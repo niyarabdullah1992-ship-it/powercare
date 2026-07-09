@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { updateCompany } from "@/lib/store";
+import { updateCompany, getCompanyData } from "@/lib/store";
+import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, FileText, ShieldQuestion, Radio,
   Users, HardHat, CalendarRange, Bell, LogOut, Globe, ChevronDown, UserCircle, Zap,
@@ -28,6 +29,43 @@ export default function Layout({ children }) {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
+
+  // Real-time notification polling (Supabase → local bell)
+  useEffect(() => {
+    if (!currentUser || !company) return;
+    const poll = async () => {
+      try {
+        const res = await base44.functions.invoke("supabaseTargets", {
+          action: "listNotifications",
+          userId: currentUser.id,
+        });
+        const remote = res.data?.notifications || [];
+        const current = getCompanyData(company.id);
+        if (!current) return;
+        const existing = new Set(
+          current.notifications.filter((n) => n.userId === currentUser.id).map((n) => n.text)
+        );
+        const fresh = remote.filter((rn) => !existing.has(rn.message));
+        if (fresh.length === 0) return;
+        updateCompany(company.id, (d) => {
+          for (const rn of fresh) {
+            d.notifications.unshift({
+              id: "snf_" + (rn.id || Math.random().toString(36).slice(2)),
+              userId: currentUser.id,
+              text: rn.message,
+              read: false,
+              createdAt: rn.created_at || new Date().toISOString(),
+            });
+          }
+        });
+      } catch {
+        // Supabase not configured or unreachable — silent
+      }
+    };
+    poll();
+    const interval = setInterval(poll, 15000);
+    return () => clearInterval(interval);
+  }, [currentUser?.id, company?.id]);
 
   if (!currentUser || !data) return children;
 

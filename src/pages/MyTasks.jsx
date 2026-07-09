@@ -163,8 +163,9 @@ export default function MyTasks() {
   const logCompleted = async (targetId) => {
     const amt = Number(logAmount) || 0;
     if (amt <= 0) return;
+    const tg = targets.find((x) => x.id === targetId);
     try {
-      await base44.functions.invoke("supabaseTargets", {
+      const res = await base44.functions.invoke("supabaseTargets", {
         action: "updateProgress",
         targetId,
         amount: amt,
@@ -172,7 +173,14 @@ export default function MyTasks() {
         managerId: data.directorId,
         employeeName: currentUser.name,
       });
-      addNotification(company.id, data.directorId, `${currentUser.name} ${t("completedCount").toLowerCase()}: +${amt} ${t("tasksUnit")}.`);
+      // Instant notification to the responsible manager (target creator)
+      const mgrId = tg?.manager_id || data.directorId;
+      const newCompleted = res?.data?.target?.completed_tasks ?? (tg?.completed_tasks || 0) + amt;
+      addNotification(
+        company.id,
+        mgrId,
+        `${currentUser.name} → ${tg?.title || t("setTarget")}: +${amt} ${t("tasksUnit")} (${newCompleted}/${tg?.task_target || "?"}).`
+      );
       setLogTarget(null);
       setLogAmount(1);
       fetchTargets();
