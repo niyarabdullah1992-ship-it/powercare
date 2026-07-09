@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { updateCompany } from "@/lib/store";
-import { HR_PERMISSIONS, hrPermLabel } from "@/lib/hrPermissions";
+import { HR_PERMISSIONS, hrPermLabel, hrPermDescription } from "@/lib/hrPermissions";
 import { Plus, Trash2 } from "lucide-react";
 
 export default function HRLevelsManager({ data }) {
@@ -59,10 +59,17 @@ export default function HRLevelsManager({ data }) {
           </div>
           <div className="flex flex-wrap gap-2">
             {HR_PERMISSIONS.map((key) => (
-              <label key={key} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border text-xs font-body cursor-pointer">
+              <label key={key} title={hrPermDescription(key, lang)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border text-xs font-body cursor-pointer">
                 <input type="checkbox" checked={perms.includes(key)} onChange={() => togglePerm(key)} />
                 {hrPermLabel(key, lang)}
               </label>
+            ))}
+          </div>
+          <div className="space-y-1">
+            {perms.map((key) => (
+              <p key={key} className="text-[11px] text-muted-foreground font-body">
+                <span className="font-medium text-foreground">{hrPermLabel(key, lang)}:</span> {hrPermDescription(key, lang)}
+              </p>
             ))}
           </div>
           <div className="flex gap-2">
@@ -82,7 +89,7 @@ export default function HRLevelsManager({ data }) {
               </p>
               <div className="flex flex-wrap gap-1 mt-1">
                 {(l.permissions || []).map((p) => (
-                  <span key={p} className="px-2 py-0.5 rounded-full bg-muted text-[10px] font-body text-muted-foreground">{hrPermLabel(p, lang)}</span>
+                  <span key={p} title={hrPermDescription(p, lang)} className="px-2 py-0.5 rounded-full bg-muted text-[10px] font-body text-muted-foreground cursor-help">{hrPermLabel(p, lang)}</span>
                 ))}
               </div>
             </div>

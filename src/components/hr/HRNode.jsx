@@ -3,9 +3,10 @@ import { useI18n } from "@/lib/i18n";
 import { updateCompany } from "@/lib/store";
 import { UserCog, Plus, X } from "lucide-react";
 import AddHRModal from "@/components/hr/AddHRModal";
+import { hrPermLabel, hrPermDescription } from "@/lib/hrPermissions";
 
 export default function HRNode({ employee, allEmployees, levels, stations, companyId, currentUser, depth = 0 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [showAdd, setShowAdd] = useState(false);
   const level = levels.find((l) => l.id === employee.hrLevelId);
   const children = allEmployees.filter((e) => e.hrParentId === employee.id);
@@ -52,6 +53,13 @@ export default function HRNode({ employee, allEmployees, levels, stations, compa
           <div className="min-w-0">
             <p className="text-sm font-body font-medium truncate">{employee.name}</p>
             <p className="text-[10px] text-muted-foreground font-body">{level?.name || "—"}</p>
+            {level?.permissions?.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {level.permissions.map((p) => (
+                  <span key={p} title={hrPermDescription(p, lang)} className="px-1.5 py-0.5 rounded-full bg-muted text-[9px] font-body text-muted-foreground cursor-help">{hrPermLabel(p, lang)}</span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         {canManageNode && (

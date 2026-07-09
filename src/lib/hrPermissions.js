@@ -21,6 +21,20 @@ const LABELS = {
   manage_payroll: { en: "Manage Payroll", ar: "إدارة الرواتب" },
 };
 
+const DESCRIPTIONS = {
+  view_employees: { en: "Can view the list of employees only, without editing their data.", ar: "يسمح بمشاهدة قائمة الموظفين فقط دون تعديل بياناتهم." },
+  manage_employees: { en: "Can add, edit, or remove employees.", ar: "يسمح بإضافة موظفين جدد أو تعديل بياناتهم أو حذفهم." },
+  view_reports: { en: "Can view daily station reports.", ar: "يسمح بمشاهدة التقارير اليومية للمحطات." },
+  manage_leave: { en: "Can review and approve leave requests.", ar: "يسمح بمراجعة والموافقة على طلبات الإجازة." },
+  view_safety: { en: "Can view station safety records, inspections, and hazards.", ar: "يسمح بمشاهدة سجلات السلامة والفحوصات والمخاطر الخاصة بالمحطة." },
+  manage_anonymous_reports: { en: "Can view and reply to anonymous complaints/suggestions within this HR member's scope.", ar: "يسمح بمشاهدة البلاغات المجهولة (الشكاوى/الاقتراحات) والرد عليها ضمن نطاق مسؤول الموارد البشرية." },
+  manage_payroll: { en: "Can manage employee payroll.", ar: "يسمح بإدارة رواتب الموظفين." },
+};
+
 export function hrPermLabel(key, lang) {
   return LABELS[key]?.[lang] || LABELS[key]?.en || key;
+}
+
+export function hrPermDescription(key, lang) {
+  return DESCRIPTIONS[key]?.[lang] || DESCRIPTIONS[key]?.en || "";
 }
