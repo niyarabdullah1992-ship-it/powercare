@@ -9,7 +9,7 @@ export default function Stations() {
   const { t } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: "", location: "", type: "Power" });
+  const [form, setForm] = useState({ name: "", location: "", type: "" });
 
   if (!data || !currentUser) return null;
   const stations = visibleStations(currentUser, data);
@@ -29,7 +29,7 @@ export default function Stations() {
       });
     });
     setShowAdd(false);
-    setForm({ name: "", location: "", type: "Power" });
+    setForm({ name: "", location: "", type: "" });
   };
 
   const cycleStatus = (id) => {
@@ -65,9 +65,7 @@ export default function Stations() {
         <form onSubmit={add} className="p-5 rounded-xl border border-border bg-card grid grid-cols-1 md:grid-cols-3 gap-3">
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("stationName")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
           <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder={t("location")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
-          <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="px-3 py-2 rounded-md border border-input text-sm font-body">
-            <option>Power</option><option>Water</option><option>Oil</option><option>Gas</option>
-          </select>
+          <input value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} placeholder={t("stationType")} className="px-3 py-2 rounded-md border border-input text-sm font-body" />
           <div className="md:col-span-3 flex gap-2">
             <button type="submit" className="px-4 py-2 rounded-md bg-foreground text-background text-sm">{t("save")}</button>
             <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-md border border-border text-sm">{t("cancel")}</button>
