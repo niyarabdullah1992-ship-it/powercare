@@ -892,10 +892,10 @@ export default function MyTasks() {
                           {canManage(tg) && (
                             <div className="flex items-center gap-1 mt-1">
                               <select
-                                value={selectedSection}
+                                value={tg.section || NO_SECTION}
                                 onChange={(e) => moveTaskToSection(tg, e.target.value)}
-                                title={t("section")}
-                                className="text-[11px] px-1.5 py-1 rounded-md border border-input bg-card font-body max-w-[100px]"
+                                title={t("moveToSection")}
+                                className="text-[11px] px-1.5 py-1 rounded-md border border-input bg-card font-body max-w-[130px]"
                               >
                                 {allSectionFolders.map((f) => (
                                   <option key={f.key} value={f.key}>{f.name}</option>
