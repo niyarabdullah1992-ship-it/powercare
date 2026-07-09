@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getAnonUsage, addNotification } from "@/lib/store";
-import { canReplyAnon } from "@/lib/permissions";
-import { ShieldCheck, Send, Lock, ArrowUpCircle, Building2, CheckCircle2 } from "lucide-react";
+import { canReplyAnon, visibleStations } from "@/lib/permissions";
+import { ShieldCheck, Send, Lock, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft } from "lucide-react";
 
 const TYPES = ["complaint", "suggestion", "risk_report", "incident"];
 const PRIORITIES = ["high", "medium", "low"];
@@ -18,12 +18,13 @@ const ROLE_LABEL_KEY = {
 };
 
 export default function AnonymousReports() {
-  const { t } = useI18n();
+  const { t, dir } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [type, setType] = useState("complaint");
   const [priority, setPriority] = useState("medium");
   const [message, setMessage] = useState("");
   const [replyText, setReplyText] = useState({});
+  const [selectedStation, setSelectedStation] = useState(null);
 
   if (!data || !currentUser) return null;
   const isStaff = canReplyAnon(currentUser);
@@ -142,6 +143,16 @@ export default function AnonymousReports() {
     incident: visibleReports.filter((a) => a.type === "incident").length,
   };
 
+  // Station grouping for staff navigation
+  const myStations = visibleStations(currentUser, data);
+  const stationGroups = myStations.map((s) => ({
+    key: s.id,
+    name: s.name,
+    count: visibleReports.filter((r) => r.stationId === s.id).length,
+  }));
+  const stationReports = selectedStation ? visibleReports.filter((r) => r.stationId === selectedStation) : [];
+  const selectedStationName = selectedStation ? stationName(selectedStation) : "";
+
   return (
     <div className="space-y-6">
       <div>
@@ -242,9 +253,48 @@ export default function AnonymousReports() {
             ))}
           </div>
 
-          <div className="space-y-3">
-            {visibleReports.length === 0 && <p className="text-sm text-muted-foreground font-body">{t("noReply")}</p>}
-            {visibleReports.map((r) => (
+          {!selectedStation ? (
+            <div className="space-y-3">
+              <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
+                <Building2 className="w-4 h-4" /> {t("stations")}
+              </h2>
+              {stationGroups.length === 0 ? (
+                <p className="text-sm text-muted-foreground font-body">{t("noReply")}</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {stationGroups.map((g) => (
+                    <button
+                      key={g.key}
+                      onClick={() => setSelectedStation(g.key)}
+                      className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-muted transition text-start"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
+                          <Building2 className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium font-body">{g.name}</p>
+                          <p className="text-xs text-muted-foreground font-body">{g.count} {t("anonymous")}</p>
+                        </div>
+                      </div>
+                      <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <button onClick={() => setSelectedStation(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
+                <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
+              </button>
+              <p className="font-heading text-base font-semibold flex items-center gap-1.5">
+                <Building2 className="w-4 h-4" /> {selectedStationName}
+              </p>
+              {stationReports.length === 0 ? (
+                <p className="text-sm text-muted-foreground font-body">{t("noReply")}</p>
+              ) : (
+                stationReports.map((r) => (
               <div key={r.id} className="p-4 rounded-xl border border-border bg-card space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -280,8 +330,10 @@ export default function AnonymousReports() {
                   </p>
                 )}
               </div>
-            ))}
-          </div>
+            ))
+              )}
+            </div>
+          )}
         </>
       )}
     </div>
