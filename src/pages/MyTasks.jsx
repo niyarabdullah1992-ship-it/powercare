@@ -19,6 +19,8 @@ const DATE_PRESETS = [
   { val: "custom", months: 0 },
 ];
 
+const NO_SECTION = "__none__";
+
 export default function MyTasks() {
   const { t, dir } = useI18n();
   const { data, currentUser, company } = useAuth();
@@ -39,11 +41,11 @@ export default function MyTasks() {
   const [targets, setTargets] = useState([]);
   const [targetsLoading, setTargetsLoading] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
+  const [selectedSection, setSelectedSection] = useState(null);
   const [priority, setPriority] = useState("medium");
   const [sortBy, setSortBy] = useState("priority");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sectionFilter, setSectionFilter] = useState("all");
   const [editTarget, setEditTarget] = useState(null);
 
   const fetchTargets = async () => {
@@ -130,14 +132,13 @@ export default function MyTasks() {
     const title = fd.get("title");
     const description = fd.get("description") || "";
     const steps = fd.get("steps") || "";
-    const taskType = fd.get("taskType") || "";
+    const section = fd.get("section") || "";
     const total = Number(fd.get("totalTasks") || 1);
     const aType = fd.get("assignType") || "member";
 
     let employeeId = null;
     let assignmentId = null;
     let stationId = null;
-    let section = "";
 
     if (aType === "member") {
       employeeId = fd.get("assignedTo");
@@ -149,9 +150,6 @@ export default function MyTasks() {
       stationId = fd.get("stationId");
       if (!stationId) { alert(t("selectStation")); return; }
       assignmentId = stationId;
-      section = fd.get("section") || "";
-    } else if (aType === "hq_team") {
-      section = fd.get("section") || "";
     }
 
     const { startDate, endDate } = computeDates();
@@ -167,7 +165,6 @@ export default function MyTasks() {
         title,
         description,
         steps,
-        taskType,
         section,
         fileUrls,
         taskTarget: total,
@@ -290,7 +287,6 @@ export default function MyTasks() {
         title: fd.get("title"),
         description: fd.get("description"),
         steps: fd.get("steps"),
-        taskType: fd.get("taskType"),
         section: fd.get("section"),
         priority: fd.get("priority"),
         endDate: fd.get("endDate"),
@@ -354,11 +350,21 @@ export default function MyTasks() {
   ];
   const PRIORITY_WEIGHT = { urgent: 0, high: 1, medium: 2, low: 3 };
   const stationTargetsAll = selectedStation ? targets.filter((tg) => targetStationKey(tg) === selectedStation) : [];
-  const stationSections = Array.from(new Set(stationTargetsAll.filter((tg) => tg.section).map((tg) => tg.section)));
-  const stationTargets = selectedStation
+  // Sections act as external folders: pick a station, then pick a section, then see its tasks.
+  const folderCounts = {};
+  for (const tg of stationTargetsAll) {
+    const key = tg.section || NO_SECTION;
+    folderCounts[key] = (folderCounts[key] || 0) + 1;
+  }
+  const sectionFolders = Object.entries(folderCounts).map(([key, count]) => ({
+    key,
+    name: key === NO_SECTION ? t("noSection") : key,
+    count,
+  }));
+  const stationTargets = selectedStation && selectedSection
     ? stationTargetsAll
+        .filter((tg) => (selectedSection === NO_SECTION ? !tg.section : tg.section === selectedSection))
         .filter((tg) => {
-          if (sectionFilter !== "all" && tg.section !== sectionFilter) return false;
           if (statusFilter !== "all" && tg.status !== statusFilter) return false;
           if (searchQuery) {
             const q = searchQuery.toLowerCase();
@@ -374,18 +380,7 @@ export default function MyTasks() {
         })
     : [];
   const selectedStationName = selectedStation === "hq" ? t("hq") : stationName(selectedStation);
-  // Group the filtered/sorted tasks by section so each section's tasks stay together,
-  // regardless of the chosen sort order.
-  const sectionGroups = [];
-  {
-    const map = new Map();
-    for (const tg of stationTargets) {
-      const key = tg.section || "";
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(tg);
-    }
-    for (const [section, tasks] of map) sectionGroups.push({ section, tasks });
-  }
+  const selectedSectionName = selectedSection === NO_SECTION ? t("noSection") : selectedSection;
 
   return (
     <div className="space-y-6">
@@ -409,12 +404,6 @@ export default function MyTasks() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input name="title" placeholder={t("taskTitle")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             <input name="description" placeholder={t("taskDescription")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-          </div>
-
-          {/* Task type — free naming */}
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> {t("taskType")}</p>
-            <input name="taskType" placeholder={t("taskTypePlaceholder")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
           </div>
 
           {/* Steps */}
@@ -474,39 +463,29 @@ export default function MyTasks() {
           )}
 
           {assignType === "station_team" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <select name="stationId" required value={formStation} onChange={(e) => setFormStation(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body">
-                <option value="" disabled>{t("selectStation")}</option>
-                {data.stations.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-              <div>
-                <label className="text-xs text-muted-foreground font-body block mb-1">{t("section")}</label>
-                <input name="section" list="sectionSuggestions" placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-                <datalist id="sectionSuggestions">
-                  {Array.from(new Set(targets.filter((tg) => tg.assignment_type === "station_team" && tg.assignment_id === formStation && tg.section).map((tg) => tg.section))).map((sec) => (
-                    <option key={sec} value={sec} />
-                  ))}
-                </datalist>
-                <p className="text-[11px] text-muted-foreground font-body mt-1">{t("sectionTaskTypeHint")}</p>
-              </div>
-            </div>
+            <select name="stationId" required value={formStation} onChange={(e) => setFormStation(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
+              <option value="" disabled>{t("selectStation")}</option>
+              {data.stations.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
           )}
 
           {assignType === "hq_team" && (
-            <div>
-              <p className="text-xs text-muted-foreground font-body mb-2">{t("hqTeamNote")}</p>
-              <label className="text-xs text-muted-foreground font-body block mb-1">{t("section")}</label>
-              <input name="section" list="hqSectionSuggestions" placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-              <datalist id="hqSectionSuggestions">
-                {Array.from(new Set(targets.filter((tg) => tg.assignment_type === "hq_team" && tg.section).map((tg) => tg.section))).map((sec) => (
-                  <option key={sec} value={sec} />
-                ))}
-              </datalist>
-              <p className="text-[11px] text-muted-foreground font-body mt-1">{t("sectionTaskTypeHint")}</p>
-            </div>
+            <p className="text-xs text-muted-foreground font-body">{t("hqTeamNote")}</p>
           )}
+
+          {/* Section — external folder to organize tasks into */}
+          <div>
+            <label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> {t("section")}</label>
+            <input name="section" list="allSectionSuggestions" placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <datalist id="allSectionSuggestions">
+              {Array.from(new Set(targets.filter((tg) => tg.section).map((tg) => tg.section))).map((sec) => (
+                <option key={sec} value={sec} />
+              ))}
+            </datalist>
+            <p className="text-[11px] text-muted-foreground font-body mt-1">{t("sectionTaskTypeHint")}</p>
+          </div>
 
           {/* Priority */}
           <div>
@@ -596,7 +575,7 @@ export default function MyTasks() {
               {stationGroups.map((g) => (
                 <button
                   key={g.key}
-                  onClick={() => { setSelectedStation(g.key); setSectionFilter("all"); }}
+                  onClick={() => { setSelectedStation(g.key); setSelectedSection(null); }}
                   className="flex items-center justify-between p-4 rounded-lg border border-border bg-background hover:bg-muted transition text-start"
                 >
                   <div className="flex items-center gap-3">
@@ -613,13 +592,44 @@ export default function MyTasks() {
               ))}
             </div>
           )
+        ) : !selectedSection ? (
+          <div className="space-y-3">
+            <button onClick={() => setSelectedStation(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
+              <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
+            </button>
+            <p className="font-heading text-base font-semibold">{selectedStationName}</p>
+            {sectionFolders.length === 0 ? (
+              <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {sectionFolders.map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setSelectedSection(f.key)}
+                    className="flex items-center justify-between p-4 rounded-lg border border-border bg-background hover:bg-muted transition text-start"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium font-body">{f.name}</p>
+                        <p className="text-xs text-muted-foreground font-body">{f.count} {t("tasksUnit")}</p>
+                      </div>
+                    </div>
+                    <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
           <div className="space-y-3">
-            <button onClick={() => { setSelectedStation(null); setSectionFilter("all"); }} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
+            <button onClick={() => setSelectedSection(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
               <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
             </button>
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <p className="font-heading text-base font-semibold">{selectedStationName}</p>
+              <p className="font-heading text-base font-semibold">{selectedStationName} — {selectedSectionName}</p>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-muted-foreground font-body">{t("sortBy")}:</span>
                 <button onClick={() => setSortBy("priority")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "priority" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byPriority")}</button>
@@ -647,181 +657,153 @@ export default function MyTasks() {
                 <option value="completed">{t("completed")}</option>
                 <option value="overdue">{t("overdue")}</option>
               </select>
-              {stationSections.length > 0 && (
-                <select
-                  value={sectionFilter}
-                  onChange={(e) => setSectionFilter(e.target.value)}
-                  className="px-3 py-2 rounded-md border border-input text-sm font-body bg-card"
-                >
-                  <option value="all">{t("allSections")}</option>
-                  {stationSections.map((sec) => <option key={sec} value={sec}>{sec}</option>)}
-                </select>
-              )}
             </div>
             {stationTargets.length === 0 ? (
               <p className="text-sm text-muted-foreground font-body">{searchQuery || statusFilter !== "all" ? t("noResults") : t("noTargets")}</p>
             ) : (
-              <div className="space-y-6">
-                {sectionGroups.map(({ section, tasks }) => (
-                  <div key={section || "__none__"}>
-                    {stationSections.length > 0 && (
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xs font-heading font-semibold uppercase tracking-wider text-foreground">{section || t("noSection")}</span>
-                        <div className="flex-1 h-px bg-border" />
+              <div className="space-y-3">
+                {stationTargets.map((tg) => {
+                  const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
+                  const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
+                  const done = tg.status === "completed";
+                  const overdue = tg.status === "overdue";
+                  const canLogThis = canLog(tg);
+                  const isUrgent = tg.priority === "urgent";
+                  const totalDur = new Date(tg.end_date).getTime() - new Date(tg.start_date).getTime();
+                  const elapsed = Date.now() - new Date(tg.start_date).getTime();
+                  const timePct = totalDur > 0 ? (elapsed / totalDur) * 100 : 0;
+                  const progressPct = tg.task_target > 0 ? (tg.completed_tasks / tg.task_target) * 100 : 0;
+                  const atRisk = isUrgent && !done && !overdue && timePct > 75 && progressPct < 50;
+                  const statusBadge = done
+                    ? "bg-emerald-100 text-emerald-700 border-emerald-300"
+                    : overdue
+                    ? "bg-red-100 text-red-700 border-red-300"
+                    : "bg-amber-100 text-amber-700 border-amber-300";
+                  const cardBorder = overdue
+                    ? "border-red-300 bg-red-50/40"
+                    : done
+                    ? "border-emerald-300 bg-emerald-50/30"
+                    : isUrgent
+                    ? "border-red-400 bg-red-50/20"
+                    : "border-border bg-background";
+                  const barColor = done
+                    ? "bg-emerald-500"
+                    : overdue
+                    ? "bg-red-500"
+                    : pct >= 67
+                    ? "bg-emerald-500"
+                    : pct >= 34
+                    ? "bg-amber-500"
+                    : "bg-yellow-400";
+                  return (
+                    <div key={tg.id} className={`p-4 rounded-lg border space-y-3 transition-colors ${cardBorder}`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium font-body">{tg.title || `${t("setTarget")}`}</p>
+                          {tg.description && <p className="text-xs text-muted-foreground font-body mt-0.5">{tg.description}</p>}
+                          {tg.steps && (
+                            <div className="text-xs text-muted-foreground font-body mt-1 p-2 rounded bg-muted/50 whitespace-pre-wrap">
+                              <span className="font-medium">{t("steps")}:</span>{"\n"}{tg.steps}
+                            </div>
+                          )}
+                          {(Array.isArray(tg.file_urls) ? tg.file_urls.length : tg.file_url) > 0 && (
+                            <div className="mt-1">
+                              <CommentAttachments files={Array.isArray(tg.file_urls) && tg.file_urls.length ? tg.file_urls : [{ url: tg.file_url, name: "PDF", type: "file" }]} />
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground font-body mt-1">{assignmentLabel(tg)}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          {isUrgent && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-body font-medium border border-red-500 bg-red-100 text-red-700 whitespace-nowrap">
+                              <AlertTriangle className="w-3 h-3" /> {t("urgent")}
+                            </span>
+                          )}
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-body font-medium border whitespace-nowrap ${statusBadge}`}>
+                            {done ? <Check className="w-3 h-3" /> : overdue ? <AlertTriangle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                            {done ? t("completed") : overdue ? t("overdue") : t("inProgress")}
+                          </span>
+                          {canManage(tg) && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <button onClick={() => setEditTarget(tg)} className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title={t("edit")}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button onClick={() => deleteTarget(tg.id)} className="p-1 rounded-md hover:bg-red-50 text-muted-foreground hover:text-red-600" title={t("delete")}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                    <div className="space-y-3">
-                      {tasks.map((tg) => {
-                        const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
-                        const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
-                        const done = tg.status === "completed";
-                        const overdue = tg.status === "overdue";
-                        const canLogThis = canLog(tg);
-                        const isUrgent = tg.priority === "urgent";
-                        const totalDur = new Date(tg.end_date).getTime() - new Date(tg.start_date).getTime();
-                        const elapsed = Date.now() - new Date(tg.start_date).getTime();
-                        const timePct = totalDur > 0 ? (elapsed / totalDur) * 100 : 0;
-                        const progressPct = tg.task_target > 0 ? (tg.completed_tasks / tg.task_target) * 100 : 0;
-                        const atRisk = isUrgent && !done && !overdue && timePct > 75 && progressPct < 50;
-                        const statusBadge = done
-                          ? "bg-emerald-100 text-emerald-700 border-emerald-300"
-                          : overdue
-                          ? "bg-red-100 text-red-700 border-red-300"
-                          : "bg-amber-100 text-amber-700 border-amber-300";
-                        const cardBorder = overdue
-                          ? "border-red-300 bg-red-50/40"
-                          : done
-                          ? "border-emerald-300 bg-emerald-50/30"
-                          : isUrgent
-                          ? "border-red-400 bg-red-50/20"
-                          : "border-border bg-background";
-                        const barColor = done
-                          ? "bg-emerald-500"
-                          : overdue
-                          ? "bg-red-500"
-                          : pct >= 67
-                          ? "bg-emerald-500"
-                          : pct >= 34
-                          ? "bg-amber-500"
-                          : "bg-yellow-400";
-                        return (
-                          <div key={tg.id} className={`p-4 rounded-lg border space-y-3 transition-colors ${cardBorder}`}>
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium font-body">{tg.title || `${t("setTarget")}`}</p>
-                                {tg.description && <p className="text-xs text-muted-foreground font-body mt-0.5">{tg.description}</p>}
-                                {tg.steps && (
-                                  <div className="text-xs text-muted-foreground font-body mt-1 p-2 rounded bg-muted/50 whitespace-pre-wrap">
-                                    <span className="font-medium">{t("steps")}:</span>{"\n"}{tg.steps}
+                      <div className="flex items-center gap-1.5 text-xs font-body">
+                        {done ? (
+                          <span className="text-emerald-600 font-medium">{t("targetDone")}</span>
+                        ) : overdue ? (
+                          <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("overdue")}</span>
+                        ) : atRisk ? (
+                          <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("atRisk")}</span>
+                        ) : (
+                          <span className={`flex items-center gap-1 ${daysLeft <= 3 ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
+                            <Clock className="w-3 h-3" /> {t("daysLeft")}: {daysLeft}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-xs font-body mb-1">
+                          <span className="text-muted-foreground">{t("completedCount")}: {tg.completed_tasks}/{tg.task_target} {t("tasksUnit")}</span>
+                          <span className="font-medium">{pct}%</span>
+                        </div>
+                        <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                          <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                      {canLogThis && !done && !overdue && (
+                        <div className="flex items-center gap-2 pt-1">
+                          <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
+                          <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
+                            <Check className="w-3.5 h-3.5" /> {t("logCompleted")}
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="pt-2 border-t border-border">
+                        <button onClick={() => { const next = commentsOpen === tg.id ? null : tg.id; setCommentsOpen(next); setCommentText(""); setCommentFiles([]); }} className="flex items-center gap-1.5 text-xs text-muted-foreground font-body hover:text-foreground">
+                          <MessageCircle className="w-3.5 h-3.5" /> {t("comments")} ({Array.isArray(tg.comments) ? tg.comments.length : 0})
+                        </button>
+                        {commentsOpen === tg.id && (
+                          <div className="mt-2 space-y-2">
+                            {Array.isArray(tg.comments) && tg.comments.length > 0 && (
+                              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                                {tg.comments.map((c) => (
+                                  <div key={c.id} className="text-xs font-body p-2 rounded-md bg-muted/50">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <p className="font-medium text-foreground">{c.user_name}</p>
+                                      <span className="text-[10px] text-muted-foreground">{c.created_at ? new Date(c.created_at).toLocaleString() : ""}</span>
+                                    </div>
+                                    <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{c.content}</p>
+                                    <CommentAttachments files={c.files} />
                                   </div>
-                                )}
-                                {(Array.isArray(tg.file_urls) ? tg.file_urls.length : tg.file_url) > 0 && (
-                                  <div className="mt-1">
-                                    <CommentAttachments files={Array.isArray(tg.file_urls) && tg.file_urls.length ? tg.file_urls : [{ url: tg.file_url, name: "PDF", type: "file" }]} />
-                                  </div>
-                                )}
-                                {(tg.task_type || tg.section) && (
-                                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                    {tg.task_type && <span className="px-2 py-0.5 rounded-full bg-accent/15 text-accent text-[10px] font-body">{tg.task_type}</span>}
-                                    {tg.section && <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-body">{tg.section}</span>}
-                                  </div>
-                                )}
-                                <p className="text-xs text-muted-foreground font-body mt-1">{assignmentLabel(tg)}</p>
-                              </div>
-                              <div className="flex flex-col items-end gap-1">
-                                {isUrgent && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-body font-medium border border-red-500 bg-red-100 text-red-700 whitespace-nowrap">
-                                    <AlertTriangle className="w-3 h-3" /> {t("urgent")}
-                                  </span>
-                                )}
-                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-body font-medium border whitespace-nowrap ${statusBadge}`}>
-                                  {done ? <Check className="w-3 h-3" /> : overdue ? <AlertTriangle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                                  {done ? t("completed") : overdue ? t("overdue") : t("inProgress")}
-                                </span>
-                                {canManage(tg) && (
-                                  <div className="flex items-center gap-1 mt-1">
-                                    <button onClick={() => setEditTarget(tg)} className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title={t("edit")}>
-                                      <Pencil className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button onClick={() => deleteTarget(tg.id)} className="p-1 rounded-md hover:bg-red-50 text-muted-foreground hover:text-red-600" title={t("delete")}>
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-xs font-body">
-                              {done ? (
-                                <span className="text-emerald-600 font-medium">{t("targetDone")}</span>
-                              ) : overdue ? (
-                                <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("overdue")}</span>
-                              ) : atRisk ? (
-                                <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("atRisk")}</span>
-                              ) : (
-                                <span className={`flex items-center gap-1 ${daysLeft <= 3 ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                                  <Clock className="w-3 h-3" /> {t("daysLeft")}: {daysLeft}
-                                </span>
-                              )}
-                            </div>
-                            <div>
-                              <div className="flex justify-between text-xs font-body mb-1">
-                                <span className="text-muted-foreground">{t("completedCount")}: {tg.completed_tasks}/{tg.task_target} {t("tasksUnit")}</span>
-                                <span className="font-medium">{pct}%</span>
-                              </div>
-                              <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                                <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
-                              </div>
-                            </div>
-                            {canLogThis && !done && !overdue && (
-                              <div className="flex items-center gap-2 pt-1">
-                                <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
-                                <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
-                                  <Check className="w-3.5 h-3.5" /> {t("logCompleted")}
-                                </button>
+                                ))}
                               </div>
                             )}
-
-                            <div className="pt-2 border-t border-border">
-                              <button onClick={() => { const next = commentsOpen === tg.id ? null : tg.id; setCommentsOpen(next); setCommentText(""); setCommentFiles([]); }} className="flex items-center gap-1.5 text-xs text-muted-foreground font-body hover:text-foreground">
-                                <MessageCircle className="w-3.5 h-3.5" /> {t("comments")} ({Array.isArray(tg.comments) ? tg.comments.length : 0})
-                              </button>
-                              {commentsOpen === tg.id && (
-                                <div className="mt-2 space-y-2">
-                                  {Array.isArray(tg.comments) && tg.comments.length > 0 && (
-                                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                                      {tg.comments.map((c) => (
-                                        <div key={c.id} className="text-xs font-body p-2 rounded-md bg-muted/50">
-                                          <div className="flex items-center justify-between gap-2">
-                                            <p className="font-medium text-foreground">{c.user_name}</p>
-                                            <span className="text-[10px] text-muted-foreground">{c.created_at ? new Date(c.created_at).toLocaleString() : ""}</span>
-                                          </div>
-                                          <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{c.content}</p>
-                                          <CommentAttachments files={c.files} />
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                  <div className="space-y-2">
-                                    <div className="flex flex-wrap items-end gap-2">
-                                      <CommentFiles files={commentFiles} setFiles={setCommentFiles} />
-                                      <VoiceRecorder files={commentFiles} setFiles={setCommentFiles} />
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={t("writeComment")} className="flex-1 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
-                                      <button onClick={() => submitComment(tg.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
-                                        <Send className="w-3.5 h-3.5" /> {t("send")}
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
+                            <div className="space-y-2">
+                              <div className="flex flex-wrap items-end gap-2">
+                                <CommentFiles files={commentFiles} setFiles={setCommentFiles} />
+                                <VoiceRecorder files={commentFiles} setFiles={setCommentFiles} />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={t("writeComment")} className="flex-1 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
+                                <button onClick={() => submitComment(tg.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
+                                  <Send className="w-3.5 h-3.5" /> {t("send")}
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        );
-                      })}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -838,11 +820,9 @@ export default function MyTasks() {
             </div>
             <input name="title" defaultValue={editTarget.title || ""} placeholder={t("taskTitle")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             <input name="description" defaultValue={editTarget.description || ""} placeholder={t("taskDescription")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input name="taskType" defaultValue={editTarget.task_type || ""} placeholder={t("taskTypePlaceholder")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-              {(editTarget.assignment_type === "station_team" || editTarget.assignment_type === "hq_team") && (
-                <input name="section" defaultValue={editTarget.section || ""} placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-              )}
+            <div>
+              <label className="text-xs text-muted-foreground font-body block mb-1">{t("section")}</label>
+              <input name="section" defaultValue={editTarget.section || ""} placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             </div>
             <textarea name="steps" rows={3} defaultValue={editTarget.steps || ""} placeholder={t("stepsPlaceholder")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-y" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
