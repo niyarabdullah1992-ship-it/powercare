@@ -1,15 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { canManageEmployees, canTransferOwnership, visibleStations, visibleEmployees } from "@/lib/permissions";
-import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X } from "lucide-react";
+import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase } from "lucide-react";
 import { badgeFor, nextBadge } from "@/lib/rewards";
 import { getRoleLabel } from "@/lib/roles";
+import { base44 } from "@/api/base44Client";
 import RoleLabelsEditor from "@/components/employees/RoleLabelsEditor";
 import EmployeePoints from "@/components/employees/EmployeePoints";
 
 const ROLES = ["employee", "station_manager", "pgm", "ops_manager", "director"];
+
+const TASK_STATUS_STYLES = {
+  overdue: "border-red-300 bg-red-50 text-red-700",
+  inProgress: "border-amber-300 bg-amber-50 text-amber-700",
+  completed: "border-emerald-300 bg-emerald-50 text-emerald-700",
+  noTasks: "border-border bg-muted text-muted-foreground",
+};
+const TASK_STATUS_DOT = {
+  overdue: "bg-red-500",
+  inProgress: "bg-amber-500",
+  completed: "bg-emerald-500",
+  noTasks: "bg-muted-foreground/40",
+};
 
 export default function Employees() {
   const { t } = useI18n();
@@ -23,6 +37,28 @@ export default function Employees() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [showTransfer, setShowTransfer] = useState(null);
+  const [targets, setTargets] = useState([]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    let ignore = false;
+    base44.functions.invoke("supabaseTargets", {
+      action: "listTargets",
+      userRole: currentUser.role,
+      userId: currentUser.id,
+      stationId: currentUser.stationId || null,
+      managedStations: currentUser.managedStations || [],
+    }).then((res) => { if (!ignore) setTargets(res?.data?.targets || []); }).catch(() => {});
+    return () => { ignore = true; };
+  }, [currentUser?.id]);
+
+  const taskStatusFor = (empId) => {
+    const mine = targets.filter((tg) => tg.assignment_type === "member" && tg.employee_id === empId);
+    if (mine.some((tg) => tg.status === "overdue")) return "overdue";
+    if (mine.some((tg) => tg.status === "active")) return "inProgress";
+    if (mine.length > 0) return "completed";
+    return "noTasks";
+  };
 
   if (!data || !currentUser) return null;
   const canManage = canManageEmployees(currentUser);
@@ -219,40 +255,58 @@ export default function Employees() {
 
       {/* Team list */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {team.map((e) => (
-          <div key={e.id} className="p-4 rounded-xl border border-border bg-card flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 min-w-0">
-              <div className="relative shrink-0">
-                <div className="w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center font-medium">{e.name.charAt(0)}</div>
-                <span className="absolute -bottom-1 -end-1 text-base leading-none w-5 h-5 flex items-center justify-center rounded-full bg-card border border-border" title={t(badgeFor(e.points || 0).key)}>{badgeFor(e.points || 0).icon}</span>
-              </div>
-              <div className="min-w-0">
-                <p className="font-body font-medium truncate">{e.name}</p>
-                {editingTitle === e.id ? (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <input
-                      value={titleInput}
-                      onChange={(ev) => setTitleInput(ev.target.value)}
-                      placeholder={t(e.role)}
-                      className="w-32 px-1.5 py-0.5 rounded border border-input text-xs font-body"
-                    />
-                    <button onClick={() => saveTitle(e.id)} className="p-1 rounded hover:bg-muted text-accent"><Check className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => setEditingTitle(null)} className="p-1 rounded hover:bg-muted text-muted-foreground"><X className="w-3.5 h-3.5" /></button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground font-body truncate flex items-center gap-1">
-                    {e.customTitle || getRoleLabel(company, e.role, t)}{e.email ? ` · ${e.email}` : ""}
-                    {currentUser.role === "director" && (
-                      <button onClick={() => { setEditingTitle(e.id); setTitleInput(e.customTitle || ""); }} className="p-0.5 rounded hover:bg-muted text-muted-foreground shrink-0">
-                        <Pencil className="w-3 h-3" />
-                      </button>
+        {team.map((e) => {
+          const status = taskStatusFor(e.id);
+          return (
+          <div key={e.id} className="p-4 rounded-2xl border border-border bg-card hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                <div className="relative shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-foreground text-background flex items-center justify-center font-medium text-lg">{e.name.charAt(0)}</div>
+                  <span className="absolute -bottom-1 -end-1 text-base leading-none w-5 h-5 flex items-center justify-center rounded-full bg-card border border-border" title={t(badgeFor(e.points || 0).key)}>{badgeFor(e.points || 0).icon}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  {editingTitle === e.id ? (
+                    <div className="flex items-center gap-1">
+                      <p className="font-heading font-semibold truncate">{e.name}</p>
+                    </div>
+                  ) : (
+                    <p className="font-heading font-semibold truncate">{e.name}</p>
+                  )}
+                  {e.email && <p className="text-xs text-muted-foreground font-body truncate">{e.email}</p>}
+
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    {editingTitle === e.id ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          value={titleInput}
+                          onChange={(ev) => setTitleInput(ev.target.value)}
+                          placeholder={t(e.role)}
+                          className="w-32 px-1.5 py-0.5 rounded border border-input text-xs font-body"
+                        />
+                        <button onClick={() => saveTitle(e.id)} className="p-1 rounded hover:bg-muted text-accent"><Check className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setEditingTitle(null)} className="p-1 rounded hover:bg-muted text-muted-foreground"><X className="w-3.5 h-3.5" /></button>
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-[11px] font-body font-medium">
+                        <Briefcase className="w-3 h-3" /> {e.customTitle || getRoleLabel(company, e.role, t)}
+                        {currentUser.role === "director" && (
+                          <button onClick={() => { setEditingTitle(e.id); setTitleInput(e.customTitle || ""); }} className="hover:text-foreground">
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        )}
+                      </span>
                     )}
-                  </p>
-                )}
-                <EmployeePoints points={e.points || 0} company={company} />
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-body font-medium border ${TASK_STATUS_STYLES[status]}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${TASK_STATUS_DOT[status]}`} /> {t(status)}
+                    </span>
+                  </div>
+                </div>
               </div>
+              <EmployeePoints points={e.points || 0} company={company} />
             </div>
-            <div className="flex items-center gap-2 shrink-0 pt-1">
+
+            <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border">
               {currentUser.role === "director" && e.id !== currentUser.id && (
                 <select value={e.role} onChange={(ev) => changeRole(e.id, ev.target.value)} className="px-2 py-1 rounded-md border border-input text-xs font-body">
                   {ROLES.map((r) => <option key={r} value={r}>{getRoleLabel(company, r, t)}</option>)}
@@ -268,7 +322,8 @@ export default function Employees() {
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
     </div>
