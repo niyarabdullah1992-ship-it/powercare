@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can create targets" }, { status: 403 });
       }
-      const { managerId, taskTarget, days, title, description, steps, fileUrl, fileUrls, assignmentType, assignmentId, employeeId, stationId, priority, startDate: customStart, endDate: customEnd } = body;
+      const { managerId, taskTarget, days, title, description, steps, fileUrl, fileUrls, assignmentType, assignmentId, employeeId, stationId, priority, startDate: customStart, endDate: customEnd, section, taskType } = body;
       if (!taskTarget) {
         return Response.json({ error: "Missing task target" }, { status: 400 });
       }
@@ -129,6 +129,8 @@ Deno.serve(async (req) => {
           assignment_type: aType,
           assignment_id: assignmentId || null,
           station_id: stationId || null,
+          section: section || null,
+          task_type: taskType || null,
           manager_id: managerId,
           task_target: Number(taskTarget),
           days: Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000),
@@ -141,7 +143,7 @@ Deno.serve(async (req) => {
       });
       const created = await res.json();
       if (!res.ok) {
-        return Response.json({ error: created?.message || "Failed to create target" }, { status: 400 });
+        return Response.json({ error: created?.message || "Failed to create target — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS section text; ALTER TABLE targets ADD COLUMN IF NOT EXISTS task_type text;" }, { status: 400 });
       }
       // Notify the assigned employee (member only)
       if (aType === "member" && employeeId) {
@@ -218,7 +220,7 @@ Deno.serve(async (req) => {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can edit targets" }, { status: 403 });
       }
-      const { targetId, title, description, steps, priority, endDate, taskTarget } = body;
+      const { targetId, title, description, steps, priority, endDate, taskTarget, section, taskType } = body;
       if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
       const patch: Record<string, unknown> = {};
       if (title !== undefined) patch.title = title;
@@ -227,6 +229,8 @@ Deno.serve(async (req) => {
       if (priority !== undefined) patch.priority = priority;
       if (endDate !== undefined) patch.end_date = endDate;
       if (taskTarget !== undefined) patch.task_target = Number(taskTarget);
+      if (section !== undefined) patch.section = section;
+      if (taskType !== undefined) patch.task_type = taskType;
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },

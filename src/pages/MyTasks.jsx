@@ -43,6 +43,7 @@ export default function MyTasks() {
   const [sortBy, setSortBy] = useState("priority");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sectionFilter, setSectionFilter] = useState("all");
   const [editTarget, setEditTarget] = useState(null);
 
   const fetchTargets = async () => {
@@ -129,12 +130,14 @@ export default function MyTasks() {
     const title = fd.get("title");
     const description = fd.get("description") || "";
     const steps = fd.get("steps") || "";
+    const taskType = fd.get("taskType") || "";
     const total = Number(fd.get("totalTasks") || 1);
     const aType = fd.get("assignType") || "member";
 
     let employeeId = null;
     let assignmentId = null;
     let stationId = null;
+    let section = "";
 
     if (aType === "member") {
       employeeId = fd.get("assignedTo");
@@ -146,6 +149,7 @@ export default function MyTasks() {
       stationId = fd.get("stationId");
       if (!stationId) { alert(t("selectStation")); return; }
       assignmentId = stationId;
+      section = fd.get("section") || "";
     }
 
     const { startDate, endDate } = computeDates();
@@ -161,6 +165,8 @@ export default function MyTasks() {
         title,
         description,
         steps,
+        taskType,
+        section,
         fileUrls,
         taskTarget: total,
         assignmentType: aType,
@@ -282,6 +288,8 @@ export default function MyTasks() {
         title: fd.get("title"),
         description: fd.get("description"),
         steps: fd.get("steps"),
+        taskType: fd.get("taskType"),
+        section: fd.get("section"),
         priority: fd.get("priority"),
         endDate: fd.get("endDate"),
         taskTarget: fd.get("totalTasks"),
@@ -343,10 +351,12 @@ export default function MyTasks() {
     ...visible.map((s) => ({ key: s.id, name: s.name, count: groupMap[s.id]?.count || 0 })),
   ];
   const PRIORITY_WEIGHT = { urgent: 0, high: 1, medium: 2, low: 3 };
+  const stationTargetsAll = selectedStation ? targets.filter((tg) => targetStationKey(tg) === selectedStation) : [];
+  const stationSections = Array.from(new Set(stationTargetsAll.filter((tg) => tg.section).map((tg) => tg.section)));
   const stationTargets = selectedStation
-    ? targets
-        .filter((tg) => targetStationKey(tg) === selectedStation)
+    ? stationTargetsAll
         .filter((tg) => {
+          if (sectionFilter !== "all" && tg.section !== sectionFilter) return false;
           if (statusFilter !== "all" && tg.status !== statusFilter) return false;
           if (searchQuery) {
             const q = searchQuery.toLowerCase();
@@ -385,6 +395,12 @@ export default function MyTasks() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input name="title" placeholder={t("taskTitle")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             <input name="description" placeholder={t("taskDescription")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+          </div>
+
+          {/* Task type — free naming */}
+          <div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> {t("taskType")}</p>
+            <input name="taskType" placeholder={t("taskTypePlaceholder")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
           </div>
 
           {/* Steps */}
@@ -444,12 +460,15 @@ export default function MyTasks() {
           )}
 
           {assignType === "station_team" && (
-            <select name="stationId" required defaultValue="" className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
-              <option value="" disabled>{t("selectStation")}</option>
-              {data.stations.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <select name="stationId" required defaultValue="" className="px-3 py-2 rounded-md border border-input text-sm font-body">
+                <option value="" disabled>{t("selectStation")}</option>
+                {data.stations.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              <input name="section" placeholder={t("sectionName")} className="px-3 py-2 rounded-md border border-input text-sm font-body" />
+            </div>
           )}
 
           {assignType === "hq_team" && (
@@ -544,7 +563,7 @@ export default function MyTasks() {
               {stationGroups.map((g) => (
                 <button
                   key={g.key}
-                  onClick={() => setSelectedStation(g.key)}
+                  onClick={() => { setSelectedStation(g.key); setSectionFilter("all"); }}
                   className="flex items-center justify-between p-4 rounded-lg border border-border bg-background hover:bg-muted transition text-start"
                 >
                   <div className="flex items-center gap-3">
@@ -563,7 +582,7 @@ export default function MyTasks() {
           )
         ) : (
           <div className="space-y-3">
-            <button onClick={() => setSelectedStation(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
+            <button onClick={() => { setSelectedStation(null); setSectionFilter("all"); }} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
               <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
             </button>
             <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -595,6 +614,16 @@ export default function MyTasks() {
                 <option value="completed">{t("completed")}</option>
                 <option value="overdue">{t("overdue")}</option>
               </select>
+              {stationSections.length > 0 && (
+                <select
+                  value={sectionFilter}
+                  onChange={(e) => setSectionFilter(e.target.value)}
+                  className="px-3 py-2 rounded-md border border-input text-sm font-body bg-card"
+                >
+                  <option value="all">{t("allSections")}</option>
+                  {stationSections.map((sec) => <option key={sec} value={sec}>{sec}</option>)}
+                </select>
+              )}
             </div>
             {stationTargets.length === 0 ? (
               <p className="text-sm text-muted-foreground font-body">{searchQuery || statusFilter !== "all" ? t("noResults") : t("noTargets")}</p>
@@ -647,6 +676,12 @@ export default function MyTasks() {
                           {(Array.isArray(tg.file_urls) ? tg.file_urls.length : tg.file_url) > 0 && (
                             <div className="mt-1">
                               <CommentAttachments files={Array.isArray(tg.file_urls) && tg.file_urls.length ? tg.file_urls : [{ url: tg.file_url, name: "PDF", type: "file" }]} />
+                            </div>
+                          )}
+                          {(tg.task_type || tg.section) && (
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {tg.task_type && <span className="px-2 py-0.5 rounded-full bg-accent/15 text-accent text-[10px] font-body">{tg.task_type}</span>}
+                              {tg.section && <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-body">{tg.section}</span>}
                             </div>
                           )}
                           <p className="text-xs text-muted-foreground font-body mt-1">{assignmentLabel(tg)}</p>
@@ -758,6 +793,12 @@ export default function MyTasks() {
             </div>
             <input name="title" defaultValue={editTarget.title || ""} placeholder={t("taskTitle")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             <input name="description" defaultValue={editTarget.description || ""} placeholder={t("taskDescription")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input name="taskType" defaultValue={editTarget.task_type || ""} placeholder={t("taskTypePlaceholder")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+              {editTarget.assignment_type === "station_team" && (
+                <input name="section" defaultValue={editTarget.section || ""} placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+              )}
+            </div>
             <textarea name="steps" rows={3} defaultValue={editTarget.steps || ""} placeholder={t("stepsPlaceholder")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-y" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
