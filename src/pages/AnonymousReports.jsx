@@ -10,34 +10,41 @@ import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
 
-// Escalation chain (station HR, then program manager, then HR/leadership):
-// 0: Station HR → 1: PGM → 2: HR Director → 3: Operations Director → 4: CEO/Owner
-const STAGE_COUNT = 5;
+// Escalation chain:
+// 0: Station Manager → 1: PGM → 2: Station HR → 3: HR Deputy Head → 4: HR Head → 5: Operations Director → 6: CEO/Owner
+const STAGE_COUNT = 7;
 
 function getHRLevelsMap(data) {
   const levels = data?.hrLevels || [];
   const companyLevels = levels.filter((l) => l.scope === "company");
   const stationLevel = levels.find((l) => l.scope === "station");
-  return { head: companyLevels[0] || null, station: stationLevel || null };
+  return { head: companyLevels[0] || null, deputy: companyLevels[1] || null, station: stationLevel || null };
 }
 
 function handlersForLevel(level, r, data) {
-  const { head, station } = getHRLevelsMap(data);
-  if (level === 0) return station ? data.employees.filter((e) => e.hrLevelId === station.id && e.hrStationId === r.stationId) : [];
+  const { head, deputy, station } = getHRLevelsMap(data);
+  if (level === 0) {
+    const st = data.stations.find((s) => s.id === r.stationId);
+    return st?.managerId ? data.employees.filter((e) => e.id === st.managerId) : [];
+  }
   if (level === 1) return data.employees.filter((e) => e.role === "pgm" && (e.managedStations || []).includes(r.stationId));
-  if (level === 2) return head ? data.employees.filter((e) => e.hrLevelId === head.id) : [];
-  if (level === 3) return data.employees.filter((e) => e.role === "director");
-  if (level === 4) return data.employees.filter((e) => e.id === data.ownerId);
+  if (level === 2) return station ? data.employees.filter((e) => e.hrLevelId === station.id && e.hrStationId === r.stationId) : [];
+  if (level === 3) return deputy ? data.employees.filter((e) => e.hrLevelId === deputy.id) : [];
+  if (level === 4) return head ? data.employees.filter((e) => e.hrLevelId === head.id) : [];
+  if (level === 5) return data.employees.filter((e) => e.role === "director");
+  if (level === 6) return data.employees.filter((e) => e.id === data.ownerId);
   return [];
 }
 
 function levelLabel(level, data, t) {
-  const { head, station } = getHRLevelsMap(data);
-  if (level === 0) return station?.name || t("stationHR");
+  const { head, deputy, station } = getHRLevelsMap(data);
+  if (level === 0) return t("stationManager");
   if (level === 1) return t("pgm");
-  if (level === 2) return head?.name || t("hr");
-  if (level === 3) return t("director");
-  if (level === 4) return t("ceoOwner");
+  if (level === 2) return station?.name || t("stationHR");
+  if (level === 3) return deputy?.name || t("hr");
+  if (level === 4) return head?.name || t("hr");
+  if (level === 5) return t("director");
+  if (level === 6) return t("ceoOwner");
   return "";
 }
 
