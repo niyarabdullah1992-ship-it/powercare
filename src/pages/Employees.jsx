@@ -220,8 +220,8 @@ export default function Employees() {
       {/* Team list */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {team.map((e) => (
-          <div key={e.id} className="p-4 rounded-xl border border-border bg-card flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
+          <div key={e.id} className="p-4 rounded-xl border border-border bg-card flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 min-w-0">
               <div className="relative shrink-0">
                 <div className="w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center font-medium">{e.name.charAt(0)}</div>
                 <span className="absolute -bottom-1 -end-1 text-base leading-none w-5 h-5 flex items-center justify-center rounded-full bg-card border border-border" title={t(badgeFor(e.points || 0).key)}>{badgeFor(e.points || 0).icon}</span>
@@ -252,7 +252,7 @@ export default function Employees() {
                 <EmployeePoints points={e.points || 0} company={company} />
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 pt-1">
               {currentUser.role === "director" && e.id !== currentUser.id && (
                 <select value={e.role} onChange={(ev) => changeRole(e.id, ev.target.value)} className="px-2 py-1 rounded-md border border-input text-xs font-body">
                   {ROLES.map((r) => <option key={r} value={r}>{getRoleLabel(company, r, t)}</option>)}
