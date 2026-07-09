@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
-  LayoutDashboard, ListTodo, FileText, ShieldQuestion, Radio,
+  LayoutDashboard, ListTodo, ShieldQuestion, Radio,
   Users, HardHat, CalendarRange, Bell, LogOut, Globe, ChevronDown, UserCircle, Zap,
 } from "lucide-react";
 
@@ -72,7 +72,7 @@ export default function Layout({ children }) {
   const navItems = [
     { to: "/app", icon: LayoutDashboard, label: t("dashboard"), end: true },
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks") },
-    { to: "/app/reports", icon: FileText, label: t("reports") },
+
     { to: "/app/anonymous", icon: ShieldQuestion, label: t("anonymous") },
     { to: "/app/stations", icon: Radio, label: t("stations") },
     { to: "/app/employees", icon: Users, label: t("employees") },
