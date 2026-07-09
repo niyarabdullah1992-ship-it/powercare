@@ -5,7 +5,7 @@ const MANAGER_ROLES = ["director", "ops_manager", "pgm", "station_manager"];
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "");
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!SUPABASE_URL || !SERVICE_KEY) {
       return Response.json({ error: "Supabase not configured" }, { status: 500 });
