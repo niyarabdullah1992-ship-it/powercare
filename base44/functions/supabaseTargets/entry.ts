@@ -24,22 +24,37 @@ Deno.serve(async (req) => {
     const isManager = MANAGER_ROLES.includes(body.userRole);
 
     if (action === "listTargets") {
-      let url = `${SUPABASE_URL}/rest/v1/targets?order=created_at.desc`;
-      if (!isManager) {
-        url += `&employee_id=eq.${encodeURIComponent(body.userId)}`;
-      }
-      const res = await fetch(url, { headers });
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?order=created_at.desc`, { headers });
       const rows = await res.json();
-      return Response.json({ targets: rows });
+      if (isManager) {
+        return Response.json({ targets: rows });
+      }
+      // Employee: filter by assignment type
+      const myStation = body.stationId || null;
+      const filtered = (rows || []).filter((tg) => {
+        if (tg.assignment_type === "member") return tg.employee_id === body.userId;
+        if (tg.assignment_type === "station_team") return tg.assignment_id === myStation;
+        if (tg.assignment_type === "hq_team") return !myStation;
+        // legacy rows without assignment_type
+        return tg.employee_id === body.userId;
+      });
+      return Response.json({ targets: filtered });
     }
 
     if (action === "createTarget") {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can create targets" }, { status: 403 });
       }
-      const { employeeId, managerId, taskTarget, days } = body;
-      if (!employeeId || !taskTarget || !days) {
+      const { managerId, taskTarget, days, title, description, assignmentType, assignmentId, employeeId, stationId } = body;
+      if (!taskTarget || !days) {
         return Response.json({ error: "Missing fields" }, { status: 400 });
+      }
+      const aType = assignmentType || "member";
+      if (aType === "member" && !employeeId) {
+        return Response.json({ error: "Select an employee for member assignment" }, { status: 400 });
+      }
+      if (aType === "station_team" && !assignmentId) {
+        return Response.json({ error: "Select a station for team assignment" }, { status: 400 });
       }
       const startDate = new Date().toISOString();
       const endDate = new Date(Date.now() + Number(days) * 86400000).toISOString();
@@ -47,7 +62,12 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { ...headers, Prefer: "return=representation" },
         body: JSON.stringify({
-          employee_id: employeeId,
+          title: title || null,
+          description: description || null,
+          employee_id: aType === "member" ? employeeId : null,
+          assignment_type: aType,
+          assignment_id: assignmentId || null,
+          station_id: stationId || null,
           manager_id: managerId,
           task_target: Number(taskTarget),
           days: Number(days),
@@ -58,16 +78,18 @@ Deno.serve(async (req) => {
         }),
       });
       const created = await res.json();
-      // Notify the assigned employee
-      await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          user_id: employeeId,
-          message: `New target assigned: ${taskTarget} tasks in ${days} days.`,
-        }),
-      });
-      return Response.json({ target: created });
+      // Notify the assigned employee (member only)
+      if (aType === "member" && employeeId) {
+        await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            user_id: employeeId,
+            message: `New target assigned: ${title || taskTarget + " tasks"} — ${taskTarget} tasks in ${days} days.`,
+          }),
+        });
+      }
+      return Response.json({ target: Array.isArray(created) ? created[0] : created });
     }
 
     if (action === "updateProgress") {

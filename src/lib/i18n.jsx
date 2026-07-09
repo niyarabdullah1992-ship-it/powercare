@@ -46,6 +46,9 @@ const dict = {
     totalTasks: "Total Tasks", numberOfDays: "Number of Days", daysLeft: "Days Left",
     completedCount: "Completed", logCompleted: "Log Completed", noTargets: "No targets set.",
     tasksUnit: "tasks", targetDone: "Target Completed!",
+    newTaskTarget: "New Task & Target", member: "Member", stationTeam: "Station Team", hqTeam: "HQ Team", hq: "HQ",
+    selectStation: "Select Station", selectEmployee: "Select Employee", taskTitle: "Task Title", taskDescription: "Task Description",
+    hqTeamNote: "This target will be assigned to all HQ members.",
     demoNote: "Demo — data is stored locally in this browser.",
   },
   ar: {
@@ -92,6 +95,9 @@ const dict = {
     totalTasks: "إجمالي المهام", numberOfDays: "عدد الأيام", daysLeft: "الأيام المتبقية",
     completedCount: "المكتملة", logCompleted: "تسجيل المنجز", noTargets: "لا توجد أهداف",
     tasksUnit: "مهمة", targetDone: "تم إنجاز الهدف!",
+    newTaskTarget: "مهمة وهدف جديد", member: "عضو", stationTeam: "فريق المحطة", hqTeam: "فريق المقر", hq: "المقر",
+    selectStation: "اختر المحطة", selectEmployee: "اختر الموظف", taskTitle: "عنوان المهمة", taskDescription: "وصف المهمة",
+    hqTeamNote: "سيُسند هذا الهدف لجميع أعضاء المقر.",
     demoNote: "تجريبي — البيانات محفوظة محليًا في هذا المتصفح.",
   },
   de: {
@@ -136,6 +142,9 @@ const dict = {
     totalTasks: "Aufgaben gesamt", numberOfDays: "Anzahl Tage", daysLeft: "Tage übrig",
     completedCount: "Erledigt", logCompleted: "Erledigte erfassen", noTargets: "Keine Ziele.",
     tasksUnit: "Aufgaben", targetDone: "Ziel erreicht!",
+    newTaskTarget: "Neue Aufgabe & Ziel", member: "Mitglied", stationTeam: "Stations-Team", hqTeam: "HQ-Team", hq: "HQ",
+    selectStation: "Station wählen", selectEmployee: "Mitarbeiter wählen", taskTitle: "Aufgabentitel", taskDescription: "Aufgabenbeschreibung",
+    hqTeamNote: "Dieses Ziel wird allen HQ-Mitgliedern zugewiesen.",
     demoNote: "Demo — Daten werden lokal in diesem Browser gespeichert.",
   },
   fr: {
@@ -180,6 +189,9 @@ const dict = {
     totalTasks: "Tâches totales", numberOfDays: "Nombre de jours", daysLeft: "Jours restants",
     completedCount: "Terminé", logCompleted: "Enregistrer terminé", noTargets: "Aucun objectif.",
     tasksUnit: "tâches", targetDone: "Objectif atteint !",
+    newTaskTarget: "Nouvelle tâche & objectif", member: "Membre", stationTeam: "Équipe de station", hqTeam: "Équipe HQ", hq: "HQ",
+    selectStation: "Sélectionner une station", selectEmployee: "Sélectionner un employé", taskTitle: "Titre de la tâche", taskDescription: "Description de la tâche",
+    hqTeamNote: "Cet objectif sera assigné à tous les membres du HQ.",
     demoNote: "Démo — les données sont stockées localement dans ce navigateur.",
   },
   es: {
@@ -224,6 +236,9 @@ const dict = {
     totalTasks: "Tareas totales", numberOfDays: "Número de días", daysLeft: "Días restantes",
     completedCount: "Completado", logCompleted: "Registrar completado", noTargets: "Sin objetivos.",
     tasksUnit: "tareas", targetDone: "¡Objetivo completado!",
+    newTaskTarget: "Nueva tarea y objetivo", member: "Miembro", stationTeam: "Equipo de estación", hqTeam: "Equipo HQ", hq: "HQ",
+    selectStation: "Seleccionar estación", selectEmployee: "Seleccionar empleado", taskTitle: "Título de tarea", taskDescription: "Descripción de tarea",
+    hqTeamNote: "Este objetivo se asignará a todos los miembros del HQ.",
     demoNote: "Demo — los datos se guardan localmente en este navegador.",
   },
   pt: {
@@ -268,6 +283,9 @@ const dict = {
     totalTasks: "Tarefas totais", numberOfDays: "Número de dias", daysLeft: "Dias restantes",
     completedCount: "Concluído", logCompleted: "Registrar concluído", noTargets: "Sem metas.",
     tasksUnit: "tarefas", targetDone: "Meta concluída!",
+    newTaskTarget: "Nova tarefa e meta", member: "Membro", stationTeam: "Equipe da estação", hqTeam: "Equipe HQ", hq: "HQ",
+    selectStation: "Selecionar estação", selectEmployee: "Selecionar funcionário", taskTitle: "Título da tarefa", taskDescription: "Descrição da tarefa",
+    hqTeamNote: "Esta meta será atribuída a todos os membros do HQ.",
     demoNote: "Demo — dados armazenados localmente neste navegador.",
   },
   ru: {
@@ -312,6 +330,9 @@ const dict = {
     totalTasks: "Всего задач", numberOfDays: "Количество дней", daysLeft: "Дней осталось",
     completedCount: "Выполнено", logCompleted: "Записать выполнено", noTargets: "Нет целей.",
     tasksUnit: "задач", targetDone: "Цель достигнута!",
+    newTaskTarget: "Новая задача и цель", member: "Участник", stationTeam: "Команда станции", hqTeam: "Команда HQ", hq: "HQ",
+    selectStation: "Выбрать станцию", selectEmployee: "Выбрать сотрудника", taskTitle: "Название задачи", taskDescription: "Описание задачи",
+    hqTeamNote: "Эта цель будет назначена всем участникам HQ.",
     demoNote: "Демо — данные хранятся локально в этом браузере.",
   },
   ja: {
@@ -356,6 +377,9 @@ const dict = {
     totalTasks: "総タスク数", numberOfDays: "日数", daysLeft: "残日数",
     completedCount: "完了", logCompleted: "完了を記録", noTargets: "目標なし。",
     tasksUnit: "タスク", targetDone: "目標達成！",
+    newTaskTarget: "新規タスク＆目標", member: "メンバー", stationTeam: "ステーションチーム", hqTeam: "HQチーム", hq: "HQ",
+    selectStation: "ステーション選択", selectEmployee: "従業員選択", taskTitle: "タスクタイトル", taskDescription: "タスク説明",
+    hqTeamNote: "この目標は全HQメンバーに割り当てられます。",
     demoNote: "デモ — データはこのブラウザにローカル保存されます。",
   },
   ko: {
@@ -400,6 +424,9 @@ const dict = {
     totalTasks: "전체 작업", numberOfDays: "일수", daysLeft: "남은 일수",
     completedCount: "완료", logCompleted: "완료 기록", noTargets: "목표 없음.",
     tasksUnit: "작업", targetDone: "목표 달성!",
+    newTaskTarget: "새 작업 및 목표", member: "멤버", stationTeam: "현장 팀", hqTeam: "HQ 팀", hq: "HQ",
+    selectStation: "현장 선택", selectEmployee: "직원 선택", taskTitle: "작업 제목", taskDescription: "작업 설명",
+    hqTeamNote: "이 목표는 모든 HQ 멤버에게 할당됩니다.",
     demoNote: "데모 — 데이터는 이 브라우저에 로컬 저장됩니다.",
   },
 };

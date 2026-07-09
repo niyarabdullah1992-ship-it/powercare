@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { canCreateTasks } from "@/lib/permissions";
 import { base44 } from "@/api/base44Client";
-import { Play, Pause, Check, Plus, Copy, Target } from "lucide-react";
+import { Play, Pause, Check, Plus, Copy, Target, User, Users, Building2 } from "lucide-react";
 
 const STOP_REASONS = ["weather", "equipment", "power", "access", "labor"];
 
@@ -16,7 +16,8 @@ export default function MyTasks() {
   const [stopReason, setStopReason] = useState("equipment");
   const [stopNote, setStopNote] = useState("");
   const [showCreate, setShowCreate] = useState(false);
-  const [showTarget, setShowTarget] = useState(false);
+  const [assignType, setAssignType] = useState("member");
+  const [formStation, setFormStation] = useState("");
   const [logTarget, setLogTarget] = useState(null);
   const [logAmount, setLogAmount] = useState(1);
   const [targets, setTargets] = useState([]);
@@ -30,6 +31,7 @@ export default function MyTasks() {
         action: "listTargets",
         userRole: currentUser.role,
         userId: currentUser.id,
+        stationId: currentUser.stationId || null,
       });
       setTargets(res.data.targets || []);
     } catch {
@@ -50,38 +52,69 @@ export default function MyTasks() {
   const employeeName = (id) => data.employees.find((e) => e.id === id)?.name || "—";
   const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || null;
 
-  // Targets visible to this user: their own (employee) or all they can manage
-  const visibleTargets = canCreateTasks(currentUser)
-    ? targets
-    : targets.filter((tg) => tg.employee_id === currentUser.id);
+  const visibleTargets = targets;
 
-  const createTarget = async (e) => {
+  // employees available for member assignment, filtered by selected station (or HQ)
+  const memberCandidates = formStation === "hq"
+    ? data.employees.filter((e) => !e.stationId)
+    : formStation
+      ? data.employees.filter((e) => e.stationId === formStation)
+      : data.employees;
+
+  const createUnified = async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
+    const title = fd.get("title");
+    const description = fd.get("description") || "";
     const total = Number(fd.get("totalTasks") || 1);
     const days = Number(fd.get("days") || 1);
-    const empId = fd.get("assignedTo");
+    const aType = fd.get("assignType") || "member";
+
+    let employeeId = null;
+    let assignmentId = null;
+    let stationId = null;
+
+    if (aType === "member") {
+      employeeId = fd.get("assignedTo");
+      if (!employeeId) { alert(t("selectEmployee")); return; }
+      const emp = data.employees.find((x) => x.id === employeeId);
+      stationId = emp?.stationId || null;
+      assignmentId = employeeId;
+    } else if (aType === "station_team") {
+      stationId = fd.get("stationId");
+      if (!stationId) { alert(t("selectStation")); return; }
+      assignmentId = stationId;
+    }
+
     try {
       await base44.functions.invoke("supabaseTargets", {
         action: "createTarget",
         userRole: currentUser.role,
-        employeeId: empId,
         managerId: currentUser.id,
+        title,
+        description,
         taskTarget: total,
         days,
+        assignmentType: aType,
+        assignmentId,
+        employeeId,
+        stationId,
       });
-      addNotification(company.id, empId, `${t("setTarget")}: ${total} ${t("tasksUnit")} / ${days} ${t("numberOfDays").toLowerCase()}.`);
-      setShowTarget(false);
+      if (aType === "member" && employeeId) {
+        addNotification(company.id, employeeId, `${t("setTarget")}: ${title} — ${total} ${t("tasksUnit")} / ${days} ${t("numberOfDays").toLowerCase()}.`);
+      }
+      setShowCreate(false);
+      setAssignType("member");
+      setFormStation("");
       fetchTargets();
     } catch (err) {
-      alert(err?.response?.data?.error || "Failed to create target");
+      alert(err?.response?.data?.error || "Failed to create");
     }
   };
 
   const logCompleted = async (targetId) => {
     const amt = Number(logAmount) || 0;
     if (amt <= 0) return;
-    const tg = targets.find((x) => x.id === targetId);
     try {
       await base44.functions.invoke("supabaseTargets", {
         action: "updateProgress",
@@ -89,9 +122,9 @@ export default function MyTasks() {
         amount: amt,
         userId: currentUser.id,
         managerId: data.directorId,
-        employeeName: employeeName(tg?.employee_id),
+        employeeName: currentUser.name,
       });
-      addNotification(company.id, data.directorId, `${employeeName(tg?.employee_id)} ${t("completedCount").toLowerCase()}: +${amt} ${t("tasksUnit")}.`);
+      addNotification(company.id, data.directorId, `${currentUser.name} ${t("completedCount").toLowerCase()}: +${amt} ${t("tasksUnit")}.`);
       setLogTarget(null);
       setLogAmount(1);
       fetchTargets();
@@ -151,26 +184,6 @@ export default function MyTasks() {
     addNotification(company.id, data.directorId, `Task "${data.tasks.find((x) => x.id === id)?.title}" completed by ${currentUser.name}.`);
   };
 
-  const createTask = (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    updateCompany(company.id, (d) => {
-      d.tasks.push({
-        id: "task_" + Math.random().toString(36).slice(2, 9),
-        title: fd.get("title"),
-        description: fd.get("description") || "",
-        stationId: currentUser.stationId || d.stations[0]?.id,
-        assignedTo: currentUser.id,
-        status: "pending",
-        dailyTarget: Number(fd.get("dailyTarget") || 1),
-        progress: 0,
-        stops: [],
-        createdAt: new Date().toISOString(),
-      });
-    });
-    setShowCreate(false);
-  };
-
   const applyTemplate = (tpl) => {
     updateCompany(company.id, (d) => {
       d.tasks.push({
@@ -188,6 +201,20 @@ export default function MyTasks() {
     });
   };
 
+  const assignmentLabel = (tg) => {
+    if (tg.assignment_type === "member") return `${t("member")}: ${employeeName(tg.employee_id)}`;
+    if (tg.assignment_type === "station_team") return `${t("stationTeam")}: ${stationName(tg.assignment_id)}`;
+    if (tg.assignment_type === "hq_team") return t("hqTeam");
+    return employeeName(tg.employee_id);
+  };
+
+  const canLog = (tg) => {
+    if (tg.assignment_type === "member") return tg.employee_id === currentUser.id;
+    if (tg.assignment_type === "station_team") return tg.assignment_id === currentUser.stationId;
+    if (tg.assignment_type === "hq_team") return !currentUser.stationId;
+    return tg.employee_id === currentUser.id;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -197,19 +224,82 @@ export default function MyTasks() {
         </div>
         {canCreateTasks(currentUser) && (
           <button onClick={() => setShowCreate((o) => !o)} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">
-            <Plus className="w-4 h-4" /> {t("add")}
+            <Plus className="w-4 h-4" /> {t("newTaskTarget")}
           </button>
         )}
       </div>
 
-      {showCreate && (
-        <form onSubmit={createTask} className="p-5 rounded-xl border border-border bg-card space-y-3">
-          <input name="title" placeholder={t("title")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-          <input name="description" placeholder={t("description")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-          <input name="dailyTarget" type="number" min="1" defaultValue="1" placeholder={t("dailyGoal")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+      {/* Unified Task + Target form */}
+      {showCreate && canCreateTasks(currentUser) && (
+        <form onSubmit={createUnified} className="p-5 rounded-xl border border-border bg-card space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input name="title" placeholder={t("taskTitle")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <input name="description" placeholder={t("taskDescription")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+          </div>
+
+          {/* Assignment type selector */}
+          <div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{t("assignTo")}</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { val: "member", label: t("member"), icon: User },
+                { val: "station_team", label: t("stationTeam"), icon: Users },
+                { val: "hq_team", label: t("hqTeam"), icon: Building2 },
+              ].map(({ val, label, icon: Icon }) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => { setAssignType(val); setFormStation(""); }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${assignType === val ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+                >
+                  <Icon className="w-3.5 h-3.5" /> {label}
+                </button>
+              ))}
+            </div>
+            <input type="hidden" name="assignType" value={assignType} />
+          </div>
+
+          {/* Conditional assignment fields */}
+          {assignType === "member" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <select value={formStation} onChange={(e) => setFormStation(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body">
+                <option value="">{t("all")}</option>
+                <option value="hq">{t("hq")}</option>
+                {data.stations.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              <select name="assignedTo" required defaultValue="" className="px-3 py-2 rounded-md border border-input text-sm font-body">
+                <option value="" disabled>{t("selectEmployee")}</option>
+                {memberCandidates.filter((e) => e.role === "employee" || e.role === "station_manager").map((e) => (
+                  <option key={e.id} value={e.id}>{e.name} — {e.stationId ? stationName(e.stationId) : t("hq")}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {assignType === "station_team" && (
+            <select name="stationId" required defaultValue="" className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
+              <option value="" disabled>{t("selectStation")}</option>
+              {data.stations.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          )}
+
+          {assignType === "hq_team" && (
+            <p className="text-xs text-muted-foreground font-body">{t("hqTeamNote")}</p>
+          )}
+
+          {/* Target quota */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input name="totalTasks" type="number" min="1" defaultValue="30" placeholder={t("totalTasks")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <input name="days" type="number" min="1" defaultValue="10" placeholder={t("numberOfDays")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+          </div>
+
           <div className="flex gap-2">
-            <button type="submit" className="px-4 py-2 rounded-md bg-foreground text-background text-sm">{t("save")}</button>
-            <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-md border border-border text-sm">{t("cancel")}</button>
+            <button type="submit" className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-body">{t("save")}</button>
+            <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-md border border-border text-sm font-body">{t("cancel")}</button>
           </div>
         </form>
       )}
@@ -230,30 +320,9 @@ export default function MyTasks() {
 
       {/* Task Targets */}
       <div className="p-5 rounded-xl border border-border bg-card space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
-            <Target className="w-4 h-4" /> {t("targets")}
-          </h2>
-          {canCreateTasks(currentUser) && (
-            <button onClick={() => setShowTarget((o) => !o)} className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
-              <Plus className="w-3.5 h-3.5" /> {t("setTarget")}
-            </button>
-          )}
-        </div>
-
-        {showTarget && canCreateTasks(currentUser) && (
-          <form onSubmit={createTarget} className="grid grid-cols-1 sm:grid-cols-4 gap-2 p-3 rounded-md bg-muted/40">
-            <select name="assignedTo" required defaultValue="" className="px-2 py-2 rounded-md border border-input text-sm font-body">
-              <option value="" disabled>{t("assignTo")}</option>
-              {data.employees.filter((e) => e.role === "employee").map((e) => (
-                <option key={e.id} value={e.id}>{e.name} — {stationName(e.stationId)}</option>
-              ))}
-            </select>
-            <input name="totalTasks" type="number" min="1" defaultValue="30" placeholder={t("totalTasks")} required className="px-2 py-2 rounded-md border border-input text-sm font-body" />
-            <input name="days" type="number" min="1" defaultValue="10" placeholder={t("numberOfDays")} required className="px-2 py-2 rounded-md border border-input text-sm font-body" />
-            <button type="submit" className="px-3 py-2 rounded-md bg-foreground text-background text-sm font-body">{t("save")}</button>
-          </form>
-        )}
+        <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
+          <Target className="w-4 h-4" /> {t("targets")}
+        </h2>
 
         {targetsLoading ? (
           <p className="text-sm text-muted-foreground font-body">…</p>
@@ -264,18 +333,17 @@ export default function MyTasks() {
             {visibleTargets.map((tg) => {
               const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
               const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
-              const isMine = tg.employee_id === currentUser.id;
               const done = tg.status === "completed";
+              const canLogThis = canLog(tg);
               return (
                 <div key={tg.id} className="p-4 rounded-lg border border-border bg-background space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-sm font-medium font-body">
-                        {isMine ? t("myDay") : employeeName(tg.employee_id)}
-                      </p>
-                      <p className="text-xs text-muted-foreground font-body">{stationName(empStation(tg.employee_id))}</p>
+                      <p className="text-sm font-medium font-body">{tg.title || `${t("setTarget")}`}</p>
+                      {tg.description && <p className="text-xs text-muted-foreground font-body mt-0.5">{tg.description}</p>}
+                      <p className="text-xs text-muted-foreground font-body mt-1">{assignmentLabel(tg)}</p>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-body ${done ? "bg-accent/15 text-accent" : "bg-muted text-muted-foreground"}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-body whitespace-nowrap ${done ? "bg-accent/15 text-accent" : "bg-muted text-muted-foreground"}`}>
                       {done ? t("targetDone") : `${t("daysLeft")}: ${daysLeft}`}
                     </span>
                   </div>
@@ -286,7 +354,7 @@ export default function MyTasks() {
                   <div className="h-2 rounded-full bg-muted overflow-hidden">
                     <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
                   </div>
-                  {isMine && !done && (
+                  {canLogThis && !done && (
                     <div className="flex items-center gap-2 pt-1">
                       <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
                       <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
@@ -336,7 +404,6 @@ export default function MyTasks() {
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="flex flex-wrap gap-2 pt-1">
                   {tk.status === "pending" && (
                     <button onClick={() => claim(tk.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
