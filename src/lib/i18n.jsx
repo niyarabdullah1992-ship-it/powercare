@@ -147,6 +147,8 @@ const dict = {
     baseSalary: "Base Salary", allowances: "Allowances", currency: "Currency",
     noCertificates: "No certificates uploaded yet.", addCertificate: "Add Certificate", certificateName: "Certificate Name",
     noLeaveRequests: "No leave requests yet.", days: "days",
+    safetyCertificates: "Safety Certificates", technicalQualifications: "Technical Qualifications",
+    category: "Category", contact: "Contact", employmentInfo: "Employment", personalInfo: "Personal",
   },
   ar: {
     dir: "rtl",
@@ -293,6 +295,8 @@ const dict = {
     baseSalary: "الراتب الأساسي", allowances: "البدلات", currency: "العملة",
     noCertificates: "لا توجد شهادات مرفوعة بعد.", addCertificate: "إضافة شهادة", certificateName: "اسم الشهادة",
     noLeaveRequests: "لا توجد طلبات إجازة بعد.", days: "أيام",
+    safetyCertificates: "شهادات السلامة", technicalQualifications: "المؤهلات الفنية",
+    category: "الفئة", contact: "التواصل", employmentInfo: "التوظيف", personalInfo: "البيانات الشخصية",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

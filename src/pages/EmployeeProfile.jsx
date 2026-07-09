@@ -4,13 +4,18 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { canManageEmployees, hasHRPermission } from "@/lib/permissions";
 import { getRoleLabel } from "@/lib/roles";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, Mail, Building2 } from "lucide-react";
 import ProfessionalInfoTab from "@/components/employees/ProfessionalInfoTab";
 import CertificatesTab from "@/components/employees/CertificatesTab";
 import SalaryTab from "@/components/employees/SalaryTab";
 import LeaveTab from "@/components/employees/LeaveTab";
 
-const TABS = ["professionalInfo", "certificates", "salary", "leave"];
+const TABS = [
+  { key: "professionalInfo", icon: Briefcase },
+  { key: "certificates", icon: Award },
+  { key: "salary", icon: Wallet },
+  { key: "leave", icon: CalendarDays },
+];
 
 export default function EmployeeProfile() {
   const { employeeId } = useParams();
@@ -27,30 +32,47 @@ export default function EmployeeProfile() {
   const canManage = canManageEmployees(currentUser) || currentUser.role === "director" || currentUser.role === "ops_manager";
   const canEditSalary = currentUser.role === "director" || hasHRPermission(currentUser, data, "manage_payroll");
   const canApproveLeave = canManage || hasHRPermission(currentUser, data, "manage_leave");
+  const stationName = data.stations.find((s) => s.id === employee.stationId)?.name;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-2 rounded-md hover:bg-muted">
-          <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} />
-        </button>
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-foreground text-background flex items-center justify-center font-medium text-lg">{employee.name.charAt(0)}</div>
-          <div>
-            <h1 className="font-heading text-2xl font-semibold">{employee.name}</h1>
-            <p className="text-muted-foreground font-body text-sm">{employee.customTitle || getRoleLabel(company, employee.role, t)}</p>
+      <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
+        <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
+      </button>
+
+      {/* Hero card */}
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="h-20 bg-gradient-to-r from-accent/25 via-accent/10 to-transparent" />
+        <div className="px-6 pb-6 -mt-10 flex flex-col sm:flex-row sm:items-end gap-4">
+          <div className="w-20 h-20 rounded-2xl bg-foreground text-background flex items-center justify-center font-heading font-medium text-3xl shadow-md ring-4 ring-card shrink-0">
+            {employee.name.charAt(0)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="font-heading text-2xl sm:text-3xl font-semibold truncate">{employee.name}</h1>
+            <p className="text-accent font-body text-sm font-medium">{employee.customTitle || getRoleLabel(company, employee.role, t)}</p>
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground font-body">
+              {employee.email && (
+                <span className="inline-flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> {employee.email}</span>
+              )}
+              {stationName && (
+                <span className="inline-flex items-center gap-1"><Building2 className="w-3.5 h-3.5" /> {stationName}</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 border-b border-border pb-2">
-        {TABS.map((tb) => (
+      {/* Tab nav */}
+      <div className="flex flex-wrap gap-2 p-1.5 rounded-xl border border-border bg-card">
+        {TABS.map(({ key, icon: Icon }) => (
           <button
-            key={tb}
-            onClick={() => setTab(tb)}
-            className={`px-3.5 py-2 rounded-md text-sm font-body ${tab === tb ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
+            key={key}
+            onClick={() => setTab(key)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-body transition-colors ${
+              tab === key ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"
+            }`}
           >
-            {t(tb)}
+            <Icon className="w-4 h-4" /> {t(key)}
           </button>
         ))}
       </div>
