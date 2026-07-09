@@ -49,6 +49,7 @@ export default function MyTasks() {
   const [editTarget, setEditTarget] = useState(null);
   const [newSectionName, setNewSectionName] = useState("");
   const [customFolders, setCustomFolders] = useState({});
+  const [sectionValue, setSectionValue] = useState("");
 
   const fetchTargets = async () => {
     if (!currentUser) return;
@@ -268,6 +269,7 @@ export default function MyTasks() {
       setCustomDays("");
       setTaskFiles([]);
       setPriority("medium");
+      setSectionValue("");
       fetchTargets();
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to create");
@@ -459,6 +461,10 @@ export default function MyTasks() {
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         })
     : [];
+  const existingSections = Array.from(new Set([
+    ...targets.filter((tg) => tg.section).map((tg) => tg.section),
+    ...Object.values(customFolders).flat(),
+  ]));
   const selectedStationName = selectedStation === "hq" ? t("hq") : stationName(selectedStation);
   const selectedSectionName = selectedSection === NO_SECTION ? t("noSection") : selectedSection;
 
@@ -557,13 +563,22 @@ export default function MyTasks() {
 
           {/* Section — external folder to organize tasks into */}
           <div>
-            <label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> {t("section")}</label>
-            <input name="section" list="allSectionSuggestions" placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-            <datalist id="allSectionSuggestions">
-              {Array.from(new Set(targets.filter((tg) => tg.section).map((tg) => tg.section))).map((sec) => (
-                <option key={sec} value={sec} />
-              ))}
-            </datalist>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> {t("section")}</p>
+            {existingSections.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {existingSections.map((sec) => (
+                  <button
+                    key={sec}
+                    type="button"
+                    onClick={() => setSectionValue(sec)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${sectionValue === sec ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+                  >
+                    {sec}
+                  </button>
+                ))}
+              </div>
+            )}
+            <input name="section" value={sectionValue} onChange={(e) => setSectionValue(e.target.value)} placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             <p className="text-[11px] text-muted-foreground font-body mt-1">{t("sectionTaskTypeHint")}</p>
           </div>
 
@@ -634,7 +649,7 @@ export default function MyTasks() {
 
           <div className="flex gap-2">
             <button type="submit" className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-body">{t("save")}</button>
-            <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-md border border-border text-sm font-body">{t("cancel")}</button>
+            <button type="button" onClick={() => { setShowCreate(false); setSectionValue(""); }} className="px-4 py-2 rounded-md border border-border text-sm font-body">{t("cancel")}</button>
           </div>
         </form>
       )}
