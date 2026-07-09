@@ -51,6 +51,8 @@ export default function MyTasks() {
   const [newSectionName, setNewSectionName] = useState("");
   const [customFolders, setCustomFolders] = useState({});
   const [sectionValue, setSectionValue] = useState("");
+  const [renameFolderKey, setRenameFolderKey] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
 
   const fetchTargets = async () => {
     if (!currentUser) return;
@@ -122,6 +124,36 @@ export default function MyTasks() {
       }
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to move task");
+    }
+  };
+
+  const renameFolder = async (oldKey, newName) => {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === oldKey) { setRenameFolderKey(null); return; }
+    const tasksInFolder = stationTargetsAll.filter((tg) => tg.section === oldKey);
+    try {
+      await Promise.all(
+        tasksInFolder.map((tg) =>
+          base44.functions.invoke("supabaseTargets", {
+            action: "updateTarget",
+            userRole: currentUser.role,
+            targetId: tg.id,
+            section: trimmed,
+          })
+        )
+      );
+      setCustomFolders((prev) => {
+        const list = prev[selectedStation] || [];
+        const next = { ...prev, [selectedStation]: list.map((n) => (n === oldKey ? trimmed : n)) };
+        if (data?.id) localStorage.setItem(`powercare_folders_${data.id}`, JSON.stringify(next));
+        return next;
+      });
+      if (selectedSection === oldKey) setSelectedSection(trimmed);
+      setRenameFolderKey(null);
+      setRenameValue("");
+      fetchTargets();
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to rename folder");
     }
   };
 
@@ -728,19 +760,29 @@ export default function MyTasks() {
                       <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
                     </button>
                     {canCreateTasks(currentUser) && f.key !== NO_SECTION && (
-                      <ConfirmDeleteDialog
-                        onConfirm={() => deleteFolder(f.key)}
-                        trigger={
-                          <button
-                            type="button"
-                            onClick={(e) => e.stopPropagation()}
-                            title={t("delete")}
-                            className={`absolute top-2 ${dir === "rtl" ? "left-2" : "right-2"} p-1 rounded-md bg-background/80 text-muted-foreground hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        }
-                      />
+                      <div className={`absolute top-2 ${dir === "rtl" ? "left-2" : "right-2"} flex items-center gap-1 opacity-0 group-hover:opacity-100 transition`}>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setRenameFolderKey(f.key); setRenameValue(f.key); }}
+                          title={t("edit")}
+                          className="p-1 rounded-md bg-background/80 text-muted-foreground hover:text-foreground hover:bg-muted"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <ConfirmDeleteDialog
+                          onConfirm={() => deleteFolder(f.key)}
+                          trigger={
+                            <button
+                              type="button"
+                              onClick={(e) => e.stopPropagation()}
+                              title={t("delete")}
+                              className="p-1 rounded-md bg-background/80 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          }
+                        />
+                      </div>
                     )}
                   </div>
                 ))}
@@ -989,6 +1031,27 @@ export default function MyTasks() {
               <button type="button" onClick={() => setEditTarget(null)} className="px-4 py-2 rounded-md border border-border text-sm font-body">{t("cancel")}</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Rename section modal */}
+      {renameFolderKey && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setRenameFolderKey(null)}>
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm p-5 rounded-xl border border-border bg-card space-y-4">
+            <h3 className="font-heading text-lg font-semibold">{t("renameSection")}</h3>
+            <input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); renameFolder(renameFolderKey, renameValue); } }}
+              placeholder={t("sectionName")}
+              autoFocus
+              className="w-full px-3 py-2 rounded-md border border-input text-sm font-body"
+            />
+            <div className="flex gap-2">
+              <button type="button" onClick={() => renameFolder(renameFolderKey, renameValue)} className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-body">{t("save")}</button>
+              <button type="button" onClick={() => setRenameFolderKey(null)} className="px-4 py-2 rounded-md border border-border text-sm font-body">{t("cancel")}</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
