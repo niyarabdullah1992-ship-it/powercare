@@ -8,6 +8,7 @@ import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
   Users, HardHat, CalendarRange, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy,
 } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
 
 export default function Layout({ children }) {
@@ -59,6 +60,13 @@ export default function Layout({ children }) {
             });
           }
         });
+        // Fire instant in-site toast alerts for each new notification
+        for (const rn of fresh) {
+          toast({
+            title: t("notifications"),
+            description: rn.message,
+          });
+        }
       } catch {
         // Supabase not configured or unreachable — silent
       }
