@@ -22,6 +22,8 @@ export default function Employees() {
   const canManage = canManageEmployees(currentUser);
   const canTransfer = canTransferOwnership(currentUser);
   const stations = visibleStations(currentUser, data);
+  // Station managers can only add employees / station managers to their own station
+  const allowedRoles = currentUser.role === "station_manager" ? ["employee", "station_manager"] : ROLES;
 
   // Drill-down: show station grid first
   if (!selectedStation) {
@@ -141,7 +143,7 @@ export default function Employees() {
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("title")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
           <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t("email")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
           <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="px-3 py-2 rounded-md border border-input text-sm font-body">
-            {ROLES.map((r) => <option key={r} value={r}>{t(r)}</option>)}
+            {allowedRoles.map((r) => <option key={r} value={r}>{t(r)}</option>)}
           </select>
           <div className="md:col-span-3 flex gap-2">
             <button type="submit" className="px-4 py-2 rounded-md bg-foreground text-background text-sm">{t("save")}</button>

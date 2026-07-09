@@ -37,6 +37,7 @@ export function canManageEmployees(user) {
   if (user.role === "director") return true;
   if (user.role === "ops_manager") return true;
   if (user.role === "pgm") return !!user.canManageTeam;
+  if (user.role === "station_manager") return true;
   return false;
 }
 
