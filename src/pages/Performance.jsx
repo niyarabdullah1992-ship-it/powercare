@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { badgeFor, nextBadge, BADGES } from "@/lib/rewards";
-import { Trophy, Medal, Crown, Users, Building2 } from "lucide-react";
+import { Trophy, Medal, Crown, Users, Building2, Award } from "lucide-react";
 
 export default function Performance() {
   const { t, dir } = useI18n();
@@ -53,6 +53,12 @@ export default function Performance() {
             className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "station" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
           >
             {t("stationRanking")}
+          </button>
+          <button
+            onClick={() => setView("achievements")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "achievements" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {t("achievementsBoard")}
           </button>
         </div>
       </div>
@@ -153,6 +159,71 @@ export default function Performance() {
           </div>
           {stationTotals.every((s) => s.points === 0) && hqTotal === 0 && (
             <p className="text-sm text-muted-foreground font-body text-center">{t("noPoints")}</p>
+          )}
+        </div>
+      )}
+
+      {view === "achievements" && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground font-body">
+            <Award className="w-4 h-4" /> {t("achievementsBoardNote")}
+          </div>
+          {ranked.every((e) => e.points === 0) ? (
+            <p className="text-sm text-muted-foreground font-body">{t("noPoints")}</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {ranked.map((e, i) => {
+                const current = badgeFor(e.points);
+                const earned = BADGES.filter((b) => e.points >= b.min);
+                return (
+                  <div
+                    key={e.id}
+                    className={`p-4 rounded-xl border space-y-3 ${e.id === currentUser.id ? "border-accent bg-accent/5" : "border-border bg-card"}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="relative shrink-0">
+                        <div className="w-11 h-11 rounded-full bg-foreground text-background flex items-center justify-center font-medium">
+                          {e.name.charAt(0)}
+                        </div>
+                        <span className="absolute -bottom-1 -end-1 text-lg leading-none">{current.icon}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          {i < 3 && rankIcon(i)}
+                          <p className="text-sm font-medium font-body truncate">{e.name}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-body truncate">
+                          {roleLabel(e.role)} · {e.stationId ? stationName(e.stationId) : t("hq")}
+                        </p>
+                      </div>
+                      <div className="ms-auto text-end shrink-0">
+                        <p className="text-lg font-heading font-semibold leading-none">
+                          {e.points}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground font-body">{t("points")}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">{t("earnedBadges")}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {earned.length === 0 ? (
+                          <span className="text-xs text-muted-foreground font-body">{t("noPoints")}</span>
+                        ) : (
+                          earned.map((b) => (
+                            <span
+                              key={b.key}
+                              className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-body border ${b.key === current.key ? "bg-accent text-accent-foreground border-accent" : "border-border bg-muted/50 text-muted-foreground"}`}
+                            >
+                              <span>{b.icon}</span> {t(b.key)}
+                            </span>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
