@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getAnonUsage, addNotification, getAnonymousCode, setAnonRateLimits } from "@/lib/store";
 import { canReplyAnon, visibleStations } from "@/lib/permissions";
 import { ShieldCheck, Send, Lock, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft } from "lucide-react";
+import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
@@ -24,6 +25,8 @@ export default function AnonymousReports() {
   const [priority, setPriority] = useState("medium");
   const [message, setMessage] = useState("");
   const [replyText, setReplyText] = useState({});
+  const [files, setFiles] = useState([]);
+  const [replyFiles, setReplyFiles] = useState({});
   const [selectedStation, setSelectedStation] = useState(null);
   const [monthlyLimitInput, setMonthlyLimitInput] = useState("");
 
@@ -64,6 +67,7 @@ export default function AnonymousReports() {
         authorId: currentUser.id,
         stationId: currentUser.stationId || null,
         type, priority, message,
+        files,
         status: "open",
         escalationLevel: 0,
         replies: [],
@@ -73,6 +77,7 @@ export default function AnonymousReports() {
     const station = data.stations.find((s) => s.id === currentUser.stationId);
     if (station?.managerId) addNotification(company.id, station.managerId, `New ${t(type)} report at ${station.name} (${t(priority)}).`);
     setMessage("");
+    setFiles([]);
   };
 
   const setStatus = (id, status) => {
@@ -91,13 +96,14 @@ export default function AnonymousReports() {
       const r = d.anonymousReports.find((x) => x.id === id);
       if (r) {
         r.replies = r.replies || [];
-        r.replies.push({ level: r.escalationLevel || 0, role: currentUser.role, authorName: currentUser.name, text: txt, createdAt: new Date().toISOString() });
+        r.replies.push({ level: r.escalationLevel || 0, role: currentUser.role, authorName: currentUser.name, text: txt, files: replyFiles[id] || [], createdAt: new Date().toISOString() });
         r.status = r.status === "open" ? "in_review" : r.status;
       }
     });
     const author = rep.authorId ? data.employees.find((e) => e.id === rep.authorId) : data.employees.find((e) => e.anonymousId === rep.anonymousId);
     if (author) addNotification(company.id, author.id, `Reply to your anonymous ${t(rep.type)} from ${currentUser.name}.`);
     setReplyText({ ...replyText, [id]: "" });
+    setReplyFiles({ ...replyFiles, [id]: [] });
   };
 
   const escalate = (id) => {
@@ -135,6 +141,7 @@ export default function AnonymousReports() {
                 <div className="mt-0.5 p-2 rounded bg-muted/50">
                   <p className="text-[10px] text-muted-foreground">{replyAtLevel.authorName} · {new Date(replyAtLevel.createdAt).toLocaleString()}</p>
                   <p className="text-foreground mt-0.5">{replyAtLevel.text}</p>
+                  <CommentAttachments files={replyAtLevel.files} />
                 </div>
               )}
             </div>
@@ -196,6 +203,7 @@ export default function AnonymousReports() {
               </div>
             )}
             <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder={t("fileReport")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
+            <CommentFiles files={files} setFiles={setFiles} />
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground font-body">
                 {usage.dayLimit - usage.day} {t("remaining")} · {usage.weekLimit - usage.week} {t("weekRemaining")} · {usage.monthLimit - usage.month} {t("monthRemaining")}
@@ -230,6 +238,7 @@ export default function AnonymousReports() {
                       </div>
                     </div>
                     <p className="text-sm font-body">{r.message}</p>
+                    <CommentAttachments files={r.files} />
                     {renderTimeline(r)}
                     {!isAtTop(r) && r.status !== "closed" && (
                       <button onClick={() => escalate(r.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300 text-amber-700 text-xs font-body hover:bg-amber-50">
@@ -337,11 +346,15 @@ export default function AnonymousReports() {
                   </div>
                 </div>
                 <p className="text-sm font-body">{r.message}</p>
+                <CommentAttachments files={r.files} />
                 {renderTimeline(r)}
                 {canReplyTo(r) && r.status !== "closed" && (
-                  <div className="flex gap-2 pt-1 border-t border-border">
-                    <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} className="flex-1 px-3 py-1.5 rounded-md border border-input text-sm font-body" />
-                    <button onClick={() => reply(r.id)} className="px-4 py-1.5 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">{t("reply")}</button>
+                  <div className="space-y-2 pt-1 border-t border-border">
+                    <CommentFiles files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
+                    <div className="flex gap-2">
+                      <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} className="flex-1 px-3 py-1.5 rounded-md border border-input text-sm font-body" />
+                      <button onClick={() => reply(r.id)} className="px-4 py-1.5 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">{t("reply")}</button>
+                    </div>
                   </div>
                 )}
                 {!canReplyTo(r) && r.status !== "closed" && (
