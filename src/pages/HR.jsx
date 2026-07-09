@@ -38,7 +38,7 @@ export default function HR() {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.id]);
+  }, [data?.id, currentUser?.id, canSeeLevels]);
 
   if (!data || !currentUser) return null;
 
