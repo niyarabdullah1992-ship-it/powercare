@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { canManageEmployees, canTransferOwnership, visibleStations, visibleEmployees } from "@/lib/permissions";
 import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog } from "lucide-react";
+import { badgeFor, nextBadge } from "@/lib/rewards";
 
 const ROLES = ["employee", "station_manager", "pgm", "ops_manager", "director"];
 
@@ -152,15 +153,24 @@ export default function Employees() {
       {/* Team list */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {team.map((e) => (
-          <div key={e.id} className="p-4 rounded-xl border border-border bg-card flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center font-medium">{e.name.charAt(0)}</div>
-              <div>
-                <p className="font-body font-medium">{e.name}</p>
-                <p className="text-xs text-muted-foreground font-body">{t(e.role)}{e.email ? ` · ${e.email}` : ""}</p>
+          <div key={e.id} className="p-4 rounded-xl border border-border bg-card flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative shrink-0">
+                <div className="w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center font-medium">{e.name.charAt(0)}</div>
+                <span className="absolute -bottom-1 -end-1 text-base leading-none" title={t(badgeFor(e.points || 0).key)}>{badgeFor(e.points || 0).icon}</span>
+              </div>
+              <div className="min-w-0">
+                <p className="font-body font-medium truncate">{e.name}</p>
+                <p className="text-xs text-muted-foreground font-body truncate">{t(e.role)}{e.email ? ` · ${e.email}` : ""}</p>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] font-body font-medium">
+                    {e.points || 0} {t("points")}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-body">{t(badgeFor(e.points || 0).key)}</span>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {e.id !== currentUser.id && (
                 <button onClick={() => switchUser(e.id)} className="text-xs text-accent font-body hover:underline">{t("switchUser")}</button>
               )}
