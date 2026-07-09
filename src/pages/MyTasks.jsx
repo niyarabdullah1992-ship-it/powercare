@@ -7,6 +7,7 @@ import { PRIORITY_POINTS } from "@/lib/rewards";
 import { base44 } from "@/api/base44Client";
 import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, MessageCircle, Send, Clock, Search, Pencil, Trash2, X } from "lucide-react";
 import TaskStats from "@/components/tasks/TaskStats";
+import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -33,6 +34,7 @@ export default function MyTasks() {
   const [logAmount, setLogAmount] = useState(1);
   const [commentsOpen, setCommentsOpen] = useState(null);
   const [commentText, setCommentText] = useState("");
+  const [commentFiles, setCommentFiles] = useState([]);
   const [targets, setTargets] = useState([]);
   const [targetsLoading, setTargetsLoading] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
@@ -252,7 +254,7 @@ export default function MyTasks() {
 
   const submitComment = async (targetId) => {
     const text = commentText.trim();
-    if (!text) return;
+    if (!text && commentFiles.length === 0) return;
     try {
       const res = await base44.functions.invoke("supabaseTargets", {
         action: "addComment",
@@ -260,10 +262,12 @@ export default function MyTasks() {
         userId: currentUser.id,
         userName: currentUser.name,
         content: text,
+        files: commentFiles,
       });
       const updated = res?.data?.comments || [];
       setTargets((prev) => prev.map((x) => (x.id === targetId ? { ...x, comments: updated } : x)));
       setCommentText("");
+      setCommentFiles([]);
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to add comment");
     }
@@ -710,7 +714,7 @@ export default function MyTasks() {
                       )}
 
                       <div className="pt-2 border-t border-border">
-                        <button onClick={() => { const next = commentsOpen === tg.id ? null : tg.id; setCommentsOpen(next); setCommentText(""); }} className="flex items-center gap-1.5 text-xs text-muted-foreground font-body hover:text-foreground">
+                        <button onClick={() => { const next = commentsOpen === tg.id ? null : tg.id; setCommentsOpen(next); setCommentText(""); setCommentFiles([]); }} className="flex items-center gap-1.5 text-xs text-muted-foreground font-body hover:text-foreground">
                           <MessageCircle className="w-3.5 h-3.5" /> {t("comments")} ({Array.isArray(tg.comments) ? tg.comments.length : 0})
                         </button>
                         {commentsOpen === tg.id && (
@@ -724,15 +728,19 @@ export default function MyTasks() {
                                       <span className="text-[10px] text-muted-foreground">{c.created_at ? new Date(c.created_at).toLocaleString() : ""}</span>
                                     </div>
                                     <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{c.content}</p>
+                                    <CommentAttachments files={c.files} />
                                   </div>
                                 ))}
                               </div>
                             )}
-                            <div className="flex items-center gap-2">
-                              <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={t("writeComment")} className="flex-1 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
-                              <button onClick={() => submitComment(tg.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
-                                <Send className="w-3.5 h-3.5" /> {t("send")}
-                              </button>
+                            <div className="space-y-2">
+                              <CommentFiles files={commentFiles} setFiles={setCommentFiles} />
+                              <div className="flex items-center gap-2">
+                                <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={t("writeComment")} className="flex-1 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
+                                <button onClick={() => submitComment(tg.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
+                                  <Send className="w-3.5 h-3.5" /> {t("send")}
+                                </button>
+                              </div>
                             </div>
                           </div>
                         )}

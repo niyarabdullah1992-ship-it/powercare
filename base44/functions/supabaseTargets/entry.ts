@@ -248,8 +248,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === "addComment") {
-      const { targetId, userId, userName, content } = body;
-      if (!targetId || !content) {
+      const { targetId, userId, userName, content, files } = body;
+      if (!targetId || (!content && (!files || files.length === 0))) {
         return Response.json({ error: "Missing fields" }, { status: 400 });
       }
       const getRes = await fetch(
@@ -260,11 +260,17 @@ Deno.serve(async (req) => {
       const tg = rows[0];
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
       const comments = Array.isArray(tg.comments) ? tg.comments : [];
+      const cleanFiles = Array.isArray(files)
+        ? files
+            .filter((f) => f && f.url)
+            .map((f) => ({ url: f.url, name: f.name || "file", type: f.type || "file" }))
+        : [];
       const newComment = {
         id: crypto.randomUUID(),
         user_id: userId,
         user_name: userName || "User",
-        content,
+        content: content || "",
+        files: cleanFiles,
         created_at: new Date().toISOString(),
       };
       comments.push(newComment);

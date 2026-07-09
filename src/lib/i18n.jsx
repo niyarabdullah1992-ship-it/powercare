@@ -120,6 +120,8 @@ const dict = {
     pointsSaved: "Point values updated",
     badgeTiers: "Badge tiers",
     badgeTiersHint: "Milestones members reach as points accumulate from completed tasks.",
+    attachFile: "Attach files", uploading: "Uploading…", attachments: "Attachments",
+    attachmentFailed: "Upload failed", removeFile: "Remove", downloadFile: "Download",
   },
   ar: {
     dir: "rtl",
@@ -239,6 +241,8 @@ const dict = {
     pointsSaved: "تم تحديث قيم النقاط",
     badgeTiers: "مستويات الشارات",
     badgeTiersHint: "محطات يصل إليها الأعضاء مع تراكم النقاط من المهام المنجزة.",
+    attachFile: "إرفاق ملفات", uploading: "جارٍ الرفع…", attachments: "المرفقات",
+    attachmentFailed: "فشل الرفع", removeFile: "إزالة", downloadFile: "تنزيل",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
