@@ -35,6 +35,23 @@ export default function Employees() {
     return (
       <div className="space-y-6">
         <h1 className="font-heading text-3xl font-semibold">{t("employees")}</h1>
+
+        {(canTransfer || currentUser.role === "director") && (
+          <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+            {canTransfer && (
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => setShowTransfer("director")} className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+                  <UserCog className="w-3.5 h-3.5" /> {t("transferDirector")}
+                </button>
+                <button onClick={() => setShowTransfer("ownership")} className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+                  <KeyRound className="w-3.5 h-3.5" /> {t("transferOwnership")}
+                </button>
+              </div>
+            )}
+            {currentUser.role === "director" && <RoleLabelsEditor company={company} />}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {stations.map((s) => {
             const team = data.employees.filter((e) => e.stationId === s.id);
@@ -149,20 +166,6 @@ export default function Employees() {
         </div>
       </div>
 
-      {/* Director sensitive actions */}
-      {canTransfer && (
-        <div className="flex flex-wrap gap-2">
-          <button onClick={() => setShowTransfer("director")} className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-            <UserCog className="w-3.5 h-3.5" /> {t("transferDirector")}
-          </button>
-          <button onClick={() => setShowTransfer("ownership")} className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-            <KeyRound className="w-3.5 h-3.5" /> {t("transferOwnership")}
-          </button>
-        </div>
-      )}
-
-      {currentUser.role === "director" && <RoleLabelsEditor company={company} />}
-
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
@@ -270,7 +273,6 @@ export default function Employees() {
         ))}
       </div>
 
-      {showTransfer && <TransferModal type={showTransfer} onClose={() => setShowTransfer(null)} />}
     </div>
   );
 }
