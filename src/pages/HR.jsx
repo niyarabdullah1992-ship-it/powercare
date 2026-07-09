@@ -56,6 +56,7 @@ export default function HR() {
 
       {(!canSeeLevels || tab === "stations") && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <HRStationCard station={null} data={data} currentUser={currentUser} canAssign={canAssign} />
           {stations.map((s) => (
             <HRStationCard key={s.id} station={s} data={data} currentUser={currentUser} canAssign={canAssign} />
           ))}
