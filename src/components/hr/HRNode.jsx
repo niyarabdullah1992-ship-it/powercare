@@ -12,6 +12,8 @@ export default function HRNode({ employee, allEmployees, levels, stations, compa
   const children = allEmployees.filter((e) => e.hrParentId === employee.id);
   const canManageNode = currentUser.role === "director" || currentUser.id === employee.id;
   const eligible = allEmployees.filter((e) => !e.hrLevelId && e.id !== employee.id);
+  // A station-scoped HR member can only manage subordinates within their own station.
+  const levelsForAdd = employee.hrStationId ? levels.filter((l) => l.scope !== "company") : levels;
 
   const addSubordinate = (empId, levelId, stationId) => {
     const lvl = levels.find((l) => l.id === levelId);
@@ -24,7 +26,7 @@ export default function HRNode({ employee, allEmployees, levels, stations, compa
       if (!emp) return;
       emp.hrLevelId = levelId;
       emp.hrParentId = employee.id;
-      emp.hrStationId = stationId || null;
+      emp.hrStationId = employee.hrStationId || stationId || null;
     });
   };
 
@@ -74,7 +76,7 @@ export default function HRNode({ employee, allEmployees, levels, stations, compa
         </div>
         {canManageNode && (
           <div className="flex items-center gap-1 shrink-0">
-            {levels.length > 0 && (
+            {levelsForAdd.length > 0 && (
               <button onClick={() => setShowAdd(true)} className="p-1.5 rounded-md hover:bg-muted text-accent" title={t("addSubordinate")}>
                 <Plus className="w-4 h-4" />
               </button>
@@ -101,8 +103,8 @@ export default function HRNode({ employee, allEmployees, levels, stations, compa
         <AddHRModal
           title={t("addSubordinate")}
           employees={eligible}
-          levels={levels}
-          stations={stations}
+          levels={levelsForAdd}
+          stations={employee.hrStationId ? null : stations}
           onAdd={addSubordinate}
           onClose={() => setShowAdd(false)}
         />
