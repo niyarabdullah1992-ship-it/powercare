@@ -5,7 +5,7 @@ import { updateCompany, getAnonUsage, addNotification } from "@/lib/store";
 import { canReplyAnon, visibleStations } from "@/lib/permissions";
 import { ShieldCheck, Send, Lock, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft } from "lucide-react";
 
-const TYPES = ["complaint", "suggestion", "risk_report", "incident"];
+const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
 
 // Escalation chain: station_manager → pgm → ops_manager → director
@@ -139,8 +139,6 @@ export default function AnonymousReports() {
   const stats = {
     complaint: visibleReports.filter((a) => a.type === "complaint").length,
     suggestion: visibleReports.filter((a) => a.type === "suggestion").length,
-    risk_report: visibleReports.filter((a) => a.type === "risk_report").length,
-    incident: visibleReports.filter((a) => a.type === "incident").length,
   };
 
   // Station grouping for staff navigation
