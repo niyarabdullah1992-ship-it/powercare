@@ -117,6 +117,8 @@ const dict = {
     savePoints: "Save",
     resetPoints: "Reset to default",
     pointsSaved: "Point values updated",
+    badgeTiers: "Badge tiers",
+    badgeTiersHint: "Milestones members reach as points accumulate from completed tasks.",
   },
   ar: {
     dir: "rtl",
@@ -233,6 +235,8 @@ const dict = {
     savePoints: "حفظ",
     resetPoints: "استعادة الافتراضي",
     pointsSaved: "تم تحديث قيم النقاط",
+    badgeTiers: "مستويات الشارات",
+    badgeTiersHint: "محطات يصل إليها الأعضاء مع تراكم النقاط من المهام المنجزة.",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

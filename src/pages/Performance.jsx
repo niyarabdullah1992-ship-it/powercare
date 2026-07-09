@@ -5,6 +5,7 @@ import { badgeFor, nextBadge, BADGES } from "@/lib/rewards";
 import { Trophy, Medal, Crown, Users, Building2, Award } from "lucide-react";
 import PerformanceAnalytics from "@/components/performance/PerformanceAnalytics";
 import PointsManager from "@/components/performance/PointsManager";
+import BadgeLegend from "@/components/performance/BadgeLegend";
 
 export default function Performance() {
   const { t, dir } = useI18n();
@@ -72,13 +73,7 @@ export default function Performance() {
       </div>
 
       {/* Badge tiers legend */}
-      <div className="flex flex-wrap gap-2">
-        {BADGES.map((b) => (
-          <span key={b.key} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border border-border bg-card">
-            <span>{b.icon}</span> {t(b.key)} · {b.min}+
-          </span>
-        ))}
-      </div>
+      <BadgeLegend />
 
       {/* Explanation + company point-value editor */}
       <PointsManager />
