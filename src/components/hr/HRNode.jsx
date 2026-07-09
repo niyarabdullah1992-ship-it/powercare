@@ -56,9 +56,11 @@ export default function HRNode({ employee, allEmployees, levels, stations, compa
         </div>
         {canManageNode && (
           <div className="flex items-center gap-1 shrink-0">
-            <button onClick={() => setShowAdd(true)} className="p-1.5 rounded-md hover:bg-muted text-accent" title={t("addSubordinate")}>
-              <Plus className="w-4 h-4" />
-            </button>
+            {levels.length > 0 && (
+              <button onClick={() => setShowAdd(true)} className="p-1.5 rounded-md hover:bg-muted text-accent" title={t("addSubordinate")}>
+                <Plus className="w-4 h-4" />
+              </button>
+            )}
             <button onClick={removeFromHR} className="p-1.5 rounded-md hover:bg-muted text-destructive" title={t("removeHR")}>
               <X className="w-4 h-4" />
             </button>

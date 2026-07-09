@@ -32,9 +32,13 @@ export default function HRStationCard({ station, data, currentUser, canAssign })
       <div className="flex items-center justify-between">
         <h4 className="font-heading font-semibold">{station.name}</h4>
         {!topHR && canAssign && (
-          <button onClick={() => setShowAssign(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-            <Plus className="w-3.5 h-3.5" /> {t("assignHR")}
-          </button>
+          levels.length > 0 ? (
+            <button onClick={() => setShowAssign(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+              <Plus className="w-3.5 h-3.5" /> {t("assignHR")}
+            </button>
+          ) : (
+            <span className="text-[11px] text-muted-foreground font-body italic">{t("noLevels")}</span>
+          )
         )}
       </div>
 

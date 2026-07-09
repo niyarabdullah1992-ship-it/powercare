@@ -21,14 +21,14 @@ export default function AddHRModal({ title, employees, levels, stations, onAdd, 
         <form onSubmit={submit} className="space-y-3">
           <div>
             <label className="block text-xs text-muted-foreground font-body mb-1">{t("selectEmployee")}</label>
-            <select value={empId} onChange={(e) => setEmpId(e.target.value)} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
+            <select value={empId} onChange={(e) => setEmpId(e.target.value)} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body bg-card">
               <option value="">—</option>
               {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-xs text-muted-foreground font-body mb-1">{t("level")}</label>
-            <select value={levelId} onChange={(e) => setLevelId(e.target.value)} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
+            <select value={levelId} onChange={(e) => setLevelId(e.target.value)} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body bg-card">
               <option value="">—</option>
               {levels.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
@@ -36,7 +36,7 @@ export default function AddHRModal({ title, employees, levels, stations, onAdd, 
           {stations && (
             <div>
               <label className="block text-xs text-muted-foreground font-body mb-1">{t("station")}</label>
-              <select value={stationId} onChange={(e) => setStationId(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
+              <select value={stationId} onChange={(e) => setStationId(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body bg-card">
                 <option value="">{t("companyWide")}</option>
                 {stations.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
