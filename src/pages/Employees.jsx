@@ -9,6 +9,7 @@ import { getRoleLabel } from "@/lib/roles";
 import { base44 } from "@/api/base44Client";
 import RoleLabelsEditor from "@/components/employees/RoleLabelsEditor";
 import EmployeePoints from "@/components/employees/EmployeePoints";
+import EmployeePerformance from "@/components/employees/EmployeePerformance";
 
 const ROLES = ["employee", "station_manager", "pgm", "ops_manager", "director"];
 
@@ -305,6 +306,8 @@ export default function Employees() {
               </div>
               <EmployeePoints points={e.points || 0} company={company} />
             </div>
+
+            <EmployeePerformance targets={targets.filter((tg) => tg.assignment_type === "member" && tg.employee_id === e.id)} />
 
             <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border">
               {currentUser.role === "director" && e.id !== currentUser.id && (
