@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
           description: description || null,
           steps: steps || null,
           file_url: fileUrl || null,
-          employee_id: aType === "member" ? employeeId : null,
+          employee_id: aType === "member" ? employeeId : (assignmentId || managerId),
           assignment_type: aType,
           assignment_id: assignmentId || null,
           station_id: stationId || null,
