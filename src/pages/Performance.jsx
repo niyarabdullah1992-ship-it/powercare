@@ -15,7 +15,7 @@ export default function Performance() {
 
   const badges = getBadges(company);
   const stationName = (id) => data.stations.find((s) => s.id === id)?.name || t("hq");
-  const roleLabel = (r) => t(r) || r;
+  const roleLabel = (e) => e.customTitle || t(e.role) || e.role;
 
   const ranked = [...data.employees]
     .map((e) => ({ ...e, points: e.points || 0 }))
@@ -96,7 +96,7 @@ export default function Performance() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium font-body truncate">{e.name}</p>
-                      <span className="text-[10px] text-muted-foreground">{roleLabel(e.role)}</span>
+                      <span className="text-[10px] text-muted-foreground">{roleLabel(e)}</span>
                     </div>
                     <p className="text-xs text-muted-foreground font-body">
                       {e.stationId ? stationName(e.stationId) : t("hq")}
@@ -236,7 +236,7 @@ export default function Performance() {
                           <p className="text-sm font-medium font-body truncate">{e.name}</p>
                         </div>
                         <p className="text-xs text-muted-foreground font-body truncate">
-                          {roleLabel(e.role)} · {e.stationId ? stationName(e.stationId) : t("hq")}
+                          {roleLabel(e)} · {e.stationId ? stationName(e.stationId) : t("hq")}
                         </p>
                       </div>
                       <div className="ms-auto text-end shrink-0">

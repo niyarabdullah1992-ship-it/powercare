@@ -3,7 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { canManageEmployees, canTransferOwnership, visibleStations, visibleEmployees } from "@/lib/permissions";
-import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog } from "lucide-react";
+import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X } from "lucide-react";
 import { badgeFor, nextBadge } from "@/lib/rewards";
 
 const ROLES = ["employee", "station_manager", "pgm", "ops_manager", "director"];
@@ -15,6 +15,8 @@ export default function Employees() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", role: "employee", stationId: "" });
   const [pgmStations, setPgmStations] = useState([]);
+  const [editingTitle, setEditingTitle] = useState(null);
+  const [titleInput, setTitleInput] = useState("");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [showTransfer, setShowTransfer] = useState(null);
@@ -104,6 +106,15 @@ export default function Employees() {
     });
   };
 
+  const saveTitle = (id) => {
+    updateCompany(company.id, (d) => {
+      const emp = d.employees.find((x) => x.id === id);
+      if (emp) emp.customTitle = titleInput.trim() || null;
+    });
+    setEditingTitle(null);
+    setTitleInput("");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -187,7 +198,27 @@ export default function Employees() {
               </div>
               <div className="min-w-0">
                 <p className="font-body font-medium truncate">{e.name}</p>
-                <p className="text-xs text-muted-foreground font-body truncate">{t(e.role)}{e.email ? ` · ${e.email}` : ""}</p>
+                {editingTitle === e.id ? (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <input
+                      value={titleInput}
+                      onChange={(ev) => setTitleInput(ev.target.value)}
+                      placeholder={t(e.role)}
+                      className="w-32 px-1.5 py-0.5 rounded border border-input text-xs font-body"
+                    />
+                    <button onClick={() => saveTitle(e.id)} className="p-1 rounded hover:bg-muted text-accent"><Check className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setEditingTitle(null)} className="p-1 rounded hover:bg-muted text-muted-foreground"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground font-body truncate flex items-center gap-1">
+                    {e.customTitle || t(e.role)}{e.email ? ` · ${e.email}` : ""}
+                    {currentUser.role === "director" && (
+                      <button onClick={() => { setEditingTitle(e.id); setTitleInput(e.customTitle || ""); }} className="p-0.5 rounded hover:bg-muted text-muted-foreground shrink-0">
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    )}
+                  </p>
+                )}
                 <div className="flex items-center gap-1.5 mt-1">
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] font-body font-medium">
                     {e.points || 0} {t("points")}
