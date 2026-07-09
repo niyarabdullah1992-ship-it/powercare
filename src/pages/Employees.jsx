@@ -5,6 +5,8 @@ import { updateCompany, addNotification } from "@/lib/store";
 import { canManageEmployees, canTransferOwnership, visibleStations, visibleEmployees } from "@/lib/permissions";
 import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X } from "lucide-react";
 import { badgeFor, nextBadge } from "@/lib/rewards";
+import { getRoleLabel } from "@/lib/roles";
+import RoleLabelsEditor from "@/components/employees/RoleLabelsEditor";
 
 const ROLES = ["employee", "station_manager", "pgm", "ops_manager", "director"];
 
@@ -52,7 +54,7 @@ export default function Employees() {
                 <div className="flex flex-wrap gap-1.5">
                   {ROLES.filter((r) => counts[r] > 0).map((r) => (
                     <span key={r} className="px-2 py-0.5 rounded-full bg-muted text-[10px] font-body text-muted-foreground">
-                      {counts[r]} {t(r)}
+                      {counts[r]} {getRoleLabel(company, r, t)}
                     </span>
                   ))}
                 </div>
@@ -159,6 +161,8 @@ export default function Employees() {
         </div>
       )}
 
+      {currentUser.role === "director" && <RoleLabelsEditor company={company} />}
+
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
@@ -167,7 +171,7 @@ export default function Employees() {
         </div>
         <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body">
           <option value="all">{t("all")}</option>
-          {ROLES.map((r) => <option key={r} value={r}>{t(r)}</option>)}
+          {ROLES.map((r) => <option key={r} value={r}>{getRoleLabel(company, r, t)}</option>)}
         </select>
         {canManage && (
           <button onClick={() => setShowAdd((o) => !o)} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">
@@ -181,7 +185,7 @@ export default function Employees() {
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("title")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
           <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t("email")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
           <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="px-3 py-2 rounded-md border border-input text-sm font-body">
-            {allowedRoles.map((r) => <option key={r} value={r}>{t(r)}</option>)}
+            {allowedRoles.map((r) => <option key={r} value={r}>{getRoleLabel(company, r, t)}</option>)}
           </select>
           {form.role === "pgm" && (
             <div className="md:col-span-3 p-3 rounded-md border border-border bg-background space-y-2">
@@ -231,7 +235,7 @@ export default function Employees() {
                   </div>
                 ) : (
                   <p className="text-xs text-muted-foreground font-body truncate flex items-center gap-1">
-                    {e.customTitle || t(e.role)}{e.email ? ` · ${e.email}` : ""}
+                    {e.customTitle || getRoleLabel(company, e.role, t)}{e.email ? ` · ${e.email}` : ""}
                     {currentUser.role === "director" && (
                       <button onClick={() => { setEditingTitle(e.id); setTitleInput(e.customTitle || ""); }} className="p-0.5 rounded hover:bg-muted text-muted-foreground shrink-0">
                         <Pencil className="w-3 h-3" />
@@ -250,7 +254,7 @@ export default function Employees() {
             <div className="flex items-center gap-2 shrink-0">
               {currentUser.role === "director" && e.id !== currentUser.id && (
                 <select value={e.role} onChange={(ev) => changeRole(e.id, ev.target.value)} className="px-2 py-1 rounded-md border border-input text-xs font-body">
-                  {ROLES.map((r) => <option key={r} value={r}>{t(r)}</option>)}
+                  {ROLES.map((r) => <option key={r} value={r}>{getRoleLabel(company, r, t)}</option>)}
                 </select>
               )}
               {e.id !== currentUser.id && (
@@ -330,7 +334,7 @@ function TransferModal({ type, onClose }) {
           <label className="block text-xs text-muted-foreground font-body mb-1">{t("select")}</label>
           <select value={target} onChange={(e) => setTarget(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
             <option value="">—</option>
-            {candidates.map((e) => <option key={e.id} value={e.id}>{e.name} ({t(e.role)})</option>)}
+            {candidates.map((e) => <option key={e.id} value={e.id}>{e.name} ({getRoleLabel(company, e.role, t)})</option>)}
           </select>
         </div>
         {type === "ownership" && !target && (

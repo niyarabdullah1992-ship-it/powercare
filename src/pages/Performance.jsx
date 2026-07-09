@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { badgeFor, nextBadge, getBadges } from "@/lib/rewards";
+import { getRoleLabel } from "@/lib/roles";
 import { Trophy, Medal, Crown, Users, Building2, Award } from "lucide-react";
 import PerformanceAnalytics from "@/components/performance/PerformanceAnalytics";
 import BadgeLegend from "@/components/performance/BadgeLegend";
@@ -15,7 +16,7 @@ export default function Performance() {
 
   const badges = getBadges(company);
   const stationName = (id) => data.stations.find((s) => s.id === id)?.name || t("hq");
-  const roleLabel = (e) => e.customTitle || t(e.role) || e.role;
+  const roleLabel = (e) => e.customTitle || getRoleLabel(company, e.role, t);
 
   const ranked = [...data.employees]
     .map((e) => ({ ...e, points: e.points || 0 }))
