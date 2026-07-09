@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { canManageStations, visibleStations } from "@/lib/permissions";
 import { Plus, Radio, Users, Trash2 } from "lucide-react";
+import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 export default function Stations() {
   const { t } = useI18n();
@@ -43,7 +44,6 @@ export default function Stations() {
 
   const removeStation = (id) => {
     if (!canManage) return;
-    if (!confirm(t("confirmDelete"))) return;
     updateCompany(company.id, (d) => {
       d.stations = d.stations.filter((x) => x.id !== id);
     });
@@ -103,9 +103,14 @@ export default function Stations() {
                     {s.status}
                   </button>
                   {canManage && (
-                    <button onClick={() => removeStation(s.id)} className="p-1 rounded-md hover:bg-destructive/10 text-destructive" title={t("delete")}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <ConfirmDeleteDialog
+                      onConfirm={() => removeStation(s.id)}
+                      trigger={
+                        <button className="p-1 rounded-md hover:bg-destructive/10 text-destructive" title={t("delete")}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      }
+                    />
                   )}
                 </div>
               </div>

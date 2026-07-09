@@ -11,6 +11,7 @@ import { base44 } from "@/api/base44Client";
 import RoleLabelsEditor from "@/components/employees/RoleLabelsEditor";
 import EmployeePoints from "@/components/employees/EmployeePoints";
 import EmployeePerformance from "@/components/employees/EmployeePerformance";
+import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 const ROLES = ["employee", "station_manager", "pgm", "ops_manager", "director"];
 
@@ -160,7 +161,6 @@ export default function Employees() {
   };
 
   const removeEmployee = (id) => {
-    if (!confirm(t("confirmDelete"))) return;
     updateCompany(company.id, (d) => {
       d.employees = d.employees.filter((x) => x.id !== id);
     });
@@ -323,9 +323,14 @@ export default function Employees() {
                 <button onClick={() => switchUser(e.id)} className="text-xs text-accent font-body hover:underline">{t("switchUser")}</button>
               )}
               {canManage && (
-                <button onClick={() => removeEmployee(e.id)} className="p-1.5 text-destructive hover:bg-muted rounded-md">
-                  <Trash2 className="w-4 h-4" strokeWidth={1.75} />
-                </button>
+                <ConfirmDeleteDialog
+                  onConfirm={() => removeEmployee(e.id)}
+                  trigger={
+                    <button className="p-1.5 text-destructive hover:bg-muted rounded-md">
+                      <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                    </button>
+                  }
+                />
               )}
             </div>
           </div>

@@ -4,6 +4,7 @@ import { updateCompany } from "@/lib/store";
 import { UserCog, Plus, X, Trash2 } from "lucide-react";
 import AddHRModal from "@/components/hr/AddHRModal";
 import { hrPermLabel, hrPermDescription } from "@/lib/hrPermissions";
+import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 export default function HRNode({ employee, allEmployees, levels, stations, companyId, currentUser, depth = 0 }) {
   const { t, lang } = useI18n();
@@ -31,7 +32,6 @@ export default function HRNode({ employee, allEmployees, levels, stations, compa
   };
 
   const removeFromHR = () => {
-    if (!confirm(t("confirmDelete"))) return;
     updateCompany(companyId, (d) => {
       const removeIds = new Set([employee.id]);
       let changed = true;
@@ -48,7 +48,6 @@ export default function HRNode({ employee, allEmployees, levels, stations, compa
   };
 
   const deleteEmployee = () => {
-    if (!confirm(t("confirmDelete"))) return;
     updateCompany(companyId, (d) => {
       d.employees.forEach((e) => {
         if (e.hrParentId === employee.id) e.hrParentId = null;
@@ -81,12 +80,22 @@ export default function HRNode({ employee, allEmployees, levels, stations, compa
                 <Plus className="w-4 h-4" />
               </button>
             )}
-            <button onClick={removeFromHR} className="p-1.5 rounded-md hover:bg-muted text-destructive" title={t("removeHR")}>
-              <X className="w-4 h-4" />
-            </button>
-            <button onClick={deleteEmployee} className="p-1.5 rounded-md hover:bg-muted text-destructive" title={t("delete")}>
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <ConfirmDeleteDialog
+              onConfirm={removeFromHR}
+              trigger={
+                <button className="p-1.5 rounded-md hover:bg-muted text-destructive" title={t("removeHR")}>
+                  <X className="w-4 h-4" />
+                </button>
+              }
+            />
+            <ConfirmDeleteDialog
+              onConfirm={deleteEmployee}
+              trigger={
+                <button className="p-1.5 rounded-md hover:bg-muted text-destructive" title={t("delete")}>
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              }
+            />
           </div>
         )}
       </div>

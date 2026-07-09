@@ -3,6 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { base44 } from "@/api/base44Client";
 import { addCertificate, removeCertificate } from "@/lib/store";
 import { FileText, Loader2, Plus, X, Award } from "lucide-react";
+import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 function CertGroup({ title, items, canEdit, onRemove }) {
   return (
@@ -17,9 +18,14 @@ function CertGroup({ title, items, canEdit, onRemove }) {
               <FileText className="w-4 h-4 text-accent shrink-0" /> {c.name}
             </a>
             {canEdit && (
-              <button onClick={() => onRemove(c.id)} className="p-1 rounded hover:bg-muted text-destructive shrink-0">
-                <X className="w-3.5 h-3.5" />
-              </button>
+              <ConfirmDeleteDialog
+                onConfirm={() => onRemove(c.id)}
+                trigger={
+                  <button className="p-1 rounded hover:bg-muted text-destructive shrink-0">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                }
+              />
             )}
           </div>
         ))}
