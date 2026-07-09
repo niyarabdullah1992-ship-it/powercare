@@ -242,14 +242,18 @@ Deno.serve(async (req) => {
         created_at: new Date().toISOString(),
       };
       comments.push(newComment);
-      await fetch(
+      const patchRes = await fetch(
         `${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`,
         {
           method: "PATCH",
-          headers,
+          headers: { ...headers, Prefer: "return=representation" },
           body: JSON.stringify({ comments }),
         }
       );
+      const patchData = await patchRes.json();
+      if (!patchRes.ok) {
+        return Response.json({ error: patchData?.message || "Failed to save comment — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS comments jsonb DEFAULT '[]'::jsonb;" }, { status: 400 });
+      }
       return Response.json({ comment: newComment, comments });
     }
 
