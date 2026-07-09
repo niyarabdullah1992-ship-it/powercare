@@ -1,16 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canManageHRLevels, canManageEmployees } from "@/lib/permissions";
+import { updateCompany } from "@/lib/store";
 import HRLevelsManager from "@/components/hr/HRLevelsManager";
 import HRStationCard from "@/components/hr/HRStationCard";
 import { Layers, Building2 } from "lucide-react";
+
+const SUGGESTED_LEVELS = [
+  { name: "مسؤول الموارد البشرية العام", permissions: ["view_employees", "manage_employees", "manage_leave", "manage_anonymous_reports", "manage_payroll"] },
+  { name: "مسؤول موارد بشرية إقليمي", permissions: ["view_employees", "manage_employees", "manage_leave", "view_safety"] },
+  { name: "مسؤول موارد بشرية المحطة", permissions: ["view_employees", "view_reports", "view_safety", "manage_anonymous_reports"] },
+];
 
 export default function HR() {
   const { t } = useI18n();
   const { data, currentUser } = useAuth();
   const canSeeLevels = data && currentUser && canManageHRLevels(currentUser);
   const [tab, setTab] = useState("stations");
+
+  useEffect(() => {
+    if (data && canSeeLevels && (data.hrLevels || []).length === 0) {
+      updateCompany(data.id, (d) => {
+        d.hrLevels = SUGGESTED_LEVELS.map((l) => ({
+          id: "hrl_" + Math.random().toString(36).slice(2, 9),
+          name: l.name,
+          permissions: l.permissions,
+          maxCount: null,
+        }));
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.id]);
 
   if (!data || !currentUser) return null;
 
