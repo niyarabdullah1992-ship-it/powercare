@@ -23,19 +23,6 @@ Deno.serve(async (req) => {
     // Permission helper: managers can create; employees see only their own.
     const isManager = MANAGER_ROLES.includes(body.userRole);
 
-    if (action === "debug") {
-      // Test root endpoint to verify URL and key
-      const rootRes = await fetch(`${SUPABASE_URL}/rest/v1/`, { headers });
-      const rootStatus = rootRes.status;
-      const rootBody = await rootRes.text();
-      return Response.json({
-        url: `${SUPABASE_URL}/rest/v1/targets`,
-        rootStatus,
-        rootBody: rootBody.substring(0, 500),
-        keyLength: SERVICE_KEY?.length || 0,
-      });
-    }
-
     if (action === "listTargets") {
       let url = `${SUPABASE_URL}/rest/v1/targets?order=created_at.desc`;
       if (!isManager) {
@@ -117,6 +104,16 @@ Deno.serve(async (req) => {
         }),
       });
       return Response.json({ target: updated[0] });
+    }
+
+    if (action === "deleteTarget") {
+      const { targetId } = body;
+      if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
+      await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
+        method: "DELETE",
+        headers,
+      });
+      return Response.json({ ok: true });
     }
 
     if (action === "listNotifications") {
