@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { ownerLogin, ownerExists, setOwner, listCompanies, createCompany, deleteCompany } from "@/lib/store";
-import { Zap, Building2, Plus, Trash2, ShieldCheck, LogIn } from "lucide-react";
+import { Zap, Building2, Plus, Trash2, ShieldCheck, LogIn, Globe, ChevronDown, Check } from "lucide-react";
 
 export default function Landing() {
   const { t, lang, setLang, languages } = useI18n();
@@ -13,10 +13,20 @@ export default function Landing() {
   const [email, setEmail] = useState("admin@gulfpower.com");
   const [password, setPassword] = useState("demo123");
   const [error, setError] = useState("");
+  const [langOpen, setLangOpen] = useState(false);
+  const currentLang = languages.find((l) => l.code === lang);
 
   useEffect(() => {
     if (session) navigate("/app");
   }, [session, navigate]);
+
+  useEffect(() => {
+    const close = () => setLangOpen(false);
+    if (langOpen) {
+      document.addEventListener("click", close);
+      return () => document.removeEventListener("click", close);
+    }
+  }, [langOpen]);
 
   const handleCompanyLogin = (e) => {
     e.preventDefault();
@@ -35,16 +45,31 @@ export default function Landing() {
           </div>
           <span className="font-heading font-semibold text-xl">{t("appName")}</span>
         </div>
-        <div className="flex items-center gap-2">
-          {languages.map((l) => (
-            <button
-              key={l.code}
-              onClick={() => setLang(l.code)}
-              className={`text-xs px-2 py-1 rounded font-body ${lang === l.code ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
-            >
-              {l.flag} {l.code.toUpperCase()}
-            </button>
-          ))}
+        <div className="relative">
+          <button
+            onClick={(e) => { e.stopPropagation(); setLangOpen((v) => !v); }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-sm font-body hover:bg-muted transition-colors"
+          >
+            <Globe className="w-4 h-4" strokeWidth={1.75} />
+            <span>{currentLang?.flag} {currentLang?.code.toUpperCase()}</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${langOpen ? "rotate-180" : ""}`} strokeWidth={1.75} />
+          </button>
+          {langOpen && (
+            <div className="absolute end-0 mt-2 w-48 rounded-md border border-border bg-card shadow-lg z-50 overflow-hidden max-h-72 overflow-y-auto">
+              {languages.map((l) => (
+                <button
+                  key={l.code}
+                  onClick={() => { setLang(l.code); setLangOpen(false); }}
+                  className={`w-full flex items-center justify-between px-3 py-2 text-sm font-body transition-colors ${
+                    lang === l.code ? "bg-foreground text-background" : "hover:bg-muted"
+                  }`}
+                >
+                  <span>{l.flag} {l.code.toUpperCase()}</span>
+                  {lang === l.code && <Check className="w-3.5 h-3.5" strokeWidth={2} />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
