@@ -60,6 +60,26 @@ Deno.serve(async (req) => {
         }
       }
       if (isManager) {
+        // PGM sees only managed stations; station_manager sees only their station
+        if (body.userRole === "pgm") {
+          const managed = new Set(body.managedStations || []);
+          const filtered = (rows || []).filter((tg) => {
+            const key = tg.assignment_type === "station_team" ? (tg.assignment_id || tg.station_id)
+              : tg.assignment_type === "hq_team" ? "hq"
+              : (tg.station_id || tg.employee_id);
+            return managed.has(key);
+          });
+          return Response.json({ targets: filtered });
+        }
+        if (body.userRole === "station_manager") {
+          const myStation = body.stationId;
+          const filtered = (rows || []).filter((tg) => {
+            if (tg.assignment_type === "station_team") return tg.assignment_id === myStation;
+            if (tg.assignment_type === "member") return tg.station_id === myStation;
+            return false;
+          });
+          return Response.json({ targets: filtered });
+        }
         return Response.json({ targets: rows });
       }
       // Employee: filter by assignment type

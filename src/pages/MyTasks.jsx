@@ -41,6 +41,7 @@ export default function MyTasks() {
         userRole: currentUser.role,
         userId: currentUser.id,
         stationId: currentUser.stationId || null,
+        managedStations: currentUser.managedStations || [],
       });
       setTargets(res.data.targets || []);
     } catch {
@@ -232,7 +233,7 @@ export default function MyTasks() {
   }
   const seesAll = canSeeAllStations(currentUser);
   const visible = visibleStations(currentUser, data);
-  const showHq = seesAll || currentUser.role === "pgm";
+  const showHq = seesAll;
   const stationGroups = [
     ...(showHq ? [{ key: "hq", name: t("hq"), count: groupMap["hq"]?.count || 0 }] : []),
     ...visible.map((s) => ({ key: s.id, name: s.name, count: groupMap[s.id]?.count || 0 })),
