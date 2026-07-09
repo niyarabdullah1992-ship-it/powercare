@@ -3,6 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { badgeFor, nextBadge, BADGES } from "@/lib/rewards";
 import { Trophy, Medal, Crown, Users, Building2, Award } from "lucide-react";
+import PerformanceAnalytics from "@/components/performance/PerformanceAnalytics";
 
 export default function Performance() {
   const { t, dir } = useI18n();
@@ -59,6 +60,12 @@ export default function Performance() {
             className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "achievements" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
           >
             {t("achievementsBoard")}
+          </button>
+          <button
+            onClick={() => setView("analytics")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "analytics" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {t("analytics")}
           </button>
         </div>
       </div>
@@ -200,6 +207,8 @@ export default function Performance() {
           )}
         </div>
       )}
+
+      {view === "analytics" && <PerformanceAnalytics />}
 
       {view === "achievements" && (
         <div className="space-y-4">
