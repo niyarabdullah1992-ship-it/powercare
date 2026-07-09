@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { canCreateTasks } from "@/lib/permissions";
+import { base44 } from "@/api/base44Client";
 import { Play, Pause, Check, Plus, Copy, Target } from "lucide-react";
 
 const STOP_REASONS = ["weather", "equipment", "power", "access", "labor"];
@@ -18,58 +19,85 @@ export default function MyTasks() {
   const [showTarget, setShowTarget] = useState(false);
   const [logTarget, setLogTarget] = useState(null);
   const [logAmount, setLogAmount] = useState(1);
+  const [targets, setTargets] = useState([]);
+  const [targetsLoading, setTargetsLoading] = useState(false);
+
+  const fetchTargets = async () => {
+    if (!currentUser) return;
+    setTargetsLoading(true);
+    try {
+      const res = await base44.functions.invoke("supabaseTargets", {
+        action: "listTargets",
+        userRole: currentUser.role,
+        userId: currentUser.id,
+      });
+      setTargets(res.data.targets || []);
+    } catch {
+      setTargets([]);
+    } finally {
+      setTargetsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTargets();
+  }, [currentUser?.id]);
 
   if (!data || !currentUser) return null;
 
   const myTasks = data.tasks.filter((tk) => tk.assignedTo === currentUser.id);
   const stationName = (id) => data.stations.find((s) => s.id === id)?.name || "—";
   const employeeName = (id) => data.employees.find((e) => e.id === id)?.name || "—";
+  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || null;
 
-  const targets = data.targets || [];
   // Targets visible to this user: their own (employee) or all they can manage
   const visibleTargets = canCreateTasks(currentUser)
     ? targets
-    : targets.filter((tg) => tg.assignedTo === currentUser.id);
-  const myActiveTargets = targets.filter((tg) => tg.assignedTo === currentUser.id && tg.status === "active");
+    : targets.filter((tg) => tg.employee_id === currentUser.id);
 
-  const createTarget = (e) => {
+  const createTarget = async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const total = Number(fd.get("totalTasks") || 1);
     const days = Number(fd.get("days") || 1);
     const empId = fd.get("assignedTo");
-    const emp = data.employees.find((x) => x.id === empId);
-    updateCompany(company.id, (d) => {
-      d.targets.push({
-        id: "tgt_" + Math.random().toString(36).slice(2, 9),
-        assignedTo: empId,
-        stationId: emp?.stationId || null,
-        totalTasks: total,
+    try {
+      await base44.functions.invoke("supabaseTargets", {
+        action: "createTarget",
+        userRole: currentUser.role,
+        employeeId: empId,
+        managerId: currentUser.id,
+        taskTarget: total,
         days,
-        completed: 0,
-        createdBy: currentUser.id,
-        createdAt: new Date().toISOString(),
-        deadline: new Date(Date.now() + days * 86400000).toISOString(),
-        status: "active",
       });
-    });
-    addNotification(company.id, empId, `${t("setTarget")}: ${total} ${t("tasksUnit")} / ${days} ${t("numberOfDays").toLowerCase()}.`);
-    setShowTarget(false);
+      addNotification(company.id, empId, `${t("setTarget")}: ${total} ${t("tasksUnit")} / ${days} ${t("numberOfDays").toLowerCase()}.`);
+      setShowTarget(false);
+      fetchTargets();
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to create target");
+    }
   };
 
-  const logCompleted = (targetId) => {
+  const logCompleted = async (targetId) => {
     const amt = Number(logAmount) || 0;
     if (amt <= 0) return;
-    updateCompany(company.id, (d) => {
-      const tg = d.targets.find((x) => x.id === targetId);
-      if (!tg) return;
-      tg.completed = Math.min(tg.completed + amt, tg.totalTasks);
-      if (tg.completed >= tg.totalTasks) tg.status = "completed";
-    });
-    const tg = data.targets.find((x) => x.id === targetId);
-    addNotification(company.id, data.directorId, `${employeeName(tg?.assignedTo)} ${t("completedCount").toLowerCase()}: +${amt} ${t("tasksUnit")} (${tg?.completed + amt}/${tg?.totalTasks}).`);
-    setLogTarget(null);
-    setLogAmount(1);
+    const tg = targets.find((x) => x.id === targetId);
+    try {
+      await base44.functions.invoke("supabaseTargets", {
+        action: "updateProgress",
+        targetId,
+        amount: amt,
+        userId: currentUser.id,
+        managerId: data.directorId,
+        employeeName: employeeName(tg?.employee_id),
+      });
+      addNotification(company.id, data.directorId, `${employeeName(tg?.employee_id)} ${t("completedCount").toLowerCase()}: +${amt} ${t("tasksUnit")}.`);
+      setLogTarget(null);
+      setLogAmount(1);
+      fetchTargets();
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to update progress");
+    }
   };
 
   const claim = (id) => {
@@ -227,30 +255,32 @@ export default function MyTasks() {
           </form>
         )}
 
-        {visibleTargets.length === 0 ? (
+        {targetsLoading ? (
+          <p className="text-sm text-muted-foreground font-body">…</p>
+        ) : visibleTargets.length === 0 ? (
           <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
         ) : (
           <div className="space-y-3">
             {visibleTargets.map((tg) => {
-              const pct = Math.min(Math.round((tg.completed / tg.totalTasks) * 100), 100);
-              const daysLeft = Math.ceil((new Date(tg.deadline).getTime() - Date.now()) / 86400000);
-              const isMine = tg.assignedTo === currentUser.id;
+              const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
+              const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
+              const isMine = tg.employee_id === currentUser.id;
               const done = tg.status === "completed";
               return (
                 <div key={tg.id} className="p-4 rounded-lg border border-border bg-background space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="text-sm font-medium font-body">
-                        {isMine ? t("myDay") : employeeName(tg.assignedTo)}
+                        {isMine ? t("myDay") : employeeName(tg.employee_id)}
                       </p>
-                      <p className="text-xs text-muted-foreground font-body">{stationName(tg.stationId)}</p>
+                      <p className="text-xs text-muted-foreground font-body">{stationName(empStation(tg.employee_id))}</p>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-body ${done ? "bg-accent/15 text-accent" : "bg-muted text-muted-foreground"}`}>
                       {done ? t("targetDone") : `${t("daysLeft")}: ${daysLeft}`}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs font-body mb-1">
-                    <span className="text-muted-foreground">{t("completedCount")}: {tg.completed}/{tg.totalTasks} {t("tasksUnit")}</span>
+                    <span className="text-muted-foreground">{t("completedCount")}: {tg.completed_tasks}/{tg.task_target} {t("tasksUnit")}</span>
                     <span>{pct}%</span>
                   </div>
                   <div className="h-2 rounded-full bg-muted overflow-hidden">
