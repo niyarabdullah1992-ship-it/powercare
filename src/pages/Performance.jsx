@@ -1,19 +1,19 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { badgeFor, nextBadge, BADGES } from "@/lib/rewards";
+import { badgeFor, nextBadge, getBadges } from "@/lib/rewards";
 import { Trophy, Medal, Crown, Users, Building2, Award } from "lucide-react";
 import PerformanceAnalytics from "@/components/performance/PerformanceAnalytics";
-import PointsManager from "@/components/performance/PointsManager";
 import BadgeLegend from "@/components/performance/BadgeLegend";
 
 export default function Performance() {
   const { t, dir } = useI18n();
-  const { data, currentUser } = useAuth();
+  const { data, currentUser, company } = useAuth();
   const [view, setView] = useState("individual");
 
   if (!data || !currentUser) return null;
 
+  const badges = getBadges(company);
   const stationName = (id) => data.stations.find((s) => s.id === id)?.name || t("hq");
   const roleLabel = (r) => t(r) || r;
 
@@ -75,17 +75,14 @@ export default function Performance() {
       {/* Badge tiers legend */}
       <BadgeLegend />
 
-      {/* Explanation + company point-value editor */}
-      <PointsManager />
-
       {view === "individual" ? (
         <div className="space-y-2">
           {ranked.every((e) => e.points === 0) ? (
             <p className="text-sm text-muted-foreground font-body">{t("noPoints")}</p>
           ) : (
             ranked.map((e, i) => {
-              const badge = badgeFor(e.points);
-              const next = nextBadge(e.points);
+              const badge = badgeFor(e.points, badges);
+              const next = nextBadge(e.points, badges);
               const pct = next ? Math.min(Math.round((e.points / next.min) * 100), 100) : 100;
               return (
                 <div
@@ -219,8 +216,8 @@ export default function Performance() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {ranked.map((e, i) => {
-                const current = badgeFor(e.points);
-                const earned = BADGES.filter((b) => e.points >= b.min);
+                const current = badgeFor(e.points, badges);
+                const earned = badges.filter((b) => e.points >= b.min);
                 return (
                   <div
                     key={e.id}
