@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can create targets" }, { status: 403 });
       }
-      const { managerId, taskTarget, days, title, description, steps, fileUrl, assignmentType, assignmentId, employeeId, stationId, priority, startDate: customStart, endDate: customEnd } = body;
+      const { managerId, taskTarget, days, title, description, steps, fileUrl, fileUrls, assignmentType, assignmentId, employeeId, stationId, priority, startDate: customStart, endDate: customEnd } = body;
       if (!taskTarget) {
         return Response.json({ error: "Missing task target" }, { status: 400 });
       }
@@ -123,7 +123,8 @@ Deno.serve(async (req) => {
           title: title || null,
           description: description || null,
           steps: steps || null,
-          file_url: fileUrl || null,
+          file_url: (Array.isArray(fileUrls) && fileUrls[0]?.url) ? fileUrls[0].url : (fileUrl || null),
+          file_urls: Array.isArray(fileUrls) && fileUrls.length ? fileUrls : null,
           employee_id: aType === "member" ? employeeId : (assignmentId || managerId),
           assignment_type: aType,
           assignment_id: assignmentId || null,

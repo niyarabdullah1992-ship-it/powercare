@@ -28,7 +28,7 @@ export default function MyTasks() {
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [customDays, setCustomDays] = useState("");
-  const [pdfFile, setPdfFile] = useState(null);
+  const [taskFiles, setTaskFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [logTarget, setLogTarget] = useState(null);
   const [logAmount, setLogAmount] = useState(1);
@@ -150,20 +150,7 @@ export default function MyTasks() {
     const { startDate, endDate } = computeDates();
     if (!endDate) { alert(t("selectDate")); return; }
 
-    let fileUrl = null;
-    if (pdfFile) {
-      setUploading(true);
-      try {
-        const up = await base44.integrations.Core.UploadFile({ file: pdfFile });
-        fileUrl = up.file_url;
-      } catch {
-        alert("PDF upload failed");
-        setUploading(false);
-        return;
-      } finally {
-        setUploading(false);
-      }
-    }
+    const fileUrls = taskFiles.length > 0 ? taskFiles.map((f) => ({ url: f.url, name: f.name, type: f.type })) : null;
 
     try {
       const res = await base44.functions.invoke("supabaseTargets", {
@@ -173,7 +160,7 @@ export default function MyTasks() {
         title,
         description,
         steps,
-        fileUrl,
+        fileUrls,
         taskTarget: total,
         assignmentType: aType,
         assignmentId,
@@ -197,7 +184,7 @@ export default function MyTasks() {
       setCustomStart("");
       setCustomEnd("");
       setCustomDays("");
-      setPdfFile(null);
+      setTaskFiles([]);
       setPriority("medium");
       fetchTargets();
     } catch (err) {
@@ -405,10 +392,10 @@ export default function MyTasks() {
             <textarea name="steps" rows={3} placeholder={t("stepsPlaceholder")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-y" />
           </div>
 
-          {/* PDF attachment */}
+          {/* File attachments */}
           <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><Paperclip className="w-3.5 h-3.5" /> {t("attachPdf")}</p>
-            <input type="file" accept="application/pdf" onChange={(e) => setPdfFile(e.target.files?.[0] || null)} className="w-full text-xs font-body file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-foreground file:text-background file:cursor-pointer" />
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><Paperclip className="w-3.5 h-3.5" /> {t("attachFile")}</p>
+            <CommentFiles files={taskFiles} setFiles={setTaskFiles} />
           </div>
 
           {/* Assignment type selector */}
@@ -653,10 +640,10 @@ export default function MyTasks() {
                               <span className="font-medium">{t("steps")}:</span>{"\n"}{tg.steps}
                             </div>
                           )}
-                          {tg.file_url && (
-                            <a href={tg.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-accent font-body mt-1 hover:underline">
-                              <FileText className="w-3.5 h-3.5" /> PDF
-                            </a>
+                          {(Array.isArray(tg.file_urls) ? tg.file_urls.length : tg.file_url) > 0 && (
+                            <div className="mt-1">
+                              <CommentAttachments files={Array.isArray(tg.file_urls) && tg.file_urls.length ? tg.file_urls : [{ url: tg.file_url, name: "PDF", type: "file" }]} />
+                            </div>
                           )}
                           <p className="text-xs text-muted-foreground font-body mt-1">{assignmentLabel(tg)}</p>
                         </div>
