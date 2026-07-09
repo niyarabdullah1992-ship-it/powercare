@@ -482,6 +482,7 @@ export default function MyTasks() {
                 ))}
               </select>
               <div>
+                <label className="text-xs text-muted-foreground font-body block mb-1">{t("section")}</label>
                 <input name="section" list="sectionSuggestions" placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
                 <datalist id="sectionSuggestions">
                   {Array.from(new Set(targets.filter((tg) => tg.assignment_type === "station_team" && tg.assignment_id === formStation && tg.section).map((tg) => tg.section))).map((sec) => (
@@ -496,6 +497,7 @@ export default function MyTasks() {
           {assignType === "hq_team" && (
             <div>
               <p className="text-xs text-muted-foreground font-body mb-2">{t("hqTeamNote")}</p>
+              <label className="text-xs text-muted-foreground font-body block mb-1">{t("section")}</label>
               <input name="section" list="hqSectionSuggestions" placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
               <datalist id="hqSectionSuggestions">
                 {Array.from(new Set(targets.filter((tg) => tg.assignment_type === "hq_team" && tg.section).map((tg) => tg.section))).map((sec) => (
