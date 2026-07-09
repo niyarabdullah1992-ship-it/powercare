@@ -17,7 +17,6 @@ import Stations from './pages/Stations';
 import Employees from './pages/Employees';
 
 import Safety from './pages/Safety';
-import Plans from './pages/Plans';
 import Performance from './pages/Performance';
 
 function RequireAuth({ children }) {
@@ -37,7 +36,6 @@ function AppRoutes() {
       <Route path="/app/stations" element={<RequireAuth><Stations /></RequireAuth>} />
       <Route path="/app/employees" element={<RequireAuth><Employees /></RequireAuth>} />
       <Route path="/app/safety" element={<RequireAuth><Safety /></RequireAuth>} />
-      <Route path="/app/plans" element={<RequireAuth><Plans /></RequireAuth>} />
       <Route path="/app/performance" element={<RequireAuth><Performance /></RequireAuth>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
