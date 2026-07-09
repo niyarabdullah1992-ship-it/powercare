@@ -3,7 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { canManageStations, visibleStations } from "@/lib/permissions";
-import { Plus, Radio, Users } from "lucide-react";
+import { Plus, Radio, Users, Trash2 } from "lucide-react";
 
 export default function Stations() {
   const { t } = useI18n();
@@ -38,6 +38,14 @@ export default function Stations() {
     updateCompany(company.id, (d) => {
       const s = d.stations.find((x) => x.id === id);
       if (s) s.status = order[(order.indexOf(s.status) + 1) % order.length];
+    });
+  };
+
+  const removeStation = (id) => {
+    if (!canManage) return;
+    if (!confirm(t("confirmDelete"))) return;
+    updateCompany(company.id, (d) => {
+      d.stations = d.stations.filter((x) => x.id !== id);
     });
   };
 
@@ -90,9 +98,16 @@ export default function Stations() {
                     <p className="text-xs text-muted-foreground font-body">{s.location} · {s.type}</p>
                   </div>
                 </div>
-                <button onClick={() => cycleStatus(s.id)} disabled={!canManage} className={`px-2 py-0.5 rounded-full text-[10px] font-body ${statusTone(s.status)} ${canManage ? "cursor-pointer" : "cursor-default"}`}>
-                  {s.status}
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button onClick={() => cycleStatus(s.id)} disabled={!canManage} className={`px-2 py-0.5 rounded-full text-[10px] font-body ${statusTone(s.status)} ${canManage ? "cursor-pointer" : "cursor-default"}`}>
+                    {s.status}
+                  </button>
+                  {canManage && (
+                    <button onClick={() => removeStation(s.id)} className="p-1 rounded-md hover:bg-destructive/10 text-destructive" title={t("delete")}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="flex items-center justify-between text-sm font-body">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
