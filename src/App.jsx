@@ -1,55 +1,58 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { AuthProvider } from '@/lib/AuthContext';
 import ScrollToTop from './components/ScrollToTop';
-import Home from './pages/Home';
+import { I18nProvider } from '@/lib/i18n';
+import { AuthProvider as PowerCareAuthProvider, useAuth as usePowerCareAuth } from '@/lib/PowerCareAuth';
+import Layout from '@/components/Layout';
 
-const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+import Landing from './pages/Landing';
+import Dashboard from './pages/Dashboard';
+import MyTasks from './pages/MyTasks';
+import AnonymousReports from './pages/AnonymousReports';
+import Stations from './pages/Stations';
+import Employees from './pages/Employees';
+import Reports from './pages/Reports';
+import Safety from './pages/Safety';
+import Plans from './pages/Plans';
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+function RequireAuth({ children }) {
+  const { session } = usePowerCareAuth();
+  if (!session) return <Navigate to="/" replace />;
+  return <Layout>{children}</Layout>;
+}
 
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
-    }
-  }
-
-  // Render the main app
+function AppRoutes() {
   return (
     <Routes>
-    {/* Add your page Route elements here */}
-    <Route path="/" element={<Home />} />
-    <Route path="*" element={<PageNotFound />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
+      <Route path="/app/tasks" element={<RequireAuth><MyTasks /></RequireAuth>} />
+      <Route path="/app/reports" element={<RequireAuth><Reports /></RequireAuth>} />
+      <Route path="/app/anonymous" element={<RequireAuth><AnonymousReports /></RequireAuth>} />
+      <Route path="/app/stations" element={<RequireAuth><Stations /></RequireAuth>} />
+      <Route path="/app/employees" element={<RequireAuth><Employees /></RequireAuth>} />
+      <Route path="/app/safety" element={<RequireAuth><Safety /></RequireAuth>} />
+      <Route path="/app/plans" element={<RequireAuth><Plans /></RequireAuth>} />
+      <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
-};
-
+}
 
 function App() {
-
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <ScrollToTop />
-          <AuthenticatedApp />
+          <I18nProvider>
+            <PowerCareAuthProvider>
+              <AppRoutes />
+            </PowerCareAuthProvider>
+          </I18nProvider>
         </Router>
         <Toaster />
       </QueryClientProvider>
