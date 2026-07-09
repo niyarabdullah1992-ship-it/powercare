@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { addNotification } from "@/lib/store";
-import { canCreateTasks } from "@/lib/permissions";
+import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { base44 } from "@/api/base44Client";
 import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio } from "lucide-react";
 
@@ -230,10 +230,13 @@ export default function MyTasks() {
     if (!groupMap[key]) groupMap[key] = { key, count: 0 };
     groupMap[key].count++;
   }
-  const stationGroups = Object.values(groupMap).map((g) => ({
-    ...g,
-    name: g.key === "hq" ? t("hq") : stationName(g.key),
-  }));
+  const seesAll = canSeeAllStations(currentUser);
+  const visible = visibleStations(currentUser, data);
+  const showHq = seesAll || currentUser.role === "pgm";
+  const stationGroups = [
+    ...(showHq ? [{ key: "hq", name: t("hq"), count: groupMap["hq"]?.count || 0 }] : []),
+    ...visible.map((s) => ({ key: s.id, name: s.name, count: groupMap[s.id]?.count || 0 })),
+  ];
   const stationTargets = selectedStation ? targets.filter((tg) => targetStationKey(tg) === selectedStation) : [];
   const selectedStationName = selectedStation === "hq" ? t("hq") : stationName(selectedStation);
 
