@@ -115,6 +115,26 @@ export default function Employees() {
     setTitleInput("");
   };
 
+  const changeRole = (id, newRole) => {
+    updateCompany(company.id, (d) => {
+      const emp = d.employees.find((x) => x.id === id);
+      if (!emp) return;
+      const oldRole = emp.role;
+      emp.role = newRole;
+      // Clear station manager assignment if demoted from station_manager
+      if (oldRole === "station_manager" && newRole !== "station_manager") {
+        const s = d.stations.find((x) => x.managerId === id);
+        if (s) s.managerId = null;
+      }
+      // Assign as station manager of their station if promoted
+      if (newRole === "station_manager" && emp.stationId) {
+        const s = d.stations.find((x) => x.id === emp.stationId);
+        if (s) s.managerId = id;
+      }
+      if (newRole !== "pgm") emp.managedStations = [];
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -228,6 +248,11 @@ export default function Employees() {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              {currentUser.role === "director" && e.id !== currentUser.id && (
+                <select value={e.role} onChange={(ev) => changeRole(e.id, ev.target.value)} className="px-2 py-1 rounded-md border border-input text-xs font-body">
+                  {ROLES.map((r) => <option key={r} value={r}>{t(r)}</option>)}
+                </select>
+              )}
               {e.id !== currentUser.id && (
                 <button onClick={() => switchUser(e.id)} className="text-xs text-accent font-body hover:underline">{t("switchUser")}</button>
               )}
