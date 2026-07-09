@@ -124,6 +124,7 @@ const dict = {
     attachFile: "Attach files", uploading: "Uploading…", attachments: "Attachments",
     attachmentFailed: "Upload failed", removeFile: "Remove", downloadFile: "Download",
     editRoleLabels: "Customize position titles",
+    recordVoice: "Record voice", recording: "Recording…", stopRecording: "Stop", micError: "Microphone access denied",
   },
   ar: {
     dir: "rtl",
@@ -247,6 +248,7 @@ const dict = {
     attachFile: "إرفاق ملفات", uploading: "جارٍ الرفع…", attachments: "المرفقات",
     attachmentFailed: "فشل الرفع", removeFile: "إزالة", downloadFile: "تنزيل",
     editRoleLabels: "تخصيص مسميات المناصب",
+    recordVoice: "تسجيل صوتي", recording: "جارٍ التسجيل…", stopRecording: "إيقاف", micError: "تم رفض الوصول إلى الميكروفون",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

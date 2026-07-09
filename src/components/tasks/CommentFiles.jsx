@@ -67,30 +67,36 @@ export default function CommentFiles({ files, setFiles, disabled }) {
   );
 }
 
+const isAudio = (name = "", type = "") => /^audio\//i.test(type) || /\.(webm|mp3|wav|m4a|ogg)$/i.test(name);
+
 export function CommentAttachments({ files }) {
   const { t } = useI18n();
   if (!files || !files.length) return null;
   return (
     <div className="mt-1.5 flex flex-wrap gap-1.5">
-      {files.map((f, i) => (
-        <a
-          key={i}
-          href={f.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          download={f.name}
-          className="group inline-flex items-center gap-1.5 ps-2 pe-2.5 py-1 rounded-md bg-muted/70 border border-border text-xs font-body hover:bg-muted transition-colors max-w-[220px]"
-          title={f.name}
-        >
-          {isImage(f.name, f.type) ? (
-            <img src={f.url} alt={f.name} className="w-4 h-4 rounded object-cover" />
-          ) : (
-            <FileText className="w-3.5 h-3.5 text-accent shrink-0" />
-          )}
-          <span className="truncate text-foreground">{f.name}</span>
-          <Download className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-        </a>
-      ))}
+      {files.map((f, i) =>
+        isAudio(f.name, f.type) ? (
+          <audio key={i} src={f.url} controls className="h-8 max-w-[220px]" />
+        ) : (
+          <a
+            key={i}
+            href={f.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            download={f.name}
+            className="group inline-flex items-center gap-1.5 ps-2 pe-2.5 py-1 rounded-md bg-muted/70 border border-border text-xs font-body hover:bg-muted transition-colors max-w-[220px]"
+            title={f.name}
+          >
+            {isImage(f.name, f.type) ? (
+              <img src={f.url} alt={f.name} className="w-4 h-4 rounded object-cover" />
+            ) : (
+              <FileText className="w-3.5 h-3.5 text-accent shrink-0" />
+            )}
+            <span className="truncate text-foreground">{f.name}</span>
+            <Download className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          </a>
+        )
+      )}
     </div>
   );
 }

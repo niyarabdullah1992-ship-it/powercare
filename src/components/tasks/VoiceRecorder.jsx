@@ -1,0 +1,57 @@
+import React, { useState, useRef } from "react";
+import { useI18n } from "@/lib/i18n";
+import { base44 } from "@/api/base44Client";
+import { Mic, Square, Loader2 } from "lucide-react";
+
+export default function VoiceRecorder({ files, setFiles, disabled }) {
+  const { t } = useI18n();
+  const [recording, setRecording] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const recorderRef = useRef(null);
+  const chunksRef = useRef([]);
+
+  const start = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((tr) => tr.stop());
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        setUploading(true);
+        try {
+          const file = new File([blob], `voice-${Date.now()}.webm`, { type: "audio/webm" });
+          const up = await base44.integrations.Core.UploadFile({ file });
+          setFiles([...(files || []), { url: up.file_url, name: file.name, type: "audio/webm" }]);
+        } catch {
+          alert(t("attachmentFailed"));
+        } finally {
+          setUploading(false);
+        }
+      };
+      recorder.start();
+      recorderRef.current = recorder;
+      setRecording(true);
+    } catch {
+      alert(t("micError"));
+    }
+  };
+
+  const stop = () => {
+    recorderRef.current?.stop();
+    setRecording(false);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={recording ? stop : start}
+      disabled={disabled || uploading}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-body border transition-colors disabled:opacity-50 ${recording ? "border-red-400 bg-red-50 text-red-700" : "border-border hover:bg-muted"}`}
+    >
+      {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : recording ? <Square className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+      {uploading ? t("uploading") : recording ? t("stopRecording") : t("recordVoice")}
+    </button>
+  );
+}

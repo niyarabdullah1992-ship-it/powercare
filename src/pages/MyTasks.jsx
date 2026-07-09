@@ -8,6 +8,7 @@ import { base44 } from "@/api/base44Client";
 import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, MessageCircle, Send, Clock, Search, Pencil, Trash2, X } from "lucide-react";
 import TaskStats from "@/components/tasks/TaskStats";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
+import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -395,7 +396,10 @@ export default function MyTasks() {
           {/* File attachments */}
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><Paperclip className="w-3.5 h-3.5" /> {t("attachFile")}</p>
-            <CommentFiles files={taskFiles} setFiles={setTaskFiles} />
+            <div className="flex flex-wrap items-start gap-2">
+              <CommentFiles files={taskFiles} setFiles={setTaskFiles} />
+              <VoiceRecorder files={taskFiles} setFiles={setTaskFiles} />
+            </div>
           </div>
 
           {/* Assignment type selector */}
@@ -721,7 +725,10 @@ export default function MyTasks() {
                               </div>
                             )}
                             <div className="space-y-2">
-                              <CommentFiles files={commentFiles} setFiles={setCommentFiles} />
+                              <div className="flex flex-wrap items-start gap-2">
+                                <CommentFiles files={commentFiles} setFiles={setCommentFiles} />
+                                <VoiceRecorder files={commentFiles} setFiles={setCommentFiles} />
+                              </div>
                               <div className="flex items-center gap-2">
                                 <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={t("writeComment")} className="flex-1 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
                                 <button onClick={() => submitComment(tg.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-foreground text-background text-xs font-body">

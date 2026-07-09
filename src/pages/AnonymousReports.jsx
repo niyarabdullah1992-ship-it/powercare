@@ -5,6 +5,7 @@ import { updateCompany, getAnonUsage, addNotification, getAnonymousCode, setAnon
 import { canReplyAnon, visibleStations } from "@/lib/permissions";
 import { ShieldCheck, Send, Lock, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
+import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
@@ -203,7 +204,10 @@ export default function AnonymousReports() {
               </div>
             )}
             <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder={t("fileReport")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
-            <CommentFiles files={files} setFiles={setFiles} />
+            <div className="flex flex-wrap items-start gap-2">
+              <CommentFiles files={files} setFiles={setFiles} />
+              <VoiceRecorder files={files} setFiles={setFiles} />
+            </div>
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground font-body">
                 {usage.dayLimit - usage.day} {t("remaining")} · {usage.weekLimit - usage.week} {t("weekRemaining")} · {usage.monthLimit - usage.month} {t("monthRemaining")}
@@ -350,7 +354,10 @@ export default function AnonymousReports() {
                 {renderTimeline(r)}
                 {canReplyTo(r) && r.status !== "closed" && (
                   <div className="space-y-2 pt-1 border-t border-border">
-                    <CommentFiles files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
+                    <div className="flex flex-wrap items-start gap-2">
+                      <CommentFiles files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
+                      <VoiceRecorder files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
+                    </div>
                     <div className="flex gap-2">
                       <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} className="flex-1 px-3 py-1.5 rounded-md border border-input text-sm font-body" />
                       <button onClick={() => reply(r.id)} className="px-4 py-1.5 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">{t("reply")}</button>
