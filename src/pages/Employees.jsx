@@ -14,6 +14,7 @@ export default function Employees() {
   const [selectedStation, setSelectedStation] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", role: "employee", stationId: "" });
+  const [pgmStations, setPgmStations] = useState([]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [showTransfer, setShowTransfer] = useState(null);
@@ -80,6 +81,11 @@ export default function Employees() {
         phone: "",
         createdAt: new Date().toISOString(),
       };
+      if (form.role === "pgm") {
+        // PGM is not tied to a single station — it's responsible for the stations assigned by the higher position
+        emp.stationId = null;
+        emp.managedStations = pgmStations;
+      }
       d.employees.push(emp);
       if (form.role === "station_manager") {
         const s = d.stations.find((x) => x.id === selectedStation);
@@ -88,6 +94,7 @@ export default function Employees() {
     });
     setShowAdd(false);
     setForm({ name: "", email: "", role: "employee", stationId: "" });
+    setPgmStations([]);
   };
 
   const removeEmployee = (id) => {
@@ -145,6 +152,23 @@ export default function Employees() {
           <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="px-3 py-2 rounded-md border border-input text-sm font-body">
             {allowedRoles.map((r) => <option key={r} value={r}>{t(r)}</option>)}
           </select>
+          {form.role === "pgm" && (
+            <div className="md:col-span-3 p-3 rounded-md border border-border bg-background space-y-2">
+              <p className="text-xs text-muted-foreground font-body">{t("selectStation")}</p>
+              <div className="flex flex-wrap gap-2">
+                {data.stations.map((s) => (
+                  <label key={s.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border text-xs font-body cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={pgmStations.includes(s.id)}
+                      onChange={(e) => setPgmStations(e.target.checked ? [...pgmStations, s.id] : pgmStations.filter((id) => id !== s.id))}
+                    />
+                    {s.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="md:col-span-3 flex gap-2">
             <button type="submit" className="px-4 py-2 rounded-md bg-foreground text-background text-sm">{t("save")}</button>
             <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-md border border-border text-sm">{t("cancel")}</button>
