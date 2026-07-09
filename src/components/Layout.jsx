@@ -6,7 +6,7 @@ import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, HardHat, CalendarRange, Bell, LogOut, Globe, ChevronDown, UserCircle,
+  Users, HardHat, CalendarRange, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 
@@ -79,6 +79,7 @@ export default function Layout({ children }) {
     { to: "/app/employees", icon: Users, label: t("employees") },
     { to: "/app/safety", icon: HardHat, label: t("safety") },
     { to: "/app/plans", icon: CalendarRange, label: t("plans") },
+    { to: "/app/performance", icon: Trophy, label: t("performance") },
   ];
 
   const myNotifs = data.notifications.filter((n) => n.userId === currentUser.id);

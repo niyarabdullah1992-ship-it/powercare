@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { addNotification } from "@/lib/store";
+import { addNotification, addPoints } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
+import { PRIORITY_POINTS } from "@/lib/rewards";
 import { base44 } from "@/api/base44Client";
 import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, MessageCircle, Send, Clock, Search, Pencil, Trash2, X } from "lucide-react";
 import TaskStats from "@/components/tasks/TaskStats";
@@ -222,6 +223,24 @@ export default function MyTasks() {
         mgrId,
         `${currentUser.name} → ${tg?.title || t("setTarget")}: +${amt} ${t("tasksUnit")} (${newCompleted}/${tg?.task_target || "?"}).`
       );
+      // Reward points on completion — team tasks reward the whole team
+      const updatedTarget = res?.data?.target;
+      const wasCompleted = tg?.status === "completed";
+      const nowCompleted = updatedTarget?.status === "completed";
+      if (!wasCompleted && nowCompleted) {
+        const pts = PRIORITY_POINTS[tg?.priority] || 75;
+        let recipients = [];
+        if (tg?.assignment_type === "member" && tg?.employee_id) {
+          recipients = [tg.employee_id];
+        } else if (tg?.assignment_type === "station_team") {
+          recipients = data.employees.filter((e) => e.stationId === tg?.assignment_id).map((e) => e.id);
+        } else if (tg?.assignment_type === "hq_team") {
+          recipients = data.employees.filter((e) => !e.stationId).map((e) => e.id);
+        }
+        for (const rid of recipients) {
+          addPoints(company.id, rid, pts, `${t("taskCompleted")}: ${tg?.title || ""}`);
+        }
+      }
       setLogTarget(null);
       setLogAmount(1);
       fetchTargets();

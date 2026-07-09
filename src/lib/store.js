@@ -257,6 +257,21 @@ export function addNotification(companyId, userId, text) {
   });
 }
 
+export function addPoints(companyId, employeeId, points, reason) {
+  updateCompany(companyId, (d) => {
+    const emp = d.employees.find((e) => e.id === employeeId);
+    if (!emp) return;
+    emp.points = (emp.points || 0) + Number(points);
+    d.notifications.unshift({
+      id: uid("ntf"),
+      userId: employeeId,
+      text: `🏆 +${points} ${reason || ""}`.trim(),
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+  });
+}
+
 /* ----------------------------- anonymous rate limit ----------------------------- */
 export function getAnonUsage(companyId, anonymousId) {
   const data = getCompanyData(companyId);
