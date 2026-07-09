@@ -106,6 +106,7 @@ function emptyCompanyData(meta) {
     plans: [],
     notifications: [],
     templates: [],
+    targets: [],
     settings: { rateLimitDaily: 3, rateLimitWeekly: 10 },
   };
 }
@@ -223,6 +224,12 @@ export function seedDemoIfEmpty() {
   data.templates = [
     { id: uid("tpl"), title: "Monthly Preventive Maintenance", description: "Standard monthly maintenance routine.", dailyTarget: 50 },
     { id: uid("tpl"), title: "Daily Safety Walkthrough", description: "Walk all zones and log hazards.", dailyTarget: 1 },
+  ];
+
+  // task targets (manager-assigned quotas: X tasks in Y days)
+  data.targets = [
+    { id: uid("tgt"), assignedTo: e1.id, stationId: s1.id, totalTasks: 30, days: 10, completed: 12, createdBy: pgm.id, createdAt: new Date(now - 86400000 * 2).toISOString(), deadline: new Date(now + 86400000 * 8).toISOString(), status: "active" },
+    { id: uid("tgt"), assignedTo: e3.id, stationId: s2.id, totalTasks: 20, days: 7, completed: 20, createdBy: opsMgr.id, createdAt: new Date(now - 86400000 * 7).toISOString(), deadline: new Date(now + 86400000 * 1).toISOString(), status: "completed" },
   ];
 
   // notifications
