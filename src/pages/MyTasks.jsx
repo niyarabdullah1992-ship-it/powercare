@@ -4,12 +4,13 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { addNotification } from "@/lib/store";
 import { canCreateTasks } from "@/lib/permissions";
 import { base44 } from "@/api/base44Client";
-import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle } from "lucide-react";
+import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText } from "lucide-react";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
   { val: "6months", months: 6 },
   { val: "yearly", months: 12 },
+  { val: "days", months: 0 },
   { val: "custom", months: 0 },
 ];
 
@@ -22,6 +23,9 @@ export default function MyTasks() {
   const [datePreset, setDatePreset] = useState("monthly");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+  const [customDays, setCustomDays] = useState("");
+  const [pdfFile, setPdfFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const [logTarget, setLogTarget] = useState(null);
   const [logAmount, setLogAmount] = useState(1);
   const [targets, setTargets] = useState([]);
@@ -68,6 +72,11 @@ export default function MyTasks() {
         endDate: customEnd ? new Date(customEnd).toISOString() : null,
       };
     }
+    if (datePreset === "days") {
+      const end = new Date(start);
+      end.setDate(end.getDate() + Number(customDays || 1));
+      return { startDate: start.toISOString(), endDate: end.toISOString() };
+    }
     const months = DATE_PRESETS.find((p) => p.val === datePreset)?.months || 1;
     const end = new Date(start);
     end.setMonth(end.getMonth() + months);
@@ -79,6 +88,7 @@ export default function MyTasks() {
     const fd = new FormData(e.target);
     const title = fd.get("title");
     const description = fd.get("description") || "";
+    const steps = fd.get("steps") || "";
     const total = Number(fd.get("totalTasks") || 1);
     const aType = fd.get("assignType") || "member";
 
@@ -101,6 +111,21 @@ export default function MyTasks() {
     const { startDate, endDate } = computeDates();
     if (!endDate) { alert(t("selectDate")); return; }
 
+    let fileUrl = null;
+    if (pdfFile) {
+      setUploading(true);
+      try {
+        const up = await base44.integrations.Core.UploadFile({ file: pdfFile });
+        fileUrl = up.file_url;
+      } catch {
+        alert("PDF upload failed");
+        setUploading(false);
+        return;
+      } finally {
+        setUploading(false);
+      }
+    }
+
     try {
       await base44.functions.invoke("supabaseTargets", {
         action: "createTarget",
@@ -108,6 +133,8 @@ export default function MyTasks() {
         managerId: currentUser.id,
         title,
         description,
+        steps,
+        fileUrl,
         taskTarget: total,
         assignmentType: aType,
         assignmentId,
@@ -125,6 +152,8 @@ export default function MyTasks() {
       setDatePreset("monthly");
       setCustomStart("");
       setCustomEnd("");
+      setCustomDays("");
+      setPdfFile(null);
       fetchTargets();
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to create");
@@ -170,6 +199,7 @@ export default function MyTasks() {
     monthly: t("presetMonthly"),
     "6months": t("preset6Months"),
     yearly: t("presetYearly"),
+    days: t("presetDays"),
     custom: t("presetCustom"),
   })[val] || val;
 
@@ -180,8 +210,8 @@ export default function MyTasks() {
           <h1 className="font-heading text-3xl font-semibold">{t("myTasks")}</h1>
         </div>
         {canCreateTasks(currentUser) && (
-          <button onClick={() => setShowCreate((o) => !o)} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">
-            <Plus className="w-4 h-4" /> {t("newTaskTarget")}
+          <button onClick={() => setShowCreate((o) => !o)} disabled={uploading} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-50">
+            <Plus className="w-4 h-4" /> {uploading ? "…" : t("newTaskTarget")}
           </button>
         )}
       </div>
@@ -192,6 +222,18 @@ export default function MyTasks() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input name="title" placeholder={t("taskTitle")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             <input name="description" placeholder={t("taskDescription")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+          </div>
+
+          {/* Steps */}
+          <div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><ListOrdered className="w-3.5 h-3.5" /> {t("steps")}</p>
+            <textarea name="steps" rows={3} placeholder={t("stepsPlaceholder")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-y" />
+          </div>
+
+          {/* PDF attachment */}
+          <div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><Paperclip className="w-3.5 h-3.5" /> {t("attachPdf")}</p>
+            <input type="file" accept="application/pdf" onChange={(e) => setPdfFile(e.target.files?.[0] || null)} className="w-full text-xs font-body file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-foreground file:text-background file:cursor-pointer" />
           </div>
 
           {/* Assignment type selector */}
@@ -271,6 +313,13 @@ export default function MyTasks() {
             </div>
           </div>
 
+          {datePreset === "days" && (
+            <div>
+              <label className="text-xs text-muted-foreground font-body block mb-1">{t("presetDays")}</label>
+              <input type="number" min="1" value={customDays} onChange={(e) => setCustomDays(e.target.value)} placeholder={t("numberOfDays")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            </div>
+          )}
+
           {datePreset === "custom" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -315,6 +364,16 @@ export default function MyTasks() {
                     <div>
                       <p className="text-sm font-medium font-body">{tg.title || `${t("setTarget")}`}</p>
                       {tg.description && <p className="text-xs text-muted-foreground font-body mt-0.5">{tg.description}</p>}
+                      {tg.steps && (
+                        <div className="text-xs text-muted-foreground font-body mt-1 p-2 rounded bg-muted/50 whitespace-pre-wrap">
+                          <span className="font-medium">{t("steps")}:</span>{"\n"}{tg.steps}
+                        </div>
+                      )}
+                      {tg.file_url && (
+                        <a href={tg.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-accent font-body mt-1 hover:underline">
+                          <FileText className="w-3.5 h-3.5" /> PDF
+                        </a>
+                      )}
                       <p className="text-xs text-muted-foreground font-body mt-1">{assignmentLabel(tg)}</p>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-body whitespace-nowrap ${done ? "bg-accent/15 text-accent" : overdue ? "bg-destructive/15 text-destructive flex items-center gap-1" : "bg-muted text-muted-foreground"}`}>
