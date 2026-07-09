@@ -5,7 +5,7 @@ const MANAGER_ROLES = ["director", "ops_manager", "pgm", "station_manager"];
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "");
+    const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "").replace(/\/rest\/v\d+$/, "");
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!SUPABASE_URL || !SERVICE_KEY) {
       return Response.json({ error: "Supabase not configured" }, { status: 500 });
@@ -22,6 +22,19 @@ Deno.serve(async (req) => {
 
     // Permission helper: managers can create; employees see only their own.
     const isManager = MANAGER_ROLES.includes(body.userRole);
+
+    if (action === "debug") {
+      // Test root endpoint to verify URL and key
+      const rootRes = await fetch(`${SUPABASE_URL}/rest/v1/`, { headers });
+      const rootStatus = rootRes.status;
+      const rootBody = await rootRes.text();
+      return Response.json({
+        url: `${SUPABASE_URL}/rest/v1/targets`,
+        rootStatus,
+        rootBody: rootBody.substring(0, 500),
+        keyLength: SERVICE_KEY?.length || 0,
+      });
+    }
 
     if (action === "listTargets") {
       let url = `${SUPABASE_URL}/rest/v1/targets?order=created_at.desc`;
