@@ -9,6 +9,7 @@ import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, P
 import TaskStats from "@/components/tasks/TaskStats";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
+import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -125,7 +126,6 @@ export default function MyTasks() {
   };
 
   const deleteFolder = async (folderKey) => {
-    if (!confirm(t("confirmDeleteTask"))) return;
     const tasksInFolder = stationTargetsAll.filter((tg) =>
       folderKey === NO_SECTION ? !tg.section : tg.section === folderKey
     );
@@ -345,7 +345,6 @@ export default function MyTasks() {
   };
 
   const deleteTarget = async (targetId) => {
-    if (!confirm(t("confirmDeleteTask"))) return;
     try {
       await base44.functions.invoke("supabaseTargets", { action: "deleteTarget", targetId });
       setTargets((prev) => prev.filter((x) => x.id !== targetId));
@@ -729,14 +728,19 @@ export default function MyTasks() {
                       <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
                     </button>
                     {canCreateTasks(currentUser) && f.key !== NO_SECTION && (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); deleteFolder(f.key); }}
-                        title={t("delete")}
-                        className={`absolute top-2 ${dir === "rtl" ? "left-2" : "right-2"} p-1 rounded-md bg-background/80 text-muted-foreground hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <ConfirmDeleteDialog
+                        onConfirm={() => deleteFolder(f.key)}
+                        trigger={
+                          <button
+                            type="button"
+                            onClick={(e) => e.stopPropagation()}
+                            title={t("delete")}
+                            className={`absolute top-2 ${dir === "rtl" ? "left-2" : "right-2"} p-1 rounded-md bg-background/80 text-muted-foreground hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        }
+                      />
                     )}
                   </div>
                 ))}
@@ -858,9 +862,15 @@ export default function MyTasks() {
                               <button onClick={() => setEditTarget(tg)} className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title={t("edit")}>
                                 <Pencil className="w-3.5 h-3.5" />
                               </button>
-                              <button onClick={() => deleteTarget(tg.id)} className="p-1 rounded-md hover:bg-red-50 text-muted-foreground hover:text-red-600" title={t("delete")}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <ConfirmDeleteDialog
+                                onConfirm={() => deleteTarget(tg.id)}
+                                description={t("confirmDeleteTask")}
+                                trigger={
+                                  <button className="p-1 rounded-md hover:bg-red-50 text-muted-foreground hover:text-red-600" title={t("delete")}>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                }
+                              />
                             </div>
                           )}
                         </div>
