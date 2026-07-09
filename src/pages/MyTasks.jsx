@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { addNotification } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { base44 } from "@/api/base44Client";
-import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, MessageCircle, Send } from "lucide-react";
+import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, MessageCircle, Send, Clock } from "lucide-react";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -448,10 +448,29 @@ export default function MyTasks() {
                   const done = tg.status === "completed";
                   const overdue = tg.status === "overdue";
                   const canLogThis = canLog(tg);
+                  const statusBadge = done
+                    ? "bg-emerald-100 text-emerald-700 border-emerald-300"
+                    : overdue
+                    ? "bg-red-100 text-red-700 border-red-300"
+                    : "bg-amber-100 text-amber-700 border-amber-300";
+                  const cardBorder = overdue
+                    ? "border-red-300 bg-red-50/40"
+                    : done
+                    ? "border-emerald-300 bg-emerald-50/30"
+                    : "border-border bg-background";
+                  const barColor = done
+                    ? "bg-emerald-500"
+                    : overdue
+                    ? "bg-red-500"
+                    : pct >= 67
+                    ? "bg-emerald-500"
+                    : pct >= 34
+                    ? "bg-amber-500"
+                    : "bg-yellow-400";
                   return (
-                    <div key={tg.id} className="p-4 rounded-lg border border-border bg-background space-y-2">
+                    <div key={tg.id} className={`p-4 rounded-lg border space-y-3 transition-colors ${cardBorder}`}>
                       <div className="flex items-start justify-between gap-2">
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium font-body">{tg.title || `${t("setTarget")}`}</p>
                           {tg.description && <p className="text-xs text-muted-foreground font-body mt-0.5">{tg.description}</p>}
                           {tg.steps && (
@@ -466,16 +485,30 @@ export default function MyTasks() {
                           )}
                           <p className="text-xs text-muted-foreground font-body mt-1">{assignmentLabel(tg)}</p>
                         </div>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-body whitespace-nowrap ${done ? "bg-accent/15 text-accent" : overdue ? "bg-destructive/15 text-destructive flex items-center gap-1" : "bg-muted text-muted-foreground"}`}>
-                          {done ? t("targetDone") : overdue ? <><AlertTriangle className="w-3 h-3" /> {t("overdue")}</> : `${t("daysLeft")}: ${daysLeft}`}
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-body font-medium border whitespace-nowrap ${statusBadge}`}>
+                          {done ? <Check className="w-3 h-3" /> : overdue ? <AlertTriangle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                          {done ? t("completed") : overdue ? t("overdue") : t("inProgress")}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xs font-body mb-1">
-                        <span className="text-muted-foreground">{t("completedCount")}: {tg.completed_tasks}/{tg.task_target} {t("tasksUnit")}</span>
-                        <span>{pct}%</span>
+                      <div className="flex items-center gap-1.5 text-xs font-body">
+                        {done ? (
+                          <span className="text-emerald-600 font-medium">{t("targetDone")}</span>
+                        ) : overdue ? (
+                          <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("overdue")}</span>
+                        ) : (
+                          <span className={`flex items-center gap-1 ${daysLeft <= 3 ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
+                            <Clock className="w-3 h-3" /> {t("daysLeft")}: {daysLeft}
+                          </span>
+                        )}
                       </div>
-                      <div className="h-2 rounded-full bg-muted overflow-hidden">
-                        <div className={`h-full transition-all ${done ? "bg-accent" : overdue ? "bg-destructive" : "bg-accent"}`} style={{ width: `${pct}%` }} />
+                      <div>
+                        <div className="flex justify-between text-xs font-body mb-1">
+                          <span className="text-muted-foreground">{t("completedCount")}: {tg.completed_tasks}/{tg.task_target} {t("tasksUnit")}</span>
+                          <span className="font-medium">{pct}%</span>
+                        </div>
+                        <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                          <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
+                        </div>
                       </div>
                       {canLogThis && !done && !overdue && (
                         <div className="flex items-center gap-2 pt-1">
