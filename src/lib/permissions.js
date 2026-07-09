@@ -61,6 +61,16 @@ export function canTransferOwnership(user) {
   return user.role === "director";
 }
 
+// Can the user create/edit HR levels and their permissions?
+export function canManageHRLevels(user) {
+  return user.role === "director";
+}
+
+// Is this employee part of the HR hierarchy?
+export function isHR(employee) {
+  return !!employee.hrLevelId;
+}
+
 // Employees visible to a user (for management views)
 export function visibleEmployees(user, data) {
   const stations = visibleStations(user, data);

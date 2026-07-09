@@ -112,6 +112,7 @@ function emptyCompanyData(meta) {
     notifications: [],
     templates: [],
     targets: [],
+    hrLevels: [],
     settings: { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30 },
   };
 }
