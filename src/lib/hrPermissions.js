@@ -8,6 +8,7 @@ export const HR_PERMISSIONS = [
   "manage_leave",
   "view_safety",
   "manage_anonymous_reports",
+  "view_anonymous_reports",
   "manage_payroll",
 ];
 
@@ -18,6 +19,7 @@ const LABELS = {
   manage_leave: { en: "Manage Leave Requests", ar: "إدارة طلبات الإجازة" },
   view_safety: { en: "View Safety Records", ar: "عرض سجلات السلامة" },
   manage_anonymous_reports: { en: "Manage Anonymous Reports", ar: "إدارة البلاغات المجهولة" },
+  view_anonymous_reports: { en: "View & Audit Anonymous Reports", ar: "عرض ومراجعة البلاغات المجهولة" },
   manage_payroll: { en: "Manage Payroll", ar: "إدارة الرواتب" },
 };
 
@@ -27,7 +29,8 @@ const DESCRIPTIONS = {
   view_reports: { en: "Can view daily station reports.", ar: "يسمح بمشاهدة التقارير اليومية للمحطات." },
   manage_leave: { en: "Can review and approve leave requests.", ar: "يسمح بمراجعة والموافقة على طلبات الإجازة." },
   view_safety: { en: "Can view station safety records, inspections, and hazards.", ar: "يسمح بمشاهدة سجلات السلامة والفحوصات والمخاطر الخاصة بالمحطة." },
-  manage_anonymous_reports: { en: "Can view and reply to anonymous complaints/suggestions within this HR member's scope.", ar: "يسمح بمشاهدة البلاغات المجهولة (الشكاوى/الاقتراحات) والرد عليها ضمن نطاق مسؤول الموارد البشرية." },
+  manage_anonymous_reports: { en: "Can approve, reject, and escalate anonymous complaints/suggestions within this HR member's scope.", ar: "يسمح بالموافقة أو الرفض أو التصعيد للبلاغات المجهولة ضمن نطاق مسؤول الموارد البشرية." },
+  view_anonymous_reports: { en: "Can view and audit anonymous reports within this HR member's scope, without taking action.", ar: "يسمح بمشاهدة ومراجعة البلاغات المجهولة ضمن النطاق دون اتخاذ أي إجراء." },
   manage_payroll: { en: "Can manage employee payroll.", ar: "يسمح بإدارة رواتب الموظفين." },
 };
 

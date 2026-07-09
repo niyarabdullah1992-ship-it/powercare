@@ -2,54 +2,38 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getAnonUsage, addNotification, getAnonymousCode, setAnonRateLimits } from "@/lib/store";
-import { canReplyAnon, visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
-import { ShieldCheck, Send, Lock, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft } from "lucide-react";
+import { visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
+import { tierLevelId, tierName, HR_TIER_COUNT } from "@/lib/hrLevels";
+import { ShieldCheck, Send, Lock, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft, Check, X as XIcon } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
 
-// Escalation chain:
-// 0: Station Manager → 1: PGM → 2: Station HR → 3: HR Deputy Head → 4: HR Head → 5: Operations Director → 6: CEO/Owner
-const STAGE_COUNT = 7;
+// Escalation chain: strictly the 5-tier global HR hierarchy — Tier 1 (Site) → Tier 2 (Cluster)
+// → Tier 3 (Head of HR Operations) → Tier 4 (VP of HR) → Tier 5 (CHRO).
+const STAGE_COUNT = HR_TIER_COUNT;
 
-function getHRLevelsMap(data) {
-  const levels = data?.hrLevels || [];
-  const companyLevels = levels.filter((l) => l.scope === "company");
-  const stationLevel = levels.find((l) => l.scope === "station");
-  return { head: companyLevels[0] || null, deputy: companyLevels[1] || null, station: stationLevel || null };
-}
-
-function handlersForLevel(level, r, data) {
-  const { head, deputy, station } = getHRLevelsMap(data);
-  if (level === 0) {
-    const st = data.stations.find((s) => s.id === r.stationId);
-    return st?.managerId ? data.employees.filter((e) => e.id === st.managerId) : [];
+// Managers (action rights) assigned to a given tier (index 0-4 → tier 1-5) within the report's scope.
+function handlersForLevel(levelIdx, r, data) {
+  const tier = levelIdx + 1;
+  const levelId = tierLevelId(tier, "manager");
+  const managers = data.employees.filter((e) => e.hrLevelId === levelId);
+  if (tier === 1) return managers.filter((e) => e.hrStationId === r.stationId);
+  if (tier === 2) {
+    const cluster = (data.hrClusters || []).find((c) => (c.stationIds || []).includes(r.stationId));
+    return cluster ? managers.filter((e) => e.hrClusterId === cluster.id) : [];
   }
-  if (level === 1) return data.employees.filter((e) => e.role === "pgm" && (e.managedStations || []).includes(r.stationId));
-  if (level === 2) return station ? data.employees.filter((e) => e.hrLevelId === station.id && e.hrStationId === r.stationId) : [];
-  if (level === 3) return deputy ? data.employees.filter((e) => e.hrLevelId === deputy.id) : [];
-  if (level === 4) return head ? data.employees.filter((e) => e.hrLevelId === head.id) : [];
-  if (level === 5) return data.employees.filter((e) => e.role === "director");
-  if (level === 6) return data.employees.filter((e) => e.id === data.ownerId);
-  return [];
+  return managers; // tiers 3-5 are company-wide
 }
 
-function levelLabel(level, data, t) {
-  const { head, deputy, station } = getHRLevelsMap(data);
-  if (level === 0) return t("stationManager");
-  if (level === 1) return t("pgm");
-  if (level === 2) return station?.name || t("stationHR");
-  if (level === 3) return deputy?.name || t("hr");
-  if (level === 4) return head?.name || t("hr");
-  if (level === 5) return t("director");
-  if (level === 6) return t("ceoOwner");
-  return "";
+function levelLabel(levelIdx, data, t, lang) {
+  return `${t("tier")} ${levelIdx + 1} · ${tierName(levelIdx + 1, "manager", lang)}`;
 }
 
 export default function AnonymousReports() {
-  const { t, dir } = useI18n();
+  const { t, dir, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [type, setType] = useState("complaint");
   const [priority, setPriority] = useState("medium");
@@ -61,9 +45,12 @@ export default function AnonymousReports() {
   const [monthlyLimitInput, setMonthlyLimitInput] = useState("");
 
   if (!data || !currentUser) return null;
-  const isHRAnon = hasHRPermission(currentUser, data, "manage_anonymous_reports");
-  const hrStations = isHRAnon ? hrScopeStations(currentUser) : [];
-  const isStaff = canReplyAnon(currentUser) || isHRAnon;
+  const canAct = hasHRPermission(currentUser, data, "manage_anonymous_reports");
+  const canView = hasHRPermission(currentUser, data, "view_anonymous_reports");
+  const isHRAnon = canAct || canView;
+  const hrStations = isHRAnon ? hrScopeStations(currentUser, data) : [];
+  const isOwner = currentUser.id === data.ownerId;
+  const isStaff = isHRAnon || currentUser.role === "director" || currentUser.role === "ops_manager" || isOwner;
   const myAnon = data.anonymousReports.filter((a) => (a.authorId ? a.authorId === currentUser.id : a.anonymousId === currentUser.anonymousId));
   const usage = getAnonUsage(company.id, currentUser.id, currentUser.anonymousId);
 
@@ -76,19 +63,15 @@ export default function AnonymousReports() {
     setMonthlyLimitInput("");
   };
 
-  const isOwner = currentUser.id === data.ownerId;
-
-  // Reports visible to a staff member based on station scope
+  // Reports visible to a staff member based on HR scope (or full oversight for director/owner/ops manager)
   const visibleReports = data.anonymousReports.filter((r) => {
     if (currentUser.role === "director" || currentUser.role === "ops_manager" || isOwner) return true;
-    if (currentUser.role === "pgm") return (currentUser.managedStations || []).includes(r.stationId);
-    if (currentUser.role === "station_manager") return r.stationId === currentUser.stationId;
     if (isHRAnon) return hrStations === null || hrStations.includes(r.stationId);
     return false;
   });
 
-  const currentHandlerLabel = (r) => levelLabel(r.escalationLevel || 0, data, t);
-  const canReplyTo = (r) => handlersForLevel(r.escalationLevel || 0, r, data).some((h) => h.id === currentUser.id);
+  const currentHandlerLabel = (r) => levelLabel(r.escalationLevel || 0, data, t, lang);
+  const canReplyTo = (r) => canAct && handlersForLevel(r.escalationLevel || 0, r, data).some((h) => h.id === currentUser.id);
   const isAtTop = (r) => (r.escalationLevel || 0) >= STAGE_COUNT - 1;
 
   const submit = (e) => {
@@ -109,33 +92,28 @@ export default function AnonymousReports() {
       });
     });
     const station = data.stations.find((s) => s.id === currentUser.stationId);
-    if (station?.managerId) addNotification(company.id, station.managerId, `New ${t(type)} report at ${station.name} (${t(priority)}).`);
+    const tier1Managers = data.employees.filter((e) => e.hrLevelId === tierLevelId(1, "manager") && e.hrStationId === currentUser.stationId);
+    for (const h of tier1Managers) addNotification(company.id, h.id, `New ${t(type)} report at ${station?.name || ""} (${t(priority)}).`);
     setMessage("");
     setFiles([]);
   };
 
-  const setStatus = (id, status) => {
-    updateCompany(company.id, (d) => {
-      const r = d.anonymousReports.find((x) => x.id === id);
-      if (r) r.status = status;
-    });
-  };
-
-  const reply = (id) => {
+  const decide = (id, decision) => {
     const txt = (replyText[id] || "").trim();
-    if (!txt) return;
     const rep = data.anonymousReports.find((x) => x.id === id);
     if (!rep) return;
     updateCompany(company.id, (d) => {
       const r = d.anonymousReports.find((x) => x.id === id);
-      if (r) {
+      if (!r) return;
+      if (txt) {
         r.replies = r.replies || [];
         r.replies.push({ level: r.escalationLevel || 0, role: currentUser.role, authorName: currentUser.name, text: txt, files: replyFiles[id] || [], createdAt: new Date().toISOString() });
-        r.status = r.status === "open" ? "in_review" : r.status;
       }
+      r.status = "closed";
+      r.resolution = decision;
     });
     const author = rep.authorId ? data.employees.find((e) => e.id === rep.authorId) : data.employees.find((e) => e.anonymousId === rep.anonymousId);
-    if (author) addNotification(company.id, author.id, `Reply to your anonymous ${t(rep.type)} from ${currentUser.name}.`);
+    if (author) addNotification(company.id, author.id, `Your anonymous ${t(rep.type)} was ${t(decision)}.`);
     setReplyText({ ...replyText, [id]: "" });
     setReplyFiles({ ...replyFiles, [id]: [] });
   };
@@ -161,7 +139,7 @@ export default function AnonymousReports() {
         const replyAtLevel = (r.replies || []).find((rp) => rp.level === idx);
         const isCurrent = (r.escalationLevel || 0) === idx;
         const isPast = (r.escalationLevel || 0) > idx;
-        const label = levelLabel(idx, data, t);
+        const label = levelLabel(idx, data, t, lang);
         return (
           <div key={idx} className={`flex items-start gap-2 text-xs font-body ${isPast ? "opacity-50" : ""}`}>
             <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${replyAtLevel ? "bg-accent text-accent-foreground" : isCurrent ? "bg-amber-100 text-amber-700 border border-amber-300" : "bg-muted text-muted-foreground"}`}>
@@ -378,11 +356,7 @@ export default function AnonymousReports() {
                     <Badge text={t(r.type)} />
                     <Badge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
                     <Badge text={currentHandlerLabel(r)} tone="accent" />
-                    <select value={r.status} onChange={(e) => setStatus(r.id, e.target.value)} className="px-2 py-0.5 rounded-md border border-input text-xs font-body">
-                      <option value="open">{t("open")}</option>
-                      <option value="in_review">{t("inReview")}</option>
-                      <option value="closed">{t("closed")}</option>
-                    </select>
+                    <Badge text={t(r.status)} tone={r.status === "closed" ? (r.resolution === "approved" ? "accent" : "destructive") : "muted"} />
                   </div>
                 </div>
                 <p className="text-sm font-body">{r.message}</p>
@@ -394,15 +368,25 @@ export default function AnonymousReports() {
                       <CommentFiles files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
                       <VoiceRecorder files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
                     </div>
-                    <div className="flex gap-2">
-                      <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} className="flex-1 px-3 py-1.5 rounded-md border border-input text-sm font-body" />
-                      <button onClick={() => reply(r.id)} className="px-4 py-1.5 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">{t("reply")}</button>
+                    <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} className="w-full px-3 py-1.5 rounded-md border border-input text-sm font-body" />
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => decide(r.id, "approved")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-body hover:bg-emerald-700">
+                        <Check className="w-3.5 h-3.5" /> {t("approveReport")}
+                      </button>
+                      <button onClick={() => decide(r.id, "rejected")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground text-xs font-body hover:opacity-90">
+                        <XIcon className="w-3.5 h-3.5" /> {t("rejectReport")}
+                      </button>
+                      {!isAtTop(r) && (
+                        <button onClick={() => escalate(r.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300 text-amber-700 text-xs font-body hover:bg-amber-50">
+                          <ArrowUpCircle className="w-3.5 h-3.5" /> {t("escalateNextTier")}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
                 {!canReplyTo(r) && r.status !== "closed" && (
                   <p className="text-xs text-muted-foreground font-body italic">
-                    {t("escalatedTo")} {currentHandlerLabel(r)}
+                    {isHRAnon && !canAct ? t("auditTrail") : `${t("escalatedTo")} ${currentHandlerLabel(r)}`}
                   </p>
                 )}
               </div>

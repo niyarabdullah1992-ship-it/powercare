@@ -78,10 +78,31 @@ export function hasHRPermission(user, data, permKey) {
   return !!level?.permissions?.includes(permKey);
 }
 
-// Stations an HR member can act on: [stationId] if tied to one station, or null for company-wide reach.
-export function hrScopeStations(user) {
+// Stations an HR member can act on: [] none, [stationId, ...] scoped, or null for company-wide reach.
+export function hrScopeStations(user, data) {
   if (!user?.hrLevelId) return [];
-  return user.hrStationId ? [user.hrStationId] : null;
+  const level = (data?.hrLevels || []).find((l) => l.id === user.hrLevelId);
+  if (!level) return [];
+  if (level.scope === "station") return user.hrStationId ? [user.hrStationId] : [];
+  if (level.scope === "cluster") {
+    const cluster = (data?.hrClusters || []).find((c) => c.id === user.hrClusterId);
+    return cluster ? cluster.stationIds || [] : [];
+  }
+  return null; // company-wide (tiers 3-5)
+}
+
+// The HR level object (tier/role/scope/permissions) assigned to this user, if any.
+export function getHRLevel(user, data) {
+  if (!user?.hrLevelId) return null;
+  return (data?.hrLevels || []).find((l) => l.id === user.hrLevelId) || null;
+}
+
+export function isHRManager(user, data) {
+  return getHRLevel(user, data)?.role === "manager";
+}
+
+export function isHRAssistant(user, data) {
+  return getHRLevel(user, data)?.role === "assistant";
 }
 
 // Employees visible to a user (for management views)
