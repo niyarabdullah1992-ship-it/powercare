@@ -10,7 +10,7 @@ export default function HRStationCard({ station, data, currentUser, canAssign })
   const [showAssign, setShowAssign] = useState(false);
   const levels = data.hrLevels || [];
   const topHR = data.employees.find((e) => e.hrStationId === station.id);
-  const stationTeam = data.employees.filter((e) => e.stationId === station.id && !e.hrLevelId);
+  const stationTeam = data.employees.filter((e) => !e.hrLevelId);
 
   const assign = (empId, levelId) => {
     const lvl = levels.find((l) => l.id === levelId);
