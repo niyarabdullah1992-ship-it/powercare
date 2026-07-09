@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { ownerLogin, ownerExists, setOwner, listCompanies, createCompany, deleteCompany } from "@/lib/store";
-import { Zap, Building2, Plus, Trash2, ShieldCheck, LogIn, Globe, ChevronDown, Check } from "lucide-react";
+import { Building2, Plus, Trash2, ShieldCheck, LogIn, Globe, ChevronDown, Check } from "lucide-react";
+import Logo from "@/components/Logo";
 
 export default function Landing() {
   const { t, lang, setLang, languages } = useI18n();
@@ -40,9 +41,7 @@ export default function Landing() {
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-5 border-b border-border">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-foreground flex items-center justify-center">
-            <Zap className="w-5 h-5 text-background" strokeWidth={2} />
-          </div>
+          <Logo size={36} />
           <span className="font-heading font-semibold text-xl">{t("appName")}</span>
         </div>
         <div className="relative">
@@ -77,6 +76,9 @@ export default function Landing() {
         <div className="w-full max-w-md">
           {/* Hero */}
           <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <Logo size={64} />
+            </div>
             <h1 className="font-heading text-4xl md:text-5xl font-semibold mb-3">{t("appName")}</h1>
             <p className="text-muted-foreground font-body">{t("tagline")}</p>
             <p className="mt-3 text-xs text-muted-foreground/70 font-body">{t("demoNote")}</p>

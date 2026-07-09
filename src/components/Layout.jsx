@@ -6,8 +6,9 @@ import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, HardHat, CalendarRange, Bell, LogOut, Globe, ChevronDown, UserCircle, Zap,
+  Users, HardHat, CalendarRange, Bell, LogOut, Globe, ChevronDown, UserCircle,
 } from "lucide-react";
+import Logo from "@/components/Logo";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -98,9 +99,7 @@ export default function Layout({ children }) {
       {/* Sidebar */}
       <aside className={`hidden md:flex flex-col w-64 ${sidebarSide} top-0 h-screen ${dir === "rtl" ? "border-l" : "border-r"} border-border bg-card sticky`}>
         <div className="px-6 py-6 flex items-center gap-2 border-b border-border">
-          <div className="w-9 h-9 rounded-lg bg-foreground flex items-center justify-center">
-            <Zap className="w-5 h-5 text-background" strokeWidth={2} />
-          </div>
+          <Logo size={36} />
           <div>
             <p className="font-heading font-semibold text-lg leading-none">{t("appName")}</p>
             <p className="text-[10px] text-muted-foreground mt-1 truncate max-w-[160px]">{company.name}</p>
@@ -137,9 +136,7 @@ export default function Layout({ children }) {
           <div className="flex items-center justify-between px-4 md:px-8 h-16">
             {/* Mobile nav (scrollable pills) */}
             <div className="md:hidden flex items-center gap-2 overflow-x-auto no-scrollbar">
-              <div className="w-8 h-8 rounded-md bg-foreground flex items-center justify-center shrink-0">
-                <Zap className="w-4 h-4 text-background" strokeWidth={2} />
-              </div>
+              <Logo size={32} className="shrink-0" />
             </div>
 
             <div className="hidden md:block">
