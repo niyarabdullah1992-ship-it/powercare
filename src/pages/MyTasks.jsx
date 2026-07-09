@@ -467,7 +467,10 @@ export default function MyTasks() {
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
-              <input name="section" placeholder={t("sectionName")} className="px-3 py-2 rounded-md border border-input text-sm font-body" />
+              <div>
+                <input name="section" placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+                <p className="text-[11px] text-muted-foreground font-body mt-1">{t("sectionTaskTypeHint")}</p>
+              </div>
             </div>
           )}
 
