@@ -59,6 +59,8 @@ const dict = {
     escalationChain: "Escalation Chain",
     waitingReply: "Awaiting reply",
     station: "Station",
+    urgent: "Urgent",
+    atRisk: "At Risk — behind schedule",
     demoNote: "Demo — data is stored locally in this browser.",
   },
   ar: {
@@ -118,6 +120,8 @@ const dict = {
     escalationChain: "سلسلة التصعيد",
     waitingReply: "بانتظار الرد",
     station: "المحطة",
+    urgent: "عاجل",
+    atRisk: "في خطر — متأخر عن الجدول",
     demoNote: "تجريبي — البيانات محفوظة محليًا في هذا المتصفح.",
   },
   de: {

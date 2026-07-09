@@ -33,6 +33,7 @@ export default function MyTasks() {
   const [targets, setTargets] = useState([]);
   const [targetsLoading, setTargetsLoading] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
+  const [priority, setPriority] = useState("medium");
 
   const fetchTargets = async () => {
     if (!currentUser) return;
@@ -56,6 +57,31 @@ export default function MyTasks() {
   useEffect(() => {
     fetchTargets();
   }, [currentUser?.id]);
+
+  // Auto-escalation: notify higher-level managers when an urgent task is at risk
+  useEffect(() => {
+    if (!data || !currentUser || !company) return;
+    if (!canCreateTasks(currentUser)) return;
+    const now = Date.now();
+    for (const tg of targets) {
+      if (tg.priority !== "urgent" || tg.status !== "active") continue;
+      const totalDur = new Date(tg.end_date).getTime() - new Date(tg.start_date).getTime();
+      const elapsed = now - new Date(tg.start_date).getTime();
+      const timePct = totalDur > 0 ? (elapsed / totalDur) * 100 : 0;
+      const progressPct = tg.task_target > 0 ? (tg.completed_tasks / tg.task_target) * 100 : 0;
+      if (timePct > 75 && progressPct < 50) {
+        const escKey = `powercare_esc_${tg.id}`;
+        if (localStorage.getItem(escKey)) continue;
+        localStorage.setItem(escKey, "1");
+        const chain = ["station_manager", "pgm", "ops_manager", "director"];
+        for (const role of chain) {
+          for (const h of (data.employees || []).filter((e) => e.role === role)) {
+            addNotification(company.id, h.id, `⚠️ ${t("urgent")}: "${tg.title}" — ${t("atRisk")}.`);
+          }
+        }
+      }
+    }
+  }, [targets, data, currentUser, company]);
 
   if (!data || !currentUser) return null;
 
@@ -144,6 +170,7 @@ export default function MyTasks() {
         assignmentId,
         employeeId,
         stationId,
+        priority,
         startDate,
         endDate,
       });
@@ -162,6 +189,7 @@ export default function MyTasks() {
       setCustomEnd("");
       setCustomDays("");
       setPdfFile(null);
+      setPriority("medium");
       fetchTargets();
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to create");
@@ -349,6 +377,28 @@ export default function MyTasks() {
             <p className="text-xs text-muted-foreground font-body">{t("hqTeamNote")}</p>
           )}
 
+          {/* Priority */}
+          <div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> {t("priority")}</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { val: "urgent", label: t("urgent") },
+                { val: "high", label: t("high") },
+                { val: "medium", label: t("medium") },
+                { val: "low", label: t("low") },
+              ].map(({ val, label }) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setPriority(val)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${priority === val ? "bg-foreground text-background border-foreground" : val === "urgent" ? "border-red-400 text-red-700 hover:bg-red-50" : "border-border hover:bg-muted"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Target quota */}
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{t("totalTasks")}</p>
@@ -448,6 +498,12 @@ export default function MyTasks() {
                   const done = tg.status === "completed";
                   const overdue = tg.status === "overdue";
                   const canLogThis = canLog(tg);
+                  const isUrgent = tg.priority === "urgent";
+                  const totalDur = new Date(tg.end_date).getTime() - new Date(tg.start_date).getTime();
+                  const elapsed = Date.now() - new Date(tg.start_date).getTime();
+                  const timePct = totalDur > 0 ? (elapsed / totalDur) * 100 : 0;
+                  const progressPct = tg.task_target > 0 ? (tg.completed_tasks / tg.task_target) * 100 : 0;
+                  const atRisk = isUrgent && !done && !overdue && timePct > 75 && progressPct < 50;
                   const statusBadge = done
                     ? "bg-emerald-100 text-emerald-700 border-emerald-300"
                     : overdue
@@ -457,6 +513,8 @@ export default function MyTasks() {
                     ? "border-red-300 bg-red-50/40"
                     : done
                     ? "border-emerald-300 bg-emerald-50/30"
+                    : isUrgent
+                    ? "border-red-400 bg-red-50/20"
                     : "border-border bg-background";
                   const barColor = done
                     ? "bg-emerald-500"
@@ -485,16 +543,25 @@ export default function MyTasks() {
                           )}
                           <p className="text-xs text-muted-foreground font-body mt-1">{assignmentLabel(tg)}</p>
                         </div>
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-body font-medium border whitespace-nowrap ${statusBadge}`}>
-                          {done ? <Check className="w-3 h-3" /> : overdue ? <AlertTriangle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                          {done ? t("completed") : overdue ? t("overdue") : t("inProgress")}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          {isUrgent && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-body font-medium border border-red-500 bg-red-100 text-red-700 whitespace-nowrap">
+                              <AlertTriangle className="w-3 h-3" /> {t("urgent")}
+                            </span>
+                          )}
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-body font-medium border whitespace-nowrap ${statusBadge}`}>
+                            {done ? <Check className="w-3 h-3" /> : overdue ? <AlertTriangle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                            {done ? t("completed") : overdue ? t("overdue") : t("inProgress")}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs font-body">
                         {done ? (
                           <span className="text-emerald-600 font-medium">{t("targetDone")}</span>
                         ) : overdue ? (
                           <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("overdue")}</span>
+                        ) : atRisk ? (
+                          <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("atRisk")}</span>
                         ) : (
                           <span className={`flex items-center gap-1 ${daysLeft <= 3 ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
                             <Clock className="w-3 h-3" /> {t("daysLeft")}: {daysLeft}
