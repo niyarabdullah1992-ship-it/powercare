@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { addNotification } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { base44 } from "@/api/base44Client";
-import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio } from "lucide-react";
+import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, MessageCircle, Send } from "lucide-react";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -28,6 +28,8 @@ export default function MyTasks() {
   const [uploading, setUploading] = useState(false);
   const [logTarget, setLogTarget] = useState(null);
   const [logAmount, setLogAmount] = useState(1);
+  const [commentsOpen, setCommentsOpen] = useState(null);
+  const [commentText, setCommentText] = useState("");
   const [targets, setTargets] = useState([]);
   const [targetsLoading, setTargetsLoading] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
@@ -192,6 +194,25 @@ export default function MyTasks() {
       fetchTargets();
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to update progress");
+    }
+  };
+
+  const submitComment = async (targetId) => {
+    const text = commentText.trim();
+    if (!text) return;
+    try {
+      const res = await base44.functions.invoke("supabaseTargets", {
+        action: "addComment",
+        targetId,
+        userId: currentUser.id,
+        userName: currentUser.name,
+        content: text,
+      });
+      const updated = res?.data?.comments || [];
+      setTargets((prev) => prev.map((x) => (x.id === targetId ? { ...x, comments: updated } : x)));
+      setCommentText("");
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to add comment");
     }
   };
 
@@ -464,6 +485,32 @@ export default function MyTasks() {
                           </button>
                         </div>
                       )}
+
+                      <div className="pt-2 border-t border-border">
+                        <button onClick={() => { const next = commentsOpen === tg.id ? null : tg.id; setCommentsOpen(next); setCommentText(""); }} className="flex items-center gap-1.5 text-xs text-muted-foreground font-body hover:text-foreground">
+                          <MessageCircle className="w-3.5 h-3.5" /> {t("comments")} ({Array.isArray(tg.comments) ? tg.comments.length : 0})
+                        </button>
+                        {commentsOpen === tg.id && (
+                          <div className="mt-2 space-y-2">
+                            {Array.isArray(tg.comments) && tg.comments.length > 0 && (
+                              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                                {tg.comments.map((c) => (
+                                  <div key={c.id} className="text-xs font-body p-2 rounded-md bg-muted/50">
+                                    <p className="font-medium text-foreground">{c.user_name}</p>
+                                    <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{c.content}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={t("writeComment")} className="flex-1 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
+                              <button onClick={() => submitComment(tg.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
+                                <Send className="w-3.5 h-3.5" /> {t("send")}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

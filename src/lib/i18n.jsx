@@ -52,6 +52,7 @@ const dict = {
     selectDate: "Duration", presetMonthly: "Monthly", preset6Months: "6 Months", presetYearly: "Yearly", presetCustom: "Custom Range",
     overdue: "Overdue",
     attachPdf: "Attach PDF", steps: "Steps", stepsPlaceholder: "Write the steps for this task...", presetDays: "Days",
+    comments: "Comments", writeComment: "Write a comment...", send: "Send",
     demoNote: "Demo — data is stored locally in this browser.",
   },
   ar: {
@@ -104,6 +105,7 @@ const dict = {
     selectDate: "المدة", presetMonthly: "شهري", preset6Months: "6 أشهر", presetYearly: "سنوي", presetCustom: "مدة مخصصة",
     overdue: "متأخر",
     attachPdf: "إرفاق PDF", steps: "الخطوات", stepsPlaceholder: "اكتب الخطوات لهذه المهمة...", presetDays: "أيام",
+    comments: "التعليقات", writeComment: "اكتب تعليقًا...", send: "إرسال",
     demoNote: "تجريبي — البيانات محفوظة محليًا في هذا المتصفح.",
   },
   de: {

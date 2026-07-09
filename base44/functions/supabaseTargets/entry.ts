@@ -221,6 +221,38 @@ Deno.serve(async (req) => {
       return Response.json({ notifications: rows });
     }
 
+    if (action === "addComment") {
+      const { targetId, userId, userName, content } = body;
+      if (!targetId || !content) {
+        return Response.json({ error: "Missing fields" }, { status: 400 });
+      }
+      const getRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`,
+        { headers }
+      );
+      const rows = await getRes.json();
+      const tg = rows[0];
+      if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
+      const comments = Array.isArray(tg.comments) ? tg.comments : [];
+      const newComment = {
+        id: crypto.randomUUID(),
+        user_id: userId,
+        user_name: userName || "User",
+        content,
+        created_at: new Date().toISOString(),
+      };
+      comments.push(newComment);
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ comments }),
+        }
+      );
+      return Response.json({ comment: newComment, comments });
+    }
+
     return Response.json({ error: "Unknown action" }, { status: 400 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
