@@ -28,6 +28,11 @@ function hashId(seed) {
   for (let i = 0; i < seed.length; i++) h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
   return "ANON-" + Math.abs(h).toString(16).toUpperCase().padStart(8, "0");
 }
+// Rotating anonymous code for an employee — changes automatically every 30 days.
+export function getAnonymousCode(employeeId, atDate = new Date()) {
+  const period = Math.floor(atDate.getTime() / (86400000 * 30));
+  return hashId(`${employeeId}_${period}`);
+}
 
 /* ----------------------------- pub/sub ----------------------------- */
 const listeners = new Set();
@@ -107,7 +112,7 @@ function emptyCompanyData(meta) {
     notifications: [],
     templates: [],
     targets: [],
-    settings: { rateLimitDaily: 3, rateLimitWeekly: 10 },
+    settings: { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30 },
   };
 }
 
@@ -273,14 +278,27 @@ export function addPoints(companyId, employeeId, points, reason) {
 }
 
 /* ----------------------------- anonymous rate limit ----------------------------- */
-export function getAnonUsage(companyId, anonymousId) {
+export function getAnonUsage(companyId, employeeId, legacyAnonymousId) {
   const data = getCompanyData(companyId);
   const now = Date.now();
-  const day = data.anonymousReports.filter(
-    (r) => r.anonymousId === anonymousId && now - new Date(r.createdAt).getTime() < 86400000
-  ).length;
-  const week = data.anonymousReports.filter(
-    (r) => r.anonymousId === anonymousId && now - new Date(r.createdAt).getTime() < 86400000 * 7
-  ).length;
-  return { day, week, dayLimit: data.settings.rateLimitDaily, weekLimit: data.settings.rateLimitWeekly };
+  const mine = (r) => (r.authorId ? r.authorId === employeeId : r.anonymousId === legacyAnonymousId);
+  const day = data.anonymousReports.filter((r) => mine(r) && now - new Date(r.createdAt).getTime() < 86400000).length;
+  const week = data.anonymousReports.filter((r) => mine(r) && now - new Date(r.createdAt).getTime() < 86400000 * 7).length;
+  const month = data.anonymousReports.filter((r) => mine(r) && now - new Date(r.createdAt).getTime() < 86400000 * 30).length;
+  return {
+    day, week, month,
+    dayLimit: data.settings.rateLimitDaily,
+    weekLimit: data.settings.rateLimitWeekly,
+    monthLimit: data.settings.rateLimitMonthly ?? 30,
+  };
+}
+
+// Director-only: configure how many anonymous complaints an employee may file per day/week/month.
+export function setAnonRateLimits(companyId, { daily, weekly, monthly } = {}) {
+  updateCompany(companyId, (d) => {
+    d.settings = d.settings || {};
+    if (daily != null) d.settings.rateLimitDaily = Number(daily);
+    if (weekly != null) d.settings.rateLimitWeekly = Number(weekly);
+    if (monthly != null) d.settings.rateLimitMonthly = Number(monthly);
+  });
 }

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { updateCompany, getAnonUsage, addNotification } from "@/lib/store";
+import { updateCompany, getAnonUsage, addNotification, getAnonymousCode, setAnonRateLimits } from "@/lib/store";
 import { canReplyAnon, visibleStations } from "@/lib/permissions";
 import { ShieldCheck, Send, Lock, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft } from "lucide-react";
 
@@ -25,14 +25,22 @@ export default function AnonymousReports() {
   const [message, setMessage] = useState("");
   const [replyText, setReplyText] = useState({});
   const [selectedStation, setSelectedStation] = useState(null);
+  const [monthlyLimitInput, setMonthlyLimitInput] = useState("");
 
   if (!data || !currentUser) return null;
   const isStaff = canReplyAnon(currentUser);
-  const myAnon = data.anonymousReports.filter((a) => a.anonymousId === currentUser.anonymousId);
-  const usage = getAnonUsage(company.id, currentUser.anonymousId);
+  const myAnon = data.anonymousReports.filter((a) => (a.authorId ? a.authorId === currentUser.id : a.anonymousId === currentUser.anonymousId));
+  const usage = getAnonUsage(company.id, currentUser.id, currentUser.anonymousId);
 
   const stationName = (id) => data.stations.find((s) => s.id === id)?.name || "—";
   const roleLabel = (role) => t(ROLE_LABEL_KEY[role] || role);
+  const displayCode = (r) => (r.authorId ? getAnonymousCode(r.authorId, new Date(r.createdAt)) : r.anonymousId);
+  const saveMonthlyLimit = () => {
+    const val = Number(monthlyLimitInput);
+    if (!val || val < 1) return;
+    setAnonRateLimits(company.id, { monthly: val });
+    setMonthlyLimitInput("");
+  };
 
   // Reports visible to a staff member based on station scope
   const visibleReports = data.anonymousReports.filter((r) => {
@@ -49,11 +57,11 @@ export default function AnonymousReports() {
   const submit = (e) => {
     e.preventDefault();
     if (!message.trim()) return;
-    if (usage.day >= usage.dayLimit) return;
+    if (usage.day >= usage.dayLimit || usage.month >= usage.monthLimit) return;
     updateCompany(company.id, (d) => {
       d.anonymousReports.unshift({
         id: "anr_" + Math.random().toString(36).slice(2, 9),
-        anonymousId: currentUser.anonymousId,
+        authorId: currentUser.id,
         stationId: currentUser.stationId || null,
         type, priority, message,
         status: "open",
@@ -87,7 +95,7 @@ export default function AnonymousReports() {
         r.status = r.status === "open" ? "in_review" : r.status;
       }
     });
-    const author = data.employees.find((e) => e.anonymousId === rep.anonymousId);
+    const author = rep.authorId ? data.employees.find((e) => e.id === rep.authorId) : data.employees.find((e) => e.anonymousId === rep.anonymousId);
     if (author) addNotification(company.id, author.id, `Reply to your anonymous ${t(rep.type)} from ${currentUser.name}.`);
     setReplyText({ ...replyText, [id]: "" });
   };
@@ -190,9 +198,9 @@ export default function AnonymousReports() {
             <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder={t("fileReport")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground font-body">
-                {usage.dayLimit - usage.day} {t("remaining")} · {usage.weekLimit - usage.week} {t("weekRemaining")}
+                {usage.dayLimit - usage.day} {t("remaining")} · {usage.weekLimit - usage.week} {t("weekRemaining")} · {usage.monthLimit - usage.month} {t("monthRemaining")}
               </p>
-              <button type="submit" disabled={usage.day >= usage.dayLimit} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-40">
+              <button type="submit" disabled={usage.day >= usage.dayLimit || usage.month >= usage.monthLimit} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-40">
                 <Send className="w-4 h-4" /> {t("fileReport")}
               </button>
             </div>
@@ -208,7 +216,7 @@ export default function AnonymousReports() {
                   <div key={r.id} className="p-4 rounded-xl border border-border bg-card space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-muted-foreground">{r.anonymousId}</span>
+                        <span className="text-xs font-mono text-muted-foreground">{displayCode(r)}</span>
                         {r.stationId && (
                           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-body">
                             <Building2 className="w-3 h-3" /> {stationName(r.stationId)}
@@ -242,6 +250,20 @@ export default function AnonymousReports() {
       {/* Staff: manage reports */}
       {isStaff && (
         <>
+          {currentUser.role === "director" && (
+            <div className="p-4 rounded-xl border border-border bg-card flex flex-wrap items-center gap-3">
+              <label className="text-xs text-muted-foreground font-body">{t("monthlyLimit")}</label>
+              <input
+                type="number"
+                min="1"
+                placeholder={String(data.settings?.rateLimitMonthly ?? 30)}
+                value={monthlyLimitInput}
+                onChange={(e) => setMonthlyLimitInput(e.target.value)}
+                className="w-24 px-2 py-1.5 rounded-md border border-input text-sm font-body"
+              />
+              <button onClick={saveMonthlyLimit} className="px-3 py-1.5 rounded-md bg-foreground text-background text-xs font-body">{t("save")}</button>
+            </div>
+          )}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {TYPES.map((ty) => (
               <div key={ty} className="p-4 rounded-xl border border-border bg-card">
@@ -296,7 +318,7 @@ export default function AnonymousReports() {
               <div key={r.id} className="p-4 rounded-xl border border-border bg-card space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-muted-foreground">{r.anonymousId}</span>
+                    <span className="text-xs font-mono text-muted-foreground">{displayCode(r)}</span>
                     {r.stationId && (
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-body">
                         <Building2 className="w-3 h-3" /> {stationName(r.stationId)}

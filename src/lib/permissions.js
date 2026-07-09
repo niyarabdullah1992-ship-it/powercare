@@ -48,7 +48,7 @@ export function canApproveReports(user) {
 
 // Can the user reply to anonymous reports?
 export function canReplyAnon(user) {
-  return ["director", "ops_manager", "pgm"].includes(user.role);
+  return ["director", "ops_manager", "pgm", "station_manager"].includes(user.role);
 }
 
 // Can the user create tasks / templates / plans?
