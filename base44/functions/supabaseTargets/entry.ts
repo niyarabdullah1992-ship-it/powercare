@@ -213,6 +213,31 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true });
     }
 
+    if (action === "updateTarget") {
+      if (!isManager) {
+        return Response.json({ error: "Forbidden: only managers can edit targets" }, { status: 403 });
+      }
+      const { targetId, title, description, steps, priority, endDate, taskTarget } = body;
+      if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
+      const patch: Record<string, unknown> = {};
+      if (title !== undefined) patch.title = title;
+      if (description !== undefined) patch.description = description;
+      if (steps !== undefined) patch.steps = steps;
+      if (priority !== undefined) patch.priority = priority;
+      if (endDate !== undefined) patch.end_date = endDate;
+      if (taskTarget !== undefined) patch.task_target = Number(taskTarget);
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
+        method: "PATCH",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify(patch),
+      });
+      const updated = await res.json();
+      if (!res.ok) {
+        return Response.json({ error: updated?.message || "Failed to update target" }, { status: 400 });
+      }
+      return Response.json({ target: Array.isArray(updated) ? updated[0] : updated });
+    }
+
     if (action === "listNotifications") {
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/notifications?user_id=eq.${encodeURIComponent(body.userId)}&order=created_at.desc&limit=20`,

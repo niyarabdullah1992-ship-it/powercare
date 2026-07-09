@@ -4,7 +4,8 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { addNotification } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { base44 } from "@/api/base44Client";
-import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, MessageCircle, Send, Clock } from "lucide-react";
+import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, MessageCircle, Send, Clock, Search, Pencil, Trash2, X } from "lucide-react";
+import TaskStats from "@/components/tasks/TaskStats";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -35,6 +36,9 @@ export default function MyTasks() {
   const [selectedStation, setSelectedStation] = useState(null);
   const [priority, setPriority] = useState("medium");
   const [sortBy, setSortBy] = useState("priority");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [editTarget, setEditTarget] = useState(null);
 
   const fetchTargets = async () => {
     if (!currentUser) return;
@@ -245,6 +249,43 @@ export default function MyTasks() {
     }
   };
 
+  const deleteTarget = async (targetId) => {
+    if (!confirm(t("confirmDeleteTask"))) return;
+    try {
+      await base44.functions.invoke("supabaseTargets", { action: "deleteTarget", targetId });
+      setTargets((prev) => prev.filter((x) => x.id !== targetId));
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to delete");
+    }
+  };
+
+  const saveEdit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    try {
+      const res = await base44.functions.invoke("supabaseTargets", {
+        action: "updateTarget",
+        userRole: currentUser.role,
+        targetId: editTarget.id,
+        title: fd.get("title"),
+        description: fd.get("description"),
+        steps: fd.get("steps"),
+        priority: fd.get("priority"),
+        endDate: fd.get("endDate"),
+        taskTarget: fd.get("totalTasks"),
+      });
+      const updated = res?.data?.target;
+      if (updated) {
+        setTargets((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      }
+      setEditTarget(null);
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to update");
+    }
+  };
+
+  const canManage = (tg) => canCreateTasks(currentUser) && (tg.manager_id === currentUser.id || canSeeAllStations(currentUser));
+
   const assignmentLabel = (tg) => {
     if (tg.assignment_type === "member") return `${t("member")}: ${employeeName(tg.employee_id)}`;
     if (tg.assignment_type === "station_team") return `${t("stationTeam")}: ${stationName(tg.assignment_id)}`;
@@ -292,6 +333,14 @@ export default function MyTasks() {
   const stationTargets = selectedStation
     ? targets
         .filter((tg) => targetStationKey(tg) === selectedStation)
+        .filter((tg) => {
+          if (statusFilter !== "all" && tg.status !== statusFilter) return false;
+          if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            return (tg.title || "").toLowerCase().includes(q) || (tg.description || "").toLowerCase().includes(q);
+          }
+          return true;
+        })
         .sort((a, b) => {
           if (sortBy === "priority") {
             return (PRIORITY_WEIGHT[a.priority] ?? 2) - (PRIORITY_WEIGHT[b.priority] ?? 2);
@@ -313,6 +362,9 @@ export default function MyTasks() {
           </button>
         )}
       </div>
+
+      {/* Statistics overview */}
+      {!targetsLoading && targets.length > 0 && <TaskStats targets={targets} t={t} />}
 
       {/* Unified Target form */}
       {showCreate && canCreateTasks(currentUser) && (
@@ -506,8 +558,30 @@ export default function MyTasks() {
                 <button onClick={() => setSortBy("date")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "date" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byNewest")}</button>
               </div>
             </div>
+            {/* Search + status filter */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className={`absolute top-1/2 -translate-y-1/2 ${dir === "rtl" ? "right-3" : "left-3"} w-4 h-4 text-muted-foreground`} />
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t("searchTasks")}
+                  className={`w-full ${dir === "rtl" ? "pr-9 pl-3" : "pl-9 pr-3"} py-2 rounded-md border border-input text-sm font-body`}
+                />
+              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 rounded-md border border-input text-sm font-body bg-card"
+              >
+                <option value="all">{t("allStatuses")}</option>
+                <option value="active">{t("inProgress")}</option>
+                <option value="completed">{t("completed")}</option>
+                <option value="overdue">{t("overdue")}</option>
+              </select>
+            </div>
             {stationTargets.length === 0 ? (
-              <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
+              <p className="text-sm text-muted-foreground font-body">{searchQuery || statusFilter !== "all" ? t("noResults") : t("noTargets")}</p>
             ) : (
               <div className="space-y-3">
                 {stationTargets.map((tg) => {
@@ -571,6 +645,16 @@ export default function MyTasks() {
                             {done ? <Check className="w-3 h-3" /> : overdue ? <AlertTriangle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                             {done ? t("completed") : overdue ? t("overdue") : t("inProgress")}
                           </span>
+                          {canManage(tg) && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <button onClick={() => setEditTarget(tg)} className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title={t("edit")}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button onClick={() => deleteTarget(tg.id)} className="p-1 rounded-md hover:bg-red-50 text-muted-foreground hover:text-red-600" title={t("delete")}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs font-body">
@@ -640,6 +724,44 @@ export default function MyTasks() {
           </div>
         )}
       </div>
+
+      {/* Edit modal */}
+      {editTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setEditTarget(null)}>
+          <form onClick={(e) => e.stopPropagation()} onSubmit={saveEdit} className="w-full max-w-lg p-5 rounded-xl border border-border bg-card space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h3 className="font-heading text-lg font-semibold flex items-center gap-2"><Pencil className="w-4 h-4" /> {t("editTask")}</h3>
+              <button type="button" onClick={() => setEditTarget(null)} className="p-1 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
+            </div>
+            <input name="title" defaultValue={editTarget.title || ""} placeholder={t("taskTitle")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <input name="description" defaultValue={editTarget.description || ""} placeholder={t("taskDescription")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <textarea name="steps" rows={3} defaultValue={editTarget.steps || ""} placeholder={t("stepsPlaceholder")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-y" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground font-body block mb-1">{t("priority")}</label>
+                <select name="priority" defaultValue={editTarget.priority || "medium"} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body bg-card">
+                  <option value="urgent">{t("urgent")}</option>
+                  <option value="high">{t("high")}</option>
+                  <option value="medium">{t("medium")}</option>
+                  <option value="low">{t("low")}</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground font-body block mb-1">{t("totalTasks")}</label>
+                <input name="totalTasks" type="number" min="1" defaultValue={editTarget.task_target || 1} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground font-body block mb-1">{t("endDate")}</label>
+              <input name="endDate" type="date" defaultValue={editTarget.end_date ? new Date(editTarget.end_date).toISOString().slice(0, 10) : ""} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button type="submit" className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-body">{t("update")}</button>
+              <button type="button" onClick={() => setEditTarget(null)} className="px-4 py-2 rounded-md border border-border text-sm font-body">{t("cancel")}</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
