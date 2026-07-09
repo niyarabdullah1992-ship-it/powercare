@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { badgeFor, nextBadge, BADGES } from "@/lib/rewards";
 import { Trophy, Medal, Crown, Users, Building2, Award } from "lucide-react";
 import PerformanceAnalytics from "@/components/performance/PerformanceAnalytics";
+import PointsManager from "@/components/performance/PointsManager";
 
 export default function Performance() {
   const { t, dir } = useI18n();
@@ -78,6 +79,9 @@ export default function Performance() {
           </span>
         ))}
       </div>
+
+      {/* Explanation + company point-value editor */}
+      <PointsManager />
 
       {view === "individual" ? (
         <div className="space-y-2">
