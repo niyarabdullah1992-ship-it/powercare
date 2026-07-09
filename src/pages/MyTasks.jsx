@@ -47,6 +47,8 @@ export default function MyTasks() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [editTarget, setEditTarget] = useState(null);
+  const [newSectionName, setNewSectionName] = useState("");
+  const [customFolders, setCustomFolders] = useState({});
 
   const fetchTargets = async () => {
     if (!currentUser) return;
@@ -70,6 +72,28 @@ export default function MyTasks() {
   useEffect(() => {
     fetchTargets();
   }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (!company?.id) return;
+    try {
+      setCustomFolders(JSON.parse(localStorage.getItem(`powercare_folders_${company.id}`)) || {});
+    } catch {
+      setCustomFolders({});
+    }
+  }, [company?.id]);
+
+  const addFolder = () => {
+    const name = newSectionName.trim();
+    if (!name || !selectedStation || !company?.id) return;
+    setCustomFolders((prev) => {
+      const list = prev[selectedStation] || [];
+      if (list.includes(name)) return prev;
+      const next = { ...prev, [selectedStation]: [...list, name] };
+      localStorage.setItem(`powercare_folders_${company.id}`, JSON.stringify(next));
+      return next;
+    });
+    setNewSectionName("");
+  };
 
   // Auto-escalation: notify higher-level managers when an urgent task is at risk
   useEffect(() => {
@@ -361,6 +385,10 @@ export default function MyTasks() {
     name: key === NO_SECTION ? t("noSection") : key,
     count,
   }));
+  const emptyCustomFolders = (customFolders[selectedStation] || [])
+    .filter((name) => !sectionFolders.some((f) => f.key === name))
+    .map((name) => ({ key: name, name, count: 0 }));
+  const allSectionFolders = [...sectionFolders, ...emptyCustomFolders];
   const stationTargets = selectedStation && selectedSection
     ? stationTargetsAll
         .filter((tg) => (selectedSection === NO_SECTION ? !tg.section : tg.section === selectedSection))
@@ -598,11 +626,25 @@ export default function MyTasks() {
               <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
             </button>
             <p className="font-heading text-base font-semibold">{selectedStationName}</p>
-            {sectionFolders.length === 0 ? (
+            {canCreateTasks(currentUser) && (
+              <div className="flex items-center gap-2">
+                <input
+                  value={newSectionName}
+                  onChange={(e) => setNewSectionName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFolder(); } }}
+                  placeholder={t("newSectionPlaceholder")}
+                  className="flex-1 px-3 py-2 rounded-md border border-input text-sm font-body"
+                />
+                <button type="button" onClick={addFolder} className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-foreground text-background text-sm font-body whitespace-nowrap">
+                  <Plus className="w-4 h-4" /> {t("addSection")}
+                </button>
+              </div>
+            )}
+            {allSectionFolders.length === 0 ? (
               <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {sectionFolders.map((f) => (
+                {allSectionFolders.map((f) => (
                   <button
                     key={f.key}
                     onClick={() => setSelectedSection(f.key)}
