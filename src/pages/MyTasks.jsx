@@ -372,6 +372,13 @@ export default function MyTasks() {
         })
     : [];
   const selectedStationName = selectedStation === "hq" ? t("hq") : stationName(selectedStation);
+  const sectionStarts = new Set();
+  {
+    let prevSection;
+    stationTargets.forEach((tg, idx) => {
+      if (tg.section !== prevSection) { sectionStarts.add(idx); prevSection = tg.section; }
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -461,14 +468,19 @@ export default function MyTasks() {
 
           {assignType === "station_team" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <select name="stationId" required defaultValue="" className="px-3 py-2 rounded-md border border-input text-sm font-body">
+              <select name="stationId" required value={formStation} onChange={(e) => setFormStation(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body">
                 <option value="" disabled>{t("selectStation")}</option>
                 {data.stations.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
               <div>
-                <input name="section" placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+                <input name="section" list="sectionSuggestions" placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+                <datalist id="sectionSuggestions">
+                  {Array.from(new Set(targets.filter((tg) => tg.assignment_type === "station_team" && tg.assignment_id === formStation && tg.section).map((tg) => tg.section))).map((sec) => (
+                    <option key={sec} value={sec} />
+                  ))}
+                </datalist>
                 <p className="text-[11px] text-muted-foreground font-body mt-1">{t("sectionTaskTypeHint")}</p>
               </div>
             </div>
@@ -632,7 +644,7 @@ export default function MyTasks() {
               <p className="text-sm text-muted-foreground font-body">{searchQuery || statusFilter !== "all" ? t("noResults") : t("noTargets")}</p>
             ) : (
               <div className="space-y-3">
-                {stationTargets.map((tg) => {
+                {stationTargets.map((tg, tgIdx) => {
                   const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
                   const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
                   const done = tg.status === "completed";
@@ -666,116 +678,124 @@ export default function MyTasks() {
                     ? "bg-amber-500"
                     : "bg-yellow-400";
                   return (
-                    <div key={tg.id} className={`p-4 rounded-lg border space-y-3 transition-colors ${cardBorder}`}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium font-body">{tg.title || `${t("setTarget")}`}</p>
-                          {tg.description && <p className="text-xs text-muted-foreground font-body mt-0.5">{tg.description}</p>}
-                          {tg.steps && (
-                            <div className="text-xs text-muted-foreground font-body mt-1 p-2 rounded bg-muted/50 whitespace-pre-wrap">
-                              <span className="font-medium">{t("steps")}:</span>{"\n"}{tg.steps}
-                            </div>
-                          )}
-                          {(Array.isArray(tg.file_urls) ? tg.file_urls.length : tg.file_url) > 0 && (
-                            <div className="mt-1">
-                              <CommentAttachments files={Array.isArray(tg.file_urls) && tg.file_urls.length ? tg.file_urls : [{ url: tg.file_url, name: "PDF", type: "file" }]} />
-                            </div>
-                          )}
-                          {(tg.task_type || tg.section) && (
-                            <div className="flex flex-wrap gap-1.5 mt-1.5">
-                              {tg.task_type && <span className="px-2 py-0.5 rounded-full bg-accent/15 text-accent text-[10px] font-body">{tg.task_type}</span>}
-                              {tg.section && <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-body">{tg.section}</span>}
-                            </div>
-                          )}
-                          <p className="text-xs text-muted-foreground font-body mt-1">{assignmentLabel(tg)}</p>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          {isUrgent && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-body font-medium border border-red-500 bg-red-100 text-red-700 whitespace-nowrap">
-                              <AlertTriangle className="w-3 h-3" /> {t("urgent")}
-                            </span>
-                          )}
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-body font-medium border whitespace-nowrap ${statusBadge}`}>
-                            {done ? <Check className="w-3 h-3" /> : overdue ? <AlertTriangle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                            {done ? t("completed") : overdue ? t("overdue") : t("inProgress")}
-                          </span>
-                          {canManage(tg) && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <button onClick={() => setEditTarget(tg)} className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title={t("edit")}>
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                              <button onClick={() => deleteTarget(tg.id)} className="p-1 rounded-md hover:bg-red-50 text-muted-foreground hover:text-red-600" title={t("delete")}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs font-body">
-                        {done ? (
-                          <span className="text-emerald-600 font-medium">{t("targetDone")}</span>
-                        ) : overdue ? (
-                          <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("overdue")}</span>
-                        ) : atRisk ? (
-                          <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("atRisk")}</span>
-                        ) : (
-                          <span className={`flex items-center gap-1 ${daysLeft <= 3 ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                            <Clock className="w-3 h-3" /> {t("daysLeft")}: {daysLeft}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-xs font-body mb-1">
-                          <span className="text-muted-foreground">{t("completedCount")}: {tg.completed_tasks}/{tg.task_target} {t("tasksUnit")}</span>
-                          <span className="font-medium">{pct}%</span>
-                        </div>
-                        <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                          <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                      {canLogThis && !done && !overdue && (
-                        <div className="flex items-center gap-2 pt-1">
-                          <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
-                          <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
-                            <Check className="w-3.5 h-3.5" /> {t("logCompleted")}
-                          </button>
+                    <div key={tg.id}>
+                      {stationSections.length > 0 && sectionStarts.has(tgIdx) && (
+                        <div className="flex items-center gap-2 pt-2 first:pt-0 mb-3">
+                          <span className="text-xs font-heading font-semibold uppercase tracking-wider text-foreground">{tg.section || t("noSection")}</span>
+                          <div className="flex-1 h-px bg-border" />
                         </div>
                       )}
-
-                      <div className="pt-2 border-t border-border">
-                        <button onClick={() => { const next = commentsOpen === tg.id ? null : tg.id; setCommentsOpen(next); setCommentText(""); setCommentFiles([]); }} className="flex items-center gap-1.5 text-xs text-muted-foreground font-body hover:text-foreground">
-                          <MessageCircle className="w-3.5 h-3.5" /> {t("comments")} ({Array.isArray(tg.comments) ? tg.comments.length : 0})
-                        </button>
-                        {commentsOpen === tg.id && (
-                          <div className="mt-2 space-y-2">
-                            {Array.isArray(tg.comments) && tg.comments.length > 0 && (
-                              <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                                {tg.comments.map((c) => (
-                                  <div key={c.id} className="text-xs font-body p-2 rounded-md bg-muted/50">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <p className="font-medium text-foreground">{c.user_name}</p>
-                                      <span className="text-[10px] text-muted-foreground">{c.created_at ? new Date(c.created_at).toLocaleString() : ""}</span>
-                                    </div>
-                                    <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{c.content}</p>
-                                    <CommentAttachments files={c.files} />
-                                  </div>
-                                ))}
+                      <div className={`p-4 rounded-lg border space-y-3 transition-colors ${cardBorder}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium font-body">{tg.title || `${t("setTarget")}`}</p>
+                            {tg.description && <p className="text-xs text-muted-foreground font-body mt-0.5">{tg.description}</p>}
+                            {tg.steps && (
+                              <div className="text-xs text-muted-foreground font-body mt-1 p-2 rounded bg-muted/50 whitespace-pre-wrap">
+                                <span className="font-medium">{t("steps")}:</span>{"\n"}{tg.steps}
                               </div>
                             )}
-                            <div className="space-y-2">
-                              <div className="flex flex-wrap items-end gap-2">
-                                <CommentFiles files={commentFiles} setFiles={setCommentFiles} />
-                                <VoiceRecorder files={commentFiles} setFiles={setCommentFiles} />
+                            {(Array.isArray(tg.file_urls) ? tg.file_urls.length : tg.file_url) > 0 && (
+                              <div className="mt-1">
+                                <CommentAttachments files={Array.isArray(tg.file_urls) && tg.file_urls.length ? tg.file_urls : [{ url: tg.file_url, name: "PDF", type: "file" }]} />
                               </div>
-                              <div className="flex items-center gap-2">
-                                <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={t("writeComment")} className="flex-1 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
-                                <button onClick={() => submitComment(tg.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
-                                  <Send className="w-3.5 h-3.5" /> {t("send")}
+                            )}
+                            {(tg.task_type || tg.section) && (
+                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                {tg.task_type && <span className="px-2 py-0.5 rounded-full bg-accent/15 text-accent text-[10px] font-body">{tg.task_type}</span>}
+                                {tg.section && <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-body">{tg.section}</span>}
+                              </div>
+                            )}
+                            <p className="text-xs text-muted-foreground font-body mt-1">{assignmentLabel(tg)}</p>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            {isUrgent && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-body font-medium border border-red-500 bg-red-100 text-red-700 whitespace-nowrap">
+                                <AlertTriangle className="w-3 h-3" /> {t("urgent")}
+                              </span>
+                            )}
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-body font-medium border whitespace-nowrap ${statusBadge}`}>
+                              {done ? <Check className="w-3 h-3" /> : overdue ? <AlertTriangle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                              {done ? t("completed") : overdue ? t("overdue") : t("inProgress")}
+                            </span>
+                            {canManage(tg) && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <button onClick={() => setEditTarget(tg)} className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title={t("edit")}>
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => deleteTarget(tg.id)} className="p-1 rounded-md hover:bg-red-50 text-muted-foreground hover:text-red-600" title={t("delete")}>
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </div>
-                            </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs font-body">
+                          {done ? (
+                            <span className="text-emerald-600 font-medium">{t("targetDone")}</span>
+                          ) : overdue ? (
+                            <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("overdue")}</span>
+                          ) : atRisk ? (
+                            <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("atRisk")}</span>
+                          ) : (
+                            <span className={`flex items-center gap-1 ${daysLeft <= 3 ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
+                              <Clock className="w-3 h-3" /> {t("daysLeft")}: {daysLeft}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-xs font-body mb-1">
+                            <span className="text-muted-foreground">{t("completedCount")}: {tg.completed_tasks}/{tg.task_target} {t("tasksUnit")}</span>
+                            <span className="font-medium">{pct}%</span>
+                          </div>
+                          <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                            <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                        {canLogThis && !done && !overdue && (
+                          <div className="flex items-center gap-2 pt-1">
+                            <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
+                            <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
+                              <Check className="w-3.5 h-3.5" /> {t("logCompleted")}
+                            </button>
                           </div>
                         )}
+
+                        <div className="pt-2 border-t border-border">
+                          <button onClick={() => { const next = commentsOpen === tg.id ? null : tg.id; setCommentsOpen(next); setCommentText(""); setCommentFiles([]); }} className="flex items-center gap-1.5 text-xs text-muted-foreground font-body hover:text-foreground">
+                            <MessageCircle className="w-3.5 h-3.5" /> {t("comments")} ({Array.isArray(tg.comments) ? tg.comments.length : 0})
+                          </button>
+                          {commentsOpen === tg.id && (
+                            <div className="mt-2 space-y-2">
+                              {Array.isArray(tg.comments) && tg.comments.length > 0 && (
+                                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                                  {tg.comments.map((c) => (
+                                    <div key={c.id} className="text-xs font-body p-2 rounded-md bg-muted/50">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <p className="font-medium text-foreground">{c.user_name}</p>
+                                        <span className="text-[10px] text-muted-foreground">{c.created_at ? new Date(c.created_at).toLocaleString() : ""}</span>
+                                      </div>
+                                      <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{c.content}</p>
+                                      <CommentAttachments files={c.files} />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap items-end gap-2">
+                                  <CommentFiles files={commentFiles} setFiles={setCommentFiles} />
+                                  <VoiceRecorder files={commentFiles} setFiles={setCommentFiles} />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={t("writeComment")} className="flex-1 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
+                                  <button onClick={() => submitComment(tg.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
+                                    <Send className="w-3.5 h-3.5" /> {t("send")}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
