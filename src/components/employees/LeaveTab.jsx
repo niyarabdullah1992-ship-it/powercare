@@ -1,16 +1,13 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { submitLeaveRequest, setLeaveRequestStatus } from "@/lib/store";
-import { Send, Check, X } from "lucide-react";
-import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
+import { Send } from "lucide-react";
+import CommentFiles from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
+import LeaveBalanceCard from "@/components/employees/LeaveBalanceCard";
+import LeaveRequestItem from "@/components/employees/LeaveRequestItem";
 
 const TYPES = ["annual", "sick", "unpaid"];
-const STATUS_TONE = {
-  pending: "bg-amber-100 text-amber-700",
-  approved: "bg-emerald-100 text-emerald-700",
-  rejected: "bg-destructive/15 text-destructive",
-};
 
 export default function LeaveTab({ employee, companyId, currentUser, isSelf, canApprove }) {
   const { t } = useI18n();
@@ -32,10 +29,7 @@ export default function LeaveTab({ employee, companyId, currentUser, isSelf, can
 
   return (
     <div className="space-y-4">
-      <div className="p-5 rounded-xl border border-border bg-card flex items-center justify-between">
-        <h3 className="font-heading font-semibold">{t("leaveBalance")}</h3>
-        <p className="text-2xl font-heading font-semibold">{employee.profile?.leaveBalance ?? 21} <span className="text-xs text-muted-foreground font-body">{t("days")}</span></p>
-      </div>
+      <LeaveBalanceCard balance={employee.profile?.leaveBalance} />
 
       {isSelf && (
         <form onSubmit={submit} className="p-5 rounded-xl border border-border bg-card space-y-3">
@@ -64,24 +58,7 @@ export default function LeaveTab({ employee, companyId, currentUser, isSelf, can
           <p className="text-sm text-muted-foreground font-body">{t("noLeaveRequests")}</p>
         ) : (
           requests.map((r) => (
-            <div key={r.id} className="p-4 rounded-xl border border-border bg-card space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-body font-medium">{t(r.type)} · {r.startDate} → {r.endDate}</p>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-body ${STATUS_TONE[r.status]}`}>{t(r.status)}</span>
-              </div>
-              {r.reason && <p className="text-sm font-body text-muted-foreground">{r.reason}</p>}
-              <CommentAttachments files={r.files} />
-              {canApprove && r.status === "pending" && (
-                <div className="flex gap-2 pt-1">
-                  <button onClick={() => decide(r.id, "approved")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
-                    <Check className="w-3.5 h-3.5" /> {t("approve")}
-                  </button>
-                  <button onClick={() => decide(r.id, "rejected")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-destructive text-destructive text-xs font-body">
-                    <X className="w-3.5 h-3.5" /> {t("reject")}
-                  </button>
-                </div>
-              )}
-            </div>
+            <LeaveRequestItem key={r.id} request={r} canApprove={canApprove} onDecide={decide} />
           ))
         )}
       </div>
