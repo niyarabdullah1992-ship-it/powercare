@@ -3,10 +3,19 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getAnonUsage, addNotification } from "@/lib/store";
 import { canReplyAnon } from "@/lib/permissions";
-import { ShieldCheck, Send, Lock } from "lucide-react";
+import { ShieldCheck, Send, Lock, ArrowUpCircle, Building2, CheckCircle2 } from "lucide-react";
 
 const TYPES = ["complaint", "suggestion", "risk_report", "incident"];
 const PRIORITIES = ["high", "medium", "low"];
+
+// Escalation chain: station_manager → pgm → ops_manager → director
+const ESCALATION_CHAIN = ["station_manager", "pgm", "ops_manager", "director"];
+const ROLE_LABEL_KEY = {
+  station_manager: "stationManager",
+  pgm: "pgm",
+  ops_manager: "opsManager",
+  director: "director",
+};
 
 export default function AnonymousReports() {
   const { t } = useI18n();
@@ -21,6 +30,21 @@ export default function AnonymousReports() {
   const myAnon = data.anonymousReports.filter((a) => a.anonymousId === currentUser.anonymousId);
   const usage = getAnonUsage(company.id, currentUser.anonymousId);
 
+  const stationName = (id) => data.stations.find((s) => s.id === id)?.name || "—";
+  const roleLabel = (role) => t(ROLE_LABEL_KEY[role] || role);
+
+  // Reports visible to a staff member based on station scope
+  const visibleReports = data.anonymousReports.filter((r) => {
+    if (currentUser.role === "director" || currentUser.role === "ops_manager") return true;
+    if (currentUser.role === "pgm") return (currentUser.managedStations || []).includes(r.stationId);
+    if (currentUser.role === "station_manager") return r.stationId === currentUser.stationId;
+    return false;
+  });
+
+  const currentHandlerRole = (r) => ESCALATION_CHAIN[r.escalationLevel || 0];
+  const canReplyTo = (r) => isStaff && currentUser.role === currentHandlerRole(r);
+  const isAtTop = (r) => (r.escalationLevel || 0) >= ESCALATION_CHAIN.length - 1;
+
   const submit = (e) => {
     e.preventDefault();
     if (!message.trim()) return;
@@ -29,15 +53,16 @@ export default function AnonymousReports() {
       d.anonymousReports.unshift({
         id: "anr_" + Math.random().toString(36).slice(2, 9),
         anonymousId: currentUser.anonymousId,
-        type,
-        priority,
-        message,
+        stationId: currentUser.stationId || null,
+        type, priority, message,
         status: "open",
-        reply: "",
+        escalationLevel: 0,
+        replies: [],
         createdAt: new Date().toISOString(),
       });
     });
-    addNotification(company.id, data.directorId, `New ${t(type)} report (${t(priority)}).`);
+    const station = data.stations.find((s) => s.id === currentUser.stationId);
+    if (station?.managerId) addNotification(company.id, station.managerId, `New ${t(type)} report at ${station.name} (${t(priority)}).`);
     setMessage("");
   };
 
@@ -49,28 +74,72 @@ export default function AnonymousReports() {
   };
 
   const reply = (id) => {
-    const txt = replyText[id] || "";
-    if (!txt.trim()) return;
+    const txt = (replyText[id] || "").trim();
+    if (!txt) return;
+    const rep = data.anonymousReports.find((x) => x.id === id);
+    if (!rep) return;
     updateCompany(company.id, (d) => {
       const r = d.anonymousReports.find((x) => x.id === id);
       if (r) {
-        r.reply = txt;
+        r.replies = r.replies || [];
+        r.replies.push({ level: r.escalationLevel || 0, role: currentUser.role, authorName: currentUser.name, text: txt, createdAt: new Date().toISOString() });
         r.status = r.status === "open" ? "in_review" : r.status;
       }
     });
-    // notify the anonymous author's real user
-    const rep = data.anonymousReports.find((x) => x.id === id);
-    const author = data.employees.find((e) => e.anonymousId === rep?.anonymousId);
-    if (author) addNotification(company.id, author.id, `Reply to your anonymous ${t(rep.type)}.`);
+    const author = data.employees.find((e) => e.anonymousId === rep.anonymousId);
+    if (author) addNotification(company.id, author.id, `Reply to your anonymous ${t(rep.type)} from ${currentUser.name}.`);
     setReplyText({ ...replyText, [id]: "" });
   };
 
-  // stats
+  const escalate = (id) => {
+    const rep = data.anonymousReports.find((x) => x.id === id);
+    if (!rep) return;
+    const nextLevel = (rep.escalationLevel || 0) + 1;
+    if (nextLevel >= ESCALATION_CHAIN.length) return;
+    updateCompany(company.id, (d) => {
+      const r = d.anonymousReports.find((x) => x.id === id);
+      if (r) { r.escalationLevel = nextLevel; r.status = "open"; }
+    });
+    const nextRole = ESCALATION_CHAIN[nextLevel];
+    const nextHandlers = data.employees.filter((e) => e.role === nextRole);
+    for (const h of nextHandlers) addNotification(company.id, h.id, `Escalated anonymous report at ${stationName(rep.stationId)} — now requires your attention.`);
+  };
+
+  // Escalation timeline showing each level and its reply
+  const renderTimeline = (r) => (
+    <div className="space-y-2 pt-2 border-t border-border">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("escalationChain")}</p>
+      {ESCALATION_CHAIN.map((role, idx) => {
+        const replyAtLevel = (r.replies || []).find((rp) => rp.level === idx);
+        const isCurrent = (r.escalationLevel || 0) === idx;
+        const isPast = (r.escalationLevel || 0) > idx;
+        return (
+          <div key={role} className={`flex items-start gap-2 text-xs font-body ${isPast ? "opacity-50" : ""}`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${replyAtLevel ? "bg-accent text-accent-foreground" : isCurrent ? "bg-amber-100 text-amber-700 border border-amber-300" : "bg-muted text-muted-foreground"}`}>
+              {replyAtLevel ? <CheckCircle2 className="w-3 h-3" /> : <span className="text-[9px]">{idx + 1}</span>}
+            </div>
+            <div className="flex-1">
+              <p className={`font-medium ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}>
+                {roleLabel(role)} {isCurrent && !replyAtLevel && <span className="text-amber-600 font-normal">— {t("waitingReply")}</span>}
+              </p>
+              {replyAtLevel && (
+                <div className="mt-0.5 p-2 rounded bg-muted/50">
+                  <p className="text-[10px] text-muted-foreground">{replyAtLevel.authorName} · {new Date(replyAtLevel.createdAt).toLocaleString()}</p>
+                  <p className="text-foreground mt-0.5">{replyAtLevel.text}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   const stats = {
-    complaint: data.anonymousReports.filter((a) => a.type === "complaint").length,
-    suggestion: data.anonymousReports.filter((a) => a.type === "suggestion").length,
-    risk_report: data.anonymousReports.filter((a) => a.type === "risk_report").length,
-    incident: data.anonymousReports.filter((a) => a.type === "incident").length,
+    complaint: visibleReports.filter((a) => a.type === "complaint").length,
+    suggestion: visibleReports.filter((a) => a.type === "suggestion").length,
+    risk_report: visibleReports.filter((a) => a.type === "risk_report").length,
+    incident: visibleReports.filter((a) => a.type === "incident").length,
   };
 
   return (
@@ -104,6 +173,11 @@ export default function AnonymousReports() {
                 </select>
               </div>
             </div>
+            {currentUser.stationId && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-body">
+                <Building2 className="w-3.5 h-3.5" /> {t("station")}: {stationName(currentUser.stationId)}
+              </div>
+            )}
             <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder={t("fileReport")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground font-body">
@@ -122,23 +196,31 @@ export default function AnonymousReports() {
             ) : (
               <div className="space-y-3">
                 {myAnon.map((r) => (
-                  <div key={r.id} className="p-4 rounded-xl border border-border bg-card">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-mono text-muted-foreground">{r.anonymousId}</span>
+                  <div key={r.id} className="p-4 rounded-xl border border-border bg-card space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-muted-foreground">{r.anonymousId}</span>
+                        {r.stationId && (
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-body">
+                            <Building2 className="w-3 h-3" /> {stationName(r.stationId)}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex gap-2">
                         <Badge text={t(r.type)} />
                         <Badge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
-                        <Badge text={t(r.status)} tone="accent" />
+                        <Badge text={roleLabel(currentHandlerRole(r))} tone="accent" />
                       </div>
                     </div>
-                    <p className="text-sm font-body mb-2">{r.message}</p>
-                    {r.reply ? (
-                      <div className="p-2 rounded bg-muted/50 text-sm font-body">
-                        <p className="text-[10px] uppercase text-muted-foreground mb-1">{t("managementReply")}</p>
-                        {r.reply}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground italic">{t("noReply")}</p>
+                    <p className="text-sm font-body">{r.message}</p>
+                    {renderTimeline(r)}
+                    {!isAtTop(r) && r.status !== "closed" && (
+                      <button onClick={() => escalate(r.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300 text-amber-700 text-xs font-body hover:bg-amber-50">
+                        <ArrowUpCircle className="w-3.5 h-3.5" /> {t("notConvinced")}
+                      </button>
+                    )}
+                    {isAtTop(r) && r.status !== "closed" && (
+                      <p className="text-xs text-muted-foreground font-body italic">{t("finalLevel")}</p>
                     )}
                   </div>
                 ))}
@@ -161,13 +243,22 @@ export default function AnonymousReports() {
           </div>
 
           <div className="space-y-3">
-            {data.anonymousReports.map((r) => (
+            {visibleReports.length === 0 && <p className="text-sm text-muted-foreground font-body">{t("noReply")}</p>}
+            {visibleReports.map((r) => (
               <div key={r.id} className="p-4 rounded-xl border border-border bg-card space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs font-mono text-muted-foreground">{r.anonymousId}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-muted-foreground">{r.anonymousId}</span>
+                    {r.stationId && (
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-body">
+                        <Building2 className="w-3 h-3" /> {stationName(r.stationId)}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <Badge text={t(r.type)} />
                     <Badge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
+                    <Badge text={roleLabel(currentHandlerRole(r))} tone="accent" />
                     <select value={r.status} onChange={(e) => setStatus(r.id, e.target.value)} className="px-2 py-0.5 rounded-md border border-input text-xs font-body">
                       <option value="open">{t("open")}</option>
                       <option value="in_review">{t("inReview")}</option>
@@ -176,16 +267,18 @@ export default function AnonymousReports() {
                   </div>
                 </div>
                 <p className="text-sm font-body">{r.message}</p>
-                {r.reply && (
-                  <div className="p-2 rounded bg-muted/50 text-sm font-body">
-                    <p className="text-[10px] uppercase text-muted-foreground mb-1">{t("managementReply")}</p>
-                    {r.reply}
+                {renderTimeline(r)}
+                {canReplyTo(r) && r.status !== "closed" && (
+                  <div className="flex gap-2 pt-1 border-t border-border">
+                    <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} className="flex-1 px-3 py-1.5 rounded-md border border-input text-sm font-body" />
+                    <button onClick={() => reply(r.id)} className="px-4 py-1.5 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">{t("reply")}</button>
                   </div>
                 )}
-                <div className="flex gap-2">
-                  <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} className="flex-1 px-3 py-1.5 rounded-md border border-input text-sm font-body" />
-                  <button onClick={() => reply(r.id)} className="px-4 py-1.5 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">{t("reply")}</button>
-                </div>
+                {!canReplyTo(r) && r.status !== "closed" && (
+                  <p className="text-xs text-muted-foreground font-body italic">
+                    {t("escalatedTo")} {roleLabel(currentHandlerRole(r))}
+                  </p>
+                )}
               </div>
             ))}
           </div>

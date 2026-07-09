@@ -200,11 +200,11 @@ export function seedDemoIfEmpty() {
     { id: uid("rep"), title: "Coastal Station Daily", content: "Salt spray cleaning completed on solar arrays.", stationId: s2.id, authorId: e3.id, status: "pending", createdAt: new Date(now - 7200000).toISOString() },
   ];
 
-  // anonymous reports
+  // anonymous reports — station-scoped with escalation chain
   data.anonymousReports = [
-    { id: uid("anr"), anonymousId: hashId("x1"), type: "complaint", priority: "high", message: "Safety gear not replaced for 3 weeks at Station Alpha.", status: "open", reply: "", createdAt: new Date(now - 86400000 * 2).toISOString() },
-    { id: uid("anr"), anonymousId: hashId("x2"), type: "suggestion", priority: "medium", message: "Suggest rotating night shifts more fairly.", status: "in_review", reply: "We are reviewing the shift schedule with HR.", createdAt: new Date(now - 86400000 * 4).toISOString() },
-    { id: uid("anr"), anonymousId: hashId("x3"), type: "risk_report", priority: "high", message: "Exposed wiring near pump room at Station Beta.", status: "open", reply: "", createdAt: new Date(now - 86400000).toISOString() },
+    { id: uid("anr"), anonymousId: hashId("x1"), stationId: s1.id, type: "complaint", priority: "high", message: "Safety gear not replaced for 3 weeks.", status: "open", escalationLevel: 0, replies: [], createdAt: new Date(now - 86400000 * 2).toISOString() },
+    { id: uid("anr"), anonymousId: hashId("x2"), stationId: s1.id, type: "suggestion", priority: "medium", message: "Suggest rotating night shifts more fairly.", status: "in_review", escalationLevel: 0, replies: [{ level: 0, role: "station_manager", authorName: "Nora Al-Subaei", text: "We are reviewing the shift schedule with HR.", createdAt: new Date(now - 86400000 * 3).toISOString() }], createdAt: new Date(now - 86400000 * 4).toISOString() },
+    { id: uid("anr"), anonymousId: hashId("x3"), stationId: s2.id, type: "risk_report", priority: "high", message: "Exposed wiring near pump room.", status: "open", escalationLevel: 1, replies: [{ level: 0, role: "station_manager", authorName: "Omar Al-Dossari", text: "I inspected the area — forwarding to program management for maintenance budget approval.", createdAt: new Date(now - 86400000 * 2).toISOString() }], createdAt: new Date(now - 86400000).toISOString() },
   ];
 
   // safety
