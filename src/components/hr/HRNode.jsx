@@ -4,7 +4,7 @@ import { updateCompany } from "@/lib/store";
 import { UserCog, Plus, X } from "lucide-react";
 import AddHRModal from "@/components/hr/AddHRModal";
 
-export default function HRNode({ employee, allEmployees, levels, companyId, currentUser, depth = 0 }) {
+export default function HRNode({ employee, allEmployees, levels, stations, companyId, currentUser, depth = 0 }) {
   const { t } = useI18n();
   const [showAdd, setShowAdd] = useState(false);
   const level = levels.find((l) => l.id === employee.hrLevelId);
@@ -12,13 +12,18 @@ export default function HRNode({ employee, allEmployees, levels, companyId, curr
   const canManageNode = currentUser.role === "director" || currentUser.id === employee.id;
   const eligible = allEmployees.filter((e) => !e.hrLevelId && e.id !== employee.id);
 
-  const addSubordinate = (empId, levelId) => {
+  const addSubordinate = (empId, levelId, stationId) => {
+    const lvl = levels.find((l) => l.id === levelId);
+    if (lvl?.maxCount && allEmployees.filter((e) => e.hrLevelId === levelId).length >= lvl.maxCount) {
+      alert(t("levelFull"));
+      return;
+    }
     updateCompany(companyId, (d) => {
       const emp = d.employees.find((x) => x.id === empId);
       if (!emp) return;
       emp.hrLevelId = levelId;
       emp.hrParentId = employee.id;
-      emp.hrStationId = null;
+      emp.hrStationId = stationId || null;
     });
   };
 
@@ -64,7 +69,7 @@ export default function HRNode({ employee, allEmployees, levels, companyId, curr
       {children.length > 0 && (
         <div className="space-y-2">
           {children.map((c) => (
-            <HRNode key={c.id} employee={c} allEmployees={allEmployees} levels={levels} companyId={companyId} currentUser={currentUser} depth={depth + 1} />
+            <HRNode key={c.id} employee={c} allEmployees={allEmployees} levels={levels} stations={stations} companyId={companyId} currentUser={currentUser} depth={depth + 1} />
           ))}
         </div>
       )}
@@ -74,6 +79,7 @@ export default function HRNode({ employee, allEmployees, levels, companyId, curr
           title={t("addSubordinate")}
           employees={eligible}
           levels={levels}
+          stations={stations}
           onAdd={addSubordinate}
           onClose={() => setShowAdd(false)}
         />

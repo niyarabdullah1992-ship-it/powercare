@@ -13,6 +13,11 @@ export default function HRStationCard({ station, data, currentUser, canAssign })
   const stationTeam = data.employees.filter((e) => e.stationId === station.id && !e.hrLevelId);
 
   const assign = (empId, levelId) => {
+    const lvl = levels.find((l) => l.id === levelId);
+    if (lvl?.maxCount && data.employees.filter((e) => e.hrLevelId === levelId).length >= lvl.maxCount) {
+      alert(t("levelFull"));
+      return;
+    }
     updateCompany(data.id, (d) => {
       const emp = d.employees.find((x) => x.id === empId);
       if (!emp) return;
@@ -34,7 +39,7 @@ export default function HRStationCard({ station, data, currentUser, canAssign })
       </div>
 
       {topHR ? (
-        <HRNode employee={topHR} allEmployees={data.employees} levels={levels} companyId={data.id} currentUser={currentUser} />
+        <HRNode employee={topHR} allEmployees={data.employees} levels={levels} stations={data.stations} companyId={data.id} currentUser={currentUser} />
       ) : (
         <p className="text-sm text-muted-foreground font-body">{t("noHRAssigned")}</p>
       )}

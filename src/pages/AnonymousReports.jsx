@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getAnonUsage, addNotification, getAnonymousCode, setAnonRateLimits } from "@/lib/store";
-import { canReplyAnon, visibleStations } from "@/lib/permissions";
+import { canReplyAnon, visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
 import { ShieldCheck, Send, Lock, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
@@ -32,7 +32,9 @@ export default function AnonymousReports() {
   const [monthlyLimitInput, setMonthlyLimitInput] = useState("");
 
   if (!data || !currentUser) return null;
-  const isStaff = canReplyAnon(currentUser);
+  const isHRAnon = hasHRPermission(currentUser, data, "manage_anonymous_reports");
+  const hrStations = isHRAnon ? hrScopeStations(currentUser) : [];
+  const isStaff = canReplyAnon(currentUser) || isHRAnon;
   const myAnon = data.anonymousReports.filter((a) => (a.authorId ? a.authorId === currentUser.id : a.anonymousId === currentUser.anonymousId));
   const usage = getAnonUsage(company.id, currentUser.id, currentUser.anonymousId);
 
@@ -51,11 +53,14 @@ export default function AnonymousReports() {
     if (currentUser.role === "director" || currentUser.role === "ops_manager") return true;
     if (currentUser.role === "pgm") return (currentUser.managedStations || []).includes(r.stationId);
     if (currentUser.role === "station_manager") return r.stationId === currentUser.stationId;
+    if (isHRAnon) return hrStations === null || hrStations.includes(r.stationId);
     return false;
   });
 
   const currentHandlerRole = (r) => ESCALATION_CHAIN[r.escalationLevel || 0];
-  const canReplyTo = (r) => isStaff && currentUser.role === currentHandlerRole(r);
+  const canReplyTo = (r) =>
+    (canReplyAnon(currentUser) && currentUser.role === currentHandlerRole(r)) ||
+    (isHRAnon && (hrStations === null || hrStations.includes(r.stationId)));
   const isAtTop = (r) => (r.escalationLevel || 0) >= ESCALATION_CHAIN.length - 1;
 
   const submit = (e) => {
@@ -157,8 +162,11 @@ export default function AnonymousReports() {
     suggestion: visibleReports.filter((a) => a.type === "suggestion").length,
   };
 
-  // Station grouping for staff navigation
-  const myStations = visibleStations(currentUser, data);
+  // Station grouping for staff navigation — merges role-based scope with HR scope
+  const hrStationList = isHRAnon ? (hrStations === null ? data.stations : data.stations.filter((s) => hrStations.includes(s.id))) : [];
+  const stationMap = new Map();
+  [...visibleStations(currentUser, data), ...hrStationList].forEach((s) => stationMap.set(s.id, s));
+  const myStations = Array.from(stationMap.values());
   const stationGroups = myStations.map((s) => ({
     key: s.id,
     name: s.name,

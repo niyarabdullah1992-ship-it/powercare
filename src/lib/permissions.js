@@ -71,6 +71,19 @@ export function isHR(employee) {
   return !!employee.hrLevelId;
 }
 
+// Does this employee's HR level grant a specific permission?
+export function hasHRPermission(user, data, permKey) {
+  if (!user?.hrLevelId) return false;
+  const level = (data?.hrLevels || []).find((l) => l.id === user.hrLevelId);
+  return !!level?.permissions?.includes(permKey);
+}
+
+// Stations an HR member can act on: [stationId] if tied to one station, or null for company-wide reach.
+export function hrScopeStations(user) {
+  if (!user?.hrLevelId) return [];
+  return user.hrStationId ? [user.hrStationId] : null;
+}
+
 // Employees visible to a user (for management views)
 export function visibleEmployees(user, data) {
   const stations = visibleStations(user, data);

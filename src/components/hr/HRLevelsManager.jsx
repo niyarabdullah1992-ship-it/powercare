@@ -8,8 +8,10 @@ export default function HRLevelsManager({ data }) {
   const { t, lang } = useI18n();
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
+  const [maxCount, setMaxCount] = useState("");
   const [perms, setPerms] = useState([]);
   const levels = data.hrLevels || [];
+  const countFor = (levelId) => data.employees.filter((e) => e.hrLevelId === levelId).length;
 
   const togglePerm = (key) => {
     setPerms((p) => (p.includes(key) ? p.filter((x) => x !== key) : [...p, key]));
@@ -20,9 +22,14 @@ export default function HRLevelsManager({ data }) {
     if (!name.trim()) return;
     updateCompany(data.id, (d) => {
       d.hrLevels = d.hrLevels || [];
-      d.hrLevels.push({ id: "hrl_" + Math.random().toString(36).slice(2, 9), name: name.trim(), permissions: perms });
+      d.hrLevels.push({
+        id: "hrl_" + Math.random().toString(36).slice(2, 9),
+        name: name.trim(),
+        permissions: perms,
+        maxCount: maxCount ? Number(maxCount) : null,
+      });
     });
-    setName(""); setPerms([]); setShowAdd(false);
+    setName(""); setMaxCount(""); setPerms([]); setShowAdd(false);
   };
 
   const removeLevel = (id) => {
@@ -46,7 +53,10 @@ export default function HRLevelsManager({ data }) {
 
       {showAdd && (
         <form onSubmit={addLevel} className="p-4 rounded-lg border border-border space-y-3">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("levelName")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+          <div className="flex gap-3">
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("levelName")} required className="flex-1 px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <input value={maxCount} onChange={(e) => setMaxCount(e.target.value)} type="number" min="1" placeholder={t("maxCount")} className="w-36 px-3 py-2 rounded-md border border-input text-sm font-body" />
+          </div>
           <div className="flex flex-wrap gap-2">
             {HR_PERMISSIONS.map((key) => (
               <label key={key} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border text-xs font-body cursor-pointer">
@@ -67,7 +77,9 @@ export default function HRLevelsManager({ data }) {
         {levels.map((l) => (
           <div key={l.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
             <div>
-              <p className="font-body font-medium text-sm">{l.name}</p>
+              <p className="font-body font-medium text-sm">
+                {l.name} <span className="text-xs text-muted-foreground font-normal">· {countFor(l.id)}/{l.maxCount || t("unlimited")}</span>
+              </p>
               <div className="flex flex-wrap gap-1 mt-1">
                 {(l.permissions || []).map((p) => (
                   <span key={p} className="px-2 py-0.5 rounded-full bg-muted text-[10px] font-body text-muted-foreground">{hrPermLabel(p, lang)}</span>

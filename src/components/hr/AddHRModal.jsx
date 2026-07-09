@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 
-export default function AddHRModal({ title, employees, levels, onAdd, onClose }) {
+export default function AddHRModal({ title, employees, levels, stations, onAdd, onClose }) {
   const { t } = useI18n();
   const [empId, setEmpId] = useState("");
   const [levelId, setLevelId] = useState("");
+  const [stationId, setStationId] = useState("");
 
   const submit = (e) => {
     e.preventDefault();
     if (!empId || !levelId) return;
-    onAdd(empId, levelId);
+    onAdd(empId, levelId, stationId || null);
     onClose();
   };
 
@@ -32,6 +33,15 @@ export default function AddHRModal({ title, employees, levels, onAdd, onClose })
               {levels.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
           </div>
+          {stations && (
+            <div>
+              <label className="block text-xs text-muted-foreground font-body mb-1">{t("station")}</label>
+              <select value={stationId} onChange={(e) => setStationId(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
+                <option value="">{t("companyWide")}</option>
+                {stations.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+          )}
           <div className="flex gap-2">
             <button type="submit" className="px-4 py-2 rounded-md bg-foreground text-background text-sm">{t("confirm")}</button>
             <button type="button" onClick={onClose} className="px-4 py-2 rounded-md border border-border text-sm">{t("cancel")}</button>
