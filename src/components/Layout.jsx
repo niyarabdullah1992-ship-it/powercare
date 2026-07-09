@@ -83,8 +83,8 @@ export default function Layout({ children }) {
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks") },
 
     { to: "/app/anonymous", icon: ShieldQuestion, label: t("anonymous") },
-    { to: "/app/stations", icon: Radio, label: t("stations") },
     { to: "/app/employees", icon: Users, label: t("employees") },
+    { to: "/app/stations", icon: Radio, label: t("stations") },
     { to: "/app/hr", icon: UserCog, label: t("hr") },
     { to: "/app/safety", icon: HardHat, label: t("safety") },
     { to: "/app/performance", icon: Trophy, label: t("performance") },
