@@ -10,6 +10,7 @@ import TaskStats from "@/components/tasks/TaskStats";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
+  { val: "3months", months: 3 },
   { val: "6months", months: 6 },
   { val: "yearly", months: 12 },
   { val: "days", months: 0 },
@@ -321,6 +322,7 @@ export default function MyTasks() {
 
   const presetLabel = (val) => ({
     monthly: t("presetMonthly"),
+    "3months": t("preset3Months"),
     "6months": t("preset6Months"),
     yearly: t("presetYearly"),
     days: t("presetDays"),
