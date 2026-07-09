@@ -8,10 +8,11 @@ import HRStationCard from "@/components/hr/HRStationCard";
 import { Layers, Building2 } from "lucide-react";
 
 const SUGGESTED_LEVELS = [
-  { name: "مسؤول الموارد البشرية العام", permissions: ["view_employees", "manage_employees", "manage_leave", "manage_anonymous_reports", "manage_payroll"] },
-  { name: "مسؤول موارد بشرية إقليمي", permissions: ["view_employees", "manage_employees", "manage_leave", "view_safety"] },
+  { name: "رئيس الموارد البشرية", permissions: ["view_employees", "manage_employees", "manage_leave", "manage_anonymous_reports", "manage_payroll", "view_reports", "view_safety"] },
+  { name: "نائب رئيس الموارد البشرية", permissions: ["view_employees", "manage_employees", "manage_leave", "view_reports", "view_safety"] },
   { name: "مسؤول موارد بشرية المحطة", permissions: ["view_employees", "view_reports", "view_safety", "manage_anonymous_reports"] },
 ];
+const HR_SCHEMA_VERSION = 2;
 
 export default function HR() {
   const { t } = useI18n();
@@ -20,7 +21,7 @@ export default function HR() {
   const [tab, setTab] = useState("stations");
 
   useEffect(() => {
-    if (data && canSeeLevels && (data.hrLevels || []).length === 0) {
+    if (data && canSeeLevels && data.hrSchemaVersion !== HR_SCHEMA_VERSION) {
       updateCompany(data.id, (d) => {
         d.hrLevels = SUGGESTED_LEVELS.map((l) => ({
           id: "hrl_" + Math.random().toString(36).slice(2, 9),
@@ -28,6 +29,12 @@ export default function HR() {
           permissions: l.permissions,
           maxCount: null,
         }));
+        d.employees.forEach((e) => {
+          e.hrLevelId = null;
+          e.hrParentId = null;
+          e.hrStationId = null;
+        });
+        d.hrSchemaVersion = HR_SCHEMA_VERSION;
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
