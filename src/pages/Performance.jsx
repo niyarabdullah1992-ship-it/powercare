@@ -123,39 +123,77 @@ export default function Performance() {
           )}
         </div>
       ) : (
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="p-4 rounded-lg border border-border bg-card flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                  <Building2 className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium font-body">{t("hq")}</p>
-                  <p className="text-xs text-muted-foreground font-body">{hqMembers.length} {t("members")}</p>
-                </div>
+        <div className="space-y-5">
+          {/* Podium for top 3 */}
+          {(() => {
+            const all = [
+              { key: "hq", name: t("hq"), points: hqTotal, memberCount: hqMembers.length, isHq: true },
+              ...stationTotals.map((s) => ({ key: s.id, name: s.name, points: s.points, memberCount: s.memberCount, isHq: false })),
+            ].filter((x) => x.memberCount > 0 || x.points > 0)
+              .sort((a, b) => b.points - a.points);
+            const top3 = all.slice(0, 3);
+            const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
+            const heights = ["h-24", "h-32", "h-20"];
+            const medalColors = ["text-gray-400", "text-yellow-500", "text-amber-600"];
+            if (all.every((x) => x.points === 0)) return null;
+            return (
+              <div className="flex items-end justify-center gap-3">
+                {podiumOrder.map((team, idx) => {
+                  const realRank = all.findIndex((x) => x.key === team.key);
+                  const podiumIdx = realRank === 0 ? 1 : realRank === 1 ? 0 : 2;
+                  return (
+                    <div key={team.key} className="flex flex-col items-center gap-1.5 w-28">
+                      <div className="relative">
+                        {realRank === 0 && <Crown className="w-5 h-5 text-yellow-500 absolute -top-5 left-1/2 -translate-x-1/2" />}
+                        <div className="w-12 h-12 rounded-full bg-foreground text-background flex items-center justify-center text-lg font-medium">
+                          {team.name.charAt(0)}
+                        </div>
+                        <span className={`absolute -bottom-1 -end-1 text-base ${medalColors[realRank]}`}>
+                          {realRank === 0 ? "🥇" : realRank === 1 ? "🥈" : "🥉"}
+                        </span>
+                      </div>
+                      <p className="text-xs font-medium font-body text-center truncate w-full">{team.name}</p>
+                      <p className="text-sm font-heading font-semibold">{team.points}</p>
+                      <div className={`w-full rounded-t-lg bg-gradient-to-t ${realRank === 0 ? "from-yellow-500/30 to-yellow-500/10" : realRank === 1 ? "from-gray-400/30 to-gray-400/10" : "from-amber-600/30 to-amber-600/10"} ${heights[podiumIdx]} flex items-start justify-center pt-2`}>
+                        <span className="text-xs font-heading font-bold text-muted-foreground">#{realRank + 1}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              <p className="text-lg font-heading font-semibold">
-                {hqTotal} <span className="text-xs text-muted-foreground font-body">{t("points")}</span>
-              </p>
-            </div>
-            {stationTotals.map((s, i) => (
-              <div key={s.id} className="p-4 rounded-lg border border-border bg-card flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-7 flex justify-center shrink-0">{rankIcon(i)}</div>
-                  <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                    <Users className="w-4 h-4" />
+            );
+          })()}
+
+          {/* Full leaderboard */}
+          <div className="space-y-2">
+            {(() => {
+              const all = [
+                { key: "hq", name: t("hq"), points: hqTotal, memberCount: hqMembers.length, isHq: true },
+                ...stationTotals.map((s) => ({ key: s.id, name: s.name, points: s.points, memberCount: s.memberCount, isHq: false })),
+              ].sort((a, b) => b.points - a.points);
+              return all.map((team, i) => (
+                <div
+                  key={team.key}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card"
+                >
+                  <div className="w-7 flex justify-center shrink-0">
+                    {i < 3 ? <span className="text-base">{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}</span> : <span className="text-xs text-muted-foreground">{i + 1}</span>}
                   </div>
-                  <div>
-                    <p className="text-sm font-medium font-body">{s.name}</p>
-                    <p className="text-xs text-muted-foreground font-body">{s.memberCount} {t("members")}</p>
+                  <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center shrink-0">
+                    {team.isHq ? <Building2 className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium font-body truncate">{team.name}</p>
+                    <p className="text-xs text-muted-foreground font-body">{team.memberCount} {t("members")}</p>
+                  </div>
+                  <div className="text-end shrink-0">
+                    <p className="text-lg font-heading font-semibold">
+                      {team.points} <span className="text-xs text-muted-foreground font-body">{t("points")}</span>
+                    </p>
                   </div>
                 </div>
-                <p className="text-lg font-heading font-semibold">
-                  {s.points} <span className="text-xs text-muted-foreground font-body">{t("points")}</span>
-                </p>
-              </div>
-            ))}
+              ));
+            })()}
           </div>
           {stationTotals.every((s) => s.points === 0) && hqTotal === 0 && (
             <p className="text-sm text-muted-foreground font-body text-center">{t("noPoints")}</p>
