@@ -82,9 +82,10 @@ Deno.serve(async (req) => {
         }
         return Response.json({ targets: rows });
       }
-      // Employee: filter by assignment type
+      // Employee: filter by assignment type; hide completed/overdue
       const myStation = body.stationId || null;
       const filtered = (rows || []).filter((tg) => {
+        if (tg.status === "completed" || tg.status === "overdue") return false;
         if (tg.assignment_type === "member") return tg.employee_id === body.userId;
         if (tg.assignment_type === "station_team") return tg.assignment_id === myStation;
         if (tg.assignment_type === "hq_team") return !myStation;
