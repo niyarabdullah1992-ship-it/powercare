@@ -15,6 +15,7 @@ import MyTasks from './pages/MyTasks';
 import AnonymousReports from './pages/AnonymousReports';
 import Stations from './pages/Stations';
 import Employees from './pages/Employees';
+import EmployeeProfile from './pages/EmployeeProfile';
 import HR from './pages/HR';
 
 import Safety from './pages/Safety';
@@ -36,6 +37,7 @@ function AppRoutes() {
       <Route path="/app/anonymous" element={<RequireAuth><AnonymousReports /></RequireAuth>} />
       <Route path="/app/stations" element={<RequireAuth><Stations /></RequireAuth>} />
       <Route path="/app/employees" element={<RequireAuth><Employees /></RequireAuth>} />
+      <Route path="/app/employees/:employeeId" element={<RequireAuth><EmployeeProfile /></RequireAuth>} />
       <Route path="/app/hr" element={<RequireAuth><HR /></RequireAuth>} />
       <Route path="/app/safety" element={<RequireAuth><Safety /></RequireAuth>} />
       <Route path="/app/performance" element={<RequireAuth><Performance /></RequireAuth>} />

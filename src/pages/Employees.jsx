@@ -3,7 +3,8 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { canManageEmployees, canTransferOwnership, visibleStations, visibleEmployees } from "@/lib/permissions";
-import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle } from "lucide-react";
 import { badgeFor, nextBadge } from "@/lib/rewards";
 import { getRoleLabel } from "@/lib/roles";
 import { base44 } from "@/api/base44Client";
@@ -310,6 +311,9 @@ export default function Employees() {
             <EmployeePerformance targets={targets.filter((tg) => tg.assignment_type === "member" && tg.employee_id === e.id)} />
 
             <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border">
+              <Link to={`/app/employees/${e.id}`} className="flex items-center gap-1.5 text-xs text-accent font-body hover:underline">
+                <UserCircle className="w-3.5 h-3.5" /> {t("viewProfile")}
+              </Link>
               {currentUser.role === "director" && e.id !== currentUser.id && (
                 <select value={e.role} onChange={(ev) => changeRole(e.id, ev.target.value)} className="px-2 py-1 rounded-md border border-input text-xs font-body">
                   {ROLES.map((r) => <option key={r} value={r}>{getRoleLabel(company, r, t)}</option>)}

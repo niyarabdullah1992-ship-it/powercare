@@ -263,6 +263,66 @@ export function addNotification(companyId, userId, text) {
   });
 }
 
+/* ----------------------------- employee profile (SAP-style) ----------------------------- */
+// Professional info, certificates and salary live directly on the employee record.
+export function updateEmployeeProfile(companyId, employeeId, profile) {
+  updateCompany(companyId, (d) => {
+    const emp = d.employees.find((e) => e.id === employeeId);
+    if (!emp) return;
+    emp.profile = { ...(emp.profile || {}), ...profile };
+  });
+}
+
+export function addCertificate(companyId, employeeId, cert) {
+  updateCompany(companyId, (d) => {
+    const emp = d.employees.find((e) => e.id === employeeId);
+    if (!emp) return;
+    emp.certificates = emp.certificates || [];
+    emp.certificates.push({ id: uid("cert"), ...cert, createdAt: new Date().toISOString() });
+  });
+}
+
+export function removeCertificate(companyId, employeeId, certId) {
+  updateCompany(companyId, (d) => {
+    const emp = d.employees.find((e) => e.id === employeeId);
+    if (!emp) return;
+    emp.certificates = (emp.certificates || []).filter((c) => c.id !== certId);
+  });
+}
+
+// Leave requests: employee submits, an authorized manager/HR approves or rejects.
+export function submitLeaveRequest(companyId, employeeId, { type, startDate, endDate, reason, files }) {
+  updateCompany(companyId, (d) => {
+    const emp = d.employees.find((e) => e.id === employeeId);
+    if (!emp) return;
+    emp.leaveRequests = emp.leaveRequests || [];
+    emp.leaveRequests.unshift({
+      id: uid("leave"),
+      type, startDate, endDate, reason,
+      files: files || [],
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    });
+  });
+}
+
+export function setLeaveRequestStatus(companyId, employeeId, requestId, status, reviewerName) {
+  updateCompany(companyId, (d) => {
+    const emp = d.employees.find((e) => e.id === employeeId);
+    if (!emp) return;
+    const req = (emp.leaveRequests || []).find((r) => r.id === requestId);
+    if (!req) return;
+    req.status = status;
+    req.reviewedBy = reviewerName;
+    req.reviewedAt = new Date().toISOString();
+    if (status === "approved") {
+      const days = Math.max(1, Math.round((new Date(req.endDate) - new Date(req.startDate)) / 86400000) + 1);
+      emp.profile = emp.profile || {};
+      emp.profile.leaveBalance = Math.max(0, (emp.profile.leaveBalance ?? 21) - days);
+    }
+  });
+}
+
 export function addPoints(companyId, employeeId, points, reason) {
   updateCompany(companyId, (d) => {
     const emp = d.employees.find((e) => e.id === employeeId);

@@ -10,14 +10,36 @@ import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
 
-// Escalation chain: station_manager → pgm → ops_manager → director
-const ESCALATION_CHAIN = ["station_manager", "pgm", "ops_manager", "director"];
-const ROLE_LABEL_KEY = {
-  station_manager: "stationManager",
-  pgm: "pgm",
-  ops_manager: "opsManager",
-  director: "director",
-};
+// Escalation chain (HR hierarchy first, then leadership):
+// 0: Station HR → 1: Deputy HR Director → 2: HR Director → 3: Operations Director → 4: CEO/Owner
+const STAGE_COUNT = 5;
+
+function getHRLevelsMap(data) {
+  const levels = data?.hrLevels || [];
+  const companyLevels = levels.filter((l) => l.scope === "company");
+  const stationLevel = levels.find((l) => l.scope === "station");
+  return { head: companyLevels[0] || null, deputy: companyLevels[1] || null, station: stationLevel || null };
+}
+
+function handlersForLevel(level, r, data) {
+  const { head, deputy, station } = getHRLevelsMap(data);
+  if (level === 0) return station ? data.employees.filter((e) => e.hrLevelId === station.id && e.hrStationId === r.stationId) : [];
+  if (level === 1) return deputy ? data.employees.filter((e) => e.hrLevelId === deputy.id) : [];
+  if (level === 2) return head ? data.employees.filter((e) => e.hrLevelId === head.id) : [];
+  if (level === 3) return data.employees.filter((e) => e.role === "director");
+  if (level === 4) return data.employees.filter((e) => e.id === data.ownerId);
+  return [];
+}
+
+function levelLabel(level, data, t) {
+  const { head, deputy, station } = getHRLevelsMap(data);
+  if (level === 0) return station?.name || t("stationHR");
+  if (level === 1) return deputy?.name || t("hr");
+  if (level === 2) return head?.name || t("hr");
+  if (level === 3) return t("director");
+  if (level === 4) return t("ceoOwner");
+  return "";
+}
 
 export default function AnonymousReports() {
   const { t, dir } = useI18n();
@@ -39,7 +61,6 @@ export default function AnonymousReports() {
   const usage = getAnonUsage(company.id, currentUser.id, currentUser.anonymousId);
 
   const stationName = (id) => data.stations.find((s) => s.id === id)?.name || "—";
-  const roleLabel = (role) => t(ROLE_LABEL_KEY[role] || role);
   const displayCode = (r) => (r.authorId ? getAnonymousCode(r.authorId, new Date(r.createdAt)) : r.anonymousId);
   const saveMonthlyLimit = () => {
     const val = Number(monthlyLimitInput);
@@ -48,20 +69,20 @@ export default function AnonymousReports() {
     setMonthlyLimitInput("");
   };
 
+  const isOwner = currentUser.id === data.ownerId;
+
   // Reports visible to a staff member based on station scope
   const visibleReports = data.anonymousReports.filter((r) => {
-    if (currentUser.role === "director" || currentUser.role === "ops_manager") return true;
+    if (currentUser.role === "director" || currentUser.role === "ops_manager" || isOwner) return true;
     if (currentUser.role === "pgm") return (currentUser.managedStations || []).includes(r.stationId);
     if (currentUser.role === "station_manager") return r.stationId === currentUser.stationId;
     if (isHRAnon) return hrStations === null || hrStations.includes(r.stationId);
     return false;
   });
 
-  const currentHandlerRole = (r) => ESCALATION_CHAIN[r.escalationLevel || 0];
-  const canReplyTo = (r) =>
-    (canReplyAnon(currentUser) && currentUser.role === currentHandlerRole(r)) ||
-    (isHRAnon && (hrStations === null || hrStations.includes(r.stationId)));
-  const isAtTop = (r) => (r.escalationLevel || 0) >= ESCALATION_CHAIN.length - 1;
+  const currentHandlerLabel = (r) => levelLabel(r.escalationLevel || 0, data, t);
+  const canReplyTo = (r) => handlersForLevel(r.escalationLevel || 0, r, data).some((h) => h.id === currentUser.id);
+  const isAtTop = (r) => (r.escalationLevel || 0) >= STAGE_COUNT - 1;
 
   const submit = (e) => {
     e.preventDefault();
@@ -116,13 +137,12 @@ export default function AnonymousReports() {
     const rep = data.anonymousReports.find((x) => x.id === id);
     if (!rep) return;
     const nextLevel = (rep.escalationLevel || 0) + 1;
-    if (nextLevel >= ESCALATION_CHAIN.length) return;
+    if (nextLevel >= STAGE_COUNT) return;
     updateCompany(company.id, (d) => {
       const r = d.anonymousReports.find((x) => x.id === id);
       if (r) { r.escalationLevel = nextLevel; r.status = "open"; }
     });
-    const nextRole = ESCALATION_CHAIN[nextLevel];
-    const nextHandlers = data.employees.filter((e) => e.role === nextRole);
+    const nextHandlers = handlersForLevel(nextLevel, rep, data);
     for (const h of nextHandlers) addNotification(company.id, h.id, `Escalated anonymous report at ${stationName(rep.stationId)} — now requires your attention.`);
   };
 
@@ -130,18 +150,19 @@ export default function AnonymousReports() {
   const renderTimeline = (r) => (
     <div className="space-y-2 pt-2 border-t border-border">
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("escalationChain")}</p>
-      {ESCALATION_CHAIN.map((role, idx) => {
+      {Array.from({ length: STAGE_COUNT }).map((_, idx) => {
         const replyAtLevel = (r.replies || []).find((rp) => rp.level === idx);
         const isCurrent = (r.escalationLevel || 0) === idx;
         const isPast = (r.escalationLevel || 0) > idx;
+        const label = levelLabel(idx, data, t);
         return (
-          <div key={role} className={`flex items-start gap-2 text-xs font-body ${isPast ? "opacity-50" : ""}`}>
+          <div key={idx} className={`flex items-start gap-2 text-xs font-body ${isPast ? "opacity-50" : ""}`}>
             <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${replyAtLevel ? "bg-accent text-accent-foreground" : isCurrent ? "bg-amber-100 text-amber-700 border border-amber-300" : "bg-muted text-muted-foreground"}`}>
               {replyAtLevel ? <CheckCircle2 className="w-3 h-3" /> : <span className="text-[9px]">{idx + 1}</span>}
             </div>
             <div className="flex-1">
               <p className={`font-medium ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}>
-                {roleLabel(role)} {isCurrent && !replyAtLevel && <span className="text-amber-600 font-normal">— {t("waitingReply")}</span>}
+                {label} {isCurrent && !replyAtLevel && <span className="text-amber-600 font-normal">— {t("waitingReply")}</span>}
               </p>
               {replyAtLevel && (
                 <div className="mt-0.5 p-2 rounded bg-muted/50">
@@ -246,7 +267,7 @@ export default function AnonymousReports() {
                       <div className="flex gap-2">
                         <Badge text={t(r.type)} />
                         <Badge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
-                        <Badge text={roleLabel(currentHandlerRole(r))} tone="accent" />
+                        <Badge text={currentHandlerLabel(r)} tone="accent" />
                       </div>
                     </div>
                     <p className="text-sm font-body">{r.message}</p>
@@ -349,7 +370,7 @@ export default function AnonymousReports() {
                   <div className="flex gap-2">
                     <Badge text={t(r.type)} />
                     <Badge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
-                    <Badge text={roleLabel(currentHandlerRole(r))} tone="accent" />
+                    <Badge text={currentHandlerLabel(r)} tone="accent" />
                     <select value={r.status} onChange={(e) => setStatus(r.id, e.target.value)} className="px-2 py-0.5 rounded-md border border-input text-xs font-body">
                       <option value="open">{t("open")}</option>
                       <option value="in_review">{t("inReview")}</option>
@@ -374,7 +395,7 @@ export default function AnonymousReports() {
                 )}
                 {!canReplyTo(r) && r.status !== "closed" && (
                   <p className="text-xs text-muted-foreground font-body italic">
-                    {t("escalatedTo")} {roleLabel(currentHandlerRole(r))}
+                    {t("escalatedTo")} {currentHandlerLabel(r)}
                   </p>
                 )}
               </div>
