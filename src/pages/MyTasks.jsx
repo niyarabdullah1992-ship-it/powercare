@@ -74,25 +74,77 @@ export default function MyTasks() {
   }, [currentUser?.id]);
 
   useEffect(() => {
-    if (!company?.id) return;
+    if (!data?.id) return;
     try {
-      setCustomFolders(JSON.parse(localStorage.getItem(`powercare_folders_${company.id}`)) || {});
+      setCustomFolders(JSON.parse(localStorage.getItem(`powercare_folders_${data.id}`)) || {});
     } catch {
       setCustomFolders({});
     }
-  }, [company?.id]);
+  }, [data?.id]);
 
   const addFolder = () => {
     const name = newSectionName.trim();
-    if (!name || !selectedStation || !company?.id) return;
+    if (!name || !selectedStation) return;
     setCustomFolders((prev) => {
       const list = prev[selectedStation] || [];
       if (list.includes(name)) return prev;
       const next = { ...prev, [selectedStation]: [...list, name] };
-      localStorage.setItem(`powercare_folders_${company.id}`, JSON.stringify(next));
+      if (data?.id) localStorage.setItem(`powercare_folders_${data.id}`, JSON.stringify(next));
       return next;
     });
     setNewSectionName("");
+  };
+
+  const removeFolder = (folderKey) => {
+    setCustomFolders((prev) => {
+      const list = prev[selectedStation] || [];
+      if (!list.includes(folderKey)) return prev;
+      const next = { ...prev, [selectedStation]: list.filter((n) => n !== folderKey) };
+      if (data?.id) localStorage.setItem(`powercare_folders_${data.id}`, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const moveTaskToSection = async (tg, newSectionKey) => {
+    const section = newSectionKey === NO_SECTION ? "" : newSectionKey;
+    try {
+      const res = await base44.functions.invoke("supabaseTargets", {
+        action: "updateTarget",
+        userRole: currentUser.role,
+        targetId: tg.id,
+        section,
+      });
+      const updated = res?.data?.target;
+      if (updated) {
+        setTargets((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      }
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to move task");
+    }
+  };
+
+  const deleteFolder = async (folderKey) => {
+    if (!confirm(t("confirmDeleteTask"))) return;
+    const tasksInFolder = stationTargetsAll.filter((tg) =>
+      folderKey === NO_SECTION ? !tg.section : tg.section === folderKey
+    );
+    try {
+      await Promise.all(
+        tasksInFolder.map((tg) =>
+          base44.functions.invoke("supabaseTargets", {
+            action: "updateTarget",
+            userRole: currentUser.role,
+            targetId: tg.id,
+            section: "",
+          })
+        )
+      );
+      removeFolder(folderKey);
+      if (selectedSection === folderKey) setSelectedSection(null);
+      fetchTargets();
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to delete folder");
+    }
   };
 
   // Auto-escalation: notify higher-level managers when an urgent task is at risk
@@ -645,22 +697,33 @@ export default function MyTasks() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {allSectionFolders.map((f) => (
-                  <button
-                    key={f.key}
-                    onClick={() => setSelectedSection(f.key)}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border bg-background hover:bg-muted transition text-start"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                        <FileText className="w-4 h-4" />
+                  <div key={f.key} className="relative group">
+                    <button
+                      onClick={() => setSelectedSection(f.key)}
+                      className="flex items-center justify-between w-full p-4 rounded-lg border border-border bg-background hover:bg-muted transition text-start"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium font-body">{f.name}</p>
+                          <p className="text-xs text-muted-foreground font-body">{f.count} {t("tasksUnit")}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium font-body">{f.name}</p>
-                        <p className="text-xs text-muted-foreground font-body">{f.count} {t("tasksUnit")}</p>
-                      </div>
-                    </div>
-                    <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
-                  </button>
+                      <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
+                    </button>
+                    {canCreateTasks(currentUser) && f.key !== NO_SECTION && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); deleteFolder(f.key); }}
+                        title={t("delete")}
+                        className={`absolute top-2 ${dir === "rtl" ? "left-2" : "right-2"} p-1 rounded-md bg-background/80 text-muted-foreground hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
@@ -767,6 +830,16 @@ export default function MyTasks() {
                           </span>
                           {canManage(tg) && (
                             <div className="flex items-center gap-1 mt-1">
+                              <select
+                                value={selectedSection}
+                                onChange={(e) => moveTaskToSection(tg, e.target.value)}
+                                title={t("section")}
+                                className="text-[11px] px-1.5 py-1 rounded-md border border-input bg-card font-body max-w-[100px]"
+                              >
+                                {allSectionFolders.map((f) => (
+                                  <option key={f.key} value={f.key}>{f.name}</option>
+                                ))}
+                              </select>
                               <button onClick={() => setEditTarget(tg)} className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title={t("edit")}>
                                 <Pencil className="w-3.5 h-3.5" />
                               </button>
