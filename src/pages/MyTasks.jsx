@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { addNotification } from "@/lib/store";
 import { canCreateTasks } from "@/lib/permissions";
 import { base44 } from "@/api/base44Client";
-import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText } from "lucide-react";
+import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio } from "lucide-react";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -15,7 +15,7 @@ const DATE_PRESETS = [
 ];
 
 export default function MyTasks() {
-  const { t } = useI18n();
+  const { t, dir } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
   const [assignType, setAssignType] = useState("member");
@@ -30,6 +30,7 @@ export default function MyTasks() {
   const [logAmount, setLogAmount] = useState(1);
   const [targets, setTargets] = useState([]);
   const [targetsLoading, setTargetsLoading] = useState(false);
+  const [selectedStation, setSelectedStation] = useState(null);
 
   const fetchTargets = async () => {
     if (!currentUser) return;
@@ -127,7 +128,7 @@ export default function MyTasks() {
     }
 
     try {
-      await base44.functions.invoke("supabaseTargets", {
+      const res = await base44.functions.invoke("supabaseTargets", {
         action: "createTarget",
         userRole: currentUser.role,
         managerId: currentUser.id,
@@ -143,6 +144,10 @@ export default function MyTasks() {
         startDate,
         endDate,
       });
+      const created = res?.data?.target;
+      if (created && created.id) {
+        setTargets((prev) => [created, ...prev.filter((x) => x.id !== created.id)]);
+      }
       if (aType === "member" && employeeId) {
         addNotification(company.id, employeeId, `${t("setTarget")}: ${title} — ${total} ${t("tasksUnit")}.`);
       }
@@ -210,6 +215,27 @@ export default function MyTasks() {
     days: t("presetDays"),
     custom: t("presetCustom"),
   })[val] || val;
+
+  // Group targets by station
+  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || null;
+  const targetStationKey = (tg) => {
+    if (tg.assignment_type === "station_team") return tg.assignment_id || tg.station_id || "unassigned";
+    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || "unassigned";
+    if (tg.assignment_type === "hq_team") return "hq";
+    return tg.station_id || "unassigned";
+  };
+  const groupMap = {};
+  for (const tg of targets) {
+    const key = targetStationKey(tg);
+    if (!groupMap[key]) groupMap[key] = { key, count: 0 };
+    groupMap[key].count++;
+  }
+  const stationGroups = Object.values(groupMap).map((g) => ({
+    ...g,
+    name: g.key === "hq" ? t("hq") : stationName(g.key),
+  }));
+  const stationTargets = selectedStation ? targets.filter((tg) => targetStationKey(tg) === selectedStation) : [];
+  const selectedStationName = selectedStation === "hq" ? t("hq") : stationName(selectedStation);
 
   return (
     <div className="space-y-6">
@@ -348,7 +374,7 @@ export default function MyTasks() {
         </form>
       )}
 
-      {/* Task Targets */}
+      {/* Task Targets — organized by station */}
       <div className="p-5 rounded-xl border border-border bg-card space-y-4">
         <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
           <Target className="w-4 h-4" /> {t("targets")}
@@ -356,56 +382,89 @@ export default function MyTasks() {
 
         {targetsLoading ? (
           <p className="text-sm text-muted-foreground font-body">…</p>
-        ) : targets.length === 0 ? (
-          <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
+        ) : !selectedStation ? (
+          targets.length === 0 ? (
+            <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {stationGroups.map((g) => (
+                <button
+                  key={g.key}
+                  onClick={() => setSelectedStation(g.key)}
+                  className="flex items-center justify-between p-4 rounded-lg border border-border bg-background hover:bg-muted transition text-start"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
+                      {g.key === "hq" ? <Building2 className="w-4 h-4" /> : <Radio className="w-4 h-4" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium font-body">{g.name}</p>
+                      <p className="text-xs text-muted-foreground font-body">{g.count} {t("tasksUnit")}</p>
+                    </div>
+                  </div>
+                  <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
+                </button>
+              ))}
+            </div>
+          )
         ) : (
           <div className="space-y-3">
-            {targets.map((tg) => {
-              const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
-              const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
-              const done = tg.status === "completed";
-              const overdue = tg.status === "overdue";
-              const canLogThis = canLog(tg);
-              return (
-                <div key={tg.id} className="p-4 rounded-lg border border-border bg-background space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-medium font-body">{tg.title || `${t("setTarget")}`}</p>
-                      {tg.description && <p className="text-xs text-muted-foreground font-body mt-0.5">{tg.description}</p>}
-                      {tg.steps && (
-                        <div className="text-xs text-muted-foreground font-body mt-1 p-2 rounded bg-muted/50 whitespace-pre-wrap">
-                          <span className="font-medium">{t("steps")}:</span>{"\n"}{tg.steps}
+            <button onClick={() => setSelectedStation(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
+              <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
+            </button>
+            <p className="font-heading text-base font-semibold">{selectedStationName}</p>
+            {stationTargets.length === 0 ? (
+              <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
+            ) : (
+              <div className="space-y-3">
+                {stationTargets.map((tg) => {
+                  const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
+                  const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
+                  const done = tg.status === "completed";
+                  const overdue = tg.status === "overdue";
+                  const canLogThis = canLog(tg);
+                  return (
+                    <div key={tg.id} className="p-4 rounded-lg border border-border bg-background space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-medium font-body">{tg.title || `${t("setTarget")}`}</p>
+                          {tg.description && <p className="text-xs text-muted-foreground font-body mt-0.5">{tg.description}</p>}
+                          {tg.steps && (
+                            <div className="text-xs text-muted-foreground font-body mt-1 p-2 rounded bg-muted/50 whitespace-pre-wrap">
+                              <span className="font-medium">{t("steps")}:</span>{"\n"}{tg.steps}
+                            </div>
+                          )}
+                          {tg.file_url && (
+                            <a href={tg.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-accent font-body mt-1 hover:underline">
+                              <FileText className="w-3.5 h-3.5" /> PDF
+                            </a>
+                          )}
+                          <p className="text-xs text-muted-foreground font-body mt-1">{assignmentLabel(tg)}</p>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-body whitespace-nowrap ${done ? "bg-accent/15 text-accent" : overdue ? "bg-destructive/15 text-destructive flex items-center gap-1" : "bg-muted text-muted-foreground"}`}>
+                          {done ? t("targetDone") : overdue ? <><AlertTriangle className="w-3 h-3" /> {t("overdue")}</> : `${t("daysLeft")}: ${daysLeft}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs font-body mb-1">
+                        <span className="text-muted-foreground">{t("completedCount")}: {tg.completed_tasks}/{tg.task_target} {t("tasksUnit")}</span>
+                        <span>{pct}%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div className={`h-full transition-all ${done ? "bg-accent" : overdue ? "bg-destructive" : "bg-accent"}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      {canLogThis && !done && !overdue && (
+                        <div className="flex items-center gap-2 pt-1">
+                          <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
+                          <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
+                            <Check className="w-3.5 h-3.5" /> {t("logCompleted")}
+                          </button>
                         </div>
                       )}
-                      {tg.file_url && (
-                        <a href={tg.file_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-accent font-body mt-1 hover:underline">
-                          <FileText className="w-3.5 h-3.5" /> PDF
-                        </a>
-                      )}
-                      <p className="text-xs text-muted-foreground font-body mt-1">{assignmentLabel(tg)}</p>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-body whitespace-nowrap ${done ? "bg-accent/15 text-accent" : overdue ? "bg-destructive/15 text-destructive flex items-center gap-1" : "bg-muted text-muted-foreground"}`}>
-                      {done ? t("targetDone") : overdue ? <><AlertTriangle className="w-3 h-3" /> {t("overdue")}</> : `${t("daysLeft")}: ${daysLeft}`}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-xs font-body mb-1">
-                    <span className="text-muted-foreground">{t("completedCount")}: {tg.completed_tasks}/{tg.task_target} {t("tasksUnit")}</span>
-                    <span>{pct}%</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div className={`h-full transition-all ${done ? "bg-accent" : overdue ? "bg-destructive" : "bg-accent"}`} style={{ width: `${pct}%` }} />
-                  </div>
-                  {canLogThis && !done && !overdue && (
-                    <div className="flex items-center gap-2 pt-1">
-                      <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
-                      <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
-                        <Check className="w-3.5 h-3.5" /> {t("logCompleted")}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

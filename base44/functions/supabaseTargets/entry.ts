@@ -118,6 +118,9 @@ Deno.serve(async (req) => {
         }),
       });
       const created = await res.json();
+      if (!res.ok) {
+        return Response.json({ error: created?.message || "Failed to create target" }, { status: 400 });
+      }
       // Notify the assigned employee (member only)
       if (aType === "member" && employeeId) {
         await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
