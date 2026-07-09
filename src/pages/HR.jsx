@@ -8,11 +8,11 @@ import HRStationCard from "@/components/hr/HRStationCard";
 import { Layers, Building2 } from "lucide-react";
 
 const SUGGESTED_LEVELS = [
-  { name: "رئيس الموارد البشرية", permissions: ["view_employees", "manage_employees", "manage_leave", "manage_anonymous_reports", "manage_payroll", "view_reports", "view_safety"] },
-  { name: "نائب رئيس الموارد البشرية", permissions: ["view_employees", "manage_employees", "manage_leave", "view_reports", "view_safety"] },
-  { name: "مسؤول موارد بشرية المحطة", permissions: ["view_employees", "view_reports", "view_safety", "manage_anonymous_reports"] },
+  { name: "رئيس الموارد البشرية", scope: "company", permissions: ["view_employees", "manage_employees", "manage_leave", "manage_anonymous_reports", "manage_payroll", "view_reports", "view_safety"] },
+  { name: "نائب رئيس الموارد البشرية", scope: "company", permissions: ["view_employees", "manage_employees", "manage_leave", "view_reports", "view_safety"] },
+  { name: "مسؤول موارد بشرية المحطة", scope: "station", permissions: ["view_employees", "view_reports", "view_safety", "manage_anonymous_reports"] },
 ];
-const HR_SCHEMA_VERSION = 2;
+const HR_SCHEMA_VERSION = 3;
 
 export default function HR() {
   const { t } = useI18n();

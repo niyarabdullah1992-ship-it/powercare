@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { updateCompany } from "@/lib/store";
-import { UserCog, Plus, X } from "lucide-react";
+import { UserCog, Plus, X, Trash2 } from "lucide-react";
 import AddHRModal from "@/components/hr/AddHRModal";
 import { hrPermLabel, hrPermDescription } from "@/lib/hrPermissions";
 
@@ -45,6 +45,16 @@ export default function HRNode({ employee, allEmployees, levels, stations, compa
     });
   };
 
+  const deleteEmployee = () => {
+    if (!confirm(t("confirmDelete"))) return;
+    updateCompany(companyId, (d) => {
+      d.employees.forEach((e) => {
+        if (e.hrParentId === employee.id) e.hrParentId = null;
+      });
+      d.employees = d.employees.filter((e) => e.id !== employee.id);
+    });
+  };
+
   return (
     <div style={{ marginInlineStart: depth * 20 }} className="space-y-2">
       <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-background">
@@ -71,6 +81,9 @@ export default function HRNode({ employee, allEmployees, levels, stations, compa
             )}
             <button onClick={removeFromHR} className="p-1.5 rounded-md hover:bg-muted text-destructive" title={t("removeHR")}>
               <X className="w-4 h-4" />
+            </button>
+            <button onClick={deleteEmployee} className="p-1.5 rounded-md hover:bg-muted text-destructive" title={t("delete")}>
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         )}
