@@ -150,6 +150,8 @@ export default function MyTasks() {
       if (!stationId) { alert(t("selectStation")); return; }
       assignmentId = stationId;
       section = fd.get("section") || "";
+    } else if (aType === "hq_team") {
+      section = fd.get("section") || "";
     }
 
     const { startDate, endDate } = computeDates();
@@ -487,7 +489,16 @@ export default function MyTasks() {
           )}
 
           {assignType === "hq_team" && (
-            <p className="text-xs text-muted-foreground font-body">{t("hqTeamNote")}</p>
+            <div>
+              <p className="text-xs text-muted-foreground font-body mb-2">{t("hqTeamNote")}</p>
+              <input name="section" list="hqSectionSuggestions" placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+              <datalist id="hqSectionSuggestions">
+                {Array.from(new Set(targets.filter((tg) => tg.assignment_type === "hq_team" && tg.section).map((tg) => tg.section))).map((sec) => (
+                  <option key={sec} value={sec} />
+                ))}
+              </datalist>
+              <p className="text-[11px] text-muted-foreground font-body mt-1">{t("sectionTaskTypeHint")}</p>
+            </div>
           )}
 
           {/* Priority */}
@@ -818,7 +829,7 @@ export default function MyTasks() {
             <input name="description" defaultValue={editTarget.description || ""} placeholder={t("taskDescription")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input name="taskType" defaultValue={editTarget.task_type || ""} placeholder={t("taskTypePlaceholder")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-              {editTarget.assignment_type === "station_team" && (
+              {(editTarget.assignment_type === "station_team" || editTarget.assignment_type === "hq_team") && (
                 <input name="section" defaultValue={editTarget.section || ""} placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
               )}
             </div>
