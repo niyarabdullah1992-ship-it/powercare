@@ -7,6 +7,7 @@ import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Penc
 import { badgeFor, nextBadge } from "@/lib/rewards";
 import { getRoleLabel } from "@/lib/roles";
 import RoleLabelsEditor from "@/components/employees/RoleLabelsEditor";
+import EmployeePoints from "@/components/employees/EmployeePoints";
 
 const ROLES = ["employee", "station_manager", "pgm", "ops_manager", "director"];
 
@@ -223,7 +224,7 @@ export default function Employees() {
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative shrink-0">
                 <div className="w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center font-medium">{e.name.charAt(0)}</div>
-                <span className="absolute -bottom-1 -end-1 text-base leading-none" title={t(badgeFor(e.points || 0).key)}>{badgeFor(e.points || 0).icon}</span>
+                <span className="absolute -bottom-1 -end-1 text-base leading-none w-5 h-5 flex items-center justify-center rounded-full bg-card border border-border" title={t(badgeFor(e.points || 0).key)}>{badgeFor(e.points || 0).icon}</span>
               </div>
               <div className="min-w-0">
                 <p className="font-body font-medium truncate">{e.name}</p>
@@ -248,12 +249,7 @@ export default function Employees() {
                     )}
                   </p>
                 )}
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[10px] font-body font-medium">
-                    {e.points || 0} {t("points")}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground font-body">{t(badgeFor(e.points || 0).key)}</span>
-                </div>
+                <EmployeePoints points={e.points || 0} company={company} />
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
