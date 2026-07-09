@@ -25,11 +25,12 @@ export default function MyTasks() {
   const stationName = (id) => data.stations.find((s) => s.id === id)?.name || "—";
   const employeeName = (id) => data.employees.find((e) => e.id === id)?.name || "—";
 
+  const targets = data.targets || [];
   // Targets visible to this user: their own (employee) or all they can manage
   const visibleTargets = canCreateTasks(currentUser)
-    ? data.targets
-    : data.targets.filter((tg) => tg.assignedTo === currentUser.id);
-  const myActiveTargets = data.targets.filter((tg) => tg.assignedTo === currentUser.id && tg.status === "active");
+    ? targets
+    : targets.filter((tg) => tg.assignedTo === currentUser.id);
+  const myActiveTargets = targets.filter((tg) => tg.assignedTo === currentUser.id && tg.status === "active");
 
   const createTarget = (e) => {
     e.preventDefault();
