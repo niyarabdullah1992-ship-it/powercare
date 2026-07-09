@@ -411,7 +411,11 @@ export default function MyTasks() {
     }
   };
 
-  const canManage = (tg) => canCreateTasks(currentUser) && (tg.manager_id === currentUser.id || canSeeAllStations(currentUser));
+  const canManage = (tg) =>
+    canCreateTasks(currentUser) &&
+    (tg.manager_id === currentUser.id ||
+      canSeeAllStations(currentUser) ||
+      (currentUser.role === "station_manager" && targetStationKey(tg) === currentUser.stationId));
 
   const assignmentLabel = (tg) => {
     if (tg.assignment_type === "member") return `${t("member")}: ${employeeName(tg.employee_id)}`;
