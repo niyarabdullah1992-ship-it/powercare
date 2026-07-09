@@ -496,7 +496,10 @@ export default function MyTasks() {
                               <div className="space-y-1.5 max-h-40 overflow-y-auto">
                                 {tg.comments.map((c) => (
                                   <div key={c.id} className="text-xs font-body p-2 rounded-md bg-muted/50">
-                                    <p className="font-medium text-foreground">{c.user_name}</p>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <p className="font-medium text-foreground">{c.user_name}</p>
+                                      <span className="text-[10px] text-muted-foreground">{c.created_at ? new Date(c.created_at).toLocaleString() : ""}</span>
+                                    </div>
                                     <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{c.content}</p>
                                   </div>
                                 ))}
