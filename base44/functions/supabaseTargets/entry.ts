@@ -26,6 +26,39 @@ Deno.serve(async (req) => {
     if (action === "listTargets") {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?order=created_at.desc`, { headers });
       const rows = await res.json();
+      // Overdue detection: auto-close targets past their end date
+      const now = Date.now();
+      for (const tg of rows || []) {
+        if (tg.status === "active" && new Date(tg.end_date).getTime() < now) {
+          // notify manager
+          await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              user_id: tg.manager_id,
+              message: `Target "${tg.title || "Untitled"}" is OVERDUED — time expired before reaching the goal (${tg.completed_tasks}/${tg.task_target}).`,
+            }),
+          });
+          // notify assigned employee (member only)
+          if (tg.assignment_type === "member" && tg.employee_id) {
+            await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                user_id: tg.employee_id,
+                message: `Your target "${tg.title || "Untitled"}" is OVERDUED — time expired (${tg.completed_tasks}/${tg.task_target}).`,
+              }),
+            });
+          }
+          // mark overdue in DB
+          await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(tg.id)}`, {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({ status: "overdue" }),
+          });
+          tg.status = "overdue";
+        }
+      }
       if (isManager) {
         return Response.json({ targets: rows });
       }
@@ -45,9 +78,14 @@ Deno.serve(async (req) => {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can create targets" }, { status: 403 });
       }
-      const { managerId, taskTarget, days, title, description, assignmentType, assignmentId, employeeId, stationId } = body;
-      if (!taskTarget || !days) {
-        return Response.json({ error: "Missing fields" }, { status: 400 });
+      const { managerId, taskTarget, days, title, description, assignmentType, assignmentId, employeeId, stationId, startDate: customStart, endDate: customEnd } = body;
+      if (!taskTarget) {
+        return Response.json({ error: "Missing task target" }, { status: 400 });
+      }
+      const hasCustomRange = customStart && customEnd;
+      const hasDays = Number(days) > 0;
+      if (!hasCustomRange && !hasDays) {
+        return Response.json({ error: "Missing duration or date range" }, { status: 400 });
       }
       const aType = assignmentType || "member";
       if (aType === "member" && !employeeId) {
@@ -56,8 +94,8 @@ Deno.serve(async (req) => {
       if (aType === "station_team" && !assignmentId) {
         return Response.json({ error: "Select a station for team assignment" }, { status: 400 });
       }
-      const startDate = new Date().toISOString();
-      const endDate = new Date(Date.now() + Number(days) * 86400000).toISOString();
+      const startDate = customStart || new Date().toISOString();
+      const endDate = customEnd || new Date(Date.now() + Number(days) * 86400000).toISOString();
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets`, {
         method: "POST",
         headers: { ...headers, Prefer: "return=representation" },
@@ -125,6 +163,17 @@ Deno.serve(async (req) => {
           message: `${employeeName || "Employee"} completed ${amount} tasks (${newCompleted}/${tg.task_target}).`,
         }),
       });
+      // On completion, notify the responsible employee (member) with a celebration
+      if (status === "completed" && tg.assignment_type === "member" && tg.employee_id) {
+        await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            user_id: tg.employee_id,
+            message: `🎉 Target "${tg.title || "Untitled"}" COMPLETED! You reached the goal (${tg.task_target} tasks).`,
+          }),
+        });
+      }
       return Response.json({ target: updated[0] });
     }
 
