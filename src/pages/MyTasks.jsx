@@ -396,7 +396,7 @@ export default function MyTasks() {
           {/* File attachments */}
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><Paperclip className="w-3.5 h-3.5" /> {t("attachFile")}</p>
-            <div className="flex flex-wrap items-start gap-2">
+            <div className="flex flex-wrap items-end gap-2">
               <CommentFiles files={taskFiles} setFiles={setTaskFiles} />
               <VoiceRecorder files={taskFiles} setFiles={setTaskFiles} />
             </div>
@@ -725,7 +725,7 @@ export default function MyTasks() {
                               </div>
                             )}
                             <div className="space-y-2">
-                              <div className="flex flex-wrap items-start gap-2">
+                              <div className="flex flex-wrap items-end gap-2">
                                 <CommentFiles files={commentFiles} setFiles={setCommentFiles} />
                                 <VoiceRecorder files={commentFiles} setFiles={setCommentFiles} />
                               </div>

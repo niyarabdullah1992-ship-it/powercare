@@ -204,7 +204,7 @@ export default function AnonymousReports() {
               </div>
             )}
             <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder={t("fileReport")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
-            <div className="flex flex-wrap items-start gap-2">
+            <div className="flex flex-wrap items-end gap-2">
               <CommentFiles files={files} setFiles={setFiles} />
               <VoiceRecorder files={files} setFiles={setFiles} />
             </div>
@@ -354,7 +354,7 @@ export default function AnonymousReports() {
                 {renderTimeline(r)}
                 {canReplyTo(r) && r.status !== "closed" && (
                   <div className="space-y-2 pt-1 border-t border-border">
-                    <div className="flex flex-wrap items-start gap-2">
+                    <div className="flex flex-wrap items-end gap-2">
                       <CommentFiles files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
                       <VoiceRecorder files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
                     </div>
