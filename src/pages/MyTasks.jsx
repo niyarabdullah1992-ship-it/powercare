@@ -34,6 +34,7 @@ export default function MyTasks() {
   const [targetsLoading, setTargetsLoading] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
   const [priority, setPriority] = useState("medium");
+  const [sortBy, setSortBy] = useState("priority");
 
   const fetchTargets = async () => {
     if (!currentUser) return;
@@ -287,7 +288,17 @@ export default function MyTasks() {
     ...(showHq ? [{ key: "hq", name: t("hq"), count: groupMap["hq"]?.count || 0 }] : []),
     ...visible.map((s) => ({ key: s.id, name: s.name, count: groupMap[s.id]?.count || 0 })),
   ];
-  const stationTargets = selectedStation ? targets.filter((tg) => targetStationKey(tg) === selectedStation) : [];
+  const PRIORITY_WEIGHT = { urgent: 0, high: 1, medium: 2, low: 3 };
+  const stationTargets = selectedStation
+    ? targets
+        .filter((tg) => targetStationKey(tg) === selectedStation)
+        .sort((a, b) => {
+          if (sortBy === "priority") {
+            return (PRIORITY_WEIGHT[a.priority] ?? 2) - (PRIORITY_WEIGHT[b.priority] ?? 2);
+          }
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        })
+    : [];
   const selectedStationName = selectedStation === "hq" ? t("hq") : stationName(selectedStation);
 
   return (
@@ -487,7 +498,14 @@ export default function MyTasks() {
             <button onClick={() => setSelectedStation(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
               <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
             </button>
-            <p className="font-heading text-base font-semibold">{selectedStationName}</p>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="font-heading text-base font-semibold">{selectedStationName}</p>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground font-body">{t("sortBy")}:</span>
+                <button onClick={() => setSortBy("priority")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "priority" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byPriority")}</button>
+                <button onClick={() => setSortBy("date")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "date" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byNewest")}</button>
+              </div>
+            </div>
             {stationTargets.length === 0 ? (
               <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
             ) : (

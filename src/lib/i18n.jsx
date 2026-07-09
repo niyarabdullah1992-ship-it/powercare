@@ -61,6 +61,9 @@ const dict = {
     station: "Station",
     urgent: "Urgent",
     atRisk: "At Risk — behind schedule",
+    sortBy: "Sort by",
+    byPriority: "Priority",
+    byNewest: "Newest",
     demoNote: "Demo — data is stored locally in this browser.",
   },
   ar: {
@@ -122,6 +125,9 @@ const dict = {
     station: "المحطة",
     urgent: "عاجل",
     atRisk: "في خطر — متأخر عن الجدول",
+    sortBy: "ترتيب حسب",
+    byPriority: "الأهمية",
+    byNewest: "الأحدث",
     demoNote: "تجريبي — البيانات محفوظة محليًا في هذا المتصفح.",
   },
   de: {
