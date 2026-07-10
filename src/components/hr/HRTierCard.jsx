@@ -23,20 +23,21 @@ export default function HRTierCard({ tier, scopeType, scopeId, scopeName, data, 
   const assistants = data.employees.filter((e) => e.hrLevelId === assistantLevelId && matchesScope(e));
   const eligible = data.employees.filter((e) => !e.hrLevelId);
 
-  const assignToSlot = (emp, role) => {
+  const assignToSlot = (emp, role, position) => {
     emp.hrLevelId = role === "manager" ? managerLevelId : assistantLevelId;
     emp.hrStationId = scopeType === "station" ? scopeId : null;
     emp.hrClusterId = scopeType === "cluster" ? scopeId : null;
+    if (position) emp.position = position;
   };
 
-  const assignExisting = (empId) => {
+  const assignExisting = (empId, position) => {
     updateCompany(data.id, (d) => {
       const emp = d.employees.find((x) => x.id === empId);
-      if (emp) assignToSlot(emp, addingRole);
+      if (emp) assignToSlot(emp, addingRole, position);
     });
   };
 
-  const hireNew = ({ name, email }) => {
+  const hireNew = ({ name, email, position }) => {
     updateCompany(data.id, (d) => {
       const emp = {
         id: "emp_" + Math.random().toString(36).slice(2, 9),
@@ -44,7 +45,7 @@ export default function HRTierCard({ tier, scopeType, scopeId, scopeName, data, 
         stationId: null, hrLevelId: null, hrStationId: null, hrClusterId: null,
         createdAt: new Date().toISOString(),
       };
-      assignToSlot(emp, addingRole);
+      assignToSlot(emp, addingRole, position);
       d.employees.push(emp);
     });
   };
@@ -80,6 +81,7 @@ export default function HRTierCard({ tier, scopeType, scopeId, scopeName, data, 
       {addingRole && (
         <HRAssignModal
           title={`${addingRole === "manager" ? t("assignManager") : t("assignAssistant")} — ${tierName(tier, addingRole, lang)}`}
+          defaultPosition={tierName(tier, addingRole, lang)}
           eligibleEmployees={eligible}
           onAssignExisting={assignExisting}
           onHireNew={hireNew}

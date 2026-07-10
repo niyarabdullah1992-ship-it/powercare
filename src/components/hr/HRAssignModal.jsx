@@ -2,21 +2,22 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 
 // Assign an existing (unassigned) employee, or hire a new one, into a given HR slot.
-export default function HRAssignModal({ title, eligibleEmployees, onAssignExisting, onHireNew, onClose }) {
+export default function HRAssignModal({ title, defaultPosition, eligibleEmployees, onAssignExisting, onHireNew, onClose }) {
   const { t } = useI18n();
   const [mode, setMode] = useState("existing");
   const [empId, setEmpId] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [position, setPosition] = useState(defaultPosition || "");
 
   const submit = (e) => {
     e.preventDefault();
     if (mode === "existing") {
       if (!empId) return;
-      onAssignExisting(empId);
+      onAssignExisting(empId, position.trim());
     } else {
       if (!name.trim()) return;
-      onHireNew({ name: name.trim(), email: email.trim() });
+      onHireNew({ name: name.trim(), email: email.trim(), position: position.trim() });
     }
     onClose();
   };
@@ -56,6 +57,10 @@ export default function HRAssignModal({ title, eligibleEmployees, onAssignExisti
               </div>
             </>
           )}
+          <div>
+            <label className="block text-xs text-muted-foreground font-body mb-1">{t("position")}</label>
+            <input value={position} onChange={(e) => setPosition(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body bg-card" />
+          </div>
           <div className="flex gap-2">
             <button type="submit" className="px-4 py-2 rounded-md bg-foreground text-background text-sm">{t("confirm")}</button>
             <button type="button" onClick={onClose} className="px-4 py-2 rounded-md border border-border text-sm">{t("cancel")}</button>
