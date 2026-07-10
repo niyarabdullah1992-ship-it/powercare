@@ -60,27 +60,32 @@ export default function Dashboard() {
     .slice(0, 8);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-3xl font-semibold">{t("overview")}</h1>
-        <p className="text-muted-foreground font-body text-sm mt-1">{data.name} · {t(currentUser.role)}</p>
+    <div className="space-y-8">
+      <div className="border-b border-border pb-6">
+        <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{data.name}</p>
+        <h1 className="hero-title text-4xl md:text-5xl">{t("overview")}</h1>
+        <p className="text-muted-foreground font-body text-sm mt-2">{t(currentUser.role)}</p>
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s) => (
-          <div key={s.label} className="p-5 rounded-xl border border-border bg-card">
-            <s.icon className={`w-5 h-5 mb-3 ${s.color}`} strokeWidth={1.75} />
-            <p className="text-3xl font-heading font-semibold">{s.value}</p>
-            <p className="text-xs text-muted-foreground font-body mt-1">{s.label}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 border border-border divide-x divide-y divide-border rtl:divide-x-reverse">
+        {stats.map((s, i) => (
+          <div key={s.label} className="p-6 bg-card">
+            <div className="flex items-center justify-between mb-5">
+              <s.icon className={`w-4 h-4 ${s.color}`} strokeWidth={1.5} />
+              <span className="hero-title text-base text-muted-foreground/40">{["I", "II", "III", "IV"][i]}</span>
+            </div>
+            <p className="hero-title text-4xl">{s.value}</p>
+            <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mt-2">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="p-5 rounded-xl border border-border bg-card">
-          <h3 className="font-heading font-semibold mb-4">{t("taskCompletion")} — 6 {lang === "ar" ? "أشهر" : "months"}</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-border">
+        <div className="p-6 bg-card">
+          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">6 {lang === "ar" ? "أشهر" : "months"}</p>
+          <h3 className="hero-title text-2xl mb-5">{t("taskCompletion")}</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -92,8 +97,9 @@ export default function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="p-5 rounded-xl border border-border bg-card">
-          <h3 className="font-heading font-semibold mb-4">{t("reports")} — {t("taskCompletion")}</h3>
+        <div className="p-6 bg-card">
+          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{t("taskCompletion")}</p>
+          <h3 className="hero-title text-2xl mb-5">{t("reports")}</h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -108,11 +114,12 @@ export default function Dashboard() {
       </div>
 
       {/* Recent activity */}
-      <div className="p-5 rounded-xl border border-border bg-card">
-        <h3 className="font-heading font-semibold mb-4">{t("recentActivity")}</h3>
-        <div className="space-y-2">
+      <div className="p-6 border border-border bg-card">
+        <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{formatDate(new Date(), lang, { month: "short" })}</p>
+        <h3 className="hero-title text-2xl mb-4">{t("recentActivity")}</h3>
+        <div className="divide-y divide-border">
           {recent.map((r, i) => (
-            <div key={i} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+            <div key={i} className="flex items-center justify-between py-3">
               <p className="text-sm font-body">{r.text}</p>
               <p className="text-xs text-muted-foreground font-body">{formatDate(r.at, lang)}</p>
             </div>
@@ -133,36 +140,36 @@ function EmployeeDashboard({ t, lang, data, user }) {
   const goalPct = totalGoal ? Math.round((totalProgress / totalGoal) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-3xl font-semibold">{t("myDay")}</h1>
-        <p className="text-muted-foreground font-body text-sm mt-1">{user.name}</p>
+    <div className="space-y-8">
+      <div className="border-b border-border pb-6">
+        <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{user.name}</p>
+        <h1 className="hero-title text-4xl md:text-5xl">{t("myDay")}</h1>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-xl border border-border bg-card">
-          <ListTodo className="w-5 h-5 mb-3 text-accent" strokeWidth={1.75} />
-          <p className="text-3xl font-heading font-semibold">{open.length}</p>
-          <p className="text-xs text-muted-foreground font-body mt-1">{t("openTasks")}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 border border-border divide-x divide-y sm:divide-y-0 divide-border rtl:divide-x-reverse">
+        <div className="p-6 bg-card">
+          <ListTodo className="w-4 h-4 mb-5 text-accent" strokeWidth={1.5} />
+          <p className="hero-title text-4xl">{open.length}</p>
+          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mt-2">{t("openTasks")}</p>
         </div>
-        <div className="p-5 rounded-xl border border-border bg-card">
-          <TrendingUp className="w-5 h-5 mb-3 text-foreground" strokeWidth={1.75} />
-          <p className="text-3xl font-heading font-semibold">{goalPct}%</p>
-          <p className="text-xs text-muted-foreground font-body mt-1">{t("dailyGoal")}</p>
+        <div className="p-6 bg-card">
+          <TrendingUp className="w-4 h-4 mb-5 text-foreground" strokeWidth={1.5} />
+          <p className="hero-title text-4xl">{goalPct}%</p>
+          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mt-2">{t("dailyGoal")}</p>
         </div>
-        <div className="p-5 rounded-xl border border-border bg-card">
-          <AlertTriangle className="w-5 h-5 mb-3 text-destructive" strokeWidth={1.75} />
-          <p className="text-3xl font-heading font-semibold">{myAnon.length}</p>
-          <p className="text-xs text-muted-foreground font-body mt-1">{t("anonymous")}</p>
+        <div className="p-6 bg-card">
+          <AlertTriangle className="w-4 h-4 mb-5 text-destructive" strokeWidth={1.5} />
+          <p className="hero-title text-4xl">{myAnon.length}</p>
+          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mt-2">{t("anonymous")}</p>
         </div>
       </div>
-      <div className="p-5 rounded-xl border border-border bg-card">
-        <h3 className="font-heading font-semibold mb-3">{t("openTasks")}</h3>
+      <div className="p-6 border border-border bg-card">
+        <h3 className="hero-title text-2xl mb-4">{t("openTasks")}</h3>
         {open.length === 0 ? (
           <p className="text-sm text-muted-foreground font-body">{t("noTasks")}</p>
         ) : (
-          <div className="space-y-2">
+          <div className="divide-y divide-border">
             {open.map((tk) => (
-              <div key={tk.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+              <div key={tk.id} className="flex items-center justify-between py-3">
                 <div>
                   <p className="text-sm font-body">{tk.title}</p>
                   <p className="text-xs text-muted-foreground">{t(tk.status)} · {tk.progress}/{tk.dailyTarget}</p>
