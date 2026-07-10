@@ -24,6 +24,29 @@ const DATE_PRESETS = [
 
 const NO_SECTION = "__none__";
 
+// Folders are stored as "/"-joined paths so a folder can be nested inside another folder.
+function getParentPath(path) {
+  if (!path) return null;
+  const idx = path.lastIndexOf("/");
+  return idx === -1 ? null : path.slice(0, idx);
+}
+function getLeafName(path) {
+  if (!path) return "";
+  const idx = path.lastIndexOf("/");
+  return idx === -1 ? path : path.slice(idx + 1);
+}
+function withAncestors(paths) {
+  const set = new Set();
+  for (const p of paths) {
+    let cur = p;
+    while (cur) {
+      set.add(cur);
+      cur = getParentPath(cur);
+    }
+  }
+  return Array.from(set);
+}
+
 export default function MyTasks() {
   const { t, dir, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
@@ -91,21 +114,21 @@ export default function MyTasks() {
   const addFolder = () => {
     const name = newSectionName.trim();
     if (!name || !selectedStation) return;
+    const path = selectedSection ? `${selectedSection}/${name}` : name;
     setCustomFolders((prev) => {
       const list = prev[selectedStation] || [];
-      if (list.includes(name)) return prev;
-      const next = { ...prev, [selectedStation]: [...list, name] };
+      if (list.includes(path)) return prev;
+      const next = { ...prev, [selectedStation]: [...list, path] };
       if (data?.id) localStorage.setItem(`powercare_folders_${data.id}`, JSON.stringify(next));
       return next;
     });
     setNewSectionName("");
   };
 
-  const removeFolder = (folderKey) => {
+  const removeFolder = (folderPath) => {
     setCustomFolders((prev) => {
       const list = prev[selectedStation] || [];
-      if (!list.includes(folderKey)) return prev;
-      const next = { ...prev, [selectedStation]: list.filter((n) => n !== folderKey) };
+      const next = { ...prev, [selectedStation]: list.filter((p) => p !== folderPath && !p.startsWith(`${folderPath}/`)) };
       if (data?.id) localStorage.setItem(`powercare_folders_${data.id}`, JSON.stringify(next));
       return next;
     });
@@ -129,28 +152,33 @@ export default function MyTasks() {
     }
   };
 
-  const renameFolder = async (oldKey, newName) => {
+  const renameFolder = async (oldPath, newName) => {
     const trimmed = newName.trim();
-    if (!trimmed || trimmed === oldKey) { setRenameFolderKey(null); return; }
-    const tasksInFolder = stationTargetsAll.filter((tg) => tg.section === oldKey);
+    if (!trimmed || trimmed === getLeafName(oldPath)) { setRenameFolderKey(null); return; }
+    const parent = getParentPath(oldPath);
+    const newPath = parent ? `${parent}/${trimmed}` : trimmed;
+    const affectedTasks = targets.filter((tg) => targetStationKey(tg) === selectedStation && (tg.section === oldPath || (tg.section || "").startsWith(`${oldPath}/`)));
     try {
       await Promise.all(
-        tasksInFolder.map((tg) =>
+        affectedTasks.map((tg) =>
           base44.functions.invoke("supabaseTargets", {
             action: "updateTarget",
             userRole: currentUser.role,
             targetId: tg.id,
-            section: trimmed,
+            section: tg.section === oldPath ? newPath : newPath + tg.section.slice(oldPath.length),
           })
         )
       );
       setCustomFolders((prev) => {
         const list = prev[selectedStation] || [];
-        const next = { ...prev, [selectedStation]: list.map((n) => (n === oldKey ? trimmed : n)) };
+        const next = {
+          ...prev,
+          [selectedStation]: list.map((p) => (p === oldPath ? newPath : p.startsWith(`${oldPath}/`) ? newPath + p.slice(oldPath.length) : p)),
+        };
         if (data?.id) localStorage.setItem(`powercare_folders_${data.id}`, JSON.stringify(next));
         return next;
       });
-      if (selectedSection === oldKey) setSelectedSection(trimmed);
+      if (selectedSection === oldPath) setSelectedSection(newPath);
       setRenameFolderKey(null);
       setRenameValue("");
       fetchTargets();
@@ -159,13 +187,11 @@ export default function MyTasks() {
     }
   };
 
-  const deleteFolder = async (folderKey) => {
-    const tasksInFolder = stationTargetsAll.filter((tg) =>
-      folderKey === NO_SECTION ? !tg.section : tg.section === folderKey
-    );
+  const deleteFolder = async (folderPath) => {
+    const affectedTasks = targets.filter((tg) => targetStationKey(tg) === selectedStation && (tg.section === folderPath || (tg.section || "").startsWith(`${folderPath}/`)));
     try {
       await Promise.all(
-        tasksInFolder.map((tg) =>
+        affectedTasks.map((tg) =>
           base44.functions.invoke("supabaseTargets", {
             action: "updateTarget",
             userRole: currentUser.role,
@@ -174,8 +200,8 @@ export default function MyTasks() {
           })
         )
       );
-      removeFolder(folderKey);
-      if (selectedSection === folderKey) setSelectedSection(null);
+      removeFolder(folderPath);
+      if (selectedSection === folderPath || (selectedSection || "").startsWith(`${folderPath}/`)) setSelectedSection(getParentPath(folderPath));
       fetchTargets();
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to delete folder");
@@ -465,24 +491,20 @@ export default function MyTasks() {
   ];
   const PRIORITY_WEIGHT = { urgent: 0, high: 1, medium: 2, low: 3 };
   const stationTargetsAll = selectedStation ? targets.filter((tg) => targetStationKey(tg) === selectedStation) : [];
-  // Sections act as external folders: pick a station, then pick a section, then see its tasks.
-  const folderCounts = {};
-  for (const tg of stationTargetsAll) {
-    const key = tg.section || NO_SECTION;
-    folderCounts[key] = (folderCounts[key] || 0) + 1;
-  }
-  const sectionFolders = Object.entries(folderCounts).map(([key, count]) => ({
-    key,
-    name: key === NO_SECTION ? t("noSection") : key,
-    count,
-  }));
-  const emptyCustomFolders = (customFolders[selectedStation] || [])
-    .filter((name) => !sectionFolders.some((f) => f.key === name))
-    .map((name) => ({ key: name, name, count: 0 }));
-  const allSectionFolders = [...sectionFolders, ...emptyCustomFolders];
-  const stationTargets = selectedStation && selectedSection
+  // Folders form a tree: a folder can be created inside another folder, sections
+  // store the full "/"-joined path of the folder a task lives directly inside.
+  const allStationFolders = withAncestors([
+    ...(customFolders[selectedStation] || []),
+    ...stationTargetsAll.filter((tg) => tg.section).map((tg) => tg.section),
+  ]);
+  const folderCountAt = (path) => stationTargetsAll.filter((tg) => (tg.section || null) === path).length;
+  const childFolders = allStationFolders
+    .filter((p) => getParentPath(p) === selectedSection)
+    .map((p) => ({ key: p, name: getLeafName(p), count: folderCountAt(p) }));
+  const directTaskCount = folderCountAt(selectedSection);
+  const stationTargets = selectedStation
     ? stationTargetsAll
-        .filter((tg) => (selectedSection === NO_SECTION ? !tg.section : tg.section === selectedSection))
+        .filter((tg) => (tg.section || null) === selectedSection)
         .filter((tg) => {
           if (statusFilter !== "all" && tg.status !== statusFilter) return false;
           if (searchQuery) {
@@ -502,8 +524,12 @@ export default function MyTasks() {
     ...targets.filter((tg) => tg.section).map((tg) => tg.section),
     ...Object.values(customFolders).flat(),
   ]));
+  const allSectionFolders = [
+    { key: NO_SECTION, name: t("noSection") },
+    ...allStationFolders.map((p) => ({ key: p, name: p })),
+  ];
   const selectedStationName = selectedStation === "hq" ? t("hq") : stationName(selectedStation);
-  const selectedSectionName = selectedSection === NO_SECTION ? t("noSection") : selectedSection;
+  const breadcrumbParts = selectedSection ? selectedSection.split("/") : [];
 
   return (
     <div className="space-y-6">
@@ -732,19 +758,35 @@ export default function MyTasks() {
               ))}
             </motion.div>
           )
-        ) : !selectedSection ? (
+        ) : (
           <motion.div
-            key="folders"
+            key={`browser-${selectedSection || "root"}`}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
             className="space-y-3"
           >
-            <button onClick={() => setSelectedStation(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
+            <button
+              onClick={() => (selectedSection ? setSelectedSection(getParentPath(selectedSection)) : setSelectedStation(null))}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground"
+            >
               <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
             </button>
-            <p className="font-heading text-base font-semibold">{selectedStationName}</p>
+
+            <div className="flex items-center gap-1.5 flex-wrap text-sm font-body">
+              <button onClick={() => setSelectedSection(null)} className="font-heading font-semibold hover:underline">{selectedStationName}</button>
+              {breadcrumbParts.map((part, idx) => {
+                const path = breadcrumbParts.slice(0, idx + 1).join("/");
+                return (
+                  <React.Fragment key={path}>
+                    <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
+                    <button onClick={() => setSelectedSection(path)} className="text-muted-foreground hover:text-foreground hover:underline">{part}</button>
+                  </React.Fragment>
+                );
+              })}
+            </div>
+
             {canCreateTasks(currentUser) && (
               <div className="flex items-center gap-2">
                 <input
@@ -759,11 +801,10 @@ export default function MyTasks() {
                 </button>
               </div>
             )}
-            {allSectionFolders.length === 0 ? (
-              <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
-            ) : (
+
+            {childFolders.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {allSectionFolders.map((f) => (
+                {childFolders.map((f) => (
                   <div key={f.key} className="relative group">
                     <button
                       onClick={() => setSelectedSection(f.key)}
@@ -780,11 +821,11 @@ export default function MyTasks() {
                       </div>
                       <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
                     </button>
-                    {canCreateTasks(currentUser) && f.key !== NO_SECTION && (
+                    {canCreateTasks(currentUser) && (
                       <div className={`absolute top-2 ${dir === "rtl" ? "left-2" : "right-2"} flex items-center gap-1 opacity-0 group-hover:opacity-100 transition`}>
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); setRenameFolderKey(f.key); setRenameValue(f.key); }}
+                          onClick={(e) => { e.stopPropagation(); setRenameFolderKey(f.key); setRenameValue(f.name); }}
                           title={t("edit")}
                           className="p-1 rounded-md bg-background/80 text-muted-foreground hover:text-foreground hover:bg-muted"
                         >
@@ -809,51 +850,44 @@ export default function MyTasks() {
                 ))}
               </div>
             )}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="tasks"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
-            className="space-y-3"
-          >
-            <button onClick={() => setSelectedSection(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
-              <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
-            </button>
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <p className="font-heading text-base font-semibold">{selectedStationName} — {selectedSectionName}</p>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground font-body">{t("sortBy")}:</span>
-                <button onClick={() => setSortBy("priority")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "priority" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byPriority")}</button>
-                <button onClick={() => setSortBy("date")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "date" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byNewest")}</button>
+
+            {directTaskCount > 0 && (
+              <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground font-body">{t("myTasks")}</p>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground font-body">{t("sortBy")}:</span>
+                  <button onClick={() => setSortBy("priority")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "priority" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byPriority")}</button>
+                  <button onClick={() => setSortBy("date")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "date" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byNewest")}</button>
+                </div>
               </div>
-            </div>
-            {/* Search + status filter */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-1">
-                <Search className={`absolute top-1/2 -translate-y-1/2 ${dir === "rtl" ? "right-3" : "left-3"} w-4 h-4 text-muted-foreground`} />
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t("searchTasks")}
-                  className={`w-full ${dir === "rtl" ? "pr-9 pl-3" : "pl-9 pr-3"} py-2 rounded-md border border-input text-sm font-body`}
-                />
+            )}
+            {directTaskCount > 0 && (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Search className={`absolute top-1/2 -translate-y-1/2 ${dir === "rtl" ? "right-3" : "left-3"} w-4 h-4 text-muted-foreground`} />
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t("searchTasks")}
+                    className={`w-full ${dir === "rtl" ? "pr-9 pl-3" : "pl-9 pr-3"} py-2 rounded-md border border-input text-sm font-body`}
+                  />
+                </div>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 rounded-md border border-input text-sm font-body bg-card"
+                >
+                  <option value="all">{t("allStatuses")}</option>
+                  <option value="active">{t("inProgress")}</option>
+                  <option value="completed">{t("completed")}</option>
+                  <option value="overdue">{t("overdue")}</option>
+                </select>
               </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 rounded-md border border-input text-sm font-body bg-card"
-              >
-                <option value="all">{t("allStatuses")}</option>
-                <option value="active">{t("inProgress")}</option>
-                <option value="completed">{t("completed")}</option>
-                <option value="overdue">{t("overdue")}</option>
-              </select>
-            </div>
+            )}
             {stationTargets.length === 0 ? (
-              <p className="text-sm text-muted-foreground font-body">{searchQuery || statusFilter !== "all" ? t("noResults") : t("noTargets")}</p>
+              childFolders.length === 0 && (
+                <p className="text-sm text-muted-foreground font-body">{searchQuery || statusFilter !== "all" ? t("noResults") : t("noTargets")}</p>
+              )
             ) : (
               <div className="space-y-3">
                 {stationTargets.map((tg) => {
