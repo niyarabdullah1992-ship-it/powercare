@@ -17,6 +17,8 @@ import ResetPassword from './pages/ResetPassword';
 import OwnerPanel from './pages/OwnerPanel';
 
 import Landing from './pages/Landing';
+import Pricing from './pages/Pricing';
+import PricingSuccess from './pages/PricingSuccess';
 import Dashboard from './pages/Dashboard';
 import MyTasks from './pages/MyTasks';
 import StationChat from './pages/StationChat';
@@ -42,6 +44,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/pricing" element={<Pricing />} />
+      <Route path="/pricing-success" element={<PricingSuccess />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
