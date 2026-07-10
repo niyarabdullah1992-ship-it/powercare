@@ -266,8 +266,8 @@ export function switchUser(userId) {
 export function createDemoCompany() {
   const suffix = Math.random().toString(36).slice(2, 6);
   const company = createCompany({
-    name: "Gulf Power Operations",
-    ownerEmail: `admin+${suffix}@gulfpower.com`,
+    name: `Preview Company ${suffix.toUpperCase()}`,
+    ownerEmail: `preview_${suffix}@powercare-demo.com`,
     ownerPassword: "demo123",
     plan: "Professional",
   });
