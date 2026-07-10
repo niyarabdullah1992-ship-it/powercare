@@ -788,7 +788,7 @@ export default function MyTasks() {
               </div>
             )}
 
-            {!hasAnyContent ? (
+            {!hasAnyContent && !canCreateTasks(currentUser) ? (
               <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
             ) : (
               <FolderTree
