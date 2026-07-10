@@ -733,7 +733,7 @@ export default function MyTasks() {
         {targetsLoading ? (
           <p className="text-sm text-muted-foreground font-body">…</p>
         ) : !selectedStation ? (
-          targets.length === 0 ? (
+          stationGroups.length === 0 ? (
             <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
           ) : (
             <motion.div
