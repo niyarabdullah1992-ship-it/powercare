@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { addNotification, addPoints } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { PRIORITY_POINTS } from "@/lib/rewards";
 import { base44 } from "@/api/base44Client";
-import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, MessageCircle, Send, Clock, Search, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, MessageCircle, Send, Clock, Search, Pencil, Trash2, X, GripVertical } from "lucide-react";
 import TaskStats from "@/components/tasks/TaskStats";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
@@ -132,8 +133,9 @@ export default function MyTasks() {
     }
     setNewSectionName("");
     setCreatingFolder(true);
+    const sortOrder = folders.filter((f) => f.station_id === selectedStation && getParentPath(f.path) === selectedSection).length;
     try {
-      const res = await base44.functions.invoke("supabaseTargets", { action: "createFolder", stationId: selectedStation, path });
+      const res = await base44.functions.invoke("supabaseTargets", { action: "createFolder", stationId: selectedStation, path, sortOrder });
       const created = res?.data?.folder;
       if (created) setFolders((prev) => [...prev, created]);
       else setFolderError("Unexpected response — could not create the section.");
@@ -511,9 +513,28 @@ export default function MyTasks() {
     ...stationTargetsAll.filter((tg) => tg.section).map((tg) => tg.section),
   ]);
   const folderCountAt = (path) => stationTargetsAll.filter((tg) => (tg.section || null) === path).length;
+  const folderRowAt = (path) => folders.find((f) => f.station_id === selectedStation && f.path === path);
   const childFolders = allStationFolders
     .filter((p) => getParentPath(p) === selectedSection)
-    .map((p) => ({ key: p, name: getLeafName(p), count: folderCountAt(p) }));
+    .map((p) => ({ key: p, name: getLeafName(p), count: folderCountAt(p), id: folderRowAt(p)?.id, sortOrder: folderRowAt(p)?.sort_order ?? 9999 }))
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const handleFolderDragEnd = async (result) => {
+    if (!result.destination || result.destination.index === result.source.index) return;
+    const reordered = Array.from(childFolders);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+    const items = reordered.filter((f) => f.id).map((f, idx) => ({ id: f.id, sortOrder: idx }));
+    setFolders((prev) => prev.map((f) => {
+      const match = items.find((it) => it.id === f.id);
+      return match ? { ...f, sort_order: match.sortOrder } : f;
+    }));
+    try {
+      await base44.functions.invoke("supabaseTargets", { action: "reorderFolders", items });
+    } catch {
+      // best-effort — order will re-sync on next fetch
+    }
+  };
   const directTaskCount = folderCountAt(selectedSection);
   const stationTargets = selectedStation
     ? stationTargetsAll
@@ -826,52 +847,72 @@ export default function MyTasks() {
             )}
 
             {childFolders.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {childFolders.map((f) => (
-                  <div key={f.key} className="relative group">
-                    <button
-                      onClick={() => setSelectedSection(f.key)}
-                      className="flex items-center justify-between w-full p-4 rounded-lg border border-border bg-background hover:bg-muted transition text-start"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                          <FileText className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium font-body">{f.name}</p>
-                          <p className="text-xs text-muted-foreground font-body">{f.count} {t("tasksUnit")}</p>
-                        </div>
-                      </div>
-                      <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
-                    </button>
-                    {canCreateTasks(currentUser) && (
-                      <div className={`absolute top-2 ${dir === "rtl" ? "left-2" : "right-2"} flex items-center gap-1 opacity-0 group-hover:opacity-100 transition`}>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setRenameFolderKey(f.key); setRenameValue(f.name); }}
-                          title={t("edit")}
-                          className="p-1 rounded-md bg-background/80 text-muted-foreground hover:text-foreground hover:bg-muted"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <ConfirmDeleteDialog
-                          onConfirm={() => deleteFolder(f.key)}
-                          trigger={
-                            <button
-                              type="button"
-                              onClick={(e) => e.stopPropagation()}
-                              title={t("delete")}
-                              className="p-1 rounded-md bg-background/80 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+              <DragDropContext onDragEnd={handleFolderDragEnd}>
+                <Droppable droppableId="task-folders">
+                  {(provided) => (
+                    <div ref={provided.innerRef} {...provided.droppableProps} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {childFolders.map((f, index) => (
+                        <Draggable key={f.key} draggableId={f.key} index={index} isDragDisabled={!canCreateTasks(currentUser)}>
+                          {(dragProvided, dragSnapshot) => (
+                            <div
+                              ref={dragProvided.innerRef}
+                              {...dragProvided.draggableProps}
+                              className={`relative group ${dragSnapshot.isDragging ? "opacity-90 shadow-lg" : ""}`}
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          }
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                              <button
+                                onClick={() => setSelectedSection(f.key)}
+                                className="flex items-center justify-between w-full p-4 rounded-lg border border-border bg-background hover:bg-muted transition text-start"
+                              >
+                                <div className="flex items-center gap-3">
+                                  {canCreateTasks(currentUser) && (
+                                    <span {...dragProvided.dragHandleProps} onClick={(e) => e.stopPropagation()} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
+                                      <GripVertical className="w-4 h-4" />
+                                    </span>
+                                  )}
+                                  <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
+                                    <FileText className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium font-body">{f.name}</p>
+                                    <p className="text-xs text-muted-foreground font-body">{f.count} {t("tasksUnit")}</p>
+                                  </div>
+                                </div>
+                                <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
+                              </button>
+                              {canCreateTasks(currentUser) && (
+                                <div className={`absolute top-2 ${dir === "rtl" ? "left-2" : "right-2"} flex items-center gap-1 opacity-0 group-hover:opacity-100 transition`}>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setRenameFolderKey(f.key); setRenameValue(f.name); }}
+                                    title={t("edit")}
+                                    className="p-1 rounded-md bg-background/80 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                  <ConfirmDeleteDialog
+                                    onConfirm={() => deleteFolder(f.key)}
+                                    trigger={
+                                      <button
+                                        type="button"
+                                        onClick={(e) => e.stopPropagation()}
+                                        title={t("delete")}
+                                        className="p-1 rounded-md bg-background/80 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    }
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             )}
 
             {directTaskCount > 0 && (

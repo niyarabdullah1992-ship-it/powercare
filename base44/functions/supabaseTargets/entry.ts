@@ -295,14 +295,14 @@ Deno.serve(async (req) => {
     }
 
     if (action === "listFolders") {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/task_folders?order=path.asc`, { headers });
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/task_folders?order=sort_order.asc,path.asc`, { headers });
       const rows = await res.json();
       if (!res.ok) return Response.json({ folders: [] });
       return Response.json({ folders: rows || [] });
     }
 
     if (action === "createFolder") {
-      const { stationId, path } = body;
+      const { stationId, path, sortOrder } = body;
       if (!stationId || !path) return Response.json({ error: "Missing fields" }, { status: 400 });
       const checkRes = await fetch(
         `${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(stationId)}&path=eq.${encodeURIComponent(path)}`,
@@ -315,13 +315,28 @@ Deno.serve(async (req) => {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/task_folders`, {
         method: "POST",
         headers: { ...headers, Prefer: "return=representation" },
-        body: JSON.stringify({ station_id: stationId, path }),
+        body: JSON.stringify({ station_id: stationId, path, sort_order: Number(sortOrder) || 0 }),
       });
       const created = await res.json();
       if (!res.ok) {
-        return Response.json({ error: created?.message || "Failed to create section — run: CREATE TABLE IF NOT EXISTS task_folders (id uuid primary key default gen_random_uuid(), station_id text, path text, created_at timestamptz default now());" }, { status: 400 });
+        return Response.json({ error: created?.message || "Failed to create section — run: CREATE TABLE IF NOT EXISTS task_folders (id uuid primary key default gen_random_uuid(), station_id text, path text, sort_order integer default 0, created_at timestamptz default now());" }, { status: 400 });
       }
       return Response.json({ folder: Array.isArray(created) ? created[0] : created });
+    }
+
+    if (action === "reorderFolders") {
+      const { items } = body;
+      if (!Array.isArray(items) || items.length === 0) return Response.json({ error: "Missing items" }, { status: 400 });
+      await Promise.all(
+        items.filter((it) => it && it.id).map((it) =>
+          fetch(`${SUPABASE_URL}/rest/v1/task_folders?id=eq.${encodeURIComponent(it.id)}`, {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({ sort_order: Number(it.sortOrder) || 0 }),
+          })
+        )
+      );
+      return Response.json({ ok: true });
     }
 
     if (action === "renameFolder") {
