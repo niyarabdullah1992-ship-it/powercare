@@ -315,12 +315,12 @@ export function setLeaveTotal(companyId, employeeId, type, total) {
 }
 
 // HR communications — per-employee thread routed to Station HR or HQ HR.
-export function addHRMessage(companyId, employeeId, { from, target, text, senderName }) {
+export function addHRMessage(companyId, employeeId, { from, target, text, files, senderName }) {
   updateCompany(companyId, (d) => {
     const emp = d.employees.find((e) => e.id === employeeId);
     if (!emp) return;
     emp.hrMessages = emp.hrMessages || [];
-    emp.hrMessages.push({ id: uid("msg"), from, target, text, senderName, createdAt: new Date().toISOString() });
+    emp.hrMessages.push({ id: uid("msg"), from, target, text, files: files || [], senderName, createdAt: new Date().toISOString() });
   });
 }
 

@@ -2,24 +2,29 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { addHRMessage } from "@/lib/store";
 import { Send, Building2, Users } from "lucide-react";
+import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
+import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 
 export default function HRCommunicationsTab({ employee, companyId, currentUser, isSelf, canReply }) {
   const { t } = useI18n();
   const [target, setTarget] = useState("station");
   const [text, setText] = useState("");
+  const [files, setFiles] = useState([]);
   const messages = employee.hrMessages || [];
   const canSend = isSelf || canReply;
 
   const send = (e) => {
     e.preventDefault();
-    if (!text.trim()) return;
+    if (!text.trim() && files.length === 0) return;
     addHRMessage(companyId, employee.id, {
       from: isSelf ? "employee" : "hr",
       target,
       text: text.trim(),
+      files,
       senderName: currentUser.name,
     });
     setText("");
+    setFiles([]);
   };
 
   return (
@@ -37,7 +42,8 @@ export default function HRCommunicationsTab({ employee, companyId, currentUser, 
                   <span>·</span>
                   <span>{m.target === "hq" ? t("hqHRTarget") : t("stationHRTarget")}</span>
                 </div>
-                <p>{m.text}</p>
+                {m.text && <p>{m.text}</p>}
+                <CommentAttachments files={m.files} />
               </div>
             </div>
           ))
@@ -57,6 +63,10 @@ export default function HRCommunicationsTab({ employee, companyId, currentUser, 
               </button>
             </div>
           )}
+          <div className="flex flex-wrap items-end gap-2">
+            <CommentFiles files={files} setFiles={setFiles} />
+            <VoiceRecorder files={files} setFiles={setFiles} />
+          </div>
           <div className="flex items-center gap-2">
             <input value={text} onChange={(e) => setText(e.target.value)} placeholder={t("typeMessage")} className="flex-1 px-3 py-2 rounded-md border border-input text-sm font-body" />
             <button type="submit" className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-foreground text-background text-sm font-body">
