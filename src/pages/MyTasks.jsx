@@ -457,8 +457,7 @@ export default function MyTasks() {
   const saveReason = async (targetId, reason) => {
     try {
       const res = await base44.functions.invoke("supabaseTargets", {
-        action: "updateTarget",
-        userRole: currentUser.role,
+        action: "setReason",
         targetId,
         reason,
       });

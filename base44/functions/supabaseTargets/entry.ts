@@ -244,6 +244,21 @@ Deno.serve(async (req) => {
       return Response.json({ target: Array.isArray(updated) ? updated[0] : updated });
     }
 
+    if (action === "setReason") {
+      const { targetId, reason } = body;
+      if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
+        method: "PATCH",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify({ reason: reason || null }),
+      });
+      const updated = await res.json();
+      if (!res.ok) {
+        return Response.json({ error: updated?.message || "Failed to save reason — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS reason text;" }, { status: 400 });
+      }
+      return Response.json({ target: Array.isArray(updated) ? updated[0] : updated });
+    }
+
     if (action === "listNotifications") {
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/notifications?user_id=eq.${encodeURIComponent(body.userId)}&order=created_at.desc&limit=20`,

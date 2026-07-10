@@ -125,10 +125,10 @@ export default function TaskCard({
           <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
         </div>
       </div>
-      {overdue && (
+      {!done && (
         <div className="p-2.5 rounded-md bg-red-50 border border-red-200 space-y-1.5">
           <p className="text-[11px] font-medium text-red-700 font-body">{t("incompleteReason")}</p>
-          {canManage ? (
+          {canManage || canLogThis ? (
             <select
               value={tg.reason || ""}
               onChange={(e) => onSaveReason(tg.id, e.target.value)}
