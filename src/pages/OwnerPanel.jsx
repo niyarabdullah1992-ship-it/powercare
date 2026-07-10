@@ -6,6 +6,7 @@ import { listCompanies, createCompany, deleteCompany, getCompanyData, setSession
 import { logAudit, fetchAllAuditLog } from "@/lib/auditLog";
 import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn } from "lucide-react";
 import Logo from "@/components/Logo";
+import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 export default function OwnerPanel() {
   const { t, lang } = useI18n();
@@ -60,12 +61,10 @@ export default function OwnerPanel() {
 
   const handleDelete = (id) => {
     const c = companies.find((x) => x.id === id);
-    if (confirm(t("confirmDelete"))) {
-      deleteCompany(id);
-      logAudit(id, "company_deleted", user.email, `${user.email} deleted company "${c?.name || id}".`);
-      refresh();
-      fetchAllAuditLog().then(setAuditLogs);
-    }
+    deleteCompany(id);
+    logAudit(id, "company_deleted", user.email, `${user.email} deleted company "${c?.name || id}".`);
+    refresh();
+    fetchAllAuditLog().then(setAuditLogs);
   };
 
   const handleEnter = (id) => {
@@ -111,9 +110,14 @@ export default function OwnerPanel() {
                     <button onClick={() => handleEnter(c.id)} title={lang === "ar" ? "دخول" : "Enter"} className="p-2 text-landing-gold hover:bg-white rounded-md">
                       <LogIn className="w-4 h-4" strokeWidth={1.75} />
                     </button>
-                    <button onClick={() => handleDelete(c.id)} className="p-2 text-red-500 hover:bg-white rounded-md">
-                      <Trash2 className="w-4 h-4" strokeWidth={1.75} />
-                    </button>
+                    <ConfirmDeleteDialog
+                      onConfirm={() => handleDelete(c.id)}
+                      trigger={
+                        <button className="p-2 text-red-500 hover:bg-white rounded-md">
+                          <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                        </button>
+                      }
+                    />
                   </div>
                 </div>
               ))}
