@@ -94,10 +94,10 @@ function saveRegistry(reg) {
 export function listCompanies() {
   return getRegistry().companies;
 }
-export function createCompany({ name, ownerEmail, ownerPassword, plan = "Starter" }) {
+export function createCompany({ name, ownerEmail, ownerPassword, plan = "Starter", allowedEmailDomain = "" }) {
   const reg = getRegistry();
   const id = uid("comp");
-  const company = { id, name, ownerEmail, ownerPassword, plan, createdAt: new Date().toISOString() };
+  const company = { id, name, ownerEmail, ownerPassword, plan, allowedEmailDomain: allowedEmailDomain.trim(), createdAt: new Date().toISOString() };
   reg.companies.push(company);
   saveRegistry(reg);
   // seed empty company workspace
@@ -113,6 +113,15 @@ export function deleteCompany(id) {
 }
 export function getCompanyMeta(id) {
   return getRegistry().companies.find((c) => c.id === id) || null;
+}
+
+// Owner/director-controlled restriction: only emails ending in this domain may be added
+// as employees for the company (e.g. "@acwa.com"). Empty/null = no restriction.
+export function setAllowedEmailDomain(companyId, domain) {
+  const reg = getRegistry();
+  const c = reg.companies.find((x) => x.id === companyId);
+  if (c) c.allowedEmailDomain = (domain || "").trim();
+  saveRegistry(reg);
 }
 
 function companyKey(id) {

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { updateCompany, addNotification, updateEmployeeProfile } from "@/lib/store";
+import { updateCompany, addNotification, updateEmployeeProfile, setAllowedEmailDomain } from "@/lib/store";
 import { canManageEmployees, canTransferOwnership, visibleStations, visibleEmployees } from "@/lib/permissions";
 import { Link } from "react-router-dom";
-import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle } from "lucide-react";
+import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle, Mail } from "lucide-react";
 import { badgeFor, nextBadge } from "@/lib/rewards";
 import { getRoleLabel } from "@/lib/roles";
 import { base44 } from "@/api/base44Client";
@@ -41,6 +41,9 @@ export default function Employees() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [showTransfer, setShowTransfer] = useState(null);
   const [targets, setTargets] = useState([]);
+  const [editingDomain, setEditingDomain] = useState(false);
+  const [domainInput, setDomainInput] = useState("");
+  const [emailError, setEmailError] = useState("");
 
   useEffect(() => {
     if (!currentUser) return;
@@ -91,6 +94,33 @@ export default function Employees() {
               )}
               {currentUser.role === "director" && <RoleLabelsEditor company={company} />}
             </div>
+            {currentUser.role === "director" && (
+              <div className="mt-3 pt-3 border-t border-border">
+                {editingDomain ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      autoFocus
+                      value={domainInput}
+                      onChange={(e) => setDomainInput(e.target.value)}
+                      placeholder="@acwa.com"
+                      className="px-2.5 py-1.5 rounded-md border border-input text-xs font-body"
+                    />
+                    <button onClick={saveDomain} className="p-1.5 rounded-md hover:bg-accent/10 text-accent"><Check className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setEditingDomain(false)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setEditingDomain(true); setDomainInput(company.allowedEmailDomain || ""); }}
+                    className="flex items-center gap-2 text-xs font-body text-muted-foreground hover:text-foreground"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    {t("allowedEmailDomain")}: {company.allowedEmailDomain ? <span className="text-foreground">{company.allowedEmailDomain}</span> : t("all")}
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                )}
+                <p className="text-[11px] text-muted-foreground font-body mt-1">{t("allowedEmailDomainNote")}</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -153,8 +183,19 @@ export default function Employees() {
   if (search) team = team.filter((e) => e.name.toLowerCase().includes(search.toLowerCase()) || e.email.toLowerCase().includes(search.toLowerCase()));
   if (roleFilter !== "all") team = team.filter((e) => e.role === roleFilter);
 
+  const saveDomain = () => {
+    setAllowedEmailDomain(company.id, domainInput);
+    setEditingDomain(false);
+  };
+
   const addEmployee = (e) => {
     e.preventDefault();
+    setEmailError("");
+    const domain = (company.allowedEmailDomain || "").trim().toLowerCase();
+    if (domain && !form.email.toLowerCase().endsWith(domain)) {
+      setEmailError(t("invalidEmailDomain"));
+      return;
+    }
     updateCompany(company.id, (d) => {
       const emp = {
         id: "emp_" + Math.random().toString(36).slice(2, 9),
@@ -226,7 +267,10 @@ export default function Employees() {
       {showAdd && (
         <form onSubmit={addEmployee} className="p-5 rounded-xl border border-border bg-card grid grid-cols-1 md:grid-cols-3 gap-3">
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("title")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
-          <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t("email")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
+          <div>
+            <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t("email")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            {emailError && <p className="text-xs text-destructive font-body mt-1">{emailError}</p>}
+          </div>
           <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="px-3 py-2 rounded-md border border-input text-sm font-body">
             {allowedRoles.map((r) => <option key={r} value={r}>{getRoleLabel(company, r, t)}</option>)}
           </select>

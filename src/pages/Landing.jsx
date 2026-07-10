@@ -243,7 +243,7 @@ function OwnerSection({ t }) {
   const [authed, setAuthed] = useState(false);
   const [error, setError] = useState("");
   const [companies, setCompanies] = useState([]);
-  const [form, setForm] = useState({ name: "", ownerEmail: "", ownerPassword: "", plan: "Starter" });
+  const [form, setForm] = useState({ name: "", ownerEmail: "", ownerPassword: "", plan: "Starter", allowedEmailDomain: "" });
 
   const refresh = () => setCompanies(listCompanies());
   useEffect(() => {
@@ -266,7 +266,7 @@ function OwnerSection({ t }) {
     e.preventDefault();
     if (!form.name || !form.ownerEmail || !form.ownerPassword) return;
     createCompany(form);
-    setForm({ name: "", ownerEmail: "", ownerPassword: "", plan: "Starter" });
+    setForm({ name: "", ownerEmail: "", ownerPassword: "", plan: "Starter", allowedEmailDomain: "" });
     refresh();
   };
 
@@ -340,6 +340,8 @@ function OwnerSection({ t }) {
           <option>Professional</option>
           <option>Enterprise</option>
         </select>
+        <input value={form.allowedEmailDomain} onChange={(e) => setForm({ ...form, allowedEmailDomain: e.target.value })} placeholder={t("allowedEmailDomain") + " (e.g. @acwa.com)"}
+          className="w-full px-3 py-2 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold" />
         <button type="submit" className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity">
           {t("createCompany")}
         </button>
