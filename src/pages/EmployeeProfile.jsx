@@ -49,7 +49,7 @@ export default function EmployeeProfile() {
         employee={employee}
         companyId={company.id}
         canEdit={isSelf || canManage}
-        roleLabel={employee.customTitle || getRoleLabel(company, employee.role, t)}
+        roleLabel={employee.profile?.position || employee.customTitle || getRoleLabel(company, employee.role, t)}
         stationName={stationName}
       />
 
