@@ -3,6 +3,7 @@ import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2, Histo
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { formatDateTime } from "@/lib/dateFormat";
 import { NO_SECTION } from "@/lib/taskFolders";
 
@@ -13,7 +14,6 @@ export default function TaskCard({
   commentsOpen, setCommentsOpen, commentText, setCommentText, commentFiles, setCommentFiles, submitComment,
   allSectionFolders, moveTaskToSection, setEditTarget, deleteTarget, onSaveReason,
 }) {
-  const [showReasonHistory, setShowReasonHistory] = useState(false);
   const REASONS = ["workStoppage", "noActivity", "weather", "equipment", "power", "access", "labor"];
   const todayStr = new Date().toISOString().slice(0, 10);
   const reasonLog = Array.isArray(tg.reason_log) ? tg.reason_log : [];
@@ -131,57 +131,54 @@ export default function TaskCard({
         </div>
       </div>
       {!done && (
-        <div className="p-2.5 rounded-md bg-red-50 border border-red-200 space-y-1.5">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] font-medium text-red-700 font-body">{t("incompleteReason")} — {t("today")}</p>
-            {pastReasons.length > 0 && (
+        <div className="flex items-center gap-2 pt-1">
+          {canLogThis && !overdue && (
+            <>
+              <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
+              <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
+                <Check className="w-3.5 h-3.5" /> {t("logCompleted")}
+              </button>
+            </>
+          )}
+          <Popover>
+            <PopoverTrigger asChild>
               <button
                 type="button"
-                onClick={() => setShowReasonHistory((v) => !v)}
-                className="flex items-center gap-1 text-[10px] text-red-700/80 font-body hover:text-red-700"
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-body border transition-colors ${todayReason ? "border-red-300 bg-red-50 text-red-700" : "border-border text-muted-foreground hover:bg-muted"}`}
+                title={t("incompleteReason")}
               >
-                <History className="w-3 h-3" /> {t("reasonHistory")} ({pastReasons.length})
+                <AlertTriangle className="w-3.5 h-3.5" /> {todayReason ? t(todayReason) : t("incompleteReason")}
               </button>
-            )}
-          </div>
-          {canManage || canLogThis ? (
-            <select
-              value={todayReason}
-              onChange={(e) => onSaveReason(tg.id, e.target.value)}
-              className="w-full px-2 py-1.5 rounded-md border border-red-200 bg-card text-xs font-body"
-            >
-              <option value="">{t("selectReason")}</option>
-              {REASONS.map((r) => (
-                <option key={r} value={r}>{t(r)}</option>
-              ))}
-            </select>
-          ) : todayReason ? (
-            <p className="text-xs text-red-700 font-body">{t(todayReason)}</p>
-          ) : (
-            <p className="text-xs text-muted-foreground font-body">—</p>
-          )}
-          {showReasonHistory && (
-            <div className="pt-1.5 border-t border-red-200 space-y-1 max-h-28 overflow-y-auto">
-              {pastReasons.length === 0 ? (
-                <p className="text-[11px] text-muted-foreground font-body">{t("noReasonHistory")}</p>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 space-y-2">
+              <p className="text-xs font-medium font-body">{t("incompleteReason")} — {t("today")}</p>
+              {canManage || canLogThis ? (
+                <select
+                  value={todayReason}
+                  onChange={(e) => onSaveReason(tg.id, e.target.value)}
+                  className="w-full px-2 py-1.5 rounded-md border border-input bg-card text-xs font-body"
+                >
+                  <option value="">{t("selectReason")}</option>
+                  {REASONS.map((r) => (
+                    <option key={r} value={r}>{t(r)}</option>
+                  ))}
+                </select>
               ) : (
-                pastReasons.map((e) => (
-                  <div key={e.date} className="flex items-center justify-between text-[11px] font-body">
-                    <span className="text-muted-foreground">{e.date}</span>
-                    <span className="text-red-700">{t(e.reason)}</span>
-                  </div>
-                ))
+                <p className="text-xs text-muted-foreground font-body">{todayReason ? t(todayReason) : "—"}</p>
               )}
-            </div>
-          )}
-        </div>
-      )}
-      {canLogThis && !done && !overdue && (
-        <div className="flex items-center gap-2 pt-1">
-          <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
-          <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
-            <Check className="w-3.5 h-3.5" /> {t("logCompleted")}
-          </button>
+              {pastReasons.length > 0 && (
+                <div className="pt-1.5 border-t border-border space-y-1 max-h-28 overflow-y-auto">
+                  <p className="text-[11px] text-muted-foreground font-body flex items-center gap-1"><History className="w-3 h-3" /> {t("reasonHistory")}</p>
+                  {pastReasons.map((e) => (
+                    <div key={e.date} className="flex items-center justify-between text-[11px] font-body">
+                      <span className="text-muted-foreground">{e.date}</span>
+                      <span className="text-foreground">{t(e.reason)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
         </div>
       )}
 
