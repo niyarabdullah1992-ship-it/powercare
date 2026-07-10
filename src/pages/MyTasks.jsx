@@ -79,6 +79,7 @@ export default function MyTasks() {
   const [renameFolderKey, setRenameFolderKey] = useState(null);
   const [renameValue, setRenameValue] = useState("");
   const [folderError, setFolderError] = useState("");
+  const [creatingFolder, setCreatingFolder] = useState(false);
 
   const fetchTargets = async () => {
     if (!currentUser) return;
@@ -126,6 +127,7 @@ export default function MyTasks() {
       return;
     }
     setNewSectionName("");
+    setCreatingFolder(true);
     try {
       const res = await base44.functions.invoke("supabaseTargets", { action: "createFolder", stationId: selectedStation, path });
       const created = res?.data?.folder;
@@ -133,6 +135,8 @@ export default function MyTasks() {
       else setFolderError("Unexpected response — could not create the section.");
     } catch (err) {
       setFolderError(err?.response?.data?.error || err?.message || "Failed to create section");
+    } finally {
+      setCreatingFolder(false);
     }
   };
 
@@ -809,8 +813,8 @@ export default function MyTasks() {
                     placeholder={t("newSectionPlaceholder")}
                     className="flex-1 px-3 py-2 rounded-md border border-input text-sm font-body"
                   />
-                  <button type="button" onClick={addFolder} className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-foreground text-background text-sm font-body whitespace-nowrap">
-                    <Plus className="w-4 h-4" /> {t("addSection")}
+                  <button type="button" onClick={addFolder} disabled={creatingFolder} className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-foreground text-background text-sm font-body whitespace-nowrap disabled:opacity-50">
+                    <Plus className="w-4 h-4" /> {creatingFolder ? "…" : t("addSection")}
                   </button>
                 </div>
                 {folderError && <p className="text-xs text-red-600 font-body">{folderError}</p>}
