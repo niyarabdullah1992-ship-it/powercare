@@ -73,6 +73,11 @@ export default function Employees() {
   // Station managers can only add employees / station managers to their own station
   const allowedRoles = currentUser.role === "station_manager" ? ["employee", "station_manager"] : ROLES;
 
+  const saveDomain = () => {
+    setAllowedEmailDomain(company.id, domainInput);
+    setEditingDomain(false);
+  };
+
   // Drill-down: show station grid first
   if (!selectedStation) {
     return (
@@ -182,11 +187,6 @@ export default function Employees() {
     : data.employees.filter((e) => e.stationId === selectedStation || (e.role === "pgm" && (e.managedStations || []).includes(selectedStation)));
   if (search) team = team.filter((e) => e.name.toLowerCase().includes(search.toLowerCase()) || e.email.toLowerCase().includes(search.toLowerCase()));
   if (roleFilter !== "all") team = team.filter((e) => e.role === roleFilter);
-
-  const saveDomain = () => {
-    setAllowedEmailDomain(company.id, domainInput);
-    setEditingDomain(false);
-  };
 
   const addEmployee = (e) => {
     e.preventDefault();
