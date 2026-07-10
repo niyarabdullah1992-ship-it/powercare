@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { addNotification, addPoints } from "@/lib/store";
@@ -695,13 +696,21 @@ export default function MyTasks() {
           <Target className="w-4 h-4" /> {t("targets")}
         </h2>
 
+        <AnimatePresence mode="wait">
         {targetsLoading ? (
           <p className="text-sm text-muted-foreground font-body">…</p>
         ) : !selectedStation ? (
           targets.length === 0 ? (
             <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <motion.div
+              key="stations"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+            >
               {stationGroups.map((g) => (
                 <button
                   key={g.key}
@@ -720,10 +729,17 @@ export default function MyTasks() {
                   <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
                 </button>
               ))}
-            </div>
+            </motion.div>
           )
         ) : !selectedSection ? (
-          <div className="space-y-3">
+          <motion.div
+            key="folders"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="space-y-3"
+          >
             <button onClick={() => setSelectedStation(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
               <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
             </button>
@@ -792,9 +808,16 @@ export default function MyTasks() {
                 ))}
               </div>
             )}
-          </div>
+          </motion.div>
         ) : (
-          <div className="space-y-3">
+          <motion.div
+            key="tasks"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="space-y-3"
+          >
             <button onClick={() => setSelectedSection(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
               <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
             </button>
@@ -992,8 +1015,9 @@ export default function MyTasks() {
                 })}
               </div>
             )}
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
 
       {/* Edit modal */}
