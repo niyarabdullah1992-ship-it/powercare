@@ -11,7 +11,7 @@ import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 
 export default function StationChat() {
   const { t, dir, lang } = useI18n();
-  const { data, currentUser, company } = useAuth();
+  const { data, currentUser } = useAuth();
   const [selectedStation, setSelectedStation] = useState(null);
   const [activeChat, setActiveChat] = useState(null); // { type: "general" } | { type: "dm", userId, name }
   const [messages, setMessages] = useState([]);
@@ -28,7 +28,7 @@ export default function StationChat() {
           key: currentUser.stationId || "hq",
           name: currentUser.stationId ? (data.stations.find((s) => s.id === currentUser.stationId)?.name || t("station")) : t("hq"),
         }];
-  const stationRooms = company?.crossStationChatEnabled
+  const stationRooms = data?.crossStationChatEnabled
     ? [{ key: "all", name: t("allStationsChat") }, ...baseRooms]
     : baseRooms;
 
