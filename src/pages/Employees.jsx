@@ -231,6 +231,16 @@ export default function Employees() {
     });
   };
 
+  const moveEmployee = (id, newStationId) => {
+    updateCompany(company.id, (d) => {
+      const emp = d.employees.find((x) => x.id === id);
+      if (!emp) return;
+      const oldStation = d.stations.find((s) => s.managerId === id);
+      if (oldStation) oldStation.managerId = null;
+      emp.stationId = newStationId || null;
+    });
+  };
+
   const saveTitle = (id) => {
     updateEmployeeProfile(company.id, id, { position: titleInput.trim() || "" });
     setEditingTitle(null);
@@ -355,7 +365,20 @@ export default function Employees() {
 
             <EmployeePerformance targets={targets.filter((tg) => tg.assignment_type === "member" && tg.employee_id === e.id)} />
 
-            <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border">
+            <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border flex-wrap">
+              {canManage && e.role !== "pgm" && (
+                <select
+                  value={e.stationId || "HQ"}
+                  onChange={(ev) => moveEmployee(e.id, ev.target.value === "HQ" ? null : ev.target.value)}
+                  title={t("moveStation")}
+                  className="px-2 py-1 rounded-md border border-input text-xs font-body bg-background"
+                >
+                  <option value="HQ">{t("hq")}</option>
+                  {data.stations.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              )}
               <Link to={`/app/employees/${e.id}`} className="flex items-center gap-1.5 text-xs text-accent font-body hover:underline">
                 <UserCircle className="w-3.5 h-3.5" /> {t("viewProfile")}
               </Link>
