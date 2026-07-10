@@ -115,12 +115,13 @@ export default function MyTasks() {
     const name = newSectionName.trim();
     if (!name || !selectedStation) return;
     const path = selectedSection ? `${selectedSection}/${name}` : name;
-    const list = customFolders[selectedStation] || [];
-    if (!list.includes(path)) {
-      const next = { ...customFolders, [selectedStation]: [...list, path] };
-      setCustomFolders(next);
+    setCustomFolders((prev) => {
+      const list = prev[selectedStation] || [];
+      if (list.includes(path)) return prev;
+      const next = { ...prev, [selectedStation]: [...list, path] };
       if (data?.id) localStorage.setItem(`powercare_folders_${data.id}`, JSON.stringify(next));
-    }
+      return next;
+    });
     setNewSectionName("");
   };
 
