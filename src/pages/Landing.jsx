@@ -14,8 +14,8 @@ export default function Landing() {
   const { login, session } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState("company");
-  const [email, setEmail] = useState("admin@gulfpower.com");
-  const [password, setPassword] = useState("demo123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [langOpen, setLangOpen] = useState(false);
   const currentLang = languages.find((l) => l.code === lang);
@@ -152,9 +152,6 @@ export default function Landing() {
                 >
                   {t("login")}
                 </button>
-                <p className="text-center text-xs text-[#3a2f22]/40 font-body pt-2">
-                  Demo: <code className="text-[#3a2f22]/70">admin@gulfpower.com</code> / <code className="text-[#3a2f22]/70">demo123</code>
-                </p>
               </form>
             ) : (
               <OwnerAccessCard t={t} lang={lang} />

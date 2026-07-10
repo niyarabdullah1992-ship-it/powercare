@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
   getSession, companyLogin, switchUser, clearSession, getCompanyData,
-  subscribe, seedDemoIfEmpty, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
+  subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
 } from "./store";
 
 const AuthContext = createContext(null);
@@ -13,7 +13,6 @@ export function AuthProvider({ children }) {
   const [tick, setTick] = useState(0); // force refresh on store changes
 
   useEffect(() => {
-    seedDemoIfEmpty();
     const refresh = () => setTick((t) => t + 1);
     const unsub = subscribe(refresh);
     return unsub;
