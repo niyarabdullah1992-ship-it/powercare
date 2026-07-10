@@ -847,6 +847,9 @@ export default function MyTasks() {
             )}
 
             {childFolders.length > 0 && (
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-body pt-1">{t("subfolders")}</p>
+            )}
+            {childFolders.length > 0 && (
               <DragDropContext onDragEnd={handleFolderDragEnd}>
                 <Droppable droppableId="task-folders">
                   {(provided) => (
@@ -916,8 +919,8 @@ export default function MyTasks() {
             )}
 
             {directTaskCount > 0 && (
-              <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-body">{t("myTasks")}</p>
+              <div className={`flex items-center justify-between gap-2 flex-wrap pt-2 ${childFolders.length > 0 ? "border-t border-border" : ""}`}>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground font-body">{t("directTasks")}</p>
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-muted-foreground font-body">{t("sortBy")}:</span>
                   <button onClick={() => setSortBy("priority")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "priority" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byPriority")}</button>

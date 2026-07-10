@@ -205,6 +205,8 @@ const dict = {
     identityVisible: "Your identity is visible to management",
     noPublicReports: "No public complaints yet.",
     yourPublicReports: "Your Public Complaints",
+    subfolders: "Subfolders",
+    directTasks: "Tasks in this folder",
   },
   ar: {
     dir: "rtl",
@@ -409,6 +411,8 @@ const dict = {
     identityVisible: "هويتك ظاهرة أمام الإدارة",
     noPublicReports: "لا توجد شكاوى جهرية بعد.",
     yourPublicReports: "شكاواك الجهرية",
+    subfolders: "الأقسام الفرعية",
+    directTasks: "المهام داخل هذا القسم",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
