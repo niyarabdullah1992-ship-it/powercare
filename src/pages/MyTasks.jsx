@@ -74,7 +74,7 @@ export default function MyTasks() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [editTarget, setEditTarget] = useState(null);
   const [newSectionName, setNewSectionName] = useState("");
-  const [customFolders, setCustomFolders] = useState({});
+  const [folders, setFolders] = useState([]);
   const [sectionValue, setSectionValue] = useState("");
   const [renameFolderKey, setRenameFolderKey] = useState(null);
   const [renameValue, setRenameValue] = useState("");
@@ -102,36 +102,32 @@ export default function MyTasks() {
     fetchTargets();
   }, [currentUser?.id]);
 
-  useEffect(() => {
-    if (!data?.id) return;
+  const fetchFolders = async () => {
     try {
-      setCustomFolders(JSON.parse(localStorage.getItem(`powercare_folders_${data.id}`)) || {});
+      const res = await base44.functions.invoke("supabaseTargets", { action: "listFolders" });
+      setFolders(res.data.folders || []);
     } catch {
-      setCustomFolders({});
+      setFolders([]);
     }
-  }, [data?.id]);
+  };
 
-  const addFolder = () => {
+  useEffect(() => {
+    fetchFolders();
+  }, []);
+
+  const addFolder = async () => {
     const name = newSectionName.trim();
     if (!name || !selectedStation) return;
     const path = selectedSection ? `${selectedSection}/${name}` : name;
-    setCustomFolders((prev) => {
-      const list = prev[selectedStation] || [];
-      if (list.includes(path)) return prev;
-      const next = { ...prev, [selectedStation]: [...list, path] };
-      if (data?.id) localStorage.setItem(`powercare_folders_${data.id}`, JSON.stringify(next));
-      return next;
-    });
     setNewSectionName("");
-  };
-
-  const removeFolder = (folderPath) => {
-    setCustomFolders((prev) => {
-      const list = prev[selectedStation] || [];
-      const next = { ...prev, [selectedStation]: list.filter((p) => p !== folderPath && !p.startsWith(`${folderPath}/`)) };
-      if (data?.id) localStorage.setItem(`powercare_folders_${data.id}`, JSON.stringify(next));
-      return next;
-    });
+    if (folders.some((f) => f.station_id === selectedStation && f.path === path)) return;
+    try {
+      const res = await base44.functions.invoke("supabaseTargets", { action: "createFolder", stationId: selectedStation, path });
+      const created = res?.data?.folder;
+      if (created) setFolders((prev) => [...prev, created]);
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to create section");
+    }
   };
 
   const moveTaskToSection = async (tg, newSectionKey) => {
@@ -169,19 +165,17 @@ export default function MyTasks() {
           })
         )
       );
-      setCustomFolders((prev) => {
-        const list = prev[selectedStation] || [];
-        const next = {
-          ...prev,
-          [selectedStation]: list.map((p) => (p === oldPath ? newPath : p.startsWith(`${oldPath}/`) ? newPath + p.slice(oldPath.length) : p)),
-        };
-        if (data?.id) localStorage.setItem(`powercare_folders_${data.id}`, JSON.stringify(next));
-        return next;
+      await base44.functions.invoke("supabaseTargets", {
+        action: "renameFolder",
+        stationId: selectedStation,
+        oldPath,
+        newPath,
       });
       if (selectedSection === oldPath) setSelectedSection(newPath);
       setRenameFolderKey(null);
       setRenameValue("");
       fetchTargets();
+      fetchFolders();
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to rename folder");
     }
@@ -200,9 +194,14 @@ export default function MyTasks() {
           })
         )
       );
-      removeFolder(folderPath);
+      await base44.functions.invoke("supabaseTargets", {
+        action: "deleteFolder",
+        stationId: selectedStation,
+        path: folderPath,
+      });
       if (selectedSection === folderPath || (selectedSection || "").startsWith(`${folderPath}/`)) setSelectedSection(getParentPath(folderPath));
       fetchTargets();
+      fetchFolders();
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to delete folder");
     }
@@ -494,7 +493,7 @@ export default function MyTasks() {
   // Folders form a tree: a folder can be created inside another folder, sections
   // store the full "/"-joined path of the folder a task lives directly inside.
   const allStationFolders = withAncestors([
-    ...(customFolders[selectedStation] || []),
+    ...folders.filter((f) => f.station_id === selectedStation).map((f) => f.path),
     ...stationTargetsAll.filter((tg) => tg.section).map((tg) => tg.section),
   ]);
   const folderCountAt = (path) => stationTargetsAll.filter((tg) => (tg.section || null) === path).length;
@@ -522,7 +521,7 @@ export default function MyTasks() {
     : [];
   const existingSections = Array.from(new Set([
     ...targets.filter((tg) => tg.section).map((tg) => tg.section),
-    ...Object.values(customFolders).flat(),
+    ...folders.map((f) => f.path),
   ]));
   const allSectionFolders = [
     { key: NO_SECTION, name: t("noSection") },

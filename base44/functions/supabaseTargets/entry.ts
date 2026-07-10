@@ -294,6 +294,65 @@ Deno.serve(async (req) => {
       return Response.json({ comment: newComment, comments });
     }
 
+    if (action === "listFolders") {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/task_folders?order=path.asc`, { headers });
+      const rows = await res.json();
+      if (!res.ok) return Response.json({ folders: [] });
+      return Response.json({ folders: rows || [] });
+    }
+
+    if (action === "createFolder") {
+      const { stationId, path } = body;
+      if (!stationId || !path) return Response.json({ error: "Missing fields" }, { status: 400 });
+      const checkRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(stationId)}&path=eq.${encodeURIComponent(path)}`,
+        { headers }
+      );
+      const existing = await checkRes.json();
+      if (Array.isArray(existing) && existing.length > 0) {
+        return Response.json({ folder: existing[0] });
+      }
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/task_folders`, {
+        method: "POST",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify({ station_id: stationId, path }),
+      });
+      const created = await res.json();
+      if (!res.ok) {
+        return Response.json({ error: created?.message || "Failed to create section — run: CREATE TABLE IF NOT EXISTS task_folders (id uuid primary key default gen_random_uuid(), station_id text, path text, created_at timestamptz default now());" }, { status: 400 });
+      }
+      return Response.json({ folder: Array.isArray(created) ? created[0] : created });
+    }
+
+    if (action === "renameFolder") {
+      const { stationId, oldPath, newPath } = body;
+      if (!stationId || !oldPath || !newPath) return Response.json({ error: "Missing fields" }, { status: 400 });
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(stationId)}&or=(path.eq.${encodeURIComponent(oldPath)},path.like.${encodeURIComponent(oldPath)}/*)`,
+        { headers }
+      );
+      const rows = await res.json();
+      for (const row of rows || []) {
+        const updatedPath = row.path === oldPath ? newPath : newPath + row.path.slice(oldPath.length);
+        await fetch(`${SUPABASE_URL}/rest/v1/task_folders?id=eq.${encodeURIComponent(row.id)}`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ path: updatedPath }),
+        });
+      }
+      return Response.json({ ok: true });
+    }
+
+    if (action === "deleteFolder") {
+      const { stationId, path } = body;
+      if (!stationId || !path) return Response.json({ error: "Missing fields" }, { status: 400 });
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(stationId)}&or=(path.eq.${encodeURIComponent(path)},path.like.${encodeURIComponent(path)}/*)`,
+        { method: "DELETE", headers }
+      );
+      return Response.json({ ok: true });
+    }
+
     return Response.json({ error: "Unknown action" }, { status: 400 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
