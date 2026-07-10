@@ -130,6 +130,7 @@ function emptyCompanyData(meta) {
     tasks: [],
     reports: [],
     anonymousReports: [],
+    publicReports: [],
     safety: [],
     plans: [],
     notifications: [],

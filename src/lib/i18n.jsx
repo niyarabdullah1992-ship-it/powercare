@@ -201,6 +201,10 @@ const dict = {
     strictAnonymous: "Strictly Anonymous — bypass to HQ",
     strictAnonymousNote: "Skips the station manager and routes this report directly to HQ management.",
     positionTitle: "Position title",
+    publicComplaints: "Public Complaints",
+    identityVisible: "Your identity is visible to management",
+    noPublicReports: "No public complaints yet.",
+    yourPublicReports: "Your Public Complaints",
   },
   ar: {
     dir: "rtl",
@@ -401,6 +405,10 @@ const dict = {
     strictAnonymous: "سرّي تمامًا — تحويل مباشر للمقر الرئيسي",
     strictAnonymousNote: "يتجاوز مدير المحطة ويوجّه البلاغ مباشرة إلى إدارة المقر الرئيسي.",
     positionTitle: "المسمى الوظيفي",
+    publicComplaints: "الشكاوى الجهرية",
+    identityVisible: "هويتك ظاهرة أمام الإدارة",
+    noPublicReports: "لا توجد شكاوى جهرية بعد.",
+    yourPublicReports: "شكاواك الجهرية",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

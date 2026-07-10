@@ -3,42 +3,16 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getAnonUsage, addNotification, getAnonymousCode, setAnonRateLimits } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
-import { groupLevelsByOrder, levelName } from "@/lib/hrLevels";
+import { groupLevelsByOrder } from "@/lib/hrLevels";
+import { handlersForLevel, levelLabel } from "@/lib/escalation";
 import { formatDateTime } from "@/lib/dateFormat";
 import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft, Check, X as XIcon } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
+import PublicComplaints from "@/components/anonymous/PublicComplaints";
 
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
-
-// Escalation chain: level 0 = the station manager, then straight up the company's
-// customizable HR tiers (see the HR page), lowest to highest authority.
-function handlersForLevel(levelIdx, r, data) {
-  if (levelIdx === 0) {
-    return data.employees.filter((e) => e.role === "station_manager" && e.stationId === r.stationId);
-  }
-  const groups = groupLevelsByOrder(data.hrLevels || []);
-  const group = groups[levelIdx - 1];
-  if (!group || !group.manager) return [];
-  return data.employees.filter((e) => {
-    if (e.hrLevelId !== group.manager.id) return false;
-    if (group.scope === "station") return e.hrStationId === r.stationId;
-    if (group.scope === "cluster") {
-      const cluster = (data.hrClusters || []).find((c) => (c.stationIds || []).includes(r.stationId));
-      return cluster ? e.hrClusterId === cluster.id : false;
-    }
-    return true;
-  });
-}
-
-function levelLabel(levelIdx, data, t, lang) {
-  if (levelIdx === 0) return t("stationManager");
-  const groups = groupLevelsByOrder(data.hrLevels || []);
-  const group = groups[levelIdx - 1];
-  if (!group) return "";
-  return levelName(group.manager || group.assistant, lang);
-}
 
 export default function AnonymousReports() {
   const { t, dir, lang } = useI18n();
@@ -440,6 +414,8 @@ export default function AnonymousReports() {
           )}
         </>
       )}
+
+      <PublicComplaints />
     </div>
   );
 }
