@@ -171,6 +171,7 @@ const dict = {
     activeVacationPeriod: "Active Vacation Period",
     hrCommunications: "HR Communications", sendTo: "Send to", stationHRTarget: "Local Station HR", hqHRTarget: "HQ HR Team",
     typeMessage: "Type your message...", noMessages: "No messages yet.",
+    orgChart: "HR Org Chart",
   },
   ar: {
     dir: "rtl",
@@ -341,6 +342,7 @@ const dict = {
     activeVacationPeriod: "فترة الإجازة النشطة",
     hrCommunications: "تواصل الموارد البشرية", sendTo: "إرسال إلى", stationHRTarget: "موارد بشرية المحطة", hqHRTarget: "فريق موارد بشرية المقر",
     typeMessage: "اكتب رسالتك...", noMessages: "لا توجد رسائل بعد.",
+    orgChart: "الهيكل التنظيمي للموارد البشرية",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canManageHRLevels } from "@/lib/permissions";
@@ -6,6 +6,7 @@ import { updateCompany } from "@/lib/store";
 import { buildHRLevels, tierName, tierNote } from "@/lib/hrLevels";
 import HRTierCard from "@/components/hr/HRTierCard";
 import ClusterEditor from "@/components/hr/ClusterEditor";
+import HROrgChart from "@/components/hr/HROrgChart";
 
 const HR_SCHEMA_VERSION = 4; // fixed 5-tier global hierarchy
 
@@ -13,6 +14,7 @@ export default function HR() {
   const { t, lang } = useI18n();
   const { data, currentUser } = useAuth();
   const canManage = data && currentUser && canManageHRLevels(currentUser);
+  const [orgChartStationId, setOrgChartStationId] = useState(null);
 
   useEffect(() => {
     if (data && canManage && data.hrSchemaVersion !== HR_SCHEMA_VERSION) {
@@ -34,6 +36,7 @@ export default function HR() {
   if (!data || !currentUser) return null;
   const stations = visibleStations(currentUser, data);
   const clusters = data.hrClusters || [];
+  const orgChartStation = stations.find((s) => s.id === orgChartStationId) || null;
 
   return (
     <div className="space-y-8">
@@ -41,6 +44,22 @@ export default function HR() {
         <h1 className="font-heading text-3xl font-semibold">{t("globalHrHierarchy")}</h1>
         <p className="text-muted-foreground font-body text-sm mt-1">{t("hrPageNote")}</p>
       </div>
+
+      <section className="space-y-3">
+        <h2 className="font-heading text-lg font-semibold">{t("orgChart")}</h2>
+        <div className="flex flex-wrap gap-2">
+          {stations.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setOrgChartStationId(s.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${orgChartStationId === s.id ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+            >
+              {s.name}
+            </button>
+          ))}
+        </div>
+        {orgChartStation && <HROrgChart station={orgChartStation} data={data} />}
+      </section>
 
       <section className="space-y-3">
         <div>
