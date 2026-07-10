@@ -4,17 +4,20 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { canManageEmployees, hasHRPermission } from "@/lib/permissions";
 import { getRoleLabel } from "@/lib/roles";
-import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, Mail, Building2 } from "lucide-react";
+import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle } from "lucide-react";
+import ProfileHero from "@/components/employees/ProfileHero";
 import ProfessionalInfoTab from "@/components/employees/ProfessionalInfoTab";
 import CertificatesTab from "@/components/employees/CertificatesTab";
 import SalaryTab from "@/components/employees/SalaryTab";
 import LeaveTab from "@/components/employees/LeaveTab";
+import HRCommunicationsTab from "@/components/employees/HRCommunicationsTab";
 
 const TABS = [
   { key: "professionalInfo", icon: Briefcase },
   { key: "certificates", icon: Award },
   { key: "salary", icon: Wallet },
   { key: "leave", icon: CalendarDays },
+  { key: "communications", icon: MessageCircle },
 ];
 
 export default function EmployeeProfile() {
@@ -41,26 +44,13 @@ export default function EmployeeProfile() {
       </button>
 
       {/* Hero card */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
-        <div className="h-20 bg-gradient-to-r from-accent/25 via-accent/10 to-transparent" />
-        <div className="px-6 pb-6 -mt-10 flex flex-col sm:flex-row sm:items-end gap-4">
-          <div className="w-20 h-20 rounded-2xl bg-foreground text-background flex items-center justify-center font-heading font-medium text-3xl shadow-md ring-4 ring-card shrink-0">
-            {employee.name.charAt(0)}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="font-heading text-2xl sm:text-3xl font-semibold truncate">{employee.name}</h1>
-            <p className="text-accent font-body text-sm font-medium">{employee.customTitle || getRoleLabel(company, employee.role, t)}</p>
-            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-muted-foreground font-body">
-              {employee.email && (
-                <span className="inline-flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> {employee.email}</span>
-              )}
-              {stationName && (
-                <span className="inline-flex items-center gap-1"><Building2 className="w-3.5 h-3.5" /> {stationName}</span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <ProfileHero
+        employee={employee}
+        companyId={company.id}
+        canEdit={isSelf || canManage}
+        roleLabel={employee.customTitle || getRoleLabel(company, employee.role, t)}
+        stationName={stationName}
+      />
 
       {/* Tab nav */}
       <div className="flex flex-wrap gap-2 p-1.5 rounded-xl border border-border bg-card">
@@ -78,9 +68,10 @@ export default function EmployeeProfile() {
       </div>
 
       {tab === "professionalInfo" && <ProfessionalInfoTab employee={employee} companyId={company.id} canEdit={canManage} />}
-      {tab === "certificates" && <CertificatesTab employee={employee} companyId={company.id} canEdit={isSelf || canManage} />}
+      {tab === "certificates" && <CertificatesTab employee={employee} companyId={company.id} canEdit={isSelf || canManage} canApprove={canManage} currentUser={currentUser} />}
       {tab === "salary" && <SalaryTab employee={employee} companyId={company.id} canEdit={canEditSalary} />}
       {tab === "leave" && <LeaveTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canApprove={canApproveLeave} />}
+      {tab === "communications" && <HRCommunicationsTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canReply={canManage} />}
     </div>
   );
 }

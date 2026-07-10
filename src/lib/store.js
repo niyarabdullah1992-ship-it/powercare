@@ -278,7 +278,7 @@ export function addCertificate(companyId, employeeId, cert) {
     const emp = d.employees.find((e) => e.id === employeeId);
     if (!emp) return;
     emp.certificates = emp.certificates || [];
-    emp.certificates.push({ id: uid("cert"), ...cert, createdAt: new Date().toISOString() });
+    emp.certificates.push({ id: uid("cert"), status: "pending", ...cert, createdAt: new Date().toISOString() });
   });
 }
 
@@ -290,15 +290,50 @@ export function removeCertificate(companyId, employeeId, certId) {
   });
 }
 
+// Qualification/certification approval workflow — manager approves or rejects a pending upload.
+export function setCertificateStatus(companyId, employeeId, certId, status, reviewerName) {
+  updateCompany(companyId, (d) => {
+    const emp = d.employees.find((e) => e.id === employeeId);
+    if (!emp) return;
+    const cert = (emp.certificates || []).find((c) => c.id === certId);
+    if (!cert) return;
+    cert.status = status;
+    cert.reviewedBy = reviewerName;
+    cert.reviewedAt = new Date().toISOString();
+  });
+}
+
+// Manager-adjustable total allowed days per leave category.
+export function setLeaveTotal(companyId, employeeId, type, total) {
+  updateCompany(companyId, (d) => {
+    const emp = d.employees.find((e) => e.id === employeeId);
+    if (!emp) return;
+    emp.profile = emp.profile || {};
+    emp.profile.leaveTotals = emp.profile.leaveTotals || {};
+    emp.profile.leaveTotals[type] = Math.max(0, Number(total) || 0);
+  });
+}
+
+// HR communications — per-employee thread routed to Station HR or HQ HR.
+export function addHRMessage(companyId, employeeId, { from, target, text, senderName }) {
+  updateCompany(companyId, (d) => {
+    const emp = d.employees.find((e) => e.id === employeeId);
+    if (!emp) return;
+    emp.hrMessages = emp.hrMessages || [];
+    emp.hrMessages.push({ id: uid("msg"), from, target, text, senderName, createdAt: new Date().toISOString() });
+  });
+}
+
 // Leave requests: employee submits, an authorized manager/HR approves or rejects.
 export function submitLeaveRequest(companyId, employeeId, { type, startDate, endDate, reason, files }) {
   updateCompany(companyId, (d) => {
     const emp = d.employees.find((e) => e.id === employeeId);
     if (!emp) return;
     emp.leaveRequests = emp.leaveRequests || [];
+    const days = Math.max(1, Math.round((new Date(endDate) - new Date(startDate)) / 86400000) + 1);
     emp.leaveRequests.unshift({
       id: uid("leave"),
-      type, startDate, endDate, reason,
+      type, startDate, endDate, days, reason,
       files: files || [],
       status: "pending",
       createdAt: new Date().toISOString(),
@@ -316,9 +351,16 @@ export function setLeaveRequestStatus(companyId, employeeId, requestId, status, 
     req.reviewedBy = reviewerName;
     req.reviewedAt = new Date().toISOString();
     if (status === "approved") {
-      const days = Math.max(1, Math.round((new Date(req.endDate) - new Date(req.startDate)) / 86400000) + 1);
-      emp.profile = emp.profile || {};
-      emp.profile.leaveBalance = Math.max(0, (emp.profile.leaveBalance ?? 21) - days);
+      const approvalDate = new Date();
+      req.approvedAt = approvalDate.toISOString();
+      // Annual leave: the active vacation period always starts on the approval date,
+      // using the number of days originally requested.
+      if (req.type === "annual") {
+        const activeEnd = new Date(approvalDate);
+        activeEnd.setDate(activeEnd.getDate() + ((req.days || 1) - 1));
+        req.activeStartDate = approvalDate.toISOString();
+        req.activeEndDate = activeEnd.toISOString();
+      }
     }
   });
 }
