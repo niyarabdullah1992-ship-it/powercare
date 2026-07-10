@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
-import { canSeeAllStations, visibleStations } from "@/lib/permissions";
+import { canSeeAllStations, visibleStations, isCompanyOwner, canTransferOwnership } from "@/lib/permissions";
+import { updateCompany } from "@/lib/store";
 import { MessageSquare, Send, ArrowLeft, Building2, Radio } from "lucide-react";
 import ChatBubble from "@/components/chat/ChatBubble";
 import ChatContactList from "@/components/chat/ChatContactList";
@@ -11,7 +12,7 @@ import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 
 export default function StationChat() {
   const { t, dir, lang } = useI18n();
-  const { data, currentUser } = useAuth();
+  const { data, currentUser, company } = useAuth();
   const [selectedStation, setSelectedStation] = useState(null);
   const [activeChat, setActiveChat] = useState(null); // { type: "general" } | { type: "dm", userId, name }
   const [messages, setMessages] = useState([]);
@@ -31,6 +32,12 @@ export default function StationChat() {
   const stationRooms = data?.crossStationChatEnabled
     ? [{ key: "all", name: t("allStationsChat") }, ...baseRooms]
     : baseRooms;
+  const isOwner = isCompanyOwner(currentUser, data) || canTransferOwnership(currentUser);
+  const toggleCrossStationChat = () => {
+    updateCompany(company.id, (d) => {
+      d.crossStationChatEnabled = !d.crossStationChatEnabled;
+    });
+  };
 
   useEffect(() => {
     if (stationRooms.length === 1 && !selectedStation) setSelectedStation(stationRooms[0].key);
@@ -107,15 +114,34 @@ export default function StationChat() {
       </div>
 
       {!selectedStation ? (
-        <div className="border border-border bg-card p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {stationRooms.map((r) => (
-            <button key={r.key} onClick={() => setSelectedStation(r.key)} className="flex items-center gap-3 p-4 rounded-lg border border-border hover:bg-muted transition text-start">
-              <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                {r.key === "all" ? <MessageSquare className="w-4 h-4" /> : r.key === "hq" ? <Building2 className="w-4 h-4" /> : <Radio className="w-4 h-4" />}
+        <div className="border border-border bg-card p-6 space-y-4">
+          {isOwner && (
+            <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
+              <div className="flex items-center gap-3">
+                <MessageSquare className="w-4 h-4 text-accent shrink-0" />
+                <div>
+                  <p className="text-sm font-medium font-body">{t("enableCrossStationChat")}</p>
+                  <p className="text-xs text-muted-foreground font-body">{t("crossStationChatNote")}</p>
+                </div>
               </div>
-              <p className="text-sm font-medium font-body">{r.name}</p>
-            </button>
-          ))}
+              <button
+                onClick={toggleCrossStationChat}
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${data.crossStationChatEnabled ? "bg-accent" : "bg-muted"}`}
+              >
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${data.crossStationChatEnabled ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0.5 rtl:-translate-x-0.5"}`} />
+              </button>
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {stationRooms.map((r) => (
+              <button key={r.key} onClick={() => setSelectedStation(r.key)} className="flex items-center gap-3 p-4 rounded-lg border border-border hover:bg-muted transition text-start">
+                <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
+                  {r.key === "all" ? <MessageSquare className="w-4 h-4" /> : r.key === "hq" ? <Building2 className="w-4 h-4" /> : <Radio className="w-4 h-4" />}
+                </div>
+                <p className="text-sm font-medium font-body">{r.name}</p>
+              </button>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="border border-border bg-card flex h-[70vh]">
