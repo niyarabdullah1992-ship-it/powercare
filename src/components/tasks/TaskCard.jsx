@@ -1,5 +1,5 @@
-import React from "react";
-import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2 } from "lucide-react";
+import React, { useState } from "react";
+import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2, History } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
@@ -13,7 +13,12 @@ export default function TaskCard({
   commentsOpen, setCommentsOpen, commentText, setCommentText, commentFiles, setCommentFiles, submitComment,
   allSectionFolders, moveTaskToSection, setEditTarget, deleteTarget, onSaveReason,
 }) {
+  const [showReasonHistory, setShowReasonHistory] = useState(false);
   const REASONS = ["workStoppage", "noActivity", "weather", "equipment", "power", "access", "labor"];
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const reasonLog = Array.isArray(tg.reason_log) ? tg.reason_log : [];
+  const todayReason = reasonLog.find((e) => e.date === todayStr)?.reason || "";
+  const pastReasons = reasonLog.filter((e) => e.date !== todayStr);
   const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
   const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
   const done = tg.status === "completed";
@@ -127,10 +132,21 @@ export default function TaskCard({
       </div>
       {!done && (
         <div className="p-2.5 rounded-md bg-red-50 border border-red-200 space-y-1.5">
-          <p className="text-[11px] font-medium text-red-700 font-body">{t("incompleteReason")}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-medium text-red-700 font-body">{t("incompleteReason")} — {t("today")}</p>
+            {pastReasons.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowReasonHistory((v) => !v)}
+                className="flex items-center gap-1 text-[10px] text-red-700/80 font-body hover:text-red-700"
+              >
+                <History className="w-3 h-3" /> {t("reasonHistory")} ({pastReasons.length})
+              </button>
+            )}
+          </div>
           {canManage || canLogThis ? (
             <select
-              value={tg.reason || ""}
+              value={todayReason}
               onChange={(e) => onSaveReason(tg.id, e.target.value)}
               className="w-full px-2 py-1.5 rounded-md border border-red-200 bg-card text-xs font-body"
             >
@@ -139,10 +155,24 @@ export default function TaskCard({
                 <option key={r} value={r}>{t(r)}</option>
               ))}
             </select>
-          ) : tg.reason ? (
-            <p className="text-xs text-red-700 font-body">{t(tg.reason)}</p>
+          ) : todayReason ? (
+            <p className="text-xs text-red-700 font-body">{t(todayReason)}</p>
           ) : (
             <p className="text-xs text-muted-foreground font-body">—</p>
+          )}
+          {showReasonHistory && (
+            <div className="pt-1.5 border-t border-red-200 space-y-1 max-h-28 overflow-y-auto">
+              {pastReasons.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground font-body">{t("noReasonHistory")}</p>
+              ) : (
+                pastReasons.map((e) => (
+                  <div key={e.date} className="flex items-center justify-between text-[11px] font-body">
+                    <span className="text-muted-foreground">{e.date}</span>
+                    <span className="text-red-700">{t(e.reason)}</span>
+                  </div>
+                ))
+              )}
+            </div>
           )}
         </div>
       )}

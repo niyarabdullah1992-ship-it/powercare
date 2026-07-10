@@ -214,6 +214,9 @@ const dict = {
     selectReason: "Select reason",
     workStoppage: "Work Stoppage",
     noActivity: "No Activity",
+    reasonHistory: "History",
+    noReasonHistory: "No past reasons logged.",
+    today: "Today",
   },
   ar: {
     dir: "rtl",
@@ -427,6 +430,9 @@ const dict = {
     selectReason: "اختر السبب",
     workStoppage: "توقف العمل",
     noActivity: "لا يوجد نشاط",
+    reasonHistory: "السجل",
+    noReasonHistory: "لا توجد أسباب سابقة مسجلة.",
+    today: "اليوم",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

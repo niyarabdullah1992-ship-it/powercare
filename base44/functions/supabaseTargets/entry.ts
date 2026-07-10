@@ -247,14 +247,22 @@ Deno.serve(async (req) => {
     if (action === "setReason") {
       const { targetId, reason } = body;
       if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
+      const getRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, { headers });
+      const rows = await getRes.json();
+      const tg = rows[0];
+      if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
+      const today = new Date().toISOString().slice(0, 10);
+      const log = Array.isArray(tg.reason_log) ? tg.reason_log.filter((e) => e.date !== today) : [];
+      if (reason) log.push({ date: today, reason });
+      log.sort((a, b) => (a.date < b.date ? 1 : -1));
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
-        body: JSON.stringify({ reason: reason || null }),
+        body: JSON.stringify({ reason: reason || null, reason_log: log }),
       });
       const updated = await res.json();
       if (!res.ok) {
-        return Response.json({ error: updated?.message || "Failed to save reason — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS reason text;" }, { status: 400 });
+        return Response.json({ error: updated?.message || "Failed to save reason — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS reason text; ALTER TABLE targets ADD COLUMN IF NOT EXISTS reason_log jsonb DEFAULT '[]'::jsonb;" }, { status: 400 });
       }
       return Response.json({ target: Array.isArray(updated) ? updated[0] : updated });
     }
