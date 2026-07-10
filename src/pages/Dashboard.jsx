@@ -1,15 +1,43 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canSeeAllStations } from "@/lib/permissions";
 import { Radio, AlertTriangle, FileText, TrendingUp } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
 import { formatDate } from "@/lib/dateFormat";
+import { base44 } from "@/api/base44Client";
 import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
+  const [stoppageCount, setStoppageCount] = useState(0);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    (async () => {
+      try {
+        const res = await base44.functions.invoke("supabaseTargets", {
+          action: "listTargets",
+          userRole: currentUser.role,
+          userId: currentUser.id,
+          stationId: currentUser.stationId || null,
+          managedStations: currentUser.managedStations || [],
+        });
+        const list = res?.data?.targets || [];
+        let count = 0;
+        for (const tg of list) {
+          for (const c of Array.isArray(tg.comments) ? tg.comments : []) {
+            if (c.is_issue) count++;
+          }
+        }
+        setStoppageCount(count);
+      } catch {
+        setStoppageCount(0);
+      }
+    })();
+  }, [currentUser?.id]);
+
   if (!data || !currentUser) return null;
 
   const stations = visibleStations(currentUser, data);
@@ -24,7 +52,6 @@ export default function Dashboard() {
   const reports = data.reports.filter((r) => stationIds.has(r.stationId));
   const anon = data.anonymousReports;
   const activeStations = stations.filter((s) => s.status === "active").length;
-  const stopped = tasks.filter((tk) => tk.status === "stopped").length;
   const pendingReports = reports.filter((r) => r.status === "pending").length;
   const completed = tasks.filter((tk) => tk.status === "completed").length;
   const completionRate = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
@@ -32,7 +59,7 @@ export default function Dashboard() {
   const stats = [
     { icon: Radio, label: t("activeStations"), value: `${activeStations}/${stations.length}`, color: "text-accent" },
     { icon: TrendingUp, label: t("taskCompletion"), value: `${completionRate}%`, color: "text-foreground" },
-    { icon: AlertTriangle, label: t("stoppedTasks"), value: stopped, color: "text-destructive" },
+    { icon: AlertTriangle, label: t("stoppageIssues"), value: stoppageCount, color: "text-destructive" },
     { icon: FileText, label: t("pendingReports"), value: pendingReports, color: "text-foreground" },
   ];
 

@@ -3,8 +3,9 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { canManageStations, canSeeAllStations, visibleStations } from "@/lib/permissions";
-import { Plus, Radio, Building2, Users, Trash2, Pencil, Check, X } from "lucide-react";
+import { Plus, Radio, Building2, Users, Trash2, Pencil, Check, X, BarChart3 } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
+import StationAnalyticsModal from "@/components/stations/StationAnalyticsModal";
 
 export default function Stations() {
   const { t } = useI18n();
@@ -13,6 +14,7 @@ export default function Stations() {
   const [form, setForm] = useState({ name: "", location: "", type: "" });
   const [renamingId, setRenamingId] = useState(null);
   const [renameVal, setRenameVal] = useState("");
+  const [analyticsFor, setAnalyticsFor] = useState(null);
 
   if (!data || !currentUser) return null;
   const stations = visibleStations(currentUser, data);
@@ -142,6 +144,9 @@ export default function Stations() {
               <span className="flex items-center gap-1.5 text-muted-foreground">
                 <Users className="w-3.5 h-3.5" /> {hqTeam.length}
               </span>
+              <button onClick={() => setAnalyticsFor({ key: "hq", name: hqLabel, members: hqTeam })} className="flex items-center gap-1 text-xs text-accent hover:underline">
+                <BarChart3 className="w-3.5 h-3.5" /> {t("analytics")}
+              </button>
             </div>
           </div>
         )}
@@ -190,10 +195,22 @@ export default function Stations() {
               <p className="text-xs font-body">
                 {manager ? <span className="text-foreground">{t("manager")}: {manager.name}</span> : <span className="text-amber-600">⚠ {t("noManager")}</span>}
               </p>
+              <button onClick={() => setAnalyticsFor({ key: s.id, name: s.name, members: team })} className="flex items-center gap-1 text-xs text-accent hover:underline">
+                <BarChart3 className="w-3.5 h-3.5" /> {t("analytics")}
+              </button>
             </div>
           );
         })}
       </div>
+
+      {analyticsFor && (
+        <StationAnalyticsModal
+          stationKey={analyticsFor.key}
+          stationName={analyticsFor.name}
+          members={analyticsFor.members}
+          onClose={() => setAnalyticsFor(null)}
+        />
+      )}
     </div>
   );
 }
