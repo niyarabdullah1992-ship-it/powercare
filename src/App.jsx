@@ -13,6 +13,7 @@ import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import MyTasks from './pages/MyTasks';
 import AnonymousReports from './pages/AnonymousReports';
+import PublicComplaints from './pages/PublicComplaints';
 import Stations from './pages/Stations';
 import Employees from './pages/Employees';
 import EmployeeProfile from './pages/EmployeeProfile';
@@ -35,6 +36,7 @@ function AppRoutes() {
       <Route path="/app/tasks" element={<RequireAuth><MyTasks /></RequireAuth>} />
 
       <Route path="/app/anonymous" element={<RequireAuth><AnonymousReports /></RequireAuth>} />
+      <Route path="/app/public-complaints" element={<RequireAuth><PublicComplaints /></RequireAuth>} />
       <Route path="/app/stations" element={<RequireAuth><Stations /></RequireAuth>} />
       <Route path="/app/employees" element={<RequireAuth><Employees /></RequireAuth>} />
       <Route path="/app/employees/:employeeId" element={<RequireAuth><EmployeeProfile /></RequireAuth>} />

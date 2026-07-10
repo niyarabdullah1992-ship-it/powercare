@@ -210,7 +210,7 @@ export default function PublicComplaints() {
   );
 
   return (
-    <div className="space-y-6 pt-4 border-t border-border">
+    <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Megaphone className="w-5 h-5 text-accent" />
         <h2 className="font-heading text-2xl font-semibold">{t("publicComplaints")}</h2>

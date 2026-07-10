@@ -6,7 +6,7 @@ import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, HardHat, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog,
+  Users, HardHat, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -83,6 +83,7 @@ export default function Layout({ children }) {
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks") },
 
     { to: "/app/anonymous", icon: ShieldQuestion, label: t("anonymous") },
+    { to: "/app/public-complaints", icon: Megaphone, label: t("publicComplaints") },
     { to: "/app/employees", icon: Users, label: t("employees") },
     { to: "/app/stations", icon: Radio, label: t("stations") },
     { to: "/app/hr", icon: UserCog, label: t("hr") },

@@ -9,7 +9,6 @@ import { formatDateTime } from "@/lib/dateFormat";
 import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft, Check, X as XIcon } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
-import PublicComplaints from "@/components/anonymous/PublicComplaints";
 
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
@@ -414,8 +413,6 @@ export default function AnonymousReports() {
           )}
         </>
       )}
-
-      <PublicComplaints />
     </div>
   );
 }
