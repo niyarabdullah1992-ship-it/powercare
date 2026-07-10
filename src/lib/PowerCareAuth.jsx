@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
   getSession, companyLogin, switchUser, clearSession, getCompanyData,
-  subscribe, seedDemoIfEmpty, getCompanyMeta,
+  subscribe, seedDemoIfEmpty, getCompanyMeta, hydrateEmployeesFromEntity,
 } from "./store";
 
 const AuthContext = createContext(null);
@@ -25,6 +25,10 @@ export function AuthProvider({ children }) {
     if (s && s.companyId) {
       setCompany(getCompanyMeta(s.companyId));
       setData(getCompanyData(s.companyId));
+      // Upgrade employees from the persisted database once it resolves (real, durable source).
+      hydrateEmployeesFromEntity(s.companyId).then((employees) => {
+        if (employees) setData((prev) => (prev ? { ...prev, employees } : prev));
+      });
     } else {
       setCompany(null);
       setData(null);

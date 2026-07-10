@@ -1,6 +1,7 @@
 // PowerCare data layer — localStorage-based, multi-tenant with full company isolation.
 // Registry tracks all companies; each company's data lives under its own key.
 import { MANAGER_PERMISSIONS, ASSISTANT_PERMISSIONS, groupLevelsByOrder } from "./hrLevels";
+import { base44 } from "@/api/base44Client";
 
 const REGISTRY_KEY = "powercare_registry";
 const COMPANY_PREFIX = "powercare_company_";
@@ -147,6 +148,61 @@ export function getCompanyData(id) {
 }
 function saveCompanyData(id, data) {
   write(companyKey(id), data);
+  syncEmployeesToEntity(id, data.employees);
+}
+
+/* ----------------------------- employee database (real, persisted) -----------------------------
+   The localStorage company blob still caches everything (stations, tasks, HR levels, etc.) for
+   instant synchronous reads, but employees are additionally persisted to the real Employee entity
+   so the workforce data survives beyond this browser. `employeeId` on each record is the same
+   stable id used everywhere else in the app (stations.managerId, tasks.assignedTo, session.userId...). */
+const lastSyncedEmployeesJSON = {};
+async function syncEmployeesToEntity(companyId, employees) {
+  const json = JSON.stringify(employees || []);
+  if (lastSyncedEmployeesJSON[companyId] === json) return;
+  lastSyncedEmployeesJSON[companyId] = json;
+  try {
+    const current = await base44.entities.Employee.filter({ companyId });
+    if (current.length) await base44.entities.Employee.deleteMany({ companyId });
+    if (employees && employees.length) {
+      await base44.entities.Employee.bulkCreate(
+        employees.map(({ id, ...rest }) => ({ ...rest, employeeId: id, companyId }))
+      );
+    }
+  } catch {
+    // best-effort background sync — the localStorage cache remains usable for the running session
+  }
+}
+
+// Fetches the authoritative, persisted employee list for a company from the real database.
+export async function hydrateEmployeesFromEntity(companyId) {
+  try {
+    const records = await base44.entities.Employee.filter({ companyId });
+    if (!records.length) return null;
+    return records.map((r) => ({
+      id: r.employeeId,
+      name: r.name,
+      email: r.email,
+      role: r.role,
+      stationId: r.stationId,
+      phone: r.phone,
+      position: r.position,
+      anonymousId: r.anonymousId,
+      points: r.points,
+      hrLevelId: r.hrLevelId,
+      hrStationId: r.hrStationId,
+      hrClusterId: r.hrClusterId,
+      canManageTeam: r.canManageTeam,
+      managedStations: r.managedStations,
+      profile: r.profile,
+      certificates: r.certificates,
+      leaveRequests: r.leaveRequests,
+      hrMessages: r.hrMessages,
+      createdAt: r.created_date,
+    }));
+  } catch {
+    return null;
+  }
 }
 
 /* ----------------------------- session ----------------------------- */

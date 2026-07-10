@@ -1,0 +1,104 @@
+{
+  "name": "Employee",
+  "type": "object",
+  "properties": {
+    "employeeId": {
+      "type": "string",
+      "description": "Stable client-side id used across the app (stations, tasks, HR, reports all reference this value)."
+    },
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company (tenant) this employee belongs to."
+    },
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "stationId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "phone": {
+      "type": "string"
+    },
+    "position": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "anonymousId": {
+      "type": "string"
+    },
+    "points": {
+      "type": "number",
+      "default": 0
+    },
+    "hrLevelId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "hrStationId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "hrClusterId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "canManageTeam": {
+      "type": "boolean",
+      "default": false
+    },
+    "managedStations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "certificates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "leaveRequests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "hrMessages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "employeeId",
+    "companyId",
+    "name",
+    "role"
+  ]
+}
