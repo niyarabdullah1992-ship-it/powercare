@@ -539,11 +539,10 @@ export default function MyTasks() {
         </div>
         {canCreateTasks(currentUser) && (
           <button
-            onClick={() => setShowCreate((o) => {
-              const next = !o;
-              if (next) setSectionValue(selectedSection || "");
-              return next;
-            })}
+            onClick={() => {
+              if (!showCreate) setSectionValue(selectedSection || "");
+              setShowCreate(!showCreate);
+            }}
             disabled={uploading}
             className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-50"
           >
