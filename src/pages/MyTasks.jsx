@@ -130,6 +130,7 @@ export default function MyTasks() {
       const res = await base44.functions.invoke("supabaseTargets", { action: "createFolder", stationId: selectedStation, path });
       const created = res?.data?.folder;
       if (created) setFolders((prev) => [...prev, created]);
+      else setFolderError("Unexpected response — could not create the section.");
     } catch (err) {
       setFolderError(err?.response?.data?.error || err?.message || "Failed to create section");
     }
