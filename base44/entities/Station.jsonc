@@ -1,0 +1,43 @@
+{
+  "name": "Station",
+  "type": "object",
+  "properties": {
+    "stationId": {
+      "type": "string",
+      "description": "Stable client-side id used across the app (employees, tasks, HR all reference this value)."
+    },
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company (tenant) this station belongs to."
+    },
+    "name": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "managerId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "stationId",
+    "companyId",
+    "name"
+  ],
+  "rls": {
+    "create": true,
+    "read": true,
+    "update": true,
+    "delete": true
+  }
+}

@@ -149,6 +149,7 @@ export function getCompanyData(id) {
 function saveCompanyData(id, data) {
   write(companyKey(id), data);
   syncEmployeesToEntity(id, data.employees);
+  syncStationsToEntity(id, data.stations);
 }
 
 /* ----------------------------- employee database (real, persisted) -----------------------------
@@ -171,6 +172,47 @@ async function syncEmployeesToEntity(companyId, employees) {
     }
   } catch {
     // best-effort background sync — the localStorage cache remains usable for the running session
+  }
+}
+
+/* ----------------------------- station database (real, persisted) -----------------------------
+   Same pattern as employees: the localStorage company blob still caches stations for instant
+   synchronous reads, but stations are additionally persisted to the real Station entity so the
+   station list survives beyond this browser. */
+const lastSyncedStationsJSON = {};
+async function syncStationsToEntity(companyId, stations) {
+  const json = JSON.stringify(stations || []);
+  if (lastSyncedStationsJSON[companyId] === json) return;
+  lastSyncedStationsJSON[companyId] = json;
+  try {
+    const current = await base44.entities.Station.filter({ companyId });
+    if (current.length) await base44.entities.Station.deleteMany({ companyId });
+    if (stations && stations.length) {
+      await base44.entities.Station.bulkCreate(
+        stations.map(({ id, ...rest }) => ({ ...rest, stationId: id, companyId }))
+      );
+    }
+  } catch {
+    // best-effort background sync — the localStorage cache remains usable for the running session
+  }
+}
+
+// Fetches the authoritative, persisted station list for a company from the real database.
+export async function hydrateStationsFromEntity(companyId) {
+  try {
+    const records = await base44.entities.Station.filter({ companyId });
+    if (!records.length) return null;
+    return records.map((r) => ({
+      id: r.stationId,
+      name: r.name,
+      location: r.location,
+      type: r.type,
+      status: r.status,
+      managerId: r.managerId,
+      createdAt: r.created_date,
+    }));
+  } catch {
+    return null;
   }
 }
 

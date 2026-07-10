@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
   getSession, companyLogin, switchUser, clearSession, getCompanyData,
-  subscribe, seedDemoIfEmpty, getCompanyMeta, hydrateEmployeesFromEntity,
+  subscribe, seedDemoIfEmpty, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
 } from "./store";
 
 const AuthContext = createContext(null);
@@ -31,6 +31,11 @@ export function AuthProvider({ children }) {
       if (localData && (!localData.employees || localData.employees.length === 0)) {
         hydrateEmployeesFromEntity(s.companyId).then((employees) => {
           if (employees) setData((prev) => (prev ? { ...prev, employees } : prev));
+        });
+      }
+      if (localData && (!localData.stations || localData.stations.length === 0)) {
+        hydrateStationsFromEntity(s.companyId).then((stations) => {
+          if (stations) setData((prev) => (prev ? { ...prev, stations } : prev));
         });
       }
     } else {
