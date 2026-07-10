@@ -12,6 +12,8 @@ import RoleLabelsEditor from "@/components/employees/RoleLabelsEditor";
 import EmployeePoints from "@/components/employees/EmployeePoints";
 import EmployeePerformance from "@/components/employees/EmployeePerformance";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
+import AuditLogPanel from "@/components/audit/AuditLogPanel";
+import { logAudit } from "@/lib/auditLog";
 
 const ROLES = ["employee", "station_manager", "pgm", "ops_manager", "director"];
 
@@ -99,6 +101,7 @@ export default function Employees() {
               )}
               {currentUser.role === "director" && <RoleLabelsEditor company={company} />}
             </div>
+            {canTransfer && <div className="mt-3"><AuditLogPanel companyId={company.id} /></div>}
             {currentUser.role === "director" && (
               <div className="mt-3 pt-3 border-t border-border">
                 {editingDomain ? (
@@ -415,22 +418,27 @@ function TransferModal({ type, onClose }) {
 
   const transferDirector = () => {
     if (!target) return;
+    let newDirName = "";
     updateCompany(company.id, (d) => {
       const oldDir = d.employees.find((x) => x.id === d.directorId);
       const newDir = d.employees.find((x) => x.id === target);
       if (oldDir) oldDir.role = "ops_manager";
       if (newDir) newDir.role = "director";
+      newDirName = newDir?.name || target;
       d.directorId = target;
     });
+    logAudit(company.id, "director_transferred", currentUser.name, `${currentUser.name} transferred the Director role to ${newDirName}.`);
     onClose();
   };
 
   const transferOwnership = () => {
     if (target) {
       // transfer to existing
+      const targetName = candidates.find((c) => c.id === target)?.name || target;
       updateCompany(company.id, (d) => {
         d.ownerId = target;
       });
+      logAudit(company.id, "ownership_transferred", currentUser.name, `${currentUser.name} transferred company ownership to ${targetName}.`);
       onClose();
     } else if (newOwner.name && newOwner.email && newOwner.password) {
       // register new owner
@@ -452,6 +460,7 @@ function TransferModal({ type, onClose }) {
       const c = reg.companies.find((x) => x.id === company.id);
       if (c) { c.ownerEmail = newOwner.email; c.ownerPassword = newOwner.password; }
       localStorage.setItem("powercare_registry", JSON.stringify(reg));
+      logAudit(company.id, "ownership_transferred", currentUser.name, `${currentUser.name} transferred company ownership to new owner ${newOwner.name} (${newOwner.email}).`);
       onClose();
     }
   };

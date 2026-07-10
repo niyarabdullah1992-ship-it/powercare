@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
 import { listCompanies, createCompany, deleteCompany } from "@/lib/store";
+import { logAudit, fetchAllAuditLog } from "@/lib/auditLog";
 import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut } from "lucide-react";
 import Logo from "@/components/Logo";
 
@@ -12,6 +13,7 @@ export default function OwnerPanel() {
   const [user, setUser] = useState(undefined); // undefined = loading
   const [companies, setCompanies] = useState([]);
   const [form, setForm] = useState({ name: "", ownerEmail: "", ownerPassword: "", plan: "Starter", allowedEmailDomain: "" });
+  const [auditLogs, setAuditLogs] = useState([]);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => setUser(null));
@@ -19,7 +21,10 @@ export default function OwnerPanel() {
 
   const refresh = () => setCompanies(listCompanies());
   useEffect(() => {
-    if (user?.role === "admin") refresh();
+    if (user?.role === "admin") {
+      refresh();
+      fetchAllAuditLog().then(setAuditLogs);
+    }
   }, [user]);
 
   if (user === undefined) return null;
@@ -46,15 +51,20 @@ export default function OwnerPanel() {
   const handleCreate = (e) => {
     e.preventDefault();
     if (!form.name || !form.ownerEmail || !form.ownerPassword) return;
-    createCompany(form);
+    const company = createCompany(form);
+    logAudit(company.id, "company_created", user.email, `${user.email} created company "${company.name}" (${company.plan}).`);
     setForm({ name: "", ownerEmail: "", ownerPassword: "", plan: "Starter", allowedEmailDomain: "" });
     refresh();
+    fetchAllAuditLog().then(setAuditLogs);
   };
 
   const handleDelete = (id) => {
+    const c = companies.find((x) => x.id === id);
     if (confirm(t("confirmDelete"))) {
       deleteCompany(id);
+      logAudit(id, "company_deleted", user.email, `${user.email} deleted company "${c?.name || id}".`);
       refresh();
+      fetchAllAuditLog().then(setAuditLogs);
     }
   };
 
@@ -119,6 +129,24 @@ export default function OwnerPanel() {
               {t("createCompany")}
             </button>
           </form>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-xl">
+          <h3 className="font-heading text-lg font-semibold mb-3 flex items-center gap-2 text-[#3a2f22]">
+            <ShieldAlert className="w-4 h-4" /> {lang === "ar" ? "سجل التدقيق (كل الشركات)" : "Audit Log (all companies)"}
+          </h3>
+          {auditLogs.length === 0 ? (
+            <p className="text-sm text-[#3a2f22]/40 font-body">{lang === "ar" ? "لا توجد عمليات مسجلة بعد." : "No actions logged yet."}</p>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {auditLogs.map((l) => (
+                <div key={l.id} className="text-xs font-body p-2.5 rounded-lg bg-landing-bg">
+                  <p className="text-[#3a2f22]">{l.details || l.action}</p>
+                  <p className="text-[#3a2f22]/40 mt-0.5">{l.performedBy} · {new Date(l.created_date).toLocaleString(lang === "ar" ? "ar" : "en")}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

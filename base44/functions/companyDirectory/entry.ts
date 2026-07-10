@@ -45,6 +45,27 @@ Deno.serve(async (req) => {
       return Response.json({ stations: records });
     }
 
+    if (action === 'logAudit') {
+      const { auditAction, performedBy, details } = body;
+      await base44.asServiceRole.entities.AuditLog.create({
+        companyId, action: auditAction || 'unknown', performedBy: performedBy || 'unknown', details: details || '',
+      });
+      return Response.json({ ok: true });
+    }
+
+    if (action === 'getAuditLog') {
+      const records = await base44.asServiceRole.entities.AuditLog.filter({ companyId }, '-created_date', 100);
+      return Response.json({ logs: records });
+    }
+
+    if (action === 'getAllAuditLog') {
+      // platform-wide log — only the platform owner (admin role) may view every company's entries.
+      const user = await base44.auth.me().catch(() => null);
+      if (!user || user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const records = await base44.asServiceRole.entities.AuditLog.list('-created_date', 200);
+      return Response.json({ logs: records });
+    }
+
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
