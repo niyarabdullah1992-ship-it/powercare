@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { canManageEmployees, hasHRPermission } from "@/lib/permissions";
+import { isAncestorManager } from "@/lib/simdif";
 import { getRoleLabel } from "@/lib/roles";
 import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle } from "lucide-react";
 import ProfileHero from "@/components/employees/ProfileHero";
@@ -34,7 +35,9 @@ export default function EmployeeProfile() {
   const isSelf = currentUser.id === employee.id;
   const canManage = canManageEmployees(currentUser) || currentUser.role === "director" || currentUser.role === "ops_manager";
   const canEditSalary = currentUser.role === "director" || hasHRPermission(currentUser, data, "manage_payroll");
-  const canApproveLeave = canManage || hasHRPermission(currentUser, data, "manage_leave");
+  const isSimDifManagerOf = isAncestorManager(data, currentUser.id, employee.id);
+  const canApproveLeave = canManage || hasHRPermission(currentUser, data, "manage_leave") || isSimDifManagerOf;
+  const canApproveCerts = canManage || isSimDifManagerOf;
   const stationName = data.stations.find((s) => s.id === employee.stationId)?.name;
 
   return (
@@ -68,7 +71,7 @@ export default function EmployeeProfile() {
       </div>
 
       {tab === "professionalInfo" && <ProfessionalInfoTab employee={employee} companyId={company.id} canEdit={canManage} />}
-      {tab === "certificates" && <CertificatesTab employee={employee} companyId={company.id} canEdit={isSelf || canManage} canApprove={canManage} currentUser={currentUser} />}
+      {tab === "certificates" && <CertificatesTab employee={employee} companyId={company.id} canEdit={isSelf || canManage} canApprove={canApproveCerts} currentUser={currentUser} />}
       {tab === "salary" && <SalaryTab employee={employee} companyId={company.id} canEdit={canEditSalary} />}
       {tab === "leave" && <LeaveTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canApprove={canApproveLeave} />}
       {tab === "communications" && <HRCommunicationsTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canReply={canManage} />}
