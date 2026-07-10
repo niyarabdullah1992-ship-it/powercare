@@ -230,6 +230,9 @@ const dict = {
     filesAndMedia: "Files & Media",
     noMediaShared: "No files or voice notes shared yet.",
     sharedBy: "Shared by",
+    tasksReport: "Tasks Report",
+    tasksReportNote: "Detailed breakdown of all tasks within the selected period.",
+    noTasksInRange: "No tasks in this range.",
   },
   ar: {
     dir: "rtl",
@@ -459,6 +462,9 @@ const dict = {
     filesAndMedia: "الملفات والوسائط",
     noMediaShared: "لم تتم مشاركة أي ملفات أو تسجيلات صوتية بعد.",
     sharedBy: "شارك بواسطة",
+    tasksReport: "تقرير المهام",
+    tasksReportNote: "تفصيل شامل لجميع المهام خلال الفترة المحددة.",
+    noTasksInRange: "لا توجد مهام في هذا النطاق.",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
