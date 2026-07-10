@@ -172,6 +172,7 @@ const dict = {
     hrCommunications: "HR Communications", sendTo: "Send to", stationHRTarget: "Local Station HR", hqHRTarget: "HQ HR Team",
     typeMessage: "Type your message...", noMessages: "No messages yet.",
     orgChart: "HR Org Chart",
+    employeeName: "Name",
   },
   ar: {
     dir: "rtl",
@@ -343,6 +344,7 @@ const dict = {
     hrCommunications: "تواصل الموارد البشرية", sendTo: "إرسال إلى", stationHRTarget: "موارد بشرية المحطة", hqHRTarget: "فريق موارد بشرية المقر",
     typeMessage: "اكتب رسالتك...", noMessages: "لا توجد رسائل بعد.",
     orgChart: "الهيكل التنظيمي للموارد البشرية",
+    employeeName: "الاسم",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
