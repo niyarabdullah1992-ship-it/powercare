@@ -79,7 +79,7 @@ export default function HRTierCard({ tier, scopeType, scopeId, scopeName, data, 
 
       {addingRole && (
         <HRAssignModal
-          title={addingRole === "manager" ? t("assignManager") : t("assignAssistant")}
+          title={`${addingRole === "manager" ? t("assignManager") : t("assignAssistant")} — ${tierName(tier, addingRole, lang)}`}
           eligibleEmployees={eligible}
           onAssignExisting={assignExisting}
           onHireNew={hireNew}
