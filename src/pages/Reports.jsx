@@ -5,9 +5,9 @@ import { base44 } from "@/api/base44Client";
 import { formatDate, formatDateTime } from "@/lib/dateFormat";
 import { visibleStations, canSeeAllStations } from "@/lib/permissions";
 import moment from "moment";
-import { FileBarChart2, Calendar, AlertTriangle, Check, Clock, Building2, ListTodo, CalendarDays, Megaphone, FileSpreadsheet, FileText } from "lucide-react";
+import { FileBarChart2, Calendar, AlertTriangle, Check, Clock, Building2, ListTodo, CalendarDays, Megaphone, FileSpreadsheet } from "lucide-react";
 import TaskStats from "@/components/tasks/TaskStats";
-import { exportCSV, exportPDF } from "@/lib/exportReport";
+import { exportCSV } from "@/lib/exportReport";
 
 const RANGES = [
   { val: "daily", amount: 1, unit: "days" },
@@ -254,9 +254,6 @@ export default function Reports() {
                 <button onClick={() => { const { headers, rows } = tasksExportData(); exportCSV(`tasks-report.csv`, headers, rows); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
                   <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
                 </button>
-                <button onClick={() => { const { headers, rows } = tasksExportData(); exportPDF(`tasks-report.pdf`, t("tasksReport"), headers, rows); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-                  <FileText className="w-3.5 h-3.5" /> PDF
-                </button>
               </div>
             )}
             <div className="p-5 rounded-xl border border-border bg-card">
@@ -365,9 +362,6 @@ export default function Reports() {
           <div className="flex items-center gap-2">
             <button onClick={() => { const { headers, rows } = complaintsExportData(); exportCSV(`complaints-report.csv`, headers, rows); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
               <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
-            </button>
-            <button onClick={() => { const { headers, rows } = complaintsExportData(); exportPDF(`complaints-report.pdf`, t("publicComplaints"), headers, rows); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-              <FileText className="w-3.5 h-3.5" /> PDF
             </button>
           </div>
         )}
