@@ -453,7 +453,7 @@ export function addHRTier(companyId, { scope, managerName, includeAssistant, ass
   updateCompany(companyId, (d) => {
     d.hrLevels = d.hrLevels || [];
     const order = Math.max(0, ...d.hrLevels.map((l) => l.order || 0)) + 1;
-    const sIds = scope === "station" && Array.isArray(stationIds) && stationIds.length > 0 ? stationIds : null;
+    const sIds = Array.isArray(stationIds) && stationIds.length > 0 ? stationIds : null;
     d.hrLevels.push({ id: uid("hrlvl"), order, role: "manager", scope, stationIds: sIds, name: managerName, permissions: managerPermissions || MANAGER_PERMISSIONS, maxCount: null });
     if (includeAssistant) {
       d.hrLevels.push({ id: uid("hrlvl"), order, role: "assistant", scope, stationIds: sIds, name: assistantName || managerName, permissions: assistantPermissions || ASSISTANT_PERMISSIONS, maxCount: null });

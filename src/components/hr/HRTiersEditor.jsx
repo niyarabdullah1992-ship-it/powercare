@@ -43,7 +43,7 @@ export default function HRTiersEditor({ data, canManage, canMultiStation }) {
       assistantName: includeAssistant ? assistantName.trim() : null,
       managerPermissions: managerPerms,
       assistantPermissions: assistantPerms,
-      stationIds: scope === "station" ? tierStationIds : null,
+      stationIds: tierStationIds,
     });
     setManagerName(""); setAssistantName(""); setIncludeAssistant(true); setScope("station"); setAdding(false);
     setManagerPerms(MANAGER_PERMISSIONS); setAssistantPerms(ASSISTANT_PERMISSIONS); setTierStationIds([]);
@@ -86,29 +86,27 @@ export default function HRTiersEditor({ data, canManage, canMultiStation }) {
               {SCOPES.map((s) => <option key={s} value={s}>{scopeLabel(s)}</option>)}
             </select>
           </div>
-          {scope === "station" && (
-            <div>
-              <label className="block text-xs text-muted-foreground font-body mb-1">{t("station") || "Station"} ({t("leaveEmptyForAll") || "leave empty for all stations"})</label>
-              <div className="flex flex-wrap gap-2">
-                {data.stations.map((s) => {
-                  const active = tierStationIds.includes(s.id);
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setTierStationIds((prev) => {
-                        if (!canMultiStation) return active ? [] : [s.id]; // single station only, unless top HR position / owner
-                        return active ? prev.filter((id) => id !== s.id) : [...prev, s.id];
-                      })}
-                      className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${active ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-                    >
-                      {s.name}
-                    </button>
-                  );
-                })}
-              </div>
+          <div>
+            <label className="block text-xs text-muted-foreground font-body mb-1">{t("station") || "Station"} ({t("leaveEmptyForAll") || "leave empty for all stations"})</label>
+            <div className="flex flex-wrap gap-2">
+              {data.stations.map((s) => {
+                const active = tierStationIds.includes(s.id);
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setTierStationIds((prev) => {
+                      if (!canMultiStation) return active ? [] : [s.id]; // single station only, unless top HR position / owner
+                      return active ? prev.filter((id) => id !== s.id) : [...prev, s.id];
+                    })}
+                    className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${active ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+                  >
+                    {s.name}
+                  </button>
+                );
+              })}
             </div>
-          )}
+          </div>
           <input value={managerName} onChange={(e) => setManagerName(e.target.value)} placeholder={t("managerPositionName")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
           <label className="flex items-center gap-2 text-xs font-body">
             <input type="checkbox" checked={includeAssistant} onChange={(e) => setIncludeAssistant(e.target.checked)} />
@@ -185,7 +183,7 @@ export default function HRTiersEditor({ data, canManage, canMultiStation }) {
                 <p className="text-[10px] text-muted-foreground font-body">
                   {(() => {
                     const sIds = g.manager?.stationIds || g.assistant?.stationIds || null;
-                    if (g.scope === "station" && sIds && sIds.length > 0) {
+                    if (sIds && sIds.length > 0) {
                       const names = sIds.map((id) => data.stations.find((s) => s.id === id)?.name).filter(Boolean).join(", ");
                       return `${scopeLabel(g.scope)} · ${names}`;
                     }
@@ -221,11 +219,9 @@ export default function HRTiersEditor({ data, canManage, canMultiStation }) {
               </div>
               {canManage && (
                 <div className="flex items-center gap-1 shrink-0">
-                  {g.scope === "station" && (
-                    <button onClick={() => startEditStations(g)} title={t("station") || "Stations"} className="p-1 rounded hover:bg-muted text-muted-foreground">
-                      <MapPin className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <button onClick={() => startEditStations(g)} title={t("station") || "Stations"} className="p-1 rounded hover:bg-muted text-muted-foreground">
+                    <MapPin className="w-3.5 h-3.5" />
+                  </button>
                   <button disabled={idx === 0} onClick={() => moveHRTier(data.id, g.order, 1)} title={t("moveUp")} className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30">
                     <ChevronUp className="w-3.5 h-3.5" />
                   </button>

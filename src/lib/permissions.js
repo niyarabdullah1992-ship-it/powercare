@@ -98,6 +98,7 @@ export function hrScopeStations(user, data) {
   if (!user?.hrLevelId) return [];
   const level = (data?.hrLevels || []).find((l) => l.id === user.hrLevelId);
   if (!level) return [];
+  if (level.stationIds && level.stationIds.length > 0) return level.stationIds; // explicit station restriction, any scope
   if (level.scope === "station") return user.hrStationId ? [user.hrStationId] : [];
   if (level.scope === "cluster") {
     const cluster = (data?.hrClusters || []).find((c) => c.id === user.hrClusterId);

@@ -13,9 +13,8 @@ export default function HROrgChart({ station, data, canManage }) {
   const groups = groupLevelsByOrder(data.hrLevels || [])
     .filter((g) => (g.manager?.active ?? true) !== false || (g.assistant?.active ?? true) !== false)
     .filter((g) => {
-      if (g.scope !== "station") return true;
       const sIds = g.manager?.stationIds || g.assistant?.stationIds || null;
-      return !sIds || sIds.includes(station.id); // station-specific tiers only show on their chosen stations
+      return !sIds || sIds.includes(station.id); // any tier can be restricted to chosen stations, regardless of scope
     })
     .slice()
     .reverse(); // highest authority first, suspended tiers hidden
