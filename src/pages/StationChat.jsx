@@ -7,6 +7,7 @@ import { MessageSquare, Send, ArrowLeft, Building2, Radio } from "lucide-react";
 import ChatBubble from "@/components/chat/ChatBubble";
 import ChatContactList from "@/components/chat/ChatContactList";
 import CommentFiles from "@/components/tasks/CommentFiles";
+import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 
 export default function StationChat() {
   const { t, dir, lang } = useI18n();
@@ -163,7 +164,10 @@ export default function StationChat() {
                       <Send className={`w-4 h-4 ${dir === "rtl" ? "-scale-x-100" : ""}`} />
                     </button>
                   </div>
-                  <CommentFiles files={files} setFiles={setFiles} disabled={sending} />
+                  <div className="flex flex-wrap items-end gap-2">
+                    <CommentFiles files={files} setFiles={setFiles} disabled={sending} />
+                    <VoiceRecorder files={files} setFiles={setFiles} disabled={sending} />
+                  </div>
                 </form>
               </>
             )}
