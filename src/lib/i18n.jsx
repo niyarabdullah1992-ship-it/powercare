@@ -173,6 +173,10 @@ const dict = {
     typeMessage: "Type your message...", noMessages: "No messages yet.",
     orgChart: "HR Org Chart",
     employeeName: "Name",
+    confidential: "Confidential",
+    makeConfidential: "Make Private",
+    removeConfidential: "Remove Private",
+    confidentialHidden: "This conversation is private",
   },
   ar: {
     dir: "rtl",
@@ -345,6 +349,10 @@ const dict = {
     typeMessage: "اكتب رسالتك...", noMessages: "لا توجد رسائل بعد.",
     orgChart: "الهيكل التنظيمي للموارد البشرية",
     employeeName: "الاسم",
+    confidential: "سرّي",
+    makeConfidential: "جعلها سرية",
+    removeConfidential: "إزالة السرية",
+    confidentialHidden: "هذه المحادثة سرية",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

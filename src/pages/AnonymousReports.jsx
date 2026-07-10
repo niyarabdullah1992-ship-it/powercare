@@ -4,20 +4,25 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getAnonUsage, addNotification, getAnonymousCode, setAnonRateLimits } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
 import { tierLevelId, tierName, HR_TIER_COUNT } from "@/lib/hrLevels";
-import { ShieldCheck, Send, Lock, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft, Check, X as XIcon } from "lucide-react";
+import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft, Check, X as XIcon } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
 
-// Escalation chain: strictly the 5-tier global HR hierarchy — Tier 1 (Site) → Tier 2 (Cluster)
-// → Tier 3 (Head of HR Operations) → Tier 4 (VP of HR) → Tier 5 (CHRO).
-const STAGE_COUNT = HR_TIER_COUNT;
+// Escalation chain: first the station manager, then the 5-tier global HR hierarchy —
+// Station Manager → Tier 1 (Site) → Tier 2 (Cluster) → Tier 3 (Head of HR Operations)
+// → Tier 4 (VP of HR) → Tier 5 (CHRO).
+const STAGE_COUNT = HR_TIER_COUNT + 1;
 
-// Managers (action rights) assigned to a given tier (index 0-4 → tier 1-5) within the report's scope.
+// Handlers (action rights) assigned to a given escalation level within the report's scope.
+// Level 0 = the station manager. Levels 1-5 = HR tiers 1-5.
 function handlersForLevel(levelIdx, r, data) {
-  const tier = levelIdx + 1;
+  if (levelIdx === 0) {
+    return data.employees.filter((e) => e.role === "station_manager" && e.stationId === r.stationId);
+  }
+  const tier = levelIdx;
   const levelId = tierLevelId(tier, "manager");
   const managers = data.employees.filter((e) => e.hrLevelId === levelId);
   if (tier === 1) return managers.filter((e) => e.hrStationId === r.stationId);
@@ -29,7 +34,8 @@ function handlersForLevel(levelIdx, r, data) {
 }
 
 function levelLabel(levelIdx, data, t, lang) {
-  return `${t("tier")} ${levelIdx + 1} · ${tierName(levelIdx + 1, "manager", lang)}`;
+  if (levelIdx === 0) return t("stationManager");
+  return `${t("tier")} ${levelIdx} · ${tierName(levelIdx, "manager", lang)}`;
 }
 
 export default function AnonymousReports() {
@@ -50,7 +56,7 @@ export default function AnonymousReports() {
   const isHRAnon = canAct || canView;
   const hrStations = isHRAnon ? hrScopeStations(currentUser, data) : [];
   const isOwner = currentUser.id === data.ownerId;
-  const isStaff = isHRAnon || currentUser.role === "director" || currentUser.role === "ops_manager" || isOwner;
+  const isStaff = isHRAnon || currentUser.role === "director" || currentUser.role === "ops_manager" || currentUser.role === "station_manager" || isOwner;
   const myAnon = data.anonymousReports.filter((a) => (a.authorId ? a.authorId === currentUser.id : a.anonymousId === currentUser.anonymousId));
   const usage = getAnonUsage(company.id, currentUser.id, currentUser.anonymousId);
 
@@ -66,13 +72,32 @@ export default function AnonymousReports() {
   // Reports visible to a staff member based on HR scope (or full oversight for director/owner/ops manager)
   const visibleReports = data.anonymousReports.filter((r) => {
     if (currentUser.role === "director" || currentUser.role === "ops_manager" || isOwner) return true;
+    if (currentUser.role === "station_manager") return r.stationId === currentUser.stationId;
     if (isHRAnon) return hrStations === null || hrStations.includes(r.stationId);
     return false;
   });
 
   const currentHandlerLabel = (r) => levelLabel(r.escalationLevel || 0, data, t, lang);
-  const canReplyTo = (r) => canAct && handlersForLevel(r.escalationLevel || 0, r, data).some((h) => h.id === currentUser.id);
+  const canReplyTo = (r) => {
+    const level = r.escalationLevel || 0;
+    if (!handlersForLevel(level, r, data).some((h) => h.id === currentUser.id)) return false;
+    return level === 0 ? true : canAct;
+  };
   const isAtTop = (r) => (r.escalationLevel || 0) >= STAGE_COUNT - 1;
+  const isConfidentialHidden = (r) => r.confidential && r.confidentialBy !== currentUser.id;
+  const toggleConfidential = (id) => {
+    updateCompany(company.id, (d) => {
+      const r = d.anonymousReports.find((x) => x.id === id);
+      if (!r) return;
+      if (r.confidential && r.confidentialBy === currentUser.id) {
+        r.confidential = false;
+        r.confidentialBy = null;
+      } else if (!r.confidential) {
+        r.confidential = true;
+        r.confidentialBy = currentUser.id;
+      }
+    });
+  };
 
   const submit = (e) => {
     e.preventDefault();
@@ -92,8 +117,8 @@ export default function AnonymousReports() {
       });
     });
     const station = data.stations.find((s) => s.id === currentUser.stationId);
-    const tier1Managers = data.employees.filter((e) => e.hrLevelId === tierLevelId(1, "manager") && e.hrStationId === currentUser.stationId);
-    for (const h of tier1Managers) addNotification(company.id, h.id, `New ${t(type)} report at ${station?.name || ""} (${t(priority)}).`);
+    const stationManagers = data.employees.filter((e) => e.role === "station_manager" && e.stationId === currentUser.stationId);
+    for (const h of stationManagers) addNotification(company.id, h.id, `New ${t(type)} report at ${station?.name || ""} (${t(priority)}).`);
     setMessage("");
     setFiles([]);
   };
@@ -253,6 +278,7 @@ export default function AnonymousReports() {
                         <Badge text={t(r.type)} />
                         <Badge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
                         <Badge text={currentHandlerLabel(r)} tone="accent" />
+                        {r.confidential && <Badge text={t("confidential")} tone="destructive" />}
                       </div>
                     </div>
                     <p className="text-sm font-body">{r.message}</p>
@@ -357,12 +383,21 @@ export default function AnonymousReports() {
                     <Badge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
                     <Badge text={currentHandlerLabel(r)} tone="accent" />
                     <Badge text={t(r.status)} tone={r.status === "closed" ? (r.resolution === "approved" ? "accent" : "destructive") : "muted"} />
+                    {r.confidential && <Badge text={t("confidential")} tone="destructive" />}
                   </div>
                 </div>
-                <p className="text-sm font-body">{r.message}</p>
-                <CommentAttachments files={r.files} />
-                {renderTimeline(r)}
-                {canReplyTo(r) && r.status !== "closed" && (
+                {isConfidentialHidden(r) ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-body italic p-3 rounded-md bg-muted/40">
+                    <Lock className="w-3.5 h-3.5" /> {t("confidentialHidden")}
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm font-body">{r.message}</p>
+                    <CommentAttachments files={r.files} />
+                    {renderTimeline(r)}
+                  </>
+                )}
+                {canReplyTo(r) && !isConfidentialHidden(r) && r.status !== "closed" && (
                   <div className="space-y-2 pt-1 border-t border-border">
                     <div className="flex flex-wrap items-end gap-2">
                       <CommentFiles files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
@@ -381,10 +416,16 @@ export default function AnonymousReports() {
                           <ArrowUpCircle className="w-3.5 h-3.5" /> {t("escalateNextTier")}
                         </button>
                       )}
+                      {(!r.confidential || r.confidentialBy === currentUser.id) && (
+                        <button onClick={() => toggleConfidential(r.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+                          {r.confidential ? <LockOpen className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                          {r.confidential ? t("removeConfidential") : t("makeConfidential")}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
-                {!canReplyTo(r) && r.status !== "closed" && (
+                {!canReplyTo(r) && r.status !== "closed" && !isConfidentialHidden(r) && (
                   <p className="text-xs text-muted-foreground font-body italic">
                     {isHRAnon && !canAct ? t("auditTrail") : `${t("escalatedTo")} ${currentHandlerLabel(r)}`}
                   </p>
