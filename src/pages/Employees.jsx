@@ -95,6 +95,25 @@ export default function Employees() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {(() => {
+            const hqTeam = data.employees.filter((e) => !e.stationId && e.role !== "pgm");
+            if (hqTeam.length === 0) return null;
+            return (
+              <button onClick={() => setSelectedStation("HQ")} className="text-start p-5 rounded-xl border border-border bg-card hover:border-accent transition-colors space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-heading font-semibold">{t("hq")}</h3>
+                </div>
+                <p className="text-sm text-muted-foreground font-body">{hqTeam.length} {t("team").toLowerCase()}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {ROLES.filter((r) => hqTeam.some((e) => e.role === r)).map((r) => (
+                    <span key={r} className="px-2 py-0.5 rounded-full bg-muted text-[10px] font-body text-muted-foreground">
+                      {hqTeam.filter((e) => e.role === r).length} {getRoleLabel(company, r, t)}
+                    </span>
+                  ))}
+                </div>
+              </button>
+            );
+          })()}
           {stations.map((s) => {
             const team = data.employees.filter((e) => e.stationId === s.id);
             const hasManager = team.some((e) => e.role === "station_manager");
@@ -125,9 +144,12 @@ export default function Employees() {
     );
   }
 
-  // Station team view
-  const station = data.stations.find((s) => s.id === selectedStation);
-  let team = data.employees.filter((e) => e.stationId === selectedStation || (e.role === "pgm" && (e.managedStations || []).includes(selectedStation)));
+  // Station team view (or HQ / company-wide team when selectedStation === "HQ")
+  const isHQ = selectedStation === "HQ";
+  const station = isHQ ? null : data.stations.find((s) => s.id === selectedStation);
+  let team = isHQ
+    ? data.employees.filter((e) => !e.stationId && e.role !== "pgm")
+    : data.employees.filter((e) => e.stationId === selectedStation || (e.role === "pgm" && (e.managedStations || []).includes(selectedStation)));
   if (search) team = team.filter((e) => e.name.toLowerCase().includes(search.toLowerCase()) || e.email.toLowerCase().includes(search.toLowerCase()));
   if (roleFilter !== "all") team = team.filter((e) => e.role === roleFilter);
 
@@ -139,7 +161,7 @@ export default function Employees() {
         name: form.name,
         email: form.email,
         role: form.role,
-        stationId: selectedStation,
+        stationId: isHQ ? null : selectedStation,
         anonymousId: "ANON-" + Math.abs(Math.random().toString(36).hashCode?.() || Math.floor(Math.random() * 1e8)).toString(16).toUpperCase().padStart(8, "0"),
         phone: "",
         createdAt: new Date().toISOString(),
@@ -199,7 +221,7 @@ export default function Employees() {
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h1 className="font-heading text-3xl font-semibold">{station?.name}</h1>
+          <h1 className="font-heading text-3xl font-semibold">{isHQ ? t("hq") : station?.name}</h1>
           <p className="text-muted-foreground font-body text-sm">{t("team")}</p>
         </div>
       </div>
