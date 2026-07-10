@@ -7,7 +7,6 @@ import { Building2, Plus, Trash2, ShieldCheck, LogIn, Globe, ChevronDown, Check,
 import Logo from "@/components/Logo";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
-const PERSON_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f2304816b_generated_image.png";
 
 export default function Landing() {
   const { t, lang, setLang, languages } = useI18n();
@@ -88,11 +87,6 @@ export default function Landing() {
               <FeatureBullet icon={Clock} title="Maximize Uptime with Intelligent Scheduling" />
               <FeatureBullet icon={TrendingUp} title="Advanced Data Analytics for Optimal Performance" />
               <FeatureBullet icon={ShieldCheck} title="Secure, Scalable Solutions for Infrastructure" />
-            </div>
-
-            <div className="mt-6 flex items-center gap-4 max-w-lg">
-              <img src={PERSON_IMG} alt="" className="w-16 h-16 rounded-full object-cover shadow-md ring-4 ring-white shrink-0" />
-              <p className="text-sm text-[#3a2f22]/60 font-body">Real people, real confidence — leading every station with care.</p>
             </div>
           </div>
 
