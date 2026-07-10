@@ -2,8 +2,11 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canManageSchedule } from "@/lib/permissions";
-import { ArrowLeft, CalendarClock } from "lucide-react";
+import { ArrowLeft, CalendarClock, Download } from "lucide-react";
 import StationScheduleEditor from "@/components/schedules/StationScheduleEditor";
+import { exportCSV } from "@/lib/exportReport";
+
+const DAY_LABELS = ["daySun", "dayMon", "dayTue", "dayWed", "dayThu", "dayFri", "daySat"];
 
 export default function Schedules() {
   const { t } = useI18n();
@@ -38,6 +41,18 @@ export default function Schedules() {
   const station = data.stations.find((s) => s.id === selectedStation);
   const canManage = canManageSchedule(currentUser, data, selectedStation);
 
+  const handleExport = () => {
+    const schedule = (data.schedules || []).find((s) => s.stationId === selectedStation);
+    const rows = [];
+    DAY_LABELS.forEach((dayLabelKey, dayIndex) => {
+      const shifts = schedule?.days?.[dayIndex] || [];
+      shifts.forEach((sh) => {
+        rows.push([t(dayLabelKey), sh.label || "", (sh.employeeNames || []).join(", "), sh.start, sh.end]);
+      });
+    });
+    exportCSV(`${station?.name || "schedule"}.csv`, [t("station"), t("shiftLabel"), t("employees"), t("startDate"), t("endDate")], rows);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -45,7 +60,9 @@ export default function Schedules() {
           <ArrowLeft className="w-4 h-4" />
         </button>
         <h1 className="flex-1 text-center font-heading text-3xl font-semibold">{station?.name}</h1>
-        <div className="w-9 shrink-0" />
+        <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-landing-gold/40 text-sm font-body hover:bg-landing-gold-light/20 shrink-0 whitespace-nowrap">
+          <Download className="w-4 h-4" /> {t("exportExcel")}
+        </button>
       </div>
       <StationScheduleEditor companyId={company.id} stationId={selectedStation} canManage={canManage} />
     </div>
