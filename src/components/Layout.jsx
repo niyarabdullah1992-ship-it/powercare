@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, HardHat, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2,
+  Users, HardHat, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, GripVertical,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -21,6 +22,15 @@ export default function Layout({ children }) {
   const langRef = useRef(null);
   const notifRef = useRef(null);
   const userRef = useRef(null);
+  const [navOrder, setNavOrder] = useState([]);
+
+  useEffect(() => {
+    if (!company) return;
+    const saved = localStorage.getItem(`powercare_nav_order_${company.id}`);
+    if (saved) {
+      try { setNavOrder(JSON.parse(saved)); } catch { setNavOrder([]); }
+    }
+  }, [company?.id]);
 
   useEffect(() => {
     const onClick = (e) => {
@@ -93,6 +103,22 @@ export default function Layout({ children }) {
     { to: "/app/reports", icon: FileBarChart2, label: t("tasksReport") },
   ];
 
+  const orderKeys = navOrder.length ? navOrder : navItems.map((i) => i.to);
+  const orderedNavItems = [
+    ...orderKeys.map((to) => navItems.find((i) => i.to === to)).filter(Boolean),
+    ...navItems.filter((i) => !orderKeys.includes(i.to)),
+  ];
+
+  const onNavDragEnd = (result) => {
+    if (!result.destination) return;
+    const items = Array.from(orderedNavItems);
+    const [moved] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, moved);
+    const newOrder = items.map((i) => i.to);
+    setNavOrder(newOrder);
+    if (company) localStorage.setItem(`powercare_nav_order_${company.id}`, JSON.stringify(newOrder));
+  };
+
   const myNotifs = data.notifications.filter((n) => n.userId === currentUser.id);
   const unread = myNotifs.filter((n) => !n.read).length;
 
@@ -117,25 +143,44 @@ export default function Layout({ children }) {
             <p className="text-[10px] text-muted-foreground mt-1 truncate max-w-[160px]">{company.name}</p>
           </div>
         </div>
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-body transition-colors ${
-                  isActive
-                    ? "bg-foreground text-background"
-                    : "text-foreground/70 hover:bg-muted hover:text-foreground"
-                }`
-              }
-            >
-              <item.icon className="w-4 h-4" strokeWidth={1.75} />
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+        <DragDropContext onDragEnd={onNavDragEnd}>
+          <Droppable droppableId="sidebar-nav">
+            {(provided) => (
+              <nav ref={provided.innerRef} {...provided.droppableProps} className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                {orderedNavItems.map((item, index) => (
+                  <Draggable key={item.to} draggableId={item.to} index={index}>
+                    {(dragProvided, dragSnapshot) => (
+                      <div
+                        ref={dragProvided.innerRef}
+                        {...dragProvided.draggableProps}
+                        className={`flex items-center rounded-md ${dragSnapshot.isDragging ? "shadow-lg bg-card" : ""}`}
+                      >
+                        <span {...dragProvided.dragHandleProps} className="px-1 text-muted-foreground hover:text-foreground cursor-grab shrink-0">
+                          <GripVertical className="w-3.5 h-3.5" />
+                        </span>
+                        <NavLink
+                          to={item.to}
+                          end={item.end}
+                          className={({ isActive }) =>
+                            `flex-1 flex items-center gap-3 px-2 py-2.5 rounded-md text-sm font-body transition-colors ${
+                              isActive
+                                ? "bg-foreground text-background"
+                                : "text-foreground/70 hover:bg-muted hover:text-foreground"
+                            }`
+                          }
+                        >
+                          <item.icon className="w-4 h-4" strokeWidth={1.75} />
+                          {item.label}
+                        </NavLink>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </nav>
+            )}
+          </Droppable>
+        </DragDropContext>
         <div className="px-4 py-4 border-t border-border">
           <p className="text-[10px] text-muted-foreground leading-relaxed">{t("demoNote")}</p>
         </div>
@@ -290,7 +335,7 @@ export default function Layout({ children }) {
 
           {/* Mobile nav row */}
           <div className="md:hidden flex items-center gap-1 overflow-x-auto px-3 pb-2 no-scrollbar">
-            {navItems.map((item) => (
+            {orderedNavItems.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
