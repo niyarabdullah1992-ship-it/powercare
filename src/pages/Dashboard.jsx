@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, visibleEmployees, canSeeAllStations } from "@/lib/permissions";
 import { Radio, ListTodo, AlertTriangle, FileText, TrendingUp } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
+import { formatDate } from "@/lib/dateFormat";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -42,7 +43,7 @@ export default function Dashboard() {
   for (let i = 5; i >= 0; i--) {
     const d = new Date();
     d.setMonth(d.getMonth() - i);
-    monthLabels.push(d.toLocaleDateString(lang, { month: "short" }));
+    monthLabels.push(formatDate(d, lang, { month: "short" }));
   }
   const chartData = monthLabels.map((m, i) => ({
     month: m,
@@ -113,7 +114,7 @@ export default function Dashboard() {
           {recent.map((r, i) => (
             <div key={i} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
               <p className="text-sm font-body">{r.text}</p>
-              <p className="text-xs text-muted-foreground font-body">{new Date(r.at).toLocaleDateString(lang)}</p>
+              <p className="text-xs text-muted-foreground font-body">{formatDate(r.at, lang)}</p>
             </div>
           ))}
         </div>

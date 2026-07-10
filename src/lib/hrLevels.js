@@ -69,17 +69,19 @@ export function tierNote(tier, lang) {
   return NOTES[tier]?.[lang] || NOTES[tier]?.en || "";
 }
 
-const MANAGER_PERMISSIONS = ["view_employees", "manage_employees", "view_reports", "manage_leave", "view_safety", "manage_anonymous_reports", "view_anonymous_reports", "manage_payroll"];
-const ASSISTANT_PERMISSIONS = ["view_employees", "view_reports", "view_safety", "view_anonymous_reports"];
+export const MANAGER_PERMISSIONS = ["view_employees", "manage_employees", "view_reports", "manage_leave", "view_safety", "manage_anonymous_reports", "view_anonymous_reports", "manage_payroll"];
+export const ASSISTANT_PERMISSIONS = ["view_employees", "view_reports", "view_safety", "view_anonymous_reports"];
 
-// The 10 fixed HR levels (5 tiers x manager/assistant). Names are resolved at render
-// time via tierName() so they always reflect the current UI language.
+// The 10 default HR levels (5 tiers x manager/assistant), used only to seed a new
+// company's hierarchy. `order` (not `tier`) drives escalation/display order from here on,
+// and `name` starts as null so the built-in translated tierName() is used until a
+// company renames the position (see levelName()).
 export function buildHRLevels() {
   const levels = [];
   for (let tier = 1; tier <= HR_TIER_COUNT; tier++) {
     const scope = SCOPE_BY_TIER[tier];
-    levels.push({ id: tierLevelId(tier, "manager"), tier, role: "manager", scope, permissions: MANAGER_PERMISSIONS, maxCount: null });
-    levels.push({ id: tierLevelId(tier, "assistant"), tier, role: "assistant", scope, permissions: ASSISTANT_PERMISSIONS, maxCount: null });
+    levels.push({ id: tierLevelId(tier, "manager"), order: tier, role: "manager", scope, name: null, permissions: MANAGER_PERMISSIONS, maxCount: null });
+    levels.push({ id: tierLevelId(tier, "assistant"), order: tier, role: "assistant", scope, name: null, permissions: ASSISTANT_PERMISSIONS, maxCount: null });
   }
   return levels;
 }
@@ -89,4 +91,31 @@ export function isManagerLevel(level) {
 }
 export function isAssistantLevel(level) {
   return level?.role === "assistant";
+}
+
+// Display label for a level: a company's custom name always wins, otherwise fall
+// back to the built-in translated name for the first 5 default tiers.
+export function levelName(level, lang) {
+  if (!level) return "";
+  if (level.name) return level.name;
+  if (level.order >= 1 && level.order <= HR_TIER_COUNT) return tierName(level.order, level.role, lang);
+  return level.role === "assistant" ? "Assistant" : "Manager";
+}
+
+export function levelNote(level, lang) {
+  if (!level || level.name) return "";
+  if (level.order >= 1 && level.order <= HR_TIER_COUNT) return tierNote(level.order, lang);
+  return "";
+}
+
+// Groups a company's flat hrLevels array into ordered tiers (manager + optional
+// assistant sharing the same `order`), ascending from lowest to highest authority.
+export function groupLevelsByOrder(levels) {
+  const orders = Array.from(new Set((levels || []).map((l) => l.order))).sort((a, b) => a - b);
+  return orders.map((order) => ({
+    order,
+    scope: levels.find((l) => l.order === order)?.scope || "company",
+    manager: levels.find((l) => l.order === order && l.role === "manager") || null,
+    assistant: levels.find((l) => l.order === order && l.role === "assistant") || null,
+  }));
 }

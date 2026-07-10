@@ -6,8 +6,9 @@ import { updateCompany } from "@/lib/store";
 import { buildHRLevels } from "@/lib/hrLevels";
 import ClusterEditor from "@/components/hr/ClusterEditor";
 import HROrgChart from "@/components/hr/HROrgChart";
+import HRTiersEditor from "@/components/hr/HRTiersEditor";
 
-const HR_SCHEMA_VERSION = 4; // fixed 5-tier global hierarchy
+const HR_SCHEMA_VERSION = 5; // flexible, company-customizable hierarchy
 
 export default function HR() {
   const { t, lang } = useI18n();
@@ -42,6 +43,11 @@ export default function HR() {
         <h1 className="font-heading text-3xl font-semibold">{t("globalHrHierarchy")}</h1>
         <p className="text-muted-foreground font-body text-sm mt-1">{t("hrPageNote")}</p>
       </div>
+
+      <section className="space-y-3">
+        <h2 className="font-heading text-lg font-semibold">{t("hrLevels")}</h2>
+        <HRTiersEditor data={data} canManage={canManage} />
+      </section>
 
       <section className="space-y-3">
         <h2 className="font-heading text-lg font-semibold">{t("clusterLevel")}</h2>

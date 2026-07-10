@@ -2,6 +2,7 @@ import React from "react";
 import { useI18n } from "@/lib/i18n";
 import { Clock, CheckCircle2, XCircle, Check, X, CalendarClock } from "lucide-react";
 import { CommentAttachments } from "@/components/tasks/CommentFiles";
+import { formatDate } from "@/lib/dateFormat";
 
 const STATUS_STYLE = {
   pending: { tone: "bg-amber-100 text-amber-700", icon: Clock },
@@ -10,7 +11,7 @@ const STATUS_STYLE = {
 };
 
 export default function LeaveRequestItem({ request, canApprove, onDecide }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { tone, icon: StatusIcon } = STATUS_STYLE[request.status];
 
   return (
@@ -23,7 +24,7 @@ export default function LeaveRequestItem({ request, canApprove, onDecide }) {
       </div>
       {request.type === "annual" && request.status === "approved" && request.activeStartDate && (
         <p className="flex items-center gap-1.5 text-xs text-accent font-body">
-          <CalendarClock className="w-3.5 h-3.5" /> {t("activeVacationPeriod")}: {new Date(request.activeStartDate).toLocaleDateString()} → {new Date(request.activeEndDate).toLocaleDateString()}
+          <CalendarClock className="w-3.5 h-3.5" /> {t("activeVacationPeriod")}: {formatDate(request.activeStartDate, lang)} → {formatDate(request.activeEndDate, lang)}
         </p>
       )}
       {request.reason && <p className="text-sm font-body text-muted-foreground">{request.reason}</p>}

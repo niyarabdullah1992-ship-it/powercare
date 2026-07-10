@@ -3,7 +3,8 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getAnonUsage, addNotification, getAnonymousCode, setAnonRateLimits } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
-import { tierLevelId, tierName, HR_TIER_COUNT } from "@/lib/hrLevels";
+import { groupLevelsByOrder, levelName } from "@/lib/hrLevels";
+import { formatDateTime } from "@/lib/dateFormat";
 import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft, Check, X as XIcon } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
@@ -11,31 +12,30 @@ import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
 
-// Escalation chain: first the station manager, then the 5-tier global HR hierarchy —
-// Station Manager → Tier 1 (Site) → Tier 2 (Cluster) → Tier 3 (Head of HR Operations)
-// → Tier 4 (VP of HR) → Tier 5 (CHRO).
-const STAGE_COUNT = HR_TIER_COUNT + 1;
-
-// Handlers (action rights) assigned to a given escalation level within the report's scope.
-// Level 0 = the station manager. Levels 1-5 = HR tiers 1-5.
+// Escalation chain: first the station manager, then the company's own custom HR
+// hierarchy — fully editable per company (see the HR page), from lowest to highest position.
 function handlersForLevel(levelIdx, r, data) {
   if (levelIdx === 0) {
     return data.employees.filter((e) => e.role === "station_manager" && e.stationId === r.stationId);
   }
-  const tier = levelIdx;
-  const levelId = tierLevelId(tier, "manager");
-  const managers = data.employees.filter((e) => e.hrLevelId === levelId);
-  if (tier === 1) return managers.filter((e) => e.hrStationId === r.stationId);
-  if (tier === 2) {
+  const groups = groupLevelsByOrder(data.hrLevels || []);
+  const group = groups[levelIdx - 1];
+  if (!group || !group.manager) return [];
+  const managers = data.employees.filter((e) => e.hrLevelId === group.manager.id);
+  if (group.scope === "station") return managers.filter((e) => e.hrStationId === r.stationId);
+  if (group.scope === "cluster") {
     const cluster = (data.hrClusters || []).find((c) => (c.stationIds || []).includes(r.stationId));
     return cluster ? managers.filter((e) => e.hrClusterId === cluster.id) : [];
   }
-  return managers; // tiers 3-5 are company-wide
+  return managers; // company-wide
 }
 
 function levelLabel(levelIdx, data, t, lang) {
   if (levelIdx === 0) return t("stationManager");
-  return `${t("tier")} ${levelIdx} · ${tierName(levelIdx, "manager", lang)}`;
+  const groups = groupLevelsByOrder(data.hrLevels || []);
+  const group = groups[levelIdx - 1];
+  if (!group) return "";
+  return `${t("tier")} ${levelIdx} · ${levelName(group.manager || group.assistant, lang)}`;
 }
 
 export default function AnonymousReports() {
@@ -51,6 +51,7 @@ export default function AnonymousReports() {
   const [monthlyLimitInput, setMonthlyLimitInput] = useState("");
 
   if (!data || !currentUser) return null;
+  const STAGE_COUNT = groupLevelsByOrder(data.hrLevels || []).length + 1;
   const canAct = hasHRPermission(currentUser, data, "manage_anonymous_reports");
   const canView = hasHRPermission(currentUser, data, "view_anonymous_reports");
   const isHRAnon = canAct || canView;
@@ -176,7 +177,7 @@ export default function AnonymousReports() {
               </p>
               {replyAtLevel && (
                 <div className="mt-0.5 p-2 rounded bg-muted/50">
-                  <p className="text-[10px] text-muted-foreground">{replyAtLevel.authorName} · {new Date(replyAtLevel.createdAt).toLocaleString()}</p>
+                  <p className="text-[10px] text-muted-foreground">{replyAtLevel.authorName} · {formatDateTime(replyAtLevel.createdAt, lang)}</p>
                   <p className="text-foreground mt-0.5">{replyAtLevel.text}</p>
                   <CommentAttachments files={replyAtLevel.files} />
                 </div>

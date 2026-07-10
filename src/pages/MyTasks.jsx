@@ -11,6 +11,7 @@ import TaskStats from "@/components/tasks/TaskStats";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
+import { formatDateTime } from "@/lib/dateFormat";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -24,7 +25,7 @@ const DATE_PRESETS = [
 const NO_SECTION = "__none__";
 
 export default function MyTasks() {
-  const { t, dir } = useI18n();
+  const { t, dir, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
   const [assignType, setAssignType] = useState("member");
@@ -987,7 +988,7 @@ export default function MyTasks() {
                                   <div key={c.id} className="text-xs font-body p-2 rounded-md bg-muted/50">
                                     <div className="flex items-center justify-between gap-2">
                                       <p className="font-medium text-foreground">{c.user_name}</p>
-                                      <span className="text-[10px] text-muted-foreground">{c.created_at ? new Date(c.created_at).toLocaleString() : ""}</span>
+                                      <span className="text-[10px] text-muted-foreground">{c.created_at ? formatDateTime(c.created_at, lang) : ""}</span>
                                     </div>
                                     <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{c.content}</p>
                                     <CommentAttachments files={c.files} />

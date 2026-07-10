@@ -1,5 +1,6 @@
 // PowerCare data layer — localStorage-based, multi-tenant with full company isolation.
 // Registry tracks all companies; each company's data lives under its own key.
+import { MANAGER_PERMISSIONS, ASSISTANT_PERMISSIONS } from "./hrLevels";
 
 const REGISTRY_KEY = "powercare_registry";
 const COMPANY_PREFIX = "powercare_company_";
@@ -403,5 +404,53 @@ export function setAnonRateLimits(companyId, { daily, weekly, monthly } = {}) {
     if (daily != null) d.settings.rateLimitDaily = Number(daily);
     if (weekly != null) d.settings.rateLimitWeekly = Number(weekly);
     if (monthly != null) d.settings.rateLimitMonthly = Number(monthly);
+  });
+}
+
+/* ----------------------------- flexible HR hierarchy editor ----------------------------- */
+// Any company can add, rename, reorder, or remove HR positions — the hierarchy is
+// no longer fixed. Each level keeps its own `order` (escalation rank) and `scope`.
+export function addHRTier(companyId, { scope, managerName, includeAssistant, assistantName }) {
+  updateCompany(companyId, (d) => {
+    d.hrLevels = d.hrLevels || [];
+    const order = Math.max(0, ...d.hrLevels.map((l) => l.order || 0)) + 1;
+    d.hrLevels.push({ id: uid("hrlvl"), order, role: "manager", scope, name: managerName, permissions: MANAGER_PERMISSIONS, maxCount: null });
+    if (includeAssistant) {
+      d.hrLevels.push({ id: uid("hrlvl"), order, role: "assistant", scope, name: assistantName || managerName, permissions: ASSISTANT_PERMISSIONS, maxCount: null });
+    }
+  });
+}
+
+export function renameHRLevel(companyId, levelId, name) {
+  updateCompany(companyId, (d) => {
+    const level = (d.hrLevels || []).find((l) => l.id === levelId);
+    if (level) level.name = name;
+  });
+}
+
+// Removes an entire position tier (manager + assistant sharing that order) and
+// unassigns any employees who held those positions.
+export function removeHRTier(companyId, order) {
+  updateCompany(companyId, (d) => {
+    const removedIds = (d.hrLevels || []).filter((l) => l.order === order).map((l) => l.id);
+    d.hrLevels = (d.hrLevels || []).filter((l) => l.order !== order);
+    d.employees.forEach((e) => {
+      if (removedIds.includes(e.hrLevelId)) { e.hrLevelId = null; e.hrStationId = null; e.hrClusterId = null; }
+    });
+  });
+}
+
+// Swaps a tier's order with the adjacent one — direction 1 = increase authority, -1 = decrease.
+export function moveHRTier(companyId, order, direction) {
+  updateCompany(companyId, (d) => {
+    const orders = Array.from(new Set((d.hrLevels || []).map((l) => l.order))).sort((a, b) => a - b);
+    const idx = orders.indexOf(order);
+    const swapIdx = idx + direction;
+    if (idx === -1 || swapIdx < 0 || swapIdx >= orders.length) return;
+    const swapOrder = orders[swapIdx];
+    (d.hrLevels || []).forEach((l) => {
+      if (l.order === order) l.order = swapOrder;
+      else if (l.order === swapOrder) l.order = order;
+    });
   });
 }
