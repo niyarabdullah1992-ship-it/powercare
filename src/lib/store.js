@@ -576,6 +576,19 @@ export function removeShift(companyId, stationId, weekday, shiftId) {
   });
 }
 
+// Moves a shift card from one weekday to another (drag & drop between days).
+export function moveShift(companyId, stationId, fromDay, toDay, shiftId) {
+  updateCompany(companyId, (d) => {
+    const entry = (d.schedules || []).find((s) => s.stationId === stationId);
+    if (!entry?.days?.[fromDay]) return;
+    const idx = entry.days[fromDay].findIndex((sh) => sh.id === shiftId);
+    if (idx === -1) return;
+    const [shift] = entry.days[fromDay].splice(idx, 1);
+    entry.days[toDay] = entry.days[toDay] || [];
+    entry.days[toDay].push(shift);
+  });
+}
+
 /* ----------------------------- flexible HR hierarchy editor ----------------------------- */
 // Any company can add, rename, reorder, or remove HR positions — the hierarchy is
 // no longer fixed. Each level keeps its own `order` (escalation rank) and `scope`.

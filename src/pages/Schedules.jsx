@@ -41,13 +41,11 @@ export default function Schedules() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={() => setSelectedStation(null)} className="p-2 rounded-md hover:bg-muted">
+        <button onClick={() => setSelectedStation(null)} className="p-2 rounded-md hover:bg-muted shrink-0">
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <div>
-          <h1 className="font-heading text-3xl font-semibold">{station?.name}</h1>
-          <p className="text-muted-foreground font-body text-sm">{t("weeklySchedule")}</p>
-        </div>
+        <h1 className="flex-1 text-center font-heading text-3xl font-semibold">{station?.name}</h1>
+        <div className="w-9 shrink-0" />
       </div>
       <StationScheduleEditor companyId={company.id} stationId={selectedStation} canManage={canManage} />
     </div>

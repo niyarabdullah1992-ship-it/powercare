@@ -1,7 +1,9 @@
 import React from "react";
+import { DragDropContext } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import DayScheduleColumn from "@/components/schedules/DayScheduleColumn";
+import { moveShift } from "@/lib/store";
+import DayTimelineRow from "@/components/schedules/DayTimelineRow";
 
 const DAYS = [
   { key: 0, label: "daySun" }, { key: 1, label: "dayMon" }, { key: 2, label: "dayTue" },
@@ -13,19 +15,29 @@ export default function StationScheduleEditor({ companyId, stationId, canManage 
   const { data } = useAuth();
   const schedule = (data.schedules || []).find((s) => s.stationId === stationId);
 
+  const onDragEnd = (result) => {
+    if (!result.destination) return;
+    const fromDay = Number(result.source.droppableId.replace("day-", ""));
+    const toDay = Number(result.destination.droppableId.replace("day-", ""));
+    if (fromDay === toDay) return;
+    moveShift(companyId, stationId, fromDay, toDay, result.draggableId);
+  };
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {DAYS.map(({ key, label }) => (
-        <DayScheduleColumn
-          key={key}
-          companyId={companyId}
-          stationId={stationId}
-          day={key}
-          dayLabel={t(label)}
-          shifts={schedule?.days?.[key] || []}
-          canManage={canManage}
-        />
-      ))}
-    </div>
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="space-y-4">
+        {DAYS.map(({ key, label }) => (
+          <DayTimelineRow
+            key={key}
+            companyId={companyId}
+            stationId={stationId}
+            day={key}
+            dayLabel={t(label)}
+            shifts={schedule?.days?.[key] || []}
+            canManage={canManage}
+          />
+        ))}
+      </div>
+    </DragDropContext>
   );
 }
