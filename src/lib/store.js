@@ -477,6 +477,16 @@ export function setHRLevelPermissions(companyId, levelId, permissions) {
   });
 }
 
+// Updates which stations a station-scoped tier applies to (empty/null = all stations).
+export function setHRTierStations(companyId, order, stationIds) {
+  updateCompany(companyId, (d) => {
+    const levels = (d.hrLevels || []).filter((l) => l.order === order);
+    if (!levels.length) return;
+    const sIds = Array.isArray(stationIds) && stationIds.length > 0 ? stationIds : null;
+    levels.forEach((l) => { l.stationIds = sIds; });
+  });
+}
+
 // Removes an entire position tier (manager + assistant sharing that order) and
 // unassigns any employees who held those positions. Any anonymous report currently
 // awaiting a reply from the removed tier is automatically redirected to whoever is

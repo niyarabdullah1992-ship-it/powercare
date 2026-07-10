@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { groupLevelsByOrder, levelName, MANAGER_PERMISSIONS, ASSISTANT_PERMISSIONS } from "@/lib/hrLevels";
-import { addHRTier, renameHRLevel, removeHRTier, moveHRTier, toggleHRTierActive, setHRLevelPermissions } from "@/lib/store";
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Check, X, Power, ShieldCheck } from "lucide-react";
+import { addHRTier, renameHRLevel, removeHRTier, moveHRTier, toggleHRTierActive, setHRLevelPermissions, setHRTierStations } from "@/lib/store";
+import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Check, X, Power, ShieldCheck, MapPin } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import HRPermissionsChecklist from "@/components/hr/HRPermissionsChecklist";
 
@@ -24,6 +24,8 @@ export default function HRTiersEditor({ data, canManage }) {
   const [tierStationIds, setTierStationIds] = useState([]);
   const [permsLevelId, setPermsLevelId] = useState(null);
   const [permsValue, setPermsValue] = useState([]);
+  const [stationsOrder, setStationsOrder] = useState(null);
+  const [stationsValue, setStationsValue] = useState([]);
 
   const groups = groupLevelsByOrder(data.hrLevels || []).slice().reverse(); // highest authority first
 
@@ -57,6 +59,12 @@ export default function HRTiersEditor({ data, canManage }) {
   const savePerms = () => {
     setHRLevelPermissions(data.id, permsLevelId, permsValue);
     setPermsLevelId(null); setPermsValue([]);
+  };
+
+  const startEditStations = (g) => { setStationsOrder(g.order); setStationsValue(g.manager?.stationIds || g.assistant?.stationIds || []); };
+  const saveStations = () => {
+    setHRTierStations(data.id, stationsOrder, stationsValue);
+    setStationsOrder(null); setStationsValue([]);
   };
 
   return (
@@ -181,9 +189,37 @@ export default function HRTiersEditor({ data, canManage }) {
                     return scopeLabel(g.scope);
                   })()}
                 </p>
+                {stationsOrder === g.order && (
+                  <div className="p-2 rounded-md border border-border bg-muted/30 space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      {data.stations.map((s) => {
+                        const active = stationsValue.includes(s.id);
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => setStationsValue((prev) => active ? prev.filter((id) => id !== s.id) : [...prev, s.id])}
+                            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${active ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+                          >
+                            {s.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={saveStations} className="px-2.5 py-1 rounded-md bg-foreground text-background text-xs font-body">{t("save")}</button>
+                      <button onClick={() => setStationsOrder(null)} className="px-2.5 py-1 rounded-md border border-border text-xs font-body">{t("cancel")}</button>
+                    </div>
+                  </div>
+                )}
               </div>
               {canManage && (
                 <div className="flex items-center gap-1 shrink-0">
+                  {g.scope === "station" && (
+                    <button onClick={() => startEditStations(g)} title={t("station") || "Stations"} className="p-1 rounded hover:bg-muted text-muted-foreground">
+                      <MapPin className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <button disabled={idx === 0} onClick={() => moveHRTier(data.id, g.order, 1)} title={t("moveUp")} className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30">
                     <ChevronUp className="w-3.5 h-3.5" />
                   </button>
