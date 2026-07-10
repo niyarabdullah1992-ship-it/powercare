@@ -7,7 +7,7 @@ import AddShiftPopover from "@/components/schedules/AddShiftPopover";
 import { HOUR_TICKS } from "@/lib/scheduleTime";
 import { addShift, removeShift } from "@/lib/store";
 
-export default function DayTimelineRow({ companyId, stationId, day, dayLabel, shifts, canManage }) {
+export default function DayTimelineRow({ companyId, stationId, day, dayLabel, shifts, canManage, employees }) {
   const { t } = useI18n();
   const [adding, setAdding] = useState(false);
 
@@ -40,7 +40,7 @@ export default function DayTimelineRow({ companyId, stationId, day, dayLabel, sh
             <button onClick={() => setAdding((o) => !o)} className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-xs font-body font-medium whitespace-nowrap">
               <Plus className="w-3.5 h-3.5" /> {t("addShift")}
             </button>
-            {adding && <AddShiftPopover onSave={handleSave} onCancel={() => setAdding(false)} />}
+            {adding && <AddShiftPopover onSave={handleSave} onCancel={() => setAdding(false)} employees={employees} />}
           </div>
         )}
       </div>

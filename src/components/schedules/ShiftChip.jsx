@@ -22,6 +22,7 @@ export default function ShiftChip({ shift, index, canManage, onRemove }) {
           }`}
         >
           <span className="truncate">
+            {shift.employeeName ? `${shift.employeeName} — ` : ""}
             {shift.label ? `(${shift.label} — ${shift.start}–${shift.end})` : `${shift.start}–${shift.end}`}
           </span>
           {canManage && (

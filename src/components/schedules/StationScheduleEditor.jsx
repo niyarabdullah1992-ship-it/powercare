@@ -14,6 +14,7 @@ export default function StationScheduleEditor({ companyId, stationId, canManage 
   const { t } = useI18n();
   const { data } = useAuth();
   const schedule = (data.schedules || []).find((s) => s.stationId === stationId);
+  const stationEmployees = (data.employees || []).filter((e) => e.stationId === stationId);
 
   const onDragEnd = (result) => {
     if (!result.destination) return;
@@ -35,6 +36,7 @@ export default function StationScheduleEditor({ companyId, stationId, canManage 
             dayLabel={t(label)}
             shifts={schedule?.days?.[key] || []}
             canManage={canManage}
+            employees={stationEmployees}
           />
         ))}
       </div>
