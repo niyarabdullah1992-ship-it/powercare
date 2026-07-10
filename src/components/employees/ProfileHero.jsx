@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { base44 } from "@/api/base44Client";
 import { updateEmployeeProfile } from "@/lib/store";
-import { Camera, Mail, Building2, Loader2 } from "lucide-react";
+import { Camera, Mail, Building2, Loader2, X } from "lucide-react";
 
 export default function ProfileHero({ employee, companyId, canEdit, roleLabel, stationName }) {
   const { t } = useI18n();
@@ -22,6 +22,10 @@ export default function ProfileHero({ employee, companyId, canEdit, roleLabel, s
     }
   };
 
+  const remove = (field) => {
+    updateEmployeeProfile(companyId, employee.id, { [field]: null });
+  };
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
       <div
@@ -29,14 +33,26 @@ export default function ProfileHero({ employee, companyId, canEdit, roleLabel, s
         style={profile.bannerUrl ? { backgroundImage: `url(${profile.bannerUrl})` } : undefined}
       >
         {canEdit && (
-          <button
-            type="button"
-            onClick={() => bannerInput.current?.click()}
-            disabled={uploading === "bannerUrl"}
-            className="absolute top-3 end-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-black/50 text-white text-xs font-body hover:bg-black/70 disabled:opacity-60"
-          >
-            {uploading === "bannerUrl" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />} {t("uploadBanner")}
-          </button>
+          <div className="absolute top-3 end-3 flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => bannerInput.current?.click()}
+              disabled={uploading === "bannerUrl"}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-black/50 text-white text-xs font-body hover:bg-black/70 disabled:opacity-60"
+            >
+              {uploading === "bannerUrl" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />} {t("uploadBanner")}
+            </button>
+            {profile.bannerUrl && (
+              <button
+                type="button"
+                onClick={() => remove("bannerUrl")}
+                className="p-1.5 rounded-md bg-black/50 text-white hover:bg-black/70"
+                title={t("removeFile")}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         )}
         <input ref={bannerInput} type="file" accept="image/*" className="hidden" onChange={(e) => upload(e.target.files?.[0], "bannerUrl")} />
       </div>
@@ -58,6 +74,16 @@ export default function ProfileHero({ employee, companyId, canEdit, roleLabel, s
               title={t("uploadPhoto")}
             >
               {uploading === "avatarUrl" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
+            </button>
+          )}
+          {canEdit && profile.avatarUrl && (
+            <button
+              type="button"
+              onClick={() => remove("avatarUrl")}
+              className="absolute -top-1 -end-1 p-1 rounded-full bg-destructive text-destructive-foreground shadow-md hover:opacity-90"
+              title={t("removeFile")}
+            >
+              <X className="w-3 h-3" />
             </button>
           )}
           <input ref={avatarInput} type="file" accept="image/*" className="hidden" onChange={(e) => upload(e.target.files?.[0], "avatarUrl")} />
