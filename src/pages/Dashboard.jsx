@@ -1,25 +1,23 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { visibleStations, visibleEmployees, canSeeAllStations } from "@/lib/permissions";
-import { Radio, ListTodo, AlertTriangle, FileText, TrendingUp } from "lucide-react";
+import { visibleStations, canSeeAllStations } from "@/lib/permissions";
+import { Radio, AlertTriangle, FileText, TrendingUp } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
 import { formatDate } from "@/lib/dateFormat";
+import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
-  const { data, currentUser } = useAuth();
+  const { data, currentUser, company } = useAuth();
   if (!data || !currentUser) return null;
 
   const stations = visibleStations(currentUser, data);
   const stationIds = new Set(stations.map((s) => s.id));
-  const employees = canSeeAllStations(currentUser)
-    ? data.employees
-    : data.employees.filter((e) => !e.stationId || stationIds.has(e.stationId));
 
   const isEmployee = currentUser.role === "employee";
 
-  if (isEmployee) return <EmployeeDashboard t={t} lang={lang} data={data} user={currentUser} />;
+  if (isEmployee) return <EmployeeDashboard user={currentUser} company={company} />;
 
   // Manager dashboard
   const tasks = data.tasks.filter((tk) => stationIds.has(tk.stationId));
@@ -125,60 +123,6 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function EmployeeDashboard({ t, lang, data, user }) {
-  const myTasks = data.tasks.filter((tk) => tk.assignedTo === user.id);
-  const open = myTasks.filter((tk) => tk.status === "pending" || tk.status === "in_progress");
-  const myAnon = data.anonymousReports.filter((a) => a.anonymousId === user.anonymousId);
-
-  const totalGoal = myTasks.reduce((s, tk) => s + (tk.dailyTarget || 0), 0);
-  const totalProgress = myTasks.reduce((s, tk) => s + (tk.progress || 0), 0);
-  const goalPct = totalGoal ? Math.round((totalProgress / totalGoal) * 100) : 0;
-
-  return (
-    <div className="space-y-8">
-      <div className="border-b border-border pb-6">
-        <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{user.name}</p>
-        <h1 className="hero-title text-4xl md:text-5xl">{t("myDay")}</h1>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 border border-border divide-x divide-y sm:divide-y-0 divide-border rtl:divide-x-reverse">
-        <div className="p-6 bg-card">
-          <ListTodo className="w-4 h-4 mb-5 text-accent" strokeWidth={1.5} />
-          <p className="hero-title text-4xl">{open.length}</p>
-          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mt-2">{t("openTasks")}</p>
-        </div>
-        <div className="p-6 bg-card">
-          <TrendingUp className="w-4 h-4 mb-5 text-foreground" strokeWidth={1.5} />
-          <p className="hero-title text-4xl">{goalPct}%</p>
-          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mt-2">{t("dailyGoal")}</p>
-        </div>
-        <div className="p-6 bg-card">
-          <AlertTriangle className="w-4 h-4 mb-5 text-destructive" strokeWidth={1.5} />
-          <p className="hero-title text-4xl">{myAnon.length}</p>
-          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mt-2">{t("anonymous")}</p>
-        </div>
-      </div>
-      <div className="p-6 border border-border bg-card">
-        <h3 className="hero-title text-2xl mb-4">{t("openTasks")}</h3>
-        {open.length === 0 ? (
-          <p className="text-sm text-muted-foreground font-body">{t("noTasks")}</p>
-        ) : (
-          <div className="divide-y divide-border">
-            {open.map((tk) => (
-              <div key={tk.id} className="flex items-center justify-between py-3">
-                <div>
-                  <p className="text-sm font-body">{tk.title}</p>
-                  <p className="text-xs text-muted-foreground">{t(tk.status)} · {tk.progress}/{tk.dailyTarget}</p>
-                </div>
-                <span className="text-xs text-muted-foreground">{Math.round((tk.progress / (tk.dailyTarget || 1)) * 100)}%</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
