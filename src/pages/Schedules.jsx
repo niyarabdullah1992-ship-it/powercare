@@ -44,15 +44,16 @@ export default function Schedules() {
   const handleExport = () => {
     const schedule = (data.schedules || []).find((s) => s.stationId === selectedStation);
     const shiftTypes = schedule?.shiftTypes || [];
-    const rows = [];
-    DAY_LABELS.forEach((dayLabelKey, dayIndex) => {
-      shiftTypes.forEach((st) => {
+    const headers = [t("shift"), ...DAY_LABELS.map((k) => t(k))];
+    const rows = shiftTypes.map((st) => {
+      const shiftCell = `${st.label} (${st.start}–${st.end})`;
+      const dayCells = DAY_LABELS.map((_, dayIndex) => {
         const ids = schedule?.assignments?.[dayIndex]?.[st.id] || [];
-        const names = ids.map((id) => data.employees.find((e) => e.id === id)?.name).filter(Boolean);
-        rows.push([t(dayLabelKey), st.label, names.join(", "), st.start, st.end]);
+        return ids.map((id) => data.employees.find((e) => e.id === id)?.name).filter(Boolean).join(", ");
       });
+      return [shiftCell, ...dayCells];
     });
-    exportCSV(`${station?.name || "schedule"}.csv`, [t("station"), t("shiftLabel"), t("employees"), t("startDate"), t("endDate")], rows);
+    exportCSV(`${station?.name || "schedule"}.csv`, headers, rows);
   };
 
   return (
