@@ -552,40 +552,69 @@ export function setAnonRateLimits(companyId, { daily, weekly, monthly } = {}) {
   });
 }
 
-/* ----------------------------- station work schedules (flexible, multi-shift per day) ----------------------------- */
-// weekday: 0 = Sunday ... 6 = Saturday
-export function addShift(companyId, stationId, weekday, shift) {
+/* ----------------------------- station work schedules (shift-type grid) -----------------------------
+   Each station has a fixed set of shift types (e.g. Morning/Evening/Night) with editable
+   names & time ranges, shared across every day of the week. `assignments[weekday][shiftTypeId]`
+   holds the list of employeeIds working that shift on that day. weekday: 0 = Sunday ... 6 = Saturday */
+function defaultShiftTypes() {
+  return [
+    { id: uid("sft"), label: "Morning Shift", start: "06:00", end: "14:00" },
+    { id: uid("sft"), label: "Evening Shift", start: "14:00", end: "22:00" },
+    { id: uid("sft"), label: "Night Shift", start: "22:00", end: "06:00" },
+  ];
+}
+
+function getOrCreateSchedule(d, stationId) {
+  d.schedules = d.schedules || [];
+  let entry = d.schedules.find((s) => s.stationId === stationId);
+  if (!entry) {
+    entry = { id: uid("sch"), stationId, shiftTypes: defaultShiftTypes(), assignments: {} };
+    d.schedules.push(entry);
+  }
+  if (!entry.shiftTypes || entry.shiftTypes.length === 0) entry.shiftTypes = defaultShiftTypes();
+  entry.assignments = entry.assignments || {};
+  return entry;
+}
+
+export function addShiftType(companyId, stationId, shiftType) {
   updateCompany(companyId, (d) => {
-    d.schedules = d.schedules || [];
-    let entry = d.schedules.find((s) => s.stationId === stationId);
-    if (!entry) {
-      entry = { id: uid("sch"), stationId, days: {} };
-      d.schedules.push(entry);
+    const entry = getOrCreateSchedule(d, stationId);
+    entry.shiftTypes.push({ id: uid("sft"), label: shiftType.label, start: shiftType.start, end: shiftType.end });
+  });
+}
+
+export function updateShiftType(companyId, stationId, shiftTypeId, updates) {
+  updateCompany(companyId, (d) => {
+    const entry = getOrCreateSchedule(d, stationId);
+    const st = entry.shiftTypes.find((s) => s.id === shiftTypeId);
+    if (st) Object.assign(st, updates);
+  });
+}
+
+export function removeShiftType(companyId, stationId, shiftTypeId) {
+  updateCompany(companyId, (d) => {
+    const entry = getOrCreateSchedule(d, stationId);
+    entry.shiftTypes = entry.shiftTypes.filter((s) => s.id !== shiftTypeId);
+    Object.values(entry.assignments).forEach((dayObj) => { delete dayObj[shiftTypeId]; });
+  });
+}
+
+export function assignEmployeeToShift(companyId, stationId, weekday, shiftTypeId, employeeId) {
+  updateCompany(companyId, (d) => {
+    const entry = getOrCreateSchedule(d, stationId);
+    entry.assignments[weekday] = entry.assignments[weekday] || {};
+    entry.assignments[weekday][shiftTypeId] = entry.assignments[weekday][shiftTypeId] || [];
+    if (!entry.assignments[weekday][shiftTypeId].includes(employeeId)) {
+      entry.assignments[weekday][shiftTypeId].push(employeeId);
     }
-    entry.days = entry.days || {};
-    entry.days[weekday] = entry.days[weekday] || [];
-    entry.days[weekday].push({ id: uid("shift"), ...shift });
   });
 }
 
-export function removeShift(companyId, stationId, weekday, shiftId) {
+export function unassignEmployeeFromShift(companyId, stationId, weekday, shiftTypeId, employeeId) {
   updateCompany(companyId, (d) => {
-    const entry = (d.schedules || []).find((s) => s.stationId === stationId);
-    if (!entry?.days?.[weekday]) return;
-    entry.days[weekday] = entry.days[weekday].filter((sh) => sh.id !== shiftId);
-  });
-}
-
-// Moves a shift card from one weekday to another (drag & drop between days).
-export function moveShift(companyId, stationId, fromDay, toDay, shiftId) {
-  updateCompany(companyId, (d) => {
-    const entry = (d.schedules || []).find((s) => s.stationId === stationId);
-    if (!entry?.days?.[fromDay]) return;
-    const idx = entry.days[fromDay].findIndex((sh) => sh.id === shiftId);
-    if (idx === -1) return;
-    const [shift] = entry.days[fromDay].splice(idx, 1);
-    entry.days[toDay] = entry.days[toDay] || [];
-    entry.days[toDay].push(shift);
+    const entry = getOrCreateSchedule(d, stationId);
+    if (!entry.assignments[weekday]?.[shiftTypeId]) return;
+    entry.assignments[weekday][shiftTypeId] = entry.assignments[weekday][shiftTypeId].filter((id) => id !== employeeId);
   });
 }
 
