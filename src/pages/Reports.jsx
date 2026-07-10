@@ -288,7 +288,7 @@ export default function Reports() {
                               <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] border ${priorityBadge(tg.priority)}`}>{t(tg.priority)}</span>
                             </td>
                             <td className="py-2.5 px-2">
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] border ${statusBadge(tg.status)}`}>
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] border whitespace-nowrap ${statusBadge(tg.status)}`}>
                                 {tg.status === "completed" ? <Check className="w-2.5 h-2.5" /> : tg.status === "overdue" ? <AlertTriangle className="w-2.5 h-2.5" /> : <Clock className="w-2.5 h-2.5" />}
                                 {tg.status === "completed" ? t("completed") : tg.status === "overdue" ? t("overdue") : t("inProgress")}
                               </span>
