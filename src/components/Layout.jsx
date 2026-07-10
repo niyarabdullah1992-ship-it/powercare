@@ -6,7 +6,7 @@ import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, HardHat, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone,
+  Users, HardHat, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -81,6 +81,7 @@ export default function Layout({ children }) {
   const navItems = [
     { to: "/app", icon: LayoutDashboard, label: t("dashboard"), end: true },
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks") },
+    { to: "/app/chat", icon: MessageSquare, label: t("chat") },
 
     { to: "/app/anonymous", icon: ShieldQuestion, label: t("anonymous") },
     { to: "/app/public-complaints", icon: Megaphone, label: t("publicComplaints") },

@@ -208,6 +208,7 @@ const dict = {
     subfolders: "Subfolders",
     directTasks: "Tasks in this folder",
     folderEmpty: "Empty folder",
+    chat: "Chat",
   },
   ar: {
     dir: "rtl",
@@ -415,6 +416,7 @@ const dict = {
     subfolders: "الأقسام الفرعية",
     directTasks: "المهام داخل هذا القسم",
     folderEmpty: "قسم فارغ",
+    chat: "الدردشة",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

@@ -12,6 +12,7 @@ import Layout from '@/components/Layout';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import MyTasks from './pages/MyTasks';
+import StationChat from './pages/StationChat';
 import AnonymousReports from './pages/AnonymousReports';
 import PublicComplaints from './pages/PublicComplaints';
 import Stations from './pages/Stations';
@@ -34,6 +35,7 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/app/tasks" element={<RequireAuth><MyTasks /></RequireAuth>} />
+      <Route path="/app/chat" element={<RequireAuth><StationChat /></RequireAuth>} />
 
       <Route path="/app/anonymous" element={<RequireAuth><AnonymousReports /></RequireAuth>} />
       <Route path="/app/public-complaints" element={<RequireAuth><PublicComplaints /></RequireAuth>} />
