@@ -446,13 +446,13 @@ export function setAnonRateLimits(companyId, { daily, weekly, monthly } = {}) {
 /* ----------------------------- flexible HR hierarchy editor ----------------------------- */
 // Any company can add, rename, reorder, or remove HR positions — the hierarchy is
 // no longer fixed. Each level keeps its own `order` (escalation rank) and `scope`.
-export function addHRTier(companyId, { scope, managerName, includeAssistant, assistantName }) {
+export function addHRTier(companyId, { scope, managerName, includeAssistant, assistantName, managerPermissions, assistantPermissions }) {
   updateCompany(companyId, (d) => {
     d.hrLevels = d.hrLevels || [];
     const order = Math.max(0, ...d.hrLevels.map((l) => l.order || 0)) + 1;
-    d.hrLevels.push({ id: uid("hrlvl"), order, role: "manager", scope, name: managerName, permissions: MANAGER_PERMISSIONS, maxCount: null });
+    d.hrLevels.push({ id: uid("hrlvl"), order, role: "manager", scope, name: managerName, permissions: managerPermissions || MANAGER_PERMISSIONS, maxCount: null });
     if (includeAssistant) {
-      d.hrLevels.push({ id: uid("hrlvl"), order, role: "assistant", scope, name: assistantName || managerName, permissions: ASSISTANT_PERMISSIONS, maxCount: null });
+      d.hrLevels.push({ id: uid("hrlvl"), order, role: "assistant", scope, name: assistantName || managerName, permissions: assistantPermissions || ASSISTANT_PERMISSIONS, maxCount: null });
     }
   });
 }
@@ -461,6 +461,15 @@ export function renameHRLevel(companyId, levelId, name) {
   updateCompany(companyId, (d) => {
     const level = (d.hrLevels || []).find((l) => l.id === levelId);
     if (level) level.name = name;
+  });
+}
+
+// Lets a company freely customize exactly which permissions any HR level (manager
+// or assistant) holds — no fixed permission set per role.
+export function setHRLevelPermissions(companyId, levelId, permissions) {
+  updateCompany(companyId, (d) => {
+    const level = (d.hrLevels || []).find((l) => l.id === levelId);
+    if (level) level.permissions = permissions;
   });
 }
 

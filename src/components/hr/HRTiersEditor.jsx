@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { groupLevelsByOrder, levelName } from "@/lib/hrLevels";
-import { addHRTier, renameHRLevel, removeHRTier, moveHRTier, toggleHRTierActive } from "@/lib/store";
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Check, X, Power } from "lucide-react";
+import { groupLevelsByOrder, levelName, MANAGER_PERMISSIONS, ASSISTANT_PERMISSIONS } from "@/lib/hrLevels";
+import { addHRTier, renameHRLevel, removeHRTier, moveHRTier, toggleHRTierActive, setHRLevelPermissions } from "@/lib/store";
+import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Check, X, Power, ShieldCheck } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
+import HRPermissionsChecklist from "@/components/hr/HRPermissionsChecklist";
 
 const SCOPES = ["station", "cluster", "company"];
 
@@ -18,6 +19,10 @@ export default function HRTiersEditor({ data, canManage }) {
   const [assistantName, setAssistantName] = useState("");
   const [editingLevelId, setEditingLevelId] = useState(null);
   const [editValue, setEditValue] = useState("");
+  const [managerPerms, setManagerPerms] = useState(MANAGER_PERMISSIONS);
+  const [assistantPerms, setAssistantPerms] = useState(ASSISTANT_PERMISSIONS);
+  const [permsLevelId, setPermsLevelId] = useState(null);
+  const [permsValue, setPermsValue] = useState([]);
 
   const groups = groupLevelsByOrder(data.hrLevels || []).slice().reverse(); // highest authority first
 
@@ -33,14 +38,23 @@ export default function HRTiersEditor({ data, canManage }) {
       managerName: managerName.trim(),
       includeAssistant,
       assistantName: includeAssistant ? assistantName.trim() : null,
+      managerPermissions: managerPerms,
+      assistantPermissions: assistantPerms,
     });
     setManagerName(""); setAssistantName(""); setIncludeAssistant(true); setScope("station"); setAdding(false);
+    setManagerPerms(MANAGER_PERMISSIONS); setAssistantPerms(ASSISTANT_PERMISSIONS);
   };
 
   const startEdit = (level) => { setEditingLevelId(level.id); setEditValue(levelName(level, lang)); };
   const saveEdit = () => {
     if (editValue.trim()) renameHRLevel(data.id, editingLevelId, editValue.trim());
     setEditingLevelId(null); setEditValue("");
+  };
+
+  const startEditPerms = (level) => { setPermsLevelId(level.id); setPermsValue(level.permissions || []); };
+  const savePerms = () => {
+    setHRLevelPermissions(data.id, permsLevelId, permsValue);
+    setPermsLevelId(null); setPermsValue([]);
   };
 
   return (
@@ -69,6 +83,16 @@ export default function HRTiersEditor({ data, canManage }) {
           </label>
           {includeAssistant && (
             <input value={assistantName} onChange={(e) => setAssistantName(e.target.value)} placeholder={t("assistantPositionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+          )}
+          <div>
+            <label className="block text-xs text-muted-foreground font-body mb-1">{t("hrManagerRole")} — {t("permissions") || "Permissions"}</label>
+            <HRPermissionsChecklist value={managerPerms} onChange={setManagerPerms} />
+          </div>
+          {includeAssistant && (
+            <div>
+              <label className="block text-xs text-muted-foreground font-body mb-1">{t("hrAssistantRole")} — {t("permissions") || "Permissions"}</label>
+              <HRPermissionsChecklist value={assistantPerms} onChange={setAssistantPerms} />
+            </div>
           )}
           <div className="flex gap-2">
             <button type="submit" className="px-4 py-2 rounded-md bg-foreground text-background text-sm">{t("save")}</button>
@@ -106,10 +130,23 @@ export default function HRTiersEditor({ data, canManage }) {
                       <>
                         <span className="text-sm font-body truncate">{levelName(level, lang)}</span>
                         {canManage && (
-                          <button onClick={() => startEdit(level)} className="p-1 rounded hover:bg-muted text-muted-foreground"><Pencil className="w-3 h-3" /></button>
+                          <>
+                            <button onClick={() => startEdit(level)} className="p-1 rounded hover:bg-muted text-muted-foreground"><Pencil className="w-3 h-3" /></button>
+                            <button onClick={() => startEditPerms(level)} title={t("permissions") || "Permissions"} className="p-1 rounded hover:bg-muted text-muted-foreground"><ShieldCheck className="w-3 h-3" /></button>
+                          </>
                         )}
                       </>
                     )}
+                  </div>
+                ))}
+                {[g.manager, g.assistant].filter(Boolean).map((level) => permsLevelId === level.id && (
+                  <div key={`perms-${level.id}`} className="p-2 rounded-md border border-border bg-muted/30 space-y-2">
+                    <p className="text-[10px] text-muted-foreground font-body">{levelName(level, lang)}</p>
+                    <HRPermissionsChecklist value={permsValue} onChange={setPermsValue} />
+                    <div className="flex gap-2">
+                      <button onClick={savePerms} className="px-2.5 py-1 rounded-md bg-foreground text-background text-xs font-body">{t("save")}</button>
+                      <button onClick={() => setPermsLevelId(null)} className="px-2.5 py-1 rounded-md border border-border text-xs font-body">{t("cancel")}</button>
+                    </div>
                   </div>
                 ))}
                 <p className="text-[10px] text-muted-foreground font-body">{scopeLabel(g.scope)}</p>
