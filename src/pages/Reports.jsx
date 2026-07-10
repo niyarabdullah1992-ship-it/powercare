@@ -5,8 +5,9 @@ import { base44 } from "@/api/base44Client";
 import { formatDate, formatDateTime } from "@/lib/dateFormat";
 import { visibleStations, canSeeAllStations } from "@/lib/permissions";
 import moment from "moment";
-import { FileBarChart2, Calendar, AlertTriangle, Check, Clock, Building2, ListTodo, CalendarDays, Megaphone } from "lucide-react";
+import { FileBarChart2, Calendar, AlertTriangle, Check, Clock, Building2, ListTodo, CalendarDays, Megaphone, FileSpreadsheet, FileText } from "lucide-react";
 import TaskStats from "@/components/tasks/TaskStats";
+import { exportCSV, exportPDF } from "@/lib/exportReport";
 
 const RANGES = [
   { val: "daily", amount: 1, unit: "days" },
@@ -148,6 +149,26 @@ export default function Reports() {
     rejected: "bg-red-100 text-red-700 border-red-300",
   }[status] || "bg-amber-100 text-amber-700 border-amber-300");
 
+  const tasksExportData = () => {
+    const headers = [t("title"), t("station"), t("assignTo"), t("priority"), t("status"), t("taskCompletion"), t("stoppageIssues"), t("startDate"), t("endDate")];
+    const rows = filteredTasks.map((tg) => [
+      tg.title || "", stationLabel(tg), assignmentLabel(tg), t(tg.priority),
+      tg.status === "completed" ? t("completed") : tg.status === "overdue" ? t("overdue") : t("inProgress"),
+      `${tg.completed_tasks}/${tg.task_target}`, issueCount(tg), formatDate(tg.start_date, lang), formatDate(tg.end_date, lang),
+    ]);
+    return { headers, rows };
+  };
+
+  const complaintsExportData = () => {
+    const headers = [t("type"), t("station"), t("status"), lang === "ar" ? "التاريخ" : "Date", t("content")];
+    const rows = filteredComplaints.map((r) => [
+      r.kind === "anonymous" ? t("anonymous") : t("publicComplaints"),
+      r.stationId ? stationName(r.stationId) : t("hq"),
+      t(r.status), formatDateTime(r.createdAt, lang), r.message || "",
+    ]);
+    return { headers, rows };
+  };
+
   const TABS = [
     { key: "tasks", label: t("tasksReport"), icon: ListTodo },
     { key: "leaves", label: t("leaveRequests"), icon: CalendarDays },
@@ -228,6 +249,16 @@ export default function Reports() {
         ) : (
           <>
             {filteredTasks.length > 0 && <TaskStats targets={filteredTasks} t={t} />}
+            {filteredTasks.length > 0 && (
+              <div className="flex items-center gap-2">
+                <button onClick={() => { const { headers, rows } = tasksExportData(); exportCSV(`tasks-report.csv`, headers, rows); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+                  <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+                </button>
+                <button onClick={() => { const { headers, rows } = tasksExportData(); exportPDF(`tasks-report.pdf`, t("tasksReport"), headers, rows); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+                  <FileText className="w-3.5 h-3.5" /> PDF
+                </button>
+              </div>
+            )}
             <div className="p-5 rounded-xl border border-border bg-card">
               {filteredTasks.length === 0 ? (
                 <p className="text-sm text-muted-foreground font-body text-center py-6">{t("noTasksInRange")}</p>
@@ -329,6 +360,17 @@ export default function Reports() {
 
       {/* Complaints tab */}
       {tab === "complaints" && (
+        <>
+        {filteredComplaints.length > 0 && (
+          <div className="flex items-center gap-2">
+            <button onClick={() => { const { headers, rows } = complaintsExportData(); exportCSV(`complaints-report.csv`, headers, rows); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+              <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+            </button>
+            <button onClick={() => { const { headers, rows } = complaintsExportData(); exportPDF(`complaints-report.pdf`, t("publicComplaints"), headers, rows); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+              <FileText className="w-3.5 h-3.5" /> PDF
+            </button>
+          </div>
+        )}
         <div className="p-5 rounded-xl border border-border bg-card">
           {filteredComplaints.length === 0 ? (
             <p className="text-sm text-muted-foreground font-body text-center py-6">{t("noPublicReports")}</p>
@@ -352,6 +394,7 @@ export default function Reports() {
             </div>
           )}
         </div>
+        </>
       )}
     </div>
   );
