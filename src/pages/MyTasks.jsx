@@ -107,6 +107,22 @@ export default function MyTasks() {
     }
   };
 
+  // Ensures a folder exists for a section path so a task assigned to a brand-new,
+  // free-typed section name actually shows up in the folder tree instead of vanishing.
+  const ensureFolder = async (path, forStationId) => {
+    if (!path || !forStationId) return;
+    if (folders.some((f) => f.station_id === forStationId && f.path === path)) return;
+    const parentPath = getParentPath(path);
+    const sortOrder = folders.filter((f) => f.station_id === forStationId && getParentPath(f.path) === parentPath).length;
+    try {
+      const res = await base44.functions.invoke("supabaseTargets", { action: "createFolder", stationId: forStationId, path, sortOrder });
+      const created = res?.data?.folder;
+      if (created) setFolders((prev) => [...prev, created]);
+    } catch {
+      // best-effort — folder will still be usable via the existing sections list
+    }
+  };
+
   const moveTaskToSection = async (tg, newSectionKey) => {
     const section = newSectionKey === NO_SECTION ? "" : newSectionKey;
     try {
@@ -300,6 +316,9 @@ export default function MyTasks() {
       if (created && created.id) {
         setTargets((prev) => [created, ...prev.filter((x) => x.id !== created.id)]);
       }
+      if (section) {
+        ensureFolder(section, aType === "hq_team" ? "hq" : stationId);
+      }
       if (aType === "member" && employeeId) {
         addNotification(company.id, employeeId, `${t("setTarget")}: ${title} — ${total} ${t("tasksUnit")}.`);
       }
@@ -413,6 +432,10 @@ export default function MyTasks() {
       const updated = res?.data?.target;
       if (updated) {
         setTargets((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      }
+      const newSection = fd.get("section");
+      if (newSection) {
+        ensureFolder(newSection, targetStationKey(editTarget));
       }
       setEditTarget(null);
     } catch (err) {
