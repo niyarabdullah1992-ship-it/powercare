@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { DragDropContext } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { addNotification, addPoints } from "@/lib/store";
@@ -204,6 +205,37 @@ export default function MyTasks() {
       await base44.functions.invoke("supabaseTargets", { action: "reorderFolders", items });
     } catch {
       // best-effort — order will re-sync on next fetch
+    }
+  };
+
+  // Single drag-and-drop handler covering the whole folder tree: reordering
+  // sibling folders, and dragging a task card onto any folder to move it there.
+  const handleTreeDragEnd = (result) => {
+    const { source, destination, draggableId, type } = result;
+    if (!destination) return;
+
+    if (type === "FOLDER") {
+      if (source.droppableId !== destination.droppableId || source.index === destination.index) return;
+      const parentKey = source.droppableId.replace(/^folder-/, "");
+      const parentPath = parentKey === "root" ? null : parentKey;
+      const siblings = folders
+        .filter((f) => f.station_id === selectedStation && getParentPath(f.path) === parentPath)
+        .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
+      const reordered = Array.from(siblings);
+      const [moved] = reordered.splice(source.index, 1);
+      reordered.splice(destination.index, 0, moved);
+      reorderChildren(parentPath, reordered.map((f) => f.id));
+      return;
+    }
+
+    if (type === "TASK") {
+      const destKey = destination.droppableId.replace(/^task(list|drop)-/, "");
+      const destPath = destKey === "root" ? null : destKey;
+      const taskId = draggableId.replace(/^task::/, "");
+      const tg = targets.find((x) => x.id === taskId);
+      if (!tg) return;
+      if ((tg.section || null) === destPath) return;
+      moveTaskToSection(tg, destPath || NO_SECTION);
     }
   };
 
@@ -814,21 +846,22 @@ export default function MyTasks() {
             {!hasAnyContent && !canCreateTasks(currentUser) ? (
               <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
             ) : (
-              <FolderTree
-                stationId={selectedStation}
-                path={null}
-                folders={folders}
-                tasksAll={stationTargetsAll}
-                canManage={canCreateTasks(currentUser)}
-                renderTask={renderTask}
-                filterTasks={filterTasks}
-                onAddFolder={addFolderAt}
-                onRenameFolder={renameFolder}
-                onDeleteFolder={deleteFolder}
-                onReorderChildren={reorderChildren}
-                t={t}
-                dir={dir}
-              />
+              <DragDropContext onDragEnd={handleTreeDragEnd}>
+                <FolderTree
+                  stationId={selectedStation}
+                  path={null}
+                  folders={folders}
+                  tasksAll={stationTargetsAll}
+                  canManage={canCreateTasks(currentUser)}
+                  renderTask={renderTask}
+                  filterTasks={filterTasks}
+                  onAddFolder={addFolderAt}
+                  onRenameFolder={renameFolder}
+                  onDeleteFolder={deleteFolder}
+                  t={t}
+                  dir={dir}
+                />
+              </DragDropContext>
             )}
           </motion.div>
         )}
