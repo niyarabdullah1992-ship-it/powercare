@@ -22,6 +22,9 @@ Deno.serve(async (req) => {
         mode: 'subscription',
         line_items: [{ price: priceId, quantity: 1 }],
         customer_email: ownerEmail,
+        subscription_data: {
+          trial_period_days: 180,
+        },
         success_url: `${returnUrl}/pricing-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${returnUrl}/pricing`,
         metadata: {
@@ -40,7 +43,7 @@ Deno.serve(async (req) => {
       if (!sessionId) return Response.json({ error: 'Missing sessionId' }, { status: 400 });
       const session = await stripe.checkout.sessions.retrieve(sessionId);
       return Response.json({
-        paid: session.payment_status === 'paid',
+        paid: session.status === 'complete',
         plan: session.metadata?.plan,
         companyName: session.metadata?.companyName,
         ownerEmail: session.metadata?.ownerEmail,

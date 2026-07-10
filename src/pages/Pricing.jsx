@@ -69,10 +69,14 @@ export default function Pricing() {
           {PLANS.map((plan) => (
             <div key={plan.id} className="bg-white rounded-2xl p-6 shadow-sm flex flex-col">
               <h3 className="font-heading text-2xl text-[#3a2f22] mb-1">{t(plan.nameKey)}</h3>
-              <p className="font-heading text-3xl text-landing-gold mb-4">
+              <p className="font-heading text-3xl text-landing-gold mb-1">
                 {plan.price === 0 ? t("plan_free") : `$${plan.price}`}
                 {plan.price > 0 && <span className="text-sm text-[#3a2f22]/40 font-body">{t("perMonth")}</span>}
               </p>
+              {plan.price > 0 && (
+                <p className="text-xs text-landing-gold font-body font-medium mb-4">{t("trialBadge")}</p>
+              )}
+              {plan.price === 0 && <div className="mb-4" />}
               <ul className="space-y-2 mb-6 flex-1">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm text-[#3a2f22]/70 font-body">

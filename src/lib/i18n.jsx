@@ -272,6 +272,7 @@ const dict = {
     confirmingPayment: "Confirming your payment...", paymentConfirmedText: "Payment confirmed! Set a password to finish creating your account.",
     choosePasswordPlaceholder: "Choose a password", finishSetupBtn: "Finish Setup", accountReadyText: "Your account is ready. Redirecting...",
     paymentNotConfirmedText: "We couldn't confirm your payment.", backToPricingBtn: "Back to Pricing",
+    trialBadge: "Free for 6 months, then billed",
   },
   ar: {
     dir: "rtl",
@@ -543,6 +544,7 @@ const dict = {
     confirmingPayment: "تأكيد عملية الدفع...", paymentConfirmedText: "تم تأكيد الدفع! حدد كلمة مرور لإكمال إنشاء حسابك.",
     choosePasswordPlaceholder: "اختر كلمة مرور", finishSetupBtn: "إكمال الإعداد", accountReadyText: "حسابك جاهز. يتم التحويل...",
     paymentNotConfirmedText: "تعذّر تأكيد عملية الدفع.", backToPricingBtn: "العودة إلى الأسعار",
+    trialBadge: "مجاني لمدة 6 أشهر، ثم يبدأ التحصيل",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
@@ -629,6 +631,7 @@ const dict = {
     confirmingPayment: "Zahlung wird bestätigt...", paymentConfirmedText: "Zahlung bestätigt! Legen Sie ein Passwort fest, um Ihr Konto abzuschließen.",
     choosePasswordPlaceholder: "Passwort wählen", finishSetupBtn: "Einrichtung abschließen", accountReadyText: "Ihr Konto ist bereit. Weiterleitung...",
     paymentNotConfirmedText: "Zahlung konnte nicht bestätigt werden.", backToPricingBtn: "Zurück zu Preisen",
+    trialBadge: "6 Monate kostenlos, danach wird abgerechnet",
   },
   fr: {
     dir: "ltr", appName: "PowerCare", tagline: "Intelligence opérationnelle pour équipes multi-sites",
@@ -715,6 +718,7 @@ const dict = {
     confirmingPayment: "Confirmation du paiement...", paymentConfirmedText: "Paiement confirmé ! Définissez un mot de passe pour finaliser votre compte.",
     choosePasswordPlaceholder: "Choisissez un mot de passe", finishSetupBtn: "Terminer la configuration", accountReadyText: "Votre compte est prêt. Redirection...",
     paymentNotConfirmedText: "Nous n'avons pas pu confirmer votre paiement.", backToPricingBtn: "Retour aux tarifs",
+    trialBadge: "Gratuit pendant 6 mois, puis facturé",
   },
   es: {
     dir: "ltr", appName: "PowerCare", tagline: "Inteligencia operativa para equipos multiestación",
@@ -801,6 +805,7 @@ const dict = {
     confirmingPayment: "Confirmando tu pago...", paymentConfirmedText: "¡Pago confirmado! Establece una contraseña para finalizar tu cuenta.",
     choosePasswordPlaceholder: "Elige una contraseña", finishSetupBtn: "Finalizar configuración", accountReadyText: "Tu cuenta está lista. Redirigiendo...",
     paymentNotConfirmedText: "No pudimos confirmar tu pago.", backToPricingBtn: "Volver a precios",
+    trialBadge: "Gratis durante 6 meses, luego se factura",
   },
   pt: {
     dir: "ltr", appName: "PowerCare", tagline: "Inteligência operacional para equipes multiestação",
@@ -887,6 +892,7 @@ const dict = {
     confirmingPayment: "Confirmando seu pagamento...", paymentConfirmedText: "Pagamento confirmado! Defina uma senha para concluir sua conta.",
     choosePasswordPlaceholder: "Escolha uma senha", finishSetupBtn: "Concluir configuração", accountReadyText: "Sua conta está pronta. Redirecionando...",
     paymentNotConfirmedText: "Não foi possível confirmar seu pagamento.", backToPricingBtn: "Voltar aos preços",
+    trialBadge: "Grátis por 6 meses, depois cobrado",
   },
   ru: {
     dir: "ltr", appName: "PowerCare", tagline: "Операционная аналитика для команд на нескольких станциях",
@@ -973,6 +979,7 @@ const dict = {
     confirmingPayment: "Подтверждение оплаты...", paymentConfirmedText: "Оплата подтверждена! Установите пароль для завершения регистрации.",
     choosePasswordPlaceholder: "Выберите пароль", finishSetupBtn: "Завершить настройку", accountReadyText: "Ваш аккаунт готов. Перенаправление...",
     paymentNotConfirmedText: "Не удалось подтвердить вашу оплату.", backToPricingBtn: "Назад к ценам",
+    trialBadge: "Бесплатно 6 месяцев, затем оплата",
   },
   ja: {
     dir: "ltr", appName: "PowerCare", tagline: "複数拠点チーム向けの運用インテリジェンス",
@@ -1059,6 +1066,7 @@ const dict = {
     confirmingPayment: "お支払いを確認中...", paymentConfirmedText: "支払いが確認されました！パスワードを設定してアカウントを完成させてください。",
     choosePasswordPlaceholder: "パスワードを選択", finishSetupBtn: "セットアップを完了", accountReadyText: "アカウントの準備が完了しました。リダイレクト中...",
     paymentNotConfirmedText: "お支払いを確認できませんでした。", backToPricingBtn: "料金ページに戻る",
+    trialBadge: "6ヶ月間無料、その後課金されます",
   },
   ko: {
     dir: "ltr", appName: "PowerCare", tagline: "다중 현장 팀을 위한 운영 인텔리전스",
@@ -1145,6 +1153,7 @@ const dict = {
     confirmingPayment: "결제 확인 중...", paymentConfirmedText: "결제가 확인되었습니다! 비밀번호를 설정하여 계정을 완료하세요.",
     choosePasswordPlaceholder: "비밀번호 선택", finishSetupBtn: "설정 완료", accountReadyText: "계정이 준비되었습니다. 리디렉션 중...",
     paymentNotConfirmedText: "결제를 확인할 수 없습니다.", backToPricingBtn: "요금제로 돌아가기",
+    trialBadge: "6개월 무료, 이후 청구됨",
   },
 };
 
