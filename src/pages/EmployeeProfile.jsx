@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { canManageEmployees, hasHRPermission } from "@/lib/permissions";
-import { isAncestorManager } from "@/lib/simdif";
 import { getRoleLabel } from "@/lib/roles";
 import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle } from "lucide-react";
 import ProfileHero from "@/components/employees/ProfileHero";
@@ -35,9 +34,8 @@ export default function EmployeeProfile() {
   const isSelf = currentUser.id === employee.id;
   const canManage = canManageEmployees(currentUser) || currentUser.role === "director" || currentUser.role === "ops_manager";
   const canEditSalary = currentUser.role === "director" || hasHRPermission(currentUser, data, "manage_payroll");
-  const isSimDifManagerOf = isAncestorManager(data, currentUser.id, employee.id);
-  const canApproveLeave = canManage || hasHRPermission(currentUser, data, "manage_leave") || isSimDifManagerOf;
-  const canApproveCerts = canManage || isSimDifManagerOf;
+  const canApproveLeave = canManage || hasHRPermission(currentUser, data, "manage_leave");
+  const canApproveCerts = canManage || hasHRPermission(currentUser, data, "manage_leave");
   const stationName = data.stations.find((s) => s.id === employee.stationId)?.name;
 
   return (

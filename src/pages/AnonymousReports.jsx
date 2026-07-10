@@ -3,7 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getAnonUsage, addNotification, getAnonymousCode, setAnonRateLimits } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
-import { getEscalationChainForStation, getHQRootNodes } from "@/lib/simdif";
+import { groupLevelsByOrder, levelName } from "@/lib/hrLevels";
 import { formatDateTime } from "@/lib/dateFormat";
 import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft, Check, X as XIcon } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
@@ -12,38 +12,32 @@ import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
 
-// Escalation chain: first the station manager, then straight up the company's
-// SimDif reporting tree for that station (see the HR page), lowest to highest.
-// Strictly-anonymous reports skip all of that and go directly to HQ management.
-function hqHandlers(data) {
-  return getHQRootNodes(data)
-    .map((n) => data.employees.find((e) => e.id === n.employeeId))
-    .filter(Boolean);
-}
-
-function stageCountFor(r, data) {
-  if (r.strict) return 1;
-  return getEscalationChainForStation(data, r.stationId).length + 1;
-}
-
+// Escalation chain: level 0 = the station manager, then straight up the company's
+// customizable HR tiers (see the HR page), lowest to highest authority.
 function handlersForLevel(levelIdx, r, data) {
-  if (r.strict) return hqHandlers(data);
   if (levelIdx === 0) {
     return data.employees.filter((e) => e.role === "station_manager" && e.stationId === r.stationId);
   }
-  const chain = getEscalationChainForStation(data, r.stationId);
-  const node = chain[levelIdx - 1];
-  if (!node || !node.employeeId) return [];
-  const emp = data.employees.find((e) => e.id === node.employeeId);
-  return emp ? [emp] : [];
+  const groups = groupLevelsByOrder(data.hrLevels || []);
+  const group = groups[levelIdx - 1];
+  if (!group || !group.manager) return [];
+  return data.employees.filter((e) => {
+    if (e.hrLevelId !== group.manager.id) return false;
+    if (group.scope === "station") return e.hrStationId === r.stationId;
+    if (group.scope === "cluster") {
+      const cluster = (data.hrClusters || []).find((c) => (c.stationIds || []).includes(r.stationId));
+      return cluster ? e.hrClusterId === cluster.id : false;
+    }
+    return true;
+  });
 }
 
-function levelLabel(levelIdx, r, data, t) {
-  if (r.strict) return t("hqManagement");
+function levelLabel(levelIdx, data, t, lang) {
   if (levelIdx === 0) return t("stationManager");
-  const chain = getEscalationChainForStation(data, r.stationId);
-  const node = chain[levelIdx - 1];
-  return node ? node.name : "";
+  const groups = groupLevelsByOrder(data.hrLevels || []);
+  const group = groups[levelIdx - 1];
+  if (!group) return "";
+  return levelName(group.manager || group.assistant, lang);
 }
 
 export default function AnonymousReports() {
@@ -57,15 +51,13 @@ export default function AnonymousReports() {
   const [replyFiles, setReplyFiles] = useState({});
   const [selectedStation, setSelectedStation] = useState(null);
   const [monthlyLimitInput, setMonthlyLimitInput] = useState("");
-  const [strict, setStrict] = useState(false);
 
   if (!data || !currentUser) return null;
-  const isSimDifHandler = (data.hrNodes || []).some((n) => n.employeeId === currentUser.id);
-  const isHQHandler = getHQRootNodes(data).some((n) => n.employeeId === currentUser.id);
-  const canAct = hasHRPermission(currentUser, data, "manage_anonymous_reports") || isSimDifHandler;
-  const canView = hasHRPermission(currentUser, data, "view_anonymous_reports") || isSimDifHandler;
+  const STAGE_COUNT = groupLevelsByOrder(data.hrLevels || []).length + 1;
+  const canAct = hasHRPermission(currentUser, data, "manage_anonymous_reports");
+  const canView = hasHRPermission(currentUser, data, "view_anonymous_reports");
   const isHRAnon = canAct || canView;
-  const hrStations = isHRAnon && !isSimDifHandler ? hrScopeStations(currentUser, data) : [];
+  const hrStations = isHRAnon ? hrScopeStations(currentUser, data) : [];
   const isOwner = currentUser.id === data.ownerId;
   const isStaff = isHRAnon || currentUser.role === "director" || currentUser.role === "ops_manager" || currentUser.role === "station_manager" || isOwner;
   const myAnon = data.anonymousReports.filter((a) => (a.authorId ? a.authorId === currentUser.id : a.anonymousId === currentUser.anonymousId));
@@ -80,25 +72,21 @@ export default function AnonymousReports() {
     setMonthlyLimitInput("");
   };
 
-  // Reports visible to a staff member based on HR/SimDif scope (or full oversight for director/owner/ops manager)
+  // Reports visible to a staff member based on HR scope (or full oversight for director/owner/ops manager)
   const visibleReports = data.anonymousReports.filter((r) => {
     if (currentUser.role === "director" || currentUser.role === "ops_manager" || isOwner) return true;
     if (currentUser.role === "station_manager") return r.stationId === currentUser.stationId;
-    if (isSimDifHandler) {
-      if (r.strict) return isHQHandler;
-      return getEscalationChainForStation(data, r.stationId).some((n) => n.employeeId === currentUser.id);
-    }
     if (isHRAnon) return hrStations === null || hrStations.includes(r.stationId);
     return false;
   });
 
-  const currentHandlerLabel = (r) => levelLabel(r.escalationLevel || 0, r, data, t);
+  const currentHandlerLabel = (r) => levelLabel(r.escalationLevel || 0, data, t, lang);
   const canReplyTo = (r) => {
     const level = r.escalationLevel || 0;
     if (!handlersForLevel(level, r, data).some((h) => h.id === currentUser.id)) return false;
     return level === 0 ? true : canAct;
   };
-  const isAtTop = (r) => (r.escalationLevel || 0) >= stageCountFor(r, data) - 1;
+  const isAtTop = (r) => (r.escalationLevel || 0) >= STAGE_COUNT - 1;
   const isConfidentialHidden = (r) => r.confidential && r.confidentialBy !== currentUser.id;
   const toggleConfidential = (id) => {
     updateCompany(company.id, (d) => {
@@ -127,21 +115,15 @@ export default function AnonymousReports() {
         files,
         status: "open",
         escalationLevel: 0,
-        strict,
         replies: [],
         createdAt: new Date().toISOString(),
       });
     });
-    if (strict) {
-      for (const h of hqHandlers(data)) addNotification(company.id, h.id, `New STRICT anonymous ${t(type)} report — HQ escalation required.`);
-    } else {
-      const station = data.stations.find((s) => s.id === currentUser.stationId);
-      const stationManagers = data.employees.filter((e) => e.role === "station_manager" && e.stationId === currentUser.stationId);
-      for (const h of stationManagers) addNotification(company.id, h.id, `New ${t(type)} report at ${station?.name || ""} (${t(priority)}).`);
-    }
+    const station = data.stations.find((s) => s.id === currentUser.stationId);
+    const stationManagers = data.employees.filter((e) => e.role === "station_manager" && e.stationId === currentUser.stationId);
+    for (const h of stationManagers) addNotification(company.id, h.id, `New ${t(type)} report at ${station?.name || ""} (${t(priority)}).`);
     setMessage("");
     setFiles([]);
-    setStrict(false);
   };
 
   const decide = (id, decision) => {
@@ -168,7 +150,7 @@ export default function AnonymousReports() {
     const rep = data.anonymousReports.find((x) => x.id === id);
     if (!rep) return;
     const nextLevel = (rep.escalationLevel || 0) + 1;
-    if (nextLevel >= stageCountFor(rep, data)) return;
+    if (nextLevel >= STAGE_COUNT) return;
     updateCompany(company.id, (d) => {
       const r = d.anonymousReports.find((x) => x.id === id);
       if (r) { r.escalationLevel = nextLevel; r.status = "open"; }
@@ -181,11 +163,11 @@ export default function AnonymousReports() {
   const renderTimeline = (r) => (
     <div className="space-y-2 pt-2 border-t border-border">
       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("escalationChain")}</p>
-      {Array.from({ length: stageCountFor(r, data) }).map((_, idx) => {
+      {Array.from({ length: STAGE_COUNT }).map((_, idx) => {
         const replyAtLevel = (r.replies || []).find((rp) => rp.level === idx);
         const isCurrent = (r.escalationLevel || 0) === idx;
         const isPast = (r.escalationLevel || 0) > idx;
-        const label = levelLabel(idx, r, data, t);
+        const label = levelLabel(idx, data, t, lang);
         return (
           <div key={idx} className={`flex items-start gap-2 text-xs font-body ${isPast ? "opacity-50" : ""}`}>
             <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${replyAtLevel ? "bg-accent text-accent-foreground" : isCurrent ? "bg-amber-100 text-amber-700 border border-amber-300" : "bg-muted text-muted-foreground"}`}>
@@ -214,13 +196,10 @@ export default function AnonymousReports() {
     suggestion: visibleReports.filter((a) => a.type === "suggestion").length,
   };
 
-  // Station grouping for staff navigation — merges role-based, HR, and SimDif scope
-  const hrStationList = isHRAnon && !isSimDifHandler ? (hrStations === null ? data.stations : data.stations.filter((s) => hrStations.includes(s.id))) : [];
-  const simDifStationList = isSimDifHandler
-    ? (isHQHandler ? data.stations : data.stations.filter((s) => getEscalationChainForStation(data, s.id).some((n) => n.employeeId === currentUser.id)))
-    : [];
+  // Station grouping for staff navigation — merges role-based scope with HR scope
+  const hrStationList = isHRAnon ? (hrStations === null ? data.stations : data.stations.filter((s) => hrStations.includes(s.id))) : [];
   const stationMap = new Map();
-  [...visibleStations(currentUser, data), ...hrStationList, ...simDifStationList].forEach((s) => stationMap.set(s.id, s));
+  [...visibleStations(currentUser, data), ...hrStationList].forEach((s) => stationMap.set(s.id, s));
   const myStations = Array.from(stationMap.values());
   const stationGroups = myStations.map((s) => ({
     key: s.id,
@@ -271,14 +250,6 @@ export default function AnonymousReports() {
               <CommentFiles files={files} setFiles={setFiles} />
               <VoiceRecorder files={files} setFiles={setFiles} />
             </div>
-            <label className="flex items-start gap-2 text-xs font-body p-2.5 rounded-md bg-muted/50">
-              <input type="checkbox" checked={strict} onChange={(e) => setStrict(e.target.checked)} className="mt-0.5" />
-              <span>
-                <span className="font-medium">{t("strictAnonymous")}</span>
-                <br />
-                <span className="text-muted-foreground">{t("strictAnonymousNote")}</span>
-              </span>
-            </label>
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground font-body">
                 {usage.dayLimit - usage.day} {t("remaining")} · {usage.weekLimit - usage.week} {t("weekRemaining")} · {usage.monthLimit - usage.month} {t("monthRemaining")}
@@ -310,7 +281,6 @@ export default function AnonymousReports() {
                         <Badge text={t(r.type)} />
                         <Badge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
                         <Badge text={currentHandlerLabel(r)} tone="accent" />
-                        {r.strict && <Badge text={t("strictAnonymous")} tone="destructive" />}
                         {r.confidential && <Badge text={t("confidential")} tone="destructive" />}
                       </div>
                     </div>
@@ -416,7 +386,6 @@ export default function AnonymousReports() {
                     <Badge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
                     <Badge text={currentHandlerLabel(r)} tone="accent" />
                     <Badge text={t(r.status)} tone={r.status === "closed" ? (r.resolution === "approved" ? "accent" : "destructive") : "muted"} />
-                    {r.strict && <Badge text={t("strictAnonymous")} tone="destructive" />}
                     {r.confidential && <Badge text={t("confidential")} tone="destructive" />}
                   </div>
                 </div>

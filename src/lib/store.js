@@ -1,7 +1,6 @@
 // PowerCare data layer — localStorage-based, multi-tenant with full company isolation.
 // Registry tracks all companies; each company's data lives under its own key.
-import { MANAGER_PERMISSIONS, ASSISTANT_PERMISSIONS } from "./hrLevels";
-import { getParentManager } from "./simdif";
+import { MANAGER_PERMISSIONS, ASSISTANT_PERMISSIONS, groupLevelsByOrder } from "./hrLevels";
 
 const REGISTRY_KEY = "powercare_registry";
 const COMPANY_PREFIX = "powercare_company_";
@@ -24,6 +23,28 @@ function write(key, value) {
 function uid(prefix = "id") {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
 }
+// The lowest-order HR manager assigned to handle this employee's station (falls
+// back up through cluster/company tiers if no station-level manager is assigned).
+function getStationHRManager(data, employeeId) {
+  const emp = data.employees.find((e) => e.id === employeeId);
+  if (!emp) return null;
+  const groups = groupLevelsByOrder(data.hrLevels || []);
+  for (const group of groups) {
+    if (!group.manager) continue;
+    const candidate = data.employees.find((e) => {
+      if (e.hrLevelId !== group.manager.id) return false;
+      if (group.scope === "station") return e.hrStationId === emp.stationId;
+      if (group.scope === "cluster") {
+        const cluster = (data.hrClusters || []).find((c) => (c.stationIds || []).includes(emp.stationId));
+        return cluster ? e.hrClusterId === cluster.id : false;
+      }
+      return true;
+    });
+    if (candidate) return candidate;
+  }
+  return null;
+}
+
 function hashId(seed) {
   // simple non-reversible hash for anonymous ids
   let h = 0;
@@ -282,12 +303,12 @@ export function addCertificate(companyId, employeeId, cert) {
     emp.certificates = emp.certificates || [];
     emp.certificates.push({ id: uid("cert"), status: "pending", ...cert, createdAt: new Date().toISOString() });
   });
-  // Route the new upload to the designated supervisor in the SimDif tree, if any.
+  // Route the new upload to the assigned HR manager for this employee's station, if any.
   const data = getCompanyData(companyId);
-  const parentManager = getParentManager(data, employeeId);
-  if (parentManager) {
+  const hrManager = getStationHRManager(data, employeeId);
+  if (hrManager) {
     const emp = data.employees.find((e) => e.id === employeeId);
-    addNotification(companyId, parentManager.id, `${emp?.name || ""} uploaded a new certificate for your approval.`);
+    addNotification(companyId, hrManager.id, `${emp?.name || ""} uploaded a new certificate for your approval.`);
   }
 }
 
@@ -348,12 +369,12 @@ export function submitLeaveRequest(companyId, employeeId, { type, startDate, end
       createdAt: new Date().toISOString(),
     });
   });
-  // Route to the immediate parent manager defined in the active SimDif tree, if any.
+  // Route to the assigned HR manager for this employee's station, if any.
   const data = getCompanyData(companyId);
-  const parentManager = getParentManager(data, employeeId);
-  if (parentManager) {
+  const hrManager = getStationHRManager(data, employeeId);
+  if (hrManager) {
     const emp = data.employees.find((e) => e.id === employeeId);
-    addNotification(companyId, parentManager.id, `New ${type} leave request from ${emp?.name || ""} needs your review.`);
+    addNotification(companyId, hrManager.id, `New ${type} leave request from ${emp?.name || ""} needs your review.`);
   }
 }
 
@@ -478,81 +499,5 @@ export function moveHRTier(companyId, order, direction) {
       if (l.order === order) l.order = swapOrder;
       else if (l.order === swapOrder) l.order = order;
     });
-  });
-}
-
-/* ----------------------------- SimDif HR org tree ----------------------------- */
-// Free-form, drag-and-drop position tree: each node has a name, scope, an optional
-// scope target (station/cluster id), a parentId (reporting line), and a canvas
-// position (x, y). Company-wide "global" nodes with no parent are HQ management.
-export function addHRNode(companyId, { name, scope, scopeTargetId, parentId, x, y }) {
-  updateCompany(companyId, (d) => {
-    d.hrNodes = d.hrNodes || [];
-    d.hrNodes.push({
-      id: uid("node"), name, scope,
-      scopeTargetId: scopeTargetId || null,
-      parentId: parentId || null,
-      x: x ?? 40, y: y ?? 40,
-      employeeId: null,
-    });
-  });
-}
-
-export function moveHRNode(companyId, nodeId, x, y) {
-  updateCompany(companyId, (d) => {
-    const n = (d.hrNodes || []).find((x2) => x2.id === nodeId);
-    if (n) { n.x = x; n.y = y; }
-  });
-}
-
-export function setHRNodeParent(companyId, nodeId, parentId) {
-  updateCompany(companyId, (d) => {
-    const n = (d.hrNodes || []).find((x) => x.id === nodeId);
-    if (n) n.parentId = parentId || null;
-  });
-}
-
-export function renameHRNode(companyId, nodeId, name) {
-  updateCompany(companyId, (d) => {
-    const n = (d.hrNodes || []).find((x) => x.id === nodeId);
-    if (n) n.name = name;
-  });
-}
-
-// Removing a node reparents its children to whatever it reported to, so the tree
-// stays connected, and frees up its assigned employee.
-export function removeHRNode(companyId, nodeId) {
-  updateCompany(companyId, (d) => {
-    const node = (d.hrNodes || []).find((n) => n.id === nodeId);
-    if (!node) return;
-    (d.hrNodes || []).forEach((n) => { if (n.parentId === nodeId) n.parentId = node.parentId; });
-    d.hrNodes = (d.hrNodes || []).filter((n) => n.id !== nodeId);
-  });
-}
-
-export function assignEmployeeToHRNode(companyId, nodeId, empId) {
-  updateCompany(companyId, (d) => {
-    (d.hrNodes || []).forEach((n) => { if (n.employeeId === empId) n.employeeId = null; });
-    const n = (d.hrNodes || []).find((x) => x.id === nodeId);
-    if (n) n.employeeId = empId;
-  });
-}
-
-export function hireIntoHRNode(companyId, nodeId, { name, email }) {
-  updateCompany(companyId, (d) => {
-    const emp = {
-      id: uid("emp"), name, email: email || "", role: "employee",
-      stationId: null, createdAt: new Date().toISOString(),
-    };
-    d.employees.push(emp);
-    const n = (d.hrNodes || []).find((x) => x.id === nodeId);
-    if (n) n.employeeId = emp.id;
-  });
-}
-
-export function unassignHRNode(companyId, nodeId) {
-  updateCompany(companyId, (d) => {
-    const n = (d.hrNodes || []).find((x) => x.id === nodeId);
-    if (n) n.employeeId = null;
   });
 }
