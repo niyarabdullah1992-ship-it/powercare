@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { addNotification, addPoints } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { PRIORITY_POINTS } from "@/lib/rewards";
 import { base44 } from "@/api/base44Client";
-import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, MessageCircle, Send, Clock, Search, Pencil, Trash2, X, GripVertical } from "lucide-react";
+import { getParentPath, withAncestors, NO_SECTION } from "@/lib/taskFolders";
+import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, Clock, Search, Pencil, X } from "lucide-react";
 import TaskStats from "@/components/tasks/TaskStats";
-import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
+import TaskCard from "@/components/tasks/TaskCard";
+import FolderTree from "@/components/tasks/FolderTree";
+import CommentFiles from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
-import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
-import { formatDateTime } from "@/lib/dateFormat";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -23,30 +23,7 @@ const DATE_PRESETS = [
   { val: "custom", months: 0 },
 ];
 
-const NO_SECTION = "__none__";
-
-// Folders are stored as "/"-joined paths so a folder can be nested inside another folder.
-function getParentPath(path) {
-  if (!path) return null;
-  const idx = path.lastIndexOf("/");
-  return idx === -1 ? null : path.slice(0, idx);
-}
-function getLeafName(path) {
-  if (!path) return "";
-  const idx = path.lastIndexOf("/");
-  return idx === -1 ? path : path.slice(idx + 1);
-}
-function withAncestors(paths) {
-  const set = new Set();
-  for (const p of paths) {
-    let cur = p;
-    while (cur) {
-      set.add(cur);
-      cur = getParentPath(cur);
-    }
-  }
-  return Array.from(set);
-}
+const PRIORITY_WEIGHT = { urgent: 0, high: 1, medium: 2, low: 3 };
 
 export default function MyTasks() {
   const { t, dir, lang } = useI18n();
@@ -59,7 +36,6 @@ export default function MyTasks() {
   const [customEnd, setCustomEnd] = useState("");
   const [customDays, setCustomDays] = useState("");
   const [taskFiles, setTaskFiles] = useState([]);
-  const [uploading, setUploading] = useState(false);
   const [logTarget, setLogTarget] = useState(null);
   const [logAmount, setLogAmount] = useState(1);
   const [commentsOpen, setCommentsOpen] = useState(null);
@@ -68,19 +44,13 @@ export default function MyTasks() {
   const [targets, setTargets] = useState([]);
   const [targetsLoading, setTargetsLoading] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
-  const [selectedSection, setSelectedSection] = useState(null);
   const [priority, setPriority] = useState("medium");
   const [sortBy, setSortBy] = useState("priority");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [editTarget, setEditTarget] = useState(null);
-  const [newSectionName, setNewSectionName] = useState("");
   const [folders, setFolders] = useState([]);
   const [sectionValue, setSectionValue] = useState("");
-  const [renameFolderKey, setRenameFolderKey] = useState(null);
-  const [renameValue, setRenameValue] = useState("");
-  const [folderError, setFolderError] = useState("");
-  const [creatingFolder, setCreatingFolder] = useState(false);
 
   const fetchTargets = async () => {
     if (!currentUser) return;
@@ -118,31 +88,22 @@ export default function MyTasks() {
     fetchFolders();
   }, []);
 
-  const addFolder = async () => {
-    setFolderError("");
-    const name = newSectionName.trim();
-    if (!name) {
-      setFolderError(t("enterSectionName") || "Please type a section name first.");
-      return;
-    }
+  const addFolderAt = async (parentPath, name) => {
     if (!selectedStation) return;
-    const path = selectedSection ? `${selectedSection}/${name}` : name;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const path = parentPath ? `${parentPath}/${trimmed}` : trimmed;
     if (folders.some((f) => f.station_id === selectedStation && f.path === path)) {
-      setFolderError(t("sectionAlreadyExists") || "This section already exists.");
+      alert(t("sectionAlreadyExists") || "This section already exists.");
       return;
     }
-    setNewSectionName("");
-    setCreatingFolder(true);
-    const sortOrder = folders.filter((f) => f.station_id === selectedStation && getParentPath(f.path) === selectedSection).length;
+    const sortOrder = folders.filter((f) => f.station_id === selectedStation && getParentPath(f.path) === parentPath).length;
     try {
       const res = await base44.functions.invoke("supabaseTargets", { action: "createFolder", stationId: selectedStation, path, sortOrder });
       const created = res?.data?.folder;
       if (created) setFolders((prev) => [...prev, created]);
-      else setFolderError("Unexpected response — could not create the section.");
     } catch (err) {
-      setFolderError(err?.response?.data?.error || err?.message || "Failed to create section");
-    } finally {
-      setCreatingFolder(false);
+      alert(err?.response?.data?.error || err?.message || "Failed to create section");
     }
   };
 
@@ -165,10 +126,8 @@ export default function MyTasks() {
   };
 
   const renameFolder = async (oldPath, newName) => {
-    const trimmed = newName.trim();
-    if (!trimmed || trimmed === getLeafName(oldPath)) { setRenameFolderKey(null); return; }
     const parent = getParentPath(oldPath);
-    const newPath = parent ? `${parent}/${trimmed}` : trimmed;
+    const newPath = parent ? `${parent}/${newName}` : newName;
     const affectedTasks = targets.filter((tg) => targetStationKey(tg) === selectedStation && (tg.section === oldPath || (tg.section || "").startsWith(`${oldPath}/`)));
     try {
       await Promise.all(
@@ -187,9 +146,6 @@ export default function MyTasks() {
         oldPath,
         newPath,
       });
-      if (selectedSection === oldPath) setSelectedSection(newPath);
-      setRenameFolderKey(null);
-      setRenameValue("");
       fetchTargets();
       fetchFolders();
     } catch (err) {
@@ -215,11 +171,23 @@ export default function MyTasks() {
         stationId: selectedStation,
         path: folderPath,
       });
-      if (selectedSection === folderPath || (selectedSection || "").startsWith(`${folderPath}/`)) setSelectedSection(getParentPath(folderPath));
       fetchTargets();
       fetchFolders();
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to delete folder");
+    }
+  };
+
+  const reorderChildren = async (parentPath, ids) => {
+    const items = ids.map((id, idx) => ({ id, sortOrder: idx }));
+    setFolders((prev) => prev.map((f) => {
+      const match = items.find((it) => it.id === f.id);
+      return match ? { ...f, sort_order: match.sortOrder } : f;
+    }));
+    try {
+      await base44.functions.invoke("supabaseTargets", { action: "reorderFolders", items });
+    } catch {
+      // best-effort — order will re-sync on next fetch
     }
   };
 
@@ -364,7 +332,6 @@ export default function MyTasks() {
         managerId: data.directorId,
         employeeName: currentUser.name,
       });
-      // Instant notification to the responsible manager (target creator)
       const mgrId = tg?.manager_id || data.directorId;
       const newCompleted = res?.data?.target?.completed_tasks ?? (tg?.completed_tasks || 0) + amt;
       addNotification(
@@ -372,7 +339,6 @@ export default function MyTasks() {
         mgrId,
         `${currentUser.name} → ${tg?.title || t("setTarget")}: +${amt} ${t("tasksUnit")} (${newCompleted}/${tg?.task_target || "?"}).`
       );
-      // Reward points on completion — team tasks reward the whole team
       const updatedTarget = res?.data?.target;
       const wasCompleted = tg?.status === "completed";
       const nowCompleted = updatedTarget?.status === "completed";
@@ -504,56 +470,11 @@ export default function MyTasks() {
     ...(showHq ? [{ key: "hq", name: t("hq"), count: groupMap["hq"]?.count || 0 }] : []),
     ...visible.map((s) => ({ key: s.id, name: s.name, count: groupMap[s.id]?.count || 0 })),
   ];
-  const PRIORITY_WEIGHT = { urgent: 0, high: 1, medium: 2, low: 3 };
   const stationTargetsAll = selectedStation ? targets.filter((tg) => targetStationKey(tg) === selectedStation) : [];
-  // Folders form a tree: a folder can be created inside another folder, sections
-  // store the full "/"-joined path of the folder a task lives directly inside.
   const allStationFolders = withAncestors([
     ...folders.filter((f) => f.station_id === selectedStation).map((f) => f.path),
     ...stationTargetsAll.filter((tg) => tg.section).map((tg) => tg.section),
   ]);
-  const folderCountAt = (path) => stationTargetsAll.filter((tg) => (tg.section || null) === path).length;
-  const folderRowAt = (path) => folders.find((f) => f.station_id === selectedStation && f.path === path);
-  const childFolders = allStationFolders
-    .filter((p) => getParentPath(p) === selectedSection)
-    .map((p) => ({ key: p, name: getLeafName(p), count: folderCountAt(p), id: folderRowAt(p)?.id, sortOrder: folderRowAt(p)?.sort_order ?? 9999 }))
-    .sort((a, b) => a.sortOrder - b.sortOrder);
-
-  const handleFolderDragEnd = async (result) => {
-    if (!result.destination || result.destination.index === result.source.index) return;
-    const reordered = Array.from(childFolders);
-    const [moved] = reordered.splice(result.source.index, 1);
-    reordered.splice(result.destination.index, 0, moved);
-    const items = reordered.filter((f) => f.id).map((f, idx) => ({ id: f.id, sortOrder: idx }));
-    setFolders((prev) => prev.map((f) => {
-      const match = items.find((it) => it.id === f.id);
-      return match ? { ...f, sort_order: match.sortOrder } : f;
-    }));
-    try {
-      await base44.functions.invoke("supabaseTargets", { action: "reorderFolders", items });
-    } catch {
-      // best-effort — order will re-sync on next fetch
-    }
-  };
-  const directTaskCount = folderCountAt(selectedSection);
-  const stationTargets = selectedStation
-    ? stationTargetsAll
-        .filter((tg) => (tg.section || null) === selectedSection)
-        .filter((tg) => {
-          if (statusFilter !== "all" && tg.status !== statusFilter) return false;
-          if (searchQuery) {
-            const q = searchQuery.toLowerCase();
-            return (tg.title || "").toLowerCase().includes(q) || (tg.description || "").toLowerCase().includes(q);
-          }
-          return true;
-        })
-        .sort((a, b) => {
-          if (sortBy === "priority") {
-            return (PRIORITY_WEIGHT[a.priority] ?? 2) - (PRIORITY_WEIGHT[b.priority] ?? 2);
-          }
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        })
-    : [];
   const existingSections = Array.from(new Set([
     ...targets.filter((tg) => tg.section).map((tg) => tg.section),
     ...folders.map((f) => f.path),
@@ -563,7 +484,32 @@ export default function MyTasks() {
     ...allStationFolders.map((p) => ({ key: p, name: p })),
   ];
   const selectedStationName = selectedStation === "hq" ? t("hq") : stationName(selectedStation);
-  const breadcrumbParts = selectedSection ? selectedSection.split("/") : [];
+  const hasAnyContent = folders.filter((f) => f.station_id === selectedStation).length > 0 || stationTargetsAll.length > 0;
+
+  const filterTasks = (arr) => arr
+    .filter((tg) => statusFilter === "all" || tg.status === statusFilter)
+    .filter((tg) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (tg.title || "").toLowerCase().includes(q) || (tg.description || "").toLowerCase().includes(q);
+    })
+    .sort((a, b) => (sortBy === "priority"
+      ? (PRIORITY_WEIGHT[a.priority] ?? 2) - (PRIORITY_WEIGHT[b.priority] ?? 2)
+      : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+
+  const renderTask = (tg) => (
+    <TaskCard
+      key={tg.id}
+      tg={tg}
+      t={t} dir={dir} lang={lang}
+      assignmentLabel={assignmentLabel(tg)}
+      canManage={canManage(tg)}
+      canLog={canLog(tg)}
+      logTarget={logTarget} logAmount={logAmount} setLogTarget={setLogTarget} setLogAmount={setLogAmount} logCompleted={logCompleted}
+      commentsOpen={commentsOpen} setCommentsOpen={setCommentsOpen} commentText={commentText} setCommentText={setCommentText} commentFiles={commentFiles} setCommentFiles={setCommentFiles} submitComment={submitComment}
+      allSectionFolders={allSectionFolders} moveTaskToSection={moveTaskToSection} setEditTarget={setEditTarget} deleteTarget={deleteTarget}
+    />
+  );
 
   return (
     <div className="space-y-6">
@@ -573,14 +519,10 @@ export default function MyTasks() {
         </div>
         {canCreateTasks(currentUser) && (
           <button
-            onClick={() => {
-              if (!showCreate) setSectionValue(selectedSection || "");
-              setShowCreate(!showCreate);
-            }}
-            disabled={uploading}
-            className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-50"
+            onClick={() => setShowCreate(!showCreate)}
+            className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent"
           >
-            <Plus className="w-4 h-4" /> {uploading ? "…" : t("newTaskTarget")}
+            <Plus className="w-4 h-4" /> {t("newTaskTarget")}
           </button>
         )}
       </div>
@@ -758,7 +700,7 @@ export default function MyTasks() {
         </form>
       )}
 
-      {/* Task Targets — organized by station */}
+      {/* Task Targets — organized by station as a hierarchical folder tree */}
       <div className="p-5 rounded-xl border border-border bg-card space-y-4">
         <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
           <Target className="w-4 h-4" /> {t("targets")}
@@ -782,7 +724,7 @@ export default function MyTasks() {
               {stationGroups.map((g) => (
                 <button
                   key={g.key}
-                  onClick={() => { setSelectedStation(g.key); setSelectedSection(null); }}
+                  onClick={() => setSelectedStation(g.key)}
                   className="flex items-center justify-between p-4 rounded-lg border border-border bg-background hover:bg-muted transition text-start"
                 >
                   <div className="flex items-center gap-3">
@@ -801,7 +743,7 @@ export default function MyTasks() {
           )
         ) : (
           <motion.div
-            key={`browser-${selectedSection || "root"}`}
+            key="browser"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
@@ -809,126 +751,15 @@ export default function MyTasks() {
             className="space-y-3"
           >
             <button
-              onClick={() => (selectedSection ? setSelectedSection(getParentPath(selectedSection)) : setSelectedStation(null))}
+              onClick={() => setSelectedStation(null)}
               className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground"
             >
               <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
             </button>
 
-            <div className="flex items-center gap-1.5 flex-wrap text-sm font-body">
-              <button onClick={() => setSelectedSection(null)} className="font-heading font-semibold hover:underline">{selectedStationName}</button>
-              {breadcrumbParts.map((part, idx) => {
-                const path = breadcrumbParts.slice(0, idx + 1).join("/");
-                return (
-                  <React.Fragment key={path}>
-                    <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
-                    <button onClick={() => setSelectedSection(path)} className="text-muted-foreground hover:text-foreground hover:underline">{part}</button>
-                  </React.Fragment>
-                );
-              })}
-            </div>
+            <h3 className="font-heading font-semibold">{selectedStationName}</h3>
 
-            {canCreateTasks(currentUser) && (
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <input
-                    value={newSectionName}
-                    onChange={(e) => { setNewSectionName(e.target.value); setFolderError(""); }}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFolder(); } }}
-                    placeholder={t("newSectionPlaceholder")}
-                    className="flex-1 px-3 py-2 rounded-md border border-input text-sm font-body"
-                  />
-                  <button type="button" onClick={addFolder} disabled={creatingFolder} className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-foreground text-background text-sm font-body whitespace-nowrap disabled:opacity-50">
-                    <Plus className="w-4 h-4" /> {creatingFolder ? "…" : t("addSection")}
-                  </button>
-                </div>
-                {folderError && <p className="text-xs text-red-600 font-body">{folderError}</p>}
-              </div>
-            )}
-
-            {childFolders.length > 0 && (
-              <p className="text-xs uppercase tracking-wider text-muted-foreground font-body pt-1">{t("subfolders")}</p>
-            )}
-            {childFolders.length > 0 && (
-              <DragDropContext onDragEnd={handleFolderDragEnd}>
-                <Droppable droppableId="task-folders">
-                  {(provided) => (
-                    <div ref={provided.innerRef} {...provided.droppableProps} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {childFolders.map((f, index) => (
-                        <Draggable key={f.key} draggableId={f.key} index={index} isDragDisabled={!canCreateTasks(currentUser)}>
-                          {(dragProvided, dragSnapshot) => (
-                            <div
-                              ref={dragProvided.innerRef}
-                              {...dragProvided.draggableProps}
-                              className={`relative group ${dragSnapshot.isDragging ? "opacity-90 shadow-lg" : ""}`}
-                            >
-                              <button
-                                onClick={() => setSelectedSection(f.key)}
-                                className="flex items-center justify-between w-full p-4 rounded-lg border border-border bg-background hover:bg-muted transition text-start"
-                              >
-                                <div className="flex items-center gap-3">
-                                  {canCreateTasks(currentUser) && (
-                                    <span {...dragProvided.dragHandleProps} onClick={(e) => e.stopPropagation()} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
-                                      <GripVertical className="w-4 h-4" />
-                                    </span>
-                                  )}
-                                  <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                                    <FileText className="w-4 h-4" />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-medium font-body">{f.name}</p>
-                                    <p className="text-xs text-muted-foreground font-body">{f.count} {t("tasksUnit")}</p>
-                                  </div>
-                                </div>
-                                <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
-                              </button>
-                              {canCreateTasks(currentUser) && (
-                                <div className={`absolute top-2 ${dir === "rtl" ? "left-2" : "right-2"} flex items-center gap-1 opacity-0 group-hover:opacity-100 transition`}>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); setRenameFolderKey(f.key); setRenameValue(f.name); }}
-                                    title={t("edit")}
-                                    className="p-1 rounded-md bg-background/80 text-muted-foreground hover:text-foreground hover:bg-muted"
-                                  >
-                                    <Pencil className="w-3.5 h-3.5" />
-                                  </button>
-                                  <ConfirmDeleteDialog
-                                    onConfirm={() => deleteFolder(f.key)}
-                                    trigger={
-                                      <button
-                                        type="button"
-                                        onClick={(e) => e.stopPropagation()}
-                                        title={t("delete")}
-                                        className="p-1 rounded-md bg-background/80 text-muted-foreground hover:text-red-600 hover:bg-red-50"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    }
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-            )}
-
-            {directTaskCount > 0 && (
-              <div className={`flex items-center justify-between gap-2 flex-wrap pt-2 ${childFolders.length > 0 ? "border-t border-border" : ""}`}>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-body">{t("directTasks")}</p>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-muted-foreground font-body">{t("sortBy")}:</span>
-                  <button onClick={() => setSortBy("priority")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "priority" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byPriority")}</button>
-                  <button onClick={() => setSortBy("date")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "date" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byNewest")}</button>
-                </div>
-              </div>
-            )}
-            {directTaskCount > 0 && (
+            {hasAnyContent && (
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
                   <Search className={`absolute top-1/2 -translate-y-1/2 ${dir === "rtl" ? "right-3" : "left-3"} w-4 h-4 text-muted-foreground`} />
@@ -949,173 +780,32 @@ export default function MyTasks() {
                   <option value="completed">{t("completed")}</option>
                   <option value="overdue">{t("overdue")}</option>
                 </select>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-xs text-muted-foreground font-body">{t("sortBy")}:</span>
+                  <button onClick={() => setSortBy("priority")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "priority" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byPriority")}</button>
+                  <button onClick={() => setSortBy("date")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "date" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byNewest")}</button>
+                </div>
               </div>
             )}
-            {stationTargets.length === 0 ? (
-              childFolders.length === 0 && (
-                <p className="text-sm text-muted-foreground font-body">{searchQuery || statusFilter !== "all" ? t("noResults") : t("noTargets")}</p>
-              )
-            ) : (
-              <div className="space-y-3">
-                {stationTargets.map((tg) => {
-                  const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
-                  const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
-                  const done = tg.status === "completed";
-                  const overdue = tg.status === "overdue";
-                  const canLogThis = canLog(tg);
-                  const isUrgent = tg.priority === "urgent";
-                  const totalDur = new Date(tg.end_date).getTime() - new Date(tg.start_date).getTime();
-                  const elapsed = Date.now() - new Date(tg.start_date).getTime();
-                  const timePct = totalDur > 0 ? (elapsed / totalDur) * 100 : 0;
-                  const progressPct = tg.task_target > 0 ? (tg.completed_tasks / tg.task_target) * 100 : 0;
-                  const atRisk = isUrgent && !done && !overdue && timePct > 75 && progressPct < 50;
-                  const statusBadge = done
-                    ? "bg-emerald-100 text-emerald-700 border-emerald-300"
-                    : overdue
-                    ? "bg-red-100 text-red-700 border-red-300"
-                    : "bg-amber-100 text-amber-700 border-amber-300";
-                  const cardBorder = overdue
-                    ? "border-red-300 bg-red-50/40"
-                    : done
-                    ? "border-emerald-300 bg-emerald-50/30"
-                    : isUrgent
-                    ? "border-red-400 bg-red-50/20"
-                    : "border-border bg-background";
-                  const barColor = done
-                    ? "bg-emerald-500"
-                    : overdue
-                    ? "bg-red-500"
-                    : pct >= 67
-                    ? "bg-emerald-500"
-                    : pct >= 34
-                    ? "bg-amber-500"
-                    : "bg-yellow-400";
-                  return (
-                    <div key={tg.id} className={`p-4 rounded-lg border space-y-3 transition-colors ${cardBorder}`}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium font-body">{tg.title || `${t("setTarget")}`}</p>
-                          {tg.description && <p className="text-xs text-muted-foreground font-body mt-0.5">{tg.description}</p>}
-                          {tg.steps && (
-                            <div className="text-xs text-muted-foreground font-body mt-1 p-2 rounded bg-muted/50 whitespace-pre-wrap">
-                              <span className="font-medium">{t("steps")}:</span>{"\n"}{tg.steps}
-                            </div>
-                          )}
-                          {(Array.isArray(tg.file_urls) ? tg.file_urls.length : tg.file_url) > 0 && (
-                            <div className="mt-1">
-                              <CommentAttachments files={Array.isArray(tg.file_urls) && tg.file_urls.length ? tg.file_urls : [{ url: tg.file_url, name: "PDF", type: "file" }]} />
-                            </div>
-                          )}
-                          <p className="text-xs text-muted-foreground font-body mt-1">{assignmentLabel(tg)}</p>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          {isUrgent && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-body font-medium border border-red-500 bg-red-100 text-red-700 whitespace-nowrap">
-                              <AlertTriangle className="w-3 h-3" /> {t("urgent")}
-                            </span>
-                          )}
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-body font-medium border whitespace-nowrap ${statusBadge}`}>
-                            {done ? <Check className="w-3 h-3" /> : overdue ? <AlertTriangle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                            {done ? t("completed") : overdue ? t("overdue") : t("inProgress")}
-                          </span>
-                          {canManage(tg) && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <select
-                                value={tg.section || NO_SECTION}
-                                onChange={(e) => moveTaskToSection(tg, e.target.value)}
-                                title={t("moveToSection")}
-                                className="text-[11px] px-1.5 py-1 rounded-md border border-input bg-card font-body max-w-[130px]"
-                              >
-                                {allSectionFolders.map((f) => (
-                                  <option key={f.key} value={f.key}>{f.name}</option>
-                                ))}
-                              </select>
-                              <button onClick={() => setEditTarget(tg)} className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title={t("edit")}>
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                              <ConfirmDeleteDialog
-                                onConfirm={() => deleteTarget(tg.id)}
-                                description={t("confirmDeleteTask")}
-                                trigger={
-                                  <button className="p-1 rounded-md hover:bg-red-50 text-muted-foreground hover:text-red-600" title={t("delete")}>
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                }
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs font-body">
-                        {done ? (
-                          <span className="text-emerald-600 font-medium">{t("targetDone")}</span>
-                        ) : overdue ? (
-                          <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("overdue")}</span>
-                        ) : atRisk ? (
-                          <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("atRisk")}</span>
-                        ) : (
-                          <span className={`flex items-center gap-1 ${daysLeft <= 3 ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                            <Clock className="w-3 h-3" /> {t("daysLeft")}: {daysLeft}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-xs font-body mb-1">
-                          <span className="text-muted-foreground">{t("completedCount")}: {tg.completed_tasks}/{tg.task_target} {t("tasksUnit")}</span>
-                          <span className="font-medium">{pct}%</span>
-                        </div>
-                        <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                          <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                      {canLogThis && !done && !overdue && (
-                        <div className="flex items-center gap-2 pt-1">
-                          <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
-                          <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
-                            <Check className="w-3.5 h-3.5" /> {t("logCompleted")}
-                          </button>
-                        </div>
-                      )}
 
-                      <div className="pt-2 border-t border-border">
-                        <button onClick={() => { const next = commentsOpen === tg.id ? null : tg.id; setCommentsOpen(next); setCommentText(""); setCommentFiles([]); }} className="flex items-center gap-1.5 text-xs text-muted-foreground font-body hover:text-foreground">
-                          <MessageCircle className="w-3.5 h-3.5" /> {t("comments")} ({Array.isArray(tg.comments) ? tg.comments.length : 0})
-                        </button>
-                        {commentsOpen === tg.id && (
-                          <div className="mt-2 space-y-2">
-                            {Array.isArray(tg.comments) && tg.comments.length > 0 && (
-                              <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                                {tg.comments.map((c) => (
-                                  <div key={c.id} className="text-xs font-body p-2 rounded-md bg-muted/50">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <p className="font-medium text-foreground">{c.user_name}</p>
-                                      <span className="text-[10px] text-muted-foreground">{c.created_at ? formatDateTime(c.created_at, lang) : ""}</span>
-                                    </div>
-                                    <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{c.content}</p>
-                                    <CommentAttachments files={c.files} />
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            <div className="space-y-2">
-                              <div className="flex flex-wrap items-end gap-2">
-                                <CommentFiles files={commentFiles} setFiles={setCommentFiles} />
-                                <VoiceRecorder files={commentFiles} setFiles={setCommentFiles} />
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={t("writeComment")} className="flex-1 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
-                                <button onClick={() => submitComment(tg.id)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
-                                  <Send className="w-3.5 h-3.5" /> {t("send")}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            {!hasAnyContent ? (
+              <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
+            ) : (
+              <FolderTree
+                stationId={selectedStation}
+                path={null}
+                folders={folders}
+                tasksAll={stationTargetsAll}
+                canManage={canCreateTasks(currentUser)}
+                renderTask={renderTask}
+                filterTasks={filterTasks}
+                onAddFolder={addFolderAt}
+                onRenameFolder={renameFolder}
+                onDeleteFolder={deleteFolder}
+                onReorderChildren={reorderChildren}
+                t={t}
+                dir={dir}
+              />
             )}
           </motion.div>
         )}
@@ -1161,27 +851,6 @@ export default function MyTasks() {
               <button type="button" onClick={() => setEditTarget(null)} className="px-4 py-2 rounded-md border border-border text-sm font-body">{t("cancel")}</button>
             </div>
           </form>
-        </div>
-      )}
-
-      {/* Rename section modal */}
-      {renameFolderKey && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setRenameFolderKey(null)}>
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm p-5 rounded-xl border border-border bg-card space-y-4">
-            <h3 className="font-heading text-lg font-semibold">{t("renameSection")}</h3>
-            <input
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); renameFolder(renameFolderKey, renameValue); } }}
-              placeholder={t("sectionName")}
-              autoFocus
-              className="w-full px-3 py-2 rounded-md border border-input text-sm font-body"
-            />
-            <div className="flex gap-2">
-              <button type="button" onClick={() => renameFolder(renameFolderKey, renameValue)} className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-body">{t("save")}</button>
-              <button type="button" onClick={() => setRenameFolderKey(null)} className="px-4 py-2 rounded-md border border-border text-sm font-body">{t("cancel")}</button>
-            </div>
-          </div>
         </div>
       )}
     </div>
