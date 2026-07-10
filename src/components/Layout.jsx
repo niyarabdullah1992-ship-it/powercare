@@ -229,17 +229,33 @@ export default function Layout({ children }) {
                   onClick={() => setUserOpen((o) => !o)}
                   className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-medium">
-                    {currentUser.name.charAt(0)}
+                  <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-medium overflow-hidden">
+                    {currentUser.profile?.avatarUrl ? (
+                      <img src={currentUser.profile.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+                    ) : (
+                      currentUser.name.charAt(0)
+                    )}
                   </div>
                   <ChevronDown className="w-3 h-3 hidden sm:block" />
                 </button>
                 {userOpen && (
                   <div className={`absolute mt-2 ${dir === "rtl" ? "left-0" : "right-0"} w-64 bg-card border border-border rounded-md shadow-xl z-50`}>
-                    <div className="px-4 py-3 border-b border-border">
-                      <p className="text-sm font-medium">{currentUser.name}</p>
-                      <p className="text-xs text-muted-foreground">{t(currentUser.role)}</p>
-                    </div>
+                    <button
+                      onClick={() => { navigate(`/app/employees/${currentUser.id}`); setUserOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 border-b border-border hover:bg-muted text-start"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-foreground text-background flex items-center justify-center text-sm font-medium overflow-hidden shrink-0">
+                        {currentUser.profile?.avatarUrl ? (
+                          <img src={currentUser.profile.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+                        ) : (
+                          currentUser.name.charAt(0)
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{currentUser.name}</p>
+                        <p className="text-xs text-accent">{t("viewProfile")}</p>
+                      </div>
+                    </button>
                     <div className="px-2 py-2 max-h-60 overflow-y-auto">
                       <p className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">{t("switchUser")}</p>
                       {data.employees.map((e) => (
