@@ -33,7 +33,7 @@ export default function HRSlotRow({ label, roleTag, employees, canManage, onAdd,
         <div className="space-y-1">
           {employees.map((e) => (
             <div key={e.id} className="flex items-center justify-between px-2 py-1 rounded-md bg-card text-xs font-body">
-              <span className="truncate">{e.name}</span>
+              <span className="truncate">{e.name}{e.position ? ` — ${e.position}` : ""}</span>
               {canManage && (
                 <ConfirmDeleteDialog
                   onConfirm={() => onRemove(e.id)}
