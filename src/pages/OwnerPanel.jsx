@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
-import { listCompanies, createCompany, deleteCompany } from "@/lib/store";
+import { listCompanies, createCompany, deleteCompany, getCompanyData, setSession } from "@/lib/store";
 import { logAudit, fetchAllAuditLog } from "@/lib/auditLog";
-import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut } from "lucide-react";
+import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn } from "lucide-react";
 import Logo from "@/components/Logo";
 
 export default function OwnerPanel() {
@@ -68,6 +68,14 @@ export default function OwnerPanel() {
     }
   };
 
+  const handleEnter = (id) => {
+    const data = getCompanyData(id);
+    if (!data) return;
+    const director = data.employees.find((e) => e.role === "director") || data.employees[0] || null;
+    setSession({ companyId: id, userId: director ? director.id : null });
+    navigate("/app");
+  };
+
   return (
     <div className="min-h-screen bg-landing-bg px-6 py-10">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -99,9 +107,14 @@ export default function OwnerPanel() {
                     <p className="text-sm font-medium truncate text-[#3a2f22]">{c.name}</p>
                     <p className="text-xs text-[#3a2f22]/40 truncate">{c.ownerEmail} · {c.plan}</p>
                   </div>
-                  <button onClick={() => handleDelete(c.id)} className="p-2 text-red-500 hover:bg-white rounded-md shrink-0">
-                    <Trash2 className="w-4 h-4" strokeWidth={1.75} />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => handleEnter(c.id)} title={lang === "ar" ? "دخول" : "Enter"} className="p-2 text-landing-gold hover:bg-white rounded-md">
+                      <LogIn className="w-4 h-4" strokeWidth={1.75} />
+                    </button>
+                    <button onClick={() => handleDelete(c.id)} className="p-2 text-red-500 hover:bg-white rounded-md">
+                      <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
