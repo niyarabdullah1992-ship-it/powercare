@@ -37,6 +37,7 @@ export default function EmployeeProfile() {
   const canApproveLeave = canManage || hasHRPermission(currentUser, data, "manage_leave");
   const canApproveCerts = canManage || hasHRPermission(currentUser, data, "manage_leave");
   const stationName = data.stations.find((s) => s.id === employee.stationId)?.name;
+  const fallbackPosition = employee.customTitle || getRoleLabel(company, employee.role, t);
 
   return (
     <div className="space-y-6">
@@ -49,7 +50,7 @@ export default function EmployeeProfile() {
         employee={employee}
         companyId={company.id}
         canEdit={isSelf || canManage}
-        roleLabel={employee.profile?.position || employee.customTitle || getRoleLabel(company, employee.role, t)}
+        roleLabel={employee.profile?.position || fallbackPosition}
         stationName={stationName}
       />
 
@@ -68,7 +69,7 @@ export default function EmployeeProfile() {
         ))}
       </div>
 
-      {tab === "professionalInfo" && <ProfessionalInfoTab employee={employee} companyId={company.id} canEdit={canManage} />}
+      {tab === "professionalInfo" && <ProfessionalInfoTab employee={employee} companyId={company.id} canEdit={canManage} fallbackPosition={fallbackPosition} />}
       {tab === "certificates" && <CertificatesTab employee={employee} companyId={company.id} canEdit={isSelf || canManage} canApprove={canApproveCerts} currentUser={currentUser} />}
       {tab === "salary" && <SalaryTab employee={employee} companyId={company.id} canEdit={canEditSalary} />}
       {tab === "leave" && <LeaveTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canApprove={canApproveLeave} />}

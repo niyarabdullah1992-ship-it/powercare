@@ -16,12 +16,14 @@ const GROUPS = [
   ] },
 ];
 
-export default function ProfessionalInfoTab({ employee, companyId, canEdit }) {
+export default function ProfessionalInfoTab({ employee, companyId, canEdit, fallbackPosition }) {
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const profile = employee.profile || {};
   const allFields = GROUPS.flatMap((g) => g.fields.map((f) => f.key));
-  const [form, setForm] = useState(() => allFields.reduce((acc, f) => ({ ...acc, [f]: profile[f] || "" }), {}));
+  const [form, setForm] = useState(() =>
+    allFields.reduce((acc, f) => ({ ...acc, [f]: profile[f] || (f === "position" ? fallbackPosition || "" : "") }), {})
+  );
 
   const save = () => {
     updateEmployeeProfile(companyId, employee.id, form);
@@ -60,7 +62,7 @@ export default function ProfessionalInfoTab({ employee, companyId, canEdit }) {
                     <input type={type || "text"} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
                   )
                 ) : (
-                  <p className="text-sm font-body px-3 py-2 rounded-md bg-muted/40 min-h-[38px]">{profile[key] || "—"}</p>
+                  <p className="text-sm font-body px-3 py-2 rounded-md bg-muted/40 min-h-[38px]">{profile[key] || (key === "position" ? fallbackPosition : "") || "—"}</p>
                 )}
               </div>
             ))}
