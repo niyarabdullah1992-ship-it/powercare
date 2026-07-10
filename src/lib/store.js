@@ -173,13 +173,7 @@ async function syncEmployeesToEntity(companyId, employees) {
   if (lastSyncedEmployeesJSON[companyId] === json) return;
   lastSyncedEmployeesJSON[companyId] = json;
   try {
-    const current = await base44.entities.Employee.filter({ companyId });
-    if (current.length) await base44.entities.Employee.deleteMany({ companyId });
-    if (employees && employees.length) {
-      await base44.entities.Employee.bulkCreate(
-        employees.map(({ id, ...rest }) => ({ ...rest, employeeId: id, companyId }))
-      );
-    }
+    await base44.functions.invoke("companyDirectory", { action: "syncEmployees", companyId, employees: employees || [] });
   } catch {
     // best-effort background sync — the localStorage cache remains usable for the running session
   }
@@ -195,13 +189,7 @@ async function syncStationsToEntity(companyId, stations) {
   if (lastSyncedStationsJSON[companyId] === json) return;
   lastSyncedStationsJSON[companyId] = json;
   try {
-    const current = await base44.entities.Station.filter({ companyId });
-    if (current.length) await base44.entities.Station.deleteMany({ companyId });
-    if (stations && stations.length) {
-      await base44.entities.Station.bulkCreate(
-        stations.map(({ id, ...rest }) => ({ ...rest, stationId: id, companyId }))
-      );
-    }
+    await base44.functions.invoke("companyDirectory", { action: "syncStations", companyId, stations: stations || [] });
   } catch {
     // best-effort background sync — the localStorage cache remains usable for the running session
   }
@@ -210,7 +198,8 @@ async function syncStationsToEntity(companyId, stations) {
 // Fetches the authoritative, persisted station list for a company from the real database.
 export async function hydrateStationsFromEntity(companyId) {
   try {
-    const records = await base44.entities.Station.filter({ companyId });
+    const res = await base44.functions.invoke("companyDirectory", { action: "getStations", companyId });
+    const records = res?.data?.stations || [];
     if (!records.length) return null;
     return records.map((r) => ({
       id: r.stationId,
@@ -229,7 +218,8 @@ export async function hydrateStationsFromEntity(companyId) {
 // Fetches the authoritative, persisted employee list for a company from the real database.
 export async function hydrateEmployeesFromEntity(companyId) {
   try {
-    const records = await base44.entities.Employee.filter({ companyId });
+    const res = await base44.functions.invoke("companyDirectory", { action: "getEmployees", companyId });
+    const records = res?.data?.employees || [];
     if (!records.length) return null;
     return records.map((r) => ({
       id: r.employeeId,
