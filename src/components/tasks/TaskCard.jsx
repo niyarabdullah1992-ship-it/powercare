@@ -11,8 +11,9 @@ export default function TaskCard({
   tg, t, dir, lang, assignmentLabel, canManage, canLog,
   logTarget, logAmount, setLogTarget, setLogAmount, logCompleted,
   commentsOpen, setCommentsOpen, commentText, setCommentText, commentFiles, setCommentFiles, submitComment,
-  allSectionFolders, moveTaskToSection, setEditTarget, deleteTarget,
+  allSectionFolders, moveTaskToSection, setEditTarget, deleteTarget, onSaveReason,
 }) {
+  const REASONS = ["workStoppage", "noActivity", "weather", "equipment", "power", "access", "labor"];
   const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
   const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
   const done = tg.status === "completed";
@@ -124,6 +125,27 @@ export default function TaskCard({
           <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
         </div>
       </div>
+      {overdue && (
+        <div className="p-2.5 rounded-md bg-red-50 border border-red-200 space-y-1.5">
+          <p className="text-[11px] font-medium text-red-700 font-body">{t("incompleteReason")}</p>
+          {canManage ? (
+            <select
+              value={tg.reason || ""}
+              onChange={(e) => onSaveReason(tg.id, e.target.value)}
+              className="w-full px-2 py-1.5 rounded-md border border-red-200 bg-card text-xs font-body"
+            >
+              <option value="">{t("selectReason")}</option>
+              {REASONS.map((r) => (
+                <option key={r} value={r}>{t(r)}</option>
+              ))}
+            </select>
+          ) : tg.reason ? (
+            <p className="text-xs text-red-700 font-body">{t(tg.reason)}</p>
+          ) : (
+            <p className="text-xs text-muted-foreground font-body">—</p>
+          )}
+        </div>
+      )}
       {canLogThis && !done && !overdue && (
         <div className="flex items-center gap-2 pt-1">
           <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />

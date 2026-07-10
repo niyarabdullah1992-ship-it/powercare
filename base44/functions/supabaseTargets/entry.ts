@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can edit targets" }, { status: 403 });
       }
-      const { targetId, title, description, steps, priority, endDate, taskTarget, section, taskType } = body;
+      const { targetId, title, description, steps, priority, endDate, taskTarget, section, taskType, reason } = body;
       if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
       const patch: Record<string, unknown> = {};
       if (title !== undefined) patch.title = title;
@@ -231,6 +231,7 @@ Deno.serve(async (req) => {
       if (taskTarget !== undefined) patch.task_target = Number(taskTarget);
       if (section !== undefined) patch.section = section;
       if (taskType !== undefined) patch.task_type = taskType;
+      if (reason !== undefined) patch.reason = reason;
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
@@ -238,7 +239,7 @@ Deno.serve(async (req) => {
       });
       const updated = await res.json();
       if (!res.ok) {
-        return Response.json({ error: updated?.message || "Failed to update target" }, { status: 400 });
+        return Response.json({ error: updated?.message || "Failed to update target — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS reason text;" }, { status: 400 });
       }
       return Response.json({ target: Array.isArray(updated) ? updated[0] : updated });
     }

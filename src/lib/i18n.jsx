@@ -210,6 +210,10 @@ const dict = {
     folderEmpty: "Empty folder",
     chat: "Chat",
     generalChat: "General Chat",
+    incompleteReason: "Reason for non-completion",
+    selectReason: "Select reason",
+    workStoppage: "Work Stoppage",
+    noActivity: "No Activity",
   },
   ar: {
     dir: "rtl",
@@ -419,6 +423,10 @@ const dict = {
     folderEmpty: "قسم فارغ",
     chat: "الدردشة",
     generalChat: "الدردشة العامة",
+    incompleteReason: "سبب عدم الإنجاز",
+    selectReason: "اختر السبب",
+    workStoppage: "توقف العمل",
+    noActivity: "لا يوجد نشاط",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

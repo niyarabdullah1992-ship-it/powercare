@@ -454,6 +454,23 @@ export default function MyTasks() {
     }
   };
 
+  const saveReason = async (targetId, reason) => {
+    try {
+      const res = await base44.functions.invoke("supabaseTargets", {
+        action: "updateTarget",
+        userRole: currentUser.role,
+        targetId,
+        reason,
+      });
+      const updated = res?.data?.target;
+      if (updated) {
+        setTargets((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      }
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to save reason");
+    }
+  };
+
   const saveEdit = async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -571,7 +588,7 @@ export default function MyTasks() {
       canLog={canLog(tg)}
       logTarget={logTarget} logAmount={logAmount} setLogTarget={setLogTarget} setLogAmount={setLogAmount} logCompleted={logCompleted}
       commentsOpen={commentsOpen} setCommentsOpen={setCommentsOpen} commentText={commentText} setCommentText={setCommentText} commentFiles={commentFiles} setCommentFiles={setCommentFiles} submitComment={submitComment}
-      allSectionFolders={allSectionFolders} moveTaskToSection={moveTaskToSection} setEditTarget={setEditTarget} deleteTarget={deleteTarget}
+      allSectionFolders={allSectionFolders} moveTaskToSection={moveTaskToSection} setEditTarget={setEditTarget} deleteTarget={deleteTarget} onSaveReason={saveReason}
     />
   );
 
