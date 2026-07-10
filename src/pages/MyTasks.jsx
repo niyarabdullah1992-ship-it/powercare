@@ -45,6 +45,7 @@ export default function MyTasks() {
   const [targets, setTargets] = useState([]);
   const [targetsLoading, setTargetsLoading] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
+  const [folderPath, setFolderPath] = useState(null);
   const [priority, setPriority] = useState("medium");
   const [sortBy, setSortBy] = useState("priority");
   const [searchQuery, setSearchQuery] = useState("");
@@ -208,15 +209,16 @@ export default function MyTasks() {
     }
   };
 
-  // Single drag-and-drop handler covering the whole folder tree: reordering
-  // sibling folders, and dragging a task card onto any folder to move it there.
+  // Single drag-and-drop handler for the flat folder browser: reordering sibling
+  // folder cards, and dragging a task card onto a folder card or breadcrumb crumb
+  // (including "Home") to move it there.
   const handleTreeDragEnd = (result) => {
     const { source, destination, draggableId, type } = result;
     if (!destination) return;
 
     if (type === "FOLDER") {
       if (source.droppableId !== destination.droppableId || source.index === destination.index) return;
-      const parentKey = source.droppableId.replace(/^folder-/, "");
+      const parentKey = source.droppableId.replace(/^folders-/, "");
       const parentPath = parentKey === "root" ? null : parentKey;
       const siblings = folders
         .filter((f) => f.station_id === selectedStation && getParentPath(f.path) === parentPath)
@@ -229,8 +231,15 @@ export default function MyTasks() {
     }
 
     if (type === "TASK") {
-      const destKey = destination.droppableId.replace(/^task(list|drop)-/, "");
-      const destPath = destKey === "root" ? null : destKey;
+      let destPath = null;
+      if (destination.droppableId.startsWith("foldercard-")) {
+        destPath = destination.droppableId.replace(/^foldercard-/, "");
+      } else if (destination.droppableId.startsWith("crumb-")) {
+        const key = destination.droppableId.replace(/^crumb-/, "");
+        destPath = key === "root" ? null : key;
+      } else {
+        return; // dropped back into the same tasks list — no-op
+      }
       const taskId = draggableId.replace(/^task::/, "");
       const tg = targets.find((x) => x.id === taskId);
       if (!tg) return;
@@ -779,7 +788,7 @@ export default function MyTasks() {
               {stationGroups.map((g) => (
                 <button
                   key={g.key}
-                  onClick={() => setSelectedStation(g.key)}
+                  onClick={() => { setSelectedStation(g.key); setFolderPath(null); }}
                   className="flex items-center justify-between p-4 rounded-lg border border-border bg-background hover:bg-muted transition text-start"
                 >
                   <div className="flex items-center gap-3">
@@ -806,7 +815,7 @@ export default function MyTasks() {
             className="space-y-3"
           >
             <button
-              onClick={() => setSelectedStation(null)}
+              onClick={() => { setSelectedStation(null); setFolderPath(null); }}
               className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground"
             >
               <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
@@ -849,7 +858,8 @@ export default function MyTasks() {
               <DragDropContext onDragEnd={handleTreeDragEnd}>
                 <FolderTree
                   stationId={selectedStation}
-                  path={null}
+                  currentPath={folderPath}
+                  onNavigate={setFolderPath}
                   folders={folders}
                   tasksAll={stationTargetsAll}
                   canManage={canCreateTasks(currentUser)}
