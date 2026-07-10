@@ -207,6 +207,7 @@ const dict = {
     yourPublicReports: "Your Public Complaints",
     subfolders: "Subfolders",
     directTasks: "Tasks in this folder",
+    folderEmpty: "Empty folder",
   },
   ar: {
     dir: "rtl",
@@ -413,6 +414,7 @@ const dict = {
     yourPublicReports: "شكاواك الجهرية",
     subfolders: "الأقسام الفرعية",
     directTasks: "المهام داخل هذا القسم",
+    folderEmpty: "قسم فارغ",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
