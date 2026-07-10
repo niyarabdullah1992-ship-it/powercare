@@ -84,9 +84,9 @@ export default function Landing() {
             <p className="mt-3 text-sm text-[#3a2f22]/45 font-body">{t("demoNote")}</p>
 
             <div className="mt-10 bg-white rounded-2xl shadow-sm divide-y divide-[#3a2f22]/8 max-w-lg overflow-hidden">
-              <FeatureBullet icon={Clock} title="Maximize Uptime with Intelligent Scheduling" />
-              <FeatureBullet icon={TrendingUp} title="Advanced Data Analytics for Optimal Performance" />
-              <FeatureBullet icon={ShieldCheck} title="Secure, Scalable Solutions for Infrastructure" />
+              <FeatureBullet icon={Clock} title={t("feature1")} />
+              <FeatureBullet icon={TrendingUp} title={t("feature2")} />
+              <FeatureBullet icon={ShieldCheck} title={t("feature3")} />
             </div>
           </div>
 
@@ -162,29 +162,17 @@ export default function Landing() {
         <div className="max-w-3xl mx-auto flex items-center justify-center gap-3 bg-black/15 rounded-full px-6 py-3 text-center text-sm font-body mb-14">
           <Sparkles className="w-4 h-4 text-white/70 shrink-0" strokeWidth={1.75} />
           <p>
-            <span className="text-white font-semibold">Announcing... Platform Benefits:</span>{" "}
-            <span className="text-white/75">Explores the power station models and innovative infrastructure and corporate clients.</span>
+            <span className="text-white font-semibold">{t("benefitAnnounce")}</span>{" "}
+            <span className="text-white/75">{t("benefitAnnounceText")}</span>
           </p>
           <Sparkles className="w-4 h-4 text-white/70 shrink-0" strokeWidth={1.75} />
         </div>
 
         {/* Benefits section */}
         <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          <BenefitCard
-            icon={MapPin}
-            title="multi-station support"
-            text="Detailed text on multi-station operations. The scalable clean multi-station operations dashboard and reporting systems and convenient monitoring covering station-house operations storage flow and analysis in the architectural retrofit."
-          />
-          <BenefitCard
-            icon={Lock}
-            title="localized data handling"
-            text="Explanation of the localized data demo feature, making it a clear selling point for security-conscious firms. PowerCare stores all localized data storage to small workspaces to your data demos."
-          />
-          <BenefitCard
-            icon={Factory}
-            title="operational intelligence"
-            text="Detailing the intelligence engine for its power plant and digital mirror/digital twin. Detailing the intelligence engine details any comprehensive operational intelligence — digital data answer options advanced evaluates in a platform instance, and innovates operability and advanced technology."
-          />
+          <BenefitCard icon={MapPin} title={t("benefit1Title")} text={t("benefit1Text")} />
+          <BenefitCard icon={Lock} title={t("benefit2Title")} text={t("benefit2Text")} />
+          <BenefitCard icon={Factory} title={t("benefit3Title")} text={t("benefit3Text")} />
         </div>
 
         {/* Footer */}
@@ -192,7 +180,7 @@ export default function Landing() {
           <div>
             <h3 className="font-heading text-2xl text-[#3a2f22] mb-3">{t("appName")}</h3>
             <p className="text-sm text-[#3a2f22]/55 font-body leading-relaxed">
-              PowerCare is a premium corporate management platform, luxurious, persuasive solution and provider for corporate clients.
+              {t("footerDescription")}
             </p>
             <div className="flex items-center gap-4 mt-5 text-[#3a2f22]/60">
               <Facebook className="w-4 h-4" strokeWidth={1.75} />
@@ -202,17 +190,17 @@ export default function Landing() {
             </div>
           </div>
           <div>
-            <h4 className="font-heading text-lg text-[#3a2f22] mb-3">Benefits</h4>
+            <h4 className="font-heading text-lg text-[#3a2f22] mb-3">{t("footerBenefitsHeading")}</h4>
             <ul className="space-y-2 text-sm font-body text-[#3a2f22]/55">
-              <li>Blog</li>
-              <li>About</li>
-              <li>Careers</li>
-              <li>Terms of Service</li>
-              <li>Contact</li>
+              <li>{t("footerBlog")}</li>
+              <li>{t("footerAbout")}</li>
+              <li>{t("footerCareers")}</li>
+              <li>{t("footerTerms")}</li>
+              <li>{t("footerContact")}</li>
             </ul>
           </div>
           <div>
-            <h4 className="font-heading text-lg text-[#3a2f22] mb-3">Contact us</h4>
+            <h4 className="font-heading text-lg text-[#3a2f22] mb-3">{t("footerContactHeading")}</h4>
             <ul className="space-y-2.5 text-sm font-body text-[#3a2f22]/55">
               <li className="flex items-center gap-2"><ShieldCheck className="w-3.5 h-3.5 text-landing-gold" /> {t("appName")}</li>
               <li className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-landing-gold" /> +123 455 7890</li>
