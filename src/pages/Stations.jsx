@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
-import { canManageStations, canSeeAllStations, visibleStations, isCompanyOwner } from "@/lib/permissions";
+import { canManageStations, canSeeAllStations, visibleStations, isCompanyOwner, canTransferOwnership } from "@/lib/permissions";
 import { Plus, Radio, Building2, Users, Trash2, Pencil, Check, X, BarChart3, MessageSquare } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import StationAnalyticsModal from "@/components/stations/StationAnalyticsModal";
@@ -22,7 +22,7 @@ export default function Stations() {
   const showHq = canSeeAllStations(currentUser);
   const hqTeam = data.employees.filter((e) => !e.stationId);
   const hqLabel = company?.hqLabel || t("hq");
-  const isOwner = isCompanyOwner(currentUser, data);
+  const isOwner = isCompanyOwner(currentUser, data) || canTransferOwnership(currentUser);
 
   const toggleCrossStationChat = () => {
     updateCompany(company.id, (d) => {
