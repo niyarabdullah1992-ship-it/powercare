@@ -406,6 +406,44 @@ Deno.serve(async (req) => {
       return Response.json({ message: Array.isArray(created) ? created[0] : created });
     }
 
+    if (action === "listDirectMessages") {
+      const { userId, otherUserId } = body;
+      if (!userId || !otherUserId) return Response.json({ error: "Missing fields" }, { status: 400 });
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/direct_messages?or=(and(sender_id.eq.${encodeURIComponent(userId)},receiver_id.eq.${encodeURIComponent(otherUserId)}),and(sender_id.eq.${encodeURIComponent(otherUserId)},receiver_id.eq.${encodeURIComponent(userId)}))&order=created_at.asc&limit=200`,
+        { headers }
+      );
+      const rows = await res.json();
+      if (!res.ok) return Response.json({ messages: [] });
+      return Response.json({ messages: rows || [] });
+    }
+
+    if (action === "sendDirectMessage") {
+      const { senderId, senderName, receiverId, text, files } = body;
+      if (!senderId || !receiverId || (!text && (!files || files.length === 0))) {
+        return Response.json({ error: "Missing fields" }, { status: 400 });
+      }
+      const cleanFiles = Array.isArray(files)
+        ? files.filter((f) => f && f.url).map((f) => ({ url: f.url, name: f.name || "file", type: f.type || "file" }))
+        : [];
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/direct_messages`, {
+        method: "POST",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify({
+          sender_id: senderId,
+          sender_name: senderName || "User",
+          receiver_id: receiverId,
+          text: text || "",
+          files: cleanFiles,
+        }),
+      });
+      const created = await res.json();
+      if (!res.ok) {
+        return Response.json({ error: created?.message || "Failed to send message — run: CREATE TABLE IF NOT EXISTS direct_messages (id uuid primary key default gen_random_uuid(), sender_id text, sender_name text, receiver_id text, text text, files jsonb DEFAULT '[]'::jsonb, created_at timestamptz default now());" }, { status: 400 });
+      }
+      return Response.json({ message: Array.isArray(created) ? created[0] : created });
+    }
+
     return Response.json({ error: "Unknown action" }, { status: 400 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
