@@ -86,18 +86,24 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="border-b border-border pb-6">
-        <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{data.name}</p>
-        <h1 className="hero-title text-4xl md:text-5xl">{t("overview")}</h1>
-        <p className="text-muted-foreground font-body text-sm mt-2">{t(currentUser.role)}</p>
+      <div className="border-b border-border pb-6 flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{data.name}</p>
+          <h1 className="hero-title text-4xl md:text-5xl">{t("overview")}</h1>
+        </div>
+        <span className="px-3 py-1.5 rounded-full border border-accent/30 bg-accent/10 text-accent text-xs font-body tracking-wide">
+          {t(currentUser.role)}
+        </span>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 border border-border divide-x divide-y divide-border rtl:divide-x-reverse">
         {stats.map((s, i) => (
-          <div key={s.label} className="p-6 bg-card">
+          <div key={s.label} className="p-6 bg-card hover:bg-muted/40 transition-colors">
             <div className="flex items-center justify-between mb-5">
-              <s.icon className={`w-4 h-4 ${s.color}`} strokeWidth={1.5} />
+              <span className={`inline-flex items-center justify-center w-9 h-9 rounded-full bg-accent/10 ${s.color}`}>
+                <s.icon className="w-4 h-4" strokeWidth={1.5} />
+              </span>
               <span className="hero-title text-base text-muted-foreground/40">{["I", "II", "III", "IV"][i]}</span>
             </div>
             <p className="hero-title text-4xl">{s.value}</p>
@@ -144,9 +150,10 @@ export default function Dashboard() {
         <h3 className="hero-title text-2xl mb-4">{t("recentActivity")}</h3>
         <div className="divide-y divide-border">
           {recent.map((r, i) => (
-            <div key={i} className="flex items-center justify-between py-3">
-              <p className="text-sm font-body">{r.text}</p>
-              <p className="text-xs text-muted-foreground font-body">{formatDate(r.at, lang)}</p>
+            <div key={i} className="flex items-center gap-3 py-3">
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${r.type === "anon" ? "bg-destructive" : r.type === "report" ? "bg-amber-500" : "bg-accent"}`} />
+              <p className="text-sm font-body flex-1">{r.text}</p>
+              <p className="text-xs text-muted-foreground font-body shrink-0">{formatDate(r.at, lang)}</p>
             </div>
           ))}
         </div>
