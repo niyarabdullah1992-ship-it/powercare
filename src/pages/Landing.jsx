@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { ownerLogin, ownerExists, setOwner, listCompanies, createCompany, deleteCompany } from "@/lib/store";
-import { Building2, Plus, Trash2, ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail } from "lucide-react";
+import { Building2, Plus, Trash2, ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles } from "lucide-react";
 import Logo from "@/components/Logo";
 
-const HERO_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/e7b0832c6_generated_image.png";
+const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
 
 export default function Landing() {
   const { t, lang, setLang, languages } = useI18n();
@@ -39,30 +39,30 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-landing-bg font-body text-white">
+    <div className="min-h-screen bg-landing-bg font-body text-[#3a2f22]">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 md:px-10 py-4 border-b border-white/10">
+      <div className="flex items-center justify-between px-6 md:px-10 py-4 border-b border-landing-gold/15">
         <div className="flex items-center gap-2">
-          <Logo size={32} />
-          <span className="font-heading font-semibold text-lg text-white">{t("appName")}</span>
+          <Logo size={30} />
+          <span className="font-heading font-semibold text-lg text-[#3a2f22]">{t("appName")}</span>
         </div>
         <div className="relative">
           <button
             onClick={(e) => { e.stopPropagation(); setLangOpen((v) => !v); }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/15 bg-white/5 text-sm font-body text-white/90 hover:bg-white/10 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-landing-gold/25 bg-white text-sm font-body text-[#3a2f22]/90 hover:bg-white/70 transition-colors"
           >
             <Globe className="w-4 h-4" strokeWidth={1.75} />
             <span>{currentLang?.flag} {currentLang?.code.toUpperCase()}</span>
             <ChevronDown className={`w-3.5 h-3.5 transition-transform ${langOpen ? "rotate-180" : ""}`} strokeWidth={1.75} />
           </button>
           {langOpen && (
-            <div className="absolute end-0 mt-2 w-48 rounded-md border border-white/10 bg-landing-bg shadow-lg z-50 overflow-hidden max-h-72 overflow-y-auto">
+            <div className="absolute end-0 mt-2 w-48 rounded-md border border-landing-gold/20 bg-white shadow-lg z-50 overflow-hidden max-h-72 overflow-y-auto">
               {languages.map((l) => (
                 <button
                   key={l.code}
                   onClick={() => { setLang(l.code); setLangOpen(false); }}
                   className={`w-full flex items-center justify-between px-3 py-2 text-sm font-body transition-colors ${
-                    lang === l.code ? "bg-landing-gold text-landing-bg" : "text-white/80 hover:bg-white/10"
+                    lang === l.code ? "bg-landing-gold text-white" : "text-[#3a2f22]/80 hover:bg-landing-bg"
                   }`}
                 >
                   <span>{l.flag} {l.code.toUpperCase()}</span>
@@ -76,15 +76,14 @@ export default function Landing() {
 
       {/* Hero */}
       <div className="relative overflow-hidden">
-        <img src={HERO_IMG} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-landing-bg via-landing-bg/85 to-landing-bg/40" />
-        <div className="relative px-6 md:px-10 py-16 md:py-24 grid lg:grid-cols-[1.3fr,1fr] gap-12 items-start">
+        <img src={PATTERN_IMG} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+        <div className="relative px-6 md:px-10 py-16 md:py-24 grid lg:grid-cols-[1.3fr,1fr] gap-10 items-start">
           <div>
             <h1 className="hero-title text-landing-gold text-6xl md:text-8xl uppercase">{t("appName")}</h1>
-            <p className="text-2xl md:text-3xl font-heading text-white/90 mt-3 max-w-md leading-snug">{t("tagline")}</p>
-            <p className="mt-3 text-sm text-white/45 font-body">{t("demoNote")}</p>
+            <p className="text-2xl md:text-3xl font-heading text-[#3a2f22]/90 mt-3 max-w-md leading-snug">{t("tagline")}</p>
+            <p className="mt-3 text-sm text-[#3a2f22]/45 font-body">{t("demoNote")}</p>
 
-            <div className="mt-10 space-y-6">
+            <div className="mt-10 bg-white rounded-2xl shadow-sm divide-y divide-[#3a2f22]/8 max-w-lg overflow-hidden">
               <FeatureBullet icon={Clock} title="Maximize Uptime with Intelligent Scheduling" />
               <FeatureBullet icon={TrendingUp} title="Advanced Data Analytics for Optimal Performance" />
               <FeatureBullet icon={ShieldCheck} title="Secure, Scalable Solutions for Infrastructure" />
@@ -92,20 +91,20 @@ export default function Landing() {
           </div>
 
           {/* Login card */}
-          <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-xl p-6 shadow-2xl">
-            <div className="flex border-b border-white/10 mb-6">
+          <div className="bg-white rounded-2xl p-6 shadow-xl">
+            <div className="flex items-center gap-1 bg-landing-bg rounded-full p-1 mb-6">
               <button
                 onClick={() => setTab("company")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-body border-b-2 transition-colors ${
-                  tab === "company" ? "border-landing-gold text-white" : "border-transparent text-white/40"
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-body transition-colors ${
+                  tab === "company" ? "bg-white text-[#3a2f22] shadow-sm" : "text-[#3a2f22]/45"
                 }`}
               >
                 <LogIn className="w-4 h-4" strokeWidth={1.75} /> {t("companyLogin")}
               </button>
               <button
                 onClick={() => setTab("owner")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-body border-b-2 transition-colors ${
-                  tab === "owner" ? "border-landing-gold text-white" : "border-transparent text-white/40"
+                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-body transition-colors ${
+                  tab === "owner" ? "bg-white text-[#3a2f22] shadow-sm" : "text-[#3a2f22]/45"
                 }`}
               >
                 <ShieldCheck className="w-4 h-4" strokeWidth={1.75} /> {t("ownerPanel")}
@@ -115,34 +114,34 @@ export default function Landing() {
             {tab === "company" ? (
               <form onSubmit={handleCompanyLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-body text-white/50 mb-1.5">{t("email")}</label>
+                  <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("email")}</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full px-3 py-2.5 rounded-md border border-white/15 bg-white/5 text-white font-body text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
+                    className="w-full px-3 py-2.5 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] font-body text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-body text-white/50 mb-1.5">{t("password")}</label>
+                  <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("password")}</label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full px-3 py-2.5 rounded-md border border-white/15 bg-white/5 text-white font-body text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
+                    className="w-full px-3 py-2.5 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] font-body text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
                   />
                 </div>
-                {error && <p className="text-sm text-red-400 font-body">{error}</p>}
+                {error && <p className="text-sm text-red-500 font-body">{error}</p>}
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-md bg-landing-gold text-landing-bg font-body text-sm font-semibold hover:opacity-90 transition-opacity"
+                  className="w-full py-3 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white font-body text-sm font-semibold hover:opacity-90 transition-opacity"
                 >
                   {t("login")}
                 </button>
-                <p className="text-center text-xs text-white/40 font-body pt-2">
-                  Demo: <code className="text-white/70">admin@gulfpower.com</code> / <code className="text-white/70">demo123</code>
+                <p className="text-center text-xs text-[#3a2f22]/40 font-body pt-2">
+                  Demo: <code className="text-[#3a2f22]/70">admin@gulfpower.com</code> / <code className="text-[#3a2f22]/70">demo123</code>
                 </p>
               </form>
             ) : (
@@ -152,15 +151,24 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* Ribbon */}
-      <div className="border-t border-white/10 bg-landing-bg px-6 md:px-10 py-4 text-center text-sm font-body">
-        <span className="text-landing-gold font-semibold">Announcing... Platform Benefits:</span>{" "}
-        <span className="text-white/40">Explores the power station models and innovative infrastructure and corporate clients.</span>
-      </div>
+      {/* Gold gradient section: brand mark + benefits + footer */}
+      <div className="bg-gradient-to-b from-landing-gold-light via-landing-gold-deep to-landing-bg px-6 md:px-10 pt-16 pb-4">
+        <div className="flex flex-col items-center">
+          <Logo size={72} />
+          <h2 className="hero-title text-[#3a2f22] text-5xl md:text-6xl mt-3 mb-10">{t("appName")}</h2>
+        </div>
 
-      {/* Benefits section */}
-      <div className="bg-landing-olive px-6 md:px-10 py-16">
-        <h2 className="text-center hero-title text-white text-5xl md:text-6xl mb-12">{t("appName")}</h2>
+        {/* Ribbon */}
+        <div className="max-w-3xl mx-auto flex items-center justify-center gap-3 bg-black/15 rounded-full px-6 py-3 text-center text-sm font-body mb-14">
+          <Sparkles className="w-4 h-4 text-white/70 shrink-0" strokeWidth={1.75} />
+          <p>
+            <span className="text-white font-semibold">Announcing... Platform Benefits:</span>{" "}
+            <span className="text-white/75">Explores the power station models and innovative infrastructure and corporate clients.</span>
+          </p>
+          <Sparkles className="w-4 h-4 text-white/70 shrink-0" strokeWidth={1.75} />
+        </div>
+
+        {/* Benefits section */}
         <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
           <BenefitCard
             icon={MapPin}
@@ -178,17 +186,15 @@ export default function Landing() {
             text="Detailing the intelligence engine for its power plant and digital mirror/digital twin. Detailing the intelligence engine details any comprehensive operational intelligence — digital data answer options advanced evaluates in a platform instance, and innovates operability and advanced technology."
           />
         </div>
-      </div>
 
-      {/* Footer */}
-      <div className="bg-landing-olive border-t border-white/10 px-6 md:px-10 py-10">
-        <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
+        {/* Footer */}
+        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10 mt-16 pt-10 border-t border-[#3a2f22]/10">
           <div>
-            <h3 className="font-heading text-2xl text-white mb-3">{t("appName")}</h3>
-            <p className="text-sm text-white/50 font-body leading-relaxed">
+            <h3 className="font-heading text-2xl text-[#3a2f22] mb-3">{t("appName")}</h3>
+            <p className="text-sm text-[#3a2f22]/55 font-body leading-relaxed">
               PowerCare is a premium corporate management platform, luxurious, persuasive solution and provider for corporate clients.
             </p>
-            <div className="flex items-center gap-4 mt-5 text-white/60">
+            <div className="flex items-center gap-4 mt-5 text-[#3a2f22]/60">
               <Facebook className="w-4 h-4" strokeWidth={1.75} />
               <Twitter className="w-4 h-4" strokeWidth={1.75} />
               <XIcon className="w-4 h-4" strokeWidth={1.75} />
@@ -196,8 +202,8 @@ export default function Landing() {
             </div>
           </div>
           <div>
-            <h4 className="font-heading text-lg text-white mb-3">Benefits</h4>
-            <ul className="space-y-2 text-sm font-body text-white/50">
+            <h4 className="font-heading text-lg text-[#3a2f22] mb-3">Benefits</h4>
+            <ul className="space-y-2 text-sm font-body text-[#3a2f22]/55">
               <li>Blog</li>
               <li>About</li>
               <li>Careers</li>
@@ -206,8 +212,8 @@ export default function Landing() {
             </ul>
           </div>
           <div>
-            <h4 className="font-heading text-lg text-white mb-3">Contact us</h4>
-            <ul className="space-y-2.5 text-sm font-body text-white/50">
+            <h4 className="font-heading text-lg text-[#3a2f22] mb-3">Contact us</h4>
+            <ul className="space-y-2.5 text-sm font-body text-[#3a2f22]/55">
               <li className="flex items-center gap-2"><ShieldCheck className="w-3.5 h-3.5 text-landing-gold" /> {t("appName")}</li>
               <li className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-landing-gold" /> +123 455 7890</li>
               <li className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-landing-gold" /> +123 9053 4700</li>
@@ -223,23 +229,23 @@ export default function Landing() {
 
 function FeatureBullet({ icon: Icon, title }) {
   return (
-    <div className="flex items-start gap-3">
-      <span className="w-9 h-9 rounded-full border border-landing-gold/60 flex items-center justify-center shrink-0 text-landing-gold">
+    <div className="flex items-center gap-3 px-5 py-4">
+      <span className="w-9 h-9 rounded-full border border-landing-gold/40 flex items-center justify-center shrink-0 text-landing-gold">
         <Icon className="w-4 h-4" strokeWidth={1.75} />
       </span>
-      <p className="text-white/85 font-body text-sm leading-relaxed pt-1.5">{title}</p>
+      <p className="text-[#3a2f22]/80 font-body text-sm leading-relaxed">{title}</p>
     </div>
   );
 }
 
 function BenefitCard({ icon: Icon, title, text }) {
   return (
-    <div className="bg-landing-olive-card border border-white/10 rounded-lg p-6">
-      <span className="w-12 h-12 rounded-md border border-landing-gold/50 flex items-center justify-center mb-4 text-landing-gold">
+    <div className="bg-landing-olive-card rounded-2xl p-6 shadow-sm">
+      <span className="w-12 h-12 rounded-xl bg-landing-bg flex items-center justify-center mb-4 text-landing-gold">
         <Icon className="w-5 h-5" strokeWidth={1.5} />
       </span>
-      <h3 className="font-heading text-xl text-white mb-2">{title}</h3>
-      <p className="text-sm text-white/45 font-body leading-relaxed">{text}</p>
+      <h3 className="font-heading text-xl text-[#3a2f22] mb-2">{title}</h3>
+      <p className="text-sm text-[#3a2f22]/55 font-body leading-relaxed">{text}</p>
     </div>
   );
 }
@@ -286,24 +292,24 @@ function OwnerSection({ t }) {
   if (!authed) {
     return (
       <form onSubmit={handleOwnerLogin} className="space-y-4">
-        <div className="flex items-center gap-2 p-3 rounded-md bg-white/5 text-xs font-body text-white/50">
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-landing-bg text-xs font-body text-[#3a2f22]/55">
           <ShieldCheck className="w-4 h-4" /> Platform owner access only.
         </div>
         <div>
-          <label className="block text-xs font-body text-white/50 mb-1.5">{t("password")}</label>
+          <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("password")}</label>
           <input
             type="password"
             value={pwd}
             onChange={(e) => setPwd(e.target.value)}
             placeholder="owner123"
-            className="w-full px-3 py-2.5 rounded-md border border-white/15 bg-white/5 text-white font-body text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
+            className="w-full px-3 py-2.5 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] font-body text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
           />
         </div>
-        {error && <p className="text-sm text-red-400 font-body">{error}</p>}
-        <button type="submit" className="w-full py-3 rounded-md bg-landing-gold text-landing-bg font-body text-sm font-semibold hover:opacity-90 transition-opacity">
+        {error && <p className="text-sm text-red-500 font-body">{error}</p>}
+        <button type="submit" className="w-full py-3 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white font-body text-sm font-semibold hover:opacity-90 transition-opacity">
           {t("login")}
         </button>
-        <p className="text-center text-xs text-white/40 font-body">Demo owner password: <code className="text-white/70">owner123</code></p>
+        <p className="text-center text-xs text-[#3a2f22]/40 font-body">Demo owner password: <code className="text-[#3a2f22]/70">owner123</code></p>
       </form>
     );
   }
@@ -311,18 +317,18 @@ function OwnerSection({ t }) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="font-heading text-lg font-semibold mb-3 flex items-center gap-2 text-white">
+        <h3 className="font-heading text-lg font-semibold mb-3 flex items-center gap-2 text-[#3a2f22]">
           <Building2 className="w-4 h-4" /> {t("companies")} ({companies.length})
         </h3>
         <div className="space-y-2 max-h-48 overflow-y-auto">
-          {companies.length === 0 && <p className="text-sm text-white/40 font-body">No companies yet.</p>}
+          {companies.length === 0 && <p className="text-sm text-[#3a2f22]/40 font-body">No companies yet.</p>}
           {companies.map((c) => (
-            <div key={c.id} className="flex items-center justify-between p-3 rounded-md border border-white/10 bg-white/5">
+            <div key={c.id} className="flex items-center justify-between p-3 rounded-lg bg-landing-bg">
               <div className="min-w-0">
-                <p className="text-sm font-medium truncate text-white">{c.name}</p>
-                <p className="text-xs text-white/40 truncate">{c.ownerEmail} · {c.plan}</p>
+                <p className="text-sm font-medium truncate text-[#3a2f22]">{c.name}</p>
+                <p className="text-xs text-[#3a2f22]/40 truncate">{c.ownerEmail} · {c.plan}</p>
               </div>
-              <button onClick={() => handleDelete(c.id)} className="p-2 text-red-400 hover:bg-white/10 rounded-md shrink-0">
+              <button onClick={() => handleDelete(c.id)} className="p-2 text-red-500 hover:bg-white rounded-md shrink-0">
                 <Trash2 className="w-4 h-4" strokeWidth={1.75} />
               </button>
             </div>
@@ -330,23 +336,23 @@ function OwnerSection({ t }) {
         </div>
       </div>
 
-      <form onSubmit={handleCreate} className="space-y-3 pt-4 border-t border-white/10">
-        <h3 className="font-heading text-lg font-semibold flex items-center gap-2 text-white">
+      <form onSubmit={handleCreate} className="space-y-3 pt-4 border-t border-[#3a2f22]/10">
+        <h3 className="font-heading text-lg font-semibold flex items-center gap-2 text-[#3a2f22]">
           <Plus className="w-4 h-4" /> {t("createCompany")}
         </h3>
         <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("companyName")} required
-          className="w-full px-3 py-2 rounded-md border border-white/15 bg-white/5 text-white text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold" />
+          className="w-full px-3 py-2 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold" />
         <input value={form.ownerEmail} onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })} placeholder={t("email")} required
-          className="w-full px-3 py-2 rounded-md border border-white/15 bg-white/5 text-white text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold" />
+          className="w-full px-3 py-2 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold" />
         <input value={form.ownerPassword} onChange={(e) => setForm({ ...form, ownerPassword: e.target.value })} placeholder={t("password")} required
-          className="w-full px-3 py-2 rounded-md border border-white/15 bg-white/5 text-white text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold" />
+          className="w-full px-3 py-2 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold" />
         <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })}
-          className="w-full px-3 py-2 rounded-md border border-white/15 bg-white/5 text-white text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold">
+          className="w-full px-3 py-2 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold">
           <option>Starter</option>
           <option>Professional</option>
           <option>Enterprise</option>
         </select>
-        <button type="submit" className="w-full py-2.5 rounded-md bg-landing-gold text-landing-bg text-sm font-semibold hover:opacity-90 transition-opacity">
+        <button type="submit" className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity">
           {t("createCompany")}
         </button>
       </form>
