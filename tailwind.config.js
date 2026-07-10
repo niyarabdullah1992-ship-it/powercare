@@ -59,7 +59,11 @@ module.exports = {
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
-  			}
+  			},
+  			'landing-bg': 'hsl(var(--landing-bg))',
+  			'landing-olive': 'hsl(var(--landing-olive))',
+  			'landing-olive-card': 'hsl(var(--landing-olive-card))',
+  			'landing-gold': 'hsl(var(--landing-gold))'
   		},
   		fontFamily: {
   			heading: ['var(--font-heading)'],
