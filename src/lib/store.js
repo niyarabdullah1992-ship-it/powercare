@@ -260,16 +260,24 @@ export function switchUser(userId) {
 }
 
 /* ----------------------------- seed demo ----------------------------- */
-export function seedDemoIfEmpty() {
-  if (getRegistry().companies.length > 0) return;
-  // create demo company
+// Creates a brand-new demo company pre-populated with stations, employees, completed
+// and in-progress tasks, reports, safety records, plans and more — for previewing the
+// platform. Can be called anytime (not gated on an empty registry).
+export function createDemoCompany() {
+  const suffix = Math.random().toString(36).slice(2, 6);
   const company = createCompany({
     name: "Gulf Power Operations",
-    ownerEmail: "admin@gulfpower.com",
+    ownerEmail: `admin+${suffix}@gulfpower.com`,
     ownerPassword: "demo123",
     plan: "Professional",
   });
-  const data = getCompanyData(company.id);
+  seedCompanyWithDemoData(company.id);
+  return company;
+}
+
+function seedCompanyWithDemoData(companyId) {
+  const data = getCompanyData(companyId);
+  const company = { id: companyId };
 
   // stations
   const s1 = { id: uid("st"), name: "Station Alpha", location: "Riyadh North", type: "Power", status: "active", managerId: null, createdAt: new Date().toISOString() };

@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
-import { listCompanies, createCompany, deleteCompany, getCompanyData, setSession } from "@/lib/store";
+import { listCompanies, createCompany, createDemoCompany, deleteCompany, getCompanyData, setSession } from "@/lib/store";
 import { logAudit, fetchAllAuditLog } from "@/lib/auditLog";
-import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn } from "lucide-react";
+import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn, Sparkles } from "lucide-react";
 import Logo from "@/components/Logo";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
@@ -67,6 +67,13 @@ export default function OwnerPanel() {
     fetchAllAuditLog().then(setAuditLogs);
   };
 
+  const handleCreateDemo = () => {
+    const company = createDemoCompany();
+    logAudit(company.id, "company_created", user.email, `${user.email} created demo company "${company.name}" (${company.plan}).`);
+    refresh();
+    fetchAllAuditLog().then(setAuditLogs);
+  };
+
   const handleEnter = (id) => {
     const data = getCompanyData(id);
     if (!data) return;
@@ -95,9 +102,17 @@ export default function OwnerPanel() {
 
         <div className="bg-white rounded-2xl p-6 shadow-xl space-y-6">
           <div>
-            <h3 className="font-heading text-lg font-semibold mb-3 flex items-center gap-2 text-[#3a2f22]">
-              <Building2 className="w-4 h-4" /> {t("companies")} ({companies.length})
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-heading text-lg font-semibold flex items-center gap-2 text-[#3a2f22]">
+                <Building2 className="w-4 h-4" /> {t("companies")} ({companies.length})
+              </h3>
+              <button
+                onClick={handleCreateDemo}
+                className="flex items-center gap-1.5 text-xs font-body text-landing-gold hover:text-landing-gold-deep"
+              >
+                <Sparkles className="w-3.5 h-3.5" /> {lang === "ar" ? "إنشاء شركة معاينة" : "Create Preview Company"}
+              </button>
+            </div>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {companies.length === 0 && <p className="text-sm text-[#3a2f22]/40 font-body">No companies yet.</p>}
               {companies.map((c) => (
