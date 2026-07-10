@@ -359,6 +359,65 @@ function seedCompanyWithDemoData(companyId) {
   saveCompanyData(company.id, data);
 }
 
+// Adds a full set of dummy stations, employees, tasks, reports, safety records, plans
+// and notifications into an EXISTING company — without touching who's currently logged
+// in (unlike createDemoCompany, this never replaces the employees/stations list).
+export function seedDummyData(companyId) {
+  updateCompany(companyId, (d) => {
+    const s1 = { id: uid("st"), name: "Station Alpha", location: "Riyadh North", type: "Power", status: "active", managerId: null, createdAt: new Date().toISOString() };
+    const s2 = { id: uid("st"), name: "Station Beta", location: "Dammam Coast", type: "Power", status: "active", managerId: null, createdAt: new Date().toISOString() };
+    const s3 = { id: uid("st"), name: "Station Gamma", location: "Jeddah Industrial", type: "Water", status: "maintenance", managerId: null, createdAt: new Date().toISOString() };
+
+    const mgr1 = { id: uid("emp"), name: "Nora Al-Subaei", email: "nora@example.com", role: "station_manager", stationId: s1.id, anonymousId: hashId(uid("a")), phone: "+96650000104", createdAt: new Date().toISOString() };
+    const mgr2 = { id: uid("emp"), name: "Omar Al-Dossari", email: "omar@example.com", role: "station_manager", stationId: s2.id, anonymousId: hashId(uid("a")), phone: "+96650000105", createdAt: new Date().toISOString() };
+    const e1 = { id: uid("emp"), name: "Ali Al-Mutairi", email: "ali@example.com", role: "employee", stationId: s1.id, anonymousId: hashId(uid("a")), phone: "+96650000106", createdAt: new Date().toISOString() };
+    const e2 = { id: uid("emp"), name: "Mona Al-Shehri", email: "mona@example.com", role: "employee", stationId: s1.id, anonymousId: hashId(uid("a")), phone: "+96650000107", createdAt: new Date().toISOString() };
+    const e3 = { id: uid("emp"), name: "Hassan Al-Ghamdi", email: "hassan@example.com", role: "employee", stationId: s2.id, anonymousId: hashId(uid("a")), phone: "+96650000108", createdAt: new Date().toISOString() };
+    const e4 = { id: uid("emp"), name: "Layla Al-Zahrani", email: "layla@example.com", role: "employee", stationId: s3.id, anonymousId: hashId(uid("a")), phone: "+96650000109", createdAt: new Date().toISOString() };
+
+    s1.managerId = mgr1.id;
+    s2.managerId = mgr2.id;
+    d.stations.push(s1, s2, s3);
+    d.employees.push(mgr1, mgr2, e1, e2, e3, e4);
+
+    const now = Date.now();
+    d.tasks.push(
+      { id: uid("task"), title: "Monthly Generator Inspection", description: "Inspect all 12 generators, check oil levels and cooling.", stationId: s1.id, assignedTo: e1.id, status: "in_progress", dailyTarget: 50, progress: 32, stops: [], createdAt: new Date(now - 86400000 * 2).toISOString() },
+      { id: uid("task"), title: "Cooling Tower Cleaning", description: "Deep clean cooling tower B.", stationId: s1.id, assignedTo: e2.id, status: "stopped", dailyTarget: 1, progress: 0, stops: [{ reason: "equipment_failure", note: "Pump #3 malfunction", at: new Date(now - 3600000).toISOString() }], createdAt: new Date(now - 86400000).toISOString() },
+      { id: uid("task"), title: "Grid Connection Test", description: "Test synchronization with national grid.", stationId: s2.id, assignedTo: e3.id, status: "pending", dailyTarget: 5, progress: 0, stops: [], createdAt: new Date(now - 7200000).toISOString() },
+      { id: uid("task"), title: "Water Quality Sampling", description: "Collect samples from 8 points.", stationId: s3.id, assignedTo: e4.id, status: "completed", dailyTarget: 8, progress: 8, stops: [], createdAt: new Date(now - 86400000 * 3).toISOString() }
+    );
+
+    d.reports.push(
+      { id: uid("rep"), title: "Shift A — Morning", content: "All systems nominal. Two minor alerts resolved.", stationId: s1.id, authorId: e1.id, status: "approved", createdAt: new Date(now - 86400000).toISOString() },
+      { id: uid("rep"), title: "Shift B — Evening", content: "Generator 4 temperature slightly high, monitoring.", stationId: s1.id, authorId: e2.id, status: "pending", createdAt: new Date(now - 3600000 * 5).toISOString() },
+      { id: uid("rep"), title: "Coastal Station Daily", content: "Salt spray cleaning completed on solar arrays.", stationId: s2.id, authorId: e3.id, status: "pending", createdAt: new Date(now - 7200000).toISOString() }
+    );
+
+    d.anonymousReports.push(
+      { id: uid("anr"), anonymousId: hashId("x1"), stationId: s1.id, type: "complaint", priority: "high", message: "Safety gear not replaced for 3 weeks.", status: "open", escalationLevel: 0, replies: [], createdAt: new Date(now - 86400000 * 2).toISOString() },
+      { id: uid("anr"), anonymousId: hashId("x3"), stationId: s2.id, type: "risk_report", priority: "high", message: "Exposed wiring near pump room.", status: "open", escalationLevel: 1, replies: [], createdAt: new Date(now - 86400000).toISOString() }
+    );
+
+    d.safety.push(
+      { id: uid("safe"), stationId: s1.id, lastInspection: new Date(now - 86400000 * 10).toISOString(), incidents: 1, hazards: ["Wet floor near pump 2"], level: "amber" },
+      { id: uid("safe"), stationId: s2.id, lastInspection: new Date(now - 86400000 * 5).toISOString(), incidents: 0, hazards: [], level: "green" },
+      { id: uid("safe"), stationId: s3.id, lastInspection: new Date(now - 86400000 * 30).toISOString(), incidents: 2, hazards: ["Outdated fire extinguisher", "Blocked emergency exit"], level: "red" }
+    );
+
+    d.plans.push(
+      { id: uid("plan"), title: "Q3 Preventive Maintenance", stationId: s1.id, startDate: new Date(now + 86400000 * 7).toISOString(), endDate: new Date(now + 86400000 * 14).toISOString(), status: "scheduled", notes: "Full turbine service and grid relay testing." }
+    );
+
+    d.targets.push(
+      { id: uid("tgt"), assignedTo: e1.id, stationId: s1.id, totalTasks: 30, days: 10, completed: 12, createdBy: mgr1.id, createdAt: new Date(now - 86400000 * 2).toISOString(), deadline: new Date(now + 86400000 * 8).toISOString(), status: "active" }
+    );
+
+    if (!d.directorId) d.directorId = d.employees[0]?.id || null;
+    if (!d.ownerId) d.ownerId = d.directorId;
+  });
+}
+
 /* ----------------------------- mutations ----------------------------- */
 export function updateCompany(companyId, updater) {
   const data = getCompanyData(companyId);

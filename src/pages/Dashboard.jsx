@@ -7,11 +7,14 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
 import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
+import { seedDummyData } from "@/lib/store";
+import { Sparkles } from "lucide-react";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [stoppageCount, setStoppageCount] = useState(0);
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -46,6 +49,14 @@ export default function Dashboard() {
   const isEmployee = currentUser.role === "employee";
 
   if (isEmployee) return <EmployeeDashboard user={currentUser} company={company} />;
+
+  const canSeed = currentUser.role === "director" || currentUser.role === "ops_manager";
+  const handleSeed = () => {
+    if (seeding) return;
+    setSeeding(true);
+    seedDummyData(company.id);
+    setSeeding(false);
+  };
 
   // Manager dashboard
   const tasks = data.tasks.filter((tk) => stationIds.has(tk.stationId));
@@ -91,9 +102,21 @@ export default function Dashboard() {
           <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{data.name}</p>
           <h1 className="hero-title text-4xl md:text-5xl">{t("overview")}</h1>
         </div>
-        <span className="px-3 py-1.5 rounded-full border border-accent/30 bg-accent/10 text-accent text-xs font-body tracking-wide">
-          {t(currentUser.role)}
-        </span>
+        <div className="flex items-center gap-3">
+          {canSeed && (
+            <button
+              onClick={handleSeed}
+              disabled={seeding}
+              className="flex items-center gap-1.5 text-xs font-body text-accent hover:text-accent/70 disabled:opacity-50"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              {lang === "ar" ? "تعبئة ببيانات وهمية" : "Fill with demo data"}
+            </button>
+          )}
+          <span className="px-3 py-1.5 rounded-full border border-accent/30 bg-accent/10 text-accent text-xs font-body tracking-wide">
+            {t(currentUser.role)}
+          </span>
+        </div>
       </div>
 
       {/* Stat cards */}
