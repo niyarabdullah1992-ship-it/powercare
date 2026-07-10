@@ -48,6 +48,28 @@ export default function FolderTree({
 
   const body = (
     <div className={isRoot ? "space-y-2" : "space-y-2 mt-2"} style={!isRoot ? { paddingInlineStart: 20 } : undefined}>
+      {isRoot && canManage && (
+        <div>
+          {adding ? (
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitAdd(); } if (e.key === "Escape") setAdding(false); }}
+                placeholder={t("newSectionPlaceholder")}
+                className="flex-1 px-2 py-1.5 rounded-md border border-input text-xs font-body"
+              />
+              <button type="button" onClick={submitAdd} className="px-2 py-1.5 rounded-md bg-foreground text-background text-xs font-body">{t("save")}</button>
+              <button type="button" onClick={() => setAdding(false)} className="px-2 py-1.5 rounded-md border border-border text-xs font-body">{t("cancel")}</button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-body border border-border hover:bg-muted transition-colors">
+              <Plus className="w-3.5 h-3.5" /> {t("addSection")}
+            </button>
+          )}
+        </div>
+      )}
       {children.length > 0 && (
         <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId={`folder-${path || "root"}`}>
@@ -89,7 +111,7 @@ export default function FolderTree({
           {directTasks.map((tg) => renderTask(tg))}
         </div>
       )}
-      {canManage && (
+      {!isRoot && canManage && (
         <div>
           {adding ? (
             <div className="flex items-center gap-2">
