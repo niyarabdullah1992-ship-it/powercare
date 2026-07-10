@@ -13,7 +13,7 @@ const HR_SCHEMA_VERSION = 5; // flexible, company-customizable hierarchy
 export default function HR() {
   const { t, lang } = useI18n();
   const { data, currentUser } = useAuth();
-  const canManage = data && currentUser && canManageHRLevels(currentUser);
+  const canManage = data && currentUser && canManageHRLevels(currentUser, data);
   const [orgChartStationId, setOrgChartStationId] = useState(null);
 
   useEffect(() => {

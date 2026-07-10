@@ -61,9 +61,10 @@ export function canTransferOwnership(user) {
   return user.role === "director";
 }
 
-// Can the user create/edit HR levels and their permissions?
-export function canManageHRLevels(user) {
-  return user.role === "director";
+// Can the user create/edit HR levels and their permissions? Directors always can;
+// the company owner can too, even if their role isn't "director".
+export function canManageHRLevels(user, data) {
+  return user.role === "director" || user.id === data?.ownerId;
 }
 
 // Is this employee part of the HR hierarchy?

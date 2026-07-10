@@ -429,14 +429,25 @@ export function renameHRLevel(companyId, levelId, name) {
 }
 
 // Removes an entire position tier (manager + assistant sharing that order) and
-// unassigns any employees who held those positions.
+// unassigns any employees who held those positions. Any anonymous report currently
+// awaiting a reply from the removed tier is automatically redirected to whoever is
+// above it in the chain (escalationLevel numbering naturally shifts up).
 export function removeHRTier(companyId, order) {
   updateCompany(companyId, (d) => {
+    const orders = Array.from(new Set((d.hrLevels || []).map((l) => l.order))).sort((a, b) => a - b);
+    const removedPosition = orders.indexOf(order) + 1; // escalationLevel: 0 = station manager, 1..N = tiers in order
     const removedIds = (d.hrLevels || []).filter((l) => l.order === order).map((l) => l.id);
     d.hrLevels = (d.hrLevels || []).filter((l) => l.order !== order);
     d.employees.forEach((e) => {
       if (removedIds.includes(e.hrLevelId)) { e.hrLevelId = null; e.hrStationId = null; e.hrClusterId = null; }
     });
+    if (removedPosition > 0) {
+      (d.anonymousReports || []).forEach((r) => {
+        if ((r.escalationLevel || 0) > removedPosition) r.escalationLevel -= 1;
+        // reports exactly at the removed level stay at the same number, which now
+        // naturally maps to the next-higher tier that shifted into that slot.
+      });
+    }
   });
 }
 
