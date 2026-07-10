@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import { Calendar, TrendingUp, Users, Building2, BarChart3 } from "lucide-react";
 import moment from "moment";
+import IssuesList from "@/components/performance/IssuesList";
 
 const RANGES = [
   { val: "daily", bucket: "day", count: 14 },
@@ -146,6 +147,8 @@ export default function PerformanceAnalytics() {
 
   return (
     <div className="space-y-5">
+      <IssuesList />
+
       {/* Range selector */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
         <div className="flex items-center gap-1.5 flex-wrap">

@@ -1,9 +1,8 @@
-import React, { useState } from "react";
-import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2, History, HelpCircle } from "lucide-react";
+import React from "react";
+import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2 } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { formatDateTime } from "@/lib/dateFormat";
 import { NO_SECTION } from "@/lib/taskFolders";
 
@@ -12,13 +11,9 @@ export default function TaskCard({
   tg, t, dir, lang, assignmentLabel, canManage, canLog,
   logTarget, logAmount, setLogTarget, setLogAmount, logCompleted,
   commentsOpen, setCommentsOpen, commentText, setCommentText, commentFiles, setCommentFiles, submitComment,
-  allSectionFolders, moveTaskToSection, setEditTarget, deleteTarget, onReportIssue,
+  markIssue, setMarkIssue,
+  allSectionFolders, moveTaskToSection, setEditTarget, deleteTarget,
 }) {
-  const [issueText, setIssueText] = useState("");
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const issueComments = (Array.isArray(tg.comments) ? tg.comments : []).filter((c) => c.is_issue);
-  const todayIssue = issueComments.find((c) => (c.created_at || "").slice(0, 10) === todayStr);
-  const pastIssues = issueComments.filter((c) => (c.created_at || "").slice(0, 10) !== todayStr).slice(-5).reverse();
   const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
   const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
   const done = tg.status === "completed";
@@ -130,69 +125,17 @@ export default function TaskCard({
           <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
         </div>
       </div>
-      {!done && (
+      {canLogThis && !done && !overdue && (
         <div className="flex items-center gap-2 pt-1">
-          {canLogThis && !overdue && (
-            <>
-              <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
-              <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
-                <Check className="w-3.5 h-3.5" /> {t("logCompleted")}
-              </button>
-            </>
-          )}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-body border transition-colors ${todayIssue ? "border-red-300 bg-red-50 text-red-700" : "border-border text-muted-foreground hover:bg-muted"}`}
-                title={t("reportIssue")}
-              >
-                <HelpCircle className="w-3.5 h-3.5" /> {t("reportIssue")}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 space-y-2">
-              <p className="text-xs font-medium font-body">{t("reportIssue")}</p>
-              {todayIssue ? (
-                <p className="text-xs text-red-700 font-body p-2 rounded-md bg-red-50 border border-red-200 whitespace-pre-wrap">{todayIssue.content}</p>
-              ) : (canManage || canLogThis) ? (
-                <div className="space-y-1.5">
-                  <textarea
-                    value={issueText}
-                    onChange={(e) => setIssueText(e.target.value)}
-                    rows={3}
-                    placeholder={t("issuePlaceholder")}
-                    className="w-full px-2 py-1.5 rounded-md border border-input bg-card text-xs font-body resize-none"
-                  />
-                  <button
-                    type="button"
-                    disabled={!issueText.trim()}
-                    onClick={() => { onReportIssue(tg.id, issueText.trim()); setIssueText(""); }}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-foreground text-background text-xs font-body disabled:opacity-50"
-                  >
-                    <Send className="w-3.5 h-3.5" /> {t("send")}
-                  </button>
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground font-body">—</p>
-              )}
-              {pastIssues.length > 0 && (
-                <div className="pt-1.5 border-t border-border space-y-1 max-h-28 overflow-y-auto">
-                  <p className="text-[11px] text-muted-foreground font-body flex items-center gap-1"><History className="w-3 h-3" /> {t("reasonHistory")}</p>
-                  {pastIssues.map((c) => (
-                    <div key={c.id} className="text-[11px] font-body">
-                      <span className="text-muted-foreground">{(c.created_at || "").slice(0, 10)}: </span>
-                      <span className="text-foreground">{c.content}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </PopoverContent>
-          </Popover>
+          <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
+          <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
+            <Check className="w-3.5 h-3.5" /> {t("logCompleted")}
+          </button>
         </div>
       )}
 
       <div className="pt-2 border-t border-border">
-        <button onClick={() => { const next = commentsOpen === tg.id ? null : tg.id; setCommentsOpen(next); setCommentText(""); setCommentFiles([]); }} className="flex items-center gap-1.5 text-xs text-muted-foreground font-body hover:text-foreground">
+        <button onClick={() => { const next = commentsOpen === tg.id ? null : tg.id; setCommentsOpen(next); setCommentText(""); setCommentFiles([]); setMarkIssue(false); }} className="flex items-center gap-1.5 text-xs text-muted-foreground font-body hover:text-foreground">
           <MessageCircle className="w-3.5 h-3.5" /> {t("comments")} ({Array.isArray(tg.comments) ? tg.comments.length : 0})
         </button>
         {commentsOpen === tg.id && (
@@ -200,9 +143,16 @@ export default function TaskCard({
             {Array.isArray(tg.comments) && tg.comments.length > 0 && (
               <div className="space-y-1.5 max-h-40 overflow-y-auto">
                 {tg.comments.map((c) => (
-                  <div key={c.id} className="text-xs font-body p-2 rounded-md bg-muted/50">
+                  <div key={c.id} className={`text-xs font-body p-2 rounded-md ${c.is_issue ? "bg-red-50 border border-red-200" : "bg-muted/50"}`}>
                     <div className="flex items-center justify-between gap-2">
-                      <p className="font-medium text-foreground">{c.user_name}</p>
+                      <p className="font-medium text-foreground flex items-center gap-1">
+                        {c.user_name}
+                        {c.is_issue && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-red-100 text-red-700 border border-red-300">
+                            <AlertTriangle className="w-2.5 h-2.5" /> {t("stoppageIssue")}
+                          </span>
+                        )}
+                      </p>
                       <span className="text-[10px] text-muted-foreground">{c.created_at ? formatDateTime(c.created_at, lang) : ""}</span>
                     </div>
                     <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{c.content}</p>
@@ -222,6 +172,12 @@ export default function TaskCard({
                   <Send className="w-3.5 h-3.5" /> {t("send")}
                 </button>
               </div>
+              {!done && (
+                <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-body cursor-pointer">
+                  <input type="checkbox" checked={!!markIssue} onChange={(e) => setMarkIssue(e.target.checked)} className="rounded border-input" />
+                  <AlertTriangle className="w-3 h-3" /> {t("markAsIssue")}
+                </label>
+              )}
             </div>
           </div>
         )}

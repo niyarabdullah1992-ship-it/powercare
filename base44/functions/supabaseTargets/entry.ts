@@ -243,45 +243,6 @@ Deno.serve(async (req) => {
       return Response.json({ target: Array.isArray(updated) ? updated[0] : updated });
     }
 
-    if (action === "reportIssue") {
-      const { targetId, userId, userName, content } = body;
-      if (!targetId || !content) return Response.json({ error: "Missing fields" }, { status: 400 });
-      const getRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, { headers });
-      const rows = await getRes.json();
-      const tg = rows[0];
-      if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
-      const comments = Array.isArray(tg.comments) ? tg.comments : [];
-      const newComment = {
-        id: crypto.randomUUID(),
-        user_id: userId,
-        user_name: userName || "User",
-        content,
-        files: [],
-        is_issue: true,
-        created_at: new Date().toISOString(),
-      };
-      comments.push(newComment);
-      const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
-        method: "PATCH",
-        headers: { ...headers, Prefer: "return=representation" },
-        body: JSON.stringify({ comments }),
-      });
-      const updated = await patchRes.json();
-      if (!patchRes.ok) {
-        return Response.json({ error: updated?.message || "Failed to report issue — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS comments jsonb DEFAULT '[]'::jsonb;" }, { status: 400 });
-      }
-      // Notify the station manager responsible for this target
-      await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          user_id: tg.manager_id,
-          message: `⚠️ ${userName || "Employee"} reported an issue on "${tg.title || "Untitled"}": ${content}`,
-        }),
-      });
-      return Response.json({ target: Array.isArray(updated) ? updated[0] : updated });
-    }
-
     if (action === "listNotifications") {
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/notifications?user_id=eq.${encodeURIComponent(body.userId)}&order=created_at.desc&limit=20`,
@@ -292,7 +253,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "addComment") {
-      const { targetId, userId, userName, content, files } = body;
+      const { targetId, userId, userName, content, files, isIssue } = body;
       if (!targetId || (!content && (!files || files.length === 0))) {
         return Response.json({ error: "Missing fields" }, { status: 400 });
       }
@@ -315,6 +276,7 @@ Deno.serve(async (req) => {
         user_name: userName || "User",
         content: content || "",
         files: cleanFiles,
+        is_issue: !!isIssue,
         created_at: new Date().toISOString(),
       };
       comments.push(newComment);
@@ -329,6 +291,16 @@ Deno.serve(async (req) => {
       const patchData = await patchRes.json();
       if (!patchRes.ok) {
         return Response.json({ error: patchData?.message || "Failed to save comment — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS comments jsonb DEFAULT '[]'::jsonb;" }, { status: 400 });
+      }
+      if (isIssue) {
+        await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            user_id: tg.manager_id,
+            message: `⚠️ ${userName || "Employee"} reported a stoppage issue on "${tg.title || "Untitled"}": ${content}`,
+          }),
+        });
       }
       return Response.json({ comment: newComment, comments });
     }

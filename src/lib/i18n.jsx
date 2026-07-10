@@ -219,6 +219,10 @@ const dict = {
     today: "Today",
     reportIssue: "Report Issue",
     issuePlaceholder: "Describe the problem...",
+    markAsIssue: "Mark as a stoppage issue",
+    stoppageIssue: "Issue",
+    stoppageIssues: "Task Stoppage Issues",
+    noIssuesReported: "No issues reported.",
   },
   ar: {
     dir: "rtl",
@@ -437,6 +441,10 @@ const dict = {
     today: "اليوم",
     reportIssue: "الإبلاغ عن مشكلة",
     issuePlaceholder: "صف المشكلة...",
+    markAsIssue: "وضع علامة كمشكلة توقف",
+    stoppageIssue: "مشكلة",
+    stoppageIssues: "مشاكل التوقف عن المهام",
+    noIssuesReported: "لم يتم الإبلاغ عن أي مشاكل.",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

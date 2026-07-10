@@ -42,6 +42,7 @@ export default function MyTasks() {
   const [commentsOpen, setCommentsOpen] = useState(null);
   const [commentText, setCommentText] = useState("");
   const [commentFiles, setCommentFiles] = useState([]);
+  const [markIssue, setMarkIssue] = useState(false);
   const [targets, setTargets] = useState([]);
   const [targetsLoading, setTargetsLoading] = useState(false);
   const [selectedStation, setSelectedStation] = useState(null);
@@ -435,11 +436,13 @@ export default function MyTasks() {
         userName: currentUser.name,
         content: text,
         files: commentFiles,
+        isIssue: markIssue,
       });
       const updated = res?.data?.comments || [];
       setTargets((prev) => prev.map((x) => (x.id === targetId ? { ...x, comments: updated } : x)));
       setCommentText("");
       setCommentFiles([]);
+      setMarkIssue(false);
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to add comment");
     }
@@ -451,24 +454,6 @@ export default function MyTasks() {
       setTargets((prev) => prev.filter((x) => x.id !== targetId));
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to delete");
-    }
-  };
-
-  const reportIssue = async (targetId, content) => {
-    try {
-      const res = await base44.functions.invoke("supabaseTargets", {
-        action: "reportIssue",
-        targetId,
-        userId: currentUser.id,
-        userName: currentUser.name,
-        content,
-      });
-      const updated = res?.data?.target;
-      if (updated) {
-        setTargets((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
-      }
-    } catch (err) {
-      alert(err?.response?.data?.error || "Failed to report issue");
     }
   };
 
@@ -589,7 +574,8 @@ export default function MyTasks() {
       canLog={canLog(tg)}
       logTarget={logTarget} logAmount={logAmount} setLogTarget={setLogTarget} setLogAmount={setLogAmount} logCompleted={logCompleted}
       commentsOpen={commentsOpen} setCommentsOpen={setCommentsOpen} commentText={commentText} setCommentText={setCommentText} commentFiles={commentFiles} setCommentFiles={setCommentFiles} submitComment={submitComment}
-      allSectionFolders={allSectionFolders} moveTaskToSection={moveTaskToSection} setEditTarget={setEditTarget} deleteTarget={deleteTarget} onReportIssue={reportIssue}
+      markIssue={markIssue} setMarkIssue={setMarkIssue}
+      allSectionFolders={allSectionFolders} moveTaskToSection={moveTaskToSection} setEditTarget={setEditTarget} deleteTarget={deleteTarget}
     />
   );
 
