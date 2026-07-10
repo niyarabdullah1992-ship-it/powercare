@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
-import { canManageStations, visibleStations } from "@/lib/permissions";
-import { Plus, Radio, Users, Trash2 } from "lucide-react";
+import { canManageStations, canSeeAllStations, visibleStations } from "@/lib/permissions";
+import { Plus, Radio, Building2, Users, Trash2, Pencil, Check, X } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 export default function Stations() {
@@ -11,10 +11,15 @@ export default function Stations() {
   const { data, currentUser, company } = useAuth();
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", location: "", type: "" });
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameVal, setRenameVal] = useState("");
 
   if (!data || !currentUser) return null;
   const stations = visibleStations(currentUser, data);
   const canManage = canManageStations(currentUser);
+  const showHq = canSeeAllStations(currentUser);
+  const hqTeam = data.employees.filter((e) => !e.stationId);
+  const hqLabel = company?.hqLabel || t("hq");
 
   const add = (e) => {
     e.preventDefault();
@@ -49,11 +54,54 @@ export default function Stations() {
     });
   };
 
+  const startRename = (id, currentName) => {
+    setRenamingId(id);
+    setRenameVal(currentName);
+  };
+
+  const submitRename = () => {
+    const name = renameVal.trim();
+    if (!name) { setRenamingId(null); return; }
+    if (renamingId === "hq") {
+      updateCompany(company.id, (d) => { d.hqLabel = name; });
+    } else {
+      updateCompany(company.id, (d) => {
+        const s = d.stations.find((x) => x.id === renamingId);
+        if (s) s.name = name;
+      });
+    }
+    setRenamingId(null);
+  };
+
   const statusTone = (s) => ({
     active: "bg-accent/15 text-accent",
     maintenance: "bg-amber-100 text-amber-700",
     stopped: "bg-destructive/15 text-destructive",
   }[s] || "bg-muted");
+
+  const renameField = (id, name) =>
+    renamingId === id ? (
+      <div className="flex items-center gap-1">
+        <input
+          autoFocus
+          value={renameVal}
+          onChange={(e) => setRenameVal(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submitRename(); } if (e.key === "Escape") setRenamingId(null); }}
+          className="px-2 py-1 rounded-md border border-input text-sm font-body font-heading font-semibold"
+        />
+        <button onClick={submitRename} className="p-1 rounded-md hover:bg-accent/10 text-accent"><Check className="w-3.5 h-3.5" /></button>
+        <button onClick={() => setRenamingId(null)} className="p-1 rounded-md hover:bg-muted text-muted-foreground"><X className="w-3.5 h-3.5" /></button>
+      </div>
+    ) : (
+      <div className="flex items-center gap-1.5 group">
+        <h3 className="font-heading font-semibold">{name}</h3>
+        {canManage && (
+          <button onClick={() => startRename(id, name)} className="p-0.5 rounded-md opacity-0 group-hover:opacity-100 transition hover:bg-muted text-muted-foreground hover:text-foreground">
+            <Pencil className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+    );
 
   return (
     <div className="space-y-6">
@@ -82,6 +130,22 @@ export default function Stations() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {showHq && (
+          <div className="p-5 rounded-xl border border-border bg-card space-y-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-accent" strokeWidth={1.75} />
+                {renameField("hq", hqLabel)}
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-sm font-body">
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <Users className="w-3.5 h-3.5" /> {hqTeam.length}
+              </span>
+            </div>
+          </div>
+        )}
+
         {stations.map((s) => {
           const team = data.employees.filter((e) => e.stationId === s.id);
           const manager = data.employees.find((e) => e.id === s.managerId);
@@ -94,7 +158,7 @@ export default function Stations() {
                 <div className="flex items-center gap-2">
                   <Radio className="w-4 h-4 text-accent" strokeWidth={1.75} />
                   <div>
-                    <h3 className="font-heading font-semibold">{s.name}</h3>
+                    {renameField(s.id, s.name)}
                     <p className="text-xs text-muted-foreground font-body">{s.location} · {s.type}</p>
                   </div>
                 </div>
