@@ -22,7 +22,7 @@ export default function Stations() {
   if (!data || !currentUser) return null;
   const stations = visibleStations(currentUser, data);
   const canManage = canManageStations(currentUser);
-  const showHq = canSeeAllStations(currentUser);
+  const showHq = canSeeAllStations(currentUser) && !company?.hqHidden;
   const hqTeam = data.employees.filter((e) => !e.stationId);
   const hqLabel = company?.hqLabel || t("hq");
 
@@ -56,6 +56,13 @@ export default function Stations() {
     if (!canManage) return;
     updateCompany(company.id, (d) => {
       d.stations = d.stations.filter((x) => x.id !== id);
+    });
+  };
+
+  const removeHq = () => {
+    if (!canManage) return;
+    updateCompany(company.id, (d) => {
+      d.hqHidden = true;
     });
   };
 
@@ -167,6 +174,16 @@ export default function Stations() {
                 <Building2 className="w-4 h-4 text-accent" strokeWidth={1.75} />
                 {renameField("hq", hqLabel)}
               </div>
+              {canManage && (
+                <ConfirmDeleteDialog
+                  onConfirm={removeHq}
+                  trigger={
+                    <button className="p-1 rounded-md hover:bg-destructive/10 text-destructive" title={t("delete")}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  }
+                />
+              )}
             </div>
             <div className="flex items-center justify-between text-sm font-body">
               <span className="flex items-center gap-1.5 text-muted-foreground">

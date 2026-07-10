@@ -125,6 +125,18 @@ export default function CertificatesTab({ employee, companyId, canEdit, canAppro
           <div>
             <label className="block text-xs text-muted-foreground font-body mb-1">{t("category")}</label>
             <input value={category} onChange={(e) => setCategory(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {[t("educationalQualification"), t("technicalQualifications"), t("safetyCertificates")].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCategory(c)}
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-body border ${category === c ? "bg-accent text-accent-foreground border-accent" : "border-border text-muted-foreground hover:bg-muted"}`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
           </div>
           <input ref={inputRef} type="file" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
           <button type="button" onClick={() => inputRef.current?.click()} disabled={!name.trim() || uploading} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-foreground text-background text-xs font-body disabled:opacity-50">
