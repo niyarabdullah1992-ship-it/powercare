@@ -120,7 +120,11 @@ export default function MyTasks() {
   const addFolder = async () => {
     setFolderError("");
     const name = newSectionName.trim();
-    if (!name || !selectedStation) return;
+    if (!name) {
+      setFolderError(t("enterSectionName") || "Please type a section name first.");
+      return;
+    }
+    if (!selectedStation) return;
     const path = selectedSection ? `${selectedSection}/${name}` : name;
     if (folders.some((f) => f.station_id === selectedStation && f.path === path)) {
       setFolderError(t("sectionAlreadyExists") || "This section already exists.");
