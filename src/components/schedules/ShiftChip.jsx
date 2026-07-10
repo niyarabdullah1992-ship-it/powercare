@@ -25,7 +25,12 @@ export default function ShiftChip({ shift, index, canManage, onRemove }) {
             {shift.label ? `(${shift.label} — ${shift.start}–${shift.end})` : `${shift.start}–${shift.end}`}
           </span>
           {canManage && (
-            <button onClick={(e) => { e.stopPropagation(); onRemove(); }} className="shrink-0 hover:opacity-70">
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onRemove(); }}
+              className="shrink-0 hover:opacity-70"
+            >
               <X className="w-3 h-3" />
             </button>
           )}
