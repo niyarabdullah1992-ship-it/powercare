@@ -147,6 +147,7 @@ function emptyCompanyData(meta) {
     templates: [],
     targets: [],
     hrLevels: [],
+    schedules: [],
     settings: { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30 },
   };
 }
@@ -548,6 +549,30 @@ export function setAnonRateLimits(companyId, { daily, weekly, monthly } = {}) {
     if (daily != null) d.settings.rateLimitDaily = Number(daily);
     if (weekly != null) d.settings.rateLimitWeekly = Number(weekly);
     if (monthly != null) d.settings.rateLimitMonthly = Number(monthly);
+  });
+}
+
+/* ----------------------------- station work schedules (flexible, multi-shift per day) ----------------------------- */
+// weekday: 0 = Sunday ... 6 = Saturday
+export function addShift(companyId, stationId, weekday, shift) {
+  updateCompany(companyId, (d) => {
+    d.schedules = d.schedules || [];
+    let entry = d.schedules.find((s) => s.stationId === stationId);
+    if (!entry) {
+      entry = { id: uid("sch"), stationId, days: {} };
+      d.schedules.push(entry);
+    }
+    entry.days = entry.days || {};
+    entry.days[weekday] = entry.days[weekday] || [];
+    entry.days[weekday].push({ id: uid("shift"), ...shift });
+  });
+}
+
+export function removeShift(companyId, stationId, weekday, shiftId) {
+  updateCompany(companyId, (d) => {
+    const entry = (d.schedules || []).find((s) => s.stationId === stationId);
+    if (!entry?.days?.[weekday]) return;
+    entry.days[weekday] = entry.days[weekday].filter((sh) => sh.id !== shiftId);
   });
 }
 

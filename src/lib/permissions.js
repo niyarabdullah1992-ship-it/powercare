@@ -126,6 +126,19 @@ export function isHRAssistant(user, data) {
   return getHRLevel(user, data)?.role === "assistant";
 }
 
+// Can the user manage a specific station's work schedule? Director always can;
+// a station manager can for their own station; HR members need the explicit
+// "manage_schedules" permission and to be in scope for that station.
+export function canManageSchedule(user, data, stationId) {
+  if (user.role === "director") return true;
+  if (user.role === "station_manager" && user.stationId === stationId) return true;
+  if (hasHRPermission(user, data, "manage_schedules")) {
+    const scope = hrScopeStations(user, data);
+    return scope === null || scope.includes(stationId);
+  }
+  return false;
+}
+
 // Employees visible to a user (for management views)
 export function visibleEmployees(user, data) {
   const stations = visibleStations(user, data);
