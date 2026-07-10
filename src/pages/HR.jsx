@@ -51,7 +51,7 @@ export default function HR() {
 
       <section className="space-y-3">
         <h2 className="font-heading text-lg font-semibold">{t("clusterLevel")}</h2>
-        <ClusterEditor data={data} canManage={canManage} />
+        <ClusterEditor data={data} canManage={canManage} myStationId={currentUser.stationId} />
       </section>
 
       <section className="space-y-3">

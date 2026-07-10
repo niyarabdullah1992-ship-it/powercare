@@ -5,12 +5,15 @@ import { Plus, Trash2 } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 // Director-only: define clusters (named groups of stations) used by Tier 2 HR assignment.
-export default function ClusterEditor({ data, canManage }) {
+// Non-managers (regular station employees) only see their own station's cluster —
+// never the clusters/HR grouping of other stations.
+export default function ClusterEditor({ data, canManage, myStationId }) {
   const { t } = useI18n();
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [stationIds, setStationIds] = useState([]);
-  const clusters = data.hrClusters || [];
+  const allClusters = data.hrClusters || [];
+  const clusters = canManage ? allClusters : allClusters.filter((c) => (c.stationIds || []).includes(myStationId));
 
   const addCluster = (e) => {
     e.preventDefault();
