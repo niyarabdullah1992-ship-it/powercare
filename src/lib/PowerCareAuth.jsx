@@ -24,11 +24,15 @@ export function AuthProvider({ children }) {
     setSession(s);
     if (s && s.companyId) {
       setCompany(getCompanyMeta(s.companyId));
-      setData(getCompanyData(s.companyId));
-      // Upgrade employees from the persisted database once it resolves (real, durable source).
-      hydrateEmployeesFromEntity(s.companyId).then((employees) => {
-        if (employees) setData((prev) => (prev ? { ...prev, employees } : prev));
-      });
+      const localData = getCompanyData(s.companyId);
+      setData(localData);
+      // Only recover from the persisted database if the local cache has no employees at all
+      // (e.g. a fresh browser) — never overwrite an already-populated local list.
+      if (localData && (!localData.employees || localData.employees.length === 0)) {
+        hydrateEmployeesFromEntity(s.companyId).then((employees) => {
+          if (employees) setData((prev) => (prev ? { ...prev, employees } : prev));
+        });
+      }
     } else {
       setCompany(null);
       setData(null);
