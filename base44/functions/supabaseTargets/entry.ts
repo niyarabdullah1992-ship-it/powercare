@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can edit targets" }, { status: 403 });
       }
-      const { targetId, title, description, steps, priority, endDate, taskTarget, section, taskType, reason } = body;
+      const { targetId, title, description, steps, priority, endDate, taskTarget, section, taskType } = body;
       if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
       const patch: Record<string, unknown> = {};
       if (title !== undefined) patch.title = title;
@@ -231,7 +231,6 @@ Deno.serve(async (req) => {
       if (taskTarget !== undefined) patch.task_target = Number(taskTarget);
       if (section !== undefined) patch.section = section;
       if (taskType !== undefined) patch.task_type = taskType;
-      if (reason !== undefined) patch.reason = reason;
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
@@ -239,31 +238,47 @@ Deno.serve(async (req) => {
       });
       const updated = await res.json();
       if (!res.ok) {
-        return Response.json({ error: updated?.message || "Failed to update target — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS reason text;" }, { status: 400 });
+        return Response.json({ error: updated?.message || "Failed to update target" }, { status: 400 });
       }
       return Response.json({ target: Array.isArray(updated) ? updated[0] : updated });
     }
 
-    if (action === "setReason") {
-      const { targetId, reason } = body;
-      if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
+    if (action === "reportIssue") {
+      const { targetId, userId, userName, content } = body;
+      if (!targetId || !content) return Response.json({ error: "Missing fields" }, { status: 400 });
       const getRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, { headers });
       const rows = await getRes.json();
       const tg = rows[0];
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
-      const today = new Date().toISOString().slice(0, 10);
-      const log = Array.isArray(tg.reason_log) ? tg.reason_log.filter((e) => e.date !== today) : [];
-      if (reason) log.push({ date: today, reason });
-      log.sort((a, b) => (a.date < b.date ? 1 : -1));
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
+      const comments = Array.isArray(tg.comments) ? tg.comments : [];
+      const newComment = {
+        id: crypto.randomUUID(),
+        user_id: userId,
+        user_name: userName || "User",
+        content,
+        files: [],
+        is_issue: true,
+        created_at: new Date().toISOString(),
+      };
+      comments.push(newComment);
+      const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
-        body: JSON.stringify({ reason: reason || null, reason_log: log }),
+        body: JSON.stringify({ comments }),
       });
-      const updated = await res.json();
-      if (!res.ok) {
-        return Response.json({ error: updated?.message || "Failed to save reason — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS reason text; ALTER TABLE targets ADD COLUMN IF NOT EXISTS reason_log jsonb DEFAULT '[]'::jsonb;" }, { status: 400 });
+      const updated = await patchRes.json();
+      if (!patchRes.ok) {
+        return Response.json({ error: updated?.message || "Failed to report issue — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS comments jsonb DEFAULT '[]'::jsonb;" }, { status: 400 });
       }
+      // Notify the station manager responsible for this target
+      await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          user_id: tg.manager_id,
+          message: `⚠️ ${userName || "Employee"} reported an issue on "${tg.title || "Untitled"}": ${content}`,
+        }),
+      });
       return Response.json({ target: Array.isArray(updated) ? updated[0] : updated });
     }
 

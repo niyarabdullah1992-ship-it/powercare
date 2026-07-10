@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2, History } from "lucide-react";
+import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2, History, HelpCircle } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
@@ -12,13 +12,13 @@ export default function TaskCard({
   tg, t, dir, lang, assignmentLabel, canManage, canLog,
   logTarget, logAmount, setLogTarget, setLogAmount, logCompleted,
   commentsOpen, setCommentsOpen, commentText, setCommentText, commentFiles, setCommentFiles, submitComment,
-  allSectionFolders, moveTaskToSection, setEditTarget, deleteTarget, onSaveReason,
+  allSectionFolders, moveTaskToSection, setEditTarget, deleteTarget, onReportIssue,
 }) {
-  const REASONS = ["workStoppage", "noActivity", "weather", "equipment", "power", "access", "labor"];
+  const [issueText, setIssueText] = useState("");
   const todayStr = new Date().toISOString().slice(0, 10);
-  const reasonLog = Array.isArray(tg.reason_log) ? tg.reason_log : [];
-  const todayReason = reasonLog.find((e) => e.date === todayStr)?.reason || "";
-  const pastReasons = reasonLog.filter((e) => e.date !== todayStr);
+  const issueComments = (Array.isArray(tg.comments) ? tg.comments : []).filter((c) => c.is_issue);
+  const todayIssue = issueComments.find((c) => (c.created_at || "").slice(0, 10) === todayStr);
+  const pastIssues = issueComments.filter((c) => (c.created_at || "").slice(0, 10) !== todayStr).slice(-5).reverse();
   const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
   const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
   const done = tg.status === "completed";
@@ -144,35 +144,44 @@ export default function TaskCard({
             <PopoverTrigger asChild>
               <button
                 type="button"
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-body border transition-colors ${todayReason ? "border-red-300 bg-red-50 text-red-700" : "border-border text-muted-foreground hover:bg-muted"}`}
-                title={t("incompleteReason")}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-body border transition-colors ${todayIssue ? "border-red-300 bg-red-50 text-red-700" : "border-border text-muted-foreground hover:bg-muted"}`}
+                title={t("reportIssue")}
               >
-                <AlertTriangle className="w-3.5 h-3.5" /> {todayReason ? t(todayReason) : t("incompleteReason")}
+                <HelpCircle className="w-3.5 h-3.5" /> {t("reportIssue")}
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-64 space-y-2">
-              <p className="text-xs font-medium font-body">{t("incompleteReason")} — {t("today")}</p>
-              {canManage || canLogThis ? (
-                <select
-                  value={todayReason}
-                  onChange={(e) => onSaveReason(tg.id, e.target.value)}
-                  className="w-full px-2 py-1.5 rounded-md border border-input bg-card text-xs font-body"
-                >
-                  <option value="">{t("selectReason")}</option>
-                  {REASONS.map((r) => (
-                    <option key={r} value={r}>{t(r)}</option>
-                  ))}
-                </select>
+              <p className="text-xs font-medium font-body">{t("reportIssue")}</p>
+              {todayIssue ? (
+                <p className="text-xs text-red-700 font-body p-2 rounded-md bg-red-50 border border-red-200 whitespace-pre-wrap">{todayIssue.content}</p>
+              ) : (canManage || canLogThis) ? (
+                <div className="space-y-1.5">
+                  <textarea
+                    value={issueText}
+                    onChange={(e) => setIssueText(e.target.value)}
+                    rows={3}
+                    placeholder={t("issuePlaceholder")}
+                    className="w-full px-2 py-1.5 rounded-md border border-input bg-card text-xs font-body resize-none"
+                  />
+                  <button
+                    type="button"
+                    disabled={!issueText.trim()}
+                    onClick={() => { onReportIssue(tg.id, issueText.trim()); setIssueText(""); }}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-foreground text-background text-xs font-body disabled:opacity-50"
+                  >
+                    <Send className="w-3.5 h-3.5" /> {t("send")}
+                  </button>
+                </div>
               ) : (
-                <p className="text-xs text-muted-foreground font-body">{todayReason ? t(todayReason) : "—"}</p>
+                <p className="text-xs text-muted-foreground font-body">—</p>
               )}
-              {pastReasons.length > 0 && (
+              {pastIssues.length > 0 && (
                 <div className="pt-1.5 border-t border-border space-y-1 max-h-28 overflow-y-auto">
                   <p className="text-[11px] text-muted-foreground font-body flex items-center gap-1"><History className="w-3 h-3" /> {t("reasonHistory")}</p>
-                  {pastReasons.map((e) => (
-                    <div key={e.date} className="flex items-center justify-between text-[11px] font-body">
-                      <span className="text-muted-foreground">{e.date}</span>
-                      <span className="text-foreground">{t(e.reason)}</span>
+                  {pastIssues.map((c) => (
+                    <div key={c.id} className="text-[11px] font-body">
+                      <span className="text-muted-foreground">{(c.created_at || "").slice(0, 10)}: </span>
+                      <span className="text-foreground">{c.content}</span>
                     </div>
                   ))}
                 </div>

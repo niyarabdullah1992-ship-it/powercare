@@ -217,6 +217,8 @@ const dict = {
     reasonHistory: "History",
     noReasonHistory: "No past reasons logged.",
     today: "Today",
+    reportIssue: "Report Issue",
+    issuePlaceholder: "Describe the problem...",
   },
   ar: {
     dir: "rtl",
@@ -433,6 +435,8 @@ const dict = {
     reasonHistory: "السجل",
     noReasonHistory: "لا توجد أسباب سابقة مسجلة.",
     today: "اليوم",
+    reportIssue: "الإبلاغ عن مشكلة",
+    issuePlaceholder: "صف المشكلة...",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
