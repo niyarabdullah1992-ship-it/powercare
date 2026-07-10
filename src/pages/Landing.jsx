@@ -2,10 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { base44 } from "@/api/base44Client";
 import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles } from "lucide-react";
 import Logo from "@/components/Logo";
-import OwnerAccessCard from "@/components/landing/OwnerAccessCard";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
 
@@ -13,7 +11,6 @@ export default function Landing() {
   const { t, lang, setLang, languages } = useI18n();
   const { login, session } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState("company");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,17 +20,6 @@ export default function Landing() {
   useEffect(() => {
     if (session) navigate("/app");
   }, [session, navigate]);
-
-  useEffect(() => {
-    if (sessionStorage.getItem("owner_login_intent")) {
-      base44.auth.isAuthenticated().then((authed) => {
-        if (authed) {
-          sessionStorage.removeItem("owner_login_intent");
-          navigate("/owner-panel");
-        }
-      });
-    }
-  }, [navigate]);
 
   useEffect(() => {
     const close = () => setLangOpen(false);
@@ -104,26 +90,12 @@ export default function Landing() {
 
           {/* Login card */}
           <div className="bg-white rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center gap-1 bg-landing-bg rounded-full p-1 mb-6">
-              <button
-                onClick={() => setTab("company")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-body transition-colors ${
-                  tab === "company" ? "bg-white text-[#3a2f22] shadow-sm" : "text-[#3a2f22]/45"
-                }`}
-              >
+            <div className="flex items-center gap-2 mb-6">
+              <span className="flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-body bg-landing-bg text-[#3a2f22]">
                 <LogIn className="w-4 h-4" strokeWidth={1.75} /> {t("companyLogin")}
-              </button>
-              <button
-                onClick={() => setTab("owner")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-body transition-colors ${
-                  tab === "owner" ? "bg-white text-[#3a2f22] shadow-sm" : "text-[#3a2f22]/45"
-                }`}
-              >
-                <ShieldCheck className="w-4 h-4" strokeWidth={1.75} /> {t("ownerPanel")}
-              </button>
+              </span>
             </div>
 
-            {tab === "company" ? (
               <form onSubmit={handleCompanyLogin} className="space-y-4">
                 <div>
                   <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("email")}</label>
@@ -153,9 +125,6 @@ export default function Landing() {
                   {t("login")}
                 </button>
               </form>
-            ) : (
-              <OwnerAccessCard t={t} lang={lang} />
-            )}
           </div>
         </div>
       </div>
