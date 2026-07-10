@@ -8,6 +8,13 @@ import ScrollToTop from './components/ScrollToTop';
 import { I18nProvider } from '@/lib/i18n';
 import { AuthProvider as PowerCareAuthProvider, useAuth as usePowerCareAuth } from '@/lib/PowerCareAuth';
 import Layout from '@/components/Layout';
+import ProtectedRoute from '@/components/ProtectedRoute';
+
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import OwnerPanel from './pages/OwnerPanel';
 
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
@@ -35,6 +42,13 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+        <Route path="/owner-panel" element={<OwnerPanel />} />
+      </Route>
       <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/app/tasks" element={<RequireAuth><MyTasks /></RequireAuth>} />
       <Route path="/app/chat" element={<RequireAuth><StationChat /></RequireAuth>} />

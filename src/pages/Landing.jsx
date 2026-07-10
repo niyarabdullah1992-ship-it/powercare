@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { ownerLogin, ownerExists, setOwner, listCompanies, createCompany, deleteCompany } from "@/lib/store";
-import { Building2, Plus, Trash2, ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles } from "lucide-react";
 import Logo from "@/components/Logo";
+import OwnerAccessCard from "@/components/landing/OwnerAccessCard";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
 
@@ -22,6 +23,17 @@ export default function Landing() {
   useEffect(() => {
     if (session) navigate("/app");
   }, [session, navigate]);
+
+  useEffect(() => {
+    if (sessionStorage.getItem("owner_login_intent")) {
+      base44.auth.isAuthenticated().then((authed) => {
+        if (authed) {
+          sessionStorage.removeItem("owner_login_intent");
+          navigate("/owner-panel");
+        }
+      });
+    }
+  }, [navigate]);
 
   useEffect(() => {
     const close = () => setLangOpen(false);
@@ -145,7 +157,7 @@ export default function Landing() {
                 </p>
               </form>
             ) : (
-              <OwnerSection t={t} />
+              <OwnerAccessCard t={t} lang={lang} />
             )}
           </div>
         </div>
@@ -234,118 +246,6 @@ function BenefitCard({ icon: Icon, title, text }) {
       </span>
       <h3 className="font-heading text-xl text-[#3a2f22] mb-2">{title}</h3>
       <p className="text-sm text-[#3a2f22]/55 font-body leading-relaxed">{text}</p>
-    </div>
-  );
-}
-
-function OwnerSection({ t }) {
-  const [pwd, setPwd] = useState("");
-  const [authed, setAuthed] = useState(false);
-  const [error, setError] = useState("");
-  const [companies, setCompanies] = useState([]);
-  const [form, setForm] = useState({ name: "", ownerEmail: "", ownerPassword: "", plan: "Starter", allowedEmailDomain: "" });
-
-  const refresh = () => setCompanies(listCompanies());
-  useEffect(() => {
-    if (authed) refresh();
-  }, [authed]);
-
-  const handleOwnerLogin = (e) => {
-    e.preventDefault();
-    setError("");
-    if (!ownerExists()) {
-      setOwner(pwd || "owner123");
-      setAuthed(true);
-      return;
-    }
-    if (ownerLogin(pwd)) setAuthed(true);
-    else setError("Wrong owner password");
-  };
-
-  const handleCreate = (e) => {
-    e.preventDefault();
-    if (!form.name || !form.ownerEmail || !form.ownerPassword) return;
-    createCompany(form);
-    setForm({ name: "", ownerEmail: "", ownerPassword: "", plan: "Starter", allowedEmailDomain: "" });
-    refresh();
-  };
-
-  const handleDelete = (id) => {
-    if (confirm(t("confirmDelete"))) {
-      deleteCompany(id);
-      refresh();
-    }
-  };
-
-  if (!authed) {
-    return (
-      <form onSubmit={handleOwnerLogin} className="space-y-4">
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-landing-bg text-xs font-body text-[#3a2f22]/55">
-          <ShieldCheck className="w-4 h-4" /> Platform owner access only.
-        </div>
-        <div>
-          <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("password")}</label>
-          <input
-            type="password"
-            value={pwd}
-            onChange={(e) => setPwd(e.target.value)}
-            placeholder="owner123"
-            className="w-full px-3 py-2.5 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] font-body text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
-          />
-        </div>
-        {error && <p className="text-sm text-red-500 font-body">{error}</p>}
-        <button type="submit" className="w-full py-3 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white font-body text-sm font-semibold hover:opacity-90 transition-opacity">
-          {t("login")}
-        </button>
-        <p className="text-center text-xs text-[#3a2f22]/40 font-body">Demo owner password: <code className="text-[#3a2f22]/70">owner123</code></p>
-      </form>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="font-heading text-lg font-semibold mb-3 flex items-center gap-2 text-[#3a2f22]">
-          <Building2 className="w-4 h-4" /> {t("companies")} ({companies.length})
-        </h3>
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {companies.length === 0 && <p className="text-sm text-[#3a2f22]/40 font-body">No companies yet.</p>}
-          {companies.map((c) => (
-            <div key={c.id} className="flex items-center justify-between p-3 rounded-lg bg-landing-bg">
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate text-[#3a2f22]">{c.name}</p>
-                <p className="text-xs text-[#3a2f22]/40 truncate">{c.ownerEmail} · {c.plan}</p>
-              </div>
-              <button onClick={() => handleDelete(c.id)} className="p-2 text-red-500 hover:bg-white rounded-md shrink-0">
-                <Trash2 className="w-4 h-4" strokeWidth={1.75} />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <form onSubmit={handleCreate} className="space-y-3 pt-4 border-t border-[#3a2f22]/10">
-        <h3 className="font-heading text-lg font-semibold flex items-center gap-2 text-[#3a2f22]">
-          <Plus className="w-4 h-4" /> {t("createCompany")}
-        </h3>
-        <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("companyName")} required
-          className="w-full px-3 py-2 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold" />
-        <input value={form.ownerEmail} onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })} placeholder={t("email")} required
-          className="w-full px-3 py-2 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold" />
-        <input value={form.ownerPassword} onChange={(e) => setForm({ ...form, ownerPassword: e.target.value })} placeholder={t("password")} required
-          className="w-full px-3 py-2 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold" />
-        <select value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })}
-          className="w-full px-3 py-2 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold">
-          <option>Starter</option>
-          <option>Professional</option>
-          <option>Enterprise</option>
-        </select>
-        <input value={form.allowedEmailDomain} onChange={(e) => setForm({ ...form, allowedEmailDomain: e.target.value })} placeholder={t("allowedEmailDomain") + " (e.g. @acwa.com)"}
-          className="w-full px-3 py-2 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold" />
-        <button type="submit" className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity">
-          {t("createCompany")}
-        </button>
-      </form>
     </div>
   );
 }

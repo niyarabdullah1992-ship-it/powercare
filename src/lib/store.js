@@ -5,7 +5,6 @@ import { base44 } from "@/api/base44Client";
 
 const REGISTRY_KEY = "powercare_registry";
 const COMPANY_PREFIX = "powercare_company_";
-const OWNER_KEY = "powercare_owner";
 const SESSION_KEY = "powercare_session";
 
 /* ----------------------------- helpers ----------------------------- */
@@ -66,22 +65,6 @@ function notify() {
 export function subscribe(fn) {
   listeners.add(fn);
   return () => listeners.delete(fn);
-}
-
-/* ----------------------------- owner ----------------------------- */
-export function getOwner() {
-  return read(OWNER_KEY, null);
-}
-export function setOwner(password) {
-  write(OWNER_KEY, { password });
-}
-export function ownerLogin(password) {
-  const owner = getOwner();
-  if (!owner) return false;
-  return owner.password === password;
-}
-export function ownerExists() {
-  return !!getOwner();
 }
 
 /* ----------------------------- registry ----------------------------- */
@@ -279,8 +262,6 @@ export function switchUser(userId) {
 /* ----------------------------- seed demo ----------------------------- */
 export function seedDemoIfEmpty() {
   if (getRegistry().companies.length > 0) return;
-  // owner password
-  if (!getOwner()) setOwner("owner123");
   // create demo company
   const company = createCompany({
     name: "Gulf Power Operations",
