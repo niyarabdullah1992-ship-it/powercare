@@ -126,7 +126,7 @@ export default function Stations() {
       <div className="flex items-center gap-1.5 group">
         <h3 className="font-heading font-semibold">{name}</h3>
         {canManage && (
-          <button onClick={() => startRename(id, name)} className="p-0.5 rounded-md opacity-0 group-hover:opacity-100 transition hover:bg-muted text-muted-foreground hover:text-foreground">
+          <button onClick={() => startRename(id, name)} className="p-0.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground">
             <Pencil className="w-3 h-3" />
           </button>
         )}
@@ -213,7 +213,7 @@ export default function Stations() {
                                   <div className="flex items-center gap-1 group">
                                     <p className="text-xs text-muted-foreground font-body">{s.location} · {s.type}</p>
                                     {canManage && (
-                                      <button onClick={() => setEditingTypeId(s.id)} className="p-0.5 rounded-md opacity-0 group-hover:opacity-100 transition hover:bg-muted text-muted-foreground hover:text-foreground">
+                                      <button onClick={() => setEditingTypeId(s.id)} className="p-0.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground">
                                         <Pencil className="w-3 h-3" />
                                       </button>
                                     )}
