@@ -538,7 +538,15 @@ export default function MyTasks() {
           <h1 className="font-heading text-3xl font-semibold">{t("myTasks")}</h1>
         </div>
         {canCreateTasks(currentUser) && (
-          <button onClick={() => setShowCreate((o) => !o)} disabled={uploading} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-50">
+          <button
+            onClick={() => setShowCreate((o) => {
+              const next = !o;
+              if (next) setSectionValue(selectedSection || "");
+              return next;
+            })}
+            disabled={uploading}
+            className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-50"
+          >
             <Plus className="w-4 h-4" /> {uploading ? "…" : t("newTaskTarget")}
           </button>
         )}
