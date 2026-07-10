@@ -175,6 +175,8 @@ export default function Employees() {
             );
           })}
         </div>
+
+        {showTransfer && <TransferModal type={showTransfer} onClose={() => setShowTransfer(null)} />}
       </div>
     );
   }
