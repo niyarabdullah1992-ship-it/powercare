@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { canManageHRLevels, visibleStations } from "@/lib/permissions";
+import { canManageHRLevels, canAssignMultiStation, visibleStations } from "@/lib/permissions";
 import { Building2, ChevronRight, ArrowLeft } from "lucide-react";
 import ClusterEditor from "@/components/hr/ClusterEditor";
 import HRTiersEditor from "@/components/hr/HRTiersEditor";
@@ -12,6 +12,7 @@ export default function HR() {
   const { data, currentUser } = useAuth();
   const [selectedStation, setSelectedStation] = useState(null);
   const canManage = data && currentUser && canManageHRLevels(currentUser, data);
+  const canMultiStation = data && currentUser && canAssignMultiStation(currentUser, data);
 
   if (!data || !currentUser) return null;
 
@@ -33,7 +34,7 @@ export default function HR() {
       {canManage && (
         <section className="space-y-3">
           <h2 className="font-heading text-lg font-semibold">{t("hrLevels")}</h2>
-          <HRTiersEditor data={data} canManage={canManage} />
+          <HRTiersEditor data={data} canManage={canManage} canMultiStation={canMultiStation} />
         </section>
       )}
 

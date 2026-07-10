@@ -67,6 +67,20 @@ export function canManageHRLevels(user, data) {
   return user.role === "director" || user.id === data?.ownerId;
 }
 
+// Is this user holding the topmost active HR tier (the highest-ranking HR position)?
+export function isTopHRHolder(user, data) {
+  const levels = (data?.hrLevels || []).filter((l) => l.active !== false);
+  if (!levels.length || !user?.hrLevelId) return false;
+  const topOrder = Math.max(...levels.map((l) => l.order || 0));
+  return levels.some((l) => l.order === topOrder && l.id === user.hrLevelId);
+}
+
+// Only the company owner or whoever holds the topmost HR position may assign a
+// single position to more than one station — everyone else picks one station at a time.
+export function canAssignMultiStation(user, data) {
+  return user?.id === data?.ownerId || isTopHRHolder(user, data);
+}
+
 // Is this employee part of the HR hierarchy?
 export function isHR(employee) {
   return !!employee.hrLevelId;

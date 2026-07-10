@@ -10,7 +10,7 @@ const SCOPES = ["station", "cluster", "company"];
 
 // Lets any company build the HR hierarchy that fits them: add, rename, reorder,
 // or delete positions — nothing about the tier structure is fixed anymore.
-export default function HRTiersEditor({ data, canManage }) {
+export default function HRTiersEditor({ data, canManage, canMultiStation }) {
   const { t, lang } = useI18n();
   const [adding, setAdding] = useState(false);
   const [scope, setScope] = useState("station");
@@ -96,7 +96,10 @@ export default function HRTiersEditor({ data, canManage }) {
                     <button
                       key={s.id}
                       type="button"
-                      onClick={() => setTierStationIds((prev) => active ? prev.filter((id) => id !== s.id) : [...prev, s.id])}
+                      onClick={() => setTierStationIds((prev) => {
+                        if (!canMultiStation) return active ? [] : [s.id]; // single station only, unless top HR position / owner
+                        return active ? prev.filter((id) => id !== s.id) : [...prev, s.id];
+                      })}
                       className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${active ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
                     >
                       {s.name}
@@ -198,7 +201,10 @@ export default function HRTiersEditor({ data, canManage }) {
                           <button
                             key={s.id}
                             type="button"
-                            onClick={() => setStationsValue((prev) => active ? prev.filter((id) => id !== s.id) : [...prev, s.id])}
+                            onClick={() => setStationsValue((prev) => {
+                              if (!canMultiStation) return active ? [] : [s.id]; // single station only, unless top HR position / owner
+                              return active ? prev.filter((id) => id !== s.id) : [...prev, s.id];
+                            })}
                             className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${active ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
                           >
                             {s.name}
