@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { updateCompany, addNotification } from "@/lib/store";
+import { updateCompany, addNotification, updateEmployeeProfile } from "@/lib/store";
 import { canManageEmployees, canTransferOwnership, visibleStations, visibleEmployees } from "@/lib/permissions";
 import { Link } from "react-router-dom";
 import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle } from "lucide-react";
@@ -167,10 +167,7 @@ export default function Employees() {
   };
 
   const saveTitle = (id) => {
-    updateCompany(company.id, (d) => {
-      const emp = d.employees.find((x) => x.id === id);
-      if (emp) emp.customTitle = titleInput.trim() || null;
-    });
+    updateEmployeeProfile(company.id, id, { position: titleInput.trim() || "" });
     setEditingTitle(null);
     setTitleInput("");
   };
@@ -283,7 +280,7 @@ export default function Employees() {
                         <input
                           value={titleInput}
                           onChange={(ev) => setTitleInput(ev.target.value)}
-                          placeholder={t(e.role)}
+                          placeholder={t("positionTitle")}
                           className="w-32 px-1.5 py-0.5 rounded border border-input text-xs font-body"
                         />
                         <button onClick={() => saveTitle(e.id)} className="p-1 rounded hover:bg-muted text-accent"><Check className="w-3.5 h-3.5" /></button>
@@ -291,9 +288,9 @@ export default function Employees() {
                       </div>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-[11px] font-body font-medium">
-                        <Briefcase className="w-3 h-3" /> {e.customTitle || getRoleLabel(company, e.role, t)}
-                        {currentUser.role === "director" && (
-                          <button onClick={() => { setEditingTitle(e.id); setTitleInput(e.customTitle || ""); }} className="hover:text-foreground">
+                        <Briefcase className="w-3 h-3" /> {e.profile?.position || e.customTitle || getRoleLabel(company, e.role, t)}
+                        {canManage && (
+                          <button onClick={() => { setEditingTitle(e.id); setTitleInput(e.profile?.position || e.customTitle || ""); }} className="hover:text-foreground">
                             <Pencil className="w-3 h-3" />
                           </button>
                         )}

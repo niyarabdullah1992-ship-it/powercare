@@ -3,7 +3,10 @@
 
 export const SYSTEM_ROLES = ["director", "ops_manager", "pgm", "station_manager", "employee"];
 
+// Some roles use snake_case ids that don't match the camelCase translation dict keys.
+const ROLE_T_KEY = { station_manager: "stationManager", ops_manager: "opsManager" };
+
 export function getRoleLabel(company, role, t) {
   const custom = company?.roleLabels?.[role];
-  return (custom && custom.trim()) || t(role);
+  return (custom && custom.trim()) || t(ROLE_T_KEY[role] || role);
 }
