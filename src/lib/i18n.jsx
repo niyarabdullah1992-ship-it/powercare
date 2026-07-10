@@ -223,6 +223,9 @@ const dict = {
     stoppageIssue: "Issue",
     stoppageIssues: "Task Stoppage Issues",
     noIssuesReported: "No issues reported.",
+    allStationsChat: "All Stations Chat",
+    enableCrossStationChat: "Enable chat between all stations",
+    crossStationChatNote: "When enabled, every employee in the company can join a shared chat room with all stations.",
   },
   ar: {
     dir: "rtl",
@@ -445,6 +448,9 @@ const dict = {
     stoppageIssue: "مشكلة",
     stoppageIssues: "مشاكل التوقف عن المهام",
     noIssuesReported: "لم يتم الإبلاغ عن أي مشاكل.",
+    allStationsChat: "دردشة جميع المحطات",
+    enableCrossStationChat: "تفعيل الدردشة بين جميع المحطات",
+    crossStationChatNote: "عند التفعيل، يمكن لكل موظف في الشركة الانضمام إلى غرفة دردشة مشتركة مع جميع المحطات.",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

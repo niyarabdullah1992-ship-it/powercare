@@ -61,6 +61,11 @@ export function canTransferOwnership(user) {
   return user.role === "director";
 }
 
+// Is this user the actual company owner (not just holding the director role)?
+export function isCompanyOwner(user, data) {
+  return user?.id === data?.ownerId;
+}
+
 // Can the user create/edit HR levels and their permissions? Directors always can;
 // the company owner can too, even if their role isn't "director".
 export function canManageHRLevels(user, data) {

@@ -11,7 +11,7 @@ import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 
 export default function StationChat() {
   const { t, dir, lang } = useI18n();
-  const { data, currentUser } = useAuth();
+  const { data, currentUser, company } = useAuth();
   const [selectedStation, setSelectedStation] = useState(null);
   const [activeChat, setActiveChat] = useState(null); // { type: "general" } | { type: "dm", userId, name }
   const [messages, setMessages] = useState([]);
@@ -20,7 +20,7 @@ export default function StationChat() {
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
 
-  const stationRooms = !data || !currentUser ? [] : canSeeAllStations(currentUser)
+  const baseRooms = !data || !currentUser ? [] : canSeeAllStations(currentUser)
     ? [{ key: "hq", name: t("hq") }, ...data.stations.map((s) => ({ key: s.id, name: s.name }))]
     : currentUser.role === "pgm"
       ? visibleStations(currentUser, data).map((s) => ({ key: s.id, name: s.name }))
@@ -28,6 +28,9 @@ export default function StationChat() {
           key: currentUser.stationId || "hq",
           name: currentUser.stationId ? (data.stations.find((s) => s.id === currentUser.stationId)?.name || t("station")) : t("hq"),
         }];
+  const stationRooms = company?.crossStationChatEnabled
+    ? [{ key: "all", name: t("allStationsChat") }, ...baseRooms]
+    : baseRooms;
 
   useEffect(() => {
     if (stationRooms.length === 1 && !selectedStation) setSelectedStation(stationRooms[0].key);
@@ -35,6 +38,7 @@ export default function StationChat() {
 
   const contacts = !data || !selectedStation ? [] : data.employees.filter((e) => {
     if (e.id === currentUser.id) return false;
+    if (selectedStation === "all") return true;
     return selectedStation === "hq" ? !e.stationId : e.stationId === selectedStation;
   });
 
@@ -107,7 +111,7 @@ export default function StationChat() {
           {stationRooms.map((r) => (
             <button key={r.key} onClick={() => setSelectedStation(r.key)} className="flex items-center gap-3 p-4 rounded-lg border border-border hover:bg-muted transition text-start">
               <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                {r.key === "hq" ? <Building2 className="w-4 h-4" /> : <Radio className="w-4 h-4" />}
+                {r.key === "all" ? <MessageSquare className="w-4 h-4" /> : r.key === "hq" ? <Building2 className="w-4 h-4" /> : <Radio className="w-4 h-4" />}
               </div>
               <p className="text-sm font-medium font-body">{r.name}</p>
             </button>

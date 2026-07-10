@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
-import { canManageStations, canSeeAllStations, visibleStations } from "@/lib/permissions";
-import { Plus, Radio, Building2, Users, Trash2, Pencil, Check, X, BarChart3 } from "lucide-react";
+import { canManageStations, canSeeAllStations, visibleStations, isCompanyOwner } from "@/lib/permissions";
+import { Plus, Radio, Building2, Users, Trash2, Pencil, Check, X, BarChart3, MessageSquare } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import StationAnalyticsModal from "@/components/stations/StationAnalyticsModal";
 
@@ -22,6 +22,13 @@ export default function Stations() {
   const showHq = canSeeAllStations(currentUser);
   const hqTeam = data.employees.filter((e) => !e.stationId);
   const hqLabel = company?.hqLabel || t("hq");
+  const isOwner = isCompanyOwner(currentUser, data);
+
+  const toggleCrossStationChat = () => {
+    updateCompany(company.id, (d) => {
+      d.crossStationChatEnabled = !d.crossStationChatEnabled;
+    });
+  };
 
   const add = (e) => {
     e.preventDefault();
@@ -118,6 +125,24 @@ export default function Stations() {
           </button>
         )}
       </div>
+
+      {isOwner && (
+        <div className="p-4 rounded-xl border border-border bg-card flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <MessageSquare className="w-4 h-4 text-accent shrink-0" />
+            <div>
+              <p className="text-sm font-medium font-body">{t("enableCrossStationChat")}</p>
+              <p className="text-xs text-muted-foreground font-body">{t("crossStationChatNote")}</p>
+            </div>
+          </div>
+          <button
+            onClick={toggleCrossStationChat}
+            className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${data.crossStationChatEnabled ? "bg-accent" : "bg-muted"}`}
+          >
+            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${data.crossStationChatEnabled ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0.5 rtl:-translate-x-0.5"}`} />
+          </button>
+        </div>
+      )}
 
       {showAdd && (
         <form onSubmit={add} className="p-5 rounded-xl border border-border bg-card grid grid-cols-1 md:grid-cols-3 gap-3">
