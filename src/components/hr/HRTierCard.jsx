@@ -57,6 +57,14 @@ export default function HRTierCard({ managerLevel, assistantLevel, scopeType, sc
     });
   };
 
+  const updatePosition = (empId, position) => {
+    updateCompany(data.id, (d) => {
+      const emp = d.employees.find((x) => x.id === empId);
+      if (!emp) return;
+      emp.position = position || null;
+    });
+  };
+
   return (
     <div className="p-4 rounded-xl border border-accent/20 bg-gradient-to-b from-card to-secondary/40 shadow-sm space-y-3">
       <h4 className="font-heading text-base tracking-wide">{scopeName}</h4>
@@ -68,6 +76,7 @@ export default function HRTierCard({ managerLevel, assistantLevel, scopeType, sc
           canManage={canManage}
           onAdd={() => setAddingRole("manager")}
           onRemove={removeFromSlot}
+          onUpdatePosition={updatePosition}
         />
       )}
       {assistantLevel && (
@@ -78,6 +87,7 @@ export default function HRTierCard({ managerLevel, assistantLevel, scopeType, sc
           canManage={canManage}
           onAdd={() => setAddingRole("assistant")}
           onRemove={removeFromSlot}
+          onUpdatePosition={updatePosition}
         />
       )}
 

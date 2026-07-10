@@ -200,6 +200,7 @@ const dict = {
     hqManagement: "HQ Management",
     strictAnonymous: "Strictly Anonymous — bypass to HQ",
     strictAnonymousNote: "Skips the station manager and routes this report directly to HQ management.",
+    positionTitle: "Position title",
   },
   ar: {
     dir: "rtl",
@@ -399,6 +400,7 @@ const dict = {
     hqManagement: "إدارة المقر الرئيسي",
     strictAnonymous: "سرّي تمامًا — تحويل مباشر للمقر الرئيسي",
     strictAnonymousNote: "يتجاوز مدير المحطة ويوجّه البلاغ مباشرة إلى إدارة المقر الرئيسي.",
+    positionTitle: "المسمى الوظيفي",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

@@ -1,12 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { UserCog, Eye, Plus, X } from "lucide-react";
+import { UserCog, Eye, Plus, X, Pencil, Check } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 // One role slot within a tier card (Manager or Assistant), listing assigned employees.
-export default function HRSlotRow({ label, roleTag, employees, canManage, onAdd, onRemove }) {
+export default function HRSlotRow({ label, roleTag, employees, canManage, onAdd, onRemove, onUpdatePosition }) {
   const { t } = useI18n();
   const isAssistant = roleTag === "assistant";
+  const [editingId, setEditingId] = useState(null);
+  const [editValue, setEditValue] = useState("");
+
+  const startEdit = (e) => { setEditingId(e.id); setEditValue(e.position || ""); };
+  const savePosition = (empId) => {
+    onUpdatePosition?.(empId, editValue.trim());
+    setEditingId(null);
+    setEditValue("");
+  };
 
   return (
     <div className="p-3 rounded-lg border border-border/70 bg-background/70 backdrop-blur-sm space-y-2">
@@ -32,17 +41,40 @@ export default function HRSlotRow({ label, roleTag, employees, canManage, onAdd,
       ) : (
         <div className="space-y-1">
           {employees.map((e) => (
-            <div key={e.id} className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-card border border-border/50 text-xs font-body">
-              <span className="truncate font-heading text-[13px]">{e.name}{e.position ? <span className="text-muted-foreground font-body"> — {e.position}</span> : ""}</span>
-              {canManage && (
-                <ConfirmDeleteDialog
-                  onConfirm={() => onRemove(e.id)}
-                  trigger={
-                    <button className="p-0.5 rounded hover:bg-muted text-destructive shrink-0" title={t("removeHR")}>
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  }
-                />
+            <div key={e.id} className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md bg-card border border-border/50 text-xs font-body">
+              {editingId === e.id ? (
+                <>
+                  <input
+                    autoFocus
+                    value={editValue}
+                    onChange={(ev) => setEditValue(ev.target.value)}
+                    onKeyDown={(ev) => { if (ev.key === "Enter") { ev.preventDefault(); savePosition(e.id); } if (ev.key === "Escape") setEditingId(null); }}
+                    placeholder={t("positionTitle")}
+                    className="flex-1 min-w-0 px-2 py-1 rounded-md border border-input text-xs font-body"
+                  />
+                  <button onClick={() => savePosition(e.id)} className="p-0.5 rounded hover:bg-muted text-accent shrink-0" title={t("save")}>
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="truncate font-heading text-[13px]">{e.name}{e.position ? <span className="text-muted-foreground font-body"> — {e.position}</span> : ""}</span>
+                  {canManage && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => startEdit(e)} className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title={t("edit")}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <ConfirmDeleteDialog
+                        onConfirm={() => onRemove(e.id)}
+                        trigger={
+                          <button className="p-0.5 rounded hover:bg-muted text-destructive shrink-0" title={t("removeHR")}>
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        }
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ))}
