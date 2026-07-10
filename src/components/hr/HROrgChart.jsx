@@ -10,7 +10,10 @@ export default function HROrgChart({ station, data, canManage }) {
   const { t, lang } = useI18n();
 
   const cluster = (data.hrClusters || []).find((c) => (c.stationIds || []).includes(station.id));
-  const groups = groupLevelsByOrder(data.hrLevels || []).slice().reverse(); // highest authority first
+  const groups = groupLevelsByOrder(data.hrLevels || [])
+    .filter((g) => (g.manager?.active ?? true) !== false || (g.assistant?.active ?? true) !== false)
+    .slice()
+    .reverse(); // highest authority first, suspended tiers hidden
 
   const nodeFor = (group) => {
     const label = levelName(group.manager || group.assistant, lang);

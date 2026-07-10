@@ -487,6 +487,17 @@ export function removeHRTier(companyId, order) {
   });
 }
 
+// Suspends (or reactivates) a whole tier without deleting it — assigned employees and
+// history stay intact, but the tier is hidden from org charts/assignment until re-enabled.
+export function toggleHRTierActive(companyId, order) {
+  updateCompany(companyId, (d) => {
+    const levels = (d.hrLevels || []).filter((l) => l.order === order);
+    if (!levels.length) return;
+    const nextActive = levels.some((l) => l.active === false);
+    levels.forEach((l) => { l.active = nextActive; });
+  });
+}
+
 // Swaps a tier's order with the adjacent one — direction 1 = increase authority, -1 = decrease.
 export function moveHRTier(companyId, order, direction) {
   updateCompany(companyId, (d) => {

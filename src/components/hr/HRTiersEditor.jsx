@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { groupLevelsByOrder, levelName } from "@/lib/hrLevels";
-import { addHRTier, renameHRLevel, removeHRTier, moveHRTier } from "@/lib/store";
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Check, X } from "lucide-react";
+import { addHRTier, renameHRLevel, removeHRTier, moveHRTier, toggleHRTierActive } from "@/lib/store";
+import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Check, X, Power } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 const SCOPES = ["station", "cluster", "company"];
@@ -81,9 +81,16 @@ export default function HRTiersEditor({ data, canManage }) {
         <p className="text-xs text-muted-foreground font-body italic">{t("noPositions")}</p>
       ) : (
         <div className="space-y-2">
-          {groups.map((g, idx) => (
-            <div key={g.order} className="flex items-center justify-between gap-2 p-3 rounded-lg border border-border bg-background">
+          {groups.map((g, idx) => {
+            const isSuspended = [g.manager, g.assistant].some((l) => l?.active === false);
+            return (
+            <div key={g.order} className={`flex items-center justify-between gap-2 p-3 rounded-lg border border-border bg-background ${isSuspended ? "opacity-50" : ""}`}>
               <div className="flex-1 min-w-0 space-y-1.5">
+                {isSuspended && (
+                  <span className="inline-block px-1.5 py-0.5 rounded-full text-[9px] font-body bg-destructive/10 text-destructive">
+                    {t("suspendedPosition") || "Suspended"}
+                  </span>
+                )}
                 {[g.manager, g.assistant].filter(Boolean).map((level) => (
                   <div key={level.id} className="flex items-center gap-2">
                     <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-body shrink-0 ${level.role === "assistant" ? "bg-muted text-muted-foreground" : "bg-accent/15 text-accent"}`}>
@@ -115,6 +122,13 @@ export default function HRTiersEditor({ data, canManage }) {
                   <button disabled={idx === groups.length - 1} onClick={() => moveHRTier(data.id, g.order, -1)} title={t("moveDown")} className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30">
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
+                  <button
+                    onClick={() => toggleHRTierActive(data.id, g.order)}
+                    title={isSuspended ? (t("activatePosition") || "Activate") : (t("suspendPosition") || "Suspend")}
+                    className={`p-1 rounded hover:bg-muted ${isSuspended ? "text-accent" : "text-muted-foreground"}`}
+                  >
+                    <Power className="w-3.5 h-3.5" />
+                  </button>
                   <ConfirmDeleteDialog
                     onConfirm={() => removeHRTier(data.id, g.order)}
                     trigger={
@@ -126,7 +140,8 @@ export default function HRTiersEditor({ data, canManage }) {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
