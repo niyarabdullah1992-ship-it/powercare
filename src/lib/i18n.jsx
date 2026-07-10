@@ -227,6 +227,9 @@ const dict = {
     allStationsChat: "All Stations Chat",
     enableCrossStationChat: "Enable chat between all stations",
     crossStationChatNote: "When enabled, every employee in the company can join a shared chat room with all stations.",
+    filesAndMedia: "Files & Media",
+    noMediaShared: "No files or voice notes shared yet.",
+    sharedBy: "Shared by",
   },
   ar: {
     dir: "rtl",
@@ -453,6 +456,9 @@ const dict = {
     allStationsChat: "دردشة جميع المحطات",
     enableCrossStationChat: "تفعيل الدردشة بين جميع المحطات",
     crossStationChatNote: "عند التفعيل، يمكن لكل موظف في الشركة الانضمام إلى غرفة دردشة مشتركة مع جميع المحطات.",
+    filesAndMedia: "الملفات والوسائط",
+    noMediaShared: "لم تتم مشاركة أي ملفات أو تسجيلات صوتية بعد.",
+    sharedBy: "شارك بواسطة",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

@@ -7,6 +7,7 @@ import { updateCompany } from "@/lib/store";
 import { MessageSquare, Send, ArrowLeft, Building2, Radio } from "lucide-react";
 import ChatBubble from "@/components/chat/ChatBubble";
 import ChatContactList from "@/components/chat/ChatContactList";
+import ChatMediaGallery from "@/components/chat/ChatMediaGallery";
 import CommentFiles from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 
@@ -19,6 +20,7 @@ export default function StationChat() {
   const [text, setText] = useState("");
   const [files, setFiles] = useState([]);
   const [sending, setSending] = useState(false);
+  const [activeTab, setActiveTab] = useState("chat");
   const bottomRef = useRef(null);
 
   const baseRooms = !data || !currentUser ? [] : canSeeAllStations(currentUser)
@@ -71,6 +73,10 @@ export default function StationChat() {
     const interval = setInterval(fetchMessages, 4000);
     return () => clearInterval(interval);
   }, [activeChat, selectedStation]);
+
+  useEffect(() => {
+    setActiveTab("chat");
+  }, [activeChat]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -168,37 +174,49 @@ export default function StationChat() {
               <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground font-body">{t("noMessages")}</div>
             ) : (
               <>
-                <div className="flex items-center gap-3 px-5 py-4 border-b border-border">
-                  <MessageSquare className="w-4 h-4 text-accent" />
-                  <h3 className="hero-title text-xl">{chatTitle}</h3>
-                </div>
-                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-                  {messages.length === 0 ? (
-                    <p className="text-sm text-muted-foreground font-body text-center mt-10">{t("noMessages")}</p>
-                  ) : (
-                    messages.map((m) => <ChatBubble key={m.id} msg={m} isMine={m.user_id === currentUser.id} lang={lang} />)
-                  )}
-                  <div ref={bottomRef} />
-                </div>
-                <form onSubmit={sendMessage} className="border-t border-border p-4 space-y-2">
-                  <div className="flex items-end gap-2">
-                    <textarea
-                      value={text}
-                      onChange={(e) => setText(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(e); } }}
-                      rows={1}
-                      placeholder={t("typeMessage")}
-                      className="flex-1 px-3 py-2 rounded-md border border-input text-sm font-body resize-none"
-                    />
-                    <button type="submit" disabled={sending} className="p-2.5 rounded-md bg-foreground text-background disabled:opacity-50">
-                      <Send className={`w-4 h-4 ${dir === "rtl" ? "-scale-x-100" : ""}`} />
-                    </button>
+                <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border">
+                  <div className="flex items-center gap-3">
+                    <MessageSquare className="w-4 h-4 text-accent" />
+                    <h3 className="hero-title text-xl">{chatTitle}</h3>
                   </div>
-                  <div className="flex flex-wrap items-end gap-2">
-                    <CommentFiles files={files} setFiles={setFiles} disabled={sending} />
-                    <VoiceRecorder files={files} setFiles={setFiles} disabled={sending} />
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => setActiveTab("chat")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "chat" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("chat")}</button>
+                    <button onClick={() => setActiveTab("media")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "media" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("filesAndMedia")}</button>
                   </div>
-                </form>
+                </div>
+                {activeTab === "media" ? (
+                  <ChatMediaGallery messages={messages} t={t} lang={lang} />
+                ) : (
+                  <>
+                    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                      {messages.length === 0 ? (
+                        <p className="text-sm text-muted-foreground font-body text-center mt-10">{t("noMessages")}</p>
+                      ) : (
+                        messages.map((m) => <ChatBubble key={m.id} msg={m} isMine={m.user_id === currentUser.id} lang={lang} />)
+                      )}
+                      <div ref={bottomRef} />
+                    </div>
+                    <form onSubmit={sendMessage} className="border-t border-border p-4 space-y-2">
+                      <div className="flex items-end gap-2">
+                        <textarea
+                          value={text}
+                          onChange={(e) => setText(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(e); } }}
+                          rows={1}
+                          placeholder={t("typeMessage")}
+                          className="flex-1 px-3 py-2 rounded-md border border-input text-sm font-body resize-none"
+                        />
+                        <button type="submit" disabled={sending} className="p-2.5 rounded-md bg-foreground text-background disabled:opacity-50">
+                          <Send className={`w-4 h-4 ${dir === "rtl" ? "-scale-x-100" : ""}`} />
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap items-end gap-2">
+                        <CommentFiles files={files} setFiles={setFiles} disabled={sending} />
+                        <VoiceRecorder files={files} setFiles={setFiles} disabled={sending} />
+                      </div>
+                    </form>
+                  </>
+                )}
               </>
             )}
           </div>
