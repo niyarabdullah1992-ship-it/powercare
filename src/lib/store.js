@@ -446,13 +446,17 @@ export function setAnonRateLimits(companyId, { daily, weekly, monthly } = {}) {
 /* ----------------------------- flexible HR hierarchy editor ----------------------------- */
 // Any company can add, rename, reorder, or remove HR positions — the hierarchy is
 // no longer fixed. Each level keeps its own `order` (escalation rank) and `scope`.
-export function addHRTier(companyId, { scope, managerName, includeAssistant, assistantName, managerPermissions, assistantPermissions }) {
+// stationId (only meaningful when scope === "station"): leave null so the position
+// applies to every station, or set it so the position — and any later suspend/remove/
+// edit on it — is scoped to that one station only, leaving other stations untouched.
+export function addHRTier(companyId, { scope, managerName, includeAssistant, assistantName, managerPermissions, assistantPermissions, stationId }) {
   updateCompany(companyId, (d) => {
     d.hrLevels = d.hrLevels || [];
     const order = Math.max(0, ...d.hrLevels.map((l) => l.order || 0)) + 1;
-    d.hrLevels.push({ id: uid("hrlvl"), order, role: "manager", scope, name: managerName, permissions: managerPermissions || MANAGER_PERMISSIONS, maxCount: null });
+    const sId = scope === "station" ? (stationId || null) : null;
+    d.hrLevels.push({ id: uid("hrlvl"), order, role: "manager", scope, stationId: sId, name: managerName, permissions: managerPermissions || MANAGER_PERMISSIONS, maxCount: null });
     if (includeAssistant) {
-      d.hrLevels.push({ id: uid("hrlvl"), order, role: "assistant", scope, name: assistantName || managerName, permissions: assistantPermissions || ASSISTANT_PERMISSIONS, maxCount: null });
+      d.hrLevels.push({ id: uid("hrlvl"), order, role: "assistant", scope, stationId: sId, name: assistantName || managerName, permissions: assistantPermissions || ASSISTANT_PERMISSIONS, maxCount: null });
     }
   });
 }

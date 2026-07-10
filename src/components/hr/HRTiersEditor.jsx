@@ -21,6 +21,7 @@ export default function HRTiersEditor({ data, canManage }) {
   const [editValue, setEditValue] = useState("");
   const [managerPerms, setManagerPerms] = useState(MANAGER_PERMISSIONS);
   const [assistantPerms, setAssistantPerms] = useState(ASSISTANT_PERMISSIONS);
+  const [tierStationId, setTierStationId] = useState("");
   const [permsLevelId, setPermsLevelId] = useState(null);
   const [permsValue, setPermsValue] = useState([]);
 
@@ -40,9 +41,10 @@ export default function HRTiersEditor({ data, canManage }) {
       assistantName: includeAssistant ? assistantName.trim() : null,
       managerPermissions: managerPerms,
       assistantPermissions: assistantPerms,
+      stationId: scope === "station" ? tierStationId || null : null,
     });
     setManagerName(""); setAssistantName(""); setIncludeAssistant(true); setScope("station"); setAdding(false);
-    setManagerPerms(MANAGER_PERMISSIONS); setAssistantPerms(ASSISTANT_PERMISSIONS);
+    setManagerPerms(MANAGER_PERMISSIONS); setAssistantPerms(ASSISTANT_PERMISSIONS); setTierStationId("");
   };
 
   const startEdit = (level) => { setEditingLevelId(level.id); setEditValue(levelName(level, lang)); };
@@ -76,6 +78,15 @@ export default function HRTiersEditor({ data, canManage }) {
               {SCOPES.map((s) => <option key={s} value={s}>{scopeLabel(s)}</option>)}
             </select>
           </div>
+          {scope === "station" && (
+            <div>
+              <label className="block text-xs text-muted-foreground font-body mb-1">{t("station") || "Station"}</label>
+              <select value={tierStationId} onChange={(e) => setTierStationId(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body bg-card">
+                <option value="">{t("allStations") || "All stations"}</option>
+                {data.stations.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+          )}
           <input value={managerName} onChange={(e) => setManagerName(e.target.value)} placeholder={t("managerPositionName")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
           <label className="flex items-center gap-2 text-xs font-body">
             <input type="checkbox" checked={includeAssistant} onChange={(e) => setIncludeAssistant(e.target.checked)} />
@@ -149,7 +160,16 @@ export default function HRTiersEditor({ data, canManage }) {
                     </div>
                   </div>
                 ))}
-                <p className="text-[10px] text-muted-foreground font-body">{scopeLabel(g.scope)}</p>
+                <p className="text-[10px] text-muted-foreground font-body">
+                  {(() => {
+                    const sId = g.manager?.stationId || g.assistant?.stationId || null;
+                    if (g.scope === "station" && sId) {
+                      const stName = data.stations.find((s) => s.id === sId)?.name || "";
+                      return `${scopeLabel(g.scope)} · ${stName}`;
+                    }
+                    return scopeLabel(g.scope);
+                  })()}
+                </p>
               </div>
               {canManage && (
                 <div className="flex items-center gap-1 shrink-0">
