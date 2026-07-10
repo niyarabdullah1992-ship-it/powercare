@@ -78,6 +78,7 @@ export default function MyTasks() {
   const [sectionValue, setSectionValue] = useState("");
   const [renameFolderKey, setRenameFolderKey] = useState(null);
   const [renameValue, setRenameValue] = useState("");
+  const [folderError, setFolderError] = useState("");
 
   const fetchTargets = async () => {
     if (!currentUser) return;
@@ -116,17 +117,21 @@ export default function MyTasks() {
   }, []);
 
   const addFolder = async () => {
+    setFolderError("");
     const name = newSectionName.trim();
     if (!name || !selectedStation) return;
     const path = selectedSection ? `${selectedSection}/${name}` : name;
+    if (folders.some((f) => f.station_id === selectedStation && f.path === path)) {
+      setFolderError(t("sectionAlreadyExists") || "This section already exists.");
+      return;
+    }
     setNewSectionName("");
-    if (folders.some((f) => f.station_id === selectedStation && f.path === path)) return;
     try {
       const res = await base44.functions.invoke("supabaseTargets", { action: "createFolder", stationId: selectedStation, path });
       const created = res?.data?.folder;
       if (created) setFolders((prev) => [...prev, created]);
     } catch (err) {
-      alert(err?.response?.data?.error || "Failed to create section");
+      setFolderError(err?.response?.data?.error || err?.message || "Failed to create section");
     }
   };
 
@@ -794,17 +799,20 @@ export default function MyTasks() {
             </div>
 
             {canCreateTasks(currentUser) && (
-              <div className="flex items-center gap-2">
-                <input
-                  value={newSectionName}
-                  onChange={(e) => setNewSectionName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFolder(); } }}
-                  placeholder={t("newSectionPlaceholder")}
-                  className="flex-1 px-3 py-2 rounded-md border border-input text-sm font-body"
-                />
-                <button type="button" onClick={addFolder} className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-foreground text-background text-sm font-body whitespace-nowrap">
-                  <Plus className="w-4 h-4" /> {t("addSection")}
-                </button>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    value={newSectionName}
+                    onChange={(e) => { setNewSectionName(e.target.value); setFolderError(""); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addFolder(); } }}
+                    placeholder={t("newSectionPlaceholder")}
+                    className="flex-1 px-3 py-2 rounded-md border border-input text-sm font-body"
+                  />
+                  <button type="button" onClick={addFolder} className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-foreground text-background text-sm font-body whitespace-nowrap">
+                    <Plus className="w-4 h-4" /> {t("addSection")}
+                  </button>
+                </div>
+                {folderError && <p className="text-xs text-red-600 font-body">{folderError}</p>}
               </div>
             )}
 
