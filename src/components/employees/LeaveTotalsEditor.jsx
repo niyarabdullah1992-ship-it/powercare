@@ -8,7 +8,7 @@ export default function LeaveTotalsEditor({ employee, companyId }) {
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const profile = employee.profile || {};
-  const types = LEAVE_TYPES.filter((ty) => ty.key !== "unpaid");
+  const types = LEAVE_TYPES.filter((ty) => ty.defaultTotal !== null);
   const [form, setForm] = useState(() => types.reduce((acc, ty) => ({ ...acc, [ty.key]: getLeaveTotal(profile, ty.key) ?? 0 }), {}));
 
   const save = () => {

@@ -12,7 +12,7 @@ export default function LeaveBalanceCard({ profile, requests }) {
         <CalendarDays className="w-4 h-4 text-accent" /> {t("leaveBalance")}
       </h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {LEAVE_TYPES.filter((ty) => ty.key !== "unpaid").map((ty) => {
+        {LEAVE_TYPES.filter((ty) => ty.key !== "unpaid" && ty.defaultTotal !== null).map((ty) => {
           const total = getLeaveTotal(profile, ty.key) ?? 0;
           const used = usedLeaveDays(requests, ty.key);
           const remaining = Math.max(0, total - used);
@@ -29,6 +29,10 @@ export default function LeaveBalanceCard({ profile, requests }) {
             </div>
           );
         })}
+        <div className="p-3 rounded-lg border border-border bg-background flex flex-col justify-center">
+          <p className="text-xs text-muted-foreground font-body truncate">{t("sick")} / {t("exam")}</p>
+          <p className="text-lg font-heading font-semibold leading-tight">{t("unlimited")}</p>
+        </div>
       </div>
     </div>
   );

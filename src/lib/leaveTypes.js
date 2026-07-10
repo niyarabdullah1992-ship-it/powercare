@@ -2,8 +2,8 @@
 
 export const LEAVE_TYPES = [
   { key: "annual", defaultTotal: 21 },
-  { key: "sick", defaultTotal: 10, requiresFile: true },
-  { key: "exam", defaultTotal: 5 },
+  { key: "sick", defaultTotal: null, requiresFile: true },
+  { key: "exam", defaultTotal: null, requiresFile: true },
   { key: "marriage", defaultTotal: 3 },
   { key: "bereavement", defaultTotal: 5 },
   { key: "maternity", defaultTotal: 70 },
