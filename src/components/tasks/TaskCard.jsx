@@ -1,5 +1,5 @@
 import React from "react";
-import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2 } from "lucide-react";
+import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2, HelpCircle } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
@@ -165,6 +165,16 @@ export default function TaskCard({
               <div className="flex flex-wrap items-end gap-2">
                 <CommentFiles files={commentFiles} setFiles={setCommentFiles} />
                 <VoiceRecorder files={commentFiles} setFiles={setCommentFiles} />
+                {!done && (
+                  <button
+                    type="button"
+                    onClick={() => setMarkIssue(!markIssue)}
+                    title={t("markAsIssue")}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-body border transition-colors ${markIssue ? "border-red-400 bg-red-50 text-red-700" : "border-border hover:bg-muted"}`}
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" /> {t("markAsIssue")}
+                  </button>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <input value={commentText} onChange={(e) => setCommentText(e.target.value)} placeholder={t("writeComment")} className="flex-1 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
@@ -172,12 +182,6 @@ export default function TaskCard({
                   <Send className="w-3.5 h-3.5" /> {t("send")}
                 </button>
               </div>
-              {!done && (
-                <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-body cursor-pointer">
-                  <input type="checkbox" checked={!!markIssue} onChange={(e) => setMarkIssue(e.target.checked)} className="rounded border-input" />
-                  <AlertTriangle className="w-3 h-3" /> {t("markAsIssue")}
-                </label>
-              )}
             </div>
           </div>
         )}
