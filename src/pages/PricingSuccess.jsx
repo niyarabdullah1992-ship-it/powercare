@@ -2,14 +2,16 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { createCompany } from "@/lib/store";
+import { useI18n } from "@/lib/i18n";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import Logo from "@/components/Logo";
 
 const PLAN_LABELS = { starter: "Starter", professional: "Professional", enterprise: "Enterprise" };
 
 export default function PricingSuccess() {
+  const { t } = useI18n();
   const navigate = useNavigate();
-  const [status, setStatus] = useState("verifying"); // verifying | success | error
+  const [status, setStatus] = useState("verifying"); // verifying | password | success | error
   const [password, setPassword] = useState("");
   const [session, setSession] = useState(null);
 
@@ -52,25 +54,25 @@ export default function PricingSuccess() {
         {status === "verifying" && (
           <>
             <Loader2 className="w-8 h-8 text-landing-gold mx-auto animate-spin" />
-            <p className="text-sm text-[#3a2f22]/60 font-body">Confirming your payment...</p>
+            <p className="text-sm text-[#3a2f22]/60 font-body">{t("confirmingPayment")}</p>
           </>
         )}
 
         {status === "password" && (
           <>
             <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
-            <p className="text-sm text-[#3a2f22]/60 font-body">Payment confirmed! Set a password to finish creating your account.</p>
+            <p className="text-sm text-[#3a2f22]/60 font-body">{t("paymentConfirmedText")}</p>
             <form onSubmit={finishSetup} className="space-y-3 text-start">
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Choose a password"
+                placeholder={t("choosePasswordPlaceholder")}
                 required
                 className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
               />
               <button type="submit" className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity">
-                Finish Setup
+                {t("finishSetupBtn")}
               </button>
             </form>
           </>
@@ -79,16 +81,16 @@ export default function PricingSuccess() {
         {status === "success" && (
           <>
             <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
-            <p className="text-sm text-[#3a2f22]/60 font-body">Your account is ready. Redirecting...</p>
+            <p className="text-sm text-[#3a2f22]/60 font-body">{t("accountReadyText")}</p>
           </>
         )}
 
         {status === "error" && (
           <>
             <XCircle className="w-10 h-10 text-red-500 mx-auto" />
-            <p className="text-sm text-[#3a2f22]/60 font-body">We couldn't confirm your payment.</p>
+            <p className="text-sm text-[#3a2f22]/60 font-body">{t("paymentNotConfirmedText")}</p>
             <button onClick={() => navigate("/pricing")} className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity">
-              Back to Pricing
+              {t("backToPricingBtn")}
             </button>
           </>
         )}

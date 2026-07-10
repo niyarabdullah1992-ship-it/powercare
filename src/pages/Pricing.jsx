@@ -2,22 +2,24 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { createCompany } from "@/lib/store";
+import { useI18n } from "@/lib/i18n";
 import { Check, Loader2 } from "lucide-react";
 import Logo from "@/components/Logo";
 import SignupDialog from "@/components/pricing/SignupDialog";
 
-const PLANS = [
-  { id: "free", name: "Free", price: 0, features: ["1 Station", "Up to 5 Employees", "Basic Task Tracking"] },
-  { id: "starter", name: "Starter", price: 49, features: ["Up to 5 Stations", "Up to 30 Employees", "Reports & Safety Tools"] },
-  { id: "professional", name: "Professional", price: 149, features: ["Unlimited Stations", "Unlimited Employees", "Full HR Suite", "Schedules & Analytics"] },
-  { id: "enterprise", name: "Enterprise", price: 249, features: ["Everything in Professional", "Priority Support", "Custom Onboarding"] },
-];
-
 export default function Pricing() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [activePlan, setActivePlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const PLANS = [
+    { id: "free", nameKey: "plan_free", price: 0, features: [t("freeF1"), t("freeF2"), t("freeF3")] },
+    { id: "starter", nameKey: "plan_starter", price: 49, features: [t("starterF1"), t("starterF2"), t("starterF3")] },
+    { id: "professional", nameKey: "plan_pro", price: 149, features: [t("proF1"), t("proF2"), t("proF3"), t("proF4")] },
+    { id: "enterprise", nameKey: "plan_ent", price: 249, features: [t("entF1"), t("entF2"), t("entF3")] },
+  ];
 
   const handleFreeSignup = ({ companyName, ownerEmail, ownerPassword }) => {
     const company = createCompany({ name: companyName, ownerEmail, ownerPassword, plan: "Starter" });
@@ -27,7 +29,7 @@ export default function Pricing() {
 
   const handlePaidSignup = async ({ companyName, ownerEmail }) => {
     if (window.self !== window.top) {
-      setError("Checkout only works from a published app, not inside the editor preview.");
+      setError(t("checkoutIframeError"));
       return;
     }
     setLoading(true);
@@ -43,10 +45,10 @@ export default function Pricing() {
       if (res.data?.url) {
         window.location.href = res.data.url;
       } else {
-        setError(res.data?.error || "Could not start checkout.");
+        setError(res.data?.error || t("checkoutGenericError"));
       }
     } catch (e) {
-      setError("Could not start checkout. Please try again.");
+      setError(t("checkoutGenericError"));
     } finally {
       setLoading(false);
     }
@@ -58,18 +60,18 @@ export default function Pricing() {
         <div className="flex items-center gap-2 justify-center mb-3">
           <Logo size={32} />
         </div>
-        <h1 className="hero-title text-landing-gold text-5xl md:text-6xl text-center mb-3">Pricing</h1>
-        <p className="text-center text-[#3a2f22]/55 font-body mb-12">Choose the plan that fits your operation.</p>
+        <h1 className="hero-title text-landing-gold text-5xl md:text-6xl text-center mb-3">{t("pricingHeading")}</h1>
+        <p className="text-center text-[#3a2f22]/55 font-body mb-12">{t("pricingSubheading")}</p>
 
         {error && <p className="text-center text-sm text-red-500 font-body mb-6">{error}</p>}
 
         <div className="grid md:grid-cols-4 gap-6">
           {PLANS.map((plan) => (
             <div key={plan.id} className="bg-white rounded-2xl p-6 shadow-sm flex flex-col">
-              <h3 className="font-heading text-2xl text-[#3a2f22] mb-1">{plan.name}</h3>
+              <h3 className="font-heading text-2xl text-[#3a2f22] mb-1">{t(plan.nameKey)}</h3>
               <p className="font-heading text-3xl text-landing-gold mb-4">
-                {plan.price === 0 ? "Free" : `$${plan.price}`}
-                {plan.price > 0 && <span className="text-sm text-[#3a2f22]/40 font-body">/mo</span>}
+                {plan.price === 0 ? t("plan_free") : `$${plan.price}`}
+                {plan.price > 0 && <span className="text-sm text-[#3a2f22]/40 font-body">{t("perMonth")}</span>}
               </p>
               <ul className="space-y-2 mb-6 flex-1">
                 {plan.features.map((f) => (
@@ -84,7 +86,7 @@ export default function Pricing() {
                 disabled={loading}
                 className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {loading && activePlan?.id === plan.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (plan.price === 0 ? "Start Free" : "Subscribe")}
+                {loading && activePlan?.id === plan.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (plan.price === 0 ? t("startFree") : t("subscribe"))}
               </button>
             </div>
           ))}
