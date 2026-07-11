@@ -60,6 +60,12 @@ export default function Performance() {
             {t("stationRanking")}
           </button>
           <button
+            onClick={() => setView("comparison")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "comparison" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {t("stationComparison")}
+          </button>
+          <button
             onClick={() => setView("achievements")}
             className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "achievements" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
           >
@@ -70,12 +76,6 @@ export default function Performance() {
             className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "analytics" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
           >
             {t("analytics")}
-          </button>
-          <button
-            onClick={() => setView("comparison")}
-            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "comparison" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-          >
-            {t("stationComparison")}
           </button>
         </div>
       </div>

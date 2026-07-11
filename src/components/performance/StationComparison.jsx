@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
-import { Building2, Check } from "lucide-react";
+import StationFilterDropdown from "@/components/reports/StationFilterDropdown";
 
 const LEVEL_TONE = {
   green: "bg-accent/15 text-accent",
@@ -46,23 +46,16 @@ export default function StationComparison() {
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-muted-foreground font-body">{t("compareStationsNote")}</p>
-
-      {/* Station picker */}
-      <div className="flex flex-wrap gap-2">
-        {data.stations.map((s) => {
-          const isSelected = selected.includes(s.id);
-          return (
-            <button
-              key={s.id}
-              onClick={() => toggle(s.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${isSelected ? "bg-accent text-accent-foreground border-accent" : "border-border hover:bg-muted"}`}
-            >
-              {isSelected && <Check className="w-3 h-3" />}
-              <Building2 className="w-3.5 h-3.5" /> {s.name}
-            </button>
-          );
-        })}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <p className="text-sm text-muted-foreground font-body">{t("compareStationsNote")}</p>
+        <StationFilterDropdown
+          t={t}
+          options={data.stations.map((s) => ({ key: s.id, label: s.name }))}
+          selected={selected}
+          onToggle={toggle}
+          onSelectAll={() => setSelected(data.stations.map((s) => s.id))}
+          onClearAll={() => setSelected([])}
+        />
       </div>
 
       {selected.length < 2 ? (
