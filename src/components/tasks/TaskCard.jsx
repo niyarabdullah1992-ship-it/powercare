@@ -10,6 +10,7 @@ import { NO_SECTION } from "@/lib/taskFolders";
 export default function TaskCard({
   tg, t, dir, lang, assignmentLabel, canManage, canLog,
   logTarget, logAmount, setLogTarget, setLogAmount, logCompleted,
+  logProofFiles, setLogProofFiles, reviewTarget,
   commentsOpen, setCommentsOpen, commentText, setCommentText, commentFiles, setCommentFiles, submitComment,
   markIssue, setMarkIssue,
   allSectionFolders, moveTaskToSection, setEditTarget, deleteTarget,
@@ -18,6 +19,7 @@ export default function TaskCard({
   const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
   const done = tg.status === "completed";
   const overdue = tg.status === "overdue";
+  const pendingReview = tg.status === "pending_review";
   const canLogThis = canLog;
   const isUrgent = tg.priority === "urgent";
   const totalDur = new Date(tg.end_date).getTime() - new Date(tg.start_date).getTime();
@@ -29,11 +31,15 @@ export default function TaskCard({
     ? "bg-emerald-100 text-emerald-700 border-emerald-300"
     : overdue
     ? "bg-red-100 text-red-700 border-red-300"
+    : pendingReview
+    ? "bg-blue-100 text-blue-700 border-blue-300"
     : "bg-amber-100 text-amber-700 border-amber-300";
   const cardBorder = overdue
     ? "border-red-300 bg-red-50/40"
     : done
     ? "border-emerald-300 bg-emerald-50/30"
+    : pendingReview
+    ? "border-blue-300 bg-blue-50/30"
     : isUrgent
     ? "border-red-400 bg-red-50/20"
     : "border-border bg-background";
@@ -73,7 +79,7 @@ export default function TaskCard({
           )}
           <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-body font-medium border whitespace-nowrap ${statusBadge}`}>
             {done ? <Check className="w-3 h-3" /> : overdue ? <AlertTriangle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-            {done ? t("completed") : overdue ? t("overdue") : t("inProgress")}
+            {done ? t("completed") : overdue ? t("overdue") : pendingReview ? t("pendingReview") : t("inProgress")}
           </span>
           {canManage && (
             <div className="flex items-center gap-1 mt-1">
@@ -125,12 +131,32 @@ export default function TaskCard({
           <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
         </div>
       </div>
-      {canLogThis && !done && !overdue && (
-        <div className="flex items-center gap-2 pt-1">
-          <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
-          <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
-            <Check className="w-3.5 h-3.5" /> {t("logCompleted")}
-          </button>
+      {canLogThis && !done && !overdue && !pendingReview && (
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center gap-2">
+            <input type="number" min="1" value={logTarget === tg.id ? logAmount : 1} onChange={(e) => { setLogTarget(tg.id); setLogAmount(e.target.value); }} className="w-20 px-2 py-1.5 rounded-md border border-input text-xs font-body" />
+            <button onClick={() => logCompleted(tg.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-accent-foreground text-xs font-body">
+              <Check className="w-3.5 h-3.5" /> {t("logCompleted")}
+            </button>
+          </div>
+          <CommentFiles files={logTarget === tg.id ? logProofFiles : []} setFiles={(arr) => { setLogTarget(tg.id); setLogProofFiles(arr); }} />
+          <p className="text-[11px] text-muted-foreground font-body">{t("proofRequired")}</p>
+        </div>
+      )}
+
+      {pendingReview && (
+        <div className="pt-1 space-y-2">
+          {Array.isArray(tg.completion_proof) && tg.completion_proof.length > 0 && (
+            <CommentAttachments files={tg.completion_proof} />
+          )}
+          {canManage ? (
+            <div className="flex items-center gap-2">
+              <button onClick={() => reviewTarget(tg, true)} className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-body">{t("approve")}</button>
+              <button onClick={() => reviewTarget(tg, false)} className="px-3 py-1.5 rounded-md border border-red-300 text-red-700 text-xs font-body">{t("reject")}</button>
+            </div>
+          ) : (
+            <p className="text-xs text-blue-700 font-body">{t("awaitingReview")}</p>
+          )}
         </div>
       )}
 

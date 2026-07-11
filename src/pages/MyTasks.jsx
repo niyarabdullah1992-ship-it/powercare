@@ -40,6 +40,7 @@ export default function MyTasks() {
   const [taskFiles, setTaskFiles] = useState([]);
   const [logTarget, setLogTarget] = useState(null);
   const [logAmount, setLogAmount] = useState(1);
+  const [logProofFiles, setLogProofFiles] = useState([]);
   const [commentsOpen, setCommentsOpen] = useState(null);
   const [commentText, setCommentText] = useState("");
   const [commentFiles, setCommentFiles] = useState([]);
@@ -393,36 +394,59 @@ export default function MyTasks() {
         userId: currentUser.id,
         managerId: data.directorId,
         employeeName: currentUser.name,
+        proofFiles: logProofFiles,
       });
+      const updatedTarget = res?.data?.target;
       const mgrId = tg?.manager_id || data.directorId;
-      const newCompleted = res?.data?.target?.completed_tasks ?? (tg?.completed_tasks || 0) + amt;
+      const newCompleted = updatedTarget?.completed_tasks ?? (tg?.completed_tasks || 0) + amt;
       addNotification(
         company.id,
         mgrId,
-        `${currentUser.name} → ${tg?.title || t("setTarget")}: +${amt} ${t("tasksUnit")} (${newCompleted}/${tg?.task_target || "?"}).`
+        updatedTarget?.status === "pending_review"
+          ? `${currentUser.name} → ${tg?.title || t("setTarget")}: ${t("reviewSubmission")} (${newCompleted}/${tg?.task_target || "?"}).`
+          : `${currentUser.name} → ${tg?.title || t("setTarget")}: +${amt} ${t("tasksUnit")} (${newCompleted}/${tg?.task_target || "?"}).`
       );
-      const updatedTarget = res?.data?.target;
-      const wasCompleted = tg?.status === "completed";
-      const nowCompleted = updatedTarget?.status === "completed";
-      if (!wasCompleted && nowCompleted) {
-        const pts = PRIORITY_POINTS[tg?.priority] || 75;
-        let recipients = [];
-        if (tg?.assignment_type === "member" && tg?.employee_id) {
-          recipients = [tg.employee_id];
-        } else if (tg?.assignment_type === "station_team") {
-          recipients = data.employees.filter((e) => e.stationId === tg?.assignment_id).map((e) => e.id);
-        } else if (tg?.assignment_type === "hq_team") {
-          recipients = data.employees.filter((e) => !e.stationId).map((e) => e.id);
-        }
-        for (const rid of recipients) {
-          addPoints(company.id, rid, pts, `${t("taskCompleted")}: ${tg?.title || ""}`);
-        }
+      if (updatedTarget) {
+        setTargets((prev) => prev.map((x) => (x.id === updatedTarget.id ? updatedTarget : x)));
       }
       setLogTarget(null);
       setLogAmount(1);
-      fetchTargets();
+      setLogProofFiles([]);
     } catch (err) {
-      alert(err?.response?.data?.error || "Failed to update progress");
+      const code = err?.response?.data?.error;
+      alert(code === "PROOF_REQUIRED" ? t("proofRequired") : (code || "Failed to update progress"));
+    }
+  };
+
+  // Manager reviews an employee's submitted proof — approve grants points, reject sends it back.
+  const reviewTarget = async (tg, approve) => {
+    try {
+      const res = await base44.functions.invoke("supabaseTargets", {
+        action: "reviewCompletion",
+        userRole: currentUser.role,
+        targetId: tg.id,
+        approve,
+      });
+      const updated = res?.data?.target;
+      if (updated) {
+        setTargets((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      }
+      if (approve) {
+        const pts = PRIORITY_POINTS[tg.priority] || 75;
+        let recipients = [];
+        if (tg.assignment_type === "member" && tg.employee_id) {
+          recipients = [tg.employee_id];
+        } else if (tg.assignment_type === "station_team") {
+          recipients = data.employees.filter((e) => e.stationId === tg.assignment_id).map((e) => e.id);
+        } else if (tg.assignment_type === "hq_team") {
+          recipients = data.employees.filter((e) => !e.stationId).map((e) => e.id);
+        }
+        for (const rid of recipients) {
+          addPoints(company.id, rid, pts, `${t("taskCompleted")}: ${tg.title || ""}`);
+        }
+      }
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to review");
     }
   };
 
@@ -590,6 +614,7 @@ export default function MyTasks() {
       canManage={canManage(tg)}
       canLog={canLog(tg)}
       logTarget={logTarget} logAmount={logAmount} setLogTarget={setLogTarget} setLogAmount={setLogAmount} logCompleted={logCompleted}
+      logProofFiles={logProofFiles} setLogProofFiles={setLogProofFiles} reviewTarget={reviewTarget}
       commentsOpen={commentsOpen} setCommentsOpen={setCommentsOpen} commentText={commentText} setCommentText={setCommentText} commentFiles={commentFiles} setCommentFiles={setCommentFiles} submitComment={submitComment}
       markIssue={markIssue} setMarkIssue={setMarkIssue}
       allSectionFolders={allSectionFolders} moveTaskToSection={moveTaskToSection} setEditTarget={setEditTarget} deleteTarget={deleteTarget}

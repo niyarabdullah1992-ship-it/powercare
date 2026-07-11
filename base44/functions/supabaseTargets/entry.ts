@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "updateProgress") {
-      const { targetId, amount, managerId, employeeName } = body;
+      const { targetId, amount, managerId, employeeName, proofFiles } = body;
       if (!targetId || !amount) {
         return Response.json({ error: "Missing fields" }, { status: 400 });
       }
@@ -173,33 +173,73 @@ Deno.serve(async (req) => {
       const tg = rows[0];
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
       const newCompleted = Math.min(tg.completed_tasks + Number(amount), tg.task_target);
-      const status = newCompleted >= tg.task_target ? "completed" : "active";
+      const reachesTarget = newCompleted >= tg.task_target;
+      const cleanProof = Array.isArray(proofFiles)
+        ? proofFiles.filter((f) => f && f.url).map((f) => ({ url: f.url, name: f.name || "file", type: f.type || "file" }))
+        : [];
+      // Reaching the quota requires attached proof (photo/file) — completion then
+      // waits for manager review instead of closing automatically.
+      if (reachesTarget && cleanProof.length === 0) {
+        return Response.json({ error: "PROOF_REQUIRED" }, { status: 400 });
+      }
+      const status = reachesTarget ? "pending_review" : "active";
+      const patch: Record<string, unknown> = { completed_tasks: newCompleted, status };
+      if (reachesTarget) patch.completion_proof = cleanProof;
       const patchRes = await fetch(
         `${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`,
         {
           method: "PATCH",
           headers: { ...headers, Prefer: "return=representation" },
-          body: JSON.stringify({ completed_tasks: newCompleted, status }),
+          body: JSON.stringify(patch),
         }
       );
       const updated = await patchRes.json();
+      if (!patchRes.ok) {
+        return Response.json({ error: updated?.message || "Failed to update progress — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS completion_proof jsonb;" }, { status: 400 });
+      }
       // Notify the manager
       await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
         method: "POST",
         headers,
         body: JSON.stringify({
           user_id: managerId || tg.manager_id,
-          message: `${employeeName || "Employee"} completed ${amount} tasks (${newCompleted}/${tg.task_target}).`,
+          message: reachesTarget
+            ? `${employeeName || "Employee"} submitted "${tg.title || "Untitled"}" for review (${newCompleted}/${tg.task_target}).`
+            : `${employeeName || "Employee"} completed ${amount} tasks (${newCompleted}/${tg.task_target}).`,
         }),
       });
-      // On completion, notify the responsible employee (member) with a celebration
-      if (status === "completed" && tg.assignment_type === "member" && tg.employee_id) {
+      return Response.json({ target: updated[0] });
+    }
+
+    if (action === "reviewCompletion") {
+      if (!isManager) {
+        return Response.json({ error: "Forbidden: only managers can review completions" }, { status: 403 });
+      }
+      const { targetId, approve } = body;
+      if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
+      const getRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, { headers });
+      const rows = await getRes.json();
+      const tg = rows[0];
+      if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
+      const patch = approve ? { status: "completed" } : { status: "active", completion_proof: null };
+      const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
+        method: "PATCH",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify(patch),
+      });
+      const updated = await patchRes.json();
+      if (!patchRes.ok) {
+        return Response.json({ error: updated?.message || "Failed to review completion" }, { status: 400 });
+      }
+      if (tg.assignment_type === "member" && tg.employee_id) {
         await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
           method: "POST",
           headers,
           body: JSON.stringify({
             user_id: tg.employee_id,
-            message: `🎉 Target "${tg.title || "Untitled"}" COMPLETED! You reached the goal (${tg.task_target} tasks).`,
+            message: approve
+              ? `🎉 Target "${tg.title || "Untitled"}" COMPLETED! Your proof was approved (${tg.task_target} tasks).`
+              : `Your completion proof for "${tg.title || "Untitled"}" was rejected. Please resubmit with new proof.`,
           }),
         });
       }

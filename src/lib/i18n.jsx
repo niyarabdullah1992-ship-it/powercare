@@ -287,6 +287,8 @@ const dict = {
     addChatGroup: "New Group", groupName: "Group Name", selectStationsForGroup: "Select 2 or more stations to link", noChatGroups: "No linked chat groups yet.",
     listView: "List", groupVsGroup: "Group vs Group", groupA: "Group A", groupB: "Group B", avgPoints: "Avg Points",
     employeeComparison: "Employee Comparison",
+    pendingReview: "Pending Review", awaitingReview: "Submitted — awaiting manager review",
+    proofRequired: "A photo or file proof is required to mark this as complete.", reviewSubmission: "submitted proof for review",
   },
   ar: {
     dir: "rtl",
@@ -573,6 +575,8 @@ const dict = {
     addChatGroup: "مجموعة جديدة", groupName: "اسم المجموعة", selectStationsForGroup: "اختر محطتين أو أكثر لربطهما", noChatGroups: "لا توجد مجموعات دردشة مرتبطة بعد.",
     listView: "قائمة", groupVsGroup: "مقارنة مجموعات", groupA: "المجموعة أ", groupB: "المجموعة ب", avgPoints: "متوسط النقاط",
     employeeComparison: "مقارنة الموظفين",
+    pendingReview: "بانتظار المراجعة", awaitingReview: "تم الإرسال — بانتظار مراجعة المدير",
+    proofRequired: "يجب إرفاق صورة أو ملف كإثبات لتعليم المهمة كمكتملة.", reviewSubmission: "أرسل إثباتًا للمراجعة",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
