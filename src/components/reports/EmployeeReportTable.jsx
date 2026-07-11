@@ -9,6 +9,7 @@ import { exportCSV } from "@/lib/exportReport";
 export default function EmployeeReportTable({ data, company, targets, t, lang }) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null); // null = not initialized yet
+  const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => {
     if (selected === null) setSelected(data.employees.map((e) => e.id));
@@ -98,8 +99,9 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
           />
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setSelected(data.employees.map((e) => e.id))} className="text-xs text-accent hover:underline font-body">{t("all")}</button>
-          <button onClick={() => setSelected([])} className="text-xs text-muted-foreground hover:underline font-body">{t("cancel")}</button>
+          <button onClick={() => setShowPicker((o) => !o)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+            <Users className="w-3.5 h-3.5" /> {t("select")}
+          </button>
           <button
             onClick={exportAll}
             disabled={compared.length === 0}
@@ -111,8 +113,13 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
       </div>
 
       {/* Employee picker */}
-      <div className="p-1.5 rounded-xl border border-border bg-card max-h-48 overflow-y-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
+      {showPicker && (
+      <div className="p-1.5 rounded-xl border border-border bg-card space-y-1.5">
+        <div className="flex items-center gap-2 px-1 pt-1">
+          <button onClick={() => setSelected(data.employees.map((e) => e.id))} className="text-xs text-accent hover:underline font-body">{t("all")}</button>
+          <button onClick={() => setSelected([])} className="text-xs text-muted-foreground hover:underline font-body">{t("cancel")}</button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 max-h-48 overflow-y-auto">
           {filteredList.map((e) => {
             const checked = selected.includes(e.id);
             return (
@@ -131,6 +138,7 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
           {filteredList.length === 0 && <p className="text-xs text-muted-foreground font-body p-2">{t("noResults")}</p>}
         </div>
       </div>
+      )}
 
       {/* Comparison table */}
       <div className="p-4 rounded-xl border border-border bg-card overflow-x-auto shadow-sm">
