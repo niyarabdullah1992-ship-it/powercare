@@ -111,18 +111,24 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
       </div>
 
       {/* Employee picker */}
-      <div className="p-3 rounded-xl border border-border bg-card max-h-48 overflow-y-auto">
-        <div className="flex flex-wrap gap-1.5">
-          {filteredList.map((e) => (
-            <button
-              key={e.id}
-              onClick={() => toggle(e.id)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-body border transition ${selected.includes(e.id) ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-            >
-              <Users className="w-3 h-3" /> {e.name}
-            </button>
-          ))}
-          {filteredList.length === 0 && <p className="text-xs text-muted-foreground font-body">{t("noResults")}</p>}
+      <div className="p-1.5 rounded-xl border border-border bg-card max-h-48 overflow-y-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
+          {filteredList.map((e) => {
+            const checked = selected.includes(e.id);
+            return (
+              <button
+                key={e.id}
+                onClick={() => toggle(e.id)}
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-body text-start transition ${checked ? "bg-foreground text-background" : "hover:bg-muted"}`}
+              >
+                <span className={`w-3.5 h-3.5 rounded-sm border shrink-0 flex items-center justify-center ${checked ? "bg-background border-background" : "border-current"}`}>
+                  {checked && <span className="w-2 h-2 rounded-[1px] bg-foreground" />}
+                </span>
+                <span className="truncate">{e.name}</span>
+              </button>
+            );
+          })}
+          {filteredList.length === 0 && <p className="text-xs text-muted-foreground font-body p-2">{t("noResults")}</p>}
         </div>
       </div>
 
