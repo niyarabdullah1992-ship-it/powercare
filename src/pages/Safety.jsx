@@ -1,8 +1,10 @@
 import React from "react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { visibleStations, canSeeAllStations } from "@/lib/permissions";
-import { AlertTriangle } from "lucide-react";
+import { updateCompany } from "@/lib/store";
+import { visibleStations, canSeeAllStations, canManageStations } from "@/lib/permissions";
+import { AlertTriangle, GripVertical } from "lucide-react";
 import SafetyCard from "@/components/safety/SafetyCard";
 
 const HQ_SAFETY_ID = "hq";
@@ -13,6 +15,7 @@ export default function Safety() {
   const { data, currentUser, company } = useAuth();
   if (!data || !currentUser) return null;
 
+  const canManage = canManageStations(currentUser);
   const stations = visibleStations(currentUser, data);
   const stationIds = new Set(stations.map((s) => s.id));
   const safetyFor = (id) => data.safety.find((s) => s.stationId === id) || DEFAULT_SAFETY;
@@ -32,6 +35,22 @@ export default function Safety() {
 
   const redCount =
     allSafety.filter((s) => s.safety.level === "red").length + (showHq && hqSafety.level === "red" ? 1 : 0);
+
+  // Reorders stations within a single type-group by drag, keeping other groups' order intact.
+  const reorderGroup = (groupIds, fromIndex, toIndex) => {
+    if (!canManage) return;
+    const reorderedIds = Array.from(groupIds);
+    const [moved] = reorderedIds.splice(fromIndex, 1);
+    reorderedIds.splice(toIndex, 0, moved);
+    updateCompany(company.id, (d) => {
+      const byId = Object.fromEntries(d.stations.map((s) => [s.id, s]));
+      const positions = [];
+      d.stations.forEach((s, i) => { if (groupIds.includes(s.id)) positions.push(i); });
+      const next = [...d.stations];
+      positions.forEach((pos, idx) => { next[pos] = byId[reorderedIds[idx]]; });
+      d.stations = next;
+    });
+  };
 
   return (
     <div className="space-y-8">
@@ -55,22 +74,57 @@ export default function Safety() {
         <p className="text-sm text-muted-foreground font-body">{t("noTasks")}</p>
       )}
 
-      {Object.entries(groups).map(([type, items]) => (
-        <div key={type} className="space-y-4">
-          <div className="flex items-center gap-2">
-            <h2 className="font-heading text-lg font-semibold">{type}</h2>
-            <span className="text-xs text-muted-foreground font-body">
-              {items.length} {t("stations").toLowerCase()}
-            </span>
+      {Object.entries(groups).map(([type, items]) => {
+        const groupIds = items.map(({ station }) => station.id);
+        return (
+          <div key={type} className="space-y-4">
+            <div className="flex items-center gap-2">
+              <h2 className="font-heading text-lg font-semibold">{type}</h2>
+              <span className="text-xs text-muted-foreground font-body">
+                {items.length} {t("stations").toLowerCase()}
+              </span>
+            </div>
+            <DragDropContext
+              onDragEnd={(result) => {
+                if (!result.destination) return;
+                reorderGroup(groupIds, result.source.index, result.destination.index);
+              }}
+            >
+              <Droppable droppableId={`safety-group-${type}`} direction="horizontal">
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                  >
+                    {showHq && <SafetyCard t={t} lang={lang} name={hqLabel} isHQ safety={hqSafety} />}
+                    {items.map(({ station, safety }, index) => (
+                      <Draggable key={station.id} draggableId={station.id} index={index} isDragDisabled={!canManage}>
+                        {(dragProvided, dragSnapshot) => (
+                          <div
+                            ref={dragProvided.innerRef}
+                            {...dragProvided.draggableProps}
+                            className={dragSnapshot.isDragging ? "shadow-lg rounded-xl" : ""}
+                          >
+                            <SafetyCard
+                              t={t}
+                              lang={lang}
+                              name={station.name}
+                              safety={safety}
+                              dragHandleProps={canManage ? dragProvided.dragHandleProps : null}
+                            />
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {showHq && <SafetyCard t={t} lang={lang} name={hqLabel} isHQ safety={hqSafety} />}
-            {items.map(({ station, safety }) => (
-              <SafetyCard key={station.id} t={t} lang={lang} name={station.name} safety={safety} />
-            ))}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

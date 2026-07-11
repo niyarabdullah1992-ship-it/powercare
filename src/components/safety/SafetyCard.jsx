@@ -1,5 +1,5 @@
 import React from "react";
-import { HardHat, Building2, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { HardHat, Building2, AlertTriangle, CheckCircle, XCircle, GripVertical } from "lucide-react";
 
 const LEVEL_MAP = {
   green: { tone: "bg-accent/15 text-accent", icon: CheckCircle, label: "Safe" },
@@ -7,7 +7,7 @@ const LEVEL_MAP = {
   red: { tone: "bg-destructive/15 text-destructive", icon: XCircle, label: "Critical" },
 };
 
-export default function SafetyCard({ t, lang, name, isHQ, safety }) {
+export default function SafetyCard({ t, lang, name, isHQ, safety, dragHandleProps }) {
   const L = LEVEL_MAP[safety.level] || LEVEL_MAP.amber;
   const Icon = isHQ ? Building2 : HardHat;
 
@@ -15,6 +15,11 @@ export default function SafetyCard({ t, lang, name, isHQ, safety }) {
     <div className={`p-5 rounded-xl border bg-card space-y-3 ${isHQ ? "border-accent/40" : "border-border"}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
+          {dragHandleProps && (
+            <span {...dragHandleProps} className="cursor-grab text-muted-foreground hover:text-foreground shrink-0">
+              <GripVertical className="w-4 h-4" />
+            </span>
+          )}
           <Icon className={`w-4 h-4 ${isHQ ? "text-accent" : "text-muted-foreground"}`} strokeWidth={1.75} />
           <h3 className="font-heading font-semibold">{name}</h3>
         </div>
