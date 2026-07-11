@@ -6,6 +6,8 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { addNotification, addPoints } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { PRIORITY_POINTS } from "@/lib/rewards";
+import { groupLevelsByOrder } from "@/lib/hrLevels";
+import { handlersForLevel, levelLabel } from "@/lib/escalation";
 import { base44 } from "@/api/base44Client";
 import { getParentPath, withAncestors, NO_SECTION } from "@/lib/taskFolders";
 import { logAudit } from "@/lib/auditLog";
@@ -481,8 +483,19 @@ export default function MyTasks() {
     }
   };
 
-  // Employee's manual objection when they disagree with a rejection — flags it for the manager.
+  // Escalation chain: level 0 = station manager, then up the company's HR tiers —
+  // same chain already used for anonymous/public complaints (see src/lib/escalation.js).
+  const STAGE_COUNT = groupLevelsByOrder(data.hrLevels || []).length + 1;
+  const escalationLevelOf = (tg) => Math.min(tg.escalation_level || 0, STAGE_COUNT - 1);
+  const isAtTopEscalation = (tg) => escalationLevelOf(tg) >= STAGE_COUNT - 1;
+  const escalationHandlerLabel = (tg) => levelLabel(escalationLevelOf(tg), data, t, lang);
+
+  // Employee's manual objection when they disagree with a rejection — escalates to the
+  // next handler up the HR chain instead of always notifying the same manager again.
   const disputeRejection = async (tg, message) => {
+    const nextLevel = Math.min((tg.escalation_level || 0) + 1, STAGE_COUNT - 1);
+    const handlers = handlersForLevel(nextLevel, { stationId: targetStationKey(tg) }, data);
+    const notifyUserIds = handlers.length ? handlers.map((h) => h.id) : [tg.manager_id];
     try {
       const res = await base44.functions.invoke("supabaseTargets", {
         action: "disputeRejection",
@@ -490,6 +503,8 @@ export default function MyTasks() {
         employeeId: currentUser.id,
         employeeName: currentUser.name,
         message,
+        escalationLevel: nextLevel,
+        notifyUserIds,
       });
       const updated = res?.data?.target;
       if (updated) setTargets((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
@@ -544,7 +559,9 @@ export default function MyTasks() {
     canCreateTasks(currentUser) &&
     (tg.manager_id === currentUser.id ||
       canSeeAllStations(currentUser) ||
-      (currentUser.role === "station_manager" && targetStationKey(tg) === currentUser.stationId));
+      (currentUser.role === "station_manager" && targetStationKey(tg) === currentUser.stationId) ||
+      // Escalated dispute: the next-level HR handler also gains review rights on this task.
+      ((tg.escalation_level || 0) > 0 && handlersForLevel(Math.min(tg.escalation_level, STAGE_COUNT - 1), { stationId: targetStationKey(tg) }, data).some((h) => h.id === currentUser.id)));
 
   const assignmentLabel = (tg) => {
     if (tg.assignment_type === "member") return `${t("member")}: ${employeeName(tg.employee_id)}`;
@@ -643,6 +660,7 @@ export default function MyTasks() {
       canLog={canLog(tg)}
       logTarget={logTarget} logAmount={logAmount} setLogTarget={setLogTarget} setLogAmount={setLogAmount} logCompleted={logCompleted}
       logProofFiles={logProofFiles} setLogProofFiles={setLogProofFiles} reviewTarget={reviewTarget} disputeRejection={disputeRejection}
+      escalationLabel={escalationHandlerLabel(tg)} isAtTopEscalation={isAtTopEscalation(tg)}
       commentsOpen={commentsOpen} setCommentsOpen={setCommentsOpen} commentText={commentText} setCommentText={setCommentText} commentFiles={commentFiles} setCommentFiles={setCommentFiles} submitComment={submitComment}
       markIssue={markIssue} setMarkIssue={setMarkIssue}
       allSectionFolders={allSectionFolders} moveTaskToSection={moveTaskToSection} setEditTarget={setEditTarget} deleteTarget={deleteTarget}

@@ -189,6 +189,8 @@ Deno.serve(async (req) => {
         // Remember the count before this submission so a rejection can restore it
         // instead of leaving completed_tasks stuck at the target (looking "100% done").
         patch.pre_review_completed = tg.completed_tasks;
+        // Fresh review cycle — reset the dispute-escalation chain back to the start.
+        patch.escalation_level = 0;
       }
       const patchRes = await fetch(
         `${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`,
@@ -272,7 +274,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "disputeRejection") {
-      const { targetId, employeeId, employeeName, message } = body;
+      const { targetId, employeeId, employeeName, message, escalationLevel, notifyUserIds } = body;
       if (!targetId || !(message || "").trim()) return Response.json({ error: "Missing fields" }, { status: 400 });
       const getRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, { headers });
       const rows = await getRes.json();
@@ -289,23 +291,30 @@ Deno.serve(async (req) => {
         is_dispute: true,
         created_at: new Date().toISOString(),
       });
+      const patch: Record<string, unknown> = { comments };
+      if (escalationLevel !== undefined) patch.escalation_level = escalationLevel;
       const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
-        body: JSON.stringify({ comments }),
+        body: JSON.stringify(patch),
       });
       const updated = await patchRes.json();
       if (!patchRes.ok) {
-        return Response.json({ error: updated?.message || "Failed to submit objection" }, { status: 400 });
+        return Response.json({ error: updated?.message || "Failed to submit objection — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS escalation_level integer DEFAULT 0;" }, { status: 400 });
       }
-      await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          user_id: tg.manager_id,
-          message: `🚩 ${employeeName || "Employee"} objected to the rejection of "${tg.title || "Untitled"}": ${message.trim()}`,
-        }),
-      });
+      // Escalation notifies the next handler up the HR chain instead of always the
+      // same manager who rejected — falls back to the manager if no chain handler is found.
+      const recipients = Array.isArray(notifyUserIds) && notifyUserIds.length ? notifyUserIds : [tg.manager_id];
+      for (const uid of recipients) {
+        await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            user_id: uid,
+            message: `🚩 ${employeeName || "Employee"} escalated the rejection of "${tg.title || "Untitled"}": ${message.trim()}`,
+          }),
+        });
+      }
       return Response.json({ target: updated[0] });
     }
 
