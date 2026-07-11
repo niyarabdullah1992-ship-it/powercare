@@ -48,22 +48,18 @@ export default function VideoIntro() {
         </p>
 
         <div className="rounded-2xl overflow-hidden shadow-2xl border border-landing-gold/20 mb-8">
-          <video
-            src={VIDEO_URL}
-            controls
-            className="w-full aspect-video bg-black"
-            onPlay={() => { audioRef.current?.play(); setPlaying(true); }}
-            onPause={() => { audioRef.current?.pause(); setPlaying(false); }}
-            onEnded={() => { audioRef.current?.pause(); setPlaying(false); }}
-          />
+          <video src={VIDEO_URL} controls className="w-full aspect-video bg-black" />
         </div>
 
         <audio ref={audioRef} src={narrationUrl} onEnded={() => setPlaying(false)} />
-        <div className="inline-flex items-center gap-2 text-landing-gold-light/70 font-body text-sm">
+        <button
+          onClick={toggleAudio}
+          className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-landing-gold/30 hover:bg-white/10 transition-colors text-landing-gold-light font-body text-sm"
+        >
           {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
           {t("narrationCta")}
           <Volume2 className="w-4 h-4 opacity-60" />
-        </div>
+        </button>
       </div>
     </section>
   );
