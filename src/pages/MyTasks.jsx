@@ -11,7 +11,9 @@ import { handlersForLevel, buildEscalationSteps } from "@/lib/escalation";
 import { base44 } from "@/api/base44Client";
 import { getParentPath, withAncestors, NO_SECTION } from "@/lib/taskFolders";
 import { logAudit } from "@/lib/auditLog";
-import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, Clock, Search, Pencil, X } from "lucide-react";
+import { getTodayAttendance, isCheckedIn } from "@/lib/attendance";
+import { Link } from "react-router-dom";
+import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, Clock, Search, Pencil, X, ClipboardCheck } from "lucide-react";
 import StationCombobox from "@/components/stations/StationCombobox";
 import TaskStats from "@/components/tasks/TaskStats";
 import TaskCard from "@/components/tasks/TaskCard";
@@ -60,6 +62,7 @@ export default function MyTasks() {
   const [editTarget, setEditTarget] = useState(null);
   const [folders, setFolders] = useState([]);
   const [sectionValue, setSectionValue] = useState("");
+  const [checkedInToday, setCheckedInToday] = useState(true);
 
   const fetchTargets = async () => {
     if (!currentUser) return;
@@ -82,6 +85,12 @@ export default function MyTasks() {
 
   useEffect(() => {
     fetchTargets();
+  }, [currentUser?.id]);
+
+  // Task actions are gated on today's attendance being checked in (see src/lib/attendance.js).
+  useEffect(() => {
+    if (!currentUser) return;
+    getTodayAttendance(currentUser.id).then((att) => setCheckedInToday(isCheckedIn(att)));
   }, [currentUser?.id]);
 
   const fetchFolders = async () => {
@@ -387,6 +396,7 @@ export default function MyTasks() {
   };
 
   const logCompleted = async (targetId) => {
+    if (!checkedInToday) { alert(t("mustCheckInFirst")); return; }
     const amt = Number(logAmount) || 0;
     if (amt <= 0) return;
     const tg = targets.find((x) => x.id === targetId);
@@ -683,6 +693,13 @@ export default function MyTasks() {
           </button>
         )}
       </div>
+
+      {!checkedInToday && (
+        <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50 flex items-center justify-between gap-3">
+          <p className="text-sm text-amber-800 font-body flex items-center gap-2"><ClipboardCheck className="w-4 h-4" /> {t("mustCheckInFirst")}</p>
+          <Link to="/app/attendance" className="text-xs font-body text-accent hover:underline whitespace-nowrap">{t("goToAttendance")}</Link>
+        </div>
+      )}
 
       {/* Statistics overview */}
       {!targetsLoading && targets.length > 0 && <TaskStats targets={targets} t={t} />}

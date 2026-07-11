@@ -34,6 +34,7 @@ import Performance from './pages/Performance';
 import Reports from './pages/Reports';
 import DailyReport from './pages/DailyReport';
 import Schedules from './pages/Schedules';
+import Attendance from './pages/Attendance';
 
 function RequireAuth({ children }) {
   const { session } = usePowerCareAuth();
@@ -69,6 +70,7 @@ function AppRoutes() {
       <Route path="/app/reports" element={<RequireAuth><Reports /></RequireAuth>} />
       <Route path="/app/daily-report" element={<RequireAuth><DailyReport /></RequireAuth>} />
       <Route path="/app/schedules" element={<RequireAuth><Schedules /></RequireAuth>} />
+      <Route path="/app/attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
