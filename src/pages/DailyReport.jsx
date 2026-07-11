@@ -5,7 +5,9 @@ import { base44 } from "@/api/base44Client";
 import { formatDateTime } from "@/lib/dateFormat";
 import { visibleStations, canSeeAllStations } from "@/lib/permissions";
 import moment from "moment";
-import { FileText, ListTodo, AlertTriangle, Activity, Building2, Check, Clock } from "lucide-react";
+import { FileText, ListTodo, AlertTriangle, Activity, Building2 } from "lucide-react";
+import ReportCard from "@/components/reports/ReportCard";
+import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
 
 export default function DailyReport() {
   const { t, lang } = useI18n();
@@ -90,11 +92,6 @@ export default function DailyReport() {
   });
   todaysActions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-  const statusBadge = (status) => ({
-    completed: "bg-emerald-100 text-emerald-700 border-emerald-300",
-    overdue: "bg-red-100 text-red-700 border-red-300",
-  }[status] || "bg-amber-100 text-amber-700 border-amber-300");
-
   const stats = [
     { icon: ListTodo, label: t("todayTasks"), value: todaysTasks.length },
     { icon: AlertTriangle, label: t("todayIssues"), value: totalIssuesToday },
@@ -112,7 +109,7 @@ export default function DailyReport() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {stats.map((s) => (
-          <div key={s.label} className="p-4 rounded-xl border border-border bg-card flex items-center gap-3">
+          <ReportCard key={s.label} className="flex items-center gap-3">
             <span className="w-9 h-9 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0">
               <s.icon className="w-4 h-4" strokeWidth={1.75} />
             </span>
@@ -120,7 +117,7 @@ export default function DailyReport() {
               <p className="text-2xl font-heading font-semibold">{s.value}</p>
               <p className="text-xs text-muted-foreground font-body">{s.label}</p>
             </div>
-          </div>
+          </ReportCard>
         ))}
       </div>
 
@@ -133,7 +130,7 @@ export default function DailyReport() {
             <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
               <ListTodo className="w-4 h-4" /> {t("todayTasks")}
             </h2>
-            <div className="p-4 rounded-xl border border-border bg-card">
+            <ReportCard>
               {todaysTasks.length === 0 ? (
                 <p className="text-sm text-muted-foreground font-body text-center py-4">{t("noTasksInRange")}</p>
               ) : (
@@ -146,15 +143,12 @@ export default function DailyReport() {
                           <Building2 className="w-3 h-3" /> {stationLabel(targetStationKey(tg))}
                         </p>
                       </div>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] border whitespace-nowrap ${statusBadge(tg.status)}`}>
-                        {tg.status === "completed" ? <Check className="w-2.5 h-2.5" /> : <Clock className="w-2.5 h-2.5" />}
-                        {tg.status === "completed" ? t("completed") : tg.status === "overdue" ? t("overdue") : t("inProgress")}
-                      </span>
+                      <TaskStatusBadge status={tg.status} t={t} />
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+            </ReportCard>
           </section>
 
           {/* Today's Issues */}
@@ -162,7 +156,7 @@ export default function DailyReport() {
             <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" /> {t("todayIssues")}
             </h2>
-            <div className="p-4 rounded-xl border border-border bg-card">
+            <ReportCard>
               {totalIssuesToday === 0 ? (
                 <p className="text-sm text-muted-foreground font-body text-center py-4">{t("noIssuesReported")}</p>
               ) : (
@@ -189,7 +183,7 @@ export default function DailyReport() {
                   ))}
                 </div>
               )}
-            </div>
+            </ReportCard>
           </section>
 
           {/* Today's Actions */}
@@ -197,7 +191,7 @@ export default function DailyReport() {
             <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
               <Activity className="w-4 h-4" /> {t("todayActions")}
             </h2>
-            <div className="p-4 rounded-xl border border-border bg-card">
+            <ReportCard>
               {todaysActions.length === 0 ? (
                 <p className="text-sm text-muted-foreground font-body text-center py-4">{t("noActionsToday")}</p>
               ) : (
@@ -215,7 +209,7 @@ export default function DailyReport() {
                   ))}
                 </div>
               )}
-            </div>
+            </ReportCard>
           </section>
         </>
       )}

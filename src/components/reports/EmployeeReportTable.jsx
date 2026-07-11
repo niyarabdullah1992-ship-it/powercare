@@ -3,6 +3,8 @@ import { Search, FileSpreadsheet, Users } from "lucide-react";
 import { getRoleLabel } from "@/lib/roles";
 import { formatDate } from "@/lib/dateFormat";
 import { exportCSV } from "@/lib/exportReport";
+import ReportCard from "@/components/reports/ReportCard";
+import ReportTableHead from "@/components/reports/ReportTableHead";
 
 // Free-form employee comparison table for the company owner — pick any employees
 // (regardless of station) and see every aspect side by side, with a full Excel export.
@@ -114,8 +116,8 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
 
       {/* Employee picker */}
       {showPicker && (
-      <div className="p-1.5 rounded-xl border border-border bg-card space-y-1.5">
-        <div className="flex items-center gap-2 px-1 pt-1">
+      <ReportCard className="space-y-1.5">
+        <div className="flex items-center gap-2 px-1">
           <button onClick={() => setSelected(data.employees.map((e) => e.id))} className="text-xs text-accent hover:underline font-body">{t("all")}</button>
           <button onClick={() => setSelected([])} className="text-xs text-muted-foreground hover:underline font-body">{t("cancel")}</button>
         </div>
@@ -137,32 +139,16 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
           })}
           {filteredList.length === 0 && <p className="text-xs text-muted-foreground font-body p-2">{t("noResults")}</p>}
         </div>
-      </div>
+      </ReportCard>
       )}
 
       {/* Comparison table */}
-      <div className="p-4 rounded-xl border border-border bg-card overflow-x-auto shadow-sm">
+      <ReportCard className="overflow-x-auto">
         {compared.length === 0 ? (
           <p className="text-sm text-muted-foreground font-body text-center py-6">{t("noResults")}</p>
         ) : (
           <table className="w-full text-sm font-body">
-            <thead>
-              <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wider">
-                <th className="py-2 px-2 text-start">{t("employeeName")}</th>
-                <th className="py-2 px-2 text-start">{t("station")}</th>
-                <th className="py-2 px-2 text-start">{t("role")}</th>
-                <th className="py-2 px-2 text-start">{t("position")}</th>
-                <th className="py-2 px-2 text-start">{t("email")}</th>
-                <th className="py-2 px-2 text-start">{t("contact")}</th>
-                <th className="py-2 px-2 text-start">{t("points")}</th>
-                <th className="py-2 px-2 text-start">{t("certificates")}</th>
-                <th className="py-2 px-2 text-start">{t("completed")}</th>
-                <th className="py-2 px-2 text-start">{t("overdue")}</th>
-                <th className="py-2 px-2 text-start">{t("leaveRequests")}</th>
-                <th className="py-2 px-2 text-start">{t("days")}</th>
-                <th className="py-2 px-2 text-start">{t("hireDate")}</th>
-              </tr>
-            </thead>
+            <ReportTableHead columns={[t("employeeName"), t("station"), t("role"), t("position"), t("email"), t("contact"), t("points"), t("certificates"), t("completed"), t("overdue"), t("leaveRequests"), t("days"), t("hireDate")]} />
             <tbody>
               {compared.map((r) => (
                 <tr key={r.id} className="border-b border-border/60 last:border-0">
@@ -184,7 +170,7 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
             </tbody>
           </table>
         )}
-      </div>
+      </ReportCard>
     </div>
   );
 }

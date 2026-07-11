@@ -5,11 +5,14 @@ import { base44 } from "@/api/base44Client";
 import { formatDate, formatDateTime } from "@/lib/dateFormat";
 import { visibleStations, canSeeAllStations, isCompanyOwner } from "@/lib/permissions";
 import moment from "moment";
-import { FileBarChart2, Calendar, AlertTriangle, Check, Clock, Building2, ListTodo, CalendarDays, Megaphone, FileSpreadsheet, UserSquare2 } from "lucide-react";
+import { FileBarChart2, Calendar, AlertTriangle, Building2, ListTodo, CalendarDays, Megaphone, FileSpreadsheet, UserSquare2 } from "lucide-react";
 import TaskStats from "@/components/tasks/TaskStats";
 import { exportCSV } from "@/lib/exportReport";
 import StationFilterDropdown from "@/components/reports/StationFilterDropdown";
 import EmployeeReportTable from "@/components/reports/EmployeeReportTable";
+import ReportCard from "@/components/reports/ReportCard";
+import ReportTableHead from "@/components/reports/ReportTableHead";
+import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
 
 const RANGES = [
   { val: "daily", amount: 1, unit: "days" },
@@ -113,11 +116,6 @@ export default function Reports() {
   };
 
   const issueCount = (tg) => (Array.isArray(tg.comments) ? tg.comments.filter((c) => c.is_issue).length : 0);
-
-  const statusBadge = (status) => ({
-    completed: "bg-emerald-100 text-emerald-700 border-emerald-300",
-    overdue: "bg-red-100 text-red-700 border-red-300",
-  }[status] || "bg-amber-100 text-amber-700 border-amber-300");
 
   const priorityBadge = (p) => (p === "urgent" ? "bg-red-100 text-red-700 border-red-300" : "bg-muted text-muted-foreground border-border");
 
@@ -249,25 +247,13 @@ export default function Reports() {
                 </button>
               </div>
             )}
-            <div className="p-5 rounded-xl border border-border bg-card">
+            <ReportCard>
               {filteredTasks.length === 0 ? (
                 <p className="text-sm text-muted-foreground font-body text-center py-6">{t("noTasksInRange")}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm font-body">
-                    <thead>
-                      <tr className="border-b border-border text-start text-xs text-muted-foreground uppercase tracking-wider">
-                        <th className="py-2 px-2 text-start">{t("title")}</th>
-                        <th className="py-2 px-2 text-start">{t("station")}</th>
-                        <th className="py-2 px-2 text-start">{t("assignTo")}</th>
-                        <th className="py-2 px-2 text-start">{t("priority")}</th>
-                        <th className="py-2 px-2 text-start">{t("status")}</th>
-                        <th className="py-2 px-2 text-start">{t("taskCompletion")}</th>
-                        <th className="py-2 px-2 text-start">{t("stoppageIssues")}</th>
-                        <th className="py-2 px-2 text-start">{t("startDate")}</th>
-                        <th className="py-2 px-2 text-start">{t("endDate")}</th>
-                      </tr>
-                    </thead>
+                    <ReportTableHead columns={[t("title"), t("station"), t("assignTo"), t("priority"), t("status"), t("taskCompletion"), t("stoppageIssues"), t("startDate"), t("endDate")]} />
                     <tbody>
                       {filteredTasks.map((tg) => {
                         const pct = tg.task_target ? Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100) : 0;
@@ -281,10 +267,7 @@ export default function Reports() {
                               <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] border ${priorityBadge(tg.priority)}`}>{t(tg.priority)}</span>
                             </td>
                             <td className="py-2.5 px-2">
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] border whitespace-nowrap ${statusBadge(tg.status)}`}>
-                                {tg.status === "completed" ? <Check className="w-2.5 h-2.5" /> : tg.status === "overdue" ? <AlertTriangle className="w-2.5 h-2.5" /> : <Clock className="w-2.5 h-2.5" />}
-                                {tg.status === "completed" ? t("completed") : tg.status === "overdue" ? t("overdue") : t("inProgress")}
-                              </span>
+                              <TaskStatusBadge status={tg.status} t={t} />
                             </td>
                             <td className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{tg.completed_tasks}/{tg.task_target} ({pct}%)</td>
                             <td className="py-2.5 px-2">
@@ -303,30 +286,20 @@ export default function Reports() {
                   </table>
                 </div>
               )}
-            </div>
+            </ReportCard>
           </>
         )
       )}
 
       {/* Leaves tab */}
       {tab === "leaves" && (
-        <div className="p-5 rounded-xl border border-border bg-card">
+        <ReportCard>
           {filteredLeaves.length === 0 ? (
             <p className="text-sm text-muted-foreground font-body text-center py-6">{t("noLeaveRequests")}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm font-body">
-                <thead>
-                  <tr className="border-b border-border text-start text-xs text-muted-foreground uppercase tracking-wider">
-                    <th className="py-2 px-2 text-start">{t("employeeName")}</th>
-                    <th className="py-2 px-2 text-start">{t("station")}</th>
-                    <th className="py-2 px-2 text-start">{t("leaveType")}</th>
-                    <th className="py-2 px-2 text-start">{t("startDate")}</th>
-                    <th className="py-2 px-2 text-start">{t("endDate")}</th>
-                    <th className="py-2 px-2 text-start">{t("days")}</th>
-                    <th className="py-2 px-2 text-start">{t("status")}</th>
-                  </tr>
-                </thead>
+                <ReportTableHead columns={[t("employeeName"), t("station"), t("leaveType"), t("startDate"), t("endDate"), t("days"), t("status")]} />
                 <tbody>
                   {filteredLeaves.map((r) => (
                     <tr key={r.id} className="border-b border-border/60 last:border-0">
@@ -345,7 +318,7 @@ export default function Reports() {
               </table>
             </div>
           )}
-        </div>
+        </ReportCard>
       )}
 
       {/* Complaints tab */}
@@ -358,7 +331,7 @@ export default function Reports() {
             </button>
           </div>
         )}
-        <div className="p-5 rounded-xl border border-border bg-card">
+        <ReportCard>
           {filteredComplaints.length === 0 ? (
             <p className="text-sm text-muted-foreground font-body text-center py-6">{t("noPublicReports")}</p>
           ) : (
@@ -380,7 +353,7 @@ export default function Reports() {
               ))}
             </div>
           )}
-        </div>
+        </ReportCard>
         </>
       )}
 

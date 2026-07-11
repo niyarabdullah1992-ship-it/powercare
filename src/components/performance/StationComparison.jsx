@@ -5,6 +5,8 @@ import { base44 } from "@/api/base44Client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { CheckCircle2, Triangle, Square, AlertOctagon } from "lucide-react";
 import StationFilterDropdown from "@/components/reports/StationFilterDropdown";
+import ReportCard from "@/components/reports/ReportCard";
+import ReportTableHead from "@/components/reports/ReportTableHead";
 
 const COLOR_COMPLETED = "#10b981"; // emerald-500
 const COLOR_ONTRACK = "#3b82f6"; // blue-500
@@ -137,8 +139,7 @@ export default function StationComparison() {
           </div>
 
           {/* Tasks: completed / overdue / on track — per station */}
-          <div className="p-5 rounded-xl border border-border bg-card shadow-sm">
-            <h3 className="font-heading text-base font-semibold mb-4">{t("completed")} · {t("overdue")} · {t("inProgress")}</h3>
+          <ReportCard title={`${t("completed")} · ${t("overdue")} · ${t("inProgress")}`}>
             <div className="w-full h-80" dir="ltr">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }} barGap={8} barCategoryGap="28%">
@@ -170,23 +171,12 @@ export default function StationComparison() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </ReportCard>
 
           {/* Comparison table */}
-          <div className="p-4 rounded-xl border border-border bg-card overflow-x-auto shadow-sm">
+          <ReportCard className="overflow-x-auto">
             <table className="w-full text-sm font-body">
-              <thead>
-                <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wider">
-                  <th className="py-2 px-2 text-start">{t("stations")}</th>
-                  <th className="py-2 px-2 text-start">{t("team")}</th>
-                  <th className="py-2 px-2 text-start">{t("completed")}</th>
-                  <th className="py-2 px-2 text-start">{t("inProgress")}</th>
-                  <th className="py-2 px-2 text-start">{t("overdue")}</th>
-                  <th className="py-2 px-2 text-start">{t("points")}</th>
-                  <th className="py-2 px-2 text-start">{t("safetyLevel")}</th>
-                  <th className="py-2 px-2 text-start">{t("incidents")}</th>
-                </tr>
-              </thead>
+              <ReportTableHead columns={[t("stations"), t("team"), t("completed"), t("inProgress"), t("overdue"), t("points"), t("safetyLevel"), t("incidents")]} />
               <tbody>
                 {compared.map((c) => (
                   <tr key={c.id} className="border-b border-border/60 last:border-0">
@@ -207,7 +197,7 @@ export default function StationComparison() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ReportCard>
         </>
       )}
     </div>
