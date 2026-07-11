@@ -10,7 +10,7 @@ import { NO_SECTION } from "@/lib/taskFolders";
 export default function TaskCard({
   tg, t, dir, lang, assignmentLabel, canManage, canLog,
   logTarget, logAmount, setLogTarget, setLogAmount, logCompleted,
-  logProofFiles, setLogProofFiles, reviewTarget,
+  logProofFiles, setLogProofFiles, reviewTarget, disputeRejection,
   commentsOpen, setCommentsOpen, commentText, setCommentText, commentFiles, setCommentFiles, submitComment,
   markIssue, setMarkIssue,
   allSectionFolders, moveTaskToSection, setEditTarget, deleteTarget,
@@ -22,6 +22,12 @@ export default function TaskCard({
   const pendingReview = tg.status === "pending_review";
   const [rejecting, setRejecting] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [disputing, setDisputing] = useState(false);
+  const [disputeMessage, setDisputeMessage] = useState("");
+  const comments = Array.isArray(tg.comments) ? tg.comments : [];
+  const lastComment = comments[comments.length - 1];
+  const canObject = !canManage && tg.status === "active" && lastComment?.is_rejection;
+  const disputeSent = !canManage && tg.status === "active" && lastComment?.is_dispute;
   const canLogThis = canLog;
   const isUrgent = tg.priority === "urgent";
   const totalDur = new Date(tg.end_date).getTime() - new Date(tg.start_date).getTime();
@@ -184,6 +190,37 @@ export default function TaskCard({
         </div>
       )}
 
+      {canObject && (
+        <div className="pt-1">
+          {disputing ? (
+            <div className="space-y-1.5">
+              <textarea
+                value={disputeMessage}
+                onChange={(e) => setDisputeMessage(e.target.value)}
+                placeholder={t("disputePlaceholder")}
+                rows={2}
+                className="w-full px-2 py-1.5 rounded-md border border-orange-300 text-xs font-body resize-y"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={!disputeMessage.trim()}
+                  onClick={() => { disputeRejection(tg, disputeMessage.trim()); setDisputing(false); setDisputeMessage(""); }}
+                  className="px-3 py-1.5 rounded-md bg-orange-600 text-white text-xs font-body disabled:opacity-50"
+                >
+                  {t("submitDispute")}
+                </button>
+                <button onClick={() => { setDisputing(false); setDisputeMessage(""); }} className="px-3 py-1.5 rounded-md border border-border text-xs font-body">{t("cancel")}</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setDisputing(true)} className="px-3 py-1.5 rounded-md border border-orange-300 text-orange-700 text-xs font-body">{t("objectToRejection")}</button>
+          )}
+        </div>
+      )}
+      {disputeSent && (
+        <p className="text-xs text-orange-700 font-body pt-1">{t("disputeSent")}</p>
+      )}
+
       <div className="pt-2 border-t border-border">
         <button onClick={() => { const next = commentsOpen === tg.id ? null : tg.id; setCommentsOpen(next); setCommentText(""); setCommentFiles([]); setMarkIssue(false); }} className="flex items-center gap-1.5 text-xs text-muted-foreground font-body hover:text-foreground">
           <MessageCircle className="w-3.5 h-3.5" /> {t("comments")} ({Array.isArray(tg.comments) ? tg.comments.length : 0})
@@ -193,7 +230,7 @@ export default function TaskCard({
             {Array.isArray(tg.comments) && tg.comments.length > 0 && (
               <div className="space-y-1.5 max-h-40 overflow-y-auto">
                 {tg.comments.map((c) => (
-                  <div key={c.id} className={`text-xs font-body p-2 rounded-md ${c.is_issue || c.is_rejection ? "bg-red-50 border border-red-200" : "bg-muted/50"}`}>
+                  <div key={c.id} className={`text-xs font-body p-2 rounded-md ${c.is_issue || c.is_rejection ? "bg-red-50 border border-red-200" : c.is_dispute ? "bg-orange-50 border border-orange-200" : "bg-muted/50"}`}>
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-medium text-foreground flex items-center gap-1">
                         {c.user_name}

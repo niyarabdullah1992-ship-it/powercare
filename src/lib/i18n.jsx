@@ -290,6 +290,8 @@ const dict = {
     pendingReview: "Pending Review", awaitingReview: "Submitted — awaiting manager review",
     proofRequired: "A photo or file proof is required to mark this as complete.", reviewSubmission: "submitted proof for review",
     rejectReasonPlaceholder: "Explain why this is being rejected (required)...",
+    objectToRejection: "Object to Rejection", disputePlaceholder: "Explain why you disagree with this rejection...",
+    submitDispute: "Submit Objection", disputeSent: "Your objection was sent to the manager for reconsideration.",
   },
   ar: {
     dir: "rtl",
@@ -579,6 +581,8 @@ const dict = {
     pendingReview: "بانتظار المراجعة", awaitingReview: "تم الإرسال — بانتظار مراجعة المدير",
     proofRequired: "يجب إرفاق صورة أو ملف كإثبات لتعليم المهمة كمكتملة.", reviewSubmission: "أرسل إثباتًا للمراجعة",
     rejectReasonPlaceholder: "اشرح سبب الرفض (إلزامي)...",
+    objectToRejection: "اعتراض على الرفض", disputePlaceholder: "اشرح سبب اعتراضك على هذا الرفض...",
+    submitDispute: "إرسال الاعتراض", disputeSent: "تم إرسال اعتراضك إلى المدير لإعادة النظر.",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

@@ -481,6 +481,24 @@ export default function MyTasks() {
     }
   };
 
+  // Employee's manual objection when they disagree with a rejection — flags it for the manager.
+  const disputeRejection = async (tg, message) => {
+    try {
+      const res = await base44.functions.invoke("supabaseTargets", {
+        action: "disputeRejection",
+        targetId: tg.id,
+        employeeId: currentUser.id,
+        employeeName: currentUser.name,
+        message,
+      });
+      const updated = res?.data?.target;
+      if (updated) setTargets((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      logAudit(company.id, "rejection_disputed", currentUser.name, `"${tg.title || ""}": ${message}`);
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to submit objection");
+    }
+  };
+
   const deleteTarget = async (targetId) => {
     const tg = targets.find((x) => x.id === targetId);
     try {
@@ -624,7 +642,7 @@ export default function MyTasks() {
       canManage={canManage(tg)}
       canLog={canLog(tg)}
       logTarget={logTarget} logAmount={logAmount} setLogTarget={setLogTarget} setLogAmount={setLogAmount} logCompleted={logCompleted}
-      logProofFiles={logProofFiles} setLogProofFiles={setLogProofFiles} reviewTarget={reviewTarget}
+      logProofFiles={logProofFiles} setLogProofFiles={setLogProofFiles} reviewTarget={reviewTarget} disputeRejection={disputeRejection}
       commentsOpen={commentsOpen} setCommentsOpen={setCommentsOpen} commentText={commentText} setCommentText={setCommentText} commentFiles={commentFiles} setCommentFiles={setCommentFiles} submitComment={submitComment}
       markIssue={markIssue} setMarkIssue={setMarkIssue}
       allSectionFolders={allSectionFolders} moveTaskToSection={moveTaskToSection} setEditTarget={setEditTarget} deleteTarget={deleteTarget}

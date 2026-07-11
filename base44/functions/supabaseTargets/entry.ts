@@ -266,6 +266,44 @@ Deno.serve(async (req) => {
       return Response.json({ target: updated[0] });
     }
 
+    if (action === "disputeRejection") {
+      const { targetId, employeeId, employeeName, message } = body;
+      if (!targetId || !(message || "").trim()) return Response.json({ error: "Missing fields" }, { status: 400 });
+      const getRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, { headers });
+      const rows = await getRes.json();
+      const tg = rows[0];
+      if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
+      const comments = Array.isArray(tg.comments) ? tg.comments : [];
+      comments.push({
+        id: crypto.randomUUID(),
+        user_id: employeeId,
+        user_name: employeeName || "Employee",
+        content: `🚩 ${message.trim()}`,
+        files: [],
+        is_issue: false,
+        is_dispute: true,
+        created_at: new Date().toISOString(),
+      });
+      const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
+        method: "PATCH",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify({ comments }),
+      });
+      const updated = await patchRes.json();
+      if (!patchRes.ok) {
+        return Response.json({ error: updated?.message || "Failed to submit objection" }, { status: 400 });
+      }
+      await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          user_id: tg.manager_id,
+          message: `🚩 ${employeeName || "Employee"} objected to the rejection of "${tg.title || "Untitled"}": ${message.trim()}`,
+        }),
+      });
+      return Response.json({ target: updated[0] });
+    }
+
     if (action === "deleteTarget") {
       const { targetId } = body;
       if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
