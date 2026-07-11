@@ -121,8 +121,8 @@ export default function StationComparison() {
             {compared.map((c) => {
               const { Icon, color, bg, label } = statusShape(c);
               return (
-                <div key={c.id} className="p-4 rounded-xl border border-border bg-card flex items-center gap-3">
-                  <span className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${bg}`}>
+                <div key={c.id} className="group p-4 rounded-xl border border-border bg-card flex items-center gap-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                  <span className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${bg} ring-4 ring-white/40 shadow-inner`}>
                     <Icon className={`w-5 h-5 ${color}`} strokeWidth={2.25} fill="currentColor" fillOpacity={0.15} />
                   </span>
                   <div className="min-w-0">
@@ -137,26 +137,43 @@ export default function StationComparison() {
           </div>
 
           {/* Tasks: completed / overdue / on track — per station */}
-          <div className="p-5 rounded-xl border border-border bg-card">
+          <div className="p-5 rounded-xl border border-border bg-card shadow-sm">
             <h3 className="font-heading text-base font-semibold mb-4">{t("completed")} · {t("overdue")} · {t("inProgress")}</h3>
-            <div className="w-full h-72" dir="ltr">
+            <div className="w-full h-80" dir="ltr">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }} barGap={6}>
+                <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }} barGap={8} barCategoryGap="28%">
+                  <defs>
+                    <linearGradient id="gradCompleted" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={COLOR_COMPLETED} stopOpacity={1} />
+                      <stop offset="100%" stopColor={COLOR_COMPLETED} stopOpacity={0.65} />
+                    </linearGradient>
+                    <linearGradient id="gradOnTrack" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={COLOR_ONTRACK} stopOpacity={1} />
+                      <stop offset="100%" stopColor={COLOR_ONTRACK} stopOpacity={0.65} />
+                    </linearGradient>
+                    <linearGradient id="gradOverdue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={COLOR_OVERDUE} stopOpacity={1} />
+                      <stop offset="100%" stopColor={COLOR_OVERDUE} stopOpacity={0.65} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} fontWeight={600} tickLine={false} axisLine={false} />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }} />
-                  <Legend wrapperStyle={{ fontSize: 12, fontWeight: 600 }} />
-                  <Bar dataKey={t("completed")} stackId="tasks" fill={COLOR_COMPLETED} radius={[0, 0, 0, 0]} />
-                  <Bar dataKey={t("inProgress")} stackId="tasks" fill={COLOR_ONTRACK} radius={[0, 0, 0, 0]} />
-                  <Bar dataKey={t("overdue")} stackId="tasks" fill={COLOR_OVERDUE} radius={[6, 6, 0, 0]} />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
+                    cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12, fontWeight: 600 }} iconType="circle" />
+                  <Bar dataKey={t("completed")} stackId="tasks" fill="url(#gradCompleted)" radius={[0, 0, 0, 0]} maxBarSize={56} />
+                  <Bar dataKey={t("inProgress")} stackId="tasks" fill="url(#gradOnTrack)" radius={[0, 0, 0, 0]} maxBarSize={56} />
+                  <Bar dataKey={t("overdue")} stackId="tasks" fill="url(#gradOverdue)" radius={[8, 8, 0, 0]} maxBarSize={56} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
           {/* Comparison table */}
-          <div className="p-4 rounded-xl border border-border bg-card overflow-x-auto">
+          <div className="p-4 rounded-xl border border-border bg-card overflow-x-auto shadow-sm">
             <table className="w-full text-sm font-body">
               <thead>
                 <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wider">
