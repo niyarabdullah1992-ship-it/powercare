@@ -4,6 +4,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles } from "lucide-react";
 import Logo from "@/components/Logo";
+import VideoIntro from "@/components/landing/VideoIntro";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
 
@@ -128,6 +129,8 @@ export default function Landing() {
           </div>
         </div>
       </div>
+
+      <VideoIntro />
 
       {/* Gold gradient section: brand mark + benefits + footer */}
       <div className="bg-gradient-to-b from-landing-gold-light via-landing-gold-deep to-landing-bg px-6 md:px-10 pt-16 pb-4">

@@ -273,6 +273,7 @@ const dict = {
     choosePasswordPlaceholder: "Choose a password", finishSetupBtn: "Finish Setup", accountReadyText: "Your account is ready. Redirecting...",
     paymentNotConfirmedText: "We couldn't confirm your payment.", backToPricingBtn: "Back to Pricing",
     trialBadge: "Free for 6 months, then billed",
+    videoHeading: "See PowerCare in Motion", videoText: "PowerCare brings your stations, teams and daily operations together in one refined platform — built where raw materials meet precision technology.",
   },
   ar: {
     dir: "rtl",
@@ -545,6 +546,7 @@ const dict = {
     choosePasswordPlaceholder: "اختر كلمة مرور", finishSetupBtn: "إكمال الإعداد", accountReadyText: "حسابك جاهز. يتم التحويل...",
     paymentNotConfirmedText: "تعذّر تأكيد عملية الدفع.", backToPricingBtn: "العودة إلى الأسعار",
     trialBadge: "مجاني لمدة 6 أشهر، ثم يبدأ التحصيل",
+    videoHeading: "شاهد باور كير في العمل", videoText: "توحّد باور كير محطاتك وفرقك وعملياتك اليومية في منصة واحدة أنيقة، تجمع بين المواد الخام والتقنية الدقيقة.",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
@@ -632,6 +634,7 @@ const dict = {
     choosePasswordPlaceholder: "Passwort wählen", finishSetupBtn: "Einrichtung abschließen", accountReadyText: "Ihr Konto ist bereit. Weiterleitung...",
     paymentNotConfirmedText: "Zahlung konnte nicht bestätigt werden.", backToPricingBtn: "Zurück zu Preisen",
     trialBadge: "6 Monate kostenlos, danach wird abgerechnet",
+    videoHeading: "PowerCare in Aktion", videoText: "PowerCare vereint Ihre Stationen, Teams und den täglichen Betrieb in einer eleganten Plattform — dort, wo Rohmaterial auf Präzisionstechnologie trifft.",
   },
   fr: {
     dir: "ltr", appName: "PowerCare", tagline: "Intelligence opérationnelle pour équipes multi-sites",
@@ -719,6 +722,7 @@ const dict = {
     choosePasswordPlaceholder: "Choisissez un mot de passe", finishSetupBtn: "Terminer la configuration", accountReadyText: "Votre compte est prêt. Redirection...",
     paymentNotConfirmedText: "Nous n'avons pas pu confirmer votre paiement.", backToPricingBtn: "Retour aux tarifs",
     trialBadge: "Gratuit pendant 6 mois, puis facturé",
+    videoHeading: "PowerCare en action", videoText: "PowerCare réunit vos stations, équipes et opérations quotidiennes au sein d'une plateforme élégante, à la croisée des matières brutes et de la technologie de précision.",
   },
   es: {
     dir: "ltr", appName: "PowerCare", tagline: "Inteligencia operativa para equipos multiestación",
@@ -806,6 +810,7 @@ const dict = {
     choosePasswordPlaceholder: "Elige una contraseña", finishSetupBtn: "Finalizar configuración", accountReadyText: "Tu cuenta está lista. Redirigiendo...",
     paymentNotConfirmedText: "No pudimos confirmar tu pago.", backToPricingBtn: "Volver a precios",
     trialBadge: "Gratis durante 6 meses, luego se factura",
+    videoHeading: "PowerCare en acción", videoText: "PowerCare reúne tus estaciones, equipos y operaciones diarias en una plataforma elegante, donde los materiales en bruto se encuentran con la tecnología de precisión.",
   },
   pt: {
     dir: "ltr", appName: "PowerCare", tagline: "Inteligência operacional para equipes multiestação",
@@ -893,6 +898,7 @@ const dict = {
     choosePasswordPlaceholder: "Escolha uma senha", finishSetupBtn: "Concluir configuração", accountReadyText: "Sua conta está pronta. Redirecionando...",
     paymentNotConfirmedText: "Não foi possível confirmar seu pagamento.", backToPricingBtn: "Voltar aos preços",
     trialBadge: "Grátis por 6 meses, depois cobrado",
+    videoHeading: "PowerCare em ação", videoText: "A PowerCare reúne suas estações, equipes e operações diárias em uma plataforma elegante, onde matérias-primas encontram tecnologia de precisão.",
   },
   ru: {
     dir: "ltr", appName: "PowerCare", tagline: "Операционная аналитика для команд на нескольких станциях",
@@ -980,6 +986,7 @@ const dict = {
     choosePasswordPlaceholder: "Выберите пароль", finishSetupBtn: "Завершить настройку", accountReadyText: "Ваш аккаунт готов. Перенаправление...",
     paymentNotConfirmedText: "Не удалось подтвердить вашу оплату.", backToPricingBtn: "Назад к ценам",
     trialBadge: "Бесплатно 6 месяцев, затем оплата",
+    videoHeading: "PowerCare в действии", videoText: "PowerCare объединяет ваши станции, команды и повседневные операции в единой элегантной платформе, где сырьё встречается с точными технологиями.",
   },
   ja: {
     dir: "ltr", appName: "PowerCare", tagline: "複数拠点チーム向けの運用インテリジェンス",
@@ -1067,6 +1074,7 @@ const dict = {
     choosePasswordPlaceholder: "パスワードを選択", finishSetupBtn: "セットアップを完了", accountReadyText: "アカウントの準備が完了しました。リダイレクト中...",
     paymentNotConfirmedText: "お支払いを確認できませんでした。", backToPricingBtn: "料金ページに戻る",
     trialBadge: "6ヶ月間無料、その後課金されます",
+    videoHeading: "PowerCareの実際の姿", videoText: "PowerCareは、素材と精密テクノロジーが融合する洗練されたプラットフォームで、貴社のステーション、チーム、日々の業務を一つにまとめます。",
   },
   ko: {
     dir: "ltr", appName: "PowerCare", tagline: "다중 현장 팀을 위한 운영 인텔리전스",
@@ -1154,6 +1162,7 @@ const dict = {
     choosePasswordPlaceholder: "비밀번호 선택", finishSetupBtn: "설정 완료", accountReadyText: "계정이 준비되었습니다. 리디렉션 중...",
     paymentNotConfirmedText: "결제를 확인할 수 없습니다.", backToPricingBtn: "요금제로 돌아가기",
     trialBadge: "6개월 무료, 이후 청구됨",
+    videoHeading: "PowerCare 소개 영상", videoText: "PowerCare는 원자재와 정밀 기술이 만나는 세련된 플랫폼에서 스테이션, 팀, 일상 운영을 하나로 통합합니다.",
   },
 };
 
