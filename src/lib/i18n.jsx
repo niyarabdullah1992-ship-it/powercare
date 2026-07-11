@@ -300,6 +300,8 @@ const dict = {
     escalationInfoTitle: "How escalation works",
     escalationInfoText: "Every complaint or contested task rejection starts with the Station Manager. If it isn't resolved there, either side can escalate it one step up the company's HR hierarchy (visible on the HR page) — Site HR, then Cluster HR, and so on up to the CHRO. The same ladder is used everywhere in the app.",
     noHandlerAssigned: "No one assigned yet",
+    clusterManagerNote: "Want a manager above the Station Manager who oversees a whole group of stations? Create a Cluster below with the stations they should cover, then add an HR position with \"Cluster-level\" scope for it. That person automatically sits above every Station Manager in that cluster in the escalation chain.",
+    selectAllStations: "Select All", deselectAllStations: "Deselect All",
   },
   ar: {
     dir: "rtl",
@@ -599,6 +601,8 @@ const dict = {
     escalationInfoTitle: "كيف يعمل التصعيد",
     escalationInfoText: "كل شكوى أو رفض مهمة معترض عليه يبدأ عند مدير المحطة. إذا لم يُحل هناك، يمكن لأي طرف تصعيده خطوة واحدة للأعلى في الهرم الوظيفي للشركة (يظهر في صفحة الموارد البشرية) — موارد بشرية الموقع، ثم موارد بشرية المجموعة، وهكذا حتى الرئيس التنفيذي للموارد البشرية. نفس السلسلة تُستخدم في كل أنحاء التطبيق.",
     noHandlerAssigned: "لم يُعيَّن أحد بعد",
+    clusterManagerNote: "تريد مديرًا أعلى من مدير المحطة يشرف على مجموعة كاملة من المحطات؟ أنشئ مجموعة (Cluster) أدناه وحدد فيها المحطات التي يجب أن يغطيها، ثم أضف منصب موارد بشرية بنطاق \"على مستوى المجموعة\". هذا الشخص يصبح تلقائيًا أعلى من كل مدير محطة ضمن تلك المجموعة في سلسلة التصعيد.",
+    selectAllStations: "تحديد الكل", deselectAllStations: "إلغاء تحديد الكل",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

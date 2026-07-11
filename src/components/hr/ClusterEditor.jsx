@@ -50,6 +50,13 @@ export default function ClusterEditor({ data, canManage, myStationId }) {
       {adding && (
         <form onSubmit={addCluster} className="p-4 rounded-xl border border-border bg-card space-y-3">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("clusterName")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+          <button
+            type="button"
+            onClick={() => setStationIds(stationIds.length === data.stations.length ? [] : data.stations.map((s) => s.id))}
+            className="text-[11px] text-accent font-body hover:underline"
+          >
+            {stationIds.length === data.stations.length ? t("deselectAllStations") : t("selectAllStations")}
+          </button>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-48 overflow-y-auto rounded-md border border-border p-1.5">
             {data.stations.map((s) => {
               const checked = stationIds.includes(s.id);

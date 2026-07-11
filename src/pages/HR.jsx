@@ -8,6 +8,7 @@ import { Building2, ChevronRight, ArrowLeft, GripVertical } from "lucide-react";
 import ClusterEditor from "@/components/hr/ClusterEditor";
 import HRTiersEditor from "@/components/hr/HRTiersEditor";
 import HROrgChart from "@/components/hr/HROrgChart";
+import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
 
 export default function HR() {
   const { t, dir } = useI18n();
@@ -45,6 +46,14 @@ export default function HR() {
         <h1 className="font-heading text-3xl font-semibold">{t("hr")}</h1>
         <p className="text-muted-foreground font-body text-sm mt-1">{t("hrPageNote")}</p>
       </div>
+
+      <EscalationInfoBox t={t} />
+
+      {canManage && (
+        <div className="p-3.5 rounded-xl border border-accent/30 bg-accent/5">
+          <p className="text-xs text-muted-foreground font-body">{t("clusterManagerNote")}</p>
+        </div>
+      )}
 
       <section className="space-y-3">
         <h2 className="font-heading text-lg font-semibold">{t("clusterLevel")}</h2>

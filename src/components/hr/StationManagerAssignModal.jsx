@@ -41,7 +41,16 @@ export default function StationManagerAssignModal({ company, data, initialStatio
         </div>
 
         <div>
-          <label className="block text-xs text-muted-foreground font-body mb-2">{t("stations")}</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs text-muted-foreground font-body">{t("stations")}</label>
+            <button
+              type="button"
+              onClick={() => setStationIds(stationIds.length === data.stations.length ? [] : data.stations.map((s) => s.id))}
+              className="text-[11px] text-accent font-body hover:underline"
+            >
+              {stationIds.length === data.stations.length ? t("deselectAllStations") : t("selectAllStations")}
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto">
             {data.stations.map((s) => (
               <label
