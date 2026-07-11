@@ -50,8 +50,24 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
     });
   }, [data.employees, targets, company, lang]);
 
-  const filteredList = data.employees.filter((e) => e.name.toLowerCase().includes(search.toLowerCase()));
-  const compared = selected === null ? [] : rows.filter((r) => selected.includes(r.id));
+  const filteredList = useMemo(() => {
+    return data.employees
+      .filter((e) => e.name.toLowerCase().includes(search.toLowerCase()))
+      .slice()
+      .sort((a, b) => {
+        const stA = a.stationId ? stationName(a.stationId) : t("hq");
+        const stB = b.stationId ? stationName(b.stationId) : t("hq");
+        return stA === stB ? a.name.localeCompare(b.name) : stA.localeCompare(stB);
+      });
+  }, [data.employees, data.stations, search, lang]);
+
+  const compared = useMemo(() => {
+    if (selected === null) return [];
+    return rows
+      .filter((r) => selected.includes(r.id))
+      .slice()
+      .sort((a, b) => (a.station === b.station ? a.name.localeCompare(b.name) : a.station.localeCompare(b.station)));
+  }, [rows, selected]);
 
   const toggle = (id) => setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
