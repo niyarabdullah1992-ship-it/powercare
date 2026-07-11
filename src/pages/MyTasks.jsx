@@ -9,6 +9,7 @@ import { PRIORITY_POINTS } from "@/lib/rewards";
 import { base44 } from "@/api/base44Client";
 import { getParentPath, withAncestors, NO_SECTION } from "@/lib/taskFolders";
 import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, Clock, Search, Pencil, X } from "lucide-react";
+import StationCombobox from "@/components/stations/StationCombobox";
 import TaskStats from "@/components/tasks/TaskStats";
 import TaskCard from "@/components/tasks/TaskCard";
 import FolderTree from "@/components/tasks/FolderTree";
@@ -646,13 +647,17 @@ export default function MyTasks() {
           {/* Conditional assignment fields */}
           {assignType === "member" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <select value={formStation} onChange={(e) => setFormStation(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body">
-                <option value="">{t("all")}</option>
-                <option value="hq">{t("hq")}</option>
-                {data.stations.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              <StationCombobox
+                t={t}
+                value={formStation}
+                onChange={setFormStation}
+                placeholder={t("all")}
+                options={[
+                  { value: "", label: t("all") },
+                  { value: "hq", label: t("hq") },
+                  ...data.stations.map((s) => ({ value: s.id, label: s.name })),
+                ]}
+              />
               <select name="assignedTo" required defaultValue="" className="px-3 py-2 rounded-md border border-input text-sm font-body">
                 <option value="" disabled>{t("selectEmployee")}</option>
                 {memberCandidates.filter((e) => e.role === "employee" || e.role === "station_manager").map((e) => (
@@ -663,12 +668,16 @@ export default function MyTasks() {
           )}
 
           {assignType === "station_team" && (
-            <select name="stationId" required value={formStation} onChange={(e) => setFormStation(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
-              <option value="" disabled>{t("selectStation")}</option>
-              {data.stations.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+            <>
+              <input type="hidden" name="stationId" value={formStation} />
+              <StationCombobox
+                t={t}
+                value={formStation}
+                onChange={setFormStation}
+                placeholder={t("selectStation")}
+                options={data.stations.map((s) => ({ value: s.id, label: s.name }))}
+              />
+            </>
           )}
 
           {assignType === "hq_team" && (

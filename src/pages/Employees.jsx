@@ -14,6 +14,7 @@ import EmployeePoints from "@/components/employees/EmployeePoints";
 import EmployeePerformance from "@/components/employees/EmployeePerformance";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import AuditLogPanel from "@/components/audit/AuditLogPanel";
+import StationCombobox from "@/components/stations/StationCombobox";
 import { logAudit } from "@/lib/auditLog";
 
 const ROLES = ["employee", "station_manager", "pgm", "ops_manager", "director"];
@@ -414,17 +415,19 @@ export default function Employees() {
 
             <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border flex-wrap">
               {canManage && e.role !== "pgm" && (
-                <select
-                  value={e.stationId || "HQ"}
-                  onChange={(ev) => moveEmployee(e.id, ev.target.value === "HQ" ? null : ev.target.value)}
-                  title={t("moveStation")}
-                  className="px-2 py-1 rounded-md border border-input text-xs font-body bg-background"
-                >
-                  <option value="HQ">{t("hq")}</option>
-                  {data.stations.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                <div className="w-40">
+                  <StationCombobox
+                    t={t}
+                    value={e.stationId || "HQ"}
+                    onChange={(val) => moveEmployee(e.id, val === "HQ" ? null : val)}
+                    placeholder={t("moveStation")}
+                    className="h-7 px-2 py-1 text-xs"
+                    options={[
+                      { value: "HQ", label: t("hq") },
+                      ...data.stations.map((s) => ({ value: s.id, label: s.name })),
+                    ]}
+                  />
+                </div>
               )}
               <Link to={`/app/employees/${e.id}`} className="flex items-center gap-1.5 text-xs text-accent font-body hover:underline">
                 <UserCircle className="w-3.5 h-3.5" /> {t("viewProfile")}
