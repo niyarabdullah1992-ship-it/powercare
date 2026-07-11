@@ -131,6 +131,7 @@ function emptyCompanyData(meta) {
     targets: [],
     hrLevels: [],
     schedules: [],
+    stationChatGroups: [],
     settings: { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30 },
   };
 }
@@ -653,6 +654,22 @@ export function unassignEmployeeFromShift(companyId, stationId, weekday, shiftTy
     const entry = getOrCreateSchedule(d, stationId);
     if (!entry.assignments[weekday]?.[shiftTypeId]) return;
     entry.assignments[weekday][shiftTypeId] = entry.assignments[weekday][shiftTypeId].filter((id) => id !== employeeId);
+  });
+}
+
+/* ----------------------------- station chat groups (flexible cross-station chat) -----------------------------
+   Lets an owner link two or more stations (or HQ) into their own shared chat room, and create
+   as many independent groups as needed (e.g. Station A+B together, Station C+D together). */
+export function addStationChatGroup(companyId, { name, stationIds }) {
+  updateCompany(companyId, (d) => {
+    d.stationChatGroups = d.stationChatGroups || [];
+    d.stationChatGroups.push({ id: uid("chgrp"), name, stationIds: stationIds || [] });
+  });
+}
+
+export function removeStationChatGroup(companyId, groupId) {
+  updateCompany(companyId, (d) => {
+    d.stationChatGroups = (d.stationChatGroups || []).filter((g) => g.id !== groupId);
   });
 }
 

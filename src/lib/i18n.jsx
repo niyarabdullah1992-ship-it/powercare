@@ -283,6 +283,8 @@ const dict = {
     videoHeading: "See PowerCare in Motion", videoText: "PowerCare is an all-in-one platform for organizations that value precision as much as people. It brings your stations, teams, schedules, reports and internal communication into one refined space — guided by a philosophy borrowed from fine architecture: the quiet strength of raw materials meeting the clarity of modern technology, with sustainability and calm wellness at its core.", narrationCta: "Listen to our story",
     employeeReport: "Employee Report", employeeReportNote: "Freely compare any employees across every aspect — role, station, points, certificates, tasks, leave — and export a full Excel report.",
     dueToday: "Due Today",
+    chatGroups: "Linked Station Chats", chatGroupsNote: "Link two or more stations into their own shared chat room — create as many separate groups as you need.",
+    addChatGroup: "New Group", groupName: "Group Name", selectStationsForGroup: "Select 2 or more stations to link", noChatGroups: "No linked chat groups yet.",
   },
   ar: {
     dir: "rtl",
@@ -565,6 +567,8 @@ const dict = {
     videoHeading: "شاهد باور كير في العمل", videoText: "باور كير منصة متكاملة صُممت للمؤسسات التي تقدّر الدقة قدر ما تقدّر الإنسان. توحّد محطاتك وفرقك وجداولك وتقاريرك وتواصلك الداخلي في مساحة واحدة أنيقة، بفلسفة تشبه العمارة الرفيعة: قوة المواد الخام الهادئة تلتقي بوضوح التقنية الحديثة، مع الاستدامة والراحة النفسية في جوهر التجربة.", narrationCta: "استمع إلى فكرتنا",
     employeeReport: "تقرير الموظفين", employeeReportNote: "قارن بحرية تامة بين أي موظفين من كل النواحي — الدور، المحطة، النقاط، الشهادات، المهام، الإجازات — ونزّل تقرير إكسل شامل.",
     dueToday: "مستحق اليوم",
+    chatGroups: "دردشات المحطات المرتبطة", chatGroupsNote: "اربط محطتين أو أكثر في غرفة دردشة خاصة بهم — أنشئ أي عدد تحتاجه من المجموعات المستقلة.",
+    addChatGroup: "مجموعة جديدة", groupName: "اسم المجموعة", selectStationsForGroup: "اختر محطتين أو أكثر لربطهما", noChatGroups: "لا توجد مجموعات دردشة مرتبطة بعد.",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

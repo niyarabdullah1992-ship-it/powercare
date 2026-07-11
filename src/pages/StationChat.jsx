@@ -3,11 +3,12 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { canSeeAllStations, visibleStations, isCompanyOwner, canTransferOwnership } from "@/lib/permissions";
-import { updateCompany } from "@/lib/store";
-import { MessageSquare, Send, ArrowLeft, Building2, Radio } from "lucide-react";
+import { updateCompany, addStationChatGroup, removeStationChatGroup } from "@/lib/store";
+import { MessageSquare, Send, ArrowLeft, Building2, Radio, Link2 } from "lucide-react";
 import ChatBubble from "@/components/chat/ChatBubble";
 import ChatContactList from "@/components/chat/ChatContactList";
 import ChatMediaGallery from "@/components/chat/ChatMediaGallery";
+import ChatGroupManager from "@/components/chat/ChatGroupManager";
 import CommentFiles from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 
@@ -31,15 +32,28 @@ export default function StationChat() {
           key: currentUser.stationId || "hq",
           name: currentUser.stationId ? (data.stations.find((s) => s.id === currentUser.stationId)?.name || t("station")) : t("hq"),
         }];
-  const stationRooms = data?.crossStationChatEnabled
-    ? [{ key: "all", name: t("allStationsChat") }, ...baseRooms]
-    : baseRooms;
   const isOwner = isCompanyOwner(currentUser, data) || canTransferOwnership(currentUser);
+  const chatGroups = data?.stationChatGroups || [];
+  const myGroups = chatGroups.filter((g) =>
+    isOwner || canSeeAllStations(currentUser) ||
+    (g.stationIds || []).includes(currentUser?.stationId || "hq")
+  );
+  const groupRooms = myGroups.map((g) => ({ key: `group_${g.id}`, name: g.name, isGroup: true }));
+  const stationRooms = [
+    ...(data?.crossStationChatEnabled ? [{ key: "all", name: t("allStationsChat") }] : []),
+    ...groupRooms,
+    ...baseRooms,
+  ];
+  const activeGroup = selectedStation?.startsWith("group_")
+    ? chatGroups.find((g) => `group_${g.id}` === selectedStation)
+    : null;
   const toggleCrossStationChat = () => {
     updateCompany(company.id, (d) => {
       d.crossStationChatEnabled = !d.crossStationChatEnabled;
     });
   };
+  const addChatGroup = ({ name, stationIds }) => addStationChatGroup(company.id, { name, stationIds });
+  const deleteChatGroup = (groupId) => removeStationChatGroup(company.id, groupId);
 
   useEffect(() => {
     if (stationRooms.length === 1 && !selectedStation) setSelectedStation(stationRooms[0].key);
@@ -48,6 +62,10 @@ export default function StationChat() {
   const contacts = !data || !selectedStation ? [] : data.employees.filter((e) => {
     if (e.id === currentUser.id) return false;
     if (selectedStation === "all") return true;
+    if (activeGroup) {
+      const ids = activeGroup.stationIds || [];
+      return ids.includes(e.stationId ? e.stationId : "hq");
+    }
     return selectedStation === "hq" ? !e.stationId : e.stationId === selectedStation;
   });
 
@@ -138,11 +156,14 @@ export default function StationChat() {
               </button>
             </div>
           )}
+          {isOwner && (
+            <ChatGroupManager t={t} stations={data.stations} groups={chatGroups} onAdd={addChatGroup} onDelete={deleteChatGroup} />
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {stationRooms.map((r) => (
               <button key={r.key} onClick={() => setSelectedStation(r.key)} className="flex items-center gap-3 p-4 rounded-lg border border-border hover:bg-muted transition text-start">
                 <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                  {r.key === "all" ? <MessageSquare className="w-4 h-4" /> : r.key === "hq" ? <Building2 className="w-4 h-4" /> : <Radio className="w-4 h-4" />}
+                  {r.key === "all" ? <MessageSquare className="w-4 h-4" /> : r.isGroup ? <Link2 className="w-4 h-4" /> : r.key === "hq" ? <Building2 className="w-4 h-4" /> : <Radio className="w-4 h-4" />}
                 </div>
                 <p className="text-sm font-medium font-body">{r.name}</p>
               </button>
