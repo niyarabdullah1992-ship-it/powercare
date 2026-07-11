@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { groupLevelsByOrder, levelName, MANAGER_PERMISSIONS, ASSISTANT_PERMISSIONS } from "@/lib/hrLevels";
 import { addHRTier, renameHRLevel, removeHRTier, moveHRTier, toggleHRTierActive, setHRLevelPermissions, setHRTierStations } from "@/lib/store";
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Check, X, Power, ShieldCheck, MapPin } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Check, X, Power, ShieldCheck, MapPin, Info } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import HRPermissionsChecklist from "@/components/hr/HRPermissionsChecklist";
+import StationPicker from "@/components/hr/StationPicker";
 
 const SCOPES = ["station", "cluster", "company"];
 
@@ -70,6 +71,16 @@ export default function HRTiersEditor({ data, canManage, canMultiStation }) {
   return (
     <div className="space-y-3">
       {canManage && (
+        <div className="flex items-start gap-2.5 p-3 rounded-lg border border-accent/25 bg-accent/5">
+          <Info className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-semibold font-body text-foreground">{t("hrExplainTitle")}</p>
+            <p className="text-[11px] text-muted-foreground font-body mt-0.5 leading-relaxed">{t("hrExplainText")}</p>
+          </div>
+        </div>
+      )}
+
+      {canManage && (
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs text-muted-foreground font-body">{t("positionsNote")}</p>
           <button onClick={() => setAdding((o) => !o)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted whitespace-nowrap">
@@ -88,24 +99,16 @@ export default function HRTiersEditor({ data, canManage, canMultiStation }) {
           </div>
           <div>
             <label className="block text-xs text-muted-foreground font-body mb-1">{t("station") || "Station"} ({t("leaveEmptyForAll") || "leave empty for all stations"})</label>
-            <div className="flex flex-wrap gap-2">
-              {data.stations.map((s) => {
-                const active = tierStationIds.includes(s.id);
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setTierStationIds((prev) => {
-                      if (!canMultiStation) return active ? [] : [s.id]; // single station only, unless top HR position / owner
-                      return active ? prev.filter((id) => id !== s.id) : [...prev, s.id];
-                    })}
-                    className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${active ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-                  >
-                    {s.name}
-                  </button>
-                );
+            <StationPicker
+              stations={data.stations}
+              selected={tierStationIds}
+              t={t}
+              onToggle={(id) => setTierStationIds((prev) => {
+                const active = prev.includes(id);
+                if (!canMultiStation) return active ? [] : [id]; // single station only, unless top HR position / owner
+                return active ? prev.filter((sid) => sid !== id) : [...prev, id];
               })}
-            </div>
+            />
           </div>
           <input value={managerName} onChange={(e) => setManagerName(e.target.value)} placeholder={t("managerPositionName")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
           <label className="flex items-center gap-2 text-xs font-body">
@@ -192,24 +195,16 @@ export default function HRTiersEditor({ data, canManage, canMultiStation }) {
                 </p>
                 {stationsOrder === g.order && (
                   <div className="p-2 rounded-md border border-border bg-muted/30 space-y-2">
-                    <div className="flex flex-wrap gap-2">
-                      {data.stations.map((s) => {
-                        const active = stationsValue.includes(s.id);
-                        return (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => setStationsValue((prev) => {
-                              if (!canMultiStation) return active ? [] : [s.id]; // single station only, unless top HR position / owner
-                              return active ? prev.filter((id) => id !== s.id) : [...prev, s.id];
-                            })}
-                            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${active ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-                          >
-                            {s.name}
-                          </button>
-                        );
+                    <StationPicker
+                      stations={data.stations}
+                      selected={stationsValue}
+                      t={t}
+                      onToggle={(id) => setStationsValue((prev) => {
+                        const active = prev.includes(id);
+                        if (!canMultiStation) return active ? [] : [id]; // single station only, unless top HR position / owner
+                        return active ? prev.filter((sid) => sid !== id) : [...prev, id];
                       })}
-                    </div>
+                    />
                     <div className="flex gap-2">
                       <button onClick={saveStations} className="px-2.5 py-1 rounded-md bg-foreground text-background text-xs font-body">{t("save")}</button>
                       <button onClick={() => setStationsOrder(null)} className="px-2.5 py-1 rounded-md border border-border text-xs font-body">{t("cancel")}</button>

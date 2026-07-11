@@ -292,6 +292,8 @@ const dict = {
     rejectReasonPlaceholder: "Explain why this is being rejected (required)...",
     objectToRejection: "Object to Rejection", disputePlaceholder: "Explain why you disagree with this rejection...",
     submitDispute: "Submit Objection", disputeSent: "Your objection was sent to the manager for reconsideration.",
+    hrExplainTitle: "How HR positions work",
+    hrExplainText: "Each position sits on a level — positions are listed from highest authority at the top to lowest at the bottom. Every position has a scope: Station-level applies only to the station(s) you pick, Cluster-level applies to a whole cluster of stations, and Company-wide applies to the entire company. A position can have a Manager and, optionally, an Assistant — you choose the name shown for each (e.g. \"Station Supervisor\"). Use the station search below to quickly find and select which station(s) a position covers.",
   },
   ar: {
     dir: "rtl",
@@ -583,6 +585,8 @@ const dict = {
     rejectReasonPlaceholder: "اشرح سبب الرفض (إلزامي)...",
     objectToRejection: "اعتراض على الرفض", disputePlaceholder: "اشرح سبب اعتراضك على هذا الرفض...",
     submitDispute: "إرسال الاعتراض", disputeSent: "تم إرسال اعتراضك إلى المدير لإعادة النظر.",
+    hrExplainTitle: "كيف تعمل مناصب الموارد البشرية",
+    hrExplainText: "كل منصب يقع ضمن مستوى — وتُعرض المناصب من الأعلى صلاحية في الأعلى إلى الأدنى في الأسفل. لكل منصب نطاق: نطاق المحطة يشمل فقط المحطة أو المحطات التي تختارها، نطاق المجموعة يشمل مجموعة كاملة من المحطات، أما النطاق على مستوى الشركة فيشمل الشركة بأكملها. يمكن أن يحتوي المنصب على مدير، وبشكل اختياري مساعد — ويمكنك اختيار المسمى الذي يظهر لكل منهما (مثل \"مشرف المحطة\"). استخدم خانة البحث عن المحطات أدناه لإيجاد واختيار المحطة أو المحطات التي يغطيها المنصب بسرعة.",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
