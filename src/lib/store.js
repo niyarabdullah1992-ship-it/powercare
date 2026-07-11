@@ -1,6 +1,6 @@
 // PowerCare data layer — localStorage-based, multi-tenant with full company isolation.
 // Registry tracks all companies; each company's data lives under its own key.
-import { MANAGER_PERMISSIONS, ASSISTANT_PERMISSIONS, groupLevelsByOrder } from "./hrLevels";
+import { MANAGER_PERMISSIONS, ASSISTANT_PERMISSIONS, groupLevelsByOrder, buildHRLevels } from "./hrLevels";
 import { base44 } from "@/api/base44Client";
 
 const REGISTRY_KEY = "powercare_registry";
@@ -416,6 +416,78 @@ export function seedDummyData(companyId) {
 
     if (!d.directorId) d.directorId = d.employees[0]?.id || null;
     if (!d.ownerId) d.ownerId = d.directorId;
+  });
+}
+
+// Seeds (or reuses) a full 5-tier HR hierarchy — station managers, a station cluster,
+// Site/Cluster/Head-of-Ops/VP/CHRO HR positions — plus sample anonymous complaints sitting
+// at different escalation levels (station manager → Site HR → Cluster HR → ... → CHRO),
+// so the whole escalation chain can be inspected end-to-end. Safe to run on any existing company.
+export function seedHRDemoHierarchy(companyId) {
+  updateCompany(companyId, (d) => {
+    if (d.stations.length < 2) {
+      d.stations.push(
+        { id: uid("st"), name: "Station Alpha", location: "Riyadh North", type: "Power", status: "active", managerId: null, createdAt: new Date().toISOString() },
+        { id: uid("st"), name: "Station Beta", location: "Dammam Coast", type: "Power", status: "active", managerId: null, createdAt: new Date().toISOString() }
+      );
+    }
+    const [s1, s2] = d.stations;
+
+    if (!d.hrLevels || d.hrLevels.length === 0) d.hrLevels = buildHRLevels();
+
+    d.hrClusters = d.hrClusters || [];
+    let cluster = d.hrClusters[0];
+    if (!cluster) {
+      cluster = { id: uid("clu"), name: "Northern Cluster", stationIds: [s1.id, s2.id] };
+      d.hrClusters.push(cluster);
+    }
+
+    let mgr1 = d.employees.find((e) => e.role === "station_manager" && e.stationId === s1.id);
+    if (!mgr1) {
+      mgr1 = { id: uid("emp"), name: "Nora Al-Subaei", email: "nora.mgr@demo.com", role: "station_manager", stationId: s1.id, anonymousId: hashId(uid("a")), phone: "+96650000201", createdAt: new Date().toISOString() };
+      d.employees.push(mgr1);
+      s1.managerId = mgr1.id;
+    }
+    let emp1 = d.employees.find((e) => e.role === "employee" && e.stationId === s1.id);
+    if (!emp1) {
+      emp1 = { id: uid("emp"), name: "Ali Al-Mutairi", email: "ali.demo@demo.com", role: "employee", stationId: s1.id, anonymousId: hashId(uid("a")), phone: "+96650000203", createdAt: new Date().toISOString() };
+      d.employees.push(emp1);
+    }
+
+    const groups = groupLevelsByOrder(d.hrLevels);
+    const [tier1, tier2, tier3, tier4, tier5] = groups; // station, cluster, then company-wide tiers
+
+    const assign = (name, email, level, hrStationId, hrClusterId) => {
+      if (!level) return null;
+      let emp = d.employees.find((e) => e.hrLevelId === level.id && e.hrStationId === (hrStationId || null) && e.hrClusterId === (hrClusterId || null));
+      if (!emp) {
+        emp = { id: uid("emp"), name, email, role: "employee", stationId: null, anonymousId: hashId(uid("a")), phone: "", hrLevelId: level.id, hrStationId: hrStationId || null, hrClusterId: hrClusterId || null, createdAt: new Date().toISOString() };
+        d.employees.push(emp);
+      }
+      return emp;
+    };
+    const siteHR = assign("Sami Al-Harbi", "sami.hr@demo.com", tier1?.manager, s1.id, null);
+    const clusterHR = assign("Huda Al-Qahtani", "huda.hr@demo.com", tier2?.manager, null, cluster.id);
+    assign("Faisal Al-Otaibi", "faisal.hr@demo.com", tier3?.manager, null, null);
+    assign("Reem Al-Shammari", "reem.hr@demo.com", tier4?.manager, null, null);
+    const chro = assign("Khalid Al-Rashidi", "khalid.chro@demo.com", tier5?.manager, null, null);
+
+    const now = Date.now();
+    d.anonymousReports = d.anonymousReports || [];
+    d.anonymousReports.push(
+      { id: uid("anr"), authorId: emp1.id, stationId: s1.id, type: "complaint", priority: "high", message: "[Demo] Safety gear hasn't been replaced for 3 weeks.", status: "open", escalationLevel: 0, replies: [], files: [], createdAt: new Date(now - 86400000).toISOString() },
+      { id: uid("anr"), authorId: emp1.id, stationId: s1.id, type: "complaint", priority: "medium", message: "[Demo] Disagree with my station manager's decision on a leave request.", status: "open", escalationLevel: 1, replies: [
+          { level: 0, role: "station_manager", authorName: mgr1.name, text: "Reviewed — forwarding to Site HR for a second opinion.", files: [], createdAt: new Date(now - 86400000 * 2).toISOString() },
+        ], files: [], createdAt: new Date(now - 86400000 * 3).toISOString() },
+      { id: uid("anr"), authorId: emp1.id, stationId: s2.id, type: "suggestion", priority: "low", message: "[Demo] Requesting a fairer night-shift rotation policy across the cluster.", status: "open", escalationLevel: 2, replies: [
+          { level: 1, role: "employee", authorName: siteHR?.name || "Site HR", text: "Outside my authority for this station — escalating to Cluster HR.", files: [], createdAt: new Date(now - 86400000 * 4).toISOString() },
+        ], files: [], createdAt: new Date(now - 86400000 * 6).toISOString() },
+      { id: uid("anr"), authorId: emp1.id, stationId: s1.id, type: "complaint", priority: "high", message: "[Demo] Serious misconduct complaint — escalated all the way to the CHRO and resolved.", status: "closed", resolution: "approved", escalationLevel: 5, replies: [
+          { level: 0, role: "station_manager", authorName: mgr1.name, text: "Escalating immediately given the severity.", files: [], createdAt: new Date(now - 86400000 * 10).toISOString() },
+          { level: 2, role: "employee", authorName: clusterHR?.name || "Cluster HR", text: "Confirmed and escalated to company leadership.", files: [], createdAt: new Date(now - 86400000 * 9).toISOString() },
+          { level: 5, role: "employee", authorName: chro?.name || "CHRO", text: "Investigated and resolved — corrective action taken.", files: [], createdAt: new Date(now - 86400000 * 8).toISOString() },
+        ], files: [], createdAt: new Date(now - 86400000 * 12).toISOString() }
+    );
   });
 }
 
