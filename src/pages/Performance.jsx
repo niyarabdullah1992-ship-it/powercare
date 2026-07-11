@@ -80,10 +80,12 @@ export default function Performance() {
         </div>
       </div>
 
-      {/* Badge tiers legend */}
-      <BadgeLegend />
+      {view === "comparison" && <StationComparison />}
 
-      {view === "individual" ? (
+      {/* Badge tiers legend */}
+      {view !== "comparison" && <BadgeLegend />}
+
+      {view === "individual" && (
         <div className="space-y-2">
           {ranked.every((e) => e.points === 0) ? (
             <p className="text-sm text-muted-foreground font-body">{t("noPoints")}</p>
@@ -133,7 +135,9 @@ export default function Performance() {
             })
           )}
         </div>
-      ) : (
+      )}
+
+      {view === "station" && (
         <div className="space-y-5">
           {/* Podium for top 3 */}
           {(() => {
@@ -214,7 +218,7 @@ export default function Performance() {
 
       {view === "analytics" && <PerformanceAnalytics />}
 
-      {view === "comparison" && <StationComparison />}
+
 
       {view === "achievements" && (
         <div className="space-y-4">

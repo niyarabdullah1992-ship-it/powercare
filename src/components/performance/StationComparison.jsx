@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
+import { base44 } from "@/api/base44Client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import StationFilterDropdown from "@/components/reports/StationFilterDropdown";
 
@@ -12,10 +13,36 @@ const LEVEL_TONE = {
 
 export default function StationComparison() {
   const { t } = useI18n();
-  const { data } = useAuth();
+  const { data, currentUser } = useAuth();
   const [selected, setSelected] = useState([]);
+  const [targets, setTargets] = useState([]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    (async () => {
+      try {
+        const res = await base44.functions.invoke("supabaseTargets", {
+          action: "listTargets",
+          userRole: currentUser.role,
+          userId: currentUser.id,
+          stationId: currentUser.stationId || null,
+          managedStations: currentUser.managedStations || [],
+        });
+        setTargets(res?.data?.targets || []);
+      } catch {
+        setTargets([]);
+      }
+    })();
+  }, [currentUser?.id]);
 
   if (!data) return null;
+
+  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || null;
+  const targetStationKey = (tg) => {
+    if (tg.assignment_type === "station_team") return tg.assignment_id || tg.station_id || null;
+    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || null;
+    return tg.station_id || null;
+  };
 
   const toggle = (id) => {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -23,18 +50,19 @@ export default function StationComparison() {
 
   const metricsFor = (station) => {
     const members = data.employees.filter((e) => e.stationId === station.id);
-    const tasks = data.tasks.filter((tk) => tk.stationId === station.id);
-    const completed = tasks.filter((tk) => tk.status === "completed").length;
-    const active = tasks.filter((tk) => tk.status === "in_progress" || tk.status === "pending").length;
-    const completionRate = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
+    const stationTargets = targets.filter((tg) => targetStationKey(tg) === station.id);
+    const completed = stationTargets.filter((tg) => tg.status === "completed").length;
+    const overdue = stationTargets.filter((tg) => tg.status === "overdue").length;
+    const onTrack = stationTargets.length - completed - overdue;
     const points = members.reduce((sum, e) => sum + (e.points || 0), 0);
     const safety = data.safety.find((s) => s.stationId === station.id) || { level: "green", incidents: 0 };
     return {
       id: station.id,
       name: station.name,
       team: members.length,
-      completionRate,
-      active,
+      completed,
+      overdue,
+      onTrack,
       points,
       safetyLevel: safety.level,
       incidents: safety.incidents || 0,
@@ -42,7 +70,12 @@ export default function StationComparison() {
   };
 
   const compared = selected.map((id) => metricsFor(data.stations.find((s) => s.id === id))).filter(Boolean);
-  const chartData = compared.map((c) => ({ name: c.name, [t("taskCompletion")]: c.completionRate, [t("points")]: c.points }));
+  const chartData = compared.map((c) => ({
+    name: c.name,
+    [t("completed")]: c.completed,
+    [t("overdue")]: c.overdue,
+    [t("inProgress")]: c.onTrack,
+  }));
 
   return (
     <div className="space-y-5">
@@ -62,6 +95,25 @@ export default function StationComparison() {
         <p className="text-sm text-muted-foreground font-body p-6 text-center border border-border rounded-xl bg-card">{t("selectAtLeastTwo")}</p>
       ) : (
         <>
+          {/* Tasks: completed / overdue / on track — per station */}
+          <div className="p-5 rounded-xl border border-border bg-card">
+            <h3 className="font-heading text-base font-semibold mb-4">{t("completed")} · {t("overdue")} · {t("inProgress")}</h3>
+            <div className="w-full h-72" dir="ltr">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                  <Bar dataKey={t("completed")} stackId="tasks" fill="hsl(var(--accent))" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey={t("inProgress")} stackId="tasks" fill="hsl(var(--chart-2))" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey={t("overdue")} stackId="tasks" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
           {/* Comparison table */}
           <div className="p-4 rounded-xl border border-border bg-card overflow-x-auto">
             <table className="w-full text-sm font-body">
@@ -69,8 +121,9 @@ export default function StationComparison() {
                 <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wider">
                   <th className="py-2 px-2 text-start">{t("stations")}</th>
                   <th className="py-2 px-2 text-start">{t("team")}</th>
-                  <th className="py-2 px-2 text-start">{t("taskCompletion")}</th>
-                  <th className="py-2 px-2 text-start">{t("activeTasksCount")}</th>
+                  <th className="py-2 px-2 text-start">{t("completed")}</th>
+                  <th className="py-2 px-2 text-start">{t("inProgress")}</th>
+                  <th className="py-2 px-2 text-start">{t("overdue")}</th>
                   <th className="py-2 px-2 text-start">{t("points")}</th>
                   <th className="py-2 px-2 text-start">{t("safetyLevel")}</th>
                   <th className="py-2 px-2 text-start">{t("incidents")}</th>
@@ -81,8 +134,9 @@ export default function StationComparison() {
                   <tr key={c.id} className="border-b border-border/60 last:border-0">
                     <td className="py-2.5 px-2 font-medium">{c.name}</td>
                     <td className="py-2.5 px-2 text-muted-foreground">{c.team}</td>
-                    <td className="py-2.5 px-2 text-muted-foreground">{c.completionRate}%</td>
-                    <td className="py-2.5 px-2 text-muted-foreground">{c.active}</td>
+                    <td className="py-2.5 px-2 text-muted-foreground">{c.completed}</td>
+                    <td className="py-2.5 px-2 text-muted-foreground">{c.onTrack}</td>
+                    <td className="py-2.5 px-2 text-muted-foreground">{c.overdue}</td>
                     <td className="py-2.5 px-2 text-muted-foreground">{c.points}</td>
                     <td className="py-2.5 px-2">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] ${LEVEL_TONE[c.safetyLevel] || LEVEL_TONE.green}`}>{t(c.safetyLevel === "red" ? "high" : c.safetyLevel === "amber" ? "medium" : "low")}</span>
@@ -92,24 +146,6 @@ export default function StationComparison() {
                 ))}
               </tbody>
             </table>
-          </div>
-
-          {/* Bar chart comparison */}
-          <div className="p-5 rounded-xl border border-border bg-card">
-            <h3 className="font-heading text-base font-semibold mb-4">{t("taskCompletion")} · {t("points")}</h3>
-            <div className="w-full h-72" dir="ltr">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey={t("taskCompletion")} fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey={t("points")} fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
           </div>
         </>
       )}
