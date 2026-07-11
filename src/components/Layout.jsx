@@ -7,7 +7,7 @@ import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, HardHat, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, GripVertical, CalendarClock,
+  Users, HardHat, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, GripVertical, CalendarClock,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -90,6 +90,7 @@ export default function Layout({ children }) {
 
   const navItems = [
     { to: "/app", icon: LayoutDashboard, label: t("dashboard"), end: true },
+    { to: "/app/daily-report", icon: FileText, label: t("reports") },
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks") },
     { to: "/app/chat", icon: MessageSquare, label: t("chat") },
 

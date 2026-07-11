@@ -153,7 +153,7 @@ export default function Dashboard() {
         </div>
         <div className="p-6 bg-card">
           <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{t("taskCompletion")}</p>
-          <h3 className="hero-title text-2xl mb-5">{t("reports")}</h3>
+          <h3 className="hero-title text-2xl mb-5">{t("productivityTrend")}</h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />

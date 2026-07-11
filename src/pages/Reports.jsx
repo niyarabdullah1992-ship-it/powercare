@@ -8,6 +8,7 @@ import moment from "moment";
 import { FileBarChart2, Calendar, AlertTriangle, Check, Clock, Building2, ListTodo, CalendarDays, Megaphone, FileSpreadsheet } from "lucide-react";
 import TaskStats from "@/components/tasks/TaskStats";
 import { exportCSV } from "@/lib/exportReport";
+import StationFilterDropdown from "@/components/reports/StationFilterDropdown";
 
 const RANGES = [
   { val: "daily", amount: 1, unit: "days" },
@@ -198,26 +199,14 @@ export default function Reports() {
       </div>
 
       {/* Station multi-select filter */}
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <Building2 className="w-4 h-4 text-muted-foreground" />
-        {myStations.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => toggleStation(s.id)}
-            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${selectedStations.includes(s.id) ? "bg-accent text-accent-foreground border-accent" : "border-border hover:bg-muted"}`}
-          >
-            {s.name}
-          </button>
-        ))}
-        {seesAll && (
-          <button
-            onClick={() => toggleStation("hq")}
-            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${selectedStations.includes("hq") ? "bg-accent text-accent-foreground border-accent" : "border-border hover:bg-muted"}`}
-          >
-            {t("hq")}
-          </button>
-        )}
-      </div>
+      <StationFilterDropdown
+        t={t}
+        options={[...myStations.map((s) => ({ key: s.id, label: s.name })), ...(seesAll ? [{ key: "hq", label: t("hq") }] : [])]}
+        selected={selectedStations}
+        onToggle={toggleStation}
+        onSelectAll={() => setSelectedStations([...myStations.map((s) => s.id), ...(seesAll ? ["hq"] : [])])}
+        onClearAll={() => setSelectedStations([])}
+      />
 
       {/* Range selector */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
