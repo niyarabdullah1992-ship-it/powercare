@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, FileSpreadsheet, Users } from "lucide-react";
+import { Search, FileSpreadsheet, Users, List, GitCompare } from "lucide-react";
 import { getRoleLabel } from "@/lib/roles";
 import { formatDate } from "@/lib/dateFormat";
 import { exportCSV } from "@/lib/exportReport";
 import ReportCard from "@/components/reports/ReportCard";
 import ReportTableHead from "@/components/reports/ReportTableHead";
+import GroupVsGroupComparison from "@/components/reports/GroupVsGroupComparison";
 
 // Free-form employee comparison table for the company owner — pick any employees
 // (regardless of station) and see every aspect side by side, with a full Excel export.
@@ -12,6 +13,7 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null); // null = not initialized yet
   const [showPicker, setShowPicker] = useState(false);
+  const [mode, setMode] = useState("list"); // "list" | "groups"
 
   useEffect(() => {
     if (selected === null) setSelected(data.employees.map((e) => e.id));
@@ -90,6 +92,26 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
 
   return (
     <div className="space-y-4">
+      {/* Mode toggle: free list comparison vs. group-vs-group aggregate comparison */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <button
+          onClick={() => setMode("list")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "list" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+        >
+          <List className="w-3.5 h-3.5" /> {t("listView")}
+        </button>
+        <button
+          onClick={() => setMode("groups")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "groups" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+        >
+          <GitCompare className="w-3.5 h-3.5" /> {t("groupVsGroup")}
+        </button>
+      </div>
+
+      {mode === "groups" ? (
+        <GroupVsGroupComparison rows={rows} employees={filteredList} t={t} />
+      ) : (
+      <>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="relative w-full sm:max-w-xs">
           <Search className="absolute top-1/2 -translate-y-1/2 start-3 w-4 h-4 text-muted-foreground" />
@@ -171,6 +193,8 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
           </table>
         )}
       </ReportCard>
+      </>
+      )}
     </div>
   );
 }
