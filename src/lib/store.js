@@ -491,6 +491,26 @@ export function seedHRDemoHierarchy(companyId) {
   });
 }
 
+// Assigns one employee as Station Manager for one or more stations at once — promotes
+// them to the station_manager role, clears their old single-station manager slot (if any),
+// and sets station.managerId on every selected station so the escalation chain (level 0,
+// see src/lib/escalation.js) and org chart both recognize them everywhere they manage.
+export function assignStationManager(companyId, employeeId, stationIds) {
+  updateCompany(companyId, (d) => {
+    const emp = d.employees.find((e) => e.id === employeeId);
+    if (!emp) return;
+    d.stations.forEach((s) => { if (s.managerId === emp.id) s.managerId = null; });
+    const ids = Array.isArray(stationIds) ? stationIds.filter(Boolean) : [];
+    emp.role = "station_manager";
+    emp.stationId = ids.length === 1 ? ids[0] : null;
+    emp.managedStations = ids;
+    ids.forEach((sid) => {
+      const s = d.stations.find((x) => x.id === sid);
+      if (s) s.managerId = emp.id;
+    });
+  });
+}
+
 /* ----------------------------- mutations ----------------------------- */
 export function updateCompany(companyId, updater) {
   const data = getCompanyData(companyId);

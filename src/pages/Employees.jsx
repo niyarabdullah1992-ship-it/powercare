@@ -177,7 +177,7 @@ export default function Employees() {
               {(provided) => (
                 <div ref={provided.innerRef} {...provided.droppableProps} className="contents">
                   {stations.map((s, index) => {
-                    const team = data.employees.filter((e) => e.stationId === s.id);
+                    const team = data.employees.filter((e) => e.stationId === s.id || (["pgm", "station_manager"].includes(e.role) && (e.managedStations || []).includes(s.id)));
                     const hasManager = team.some((e) => e.role === "station_manager");
                     const counts = ROLES.reduce((acc, r) => ({ ...acc, [r]: team.filter((e) => e.role === r).length }), {});
                     return (
@@ -234,7 +234,7 @@ export default function Employees() {
   const station = isHQ ? null : data.stations.find((s) => s.id === selectedStation);
   let team = isHQ
     ? data.employees.filter((e) => !e.stationId && e.role !== "pgm")
-    : data.employees.filter((e) => e.stationId === selectedStation || (e.role === "pgm" && (e.managedStations || []).includes(selectedStation)));
+    : data.employees.filter((e) => e.stationId === selectedStation || (["pgm", "station_manager"].includes(e.role) && (e.managedStations || []).includes(selectedStation)));
   if (search) team = team.filter((e) => e.name.toLowerCase().includes(search.toLowerCase()) || e.email.toLowerCase().includes(search.toLowerCase()));
   if (roleFilter !== "all") team = team.filter((e) => e.role === roleFilter);
 

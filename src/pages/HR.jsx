@@ -107,7 +107,7 @@ export default function HR() {
             <button onClick={() => setSelectedStation(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
               <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
             </button>
-            {station && <HROrgChart station={station} data={data} canManage={canManage} />}
+            {station && <HROrgChart station={station} data={data} canManage={canManage} company={company} />}
           </div>
         )}
       </section>

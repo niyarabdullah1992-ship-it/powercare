@@ -1,14 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { groupLevelsByOrder, levelName, levelNote } from "@/lib/hrLevels";
 import HRTierCard from "@/components/hr/HRTierCard";
+import StationManagerAssignModal from "@/components/hr/StationManagerAssignModal";
 import { UserCircle2 } from "lucide-react";
 
 // Vertical org chart for one station's HR reporting line: highest authority down to
 // the station's own HR position, connected with elegant tapered lines. The set of
 // tiers, their scope, order, and names all come from the company's own customizable hrLevels.
-export default function HROrgChart({ station, data, canManage }) {
+export default function HROrgChart({ station, data, canManage, company }) {
   const { t, lang } = useI18n();
 
   const cluster = (data.hrClusters || []).find((c) => (c.stationIds || []).includes(station.id));
@@ -34,13 +35,13 @@ export default function HROrgChart({ station, data, canManage }) {
   // but is a regular employee role, not one of the customizable HR tiers above — surface it here
   // so it's clear how it links into the hierarchy.
   const stationManager = data.employees.find((e) => e.id === station.managerId)
-    || data.employees.find((e) => e.role === "station_manager" && e.stationId === station.id);
+    || data.employees.find((e) => e.role === "station_manager" && (e.stationId === station.id || (e.managedStations || []).includes(station.id)));
 
   if (groups.length === 0) {
     return (
       <div className="p-6 rounded-2xl border border-dashed border-border text-center space-y-3">
         <p className="text-sm text-muted-foreground font-body italic">{t("noPositions")}</p>
-        <StationManagerNode stationManager={stationManager} t={t} />
+        <StationManagerNode stationManager={stationManager} t={t} station={station} data={data} company={company} canManage={canManage} />
       </div>
     );
   }
@@ -81,19 +82,27 @@ export default function HROrgChart({ station, data, canManage }) {
           <div className="w-1.5 h-1.5 rotate-45 bg-accent/70 my-0.5 shrink-0" />
           <div className="w-px flex-1 bg-gradient-to-b from-accent/40 via-border to-accent/40" />
         </div>
-        <StationManagerNode stationManager={stationManager} t={t} />
+        <StationManagerNode stationManager={stationManager} t={t} station={station} data={data} company={company} canManage={canManage} />
       </div>
     </div>
   );
 }
 
-function StationManagerNode({ stationManager, t }) {
+function StationManagerNode({ stationManager, t, station, data, company, canManage }) {
+  const [showAssign, setShowAssign] = useState(false);
   return (
     <div className="w-full max-w-sm">
       <div className="p-4 rounded-xl border border-accent/20 bg-gradient-to-b from-card to-secondary/40 shadow-sm space-y-2">
-        <div className="flex items-center gap-2">
-          <UserCircle2 className="w-4 h-4 text-accent shrink-0" />
-          <h4 className="font-heading text-base tracking-wide">{t("stationManager")}</h4>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <UserCircle2 className="w-4 h-4 text-accent shrink-0" />
+            <h4 className="font-heading text-base tracking-wide">{t("stationManager")}</h4>
+          </div>
+          {canManage && company && (
+            <button onClick={() => setShowAssign(true)} className="text-[11px] text-accent font-body hover:underline shrink-0">
+              {t("assignManager")}
+            </button>
+          )}
         </div>
         {stationManager ? (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-body">
@@ -107,6 +116,9 @@ function StationManagerNode({ stationManager, t }) {
       <div className="text-center mt-1">
         <Link to="/app/employees" className="text-[11px] text-accent font-body hover:underline">{t("goToEmployees")}</Link>
       </div>
+      {showAssign && (
+        <StationManagerAssignModal company={company} data={data} initialStationId={station.id} onClose={() => setShowAssign(false)} />
+      )}
     </div>
   );
 }

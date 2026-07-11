@@ -5,7 +5,7 @@ import { groupLevelsByOrder, levelName } from "./hrLevels";
 
 export function handlersForLevel(levelIdx, r, data) {
   if (levelIdx === 0) {
-    return data.employees.filter((e) => e.role === "station_manager" && e.stationId === r.stationId);
+    return data.employees.filter((e) => e.role === "station_manager" && (e.stationId === r.stationId || (e.managedStations || []).includes(r.stationId)));
   }
   const groups = groupLevelsByOrder(data.hrLevels || []);
   const group = groups[levelIdx - 1];
