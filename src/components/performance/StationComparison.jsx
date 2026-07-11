@@ -3,13 +3,34 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import { CheckCircle2, Triangle, Square, AlertOctagon } from "lucide-react";
 import StationFilterDropdown from "@/components/reports/StationFilterDropdown";
 
+const COLOR_COMPLETED = "#10b981"; // emerald-500
+const COLOR_ONTRACK = "#3b82f6"; // blue-500
+const COLOR_OVERDUE = "#ef4444"; // red-500
+
 const LEVEL_TONE = {
-  green: "bg-accent/15 text-accent",
-  amber: "bg-amber-100 text-amber-700",
-  red: "bg-destructive/15 text-destructive",
+  green: "bg-emerald-100 text-emerald-700 border border-emerald-300",
+  amber: "bg-amber-100 text-amber-700 border border-amber-300",
+  red: "bg-red-100 text-red-700 border border-red-300",
 };
+
+// Overall health shape for a station, at a glance: circle = healthy, square = needs
+// attention, triangle/octagon = at risk — shape + color both carry the signal.
+function statusShape(c) {
+  const overdueRatio = c.overdue > 0 ? c.overdue / Math.max(1, c.completed + c.overdue + c.onTrack) : 0;
+  if (c.safetyLevel === "red" || overdueRatio > 0.3) {
+    return { Icon: AlertOctagon, color: "text-red-600", bg: "bg-red-100", label: "high" };
+  }
+  if (c.overdue > 0 || c.safetyLevel === "amber") {
+    return { Icon: Triangle, color: "text-amber-600", bg: "bg-amber-100", label: "medium" };
+  }
+  if (c.completed > 0 && c.onTrack === 0 && c.overdue === 0) {
+    return { Icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-100", label: "low" };
+  }
+  return { Icon: Square, color: "text-blue-600", bg: "bg-blue-100", label: "low" };
+}
 
 export default function StationComparison() {
   const { t } = useI18n();
@@ -95,20 +116,40 @@ export default function StationComparison() {
         <p className="text-sm text-muted-foreground font-body p-6 text-center border border-border rounded-xl bg-card">{t("selectAtLeastTwo")}</p>
       ) : (
         <>
+          {/* At-a-glance status shapes — color + geometry both signal station health */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {compared.map((c) => {
+              const { Icon, color, bg, label } = statusShape(c);
+              return (
+                <div key={c.id} className="p-4 rounded-xl border border-border bg-card flex items-center gap-3">
+                  <span className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${bg}`}>
+                    <Icon className={`w-5 h-5 ${color}`} strokeWidth={2.25} fill="currentColor" fillOpacity={0.15} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium font-body truncate">{c.name}</p>
+                    <p className={`text-xs font-body font-medium ${color}`}>
+                      {label === "high" ? t("high") : label === "medium" ? t("medium") : t("low")} · {c.overdue} {t("overdue").toLowerCase()}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {/* Tasks: completed / overdue / on track — per station */}
           <div className="p-5 rounded-xl border border-border bg-card">
             <h3 className="font-heading text-base font-semibold mb-4">{t("completed")} · {t("overdue")} · {t("inProgress")}</h3>
             <div className="w-full h-72" dir="ltr">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }} barGap={6}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} fontWeight={600} tickLine={false} axisLine={false} />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey={t("completed")} stackId="tasks" fill="hsl(var(--accent))" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey={t("inProgress")} stackId="tasks" fill="hsl(var(--chart-2))" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey={t("overdue")} stackId="tasks" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }} />
+                  <Legend wrapperStyle={{ fontSize: 12, fontWeight: 600 }} />
+                  <Bar dataKey={t("completed")} stackId="tasks" fill={COLOR_COMPLETED} radius={[0, 0, 0, 0]} />
+                  <Bar dataKey={t("inProgress")} stackId="tasks" fill={COLOR_ONTRACK} radius={[0, 0, 0, 0]} />
+                  <Bar dataKey={t("overdue")} stackId="tasks" fill={COLOR_OVERDUE} radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -139,7 +180,10 @@ export default function StationComparison() {
                     <td className="py-2.5 px-2 text-muted-foreground">{c.overdue}</td>
                     <td className="py-2.5 px-2 text-muted-foreground">{c.points}</td>
                     <td className="py-2.5 px-2">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] ${LEVEL_TONE[c.safetyLevel] || LEVEL_TONE.green}`}>{t(c.safetyLevel === "red" ? "high" : c.safetyLevel === "amber" ? "medium" : "low")}</span>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${LEVEL_TONE[c.safetyLevel] || LEVEL_TONE.green}`}>
+                        {c.safetyLevel === "red" ? <AlertOctagon className="w-3 h-3" /> : c.safetyLevel === "amber" ? <Triangle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+                        {t(c.safetyLevel === "red" ? "high" : c.safetyLevel === "amber" ? "medium" : "low")}
+                      </span>
                     </td>
                     <td className="py-2.5 px-2 text-muted-foreground">{c.incidents}</td>
                   </tr>

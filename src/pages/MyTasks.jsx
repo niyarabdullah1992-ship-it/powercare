@@ -543,10 +543,15 @@ export default function MyTasks() {
     ...folders.filter((f) => f.station_id === selectedStation).map((f) => f.path),
     ...stationTargetsAll.filter((tg) => tg.section).map((tg) => tg.section),
   ]);
-  const existingSections = Array.from(new Set([
-    ...targets.filter((tg) => tg.section).map((tg) => tg.section),
-    ...folders.map((f) => f.path),
-  ]));
+  // Only show sections that belong to the station/team currently selected in the form —
+  // otherwise every section from every station across the company piles up in one list.
+  const sectionScopeKey = assignType === "hq_team" ? "hq" : (formStation || null);
+  const existingSections = sectionScopeKey
+    ? Array.from(new Set([
+        ...targets.filter((tg) => tg.section && targetStationKey(tg) === sectionScopeKey).map((tg) => tg.section),
+        ...folders.filter((f) => f.station_id === sectionScopeKey).map((f) => f.path),
+      ]))
+    : [];
   const allSectionFolders = [
     { key: NO_SECTION, name: t("noSection") },
     ...allStationFolders.map((p) => ({ key: p, name: p })),
