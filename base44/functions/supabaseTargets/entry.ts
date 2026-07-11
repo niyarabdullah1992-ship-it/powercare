@@ -553,6 +553,80 @@ Deno.serve(async (req) => {
       return Response.json({ message: Array.isArray(created) ? created[0] : created });
     }
 
+    if (action === "runEscalationSweep") {
+      // Server-driven sweep (called by a scheduled workflow) — marks newly overdue
+      // targets and sends repeat escalation notifications for targets still overdue,
+      // so escalation no longer depends on someone having the app open.
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?status=in.(active,overdue)&order=created_at.desc`, { headers });
+      const rows = await res.json();
+      if (!res.ok) return Response.json({ error: rows?.message || "Failed to fetch targets" }, { status: 400 });
+      const now = Date.now();
+      let newlyOverdue = 0;
+      let escalated = 0;
+      for (const tg of rows || []) {
+        if (tg.status === "active" && new Date(tg.end_date).getTime() < now) {
+          await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              user_id: tg.manager_id,
+              message: `Target "${tg.title || "Untitled"}" is OVERDUED — time expired before reaching the goal (${tg.completed_tasks}/${tg.task_target}).`,
+            }),
+          });
+          if (tg.assignment_type === "member" && tg.employee_id) {
+            await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                user_id: tg.employee_id,
+                message: `Your target "${tg.title || "Untitled"}" is OVERDUED — time expired (${tg.completed_tasks}/${tg.task_target}).`,
+              }),
+            });
+          }
+          await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(tg.id)}`, {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({ status: "overdue" }),
+          });
+          newlyOverdue++;
+          continue;
+        }
+        if (tg.status === "overdue") {
+          const comments = Array.isArray(tg.comments) ? tg.comments : [];
+          const lastEscalation = [...comments].reverse().find((c) => c.is_escalation);
+          const hoursSince = lastEscalation ? (now - new Date(lastEscalation.created_at).getTime()) / 3600000 : Infinity;
+          if (hoursSince >= 24) {
+            const daysOverdue = Math.max(1, Math.ceil((now - new Date(tg.end_date).getTime()) / 86400000));
+            comments.push({
+              id: crypto.randomUUID(),
+              user_id: "system",
+              user_name: "System",
+              content: `🔺 Automatic escalation — overdue by ${daysOverdue} day(s). Manager notified again.`,
+              files: [],
+              is_issue: false,
+              is_escalation: true,
+              created_at: new Date().toISOString(),
+            });
+            await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(tg.id)}`, {
+              method: "PATCH",
+              headers,
+              body: JSON.stringify({ comments }),
+            });
+            await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                user_id: tg.manager_id,
+                message: `🔺 Escalation: "${tg.title || "Untitled"}" is still overdue by ${daysOverdue} day(s) (${tg.completed_tasks}/${tg.task_target}).`,
+              }),
+            });
+            escalated++;
+          }
+        }
+      }
+      return Response.json({ ok: true, newlyOverdue, escalated });
+    }
+
     return Response.json({ error: "Unknown action" }, { status: 400 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

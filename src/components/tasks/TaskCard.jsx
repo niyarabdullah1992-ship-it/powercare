@@ -230,7 +230,7 @@ export default function TaskCard({
             {Array.isArray(tg.comments) && tg.comments.length > 0 && (
               <div className="space-y-1.5 max-h-40 overflow-y-auto">
                 {tg.comments.map((c) => (
-                  <div key={c.id} className={`text-xs font-body p-2 rounded-md ${c.is_issue || c.is_rejection ? "bg-red-50 border border-red-200" : c.is_dispute ? "bg-orange-50 border border-orange-200" : "bg-muted/50"}`}>
+                  <div key={c.id} className={`text-xs font-body p-2 rounded-md ${c.is_issue || c.is_rejection ? "bg-red-50 border border-red-200" : c.is_dispute || c.is_escalation ? "bg-orange-50 border border-orange-200" : "bg-muted/50"}`}>
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-medium text-foreground flex items-center gap-1">
                         {c.user_name}
