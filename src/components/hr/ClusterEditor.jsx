@@ -50,17 +50,23 @@ export default function ClusterEditor({ data, canManage, myStationId }) {
       {adding && (
         <form onSubmit={addCluster} className="p-4 rounded-xl border border-border bg-card space-y-3">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("clusterName")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-          <div className="flex flex-wrap gap-2">
-            {data.stations.map((s) => (
-              <label key={s.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border text-xs font-body cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={stationIds.includes(s.id)}
-                  onChange={(e) => setStationIds(e.target.checked ? [...stationIds, s.id] : stationIds.filter((id) => id !== s.id))}
-                />
-                {s.name}
-              </label>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-48 overflow-y-auto rounded-md border border-border p-1.5">
+            {data.stations.map((s) => {
+              const checked = stationIds.includes(s.id);
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setStationIds(checked ? stationIds.filter((id) => id !== s.id) : [...stationIds, s.id])}
+                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-body text-start transition ${checked ? "bg-foreground text-background" : "hover:bg-muted"}`}
+                >
+                  <span className={`w-3.5 h-3.5 rounded-sm border shrink-0 flex items-center justify-center ${checked ? "bg-background border-background" : "border-current"}`}>
+                    {checked && <span className="w-2 h-2 rounded-[1px] bg-foreground" />}
+                  </span>
+                  <span className="truncate">{s.name}</span>
+                </button>
+              );
+            })}
           </div>
           <div className="flex gap-2">
             <button type="submit" className="px-4 py-2 rounded-md bg-foreground text-background text-sm">{t("save")}</button>
