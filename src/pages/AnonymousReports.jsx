@@ -1,8 +1,9 @@
 import React, { useState } from "react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getAnonUsage, addNotification, getAnonymousCode, setAnonRateLimits } from "@/lib/store";
-import { visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
+import { visibleStations, hasHRPermission, hrScopeStations, canManageStations } from "@/lib/permissions";
 import { groupLevelsByOrder } from "@/lib/hrLevels";
 import { handlersForLevel, levelLabel } from "@/lib/escalation";
 import { formatDateTime } from "@/lib/dateFormat";
@@ -182,6 +183,24 @@ export default function AnonymousReports() {
   const stationReports = selectedStation ? visibleReports.filter((r) => r.stationId === selectedStation) : [];
   const selectedStationName = selectedStation ? stationName(selectedStation) : "";
 
+  // Drag-and-drop reordering of the station cards (reorders the underlying station list).
+  const canReorderStations = canManageStations(currentUser);
+  const handleStationDragEnd = (result) => {
+    if (!result.destination || !canReorderStations) return;
+    const ids = stationGroups.map((g) => g.key);
+    const reordered = Array.from(ids);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+    updateCompany(company.id, (d) => {
+      const byId = Object.fromEntries(d.stations.map((s) => [s.id, s]));
+      const positions = [];
+      d.stations.forEach((s, i) => { if (ids.includes(s.id)) positions.push(i); });
+      const next = [...d.stations];
+      positions.forEach((pos, idx) => { next[pos] = byId[reordered[idx]]; });
+      d.stations = next;
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -310,26 +329,39 @@ export default function AnonymousReports() {
               {stationGroups.length === 0 ? (
                 <p className="text-sm text-muted-foreground font-body">{t("noReply")}</p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {stationGroups.map((g) => (
-                    <button
-                      key={g.key}
-                      onClick={() => setSelectedStation(g.key)}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-muted transition text-start"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                          <Building2 className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium font-body">{g.name}</p>
-                          <p className="text-xs text-muted-foreground font-body">{g.count} {t("anonymous")}</p>
-                        </div>
+                <DragDropContext onDragEnd={handleStationDragEnd}>
+                  <Droppable droppableId="anon-station-groups">
+                    {(provided) => (
+                      <div ref={provided.innerRef} {...provided.droppableProps} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {stationGroups.map((g, index) => (
+                          <Draggable key={g.key} draggableId={g.key} index={index} isDragDisabled={!canReorderStations}>
+                            {(dragProvided, dragSnapshot) => (
+                              <button
+                                ref={dragProvided.innerRef}
+                                {...dragProvided.draggableProps}
+                                {...dragProvided.dragHandleProps}
+                                onClick={() => setSelectedStation(g.key)}
+                                className={`flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-muted transition text-start ${dragSnapshot.isDragging ? "shadow-lg ring-2 ring-accent/40" : ""}`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
+                                    <Building2 className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium font-body">{g.name}</p>
+                                    <p className="text-xs text-muted-foreground font-body">{g.count} {t("anonymous")}</p>
+                                  </div>
+                                </div>
+                                <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
+                              </button>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
-                      <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
-                    </button>
-                  ))}
-                </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
               )}
             </div>
           ) : (

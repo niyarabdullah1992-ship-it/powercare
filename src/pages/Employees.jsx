@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification, updateEmployeeProfile, setAllowedEmailDomain } from "@/lib/store";
-import { canManageEmployees, canTransferOwnership, visibleStations, visibleEmployees } from "@/lib/permissions";
+import { canManageEmployees, canTransferOwnership, canManageStations, visibleStations, visibleEmployees } from "@/lib/permissions";
 import { Link } from "react-router-dom";
-import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle, Mail } from "lucide-react";
+import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle, Mail, GripVertical } from "lucide-react";
 import { badgeFor, nextBadge } from "@/lib/rewards";
 import { getRoleLabel } from "@/lib/roles";
 import { base44 } from "@/api/base44Client";
@@ -80,6 +81,24 @@ export default function Employees() {
     setEditingDomain(false);
   };
 
+  // Drag-and-drop reordering of the station cards (reorders the underlying station list).
+  const canReorderStations = canManageStations(currentUser);
+  const handleStationDragEnd = (result) => {
+    if (!result.destination || !canReorderStations) return;
+    const ids = stations.map((s) => s.id);
+    const reordered = Array.from(ids);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+    updateCompany(company.id, (d) => {
+      const byId = Object.fromEntries(d.stations.map((s) => [s.id, s]));
+      const positions = [];
+      d.stations.forEach((s, i) => { if (ids.includes(s.id)) positions.push(i); });
+      const next = [...d.stations];
+      positions.forEach((pos, idx) => { next[pos] = byId[reordered[idx]]; });
+      d.stations = next;
+    });
+  };
+
   // Drill-down: show station grid first
   if (!selectedStation) {
     return (
@@ -152,31 +171,56 @@ export default function Employees() {
               </button>
             );
           })()}
-          {stations.map((s) => {
-            const team = data.employees.filter((e) => e.stationId === s.id);
-            const hasManager = team.some((e) => e.role === "station_manager");
-            const counts = ROLES.reduce((acc, r) => ({ ...acc, [r]: team.filter((e) => e.role === r).length }), {});
-            return (
-              <button key={s.id} onClick={() => setSelectedStation(s.id)} className="text-start p-5 rounded-xl border border-border bg-card hover:border-accent transition-colors space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-heading font-semibold">{s.name}</h3>
-                  {!hasManager && (
-                    <span className="flex items-center gap-1 text-[10px] text-amber-600 font-body">
-                      <AlertTriangle className="w-3 h-3" /> {t("noManager")}
-                    </span>
-                  )}
+          <DragDropContext onDragEnd={handleStationDragEnd}>
+            <Droppable droppableId="employees-station-cards">
+              {(provided) => (
+                <div ref={provided.innerRef} {...provided.droppableProps} className="contents">
+                  {stations.map((s, index) => {
+                    const team = data.employees.filter((e) => e.stationId === s.id);
+                    const hasManager = team.some((e) => e.role === "station_manager");
+                    const counts = ROLES.reduce((acc, r) => ({ ...acc, [r]: team.filter((e) => e.role === r).length }), {});
+                    return (
+                      <Draggable key={s.id} draggableId={s.id} index={index} isDragDisabled={!canReorderStations}>
+                        {(dragProvided, dragSnapshot) => (
+                          <button
+                            ref={dragProvided.innerRef}
+                            {...dragProvided.draggableProps}
+                            onClick={() => setSelectedStation(s.id)}
+                            className={`text-start p-5 rounded-xl border border-border bg-card hover:border-accent transition-colors space-y-3 ${dragSnapshot.isDragging ? "shadow-lg ring-2 ring-accent/40" : ""}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {canReorderStations && (
+                                  <span {...dragProvided.dragHandleProps} onClick={(e) => e.stopPropagation()} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0">
+                                    <GripVertical className="w-4 h-4" />
+                                  </span>
+                                )}
+                                <h3 className="font-heading font-semibold">{s.name}</h3>
+                              </div>
+                              {!hasManager && (
+                                <span className="flex items-center gap-1 text-[10px] text-amber-600 font-body">
+                                  <AlertTriangle className="w-3 h-3" /> {t("noManager")}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground font-body">{team.length} {t("team").toLowerCase()}</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {ROLES.filter((r) => counts[r] > 0).map((r) => (
+                                <span key={r} className="px-2 py-0.5 rounded-full bg-muted text-[10px] font-body text-muted-foreground">
+                                  {counts[r]} {getRoleLabel(company, r, t)}
+                                </span>
+                              ))}
+                            </div>
+                          </button>
+                        )}
+                      </Draggable>
+                    );
+                  })}
+                  {provided.placeholder}
                 </div>
-                <p className="text-sm text-muted-foreground font-body">{team.length} {t("team").toLowerCase()}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {ROLES.filter((r) => counts[r] > 0).map((r) => (
-                    <span key={r} className="px-2 py-0.5 rounded-full bg-muted text-[10px] font-body text-muted-foreground">
-                      {counts[r]} {getRoleLabel(company, r, t)}
-                    </span>
-                  ))}
-                </div>
-              </button>
-            );
-          })}
+              )}
+            </Droppable>
+          </DragDropContext>
         </div>
 
         {showTransfer && <TransferModal type={showTransfer} onClose={() => setShowTransfer(null)} />}
