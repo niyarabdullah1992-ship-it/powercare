@@ -84,44 +84,42 @@ export default function Safety() {
                 {items.length} {t("stations").toLowerCase()}
               </span>
             </div>
-            <DragDropContext
-              onDragEnd={(result) => {
-                if (!result.destination) return;
-                reorderGroup(groupIds, result.source.index, result.destination.index);
-              }}
-            >
-              <Droppable droppableId={`safety-group-${type}`} direction="horizontal">
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                  >
-                    {showHq && <SafetyCard t={t} lang={lang} name={hqLabel} isHQ safety={hqSafety} />}
-                    {items.map(({ station, safety }, index) => (
-                      <Draggable key={station.id} draggableId={station.id} index={index} isDragDisabled={!canManage}>
-                        {(dragProvided, dragSnapshot) => (
-                          <div
-                            ref={dragProvided.innerRef}
-                            {...dragProvided.draggableProps}
-                            className={dragSnapshot.isDragging ? "shadow-lg rounded-xl" : ""}
-                          >
-                            <SafetyCard
-                              t={t}
-                              lang={lang}
-                              name={station.name}
-                              safety={safety}
-                              dragHandleProps={canManage ? dragProvided.dragHandleProps : null}
-                            />
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {showHq && <SafetyCard t={t} lang={lang} name={hqLabel} isHQ safety={hqSafety} />}
+              <DragDropContext
+                onDragEnd={(result) => {
+                  if (!result.destination) return;
+                  reorderGroup(groupIds, result.source.index, result.destination.index);
+                }}
+              >
+                <Droppable droppableId={`safety-group-${type}`}>
+                  {(provided) => (
+                    <div ref={provided.innerRef} {...provided.droppableProps} className="contents">
+                      {items.map(({ station, safety }, index) => (
+                        <Draggable key={station.id} draggableId={station.id} index={index} isDragDisabled={!canManage}>
+                          {(dragProvided, dragSnapshot) => (
+                            <div
+                              ref={dragProvided.innerRef}
+                              {...dragProvided.draggableProps}
+                              className={dragSnapshot.isDragging ? "shadow-lg rounded-xl" : ""}
+                            >
+                              <SafetyCard
+                                t={t}
+                                lang={lang}
+                                name={station.name}
+                                safety={safety}
+                                dragHandleProps={canManage ? dragProvided.dragHandleProps : null}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+            </div>
           </div>
         );
       })}
