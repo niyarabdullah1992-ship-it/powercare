@@ -98,6 +98,15 @@ export default function Stations() {
     groups[key].push(s);
   });
 
+  // A single shared drag context handles every section — multiple DragDropContexts
+  // mounted at once conflict with each other and only the first one works.
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    const type = result.source.droppableId.replace("stations-group-", "");
+    const groupIds = (groups[type] || []).map((s) => s.id);
+    reorderGroup(groupIds, result.source.index, result.destination.index);
+  };
+
   const startRename = (id, currentName) => {
     setRenamingId(id);
     setRenameVal(currentName);
@@ -204,8 +213,8 @@ export default function Stations() {
         </div>
       )}
 
+      <DragDropContext onDragEnd={handleDragEnd}>
       {Object.entries(groups).map(([type, items]) => {
-        const groupIds = items.map((s) => s.id);
         return (
           <div key={type} className="space-y-3">
             <div className="flex items-center gap-2">
@@ -215,12 +224,6 @@ export default function Stations() {
               </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <DragDropContext
-                onDragEnd={(result) => {
-                  if (!result.destination) return;
-                  reorderGroup(groupIds, result.source.index, result.destination.index);
-                }}
-              >
                 <Droppable droppableId={`stations-group-${type}`}>
                   {(provided) => (
                     <div ref={provided.innerRef} {...provided.droppableProps} className="contents">
@@ -302,11 +305,11 @@ export default function Stations() {
                     </div>
                   )}
                 </Droppable>
-              </DragDropContext>
             </div>
           </div>
         );
       })}
+      </DragDropContext>
 
       {analyticsFor && (
         <StationAnalyticsModal

@@ -52,6 +52,15 @@ export default function Safety() {
     });
   };
 
+  // A single shared drag context handles every group — multiple DragDropContexts
+  // mounted at once conflict with each other and only the first one works.
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    const type = result.source.droppableId.replace("safety-group-", "");
+    const groupIds = (groups[type] || []).map(({ station }) => station.id);
+    reorderGroup(groupIds, result.source.index, result.destination.index);
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -74,24 +83,22 @@ export default function Safety() {
         <p className="text-sm text-muted-foreground font-body">{t("noTasks")}</p>
       )}
 
-      {Object.entries(groups).map(([type, items]) => {
-        const groupIds = items.map(({ station }) => station.id);
-        return (
-          <div key={type} className="space-y-4">
-            <div className="flex items-center gap-2">
-              <h2 className="font-heading text-lg font-semibold">{type}</h2>
-              <span className="text-xs text-muted-foreground font-body">
-                {items.length} {t("stations").toLowerCase()}
-              </span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {showHq && <SafetyCard t={t} lang={lang} name={hqLabel} isHQ safety={hqSafety} />}
-              <DragDropContext
-                onDragEnd={(result) => {
-                  if (!result.destination) return;
-                  reorderGroup(groupIds, result.source.index, result.destination.index);
-                }}
-              >
+      <DragDropContext onDragEnd={handleDragEnd}>
+        {showHq && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <SafetyCard t={t} lang={lang} name={hqLabel} isHQ safety={hqSafety} />
+          </div>
+        )}
+        {Object.entries(groups).map(([type, items]) => {
+          return (
+            <div key={type} className="space-y-4">
+              <div className="flex items-center gap-2">
+                <h2 className="font-heading text-lg font-semibold">{type}</h2>
+                <span className="text-xs text-muted-foreground font-body">
+                  {items.length} {t("stations").toLowerCase()}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Droppable droppableId={`safety-group-${type}`}>
                   {(provided) => (
                     <div ref={provided.innerRef} {...provided.droppableProps} className="contents">
@@ -118,11 +125,11 @@ export default function Safety() {
                     </div>
                   )}
                 </Droppable>
-              </DragDropContext>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </DragDropContext>
     </div>
   );
 }
