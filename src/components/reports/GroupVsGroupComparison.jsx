@@ -49,7 +49,7 @@ export default function GroupVsGroupComparison({ rows, employees, t }) {
 
   return (
     <div className="space-y-4">
-      <ReportCard className="space-y-4">
+      <ReportCard className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <GroupPicker label={t("groupA")} employees={employees} selected={groupA} onToggle={toggleA} accent="bg-accent" />
         <GroupPicker label={t("groupB")} employees={employees} selected={groupB} onToggle={toggleB} accent="bg-foreground" />
       </ReportCard>
