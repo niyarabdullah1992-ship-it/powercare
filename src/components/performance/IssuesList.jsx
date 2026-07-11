@@ -50,21 +50,18 @@ export default function IssuesList() {
       ) : issues.length === 0 ? (
         <p className="text-sm text-muted-foreground font-body">{t("noIssuesReported")}</p>
       ) : (
-        <div className="space-y-2.5 max-h-96 overflow-y-auto">
+        <div className="space-y-1.5 max-h-96 overflow-y-auto">
           {issues.map((c) => (
-            <div key={c.id} className="flex gap-3 p-3.5 rounded-xl border border-border bg-background shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-9 h-9 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-medium text-sm shrink-0">
+            <div key={c.id} className="flex items-start gap-2.5 py-2 px-2.5 rounded-lg border-s-2 border-amber-400 bg-muted/40 hover:bg-muted/60 transition-colors">
+              <div className="w-6 h-6 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-[11px] font-medium shrink-0 mt-0.5">
                 {(c.user_name || "?").charAt(0)}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium font-body truncate">{c.user_name}</p>
-                    <p className="text-xs text-muted-foreground font-body truncate">{c.taskTitle}</p>
-                  </div>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium font-body truncate">{c.user_name} <span className="text-muted-foreground font-normal">· {c.taskTitle}</span></p>
                   <span className="text-[10px] text-muted-foreground font-body whitespace-nowrap shrink-0">{c.created_at ? formatDateTime(c.created_at, lang) : ""}</span>
                 </div>
-                <p className="text-sm text-foreground font-body mt-2 whitespace-pre-wrap bg-red-50 border border-red-100 rounded-lg px-2.5 py-1.5">{c.content}</p>
+                <p className="text-xs text-foreground/80 font-body mt-0.5 truncate">{c.content}</p>
               </div>
             </div>
           ))}
