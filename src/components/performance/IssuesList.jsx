@@ -50,15 +50,22 @@ export default function IssuesList() {
       ) : issues.length === 0 ? (
         <p className="text-sm text-muted-foreground font-body">{t("noIssuesReported")}</p>
       ) : (
-        <div className="space-y-2 max-h-96 overflow-y-auto">
+        <div className="space-y-2.5 max-h-96 overflow-y-auto">
           {issues.map((c) => (
-            <div key={c.id} className="p-3 rounded-lg border border-red-200 bg-red-50/50">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium font-body">{c.taskTitle}</p>
-                <span className="text-[10px] text-muted-foreground font-body">{c.created_at ? formatDateTime(c.created_at, lang) : ""}</span>
+            <div key={c.id} className="flex gap-3 p-3.5 rounded-xl border border-border bg-background shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-9 h-9 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-medium text-sm shrink-0">
+                {(c.user_name || "?").charAt(0)}
               </div>
-              <p className="text-xs text-muted-foreground font-body mt-0.5">{c.user_name}</p>
-              <p className="text-sm text-foreground font-body mt-1 whitespace-pre-wrap">{c.content}</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium font-body truncate">{c.user_name}</p>
+                    <p className="text-xs text-muted-foreground font-body truncate">{c.taskTitle}</p>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-body whitespace-nowrap shrink-0">{c.created_at ? formatDateTime(c.created_at, lang) : ""}</span>
+                </div>
+                <p className="text-sm text-foreground font-body mt-2 whitespace-pre-wrap bg-red-50 border border-red-100 rounded-lg px-2.5 py-1.5">{c.content}</p>
+              </div>
             </div>
           ))}
         </div>
