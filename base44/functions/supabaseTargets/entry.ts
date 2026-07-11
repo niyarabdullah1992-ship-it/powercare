@@ -184,7 +184,12 @@ Deno.serve(async (req) => {
       }
       const status = reachesTarget ? "pending_review" : "active";
       const patch: Record<string, unknown> = { completed_tasks: newCompleted, status };
-      if (reachesTarget) patch.completion_proof = cleanProof;
+      if (reachesTarget) {
+        patch.completion_proof = cleanProof;
+        // Remember the count before this submission so a rejection can restore it
+        // instead of leaving completed_tasks stuck at the target (looking "100% done").
+        patch.pre_review_completed = tg.completed_tasks;
+      }
       const patchRes = await fetch(
         `${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`,
         {
@@ -195,7 +200,7 @@ Deno.serve(async (req) => {
       );
       const updated = await patchRes.json();
       if (!patchRes.ok) {
-        return Response.json({ error: updated?.message || "Failed to update progress — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS completion_proof jsonb;" }, { status: 400 });
+        return Response.json({ error: updated?.message || "Failed to update progress — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS completion_proof jsonb; ALTER TABLE targets ADD COLUMN IF NOT EXISTS pre_review_completed integer;" }, { status: 400 });
       }
       // Notify the manager
       await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
@@ -227,7 +232,7 @@ Deno.serve(async (req) => {
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
       const patch: Record<string, unknown> = approve
         ? { status: "completed" }
-        : { status: "active", completion_proof: null };
+        : { status: "active", completion_proof: null, completed_tasks: tg.pre_review_completed ?? 0 };
       if (!approve) {
         const comments = Array.isArray(tg.comments) ? tg.comments : [];
         comments.push({
