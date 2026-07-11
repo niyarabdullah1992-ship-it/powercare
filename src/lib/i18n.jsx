@@ -281,6 +281,7 @@ const dict = {
     paymentNotConfirmedText: "We couldn't confirm your payment.", backToPricingBtn: "Back to Pricing",
     trialBadge: "Free for 6 months, then billed",
     videoHeading: "See PowerCare in Motion", videoText: "PowerCare is an all-in-one platform for organizations that value precision as much as people. It brings your stations, teams, schedules, reports and internal communication into one refined space — guided by a philosophy borrowed from fine architecture: the quiet strength of raw materials meeting the clarity of modern technology, with sustainability and calm wellness at its core.", narrationCta: "Listen to our story",
+    employeeReport: "Employee Report", employeeReportNote: "Freely compare any employees across every aspect — role, station, points, certificates, tasks, leave — and export a full Excel report.",
   },
   ar: {
     dir: "rtl",
@@ -561,6 +562,7 @@ const dict = {
     paymentNotConfirmedText: "تعذّر تأكيد عملية الدفع.", backToPricingBtn: "العودة إلى الأسعار",
     trialBadge: "مجاني لمدة 6 أشهر، ثم يبدأ التحصيل",
     videoHeading: "شاهد باور كير في العمل", videoText: "باور كير منصة متكاملة صُممت للمؤسسات التي تقدّر الدقة قدر ما تقدّر الإنسان. توحّد محطاتك وفرقك وجداولك وتقاريرك وتواصلك الداخلي في مساحة واحدة أنيقة، بفلسفة تشبه العمارة الرفيعة: قوة المواد الخام الهادئة تلتقي بوضوح التقنية الحديثة، مع الاستدامة والراحة النفسية في جوهر التجربة.", narrationCta: "استمع إلى فكرتنا",
+    employeeReport: "تقرير الموظفين", employeeReportNote: "قارن بحرية تامة بين أي موظفين من كل النواحي — الدور، المحطة، النقاط، الشهادات، المهام، الإجازات — ونزّل تقرير إكسل شامل.",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

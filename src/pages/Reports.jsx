@@ -3,12 +3,13 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { formatDate, formatDateTime } from "@/lib/dateFormat";
-import { visibleStations, canSeeAllStations } from "@/lib/permissions";
+import { visibleStations, canSeeAllStations, isCompanyOwner } from "@/lib/permissions";
 import moment from "moment";
-import { FileBarChart2, Calendar, AlertTriangle, Check, Clock, Building2, ListTodo, CalendarDays, Megaphone, FileSpreadsheet } from "lucide-react";
+import { FileBarChart2, Calendar, AlertTriangle, Check, Clock, Building2, ListTodo, CalendarDays, Megaphone, FileSpreadsheet, UserSquare2 } from "lucide-react";
 import TaskStats from "@/components/tasks/TaskStats";
 import { exportCSV } from "@/lib/exportReport";
 import StationFilterDropdown from "@/components/reports/StationFilterDropdown";
+import EmployeeReportTable from "@/components/reports/EmployeeReportTable";
 
 const RANGES = [
   { val: "daily", amount: 1, unit: "days" },
@@ -21,7 +22,7 @@ const RANGES = [
 
 export default function Reports() {
   const { t, dir, lang } = useI18n();
-  const { data, currentUser } = useAuth();
+  const { data, currentUser, company } = useAuth();
   const [targets, setTargets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("monthly");
@@ -170,10 +171,13 @@ export default function Reports() {
     return { headers, rows };
   };
 
+  const isOwner = isCompanyOwner(currentUser, data);
+
   const TABS = [
     { key: "tasks", label: t("tasksReport"), icon: ListTodo },
     { key: "leaves", label: t("leaveRequests"), icon: CalendarDays },
     { key: "complaints", label: t("publicComplaints"), icon: Megaphone },
+    ...(isOwner ? [{ key: "employeeReport", label: t("employeeReport"), icon: UserSquare2 }] : []),
   ];
 
   return (
@@ -378,6 +382,11 @@ export default function Reports() {
           )}
         </div>
         </>
+      )}
+
+      {/* Employee report tab — owner-only, free comparison across every employee aspect */}
+      {tab === "employeeReport" && isOwner && (
+        <EmployeeReportTable data={data} company={company} targets={targets} t={t} lang={lang} />
       )}
     </div>
   );
