@@ -7,7 +7,7 @@ import { addNotification, addPoints } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { PRIORITY_POINTS } from "@/lib/rewards";
 import { groupLevelsByOrder } from "@/lib/hrLevels";
-import { handlersForLevel, levelLabel } from "@/lib/escalation";
+import { handlersForLevel, buildEscalationSteps } from "@/lib/escalation";
 import { base44 } from "@/api/base44Client";
 import { getParentPath, withAncestors, NO_SECTION } from "@/lib/taskFolders";
 import { logAudit } from "@/lib/auditLog";
@@ -18,6 +18,7 @@ import TaskCard from "@/components/tasks/TaskCard";
 import FolderTree from "@/components/tasks/FolderTree";
 import CommentFiles from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
+import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -487,14 +488,14 @@ export default function MyTasks() {
   // same chain already used for anonymous/public complaints (see src/lib/escalation.js).
   const STAGE_COUNT = groupLevelsByOrder(data.hrLevels || []).length + 1;
   const escalationLevelOf = (tg) => Math.min(tg.escalation_level || 0, STAGE_COUNT - 1);
-  const isAtTopEscalation = (tg) => escalationLevelOf(tg) >= STAGE_COUNT - 1;
-  const escalationHandlerLabel = (tg) => levelLabel(escalationLevelOf(tg), data, t, lang);
+  const escalationStepsFor = (tg) => buildEscalationSteps(escalationLevelOf(tg), { stationId: targetStationKey(tg) }, data, t, lang, STAGE_COUNT);
 
   // Employee's manual objection when they disagree with a rejection — escalates to the
   // next handler up the HR chain instead of always notifying the same manager again.
   const disputeRejection = async (tg, message) => {
     const nextLevel = Math.min((tg.escalation_level || 0) + 1, STAGE_COUNT - 1);
     const handlers = handlersForLevel(nextLevel, { stationId: targetStationKey(tg) }, data);
+    if (handlers.length === 0 && !confirm(`${t("noHandlerAssigned")}. ${lang === "ar" ? "المتابعة؟" : "Continue anyway?"}`)) return;
     const notifyUserIds = handlers.length ? handlers.map((h) => h.id) : [tg.manager_id];
     try {
       const res = await base44.functions.invoke("supabaseTargets", {
@@ -660,7 +661,7 @@ export default function MyTasks() {
       canLog={canLog(tg)}
       logTarget={logTarget} logAmount={logAmount} setLogTarget={setLogTarget} setLogAmount={setLogAmount} logCompleted={logCompleted}
       logProofFiles={logProofFiles} setLogProofFiles={setLogProofFiles} reviewTarget={reviewTarget} disputeRejection={disputeRejection}
-      escalationLabel={escalationHandlerLabel(tg)} isAtTopEscalation={isAtTopEscalation(tg)}
+      escalationSteps={escalationStepsFor(tg)}
       commentsOpen={commentsOpen} setCommentsOpen={setCommentsOpen} commentText={commentText} setCommentText={setCommentText} commentFiles={commentFiles} setCommentFiles={setCommentFiles} submitComment={submitComment}
       markIssue={markIssue} setMarkIssue={setMarkIssue}
       allSectionFolders={allSectionFolders} moveTaskToSection={moveTaskToSection} setEditTarget={setEditTarget} deleteTarget={deleteTarget}
@@ -685,6 +686,10 @@ export default function MyTasks() {
 
       {/* Statistics overview */}
       {!targetsLoading && targets.length > 0 && <TaskStats targets={targets} t={t} />}
+
+      {targets.some((tg) => tg.status === "active" && Array.isArray(tg.comments) && tg.comments.some((c) => c.is_rejection || c.is_dispute)) && (
+        <EscalationInfoBox t={t} />
+      )}
 
       {/* Unified Target form */}
       {showCreate && canCreateTasks(currentUser) && (

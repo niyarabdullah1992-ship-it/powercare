@@ -28,3 +28,20 @@ export function levelLabel(levelIdx, data, t, lang) {
   if (!group) return "";
   return levelName(group.manager || group.assistant, lang);
 }
+
+// Whether anyone is actually assigned to handle a given escalation level right now —
+// surfaces the "gap" case where a level exists but no employee holds that position.
+export function hasHandlerAtLevel(levelIdx, r, data) {
+  return handlersForLevel(levelIdx, r, data).length > 0;
+}
+
+// Builds the full escalation ladder (station manager → every HR tier) for display,
+// so complaints and task-rejection disputes can show the exact same visual chain.
+export function buildEscalationSteps(currentLevel, r, data, t, lang, stageCount) {
+  return Array.from({ length: stageCount }).map((_, idx) => ({
+    idx,
+    label: levelLabel(idx, data, t, lang),
+    hasHandler: hasHandlerAtLevel(idx, r, data),
+    state: idx < currentLevel ? "done" : idx === currentLevel ? "current" : "pending",
+  }));
+}

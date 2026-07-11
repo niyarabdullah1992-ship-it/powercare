@@ -5,13 +5,14 @@ import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import { formatDateTime } from "@/lib/dateFormat";
 import { NO_SECTION } from "@/lib/taskFolders";
+import EscalationSteps from "@/components/escalation/EscalationSteps";
 
 // A single task target card — progress, comments, and management actions.
 export default function TaskCard({
   tg, t, dir, lang, assignmentLabel, canManage, canLog,
   logTarget, logAmount, setLogTarget, setLogAmount, logCompleted,
   logProofFiles, setLogProofFiles, reviewTarget, disputeRejection,
-  escalationLabel, isAtTopEscalation,
+  escalationSteps,
   commentsOpen, setCommentsOpen, commentText, setCommentText, commentFiles, setCommentFiles, submitComment,
   markIssue, setMarkIssue,
   allSectionFolders, moveTaskToSection, setEditTarget, deleteTarget,
@@ -193,11 +194,7 @@ export default function TaskCard({
 
       {canObject && (
         <div className="pt-1 space-y-1.5">
-          {isAtTopEscalation ? (
-            <p className="text-xs text-muted-foreground font-body italic">{t("finalLevel")}</p>
-          ) : (
-            <p className="text-[11px] text-muted-foreground font-body">{t("escalatedTo")}: {escalationLabel}</p>
-          )}
+          <EscalationSteps steps={escalationSteps} t={t} lang={lang} />
           {disputing ? (
             <div className="space-y-1.5">
               <textarea
@@ -224,7 +221,10 @@ export default function TaskCard({
         </div>
       )}
       {disputeSent && (
-        <p className="text-xs text-orange-700 font-body pt-1">{t("disputeSent")} {t("escalatedTo")}: {escalationLabel}</p>
+        <div className="pt-1 space-y-1.5">
+          <p className="text-xs text-orange-700 font-body">{t("disputeSent")}</p>
+          <EscalationSteps steps={escalationSteps} t={t} lang={lang} />
+        </div>
       )}
 
       <div className="pt-2 border-t border-border">

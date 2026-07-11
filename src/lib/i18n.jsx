@@ -297,6 +297,9 @@ const dict = {
     hrExplainText: "Each position sits on a level — positions are listed from highest authority at the top to lowest at the bottom. Every position has a scope: Station-level applies only to the station(s) you pick, Cluster-level applies to a whole cluster of stations, and Company-wide applies to the entire company. A position can have a Manager and, optionally, an Assistant — you choose the name shown for each (e.g. \"Station Supervisor\"). Use the station search below to quickly find and select which station(s) a position covers.",
     stationManagerHrNote: "The Station Manager is the base of the hierarchy — the first person who reviews tasks, complaints, and disputes for this station before anything is escalated upward. It isn't one of the customizable HR levels above; it's assigned by giving an employee the \"Station Manager\" role from the Employees page.",
     goToEmployees: "Go to Employees",
+    escalationInfoTitle: "How escalation works",
+    escalationInfoText: "Every complaint or contested task rejection starts with the Station Manager. If it isn't resolved there, either side can escalate it one step up the company's HR hierarchy (visible on the HR page) — Site HR, then Cluster HR, and so on up to the CHRO. The same ladder is used everywhere in the app.",
+    noHandlerAssigned: "No one assigned yet",
   },
   ar: {
     dir: "rtl",
@@ -593,6 +596,9 @@ const dict = {
     hrExplainText: "كل منصب يقع ضمن مستوى — وتُعرض المناصب من الأعلى صلاحية في الأعلى إلى الأدنى في الأسفل. لكل منصب نطاق: نطاق المحطة يشمل فقط المحطة أو المحطات التي تختارها، نطاق المجموعة يشمل مجموعة كاملة من المحطات، أما النطاق على مستوى الشركة فيشمل الشركة بأكملها. يمكن أن يحتوي المنصب على مدير، وبشكل اختياري مساعد — ويمكنك اختيار المسمى الذي يظهر لكل منهما (مثل \"مشرف المحطة\"). استخدم خانة البحث عن المحطات أدناه لإيجاد واختيار المحطة أو المحطات التي يغطيها المنصب بسرعة.",
     stationManagerHrNote: "مدير المحطة هو قاعدة الهرم الوظيفي — أول شخص يراجع المهام والشكاوى والاعتراضات الخاصة بهذه المحطة قبل تصعيدها لأعلى. وهو ليس أحد مستويات الموارد البشرية القابلة للتخصيص أعلاه؛ بل يتم تعيينه بمنح أحد الموظفين دور \"مدير المحطة\" من صفحة الموظفين.",
     goToEmployees: "الذهاب إلى الموظفين",
+    escalationInfoTitle: "كيف يعمل التصعيد",
+    escalationInfoText: "كل شكوى أو رفض مهمة معترض عليه يبدأ عند مدير المحطة. إذا لم يُحل هناك، يمكن لأي طرف تصعيده خطوة واحدة للأعلى في الهرم الوظيفي للشركة (يظهر في صفحة الموارد البشرية) — موارد بشرية الموقع، ثم موارد بشرية المجموعة، وهكذا حتى الرئيس التنفيذي للموارد البشرية. نفس السلسلة تُستخدم في كل أنحاء التطبيق.",
+    noHandlerAssigned: "لم يُعيَّن أحد بعد",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

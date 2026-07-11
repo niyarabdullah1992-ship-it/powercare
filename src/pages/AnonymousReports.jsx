@@ -5,11 +5,12 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getAnonUsage, addNotification, getAnonymousCode, setAnonRateLimits } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations, canManageStations } from "@/lib/permissions";
 import { groupLevelsByOrder } from "@/lib/hrLevels";
-import { handlersForLevel, levelLabel } from "@/lib/escalation";
-import { formatDateTime } from "@/lib/dateFormat";
-import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, CheckCircle2, ChevronRight, ArrowLeft, Check, X as XIcon } from "lucide-react";
+import { handlersForLevel, levelLabel, buildEscalationSteps } from "@/lib/escalation";
+import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, ChevronRight, ArrowLeft, Check, X as XIcon } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
+import EscalationSteps from "@/components/escalation/EscalationSteps";
+import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
 
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
@@ -125,45 +126,23 @@ export default function AnonymousReports() {
     if (!rep) return;
     const nextLevel = (rep.escalationLevel || 0) + 1;
     if (nextLevel >= STAGE_COUNT) return;
+    const nextHandlers = handlersForLevel(nextLevel, rep, data);
+    if (nextHandlers.length === 0 && !confirm(`${t("noHandlerAssigned")}. ${lang === "ar" ? "المتابعة؟" : "Continue anyway?"}`)) return;
     updateCompany(company.id, (d) => {
       const r = d.anonymousReports.find((x) => x.id === id);
       if (r) { r.escalationLevel = nextLevel; r.status = "open"; }
     });
-    const nextHandlers = handlersForLevel(nextLevel, rep, data);
     for (const h of nextHandlers) addNotification(company.id, h.id, `Escalated anonymous report at ${stationName(rep.stationId)} — now requires your attention.`);
   };
 
-  // Escalation timeline showing each level and its reply
-  const renderTimeline = (r) => (
-    <div className="space-y-2 pt-2 border-t border-border">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("escalationChain")}</p>
-      {Array.from({ length: STAGE_COUNT }).map((_, idx) => {
-        const replyAtLevel = (r.replies || []).find((rp) => rp.level === idx);
-        const isCurrent = (r.escalationLevel || 0) === idx;
-        const isPast = (r.escalationLevel || 0) > idx;
-        const label = levelLabel(idx, data, t, lang);
-        return (
-          <div key={idx} className={`flex items-start gap-2 text-xs font-body ${isPast ? "opacity-50" : ""}`}>
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${replyAtLevel ? "bg-accent text-accent-foreground" : isCurrent ? "bg-amber-100 text-amber-700 border border-amber-300" : "bg-muted text-muted-foreground"}`}>
-              {replyAtLevel ? <CheckCircle2 className="w-3 h-3" /> : <span className="text-[9px]">{idx + 1}</span>}
-            </div>
-            <div className="flex-1">
-              <p className={`font-medium ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}>
-                {label} {isCurrent && !replyAtLevel && <span className="text-amber-600 font-normal">— {t("waitingReply")}</span>}
-              </p>
-              {replyAtLevel && (
-                <div className="mt-0.5 p-2 rounded bg-muted/50">
-                  <p className="text-[10px] text-muted-foreground">{replyAtLevel.authorName} · {formatDateTime(replyAtLevel.createdAt, lang)}</p>
-                  <p className="text-foreground mt-0.5">{replyAtLevel.text}</p>
-                  <CommentAttachments files={replyAtLevel.files} />
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+  // Escalation ladder showing each level, its reply (if any), and whether anyone is assigned to it
+  const renderTimeline = (r) => {
+    const steps = buildEscalationSteps(r.escalationLevel || 0, r, data, t, lang, STAGE_COUNT).map((s) => ({
+      ...s,
+      reply: (r.replies || []).find((rp) => rp.level === s.idx) || null,
+    }));
+    return <EscalationSteps steps={steps} t={t} lang={lang} />;
+  };
 
   const stats = {
     complaint: visibleReports.filter((a) => a.type === "complaint").length,
@@ -207,6 +186,8 @@ export default function AnonymousReports() {
         <h1 className="font-heading text-3xl font-semibold">{t("anonymous")}</h1>
         <p className="text-muted-foreground font-body text-sm mt-1">{isStaff ? t("overview") : t("identityProtected")}</p>
       </div>
+
+      <EscalationInfoBox t={t} />
 
       {/* Employee: file report */}
       {!isStaff && (
