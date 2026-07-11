@@ -559,8 +559,19 @@ export default function MyTasks() {
   const selectedStationName = selectedStation === "hq" ? t("hq") : stationName(selectedStation);
   const hasAnyContent = folders.filter((f) => f.station_id === selectedStation).length > 0 || stationTargetsAll.length > 0;
 
+  const isDueToday = (tg) => {
+    if (!tg.end_date || tg.status === "completed") return false;
+    const end = new Date(tg.end_date);
+    const now = new Date();
+    return end.toDateString() === now.toDateString();
+  };
+
   const filterTasks = (arr) => arr
-    .filter((tg) => statusFilter === "all" || tg.status === statusFilter)
+    .filter((tg) => {
+      if (statusFilter === "all") return true;
+      if (statusFilter === "due_today") return isDueToday(tg);
+      return tg.status === statusFilter;
+    })
     .filter((tg) => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
@@ -861,7 +872,24 @@ export default function MyTasks() {
                   <option value="active">{t("inProgress")}</option>
                   <option value="completed">{t("completed")}</option>
                   <option value="overdue">{t("overdue")}</option>
+                  <option value="due_today">{t("dueToday")}</option>
                 </select>
+                <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter(statusFilter === "overdue" ? "all" : "overdue")}
+                    className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${statusFilter === "overdue" ? "bg-red-600 text-white border-red-600" : "border-red-300 text-red-700 hover:bg-red-50"}`}
+                  >
+                    {t("overdue")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter(statusFilter === "due_today" ? "all" : "due_today")}
+                    className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${statusFilter === "due_today" ? "bg-amber-600 text-white border-amber-600" : "border-amber-300 text-amber-700 hover:bg-amber-50"}`}
+                  >
+                    {t("dueToday")}
+                  </button>
+                </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className="text-xs text-muted-foreground font-body">{t("sortBy")}:</span>
                   <button onClick={() => setSortBy("priority")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${sortBy === "priority" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("byPriority")}</button>
