@@ -286,6 +286,7 @@ const dict = {
     chatGroups: "Linked Station Chats", chatGroupsNote: "Link two or more stations into their own shared chat room — create as many separate groups as you need.",
     addChatGroup: "New Group", groupName: "Group Name", selectStationsForGroup: "Select 2 or more stations to link", noChatGroups: "No linked chat groups yet.",
     listView: "List", groupVsGroup: "Group vs Group", groupA: "Group A", groupB: "Group B", avgPoints: "Avg Points",
+    employeeComparison: "Employee Comparison",
   },
   ar: {
     dir: "rtl",
@@ -571,6 +572,7 @@ const dict = {
     chatGroups: "دردشات المحطات المرتبطة", chatGroupsNote: "اربط محطتين أو أكثر في غرفة دردشة خاصة بهم — أنشئ أي عدد تحتاجه من المجموعات المستقلة.",
     addChatGroup: "مجموعة جديدة", groupName: "اسم المجموعة", selectStationsForGroup: "اختر محطتين أو أكثر لربطهما", noChatGroups: "لا توجد مجموعات دردشة مرتبطة بعد.",
     listView: "قائمة", groupVsGroup: "مقارنة مجموعات", groupA: "المجموعة أ", groupB: "المجموعة ب", avgPoints: "متوسط النقاط",
+    employeeComparison: "مقارنة الموظفين",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

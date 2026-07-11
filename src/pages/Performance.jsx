@@ -7,6 +7,7 @@ import { Trophy, Medal, Crown, Users, Building2, Award } from "lucide-react";
 import PerformanceAnalytics from "@/components/performance/PerformanceAnalytics";
 import BadgeLegend from "@/components/performance/BadgeLegend";
 import StationComparison from "@/components/performance/StationComparison";
+import EmployeeComparisonView from "@/components/performance/EmployeeComparisonView";
 
 export default function Performance() {
   const { t, dir } = useI18n();
@@ -66,6 +67,12 @@ export default function Performance() {
             {t("stationComparison")}
           </button>
           <button
+            onClick={() => setView("employeeComparison")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "employeeComparison" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {t("employeeComparison")}
+          </button>
+          <button
             onClick={() => setView("achievements")}
             className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "achievements" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
           >
@@ -81,9 +88,10 @@ export default function Performance() {
       </div>
 
       {view === "comparison" && <StationComparison />}
+      {view === "employeeComparison" && <EmployeeComparisonView t={t} />}
 
       {/* Badge tiers legend */}
-      {view !== "comparison" && <BadgeLegend />}
+      {view !== "comparison" && view !== "employeeComparison" && <BadgeLegend />}
 
       {view === "individual" && (
         <div className="space-y-2">
