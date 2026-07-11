@@ -6,6 +6,7 @@ import { getRoleLabel } from "@/lib/roles";
 import { Trophy, Medal, Crown, Users, Building2, Award } from "lucide-react";
 import PerformanceAnalytics from "@/components/performance/PerformanceAnalytics";
 import BadgeLegend from "@/components/performance/BadgeLegend";
+import StationComparison from "@/components/performance/StationComparison";
 
 export default function Performance() {
   const { t, dir } = useI18n();
@@ -69,6 +70,12 @@ export default function Performance() {
             className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "analytics" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
           >
             {t("analytics")}
+          </button>
+          <button
+            onClick={() => setView("comparison")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "comparison" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {t("stationComparison")}
           </button>
         </div>
       </div>
@@ -206,6 +213,8 @@ export default function Performance() {
       )}
 
       {view === "analytics" && <PerformanceAnalytics />}
+
+      {view === "comparison" && <StationComparison />}
 
       {view === "achievements" && (
         <div className="space-y-4">
