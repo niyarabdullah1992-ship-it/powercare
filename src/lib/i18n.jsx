@@ -289,6 +289,7 @@ const dict = {
     employeeComparison: "Employee Comparison",
     pendingReview: "Pending Review", awaitingReview: "Submitted — awaiting manager review",
     proofRequired: "A photo or file proof is required to mark this as complete.", reviewSubmission: "submitted proof for review",
+    rejectReasonPlaceholder: "Explain why this is being rejected (required)...",
   },
   ar: {
     dir: "rtl",
@@ -577,6 +578,7 @@ const dict = {
     employeeComparison: "مقارنة الموظفين",
     pendingReview: "بانتظار المراجعة", awaitingReview: "تم الإرسال — بانتظار مراجعة المدير",
     proofRequired: "يجب إرفاق صورة أو ملف كإثبات لتعليم المهمة كمكتملة.", reviewSubmission: "أرسل إثباتًا للمراجعة",
+    rejectReasonPlaceholder: "اشرح سبب الرفض (إلزامي)...",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

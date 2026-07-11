@@ -8,6 +8,7 @@ import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permis
 import { PRIORITY_POINTS } from "@/lib/rewards";
 import { base44 } from "@/api/base44Client";
 import { getParentPath, withAncestors, NO_SECTION } from "@/lib/taskFolders";
+import { logAudit } from "@/lib/auditLog";
 import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, Clock, Search, Pencil, X } from "lucide-react";
 import StationCombobox from "@/components/stations/StationCombobox";
 import TaskStats from "@/components/tasks/TaskStats";
@@ -418,18 +419,25 @@ export default function MyTasks() {
     }
   };
 
-  // Manager reviews an employee's submitted proof — approve grants points, reject sends it back.
-  const reviewTarget = async (tg, approve) => {
+  // Manager reviews an employee's submitted proof — approve grants points, reject requires
+  // a written reason (no arbitrary rejections) and is recorded to the audit trail.
+  const reviewTarget = async (tg, approve, reason) => {
     try {
       const res = await base44.functions.invoke("supabaseTargets", {
         action: "reviewCompletion",
         userRole: currentUser.role,
         targetId: tg.id,
         approve,
+        reason,
+        reviewerId: currentUser.id,
+        reviewerName: currentUser.name,
       });
       const updated = res?.data?.target;
       if (updated) {
         setTargets((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      }
+      if (!approve) {
+        logAudit(company.id, "task_completion_rejected", currentUser.name, `${t("reject")} "${tg.title || ""}": ${reason}`);
       }
       if (approve) {
         const pts = PRIORITY_POINTS[tg.priority] || 75;
@@ -474,9 +482,11 @@ export default function MyTasks() {
   };
 
   const deleteTarget = async (targetId) => {
+    const tg = targets.find((x) => x.id === targetId);
     try {
       await base44.functions.invoke("supabaseTargets", { action: "deleteTarget", targetId });
       setTargets((prev) => prev.filter((x) => x.id !== targetId));
+      logAudit(company.id, "task_deleted", currentUser.name, `"${tg?.title || targetId}" (${tg?.status || "?"})`);
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to delete");
     }

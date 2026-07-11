@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2, HelpCircle } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
@@ -20,6 +20,8 @@ export default function TaskCard({
   const done = tg.status === "completed";
   const overdue = tg.status === "overdue";
   const pendingReview = tg.status === "pending_review";
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
   const canLogThis = canLog;
   const isUrgent = tg.priority === "urgent";
   const totalDur = new Date(tg.end_date).getTime() - new Date(tg.start_date).getTime();
@@ -150,10 +152,32 @@ export default function TaskCard({
             <CommentAttachments files={tg.completion_proof} />
           )}
           {canManage ? (
-            <div className="flex items-center gap-2">
-              <button onClick={() => reviewTarget(tg, true)} className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-body">{t("approve")}</button>
-              <button onClick={() => reviewTarget(tg, false)} className="px-3 py-1.5 rounded-md border border-red-300 text-red-700 text-xs font-body">{t("reject")}</button>
-            </div>
+            rejecting ? (
+              <div className="space-y-1.5">
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder={t("rejectReasonPlaceholder")}
+                  rows={2}
+                  className="w-full px-2 py-1.5 rounded-md border border-red-300 text-xs font-body resize-y"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={!rejectReason.trim()}
+                    onClick={() => { reviewTarget(tg, false, rejectReason.trim()); setRejecting(false); setRejectReason(""); }}
+                    className="px-3 py-1.5 rounded-md bg-red-600 text-white text-xs font-body disabled:opacity-50"
+                  >
+                    {t("confirm")}
+                  </button>
+                  <button onClick={() => { setRejecting(false); setRejectReason(""); }} className="px-3 py-1.5 rounded-md border border-border text-xs font-body">{t("cancel")}</button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button onClick={() => reviewTarget(tg, true)} className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-body">{t("approve")}</button>
+                <button onClick={() => setRejecting(true)} className="px-3 py-1.5 rounded-md border border-red-300 text-red-700 text-xs font-body">{t("reject")}</button>
+              </div>
+            )
           ) : (
             <p className="text-xs text-blue-700 font-body">{t("awaitingReview")}</p>
           )}
@@ -169,7 +193,7 @@ export default function TaskCard({
             {Array.isArray(tg.comments) && tg.comments.length > 0 && (
               <div className="space-y-1.5 max-h-40 overflow-y-auto">
                 {tg.comments.map((c) => (
-                  <div key={c.id} className={`text-xs font-body p-2 rounded-md ${c.is_issue ? "bg-red-50 border border-red-200" : "bg-muted/50"}`}>
+                  <div key={c.id} className={`text-xs font-body p-2 rounded-md ${c.is_issue || c.is_rejection ? "bg-red-50 border border-red-200" : "bg-muted/50"}`}>
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-medium text-foreground flex items-center gap-1">
                         {c.user_name}

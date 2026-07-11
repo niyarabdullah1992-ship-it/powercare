@@ -215,13 +215,33 @@ Deno.serve(async (req) => {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can review completions" }, { status: 403 });
       }
-      const { targetId, approve } = body;
+      const { targetId, approve, reason, reviewerId, reviewerName } = body;
       if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
+      // A rejection must be justified — no silent/arbitrary rejections of an employee's proof.
+      if (!approve && !(reason || "").trim()) {
+        return Response.json({ error: "REASON_REQUIRED" }, { status: 400 });
+      }
       const getRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, { headers });
       const rows = await getRes.json();
       const tg = rows[0];
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
-      const patch = approve ? { status: "completed" } : { status: "active", completion_proof: null };
+      const patch: Record<string, unknown> = approve
+        ? { status: "completed" }
+        : { status: "active", completion_proof: null };
+      if (!approve) {
+        const comments = Array.isArray(tg.comments) ? tg.comments : [];
+        comments.push({
+          id: crypto.randomUUID(),
+          user_id: reviewerId || tg.manager_id,
+          user_name: reviewerName || "Manager",
+          content: `❌ ${reason.trim()}`,
+          files: [],
+          is_issue: false,
+          is_rejection: true,
+          created_at: new Date().toISOString(),
+        });
+        patch.comments = comments;
+      }
       const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
@@ -239,7 +259,7 @@ Deno.serve(async (req) => {
             user_id: tg.employee_id,
             message: approve
               ? `🎉 Target "${tg.title || "Untitled"}" COMPLETED! Your proof was approved (${tg.task_target} tasks).`
-              : `Your completion proof for "${tg.title || "Untitled"}" was rejected. Please resubmit with new proof.`,
+              : `Your completion proof for "${tg.title || "Untitled"}" was rejected: ${reason.trim()}. Please resubmit with new proof.`,
           }),
         });
       }
