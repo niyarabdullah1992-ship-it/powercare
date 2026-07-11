@@ -9,6 +9,29 @@ import StationPicker from "@/components/hr/StationPicker";
 
 const SCOPES = ["station", "cluster", "company"];
 
+// Suggested position names per scope — the owner can accept a suggestion with one
+// click or freely type a custom title instead; these are just a starting point.
+const SUGGESTED_TITLES = {
+  station: {
+    manager: { en: ["Station Manager", "Station Supervisor", "Station HR Officer"], ar: ["مدير المحطة", "مشرف المحطة", "مسؤول الموارد البشرية بالمحطة"] },
+    assistant: { en: ["Assistant Station Manager", "Deputy Supervisor"], ar: ["مساعد مدير المحطة", "نائب المشرف"] },
+  },
+  cluster: {
+    manager: { en: ["Cluster Manager", "Regional Manager"], ar: ["مدير المجموعة", "المدير الإقليمي"] },
+    assistant: { en: ["Assistant Cluster Manager"], ar: ["مساعد مدير المجموعة"] },
+  },
+  company: {
+    manager: { en: ["HR Manager", "HR Director", "Chief HR Officer"], ar: ["مدير الموارد البشرية", "مدير عام الموارد البشرية", "الرئيس التنفيذي للموارد البشرية"] },
+    assistant: { en: ["Assistant HR Manager", "HR Coordinator"], ar: ["مساعد مدير الموارد البشرية", "منسق الموارد البشرية"] },
+  },
+};
+
+function getSuggestedTitles(scope, role, lang) {
+  const forScope = SUGGESTED_TITLES[scope]?.[role];
+  if (!forScope) return [];
+  return forScope[lang] || forScope.en || [];
+}
+
 // Lets any company build the HR hierarchy that fits them: add, rename, reorder,
 // or delete positions — nothing about the tier structure is fixed anymore.
 export default function HRTiersEditor({ data, canManage, canMultiStation }) {
@@ -110,13 +133,33 @@ export default function HRTiersEditor({ data, canManage, canMultiStation }) {
               })}
             />
           </div>
-          <input value={managerName} onChange={(e) => setManagerName(e.target.value)} placeholder={t("managerPositionName")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+          <div className="space-y-1.5">
+            <input value={managerName} onChange={(e) => setManagerName(e.target.value)} placeholder={t("managerPositionName")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <div className="flex flex-wrap gap-1.5">
+              <span className="text-[10px] text-muted-foreground font-body">{t("suggestedNames")}:</span>
+              {getSuggestedTitles(scope, "manager", lang).map((title) => (
+                <button key={title} type="button" onClick={() => setManagerName(title)} className="px-2 py-0.5 rounded-full text-[11px] font-body border border-border hover:bg-muted transition-colors">
+                  {title}
+                </button>
+              ))}
+            </div>
+          </div>
           <label className="flex items-center gap-2 text-xs font-body">
             <input type="checkbox" checked={includeAssistant} onChange={(e) => setIncludeAssistant(e.target.checked)} />
             {t("includeAssistantPosition")}
           </label>
           {includeAssistant && (
-            <input value={assistantName} onChange={(e) => setAssistantName(e.target.value)} placeholder={t("assistantPositionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <div className="space-y-1.5">
+              <input value={assistantName} onChange={(e) => setAssistantName(e.target.value)} placeholder={t("assistantPositionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+              <div className="flex flex-wrap gap-1.5">
+                <span className="text-[10px] text-muted-foreground font-body">{t("suggestedNames")}:</span>
+                {getSuggestedTitles(scope, "assistant", lang).map((title) => (
+                  <button key={title} type="button" onClick={() => setAssistantName(title)} className="px-2 py-0.5 rounded-full text-[11px] font-body border border-border hover:bg-muted transition-colors">
+                    {title}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
           <div>
             <label className="block text-xs text-muted-foreground font-body mb-1">{t("hrManagerRole")} — {t("permissions") || "Permissions"}</label>
