@@ -273,7 +273,7 @@ const dict = {
     choosePasswordPlaceholder: "Choose a password", finishSetupBtn: "Finish Setup", accountReadyText: "Your account is ready. Redirecting...",
     paymentNotConfirmedText: "We couldn't confirm your payment.", backToPricingBtn: "Back to Pricing",
     trialBadge: "Free for 6 months, then billed",
-    videoHeading: "See PowerCare in Motion", videoText: "PowerCare is an all-in-one platform for organizations that value precision as much as people. It brings your stations, teams, schedules, reports and internal communication into one refined space — guided by a philosophy borrowed from fine architecture: the quiet strength of raw materials meeting the clarity of modern technology, with sustainability and calm wellness at its core.",
+    videoHeading: "See PowerCare in Motion", videoText: "PowerCare is an all-in-one platform for organizations that value precision as much as people. It brings your stations, teams, schedules, reports and internal communication into one refined space — guided by a philosophy borrowed from fine architecture: the quiet strength of raw materials meeting the clarity of modern technology, with sustainability and calm wellness at its core.", narrationCta: "Listen to our story",
   },
   ar: {
     dir: "rtl",
@@ -546,7 +546,7 @@ const dict = {
     choosePasswordPlaceholder: "اختر كلمة مرور", finishSetupBtn: "إكمال الإعداد", accountReadyText: "حسابك جاهز. يتم التحويل...",
     paymentNotConfirmedText: "تعذّر تأكيد عملية الدفع.", backToPricingBtn: "العودة إلى الأسعار",
     trialBadge: "مجاني لمدة 6 أشهر، ثم يبدأ التحصيل",
-    videoHeading: "شاهد باور كير في العمل", videoText: "باور كير منصة متكاملة صُممت للمؤسسات التي تقدّر الدقة قدر ما تقدّر الإنسان. توحّد محطاتك وفرقك وجداولك وتقاريرك وتواصلك الداخلي في مساحة واحدة أنيقة، بفلسفة تشبه العمارة الرفيعة: قوة المواد الخام الهادئة تلتقي بوضوح التقنية الحديثة، مع الاستدامة والراحة النفسية في جوهر التجربة.",
+    videoHeading: "شاهد باور كير في العمل", videoText: "باور كير منصة متكاملة صُممت للمؤسسات التي تقدّر الدقة قدر ما تقدّر الإنسان. توحّد محطاتك وفرقك وجداولك وتقاريرك وتواصلك الداخلي في مساحة واحدة أنيقة، بفلسفة تشبه العمارة الرفيعة: قوة المواد الخام الهادئة تلتقي بوضوح التقنية الحديثة، مع الاستدامة والراحة النفسية في جوهر التجربة.", narrationCta: "استمع إلى فكرتنا",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
@@ -634,7 +634,7 @@ const dict = {
     choosePasswordPlaceholder: "Passwort wählen", finishSetupBtn: "Einrichtung abschließen", accountReadyText: "Ihr Konto ist bereit. Weiterleitung...",
     paymentNotConfirmedText: "Zahlung konnte nicht bestätigt werden.", backToPricingBtn: "Zurück zu Preisen",
     trialBadge: "6 Monate kostenlos, danach wird abgerechnet",
-    videoHeading: "PowerCare in Aktion", videoText: "PowerCare ist eine All-in-One-Plattform für Organisationen, die Präzision genauso schätzen wie Menschen. Sie vereint Ihre Stationen, Teams, Zeitpläne, Berichte und interne Kommunikation in einem eleganten Raum — geleitet von einer Philosophie, die an feine Architektur erinnert: die stille Kraft roher Materialien trifft auf die Klarheit moderner Technologie, mit Nachhaltigkeit und ruhigem Wohlbefinden im Kern.",
+    videoHeading: "PowerCare in Aktion", videoText: "PowerCare ist eine All-in-One-Plattform für Organisationen, die Präzision genauso schätzen wie Menschen. Sie vereint Ihre Stationen, Teams, Zeitpläne, Berichte und interne Kommunikation in einem eleganten Raum — geleitet von einer Philosophie, die an feine Architektur erinnert: die stille Kraft roher Materialien trifft auf die Klarheit moderner Technologie, mit Nachhaltigkeit und ruhigem Wohlbefinden im Kern.", narrationCta: "Unsere Geschichte anhören",
   },
   fr: {
     dir: "ltr", appName: "PowerCare", tagline: "Intelligence opérationnelle pour équipes multi-sites",
@@ -722,7 +722,7 @@ const dict = {
     choosePasswordPlaceholder: "Choisissez un mot de passe", finishSetupBtn: "Terminer la configuration", accountReadyText: "Votre compte est prêt. Redirection...",
     paymentNotConfirmedText: "Nous n'avons pas pu confirmer votre paiement.", backToPricingBtn: "Retour aux tarifs",
     trialBadge: "Gratuit pendant 6 mois, puis facturé",
-    videoHeading: "PowerCare en action", videoText: "PowerCare est une plateforme tout-en-un pour les organisations qui accordent autant d'importance à la précision qu'aux personnes. Elle réunit vos stations, équipes, plannings, rapports et communications internes dans un espace raffiné — guidée par une philosophie proche de la belle architecture : la force silencieuse des matières brutes rencontrant la clarté de la technologie moderne, avec la durabilité et le bien-être serein en son cœur.",
+    videoHeading: "PowerCare en action", videoText: "PowerCare est une plateforme tout-en-un pour les organisations qui accordent autant d'importance à la précision qu'aux personnes. Elle réunit vos stations, équipes, plannings, rapports et communications internes dans un espace raffiné — guidée par une philosophie proche de la belle architecture : la force silencieuse des matières brutes rencontrant la clarté de la technologie moderne, avec la durabilité et le bien-être serein en son cœur.", narrationCta: "Écouter notre histoire",
   },
   es: {
     dir: "ltr", appName: "PowerCare", tagline: "Inteligencia operativa para equipos multiestación",
@@ -810,7 +810,7 @@ const dict = {
     choosePasswordPlaceholder: "Elige una contraseña", finishSetupBtn: "Finalizar configuración", accountReadyText: "Tu cuenta está lista. Redirigiendo...",
     paymentNotConfirmedText: "No pudimos confirmar tu pago.", backToPricingBtn: "Volver a precios",
     trialBadge: "Gratis durante 6 meses, luego se factura",
-    videoHeading: "PowerCare en acción", videoText: "PowerCare es una plataforma integral para organizaciones que valoran la precisión tanto como a las personas. Reúne tus estaciones, equipos, horarios, informes y comunicación interna en un espacio elegante, guiada por una filosofía cercana a la arquitectura refinada: la fuerza silenciosa de los materiales en bruto que se encuentra con la claridad de la tecnología moderna, con la sostenibilidad y el bienestar tranquilo en su esencia.",
+    videoHeading: "PowerCare en acción", videoText: "PowerCare es una plataforma integral para organizaciones que valoran la precisión tanto como a las personas. Reúne tus estaciones, equipos, horarios, informes y comunicación interna en un espacio elegante, guiada por una filosofía cercana a la arquitectura refinada: la fuerza silenciosa de los materiales en bruto que se encuentra con la claridad de la tecnología moderna, con la sostenibilidad y el bienestar tranquilo en su esencia.", narrationCta: "Escucha nuestra historia",
   },
   pt: {
     dir: "ltr", appName: "PowerCare", tagline: "Inteligência operacional para equipes multiestação",
@@ -898,7 +898,7 @@ const dict = {
     choosePasswordPlaceholder: "Escolha uma senha", finishSetupBtn: "Concluir configuração", accountReadyText: "Sua conta está pronta. Redirecionando...",
     paymentNotConfirmedText: "Não foi possível confirmar seu pagamento.", backToPricingBtn: "Voltar aos preços",
     trialBadge: "Grátis por 6 meses, depois cobrado",
-    videoHeading: "PowerCare em ação", videoText: "A PowerCare é uma plataforma completa para organizações que valorizam a precisão tanto quanto as pessoas. Ela reúne suas estações, equipes, horários, relatórios e comunicação interna em um espaço refinado — guiada por uma filosofia próxima à arquitetura elegante: a força silenciosa dos materiais brutos encontrando a clareza da tecnologia moderna, com sustentabilidade e bem-estar tranquilo em sua essência.",
+    videoHeading: "PowerCare em ação", videoText: "A PowerCare é uma plataforma completa para organizações que valorizam a precisão tanto quanto as pessoas. Ela reúne suas estações, equipes, horários, relatórios e comunicação interna em um espaço refinado — guiada por uma filosofia próxima à arquitetura elegante: a força silenciosa dos materiais brutos encontrando a clareza da tecnologia moderna, com sustentabilidade e bem-estar tranquilo em sua essência.", narrationCta: "Ouça nossa história",
   },
   ru: {
     dir: "ltr", appName: "PowerCare", tagline: "Операционная аналитика для команд на нескольких станциях",
@@ -986,7 +986,7 @@ const dict = {
     choosePasswordPlaceholder: "Выберите пароль", finishSetupBtn: "Завершить настройку", accountReadyText: "Ваш аккаунт готов. Перенаправление...",
     paymentNotConfirmedText: "Не удалось подтвердить вашу оплату.", backToPricingBtn: "Назад к ценам",
     trialBadge: "Бесплатно 6 месяцев, затем оплата",
-    videoHeading: "PowerCare в действии", videoText: "PowerCare — это универсальная платформа для организаций, которые ценят точность не меньше, чем людей. Она объединяет ваши станции, команды, графики, отчёты и внутреннюю коммуникацию в одном изысканном пространстве, руководствуясь философией, близкой к утончённой архитектуре: тихая сила сырых материалов встречается с ясностью современных технологий, а устойчивость и спокойное благополучие лежат в основе всего.",
+    videoHeading: "PowerCare в действии", videoText: "PowerCare — это универсальная платформа для организаций, которые ценят точность не меньше, чем людей. Она объединяет ваши станции, команды, графики, отчёты и внутреннюю коммуникацию в одном изысканном пространстве, руководствуясь философией, близкой к утончённой архитектуре: тихая сила сырых материалов встречается с ясностью современных технологий, а устойчивость и спокойное благополучие лежат в основе всего.", narrationCta: "Слушать нашу историю",
   },
   ja: {
     dir: "ltr", appName: "PowerCare", tagline: "複数拠点チーム向けの運用インテリジェンス",
@@ -1074,7 +1074,7 @@ const dict = {
     choosePasswordPlaceholder: "パスワードを選択", finishSetupBtn: "セットアップを完了", accountReadyText: "アカウントの準備が完了しました。リダイレクト中...",
     paymentNotConfirmedText: "お支払いを確認できませんでした。", backToPricingBtn: "料金ページに戻る",
     trialBadge: "6ヶ月間無料、その後課金されます",
-    videoHeading: "PowerCareの実際の姿", videoText: "PowerCareは、精密さと同じくらい人を大切にする組織のための統合プラットフォームです。ステーション、チーム、スケジュール、レポート、社内コミュニケーションを一つの洗練された空間にまとめ、上質な建築にも通じる哲学に基づいています。素材の静かな力と最新技術の明快さが融合し、持続可能性と穏やかなウェルビーイングを核としています。",
+    videoHeading: "PowerCareの実際の姿", videoText: "PowerCareは、精密さと同じくらい人を大切にする組織のための統合プラットフォームです。ステーション、チーム、スケジュール、レポート、社内コミュニケーションを一つの洗練された空間にまとめ、上質な建築にも通じる哲学に基づいています。素材の静かな力と最新技術の明快さが融合し、持続可能性と穏やかなウェルビーイングを核としています。", narrationCta: "私たちの物語を聞く",
   },
   ko: {
     dir: "ltr", appName: "PowerCare", tagline: "다중 현장 팀을 위한 운영 인텔리전스",
@@ -1162,7 +1162,7 @@ const dict = {
     choosePasswordPlaceholder: "비밀번호 선택", finishSetupBtn: "설정 완료", accountReadyText: "계정이 준비되었습니다. 리디렉션 중...",
     paymentNotConfirmedText: "결제를 확인할 수 없습니다.", backToPricingBtn: "요금제로 돌아가기",
     trialBadge: "6개월 무료, 이후 청구됨",
-    videoHeading: "PowerCare 소개 영상", videoText: "PowerCare는 정밀함만큼 사람을 중요하게 여기는 조직을 위한 통합 플랫폼입니다. 스테이션, 팀, 일정, 보고서, 사내 소통을 하나의 세련된 공간으로 통합하며, 고급 건축에서 비롯된 철학을 따릅니다. 원자재의 고요한 힘과 현대 기술의 명료함이 만나고, 지속 가능성과 평온한 웰빙이 그 핵심에 있습니다.",
+    videoHeading: "PowerCare 소개 영상", videoText: "PowerCare는 정밀함만큼 사람을 중요하게 여기는 조직을 위한 통합 플랫폼입니다. 스테이션, 팀, 일정, 보고서, 사내 소통을 하나의 세련된 공간으로 통합하며, 고급 건축에서 비롯된 철학을 따릅니다. 원자재의 고요한 힘과 현대 기술의 명료함이 만나고, 지속 가능성과 평온한 웰빙이 그 핵심에 있습니다.", narrationCta: "우리의 이야기 듣기",
   },
 };
 
