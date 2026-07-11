@@ -48,7 +48,7 @@ export default function Dashboard() {
 
   const isEmployee = currentUser.role === "employee";
 
-  if (isEmployee) return <EmployeeDashboard user={currentUser} company={company} />;
+  if (isEmployee) return <EmployeeDashboard user={currentUser} company={company} data={data} />;
 
   const canSeed = currentUser.role === "director" || currentUser.role === "ops_manager";
   const handleSeed = () => {

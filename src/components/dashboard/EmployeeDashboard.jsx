@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { base44 } from "@/api/base44Client";
-import { ListTodo, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ListTodo, CheckCircle2, AlertTriangle, Radio, UserCircle } from "lucide-react";
 import EmployeePoints from "@/components/employees/EmployeePoints";
 
-export default function EmployeeDashboard({ user, company }) {
+export default function EmployeeDashboard({ user, company, data }) {
   const { t } = useI18n();
+  const station = user.stationId ? data?.stations.find((s) => s.id === user.stationId) : null;
+  const manager = station?.managerId ? data?.employees.find((e) => e.id === station.managerId) : null;
   const [targets, setTargets] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,6 +46,19 @@ export default function EmployeeDashboard({ user, company }) {
           <h1 className="hero-title text-4xl md:text-5xl">{t("myDay")}</h1>
         </div>
         <EmployeePoints points={user.points || 0} company={company} />
+      </div>
+
+      <div className="p-4 rounded-xl border border-border bg-card flex flex-wrap items-center gap-x-8 gap-y-2">
+        <div className="flex items-center gap-2">
+          <Radio className="w-4 h-4 text-accent" strokeWidth={1.5} />
+          <span className="text-xs text-muted-foreground font-body">{t("station")}:</span>
+          <span className="text-sm font-medium font-body">{station ? station.name : t("hq")}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <UserCircle className="w-4 h-4 text-accent" strokeWidth={1.5} />
+          <span className="text-xs text-muted-foreground font-body">{t("manager")}:</span>
+          <span className="text-sm font-medium font-body">{manager ? manager.name : t("noManager")}</span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 border border-border divide-x divide-y sm:divide-y-0 divide-border rtl:divide-x-reverse">
