@@ -78,15 +78,18 @@ export default function ChatGroupManager({ t, stations, groups, onAdd, onDelete 
             <button type="button" onClick={() => setShowForm(false)} className="p-1.5 rounded-md hover:bg-muted"><X className="w-3.5 h-3.5" /></button>
           </div>
           <p className="text-[11px] text-muted-foreground font-body">{t("selectStationsForGroup")}</p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-48 overflow-y-auto rounded-md border border-border p-1.5">
             {options.map((o) => (
               <button
                 key={o.id}
                 type="button"
                 onClick={() => toggleStation(o.id)}
-                className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${selected.includes(o.id) ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-body text-start transition ${selected.includes(o.id) ? "bg-foreground text-background" : "hover:bg-muted"}`}
               >
-                {o.name}
+                <span className={`w-3.5 h-3.5 rounded-sm border shrink-0 flex items-center justify-center ${selected.includes(o.id) ? "bg-background border-background" : "border-current"}`}>
+                  {selected.includes(o.id) && <span className="w-2 h-2 rounded-[1px] bg-foreground" />}
+                </span>
+                <span className="truncate">{o.name}</span>
               </button>
             ))}
           </div>
