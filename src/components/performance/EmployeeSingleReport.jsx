@@ -13,6 +13,7 @@ export default function EmployeeSingleReport({ t }) {
   const { data, company, currentUser } = useAuth();
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState(currentUser?.id || null);
+  const [showResults, setShowResults] = useState(false);
   const [targets, setTargets] = useState([]);
 
   useEffect(() => {
@@ -89,25 +90,34 @@ export default function EmployeeSingleReport({ t }) {
   return (
     <div className="space-y-4">
       {/* Employee picker */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute top-1/2 -translate-y-1/2 start-3 w-4 h-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("search")}
-            className="w-full ps-9 pe-3 py-2 rounded-md border border-input text-sm font-body"
-          />
-        </div>
-        <select
-          value={selectedId || ""}
-          onChange={(e) => setSelectedId(e.target.value)}
-          className="px-3 py-2 rounded-md border border-input text-sm font-body flex-1"
-        >
-          {filteredEmployees.map((e) => (
-            <option key={e.id} value={e.id}>{e.name}</option>
-          ))}
-        </select>
+      <div className="relative w-full sm:max-w-xs">
+        <Search className="absolute top-1/2 -translate-y-1/2 start-3 w-4 h-4 text-muted-foreground" />
+        <input
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setShowResults(true); }}
+          onFocus={() => setShowResults(true)}
+          onBlur={() => setTimeout(() => setShowResults(false), 150)}
+          placeholder={t("search")}
+          className="w-full ps-9 pe-3 py-2 rounded-md border border-input text-sm font-body"
+        />
+        {showResults && (
+          <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto rounded-md border border-border bg-card shadow-md">
+            {filteredEmployees.length === 0 ? (
+              <p className="text-xs text-muted-foreground font-body p-3">{t("noResults")}</p>
+            ) : (
+              filteredEmployees.map((e) => (
+                <button
+                  key={e.id}
+                  type="button"
+                  onMouseDown={() => { setSelectedId(e.id); setSearch(e.name); setShowResults(false); }}
+                  className={`w-full text-start px-3 py-2 text-sm font-body hover:bg-muted transition ${e.id === selectedId ? "bg-muted font-medium" : ""}`}
+                >
+                  {e.name}
+                </button>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* Profile header */}
