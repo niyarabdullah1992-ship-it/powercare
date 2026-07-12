@@ -25,16 +25,27 @@ export function AuthProvider({ children }) {
       setCompany(getCompanyMeta(s.companyId));
       const localData = getCompanyData(s.companyId);
       setData(localData);
-      // Only recover from the persisted database if the local cache has no employees at all
-      // (e.g. a fresh browser) — never overwrite an already-populated local list.
-      if (localData && (!localData.employees || localData.employees.length === 0)) {
+      // Always reconcile with the persisted database (not just on an empty cache) so
+      // records created on another device/browser eventually show up here too. Local-only
+      // records (not yet synced) are kept as-is; server records are merged in additively.
+      if (localData) {
         hydrateEmployeesFromEntity(s.companyId).then((employees) => {
-          if (employees) setData((prev) => (prev ? { ...prev, employees } : prev));
+          if (!employees) return;
+          setData((prev) => {
+            if (!prev) return prev;
+            const localIds = new Set((prev.employees || []).map((e) => e.id));
+            const merged = [...(prev.employees || []), ...employees.filter((e) => !localIds.has(e.id))];
+            return { ...prev, employees: merged };
+          });
         });
-      }
-      if (localData && (!localData.stations || localData.stations.length === 0)) {
         hydrateStationsFromEntity(s.companyId).then((stations) => {
-          if (stations) setData((prev) => (prev ? { ...prev, stations } : prev));
+          if (!stations) return;
+          setData((prev) => {
+            if (!prev) return prev;
+            const localIds = new Set((prev.stations || []).map((st) => st.id));
+            const merged = [...(prev.stations || []), ...stations.filter((st) => !localIds.has(st.id))];
+            return { ...prev, stations: merged };
+          });
         });
       }
     } else {
