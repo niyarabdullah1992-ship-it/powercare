@@ -8,6 +8,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
 import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
+import StationManagerDashboard from "@/components/dashboard/StationManagerDashboard";
 import { seedDummyData } from "@/lib/store";
 import { Sparkles } from "lucide-react";
 
@@ -50,6 +51,11 @@ export default function Dashboard() {
   const isEmployee = currentUser.role === "employee";
 
   if (isEmployee) return <EmployeeDashboard user={currentUser} company={company} data={data} />;
+
+  // Station-scoped managers get their own station-focused dashboard.
+  if (currentUser.role === "station_manager" || currentUser.role === "pgm") {
+    return <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />;
+  }
 
   const canSeed = currentUser.role === "director" || currentUser.role === "ops_manager";
   const handleSeed = () => {

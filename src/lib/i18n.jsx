@@ -351,6 +351,7 @@ const dict = {
     emptyFolderNote: "This folder is empty — create a folder or upload a file.",
     foldersLabel: "Folders",
     itemsUnit: "items",
+    myStation: "My Station",
   },
   ar: {
     dir: "rtl",
@@ -701,6 +702,7 @@ const dict = {
     emptyFolderNote: "هذا المجلد فارغ — أنشئ مجلدًا أو ارفع ملفًا.",
     foldersLabel: "المجلدات",
     itemsUnit: "عنصر",
+    myStation: "محطتي",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
