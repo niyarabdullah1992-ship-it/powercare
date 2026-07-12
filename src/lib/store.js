@@ -145,6 +145,35 @@ function saveCompanyData(id, data) {
   write(companyKey(id), data);
   syncEmployeesToEntity(id, data.employees);
   syncStationsToEntity(id, data.stations);
+  BLOB_CATEGORIES.forEach((category) => syncBlobToEntity(id, category, data[category]));
+}
+
+/* ----------------------------- generic collections (real, persisted) -----------------------------
+   Tasks, reports, anonymous reports, safety, plans, schedules and HR levels are synced the same
+   way as employees/stations: the localStorage blob stays the instant cache, while each full array
+   is additionally persisted to the CompanyDataBlob entity so it survives beyond this browser. */
+export const BLOB_CATEGORIES = ["tasks", "reports", "anonymousReports", "safety", "plans", "schedules", "hrLevels"];
+const lastSyncedBlobJSON = {};
+async function syncBlobToEntity(companyId, category, payload) {
+  const key = `${companyId}_${category}`;
+  const json = JSON.stringify(payload || []);
+  if (lastSyncedBlobJSON[key] === json) return;
+  lastSyncedBlobJSON[key] = json;
+  try {
+    await base44.functions.invoke("companyDirectory", { action: "syncBlob", companyId, category, payload: payload || [] });
+  } catch {
+    // best-effort background sync — the localStorage cache remains usable for the running session
+  }
+}
+
+// Fetches the authoritative, persisted array for a category from the real database.
+export async function hydrateBlobFromEntity(companyId, category) {
+  try {
+    const res = await base44.functions.invoke("companyDirectory", { action: "getBlob", companyId, category });
+    return res?.data?.payload || null;
+  } catch {
+    return null;
+  }
 }
 
 // Removes duplicate employee records (e.g. from seeding dummy data more than once) —

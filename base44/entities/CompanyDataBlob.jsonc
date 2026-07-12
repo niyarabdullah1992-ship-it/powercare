@@ -1,0 +1,40 @@
+{
+  "name": "CompanyDataBlob",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company (tenant) this data belongs to."
+    },
+    "category": {
+      "type": "string",
+      "description": "Which collection this blob holds, e.g. tasks, reports, anonymousReports, safety, plans, schedules, hrLevels."
+    },
+    "payload": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "The full array snapshot for this category."
+    }
+  },
+  "required": [
+    "companyId",
+    "category"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": false,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": false
+  }
+}

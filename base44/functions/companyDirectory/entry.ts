@@ -45,6 +45,29 @@ Deno.serve(async (req) => {
       return Response.json({ stations: records });
     }
 
+    if (action === 'syncBlob') {
+      const { category, payload } = body;
+      if (!category) return Response.json({ error: 'Missing category' }, { status: 400 });
+      const existing = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
+      const data = Array.isArray(payload) ? payload : [];
+      if (existing.length) {
+        await base44.asServiceRole.entities.CompanyDataBlob.update(existing[0].id, { payload: data });
+        for (const extra of existing.slice(1)) {
+          await base44.asServiceRole.entities.CompanyDataBlob.delete(extra.id);
+        }
+      } else {
+        await base44.asServiceRole.entities.CompanyDataBlob.create({ companyId, category, payload: data });
+      }
+      return Response.json({ ok: true });
+    }
+
+    if (action === 'getBlob') {
+      const { category } = body;
+      if (!category) return Response.json({ error: 'Missing category' }, { status: 400 });
+      const existing = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
+      return Response.json({ payload: existing[0]?.payload || [] });
+    }
+
     if (action === 'logAudit') {
       const { auditAction, performedBy, details } = body;
       await base44.asServiceRole.entities.AuditLog.create({

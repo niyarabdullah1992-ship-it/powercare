@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import {
   getSession, companyLogin, switchUser, clearSession, getCompanyData,
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
+  hydrateBlobFromEntity, BLOB_CATEGORIES,
 } from "./store";
 
 const AuthContext = createContext(null);
@@ -48,6 +49,17 @@ export function AuthProvider({ children }) {
             const serverIds = new Set(stations.map((st) => st.id));
             const localOnly = (prev.stations || []).filter((st) => !serverIds.has(st.id));
             return { ...prev, stations: [...stations, ...localOnly] };
+          });
+        });
+        BLOB_CATEGORIES.forEach((category) => {
+          hydrateBlobFromEntity(s.companyId, category).then((records) => {
+            if (!records || records.length === 0) return;
+            setData((prev) => {
+              if (!prev) return prev;
+              const serverIds = new Set(records.map((r) => r.id));
+              const localOnly = (prev[category] || []).filter((r) => !serverIds.has(r.id));
+              return { ...prev, [category]: [...records, ...localOnly] };
+            });
           });
         });
       }
