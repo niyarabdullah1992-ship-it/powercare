@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
-import { getAccuratePosition } from "@/lib/geo";
 import GoogleTiles from "@/components/maps/GoogleTiles";
 import { X, MapPin, LocateFixed, Loader2, Check } from "lucide-react";
 import "leaflet/dist/leaflet.css";
@@ -38,18 +37,46 @@ export default function StationLocationEditor({ t, station, onSave, onCancel }) 
   const [accuracy, setAccuracy] = useState(null);
   const [error, setError] = useState("");
 
-  // Uses high-accuracy GPS tracking (watchPosition) — keeps refining the fix
-  // until it's precise instead of accepting the first coarse Wi-Fi/IP reading.
-  const useMyLocation = async () => {
+  const watchRef = useRef(null);
+  const bestRef = useRef(null);
+
+  const stopTracking = () => {
+    if (watchRef.current != null) {
+      navigator.geolocation.clearWatch(watchRef.current);
+      watchRef.current = null;
+    }
+    setLocating(false);
+  };
+
+  useEffect(() => stopTracking, []);
+
+  // Live high-accuracy tracking — keeps watching the GPS and moving the marker
+  // every time a more precise fix arrives (instead of one coarse Wi-Fi/IP reading),
+  // stopping automatically once the fix is truly precise.
+  const useMyLocation = () => {
     setError("");
     setAccuracy(null);
+    bestRef.current = null;
     if (!navigator.geolocation) { setError(t("locationDenied")); return; }
+    stopTracking();
     setLocating(true);
-    const fix = await getAccuratePosition({ timeoutMs: 20000 });
-    setLocating(false);
-    if (!fix) { setError(t("locationDenied")); return; }
-    setPos([fix.lat, fix.lng]);
-    setAccuracy(fix.accuracy != null ? Math.round(fix.accuracy) : null);
+    watchRef.current = navigator.geolocation.watchPosition(
+      (p) => {
+        const fix = { lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy ?? null };
+        const best = bestRef.current;
+        if (!best || (fix.accuracy != null && (best.accuracy == null || fix.accuracy < best.accuracy))) {
+          bestRef.current = fix;
+          setPos([fix.lat, fix.lng]);
+          setAccuracy(fix.accuracy != null ? Math.round(fix.accuracy) : null);
+        }
+        if (bestRef.current.accuracy != null && bestRef.current.accuracy <= 10) stopTracking();
+      },
+      () => {
+        stopTracking();
+        if (!bestRef.current) setError(t("locationDenied"));
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
+    );
   };
 
   const submit = () => {
@@ -73,20 +100,22 @@ export default function StationLocationEditor({ t, station, onSave, onCancel }) 
         <div className="px-4 py-2 flex items-center justify-between gap-2 border-b border-border">
           <p className="text-[11px] text-muted-foreground font-body">{t("tapMapToSet")}</p>
           <button
-            onClick={useMyLocation}
-            disabled={locating}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent/10 text-accent text-xs font-body hover:bg-accent/20 disabled:opacity-50 shrink-0"
+            onClick={locating ? stopTracking : useMyLocation}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent/10 text-accent text-xs font-body hover:bg-accent/20 shrink-0"
           >
             {locating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LocateFixed className="w-3.5 h-3.5" />}
-            {t("useMyLocation")}
+            {locating ? `${t("locating")}${accuracy != null ? ` ±${accuracy}${t("metersUnit")}` : ""}` : t("useMyLocation")}
           </button>
         </div>
 
         <div className="h-72 relative">
           <MapContainer center={pos || DEFAULT_CENTER} zoom={pos ? 17 : 6} style={{ height: "100%", width: "100%" }}>
             <GoogleTiles />
-            <ClickToPlace onPick={setPos} />
+            <ClickToPlace onPick={(p) => { stopTracking(); setAccuracy(null); setPos(p); }} />
             <Recenter pos={pos} />
+            {pos && accuracy != null && (
+              <Circle center={pos} radius={accuracy} pathOptions={{ color: "#3b82f6", weight: 1, fillOpacity: 0.08 }} />
+            )}
             {pos && <Marker position={pos} icon={markerIcon} />}
             {pos && <Circle center={pos} radius={Number(radius) || 200} pathOptions={{ color: "#b07d3f", fillOpacity: 0.12 }} />}
           </MapContainer>
