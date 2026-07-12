@@ -2,6 +2,7 @@
 // Registry tracks all companies; each company's data lives under its own key.
 import { MANAGER_PERMISSIONS, ASSISTANT_PERMISSIONS, groupLevelsByOrder, buildHRLevels } from "./hrLevels";
 import { base44 } from "@/api/base44Client";
+import { sendEmailAlert } from "./emailAlerts";
 
 const REGISTRY_KEY = "powercare_registry";
 const COMPANY_PREFIX = "powercare_company_";
@@ -898,13 +899,48 @@ export function updateCompany(companyId, updater) {
     reports: new Map((data.reports || []).map((r) => [r.id, r.title])),
     files: new Map((data.files || []).map((f) => [f.id, f.name])),
     plans: new Map((data.plans || []).map((p) => [p.id, p.title])),
+    anrIds: new Set((data.anonymousReports || []).map((r) => r.id)),
+    pubIds: new Set((data.publicReports || []).map((r) => r.id)),
     schedulesJSON: JSON.stringify(data.schedules || []),
     settingsJSON: JSON.stringify(data.settings || {}),
   };
   updater(data);
   saveCompanyData(companyId, data);
   logCollectionDiffs(companyId, data, before);
+  emailNewEvents(companyId, data, before);
   return data;
+}
+
+// Automatic Gmail alerts: emails the assigned employee when a new task is created
+// for them, and emails the responsible manager when a new complaint/report is filed.
+function emailNewEvents(companyId, data, before) {
+  (data.tasks || []).forEach((t) => {
+    if (before.tasks.has(t.id) || !t.assignedTo) return;
+    const emp = (data.employees || []).find((e) => e.id === t.assignedTo);
+    if (emp?.email) {
+      sendEmailAlert(
+        companyId, emp.email,
+        `PowerCare — مهمة جديدة: ${t.title}`,
+        `مرحبًا ${emp.name}،\n\nتم إسناد مهمة جديدة إليك: "${t.title}".\nيرجى الدخول إلى منصة PowerCare لمراجعة التفاصيل.\n\nA new task "${t.title}" has been assigned to you on PowerCare.`
+      );
+    }
+  });
+  const newReports = [
+    ...(data.anonymousReports || []).filter((r) => !before.anrIds.has(r.id)),
+    ...(data.publicReports || []).filter((r) => !before.pubIds.has(r.id)),
+  ];
+  newReports.forEach((r) => {
+    const station = (data.stations || []).find((s) => s.id === r.stationId);
+    const manager = (data.employees || []).find((e) => e.id === station?.managerId);
+    const toEmail = manager?.email || getCompanyMeta(companyId)?.ownerEmail;
+    if (toEmail) {
+      sendEmailAlert(
+        companyId, toEmail,
+        "PowerCare — شكوى/بلاغ جديد بانتظار المراجعة",
+        `تم استلام ${r.type === "suggestion" ? "اقتراح جديد" : "شكوى/بلاغ جديد"}${station ? ` في محطة "${station.name}"` : ""}.\nيرجى الدخول إلى منصة PowerCare لمراجعته والرد عليه.\n\nA new complaint/report was received${station ? ` at station "${station.name}"` : ""} on PowerCare and is awaiting your review.`
+      );
+    }
+  });
 }
 
 // Automatic audit entries derived from what actually changed during a mutation —

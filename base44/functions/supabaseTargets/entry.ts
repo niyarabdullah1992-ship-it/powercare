@@ -2,6 +2,27 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.31";
 
 const MANAGER_ROLES = ["director", "ops_manager", "pgm", "station_manager"];
 
+// Best-effort Gmail alert sent from the company's connected Gmail account.
+async function sendGmail(base44, to, subject, text) {
+  const { accessToken } = await base44.asServiceRole.connectors.getConnection("gmail");
+  const { createMimeMessage } = await import("npm:mimetext@3.0.24");
+  const msg = createMimeMessage();
+  msg.setSender({ name: "PowerCare", addr: "no-reply@powercare.app" });
+  msg.setRecipient(to);
+  msg.setSubject(subject);
+  msg.addMessage({ contentType: "text/plain", data: text });
+  const bytes = new TextEncoder().encode(msg.asRaw());
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  const raw = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ raw }),
+  });
+  if (!res.ok) console.error("Gmail send failed:", await res.text());
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -155,6 +176,20 @@ Deno.serve(async (req) => {
             message: `New target assigned: ${title || taskTarget + " tasks"} — ${taskTarget} tasks in ${days} days.`,
           }),
         });
+        // Gmail email alert to the assigned employee (best-effort)
+        try {
+          const emps = await base44.asServiceRole.entities.Employee.filter({ employeeId });
+          const email = emps[0]?.email;
+          if (email) {
+            await sendGmail(
+              base44, email,
+              `PowerCare — مهمة جديدة أُسندت إليك${title ? `: ${title}` : ""}`,
+              `مرحبًا ${emps[0]?.name || ""}،\n\nتم إسناد مهمة جديدة إليك${title ? `: "${title}"` : ""} (${taskTarget} مهمة).\nيرجى الدخول إلى منصة PowerCare لمراجعة التفاصيل.\n\nA new task${title ? ` "${title}"` : ""} has been assigned to you on PowerCare.`
+            );
+          }
+        } catch (e) {
+          console.error("Gmail alert failed:", e.message);
+        }
       }
       return Response.json({ target: Array.isArray(created) ? created[0] : created });
     }
