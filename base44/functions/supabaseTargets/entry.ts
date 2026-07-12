@@ -564,6 +564,24 @@ Deno.serve(async (req) => {
       return Response.json({ message: Array.isArray(created) ? created[0] : created });
     }
 
+    // ---- Delete a station/group chat message: only the sender, and only within ----
+    // 2 minutes of sending — after that the message is permanent for everyone.
+    if (action === "deleteChatMessage") {
+      const { messageId, userId } = body;
+      if (!messageId || !userId) return Response.json({ error: "Missing fields" }, { status: 400 });
+      const getRes = await fetch(`${SUPABASE_URL}/rest/v1/station_chat?id=eq.${encodeURIComponent(messageId)}`, { headers });
+      const rows = await getRes.json();
+      const msg = Array.isArray(rows) && rows[0];
+      if (!msg) return Response.json({ error: "Message not found" }, { status: 404 });
+      if (msg.user_id !== userId) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const ageMs = Date.now() - new Date(msg.created_at).getTime();
+      if (ageMs > 2 * 60 * 1000) {
+        return Response.json({ error: "Messages can only be deleted within 2 minutes of sending" }, { status: 403 });
+      }
+      await fetch(`${SUPABASE_URL}/rest/v1/station_chat?id=eq.${encodeURIComponent(messageId)}`, { method: "DELETE", headers });
+      return Response.json({ ok: true });
+    }
+
     if (action === "listDirectMessages") {
       const { userId, otherUserId } = body;
       if (!userId || !otherUserId) return Response.json({ error: "Missing fields" }, { status: 400 });

@@ -128,7 +128,8 @@ export default function StationChat() {
 
   const deleteMessage = async (msg) => {
     try {
-      await base44.functions.invoke("supabaseTargets", { action: "deleteDirectMessage", messageId: msg.id, userId: currentUser.id });
+      const action = activeChat?.type === "general" ? "deleteChatMessage" : "deleteDirectMessage";
+      await base44.functions.invoke("supabaseTargets", { action, messageId: msg.id, userId: currentUser.id });
       fetchMessages();
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to delete message");
@@ -238,7 +239,7 @@ export default function StationChat() {
                             msg={m}
                             isMine={m.user_id === currentUser.id}
                             lang={lang}
-                            onDelete={activeChat.type === "dm" ? deleteMessage : undefined}
+                            onDelete={deleteMessage}
                           />
                         ))
                       )}
