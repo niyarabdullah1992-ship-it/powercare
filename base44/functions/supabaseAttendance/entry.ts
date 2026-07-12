@@ -225,6 +225,17 @@ Deno.serve(async (req) => {
       return Response.json({ rows: rows || [] });
     }
 
+    // ---- Flexible date-range report (used by the monthly/3mo/6mo/yearly/custom report filters) ----
+
+    if (action === "listRange") {
+      const { employeeId, startDate, endDate } = body;
+      if (!employeeId || !startDate || !endDate) return Response.json({ error: "Missing fields" }, { status: 400 });
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=gte.${startDate}&date=lte.${endDate}&order=date.asc`, { headers });
+      const rows = await res.json();
+      if (!res.ok) return Response.json({ rows: [] });
+      return Response.json({ rows: rows || [] });
+    }
+
     // ---- Manager analytics: attendance rate, late frequency, employee comparison ----
 
     if (action === "getAnalytics") {

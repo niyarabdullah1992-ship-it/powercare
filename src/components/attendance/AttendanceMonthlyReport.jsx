@@ -1,21 +1,55 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import moment from "moment";
 import { base44 } from "@/api/base44Client";
+import { exportCSV } from "@/lib/exportReport";
+import { FileSpreadsheet } from "lucide-react";
 
-// Monthly per-employee attendance report with present/late/absent/hours totals.
+const RANGES = [
+  { val: "monthly", amount: 1, unit: "months" },
+  { val: "3months", amount: 3, unit: "months" },
+  { val: "6months", amount: 6, unit: "months" },
+  { val: "yearly", amount: 1, unit: "years" },
+  { val: "custom" },
+];
+
+// Per-employee attendance report with present/late/absent/hours totals, a flexible
+// date-range filter (monthly / 3mo / 6mo / yearly / custom), and Excel export.
 export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, t }) {
   const [employeeId, setEmployeeId] = useState(defaultEmployeeId || employees[0]?.id || "");
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [range, setRange] = useState("monthly");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const rangeLabel = (val) => ({
+    monthly: t("rangeMonthly"),
+    "3months": t("range3Months"),
+    "6months": t("preset6Months"),
+    yearly: t("rangeYearly"),
+    custom: t("rangeCustom"),
+  }[val] || val);
+
+  const dateWindow = useMemo(() => {
+    let start, end = moment();
+    if (range === "custom") {
+      start = customStart ? moment(customStart) : moment().subtract(1, "months");
+      end = customEnd ? moment(customEnd) : moment();
+    } else {
+      const cfg = RANGES.find((r) => r.val === range);
+      start = moment().subtract(cfg.amount, cfg.unit);
+    }
+    return { startDate: start.format("YYYY-MM-DD"), endDate: end.format("YYYY-MM-DD") };
+  }, [range, customStart, customEnd]);
+
   useEffect(() => {
-    if (!employeeId || !month) return;
+    if (!employeeId) return;
     setLoading(true);
-    base44.functions.invoke("supabaseAttendance", { action: "listMonthly", employeeId, month })
+    base44.functions.invoke("supabaseAttendance", { action: "listRange", employeeId, ...dateWindow })
       .then((res) => setRows(res?.data?.rows || []))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
-  }, [employeeId, month]);
+  }, [employeeId, dateWindow.startDate, dateWindow.endDate]);
 
   const totals = rows.reduce(
     (acc, r) => {
@@ -28,14 +62,52 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
     { present: 0, late: 0, absent: 0, hours: 0 }
   );
 
+  const statusLabel = (r) => t(`attendanceStatus${r.status.charAt(0).toUpperCase()}${r.status.slice(1).replace(/_([a-z])/, (m, c) => c.toUpperCase())}`);
+
+  const exportExcel = () => {
+    const employeeName = employees.find((e) => e.id === employeeId)?.name || "";
+    const headers = [t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("lateMinutesLabel")];
+    const dataRows = rows.map((r) => [
+      r.date, statusLabel(r) + (r.excused ? ` (${t("excused")})` : ""),
+      r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—",
+      r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : "—",
+      r.work_hours ?? "—", r.status === "late" ? (r.late_minutes ?? "—") : "—",
+    ]);
+    exportCSV(`attendance-${employeeName}-${dateWindow.startDate}_${dateWindow.endDate}.csv`, headers, dataRows);
+  };
+
   return (
     <div className="p-5 rounded-xl border border-border bg-card space-y-4">
       <h3 className="font-heading text-lg font-semibold">{t("monthlyAttendanceReport")}</h3>
-      <div className="flex flex-wrap gap-3">
+
+      <div className="flex flex-wrap gap-3 items-center">
         <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body bg-card">
           {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
         </select>
-        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body" />
+        {rows.length > 0 && (
+          <button onClick={exportExcel} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+            <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        {RANGES.map((r) => (
+          <button
+            key={r.val}
+            onClick={() => setRange(r.val)}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${range === r.val ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {rangeLabel(r.val)}
+          </button>
+        ))}
+        {range === "custom" && (
+          <div className="flex items-center gap-2">
+            <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="px-2.5 py-1.5 rounded-md border border-input text-xs font-body" />
+            <span className="text-muted-foreground text-xs">—</span>
+            <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="px-2.5 py-1.5 rounded-md border border-input text-xs font-body" />
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -79,7 +151,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
                 <tr key={r.id} className="border-b border-border/60">
                   <td className="py-2 pe-3">{r.date}</td>
                   <td className="py-2 pe-3 text-muted-foreground">
-                    {t(`attendanceStatus${r.status.charAt(0).toUpperCase()}${r.status.slice(1).replace(/_([a-z])/, (m, c) => c.toUpperCase())}`)}
+                    {statusLabel(r)}
                     {r.excused && <span className="ms-1.5 text-emerald-700">({t("excused")})</span>}
                   </td>
                   <td className="py-2 pe-3 text-muted-foreground">{r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—"}</td>
