@@ -3,13 +3,14 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { buildAssistantContext } from "@/lib/assistantContext";
+import { executeAssistantAction } from "@/lib/assistantActions";
 import AssistantMessage from "@/components/assistant/AssistantMessage";
 import SuggestedQuestions from "@/components/assistant/SuggestedQuestions";
 import { Sparkles, Send, Loader2 } from "lucide-react";
 
 export default function Assistant() {
   const { t } = useI18n();
-  const { data, currentUser } = useAuth();
+  const { data, currentUser, company } = useAuth();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,14 +32,20 @@ export default function Assistant() {
     try {
       const context = buildAssistantContext(data, currentUser);
       const history = nextMessages.slice(-8).map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`).join("\n");
-      const answer = await base44.integrations.Core.InvokeLLM({
+      const res = await base44.integrations.Core.InvokeLLM({
         prompt: `You are PowerCare's smart operations assistant for power/water station management.
-You answer questions from "${currentUser.name}" (role: ${currentUser.role}) about their company's stations, employees, tasks, daily reports and safety, and you can summarize reports and highlight performance issues.
+You answer questions from "${currentUser.name}" (role: ${currentUser.role}) about their company's stations, employees, tasks, daily reports and safety — and you can EXECUTE real actions.
+
+AVAILABLE ACTIONS (include them in "actions" when the user asks you to do something):
+- {"type":"export_data","dataset":"employees"|"tasks"|"reports"|"stations"|"safety"} — downloads the data as an Excel-compatible file. If the user asks for Excel/export of data, USE THIS.
+- {"type":"create_task","title":"...","description":"...","station":"<station name>","assignee":"<employee name>","dailyTarget":1} — creates a new task.
+- {"type":"update_task_status","taskTitle":"<existing task title>","newStatus":"pending"|"in_progress"|"completed"|"stopped"} — changes a task's status.
 
 Rules:
+- When the user asks you to DO something covered by an action, include it in "actions" and confirm briefly in "answer". Never say you can't export or execute — you can.
 - Answer ONLY based on the company data below. If the data doesn't contain the answer, say so briefly.
 - ALWAYS answer in the same language as the user's question (Arabic questions get Arabic answers).
-- Be concise and practical. Use short bullet points, bold key numbers/names. Use markdown.
+- Be concise and practical. Use short bullet points, bold key numbers/names. Use markdown in "answer".
 - When asked for a summary, group by station and call out problems (stopped tasks, pending reports, red safety levels, low performance).
 
 COMPANY DATA (JSON):
@@ -48,8 +55,37 @@ CONVERSATION SO FAR:
 ${history}
 
 Answer the last user question.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            answer: { type: "string" },
+            actions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  type: { type: "string" },
+                  dataset: { type: "string" },
+                  title: { type: "string" },
+                  description: { type: "string" },
+                  station: { type: "string" },
+                  assignee: { type: "string" },
+                  dailyTarget: { type: "number" },
+                  taskTitle: { type: "string" },
+                  newStatus: { type: "string" },
+                },
+              },
+            },
+          },
+          required: ["answer"],
+        },
       });
-      setMessages((prev) => [...prev, { role: "assistant", text: typeof answer === "string" ? answer : JSON.stringify(answer) }]);
+      let text = res?.answer || "";
+      for (const action of res?.actions || []) {
+        const result = executeAssistantAction(action, { data, company, currentUser, t });
+        text += `\n\n${result.ok ? "✅" : "⚠️"} ${result.message}`;
+      }
+      setMessages((prev) => [...prev, { role: "assistant", text }]);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", text: t("aiError") }]);
     }
