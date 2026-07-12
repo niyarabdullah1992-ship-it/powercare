@@ -39,8 +39,11 @@ export default function QuickCheckInCard({ currentUser, company }) {
         ]);
         setSettings(setRes?.data?.settings || null);
         setAttendance(attRes?.data?.attendance || null);
-        if (setRes?.data?.settings?.gps_enabled) locate();
-      } catch { /* best-effort */ }
+        if (setRes?.data?.settings?.gps_enabled !== false) locate();
+      } catch {
+        // settings unavailable — GPS is on by default, still ask for the location
+        locate();
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id, company?.id]);
@@ -63,11 +66,13 @@ export default function QuickCheckInCard({ currentUser, company }) {
     setError("");
     setLoading(true);
     try {
+      // GPS is on by default platform-wide — always request the location before
+      // checking in, even if the settings call failed, and block without it.
       let c = coords;
-      if (settings?.gps_enabled && !c) {
+      if ((!settings || settings.gps_enabled) && !c) {
         c = await getAccuratePosition();
         if (c) { setCoords(c); setLocState("ready"); }
-        if (settings.gps_required && !c) {
+        if ((!settings || settings.gps_required) && !c) {
           setError(t("locationDenied"));
           setLoading(false);
           return;
@@ -156,7 +161,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
           )}
 
           {/* Live GPS indicator */}
-          {settings?.gps_enabled && !checkedOut && (
+          {(!settings || settings.gps_enabled) && !checkedOut && (
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
               {locState === "locating" && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-xs font-body text-muted-foreground">

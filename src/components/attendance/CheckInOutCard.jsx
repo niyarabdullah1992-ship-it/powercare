@@ -46,10 +46,12 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
     setError("");
     setLoading(true);
     try {
+      // GPS is on by default platform-wide — always request the location, even if
+      // the settings call hasn't resolved yet, and block check-in without it.
       let coords = null;
-      if (settings?.gps_enabled) {
+      if (!settings || settings.gps_enabled) {
         coords = await getAccuratePosition();
-        if (settings.gps_required && !coords) {
+        if ((!settings || settings.gps_required) && !coords) {
           setError(t("locationDenied"));
           setLoading(false);
           return;
@@ -153,7 +155,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         )}
       </div>
 
-      {settings?.gps_enabled && (
+      {(!settings || settings.gps_enabled) && (
         <p className="text-[11px] text-muted-foreground font-body flex items-center gap-1"><MapPin className="w-3 h-3" /> {t("gpsNote")}</p>
       )}
     </div>
