@@ -2,10 +2,11 @@ import React, { useState, useRef } from "react";
 import { Send, Upload, Loader2, FileText, CheckCircle2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { signPdfFile, imageBlobToPdf } from "@/lib/signPdf";
+import { detectSignatureSpot } from "@/lib/detectSignatureSpot";
 
 // Merges the signature onto image documents (bottom-right corner with name & date)
 // and returns the signed PNG blob; PDFs are stamped directly via signPdfFile.
-async function signImageFile(docUrl, sigUrl, signerName, sigId) {
+async function signImageFile(docUrl, sigUrl, signerName, sigId, spot) {
   const load = (src) => new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -21,14 +22,21 @@ async function signImageFile(docUrl, sigUrl, signerName, sigId) {
   ctx.drawImage(doc, 0, 0);
   const sw = Math.max(120, doc.width * 0.22);
   const sh = sw * (sig.height / sig.width);
-  ctx.drawImage(sig, doc.width - sw - 24, doc.height - sh - 48);
+  // AI-detected blank signature area (center %, from top-left) — else bottom-right.
+  const sx = spot
+    ? Math.min(Math.max((doc.width * spot.x) / 100 - sw / 2, 8), doc.width - sw - 8)
+    : doc.width - sw - 24;
+  const sy = spot
+    ? Math.min(Math.max((doc.height * spot.y) / 100 - sh / 2, 8), doc.height - sh - 40)
+    : doc.height - sh - 48;
+  ctx.drawImage(sig, sx, sy, sw, sh);
   ctx.fillStyle = "#1e293b";
   ctx.font = `${Math.max(12, doc.width * 0.018)}px sans-serif`;
   ctx.textAlign = "right";
-  ctx.fillText(`${signerName} — ${new Date().toLocaleDateString()}`, doc.width - 24, doc.height - 20);
+  ctx.fillText(`${signerName} — ${new Date().toLocaleDateString()}`, sx + sw, sy + sh + 16);
   if (sigId) {
     ctx.font = `${Math.max(10, doc.width * 0.014)}px monospace`;
-    ctx.fillText(`ID: ${sigId}`, doc.width - 24, doc.height - 4);
+    ctx.fillText(`ID: ${sigId}`, sx + sw, sy + sh + 32);
   }
   return await new Promise((r) => canvas.toBlob(r, "image/png"));
 }
@@ -74,12 +82,14 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
       let signedUrl = doc.url;
       if (signatureUrl) {
         try {
+          // AI scans the document for the blank signature field/frame first.
+          const spot = (doc.isPdf || doc.isImage) ? await detectSignatureSpot(doc.url) : null;
           if (doc.isPdf) {
-            // Stamp the signature directly onto the last page of the PDF itself.
-            signedUrl = await signPdfFile(doc.url, signatureUrl, currentUser.name, signatureId);
+            // Stamp the signature directly onto the detected spot (or last page).
+            signedUrl = await signPdfFile(doc.url, signatureUrl, currentUser.name, signatureId, spot);
           } else if (doc.isImage) {
             // Sign the image, then wrap it into a PDF so the sent file is a PDF.
-            const signedBlob = await signImageFile(doc.url, signatureUrl, currentUser.name, signatureId);
+            const signedBlob = await signImageFile(doc.url, signatureUrl, currentUser.name, signatureId, spot);
             signedUrl = await imageBlobToPdf(signedBlob);
           }
         } catch { /* fall back to original */ }
