@@ -6,7 +6,12 @@ const KEY = "powercare_theme";
 // Dark-mode switch — applies the .dark class while the app layout is mounted,
 // and removes it on unmount so the public landing pages always stay light.
 export default function ThemeToggle() {
-  const [dark, setDark] = useState(() => localStorage.getItem(KEY) === "dark");
+  const [dark, setDark] = useState(() => {
+    // Saved preference wins; on first launch fall back to the Android/OS system theme.
+    const saved = localStorage.getItem(KEY);
+    if (saved) return saved === "dark";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
