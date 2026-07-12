@@ -100,8 +100,6 @@ export default function Layout({ children }) {
     { to: "/app/chat", icon: MessageSquare, label: t("chat") },
     { to: "/app/files", icon: FolderOpen, label: t("files") },
     { to: "/app/assistant", icon: Sparkles, label: t("aiAssistant") },
-    { to: "/app/calendar", icon: CalendarDays, label: lang === "ar" ? "التقويم" : "Calendar" },
-
     { to: "/app/complaints", icon: Megaphone, label: t("allComplaints") },
     { to: "/app/employees", icon: Users, label: t("employees") },
     { to: "/app/stations", icon: Radio, label: t("stations") },

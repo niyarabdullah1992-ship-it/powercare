@@ -35,7 +35,6 @@ import DailyReport from './pages/DailyReport';
 import Attendance from './pages/Attendance';
 import Files from './pages/Files';
 import Assistant from './pages/Assistant';
-import CalendarSync from './pages/CalendarSync';
 
 function RequireAuth({ children }) {
   const { session } = usePowerCareAuth();
@@ -72,7 +71,6 @@ function AppRoutes() {
       <Route path="/app/attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/files" element={<RequireAuth><Files /></RequireAuth>} />
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
-      <Route path="/app/calendar" element={<RequireAuth><CalendarSync /></RequireAuth>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
