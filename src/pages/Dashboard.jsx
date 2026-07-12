@@ -14,10 +14,11 @@ import StationManagerDashboard from "@/components/dashboard/StationManagerDashbo
 import { seedDummyData } from "@/lib/store";
 import { Sparkles } from "lucide-react";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
+import { queryClientInstance } from "@/lib/query-client";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
-  const { data, currentUser, company } = useAuth();
+  const { data, currentUser, company, refresh } = useAuth();
   const [stoppageCount, setStoppageCount] = useState(0);
   const [seeding, setSeeding] = useState(false);
 
@@ -48,6 +49,13 @@ export default function Dashboard() {
     loadStoppage();
   }, [currentUser?.id]);
 
+  // Pull-to-refresh: full state reload — local fetches, tanstack-query caches,
+  // and the AuthContext offline/online store sync.
+  const handleRefresh = async () => {
+    await Promise.allSettled([loadStoppage(), queryClientInstance.invalidateQueries()]);
+    refresh();
+  };
+
   if (!data || !currentUser) return null;
 
   const stations = visibleStations(currentUser, data);
@@ -70,7 +78,7 @@ export default function Dashboard() {
   const isEmployee = currentUser.role === "employee";
 
   if (isEmployee) return (
-    <PullToRefresh onRefresh={loadStoppage}>
+    <PullToRefresh onRefresh={handleRefresh}>
       <div className="space-y-6">
         {welcomeHero}
         <EmployeeDashboard user={currentUser} company={company} data={data} />
@@ -81,7 +89,7 @@ export default function Dashboard() {
   // Station-scoped managers get their own station-focused dashboard.
   if (currentUser.role === "station_manager" || currentUser.role === "pgm") {
     return (
-      <PullToRefresh onRefresh={loadStoppage}>
+      <PullToRefresh onRefresh={handleRefresh}>
         <div className="space-y-6">
           {welcomeHero}
           <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
@@ -136,7 +144,7 @@ export default function Dashboard() {
     .slice(0, 8);
 
   return (
-    <PullToRefresh onRefresh={loadStoppage}>
+    <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-8">
       {welcomeHero}
       <OnboardingChecklist data={data} lang={lang} />

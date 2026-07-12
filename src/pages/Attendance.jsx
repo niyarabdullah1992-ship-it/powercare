@@ -7,6 +7,8 @@ import { Loader2 } from "lucide-react";
 import CheckInOutCard from "@/components/attendance/CheckInOutCard";
 import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDashboard";
 import CalendarExportCard from "@/components/calendar/CalendarExportCard";
+import PullToRefresh from "@/components/mobile/PullToRefresh";
+import { queryClientInstance } from "@/lib/query-client";
 
 // Heavy tabs (maps/charts) load only when their tab is actually opened —
 // the page itself now appears instantly with the check-in card + team list.
@@ -23,7 +25,7 @@ function TabLoader() {
 
 export default function Attendance() {
   const { t } = useI18n();
-  const { data, currentUser, company } = useAuth();
+  const { data, currentUser, company, refresh } = useAuth();
   const [tab, setTab] = useState("team");
 
   const isManager = data && currentUser && canCreateTasks(currentUser);
@@ -31,20 +33,31 @@ export default function Attendance() {
   const canEditSettings = data && currentUser && (canCreateTasks(currentUser) || isCompanyOwner(currentUser, data));
   const employees = data && currentUser ? visibleEmployees(currentUser, data) : [];
 
-  useEffect(() => {
-    if (!isManager || !company || employees.length === 0) return;
+  const syncRoster = () => {
+    if (!isManager || !company || employees.length === 0) return Promise.resolve();
     const director = data.employees.find((e) => e.role === "director")?.id || null;
     const managerFor = (e) => {
       const station = data.stations.find((s) => s.id === e.stationId);
       return station?.managerId || director;
     };
-    base44.functions.invoke("supabaseAttendance", {
+    return base44.functions.invoke("supabaseAttendance", {
       action: "syncRoster",
       companyId: company.id,
       employees: employees.map((e) => ({ id: e.id, name: e.name, stationId: e.stationId, managerId: managerFor(e) })),
     }).catch(() => {});
+  };
+
+  useEffect(() => {
+    syncRoster();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isManager, company?.id, employees.length]);
+
+  // Pull-to-refresh: full state reload — roster sync, tanstack-query caches,
+  // and the AuthContext offline/online store sync.
+  const handleRefresh = async () => {
+    await Promise.allSettled([syncRoster(), queryClientInstance.invalidateQueries()]);
+    refresh();
+  };
 
   if (!data || !currentUser) return null;
 
@@ -58,6 +71,7 @@ export default function Attendance() {
   ];
 
   return (
+    <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-6">
       <h1 className="font-heading text-3xl font-semibold">{t("attendanceScheduling")}</h1>
 
@@ -95,5 +109,6 @@ export default function Attendance() {
         </div>
       )}
     </div>
+    </PullToRefresh>
   );
 }

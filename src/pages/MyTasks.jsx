@@ -23,6 +23,7 @@ import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import MobileSelect from "@/components/mobile/MobileSelect";
+import { queryClientInstance } from "@/lib/query-client";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -37,7 +38,7 @@ const PRIORITY_WEIGHT = { urgent: 0, high: 1, medium: 2, low: 3 };
 
 export default function MyTasks() {
   const { t, dir, lang } = useI18n();
-  const { data, currentUser, company } = useAuth();
+  const { data, currentUser, company, refresh } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
   const [assignType, setAssignType] = useState("member");
   const [formStation, setFormStation] = useState("");
@@ -722,7 +723,11 @@ export default function MyTasks() {
   );
 
   return (
-    <PullToRefresh onRefresh={async () => { await Promise.all([fetchTargets(), fetchFolders()]); }}>
+    <PullToRefresh onRefresh={async () => {
+      // Full state reload: local fetches + tanstack-query caches + AuthContext store sync.
+      await Promise.allSettled([fetchTargets(), fetchFolders(), queryClientInstance.invalidateQueries()]);
+      refresh();
+    }}>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
