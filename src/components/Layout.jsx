@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, GripVertical, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, CalendarDays,
+  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, GripVertical, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, CalendarDays, HelpCircle,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -113,6 +113,7 @@ export default function Layout({ children }) {
     { to: "/app/hr", icon: UserCog, label: t("hr") },
     { to: "/app/performance", icon: Trophy, label: t("performance") },
     { to: "/app/reports", icon: FileBarChart2, label: t("tasksReport") },
+    { to: "/app/help", icon: HelpCircle, label: lang === "ar" ? "دليل الاستخدام" : "User Guide" },
   ];
 
   // Role-based visibility: each user only sees the sections their role needs.

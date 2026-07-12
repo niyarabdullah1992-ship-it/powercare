@@ -40,6 +40,7 @@ const Files = lazy(() => import('./pages/Files'));
 const FileSigning = lazy(() => import('./pages/FileSigning'));
 const Assistant = lazy(() => import('./pages/Assistant'));
 const About = lazy(() => import('./pages/About'));
+const Help = lazy(() => import('./pages/Help'));
 
 // After the first page is interactive, quietly download the most-used pages in
 // the background so navigating to them later is instant.
@@ -103,6 +104,7 @@ function AppRoutes() {
       <Route path="/app/files" element={<RequireAuth><Files /></RequireAuth>} />
       <Route path="/app/signing" element={<RequireAuth><FileSigning /></RequireAuth>} />
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
+      <Route path="/app/help" element={<RequireAuth><Help /></RequireAuth>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </Suspense>
