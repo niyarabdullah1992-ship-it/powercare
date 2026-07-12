@@ -9,6 +9,7 @@ import { formatDateTime } from "@/lib/dateFormat";
 import { Megaphone, Send, Building2, CheckCircle2, ChevronRight, ArrowLeft, Check, X as XIcon, ArrowUpCircle } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
+import MobileSelect from "@/components/mobile/MobileSelect";
 
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
@@ -222,15 +223,23 @@ export default function PublicComplaints() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-muted-foreground font-body mb-1">{t("type")}</label>
-                <select value={type} onChange={(e) => setType(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
-                  {TYPES.map((ty) => <option key={ty} value={ty}>{t(ty)}</option>)}
-                </select>
+                <MobileSelect
+                  value={type}
+                  onChange={setType}
+                  placeholder={t("type")}
+                  className="w-full"
+                  options={TYPES.map((ty) => ({ value: ty, label: t(ty) }))}
+                />
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground font-body mb-1">{t("priority")}</label>
-                <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
-                  {PRIORITIES.map((p) => <option key={p} value={p}>{t(p)}</option>)}
-                </select>
+                <MobileSelect
+                  value={priority}
+                  onChange={setPriority}
+                  placeholder={t("priority")}
+                  className="w-full"
+                  options={PRIORITIES.map((p) => ({ value: p, label: t(p) }))}
+                />
               </div>
             </div>
             {currentUser.stationId && (
