@@ -1,8 +1,9 @@
 import React, { useState, useRef } from "react";
-import { Send, Upload, Loader2, FileText, CheckCircle2 } from "lucide-react";
+import { Send, Upload, Loader2, FileText, CheckCircle2, MousePointerClick } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { signPdfFile, imageBlobToPdf } from "@/lib/signPdf";
 import { detectSignatureSpot } from "@/lib/detectSignatureSpot";
+import SignaturePlacementModal from "@/components/files/SignaturePlacementModal";
 
 // Merges the signature onto image documents (bottom-right corner with name & date)
 // and returns the signed PNG blob; PDFs are stamped directly via signPdfFile.
@@ -53,6 +54,8 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const [placing, setPlacing] = useState(false); // DocuSign-style placement modal
+  const [manualSpot, setManualSpot] = useState(null); // { page, x, y } chosen by the user
   const fileRef = useRef(null);
 
   const handleUpload = async (e) => {
@@ -60,6 +63,7 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
     if (!file) return;
     setUploading(true);
     setSent(false);
+    setManualSpot(null);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       setDoc({
@@ -82,8 +86,9 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
       let signedUrl = doc.url;
       if (signatureUrl) {
         try {
-          // AI scans the document for the blank signature field/frame first.
-          const spot = (doc.isPdf || doc.isImage) ? await detectSignatureSpot(doc.url) : null;
+          // The user's manually chosen spot wins; otherwise AI scans the
+          // document for the blank signature field/frame.
+          const spot = manualSpot || ((doc.isPdf || doc.isImage) ? await detectSignatureSpot(doc.url) : null);
           if (doc.isPdf) {
             // Stamp the signature directly onto the detected spot (or last page).
             signedUrl = await signPdfFile(doc.url, signatureUrl, currentUser.name, signatureId, spot);
@@ -111,6 +116,7 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
       await base44.integrations.Core.SendEmail({ from_name: companyName || "PowerCare", to: to.trim(), subject: subject.trim(), body });
       setSent(true);
       setDoc(null);
+      setManualSpot(null);
       setTo(""); setSubject(""); setMessage("");
     } catch {
       setError(ar ? "تعذّر الإرسال — تحقق من البريد وحاول مجددًا." : "Sending failed — check the email and try again.");
@@ -150,6 +156,29 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
           </span>
         )}
       </div>
+      {/* DocuSign-style: pick exactly where the signature goes */}
+      {doc && (doc.isPdf || doc.isImage) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={() => setPlacing(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-accent/60 text-accent text-xs font-body hover:bg-accent/10">
+            <MousePointerClick className="w-3.5 h-3.5" />
+            {manualSpot ? (ar ? "تغيير مكان التوقيع" : "Change signature spot") : ar ? "تحديد مكان التوقيع يدويًا" : "Pick signature spot manually"}
+          </button>
+          <span className="text-[11px] text-muted-foreground font-body">
+            {manualSpot
+              ? (ar ? `تم التحديد — صفحة ${manualSpot.page}` : `Spot set — page ${manualSpot.page}`)
+              : ar ? "أو اتركه ليحدده الذكاء الاصطناعي تلقائيًا" : "or leave it for AI to detect automatically"}
+          </span>
+        </div>
+      )}
+      {placing && doc && (
+        <SignaturePlacementModal
+          doc={doc}
+          signatureUrl={signatureUrl}
+          ar={ar}
+          onConfirm={(spot) => { setManualSpot(spot); setPlacing(false); }}
+          onClose={() => setPlacing(false)}
+        />
+      )}
       {/* Email fields */}
       <input
         type="email" dir="ltr" value={to} onChange={(e) => setTo(e.target.value)}
