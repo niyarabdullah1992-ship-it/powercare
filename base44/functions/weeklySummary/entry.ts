@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
             subject: `PowerCare — الملخص الأسبوعي لشركة ${acc.name || ''}`.trim(),
             body: text,
           });
-          results.push({ companyId, sent: true, via: 'platform' });
+          results.push({ companyId, sent: true, via: 'platform', gmailError: errText.slice(0, 300) });
         } else {
           results.push({ companyId, sent: true, via: 'gmail' });
         }
