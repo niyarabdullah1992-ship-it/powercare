@@ -162,6 +162,22 @@ body { -webkit-tap-highlight-color: transparent; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Native WebView polish: hide all browser scrollbars on mobile viewports */
+@media (max-width: 767px) {
+  ::-webkit-scrollbar,
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-thumb {
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
+  }
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+}
+
 /* Custom selection */
 ::selection {
   background: hsl(var(--accent));

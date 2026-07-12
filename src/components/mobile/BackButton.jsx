@@ -47,7 +47,7 @@ export default function BackButton() {
     <button
       onClick={goBack}
       aria-label="back"
-      className="p-2 -ms-1 rounded-md hover:bg-muted shrink-0 no-select"
+      className="flex items-center justify-center min-w-[44px] min-h-[44px] -ms-2 rounded-md hover:bg-muted shrink-0 no-select"
     >
       <ArrowLeft className={`w-5 h-5 ${dir === "rtl" ? "rotate-180" : ""}`} strokeWidth={1.75} />
     </button>

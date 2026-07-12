@@ -41,10 +41,12 @@ export default function BottomTabBar() {
 
   const openTab = (tab) => {
     if (matchesTab(tab, location.pathname)) {
-      // Active tab re-tap: reset the module back to its root.
+      // Active tab re-tap: reset the module back to its root. Uses replace so
+      // the hardware back button and the custom back arrow see the same
+      // history stack (no phantom entry for the screen that was just reset).
       sessionStorage.removeItem(memKey(tab.to));
       window.dispatchEvent(new CustomEvent("powercare:tab-reset", { detail: tab.to }));
-      if (location.pathname !== tab.to) navigate(tab.to);
+      if (location.pathname !== tab.to) navigate(tab.to, { replace: true });
     } else {
       navigate(sessionStorage.getItem(memKey(tab.to)) || tab.to);
     }
@@ -59,7 +61,7 @@ export default function BottomTabBar() {
             <button
               key={tab.to}
               onClick={() => openTab(tab)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-body transition-colors ${
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[48px] min-w-[44px] text-[10px] font-body transition-colors ${
                 active ? "text-accent" : "text-muted-foreground"
               }`}
             >

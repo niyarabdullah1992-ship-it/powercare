@@ -229,7 +229,7 @@ export default function Layout({ children }) {
               <div className="relative" ref={langRef}>
                 <button
                   onClick={() => setLangOpen((o) => !o)}
-                  className="flex items-center gap-1.5 px-2.5 py-2 rounded-md hover:bg-muted text-sm font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex items-center justify-center gap-1.5 px-2.5 py-2 max-md:min-w-[44px] max-md:min-h-[44px] rounded-md hover:bg-muted text-sm font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label={t("language")}
                 >
                   <Globe className="w-4 h-4" strokeWidth={1.75} />
@@ -257,7 +257,7 @@ export default function Layout({ children }) {
               <div className="relative" ref={notifRef}>
                 <button
                   onClick={() => setNotifOpen((o) => !o)}
-                  className="relative p-2 rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="relative p-2 max-md:min-w-[44px] max-md:min-h-[44px] max-md:flex max-md:items-center max-md:justify-center rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label={t("notifications")}
                 >
                   <Bell className="w-5 h-5" strokeWidth={1.75} />
@@ -308,7 +308,7 @@ export default function Layout({ children }) {
               <div className="relative" ref={userRef}>
                 <button
                   onClick={() => setUserOpen((o) => !o)}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex items-center justify-center gap-2 px-2 py-1.5 max-md:min-w-[44px] max-md:min-h-[44px] rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-medium overflow-hidden">
                     {currentUser.profile?.avatarUrl ? (
