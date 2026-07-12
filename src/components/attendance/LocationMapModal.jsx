@@ -1,5 +1,6 @@
 import React from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, Marker, Popup } from "react-leaflet";
+import GoogleTiles from "@/components/maps/GoogleTiles";
 import L from "leaflet";
 import { X } from "lucide-react";
 import "leaflet/dist/leaflet.css";
@@ -28,9 +29,9 @@ export default function LocationMapModal({ row, t, onClose }) {
         <div className="px-4 py-2 text-xs font-body text-muted-foreground border-b border-border">
           {t("distanceMeters")}: {row.distance_meters ?? "—"}m
         </div>
-        <div className="h-72">
-          <MapContainer center={center} zoom={15} style={{ height: "100%", width: "100%" }}>
-            <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <div className="h-72 relative">
+          <MapContainer center={center} zoom={16} style={{ height: "100%", width: "100%" }}>
+            <GoogleTiles />
             {empPos && <Marker position={empPos} icon={markerIcon}><Popup>{t("employeeLocation")}</Popup></Marker>}
             {stationPos && <Marker position={stationPos} icon={markerIcon}><Popup>{t("stationLocation")}</Popup></Marker>}
           </MapContainer>

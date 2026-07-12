@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { MapContainer, TileLayer, CircleMarker, Circle, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, CircleMarker, Circle, Marker, Popup, useMap } from "react-leaflet";
+import GoogleTiles from "@/components/maps/GoogleTiles";
 import L from "leaflet";
 import { Loader2, MapPin } from "lucide-react";
 import "leaflet/dist/leaflet.css";
@@ -86,9 +87,9 @@ export default function AttendanceMapDashboard({ employees, t }) {
           {t("noMapData")}
         </div>
       ) : (
-        <div className="h-[480px] rounded-xl border border-border overflow-hidden">
+        <div className="h-[480px] rounded-xl border border-border overflow-hidden relative">
           <MapContainer center={points[0] || [24.7, 46.7]} zoom={12} style={{ height: "100%", width: "100%" }}>
-            <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <GoogleTiles />
             <FitBounds points={points} />
             {stations.map((s) => (
               <React.Fragment key={s.id}>

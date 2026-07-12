@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import { getAccuratePosition } from "@/lib/geo";
+import GoogleTiles from "@/components/maps/GoogleTiles";
 import { X, MapPin, LocateFixed, Loader2, Check } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
@@ -81,9 +82,9 @@ export default function StationLocationEditor({ t, station, onSave, onCancel }) 
           </button>
         </div>
 
-        <div className="h-72">
-          <MapContainer center={pos || DEFAULT_CENTER} zoom={pos ? 15 : 6} style={{ height: "100%", width: "100%" }}>
-            <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <div className="h-72 relative">
+          <MapContainer center={pos || DEFAULT_CENTER} zoom={pos ? 17 : 6} style={{ height: "100%", width: "100%" }}>
+            <GoogleTiles />
             <ClickToPlace onPick={setPos} />
             <Recenter pos={pos} />
             {pos && <Marker position={pos} icon={markerIcon} />}
