@@ -280,7 +280,7 @@ export default function Reports() {
                 <p className="text-sm text-muted-foreground font-body text-center py-6">{t("noTasksInRange")}</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm font-body">
+                  <table className="w-full text-sm font-body mobile-cards">
                     <ReportTableHead columns={[t("title"), t("station"), t("assignTo"), t("priority"), t("status"), t("taskCompletion"), t("stoppageIssues"), t("startDate"), t("endDate")]} />
                     <tbody>
                       {filteredTasks.map((tg) => {
@@ -288,25 +288,25 @@ export default function Reports() {
                         const issues = issueCount(tg);
                         return (
                           <tr key={tg.id} className="border-b border-border/60 last:border-0">
-                            <td className="py-2.5 px-2 font-medium max-w-[180px] truncate">{tg.title || t("setTarget")}</td>
-                            <td className="py-2.5 px-2 text-muted-foreground">{stationLabel(tg)}</td>
-                            <td className="py-2.5 px-2 text-muted-foreground">{assignmentLabel(tg)}</td>
-                            <td className="py-2.5 px-2">
+                            <td data-label={t("title")} className="py-2.5 px-2 font-medium max-w-[180px] truncate">{tg.title || t("setTarget")}</td>
+                            <td data-label={t("station")} className="py-2.5 px-2 text-muted-foreground">{stationLabel(tg)}</td>
+                            <td data-label={t("assignTo")} className="py-2.5 px-2 text-muted-foreground">{assignmentLabel(tg)}</td>
+                            <td data-label={t("priority")} className="py-2.5 px-2">
                               <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] border ${priorityBadge(tg.priority)}`}>{t(tg.priority)}</span>
                             </td>
-                            <td className="py-2.5 px-2">
+                            <td data-label={t("status")} className="py-2.5 px-2">
                               <TaskStatusBadge status={tg.status} t={t} />
                             </td>
-                            <td className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{tg.completed_tasks}/{tg.task_target} ({pct}%)</td>
-                            <td className="py-2.5 px-2">
+                            <td data-label={t("taskCompletion")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{tg.completed_tasks}/{tg.task_target} ({pct}%)</td>
+                            <td data-label={t("stoppageIssues")} className="py-2.5 px-2">
                               {issues > 0 ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-red-100 text-red-700 border border-red-300">
                                   <AlertTriangle className="w-2.5 h-2.5" /> {issues}
                                 </span>
                               ) : "—"}
                             </td>
-                            <td className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{formatDate(tg.start_date, lang)}</td>
-                            <td className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{formatDate(tg.end_date, lang)}</td>
+                            <td data-label={t("startDate")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{formatDate(tg.start_date, lang)}</td>
+                            <td data-label={t("endDate")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{formatDate(tg.end_date, lang)}</td>
                           </tr>
                         );
                       })}
@@ -326,18 +326,18 @@ export default function Reports() {
             <p className="text-sm text-muted-foreground font-body text-center py-6">{t("noLeaveRequests")}</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm font-body">
+              <table className="w-full text-sm font-body mobile-cards">
                 <ReportTableHead columns={[t("employeeName"), t("station"), t("leaveType"), t("startDate"), t("endDate"), t("days"), t("status")]} />
                 <tbody>
                   {filteredLeaves.map((r) => (
                     <tr key={r.id} className="border-b border-border/60 last:border-0">
-                      <td className="py-2.5 px-2 font-medium">{employeeName(r.employeeId)}</td>
-                      <td className="py-2.5 px-2 text-muted-foreground">{empStation(r.employeeId) ? stationName(empStation(r.employeeId)) : t("hq")}</td>
-                      <td className="py-2.5 px-2 text-muted-foreground">{t(r.type)}</td>
-                      <td className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{formatDate(r.startDate, lang)}</td>
-                      <td className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{formatDate(r.endDate, lang)}</td>
-                      <td className="py-2.5 px-2 text-muted-foreground">{r.days}</td>
-                      <td className="py-2.5 px-2">
+                      <td data-label={t("employeeName")} className="py-2.5 px-2 font-medium">{employeeName(r.employeeId)}</td>
+                      <td data-label={t("station")} className="py-2.5 px-2 text-muted-foreground">{empStation(r.employeeId) ? stationName(empStation(r.employeeId)) : t("hq")}</td>
+                      <td data-label={t("leaveType")} className="py-2.5 px-2 text-muted-foreground">{t(r.type)}</td>
+                      <td data-label={t("startDate")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{formatDate(r.startDate, lang)}</td>
+                      <td data-label={t("endDate")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{formatDate(r.endDate, lang)}</td>
+                      <td data-label={t("days")} className="py-2.5 px-2 text-muted-foreground">{r.days}</td>
+                      <td data-label={t("status")} className="py-2.5 px-2">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] border ${leaveStatusBadge(r.status)}`}>{t(r.status)}</span>
                       </td>
                     </tr>

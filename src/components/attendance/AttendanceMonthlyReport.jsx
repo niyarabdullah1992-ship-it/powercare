@@ -139,7 +139,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
         <p className="text-sm text-muted-foreground font-body">{t("noAttendanceRecords")}</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm font-body">
+          <table className="w-full text-sm font-body mobile-cards">
             <thead>
               <tr className="text-start text-xs text-muted-foreground border-b border-border">
                 <th className="py-2 pe-3 text-start">{t("date")}</th>
@@ -153,15 +153,15 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-b border-border/60">
-                  <td className="py-2 pe-3">{r.date}</td>
-                  <td className="py-2 pe-3 text-muted-foreground">
+                  <td data-label={t("date")} className="py-2 pe-3">{r.date}</td>
+                  <td data-label={t("status")} className="py-2 pe-3 text-muted-foreground">
                     {statusLabel(r)}
                     {r.excused && <span className="ms-1.5 text-emerald-700">({t("excused")})</span>}
                   </td>
-                  <td className="py-2 pe-3 text-muted-foreground">{r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—"}</td>
-                  <td className="py-2 pe-3 text-muted-foreground">{r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : "—"}</td>
-                  <td className="py-2 pe-3 text-muted-foreground">{r.work_hours ?? "—"}</td>
-                  <td className="py-2 pe-3 text-muted-foreground">{r.status === "late" ? (r.late_minutes ?? "—") : "—"}</td>
+                  <td data-label={t("checkIn")} className="py-2 pe-3 text-muted-foreground">{r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—"}</td>
+                  <td data-label={t("checkOut")} className="py-2 pe-3 text-muted-foreground">{r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : "—"}</td>
+                  <td data-label={t("workHoursLabel")} className="py-2 pe-3 text-muted-foreground">{r.work_hours ?? "—"}</td>
+                  <td data-label={t("lateMinutesLabel")} className="py-2 pe-3 text-muted-foreground">{r.status === "late" ? (r.late_minutes ?? "—") : "—"}</td>
                 </tr>
               ))}
             </tbody>

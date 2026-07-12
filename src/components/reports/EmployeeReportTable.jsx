@@ -169,24 +169,24 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
         {compared.length === 0 ? (
           <p className="text-sm text-muted-foreground font-body text-center py-6">{t("noResults")}</p>
         ) : (
-          <table className="w-full text-sm font-body">
+          <table className="w-full text-sm font-body mobile-cards">
             <ReportTableHead columns={[t("employeeName"), t("station"), t("role"), t("position"), t("email"), t("contact"), t("points"), t("certificates"), t("completed"), t("overdue"), t("leaveRequests"), t("days"), t("hireDate")]} />
             <tbody>
               {compared.map((r) => (
                 <tr key={r.id} className="border-b border-border/60 last:border-0">
-                  <td className="py-2.5 px-2 font-medium whitespace-nowrap">{r.name}</td>
-                  <td className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.station}</td>
-                  <td className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.role}</td>
-                  <td className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.position}</td>
-                  <td className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.email}</td>
-                  <td className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.phone}</td>
-                  <td className="py-2.5 px-2 text-muted-foreground">{r.points}</td>
-                  <td className="py-2.5 px-2 text-muted-foreground">{r.certificates}</td>
-                  <td className="py-2.5 px-2 text-emerald-700">{r.completed}</td>
-                  <td className="py-2.5 px-2 text-red-700">{r.overdue}</td>
-                  <td className="py-2.5 px-2 text-muted-foreground">{r.leaveRequests}</td>
-                  <td className="py-2.5 px-2 text-muted-foreground">{r.approvedDays}</td>
-                  <td className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.hireDate}</td>
+                  <td data-label={t("employeeName")} className="py-2.5 px-2 font-medium whitespace-nowrap">{r.name}</td>
+                  <td data-label={t("station")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.station}</td>
+                  <td data-label={t("role")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.role}</td>
+                  <td data-label={t("position")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.position}</td>
+                  <td data-label={t("email")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.email}</td>
+                  <td data-label={t("contact")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.phone}</td>
+                  <td data-label={t("points")} className="py-2.5 px-2 text-muted-foreground">{r.points}</td>
+                  <td data-label={t("certificates")} className="py-2.5 px-2 text-muted-foreground">{r.certificates}</td>
+                  <td data-label={t("completed")} className="py-2.5 px-2 text-emerald-700">{r.completed}</td>
+                  <td data-label={t("overdue")} className="py-2.5 px-2 text-red-700">{r.overdue}</td>
+                  <td data-label={t("leaveRequests")} className="py-2.5 px-2 text-muted-foreground">{r.leaveRequests}</td>
+                  <td data-label={t("days")} className="py-2.5 px-2 text-muted-foreground">{r.approvedDays}</td>
+                  <td data-label={t("hireDate")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.hireDate}</td>
                 </tr>
               ))}
             </tbody>

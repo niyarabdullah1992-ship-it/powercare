@@ -115,7 +115,7 @@ export default function FolderTree({
       {children.length > 0 && (
         <Droppable droppableId={`folders-${key}`} type="FOLDER">
           {(provided) => (
-            <div ref={provided.innerRef} {...provided.droppableProps} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            <div ref={provided.innerRef} {...provided.droppableProps} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-2.5">
               {children.map((f, index) => (
                 <Draggable key={f.path} draggableId={`folder::${f.path}`} index={index} isDragDisabled={!canManage}>
                   {(dragProvided, dragSnapshot) => {
@@ -128,7 +128,7 @@ export default function FolderTree({
                             <div
                               ref={dropProvided.innerRef}
                               {...dropProvided.droppableProps}
-                              className={`group flex items-center gap-2.5 p-3 rounded-xl border transition-all ${dropSnapshot.isDraggingOver ? "border-accent bg-accent/10 ring-2 ring-accent/30" : "border-border bg-background hover:shadow-sm hover:border-accent/40"}`}
+                              className={`group flex items-center gap-2.5 p-4 sm:p-3 rounded-xl border transition-all ${dropSnapshot.isDraggingOver ? "border-accent bg-accent/10 ring-2 ring-accent/30" : "border-border bg-background hover:shadow-sm hover:border-accent/40"}`}
                             >
                               {canManage && (
                                 <span {...dragProvided.dragHandleProps} className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground shrink-0">

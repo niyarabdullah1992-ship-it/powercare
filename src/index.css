@@ -159,6 +159,51 @@
 html, body { overscroll-behavior-y: none; }
 body { -webkit-tap-highlight-color: transparent; }
 
+/* iOS WebView: interactive elements never trigger text-selection / callout.
+   Text content (paragraphs, table data, inputs) stays fully selectable. */
+button, [role="button"], a, label, select, summary {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Mobile stacked-card tables: below 768px, tables with .mobile-cards render each
+   row as a stand-alone card (label + value per line) — no horizontal scrolling. */
+@media (max-width: 767px) {
+  table.mobile-cards { display: block; width: 100%; }
+  table.mobile-cards thead { display: none; }
+  table.mobile-cards tbody { display: block; }
+  table.mobile-cards tr {
+    display: block;
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.75rem;
+    padding: 0.875rem 1rem;
+    margin-bottom: 0.75rem;
+    background: hsl(var(--card));
+  }
+  table.mobile-cards td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.3rem 0;
+    max-width: none;
+    white-space: normal;
+    text-align: end;
+  }
+  table.mobile-cards td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    color: hsl(var(--muted-foreground));
+    flex-shrink: 0;
+    text-align: start;
+  }
+}
+
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
