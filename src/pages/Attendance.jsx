@@ -8,6 +8,7 @@ import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDas
 import AttendanceMonthlyReport from "@/components/attendance/AttendanceMonthlyReport";
 import AttendanceSettingsPanel from "@/components/attendance/AttendanceSettingsPanel";
 import AttendanceAnalytics from "@/components/attendance/AttendanceAnalytics";
+import AttendanceMapDashboard from "@/components/attendance/AttendanceMapDashboard";
 import ScheduleTab from "@/components/attendance/ScheduleTab";
 
 export default function Attendance() {
@@ -39,6 +40,7 @@ export default function Attendance() {
 
   const tabs = [
     { key: "team", label: t("teamTab") },
+    { key: "map", label: t("mapTab") },
     { key: "schedule", label: t("scheduleTab") },
     { key: "report", label: t("reportTab") },
     { key: "analytics", label: t("analyticsTab") },
@@ -66,6 +68,7 @@ export default function Attendance() {
           </div>
 
           {tab === "team" && <AttendanceDailyDashboard employees={employees} currentUser={currentUser} t={t} />}
+          {tab === "map" && <AttendanceMapDashboard employees={employees} t={t} />}
           {tab === "schedule" && <ScheduleTab />}
           {tab === "report" && <AttendanceMonthlyReport employees={employees} defaultEmployeeId={currentUser.id} t={t} />}
           {tab === "analytics" && <AttendanceAnalytics employees={employees} t={t} />}
