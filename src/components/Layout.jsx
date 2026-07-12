@@ -12,6 +12,7 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
 import PresenceDot from "@/components/employees/PresenceDot";
+import SwipeToDeleteItem from "@/components/notifications/SwipeToDeleteItem";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -266,21 +267,23 @@ export default function Layout({ children }) {
                         <p className="px-4 py-6 text-sm text-muted-foreground text-center">{t("noNotifications")}</p>
                       ) : (
                         myNotifs.slice(0, 12).map((n) => (
-                          <div key={n.id} className={`flex items-start gap-2 px-4 py-3 border-b border-border/60 ${n.read ? "opacity-60" : ""}`}>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-body">{n.text}</p>
-                              <p className="text-[10px] text-muted-foreground mt-1">
-                                {new Date(n.createdAt).toLocaleString(lang)}
-                              </p>
+                          <SwipeToDeleteItem key={n.id} onDelete={() => dismissNotification(n.id)}>
+                            <div className={`flex items-start gap-2 px-4 py-3 border-b border-border/60 ${n.read ? "opacity-60" : ""}`}>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-body">{n.text}</p>
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  {new Date(n.createdAt).toLocaleString(lang)}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => dismissNotification(n.id)}
+                                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
+                                aria-label="dismiss"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
                             </div>
-                            <button
-                              onClick={() => dismissNotification(n.id)}
-                              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
-                              aria-label="dismiss"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                          </SwipeToDeleteItem>
                         ))
                       )}
                     </div>
