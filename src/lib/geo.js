@@ -22,7 +22,36 @@ async function googleFallback() {
   return null;
 }
 
+/* ----------------------------- warm-fix cache -----------------------------
+   startGeoWarmup() runs a short background GPS watch (e.g. when the attendance
+   card appears) and caches the best fix. If a fresh, accurate fix is already
+   cached when the user taps check-in, we use it instantly — zero wait. */
+let warmFix = null;
+let warmAt = 0;
+export function startGeoWarmup(durationMs = 30000) {
+  if (typeof navigator === "undefined" || !navigator.geolocation) return;
+  let watchId = null;
+  const stop = () => { if (watchId != null) navigator.geolocation.clearWatch(watchId); };
+  watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const fix = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy ?? null };
+      if (!warmFix || (fix.accuracy != null && (warmFix.accuracy == null || fix.accuracy < warmFix.accuracy))) {
+        warmFix = fix;
+        warmAt = Date.now();
+      }
+      if (fix.accuracy != null && fix.accuracy <= GOOD_ACCURACY_M) { warmAt = Date.now(); stop(); }
+    },
+    () => stop(),
+    { enableHighAccuracy: true, maximumAge: 0 }
+  );
+  setTimeout(stop, durationMs);
+}
+
 export async function getAccuratePosition({ timeoutMs = 10000 } = {}) {
+  // Fresh, accurate warm fix already in hand → instant check-in.
+  if (warmFix && warmFix.accuracy != null && warmFix.accuracy <= GOOD_ACCURACY_M && Date.now() - warmAt < 60000) {
+    return warmFix;
+  }
   const browserFix = await getBrowserPosition({ timeoutMs });
   // Good browser fix → done, no paid call.
   if (browserFix && browserFix.accuracy != null && browserFix.accuracy <= COARSE_ACCURACY_M) return browserFix;

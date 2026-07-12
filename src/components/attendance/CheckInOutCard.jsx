@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { getTodaysShift } from "@/lib/attendance";
-import { getAccuratePosition } from "@/lib/geo";
+import { getAccuratePosition, startGeoWarmup } from "@/lib/geo";
 import { LogIn, LogOut, MapPin, Loader2, Clock } from "lucide-react";
 
 const STATUS_STYLE = {
@@ -39,11 +39,9 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
 
   useEffect(() => {
     load();
-    // Warm up the GPS chip + permission prompt as soon as the card appears,
-    // so the real fix at check-in time resolves in a second or two.
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(() => {}, () => {}, { enableHighAccuracy: true, timeout: 8000 });
-    }
+    // Warm up GPS in the background and cache the best fix — by the time the
+    // user taps check-in, the location is usually already in hand (instant).
+    startGeoWarmup();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id, company?.id]);
 
