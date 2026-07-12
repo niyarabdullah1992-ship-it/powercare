@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { base44 } from "@/api/base44Client";
 import { addCertificate, removeCertificate, setCertificateStatus } from "@/lib/store";
-import { FileText, Loader2, Plus, X, Award, Check } from "lucide-react";
+import { FileText, Loader2, Plus, X, Award, Check, Paperclip } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 const STATUS_TONE = {
@@ -62,11 +62,12 @@ export default function CertificatesTab({ employee, companyId, canEdit, canAppro
   const { t } = useI18n();
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
+  const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef(null);
   const certs = employee.certificates || [];
 
-  const upload = async (file) => {
+  const submit = async () => {
     if (!name.trim() || !file) return;
     setUploading(true);
     try {
@@ -74,6 +75,7 @@ export default function CertificatesTab({ employee, companyId, canEdit, canAppro
       addCertificate(companyId, employee.id, { name: name.trim(), category: category.trim(), url: up.file_url, fileName: file.name, uploadedBy: currentUser?.name });
       setName("");
       setCategory("");
+      setFile(null);
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -117,14 +119,14 @@ export default function CertificatesTab({ employee, companyId, canEdit, canAppro
       )}
 
       {canEdit && (
-        <div className="p-4 rounded-xl border border-border bg-card flex flex-wrap items-end gap-2">
-          <div>
+        <div className="p-4 rounded-xl border border-border bg-card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
+          <div className="flex flex-col">
             <label className="block text-xs text-muted-foreground font-body mb-1">{t("certificateName")}</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <input value={name} onChange={(e) => setName(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body h-9" />
           </div>
-          <div>
+          <div className="flex flex-col">
             <label className="block text-xs text-muted-foreground font-body mb-1">{t("category")}</label>
-            <input value={category} onChange={(e) => setCategory(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <input value={category} onChange={(e) => setCategory(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body h-9" />
             <div className="flex flex-wrap gap-1 mt-1.5">
               {[t("educationalQualification"), t("technicalQualifications"), t("safetyCertificates")].map((c) => (
                 <button
@@ -138,10 +140,29 @@ export default function CertificatesTab({ employee, companyId, canEdit, canAppro
               ))}
             </div>
           </div>
-          <input ref={inputRef} type="file" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
-          <button type="button" onClick={() => inputRef.current?.click()} disabled={!name.trim() || uploading} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-foreground text-background text-xs font-body disabled:opacity-50">
-            {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} {t("addCertificate")}
-          </button>
+          <div className="flex flex-col">
+            <label className="block text-xs text-muted-foreground font-body mb-1">{t("attachFile")}</label>
+            <input ref={inputRef} type="file" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-input text-xs font-body h-9 hover:bg-muted"
+            >
+              <Paperclip className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{file ? file.name : t("attachFile")}</span>
+            </button>
+          </div>
+          <div className="flex flex-col">
+            <label className="block text-xs text-transparent font-body mb-1 select-none hidden sm:block">.</label>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={!name.trim() || !file || uploading}
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-md bg-foreground text-background text-xs font-body disabled:opacity-50 h-9"
+            >
+              {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} {t("addCertificate")}
+            </button>
+          </div>
         </div>
       )}
     </div>
