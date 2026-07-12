@@ -358,6 +358,40 @@ export async function companyLogin(email, password) {
   setSession({ companyId: company.id, userId: director ? director.id : null });
   return company;
 }
+// Per-employee login — verifies the employee's own credentials against the cloud
+// directory, then opens a session as that employee (works from any device/browser).
+export async function employeeLogin(email, password) {
+  try {
+    const res = await base44.functions.invoke("companyDirectory", { action: "employeeLogin", email, password });
+    const result = res?.data;
+    if (!result?.employee) return null;
+    const { companyId, employeeId } = result.employee;
+    const reg = getRegistry();
+    let company = reg.companies.find((c) => c.id === companyId);
+    if (!company) {
+      company = {
+        id: companyId, name: result.company?.name || "", ownerEmail: result.company?.ownerEmail || "",
+        ownerPassword: null, plan: result.company?.plan || "Starter",
+        allowedEmailDomain: result.company?.allowedEmailDomain || "", createdAt: new Date().toISOString(),
+      };
+      reg.companies.push(company);
+      saveRegistry(reg);
+    }
+    if (!getCompanyData(companyId)) write(companyKey(companyId), emptyCompanyData(company));
+    setSession({ companyId, userId: employeeId });
+    return company;
+  } catch {
+    return null;
+  }
+}
+
+// Owner/manager sets (or resets) an employee's personal login password — stored only
+// as a salted hash in the cloud directory, never in localStorage.
+export async function setEmployeePassword(companyId, employeeId, email, password) {
+  const res = await base44.functions.invoke("companyDirectory", { action: "setEmployeePassword", companyId, employeeId, email, password });
+  return !!res?.data?.ok;
+}
+
 export function switchUser(userId) {
   const s = getSession();
   if (!s) return;

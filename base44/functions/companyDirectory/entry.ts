@@ -51,7 +51,40 @@ Deno.serve(async (req) => {
       return Response.json({ company: safe });
     }
 
+    // Per-employee login — each employee signs in with their own email + personal password.
+    if (action === 'employeeLogin') {
+      const { email, password } = body;
+      if (!email || !password) return Response.json({ error: 'Missing credentials' }, { status: 400 });
+      const creds = await base44.asServiceRole.entities.EmployeeCredential.filter({ email: String(email).toLowerCase() });
+      let match = null;
+      for (const c of creds) {
+        if (await verifyPassword(password, c.passwordHash)) { match = c; break; }
+      }
+      if (!match) return Response.json({ employee: null });
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: match.companyId });
+      const acc = accounts[0] || {};
+      return Response.json({
+        employee: { companyId: match.companyId, employeeId: match.employeeId },
+        company: { companyId: match.companyId, name: acc.name || '', plan: acc.plan || '', allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '' },
+      });
+    }
+
     if (!companyId) return Response.json({ error: 'Missing companyId' }, { status: 400 });
+
+    // Sets (or resets) an employee's personal login password — always stored hashed.
+    if (action === 'setEmployeePassword') {
+      const { employeeId, email, password } = body;
+      if (!employeeId || !email || !password) return Response.json({ error: 'Missing fields' }, { status: 400 });
+      const stored = await hashPassword(password);
+      const fields = { companyId, employeeId, email: String(email).toLowerCase(), passwordHash: stored };
+      const existing = await base44.asServiceRole.entities.EmployeeCredential.filter({ companyId, employeeId });
+      if (existing.length) {
+        await base44.asServiceRole.entities.EmployeeCredential.update(existing[0].id, fields);
+      } else {
+        await base44.asServiceRole.entities.EmployeeCredential.create(fields);
+      }
+      return Response.json({ ok: true });
+    }
 
     if (action === 'syncEmployees') {
       const { employees } = body;

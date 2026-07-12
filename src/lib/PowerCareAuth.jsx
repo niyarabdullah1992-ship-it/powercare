@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
-  getSession, companyLogin, switchUser, clearSession, getCompanyData,
+  getSession, companyLogin, employeeLogin, switchUser, clearSession, getCompanyData,
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
   hydrateBlobFromEntity, BLOB_CATEGORIES, getLastLocalWriteAt,
 } from "./store";
@@ -106,7 +106,9 @@ export function AuthProvider({ children }) {
   }, [refresh]);
 
   const login = async (email, password) => {
-    const c = await companyLogin(email, password);
+    // Try the company-owner account first, then fall back to a personal employee login.
+    let c = await companyLogin(email, password);
+    if (!c) c = await employeeLogin(email, password);
     if (c) refresh();
     return c;
   };
