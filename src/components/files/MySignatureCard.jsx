@@ -24,7 +24,7 @@ export default function MySignatureCard({ companyId, currentUser, ar }) {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const saveSignature = async (dataUrl) => {
+  const saveSignature = async (dataUrl, typedName) => {
     setSaving(true);
     try {
       const blob = await (await fetch(dataUrl)).blob();
@@ -34,6 +34,9 @@ export default function MySignatureCard({ companyId, currentUser, ar }) {
       updateEmployeeProfile(companyId, currentUser.id, {
         signatureUrl: file_url,
         signatureId: sigId,
+        // The name shown inside the verification badge — updates whenever
+        // the signature is re-saved with a new name.
+        signatureName: typedName || currentUser.name,
         signatureUpdatedAt: new Date().toISOString(),
       });
       setEditing(false);

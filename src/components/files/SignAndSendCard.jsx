@@ -16,29 +16,23 @@ async function signImageFile(docUrl, sigUrl, signerName, sigId, spot) {
     img.onerror = reject;
     img.src = src;
   });
-  const [doc, sig] = await Promise.all([load(docUrl), load(sigUrl)]);
+  const doc = await load(docUrl);
   const canvas = document.createElement("canvas");
   canvas.width = doc.width;
   canvas.height = doc.height;
   const ctx = canvas.getContext("2d");
   ctx.drawImage(doc, 0, 0);
-  const sw = Math.max(120, doc.width * 0.22);
-  const sh = sw * (sig.height / sig.width);
-  // AI-detected blank signature area (center %, from top-left) — else bottom-right.
-  const sx = spot
-    ? Math.min(Math.max((doc.width * spot.x) / 100 - sw / 2, 8), doc.width - sw - 8)
-    : doc.width - sw - 24;
-  const sy = spot
-    ? Math.min(Math.max((doc.height * spot.y) / 100 - sh / 2, 8), doc.height - sh - 40)
-    : doc.height - sh - 48;
-  ctx.drawImage(sig, sx, sy, sw, sh);
-  // Styled verification badge (fingerprint icon + encrypted ID + name & date)
-  // stamped just below the signature.
+  // Only the verification badge is stamped (fingerprint icon + encrypted ID +
+  // signer name & date) — centered on the chosen/detected spot, else bottom-right.
   const badge = makeVerificationBadgeCanvas(sigId, signerName);
-  const bw = Math.min(sw * 1.4, doc.width - 16);
+  const bw = Math.min(Math.max(220, doc.width * 0.3), doc.width - 16);
   const bh = bw * (badge.height / badge.width);
-  const bx = Math.min(Math.max(sx + sw / 2 - bw / 2, 8), doc.width - bw - 8);
-  const by = Math.min(sy + sh + 6, doc.height - bh - 8);
+  const bx = spot
+    ? Math.min(Math.max((doc.width * spot.x) / 100 - bw / 2, 8), doc.width - bw - 8)
+    : doc.width - bw - 24;
+  const by = spot
+    ? Math.min(Math.max((doc.height * spot.y) / 100 - bh / 2, 8), doc.height - bh - 8)
+    : doc.height - bh - 32;
   ctx.drawImage(badge, bx, by, bw, bh);
   return await new Promise((r) => canvas.toBlob(r, "image/png"));
 }
@@ -46,7 +40,8 @@ async function signImageFile(docUrl, sigUrl, signerName, sigId, spot) {
 // Upload a document, sign it with your saved signature, and email it to anyone.
 export default function SignAndSendCard({ currentUser, companyName, ar }) {
   const signatureUrl = currentUser?.profile?.signatureUrl || "";
-  const signatureId = currentUser?.profile?.signatureId || "";
+  // The name inside the badge rectangle — follows the saved signature name.
+  const signerName = currentUser?.profile?.signatureName || currentUser?.name || "";
   const [doc, setDoc] = useState(null); // { name, url, isImage }
   const [uploading, setUploading] = useState(false);
   const [to, setTo] = useState("");
@@ -97,10 +92,10 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
         try {
           if (doc.isPdf) {
             // Stamp the signature directly onto the detected spot (or last page).
-            signedUrl = await signPdfFile(doc.url, signatureUrl, currentUser.name, doc.sigId, spot);
+            signedUrl = await signPdfFile(doc.url, signatureUrl, signerName, doc.sigId, spot);
           } else {
             // Sign the image, then wrap it into a PDF so the sent file is a PDF.
-            const signedBlob = await signImageFile(doc.url, signatureUrl, currentUser.name, doc.sigId, spot);
+            const signedBlob = await signImageFile(doc.url, signatureUrl, signerName, doc.sigId, spot);
             signedUrl = await imageBlobToPdf(signedBlob);
           }
         } catch (err) {
@@ -186,7 +181,7 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
           doc={doc}
           signatureUrl={signatureUrl}
           sigId={doc.sigId}
-          signerName={currentUser?.name}
+          signerName={signerName}
           ar={ar}
           onConfirm={(spot) => { setManualSpot(spot); setPlacing(false); }}
           onClose={() => setPlacing(false)}

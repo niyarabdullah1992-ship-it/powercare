@@ -101,12 +101,11 @@ export default function SignaturePlacementModal({ doc, signatureUrl, sigId, sign
                 className="absolute pointer-events-none border-2 border-accent rounded-md bg-accent/10 p-1"
                 style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: "24%", transform: "translate(-50%, -50%)" }}
               >
-                {signatureUrl ? (
-                  <img src={signatureUrl} alt="signature" className="w-full" draggable={false} />
+                {badgeUrl ? (
+                  <img src={badgeUrl} alt="" className="w-full" draggable={false} />
                 ) : (
                   <div className="h-8" />
                 )}
-                {badgeUrl && <img src={badgeUrl} alt="" className="w-full mt-1" draggable={false} />}
               </div>
             )}
           </div>

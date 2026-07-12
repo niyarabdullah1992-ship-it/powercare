@@ -32,7 +32,7 @@ export default function TypedSignature({ ar, defaultName = "", onSave, saving })
       size -= 4;
     } while (ctx.measureText(name).width > 520 && size > 20);
     ctx.fillText(name, 280, 80);
-    onSave(canvas.toDataURL("image/png"));
+    onSave(canvas.toDataURL("image/png"), name.trim());
   };
 
   return (

@@ -9,35 +9,26 @@ import { makeVerificationBadgePng } from "@/lib/verificationBadge";
 // the top-left where the signature's center should land. Falls back to the
 // bottom-right of the last page when absent.
 export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot) {
-  const [pdfBytes, sigBytes] = await Promise.all([
-    fetch(docUrl).then((r) => r.arrayBuffer()),
-    fetch(sigUrl).then((r) => r.arrayBuffer()),
-  ]);
+  const pdfBytes = await fetch(docUrl).then((r) => r.arrayBuffer());
   const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
-  const sigImg = await pdf.embedPng(sigBytes);
-  // Styled verification badge (fingerprint icon + encrypted ID + name & date).
+  // Only the verification badge is stamped (fingerprint icon + encrypted ID +
+  // signer name & date) — the name lives inside the rectangle itself.
   const badge = await makeVerificationBadgePng(sigId, signerName);
   const badgeImg = await pdf.embedPng(badge.bytes);
   const pages = pdf.getPages();
   const page = spot ? pages[Math.min(spot.page - 1, pages.length - 1)] : pages[pages.length - 1];
   const { width, height } = page.getSize();
-  const sw = Math.min(160, width * 0.3);
-  const sh = sw * (sigImg.height / sigImg.width);
-  let x, y;
-  if (spot) {
-    // Center the signature on the detected blank area (spot.y measured from top).
-    x = Math.min(Math.max((width * spot.x) / 100 - sw / 2, 8), width - sw - 8);
-    y = Math.min(Math.max(height - (height * spot.y) / 100 - sh / 2, 40), height - sh - 8);
-  } else {
-    x = width - sw - 36;
-    y = 64;
-  }
-  page.drawImage(sigImg, { x, y, width: sw, height: sh });
-  // Stamp the verification badge just below the signature.
-  const bw = Math.min(sw * 1.4, width - 16);
+  const bw = Math.min(240, width * 0.42);
   const bh = bw * badge.ratio;
-  const bx = Math.min(Math.max(x + sw / 2 - bw / 2, 8), width - bw - 8);
-  const by = Math.max(y - bh - 6, 8);
+  let bx, by;
+  if (spot) {
+    // Center the badge on the chosen/detected spot (spot.y measured from top).
+    bx = Math.min(Math.max((width * spot.x) / 100 - bw / 2, 8), width - bw - 8);
+    by = Math.min(Math.max(height - (height * spot.y) / 100 - bh / 2, 8), height - bh - 8);
+  } else {
+    bx = width - bw - 36;
+    by = 48;
+  }
   page.drawImage(badgeImg, { x: bx, y: by, width: bw, height: bh });
   const out = await pdf.save();
   const file = new File([out], "signed-document.pdf", { type: "application/pdf" });

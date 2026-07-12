@@ -59,10 +59,10 @@ export function makeVerificationBadgeCanvas(sigId, signerName) {
   ctx.font = "600 21px 'Courier New', monospace";
   ctx.fillText(sigId || "", tx, signerName ? 62 : 66);
   if (signerName) {
-    ctx.fillStyle = "#6b6152";
-    ctx.font = "13px sans-serif";
+    ctx.fillStyle = "#2b2418";
+    ctx.font = "600 17px sans-serif";
     ctx.direction = "ltr";
-    ctx.fillText(`${signerName} — ${new Date().toLocaleDateString("en-GB")}`, tx, 96);
+    ctx.fillText(`${signerName} — ${new Date().toLocaleDateString("en-GB")}`, tx, 98);
   }
   return canvas;
 }
