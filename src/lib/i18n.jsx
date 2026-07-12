@@ -326,6 +326,11 @@ const dict = {
     attendanceRateLabel: "Attendance Rate", lateFrequencyLabel: "Late Frequency",
     employeeComparisonLabel: "Employee Comparison", avgAttendanceRate: "Avg Attendance Rate",
     noAnalyticsDataAttendance: "No attendance data for this period.",
+    stationLat: "Latitude", stationLng: "Longitude", stationRadius: "Allowed radius", metersUnit: "m",
+    setLocation: "Set Location", editLocation: "Edit Location",
+    locationStatus: "Location", insideLocation: "Inside Location", outsideLocation: "Outside Location",
+    employeeLocation: "Employee Location", stationLocation: "Station Location", distanceMeters: "Distance",
+    viewOnMap: "View on map",
   },
   ar: {
     dir: "rtl",
@@ -651,6 +656,11 @@ const dict = {
     attendanceRateLabel: "نسبة الحضور", lateFrequencyLabel: "تكرار التأخير",
     employeeComparisonLabel: "مقارنة الموظفين", avgAttendanceRate: "متوسط نسبة الحضور",
     noAnalyticsDataAttendance: "لا توجد بيانات حضور لهذه الفترة.",
+    stationLat: "خط العرض", stationLng: "خط الطول", stationRadius: "نطاق المسافة المسموح", metersUnit: "م",
+    setLocation: "تحديد الموقع", editLocation: "تعديل الموقع",
+    locationStatus: "الموقع", insideLocation: "داخل الموقع", outsideLocation: "خارج الموقع",
+    employeeLocation: "موقع الموظف", stationLocation: "موقع المحطة", distanceMeters: "المسافة",
+    viewOnMap: "عرض على الخريطة",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

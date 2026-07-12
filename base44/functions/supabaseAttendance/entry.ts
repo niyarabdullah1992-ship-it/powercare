@@ -21,6 +21,15 @@ Deno.serve(async (req) => {
       const parts = (hhmm || "").split(":").map(Number);
       return (parts[0] || 0) * 60 + (parts[1] || 0);
     };
+    // Haversine distance in meters between two GPS points — used for check-in location verification.
+    const distanceMeters = (lat1, lng1, lat2, lng2) => {
+      const R = 6371000;
+      const toRad = (d) => (d * Math.PI) / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
 
     if (action === "getSettings") {
       const { companyId } = body;
@@ -76,7 +85,7 @@ Deno.serve(async (req) => {
     // page) — the frontend resolves the employee's shift for today and passes it in.
 
     if (action === "checkIn") {
-      const { companyId, employeeId, employeeName, stationId, lat, lng, shiftStart } = body;
+      const { companyId, employeeId, employeeName, stationId, lat, lng, shiftStart, stationLat, stationLng, radiusMeters } = body;
       if (!companyId || !employeeId) return Response.json({ error: "Missing fields" }, { status: 400 });
       const date = todayStr();
       const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
@@ -95,6 +104,12 @@ Deno.serve(async (req) => {
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
       const lateMinutes = Math.max(0, nowMinutes - startMinutes);
       const status = lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present";
+      let locationStatus = null;
+      let distMeters = null;
+      if (lat != null && lng != null && stationLat != null && stationLng != null) {
+        distMeters = Math.round(distanceMeters(lat, lng, stationLat, stationLng));
+        locationStatus = distMeters <= (radiusMeters || 200) ? "inside" : "outside";
+      }
       const payload = {
         company_id: companyId,
         employee_id: employeeId,
@@ -108,6 +123,10 @@ Deno.serve(async (req) => {
         early_checkout: false,
         check_in_lat: lat ?? null,
         check_in_lng: lng ?? null,
+        station_lat: stationLat ?? null,
+        station_lng: stationLng ?? null,
+        distance_meters: distMeters,
+        location_status: locationStatus,
       };
       let res;
       if (Array.isArray(existing) && existing.length > 0) {
@@ -125,7 +144,7 @@ Deno.serve(async (req) => {
       }
       const saved = await res.json();
       if (!res.ok) {
-        return Response.json({ error: saved?.message || "Failed to check in — run: CREATE TABLE IF NOT EXISTS attendance (id uuid primary key default gen_random_uuid(), company_id text, employee_id text, employee_name text, station_id text, date text, check_in_at timestamptz, check_out_at timestamptz, status text, late_minutes numeric default 0, excused boolean default false, excused_by text, excused_by_name text, excused_note text, excused_at timestamptz, early_checkout boolean default false, work_hours numeric, check_in_lat numeric, check_in_lng numeric, created_at timestamptz default now());" }, { status: 400 });
+        return Response.json({ error: saved?.message || "Failed to check in — run: CREATE TABLE IF NOT EXISTS attendance (id uuid primary key default gen_random_uuid(), company_id text, employee_id text, employee_name text, station_id text, date text, check_in_at timestamptz, check_out_at timestamptz, status text, late_minutes numeric default 0, excused boolean default false, excused_by text, excused_by_name text, excused_note text, excused_at timestamptz, early_checkout boolean default false, work_hours numeric, check_in_lat numeric, check_in_lng numeric, station_lat numeric, station_lng numeric, distance_meters numeric, location_status text, created_at timestamptz default now()); -- if the table already exists, instead run: ALTER TABLE attendance ADD COLUMN IF NOT EXISTS station_lat numeric, ADD COLUMN IF NOT EXISTS station_lng numeric, ADD COLUMN IF NOT EXISTS distance_meters numeric, ADD COLUMN IF NOT EXISTS location_status text;" }, { status: 400 });
       }
       await fetch(`${SUPABASE_URL}/rest/v1/employees_directory`, {
         method: "POST",

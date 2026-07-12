@@ -4,10 +4,11 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { canManageStations, canSeeAllStations, visibleStations } from "@/lib/permissions";
-import { Plus, Radio, Building2, Users, Trash2, Pencil, Check, X, BarChart3, GripVertical } from "lucide-react";
+import { Plus, Radio, Building2, Users, Trash2, Pencil, Check, X, BarChart3, GripVertical, MapPin } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import StationAnalyticsModal from "@/components/stations/StationAnalyticsModal";
 import StationTypeEditor from "@/components/stations/StationTypeEditor";
+import StationLocationEditor from "@/components/stations/StationLocationEditor";
 
 export default function Stations() {
   const { t } = useI18n();
@@ -18,6 +19,7 @@ export default function Stations() {
   const [renameVal, setRenameVal] = useState("");
   const [analyticsFor, setAnalyticsFor] = useState(null);
   const [editingTypeId, setEditingTypeId] = useState(null);
+  const [editingLocationId, setEditingLocationId] = useState(null);
 
   if (!data || !currentUser) return null;
   const stations = visibleStations(currentUser, data);
@@ -72,6 +74,14 @@ export default function Stations() {
       if (s) s.type = value;
     });
     setEditingTypeId(null);
+  };
+
+  const saveLocation = (id, coords) => {
+    updateCompany(company.id, (d) => {
+      const s = d.stations.find((x) => x.id === id);
+      if (s) { s.lat = coords.lat; s.lng = coords.lng; s.radiusMeters = coords.radiusMeters; }
+    });
+    setEditingLocationId(null);
   };
 
   // Reorders stations within a single type-section by drag, keeping other sections' order intact.
@@ -293,9 +303,20 @@ export default function Stations() {
                                 <p className="text-xs font-body">
                                   {manager ? <span className="text-foreground">{t("manager")}: {manager.name}</span> : <span className="text-amber-600">⚠ {t("noManager")}</span>}
                                 </p>
-                                <button onClick={() => setAnalyticsFor({ key: s.id, name: s.name, members: team })} className="flex items-center gap-1 text-xs text-accent hover:underline">
-                                  <BarChart3 className="w-3.5 h-3.5" /> {t("analytics")}
-                                </button>
+                                {editingLocationId === s.id ? (
+                                  <StationLocationEditor t={t} station={s} onSave={(coords) => saveLocation(s.id, coords)} onCancel={() => setEditingLocationId(null)} />
+                                ) : (
+                                  <div className="flex items-center justify-between gap-2">
+                                    <button onClick={() => setAnalyticsFor({ key: s.id, name: s.name, members: team })} className="flex items-center gap-1 text-xs text-accent hover:underline">
+                                      <BarChart3 className="w-3.5 h-3.5" /> {t("analytics")}
+                                    </button>
+                                    {canManage && (
+                                      <button onClick={() => setEditingLocationId(s.id)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                                        <MapPin className="w-3.5 h-3.5" /> {s.lat != null && s.lng != null ? t("editLocation") : t("setLocation")}
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </Draggable>

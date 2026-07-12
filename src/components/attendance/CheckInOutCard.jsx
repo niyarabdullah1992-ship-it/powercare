@@ -15,6 +15,7 @@ const STATUS_STYLE = {
 export default function CheckInOutCard({ currentUser, company, t, onStatusChange }) {
   const { data } = useAuth();
   const shift = getTodaysShift(data, currentUser);
+  const station = data?.stations?.find((s) => s.id === currentUser.stationId);
   const [settings, setSettings] = useState(null);
   const [attendance, setAttendance] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -71,11 +72,15 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         stationId: currentUser.stationId || null,
         lat: coords?.lat, lng: coords?.lng,
         shiftStart: shift?.start,
+        stationLat: station?.lat ?? null,
+        stationLng: station?.lng ?? null,
+        radiusMeters: station?.radiusMeters ?? null,
       });
       const att = res?.data?.attendance;
       if (att) { setAttendance(att); onStatusChange?.(att); }
     } catch (err) {
-      setError(err?.response?.data?.error === "GPS_REQUIRED" ? t("locationDenied") : "Failed to check in");
+      const code = err?.response?.data?.error;
+      setError(code === "GPS_REQUIRED" ? t("locationDenied") : (code || "Failed to check in"));
     } finally {
       setLoading(false);
     }
@@ -126,7 +131,13 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
       {attendance?.early_checkout && (
         <p className="text-xs text-amber-700 font-body">{t("earlyCheckoutLabel")}</p>
       )}
-      {error && <p className="text-xs text-destructive font-body">{error}</p>}
+      {attendance?.location_status && (
+        <p className={`text-xs font-body ${attendance.location_status === "inside" ? "text-emerald-700" : "text-red-700"}`}>
+          {attendance.location_status === "inside" ? t("insideLocation") : t("outsideLocation")}
+          {attendance.distance_meters != null && ` (${attendance.distance_meters}m)`}
+        </p>
+      )}
+      {error && <p className="text-xs text-destructive font-body whitespace-pre-wrap break-words">{error}</p>}
 
       <div className="flex gap-2">
         {!attendance?.check_in_at ? (

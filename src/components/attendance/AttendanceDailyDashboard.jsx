@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { MapPin } from "lucide-react";
+import LocationMapModal from "@/components/attendance/LocationMapModal";
 
 const STATUS_STYLE = {
   present: "bg-emerald-100 text-emerald-700 border-emerald-300",
@@ -14,6 +16,7 @@ const STATUS_STYLE = {
 export default function AttendanceDailyDashboard({ employees, currentUser, t }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [mapRow, setMapRow] = useState(null);
 
   const load = () => {
     if (!employees.length) { setRows([]); setLoading(false); return; }
@@ -66,6 +69,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, t }) 
                 <th className="py-2 pe-3 text-start">{t("checkIn")}</th>
                 <th className="py-2 pe-3 text-start">{t("checkOut")}</th>
                 <th className="py-2 pe-3 text-start">{t("workHoursLabel")}</th>
+                <th className="py-2 pe-3 text-start">{t("locationStatus")}</th>
                 <th className="py-2 pe-3 text-start"></th>
               </tr>
             </thead>
@@ -97,6 +101,21 @@ export default function AttendanceDailyDashboard({ employees, currentUser, t }) 
                     <td className="py-2 pe-3 text-muted-foreground">{r?.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : "—"}</td>
                     <td className="py-2 pe-3 text-muted-foreground">{r?.work_hours ?? "—"}</td>
                     <td className="py-2 pe-3">
+                      {r?.location_status ? (
+                        <button
+                          onClick={() => setMapRow(r)}
+                          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border hover:opacity-80 ${r.location_status === "inside" ? "bg-emerald-100 text-emerald-700 border-emerald-300" : "bg-red-100 text-red-700 border-red-300"}`}
+                          title={t("viewOnMap")}
+                        >
+                          <MapPin className="w-3 h-3" />
+                          {r.location_status === "inside" ? t("insideLocation") : t("outsideLocation")}
+                          {r.distance_meters != null && ` · ${r.distance_meters}m`}
+                        </button>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="py-2 pe-3">
                       {(status === "late" || status === "absent") && (
                         <button
                           onClick={() => toggleExcuse(r)}
@@ -113,6 +132,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, t }) 
           </table>
         </div>
       )}
+      {mapRow && <LocationMapModal row={mapRow} t={t} onClose={() => setMapRow(null)} />}
     </div>
   );
 }
