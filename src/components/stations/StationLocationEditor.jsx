@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import GoogleTiles from "@/components/maps/GoogleTiles";
+import LocationSearchBox from "@/components/maps/LocationSearchBox";
 import { X, MapPin, LocateFixed, Loader2, Check } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
@@ -106,6 +107,10 @@ export default function StationLocationEditor({ t, station, onSave, onCancel }) 
             {locating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LocateFixed className="w-3.5 h-3.5" />}
             {locating ? `${t("locating")}${accuracy != null ? ` ±${accuracy}${t("metersUnit")}` : ""}` : t("useMyLocation")}
           </button>
+        </div>
+
+        <div className="px-4 py-2 border-b border-border">
+          <LocationSearchBox t={t} onPick={(p) => { stopTracking(); setAccuracy(null); setPos(p); }} />
         </div>
 
         <div className="h-72 relative">
