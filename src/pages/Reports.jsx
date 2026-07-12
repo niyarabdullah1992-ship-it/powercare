@@ -174,7 +174,7 @@ export default function Reports() {
   const TABS = [
     { key: "tasks", label: t("tasksReport"), icon: ListTodo },
     { key: "leaves", label: t("leaveRequests"), icon: CalendarDays },
-    { key: "complaints", label: t("publicComplaints"), icon: Megaphone },
+    { key: "complaints", label: t("allComplaints"), icon: Megaphone },
     ...(isOwner ? [{ key: "employeeReport", label: t("employeeReport"), icon: UserSquare2 }] : []),
   ];
 
