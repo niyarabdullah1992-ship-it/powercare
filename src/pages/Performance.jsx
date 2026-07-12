@@ -9,13 +9,19 @@ import BadgeLegend from "@/components/performance/BadgeLegend";
 import StationComparison from "@/components/performance/StationComparison";
 import EmployeeComparisonView from "@/components/performance/EmployeeComparisonView";
 import EmployeeSingleReport from "@/components/performance/EmployeeSingleReport";
+import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
+import { isCompanyOwner } from "@/lib/permissions";
+import { Palette } from "lucide-react";
 
 export default function Performance() {
-  const { t, dir } = useI18n();
+  const { t, dir, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [view, setView] = useState("individual");
+  const [showBranding, setShowBranding] = useState(false);
 
   if (!data || !currentUser) return null;
+
+  const canBrand = isCompanyOwner(currentUser, data) || currentUser.role === "director";
 
   const badges = getBadges(company);
   const stationName = (id) => data.stations.find((s) => s.id === id)?.name || t("hq");
@@ -109,8 +115,27 @@ export default function Performance() {
             {t("analytics")}
           </button>
           )}
+          {canBrand && (
+            <button
+              onClick={() => setShowBranding((v) => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border border-border hover:bg-muted transition"
+            >
+              <Palette className="w-3.5 h-3.5" style={{ color: data.reportBranding?.color || "#b07d3f" }} />
+              {lang === "ar" ? "هوية التقارير" : "Report branding"}
+            </button>
+          )}
         </div>
       </div>
+
+      {showBranding && canBrand && (
+        <BrandingSettingsCard
+          companyId={company.id}
+          branding={data.reportBranding}
+          companyName={data.name || company?.name || ""}
+          lang={lang}
+          onClose={() => setShowBranding(false)}
+        />
+      )}
 
       {view === "comparison" && <StationComparison />}
       {view === "employeeComparison" && <EmployeeComparisonView t={t} />}

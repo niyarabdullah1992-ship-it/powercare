@@ -14,7 +14,8 @@ import EmployeeReportTable from "@/components/reports/EmployeeReportTable";
 import ReportCard from "@/components/reports/ReportCard";
 import ReportTableHead from "@/components/reports/ReportTableHead";
 import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
-import ReportBrandingEditor from "@/components/reports/ReportBrandingEditor";
+import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
+import { Palette } from "lucide-react";
 
 const RANGES = [
   { val: "daily", amount: 1, unit: "days" },
@@ -35,6 +36,7 @@ export default function Reports() {
   const [customEnd, setCustomEnd] = useState("");
   const [tab, setTab] = useState("tasks");
   const [selectedStations, setSelectedStations] = useState(null); // null = not initialized yet
+  const [showBranding, setShowBranding] = useState(false);
 
   const seesAll = data && currentUser ? canSeeAllStations(currentUser) : false;
   const myStations = data && currentUser ? visibleStations(currentUser, data) : [];
@@ -255,9 +257,21 @@ export default function Reports() {
                   <Printer className="w-3.5 h-3.5" /> PDF
                 </button>
                 {(isOwner || currentUser.role === "director") && (
-                  <ReportBrandingEditor companyId={company.id} branding={data.reportBranding} lang={lang} />
+                  <button onClick={() => setShowBranding((v) => !v)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+                    <Palette className="w-3.5 h-3.5" style={{ color: data.reportBranding?.color || "#b07d3f" }} />
+                    {lang === "ar" ? "هوية التقارير" : "Report branding"}
+                  </button>
                 )}
               </div>
+            )}
+            {showBranding && (isOwner || currentUser.role === "director") && (
+              <BrandingSettingsCard
+                companyId={company.id}
+                branding={data.reportBranding}
+                companyName={data.name || company?.name || ""}
+                lang={lang}
+                onClose={() => setShowBranding(false)}
+              />
             )}
             <ReportCard>
               {filteredTasks.length === 0 ? (
