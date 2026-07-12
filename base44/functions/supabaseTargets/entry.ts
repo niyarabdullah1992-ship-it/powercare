@@ -538,7 +538,37 @@ Deno.serve(async (req) => {
       );
       const rows = await res.json();
       if (!res.ok) return Response.json({ messages: [] });
-      return Response.json({ messages: rows || [] });
+      const visible = (rows || []).filter((m) => !(Array.isArray(m.deleted_for) && m.deleted_for.includes(userId)));
+      return Response.json({ messages: visible });
+    }
+
+    // ---- Delete a sent DM: within 2 minutes it's removed for both sides, after ----
+    // that it only disappears from the sender's own view (stays for the other side).
+    if (action === "deleteDirectMessage") {
+      const { messageId, userId } = body;
+      if (!messageId || !userId) return Response.json({ error: "Missing fields" }, { status: 400 });
+      const getRes = await fetch(`${SUPABASE_URL}/rest/v1/direct_messages?id=eq.${encodeURIComponent(messageId)}`, { headers });
+      const rows = await getRes.json();
+      const msg = Array.isArray(rows) && rows[0];
+      if (!msg) return Response.json({ error: "Message not found" }, { status: 404 });
+      if (msg.sender_id !== userId) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const ageMs = Date.now() - new Date(msg.created_at).getTime();
+      if (ageMs <= 2 * 60 * 1000) {
+        await fetch(`${SUPABASE_URL}/rest/v1/direct_messages?id=eq.${encodeURIComponent(messageId)}`, { method: "DELETE", headers });
+        return Response.json({ ok: true, deletedForEveryone: true });
+      }
+      const deletedFor = Array.isArray(msg.deleted_for) ? msg.deleted_for : [];
+      if (!deletedFor.includes(userId)) deletedFor.push(userId);
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/direct_messages?id=eq.${encodeURIComponent(messageId)}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ deleted_for: deletedFor }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        return Response.json({ error: err?.message || "Failed to delete — run: ALTER TABLE direct_messages ADD COLUMN IF NOT EXISTS deleted_for jsonb DEFAULT '[]'::jsonb;" }, { status: 400 });
+      }
+      return Response.json({ ok: true, deletedForEveryone: false });
     }
 
     if (action === "sendDirectMessage") {

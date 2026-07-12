@@ -125,6 +125,15 @@ export default function StationChat() {
     }
   };
 
+  const deleteMessage = async (msg) => {
+    try {
+      await base44.functions.invoke("supabaseTargets", { action: "deleteDirectMessage", messageId: msg.id, userId: currentUser.id });
+      fetchMessages();
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to delete message");
+    }
+  };
+
   if (!data || !currentUser) return null;
 
   const stationName = stationRooms.find((r) => r.key === selectedStation)?.name || "";
@@ -213,7 +222,15 @@ export default function StationChat() {
                       {messages.length === 0 ? (
                         <p className="text-sm text-muted-foreground font-body text-center mt-10">{t("noMessages")}</p>
                       ) : (
-                        messages.map((m) => <ChatBubble key={m.id} msg={m} isMine={m.user_id === currentUser.id} lang={lang} />)
+                        messages.map((m) => (
+                          <ChatBubble
+                            key={m.id}
+                            msg={m}
+                            isMine={m.user_id === currentUser.id}
+                            lang={lang}
+                            onDelete={activeChat.type === "dm" ? deleteMessage : undefined}
+                          />
+                        ))
                       )}
                       <div ref={bottomRef} />
                     </div>
