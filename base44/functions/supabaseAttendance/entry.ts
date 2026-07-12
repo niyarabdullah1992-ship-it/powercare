@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       const { companyId } = body;
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(companyId)}`, { headers });
       const rows = await res.json();
-      const defaults = { company_id: companyId, work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: false, gps_required: false };
+      const defaults = { company_id: companyId, work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: true, gps_required: true };
       if (!res.ok || !Array.isArray(rows) || rows.length === 0) return Response.json({ settings: defaults });
       return Response.json({ settings: rows[0] });
     }
@@ -61,6 +61,19 @@ Deno.serve(async (req) => {
         return Response.json({ error: updated?.message || "Failed to save settings — run: CREATE TABLE IF NOT EXISTS attendance_settings (company_id text primary key, work_start_time text default '08:00', late_threshold_minutes integer default 15, gps_enabled boolean default false, gps_required boolean default false);" }, { status: 400 });
       }
       return Response.json({ settings: Array.isArray(updated) ? updated[0] : updated });
+    }
+
+    // One-shot maintenance: turns GPS on for every company that already has a settings row.
+    if (action === "enableGpsEverywhere") {
+      if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?or=(gps_enabled.eq.false,gps_required.eq.false)`, {
+        method: "PATCH",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify({ gps_enabled: true, gps_required: true }),
+      });
+      const updated = await res.json();
+      if (!res.ok) return Response.json({ error: updated?.message || "Failed" }, { status: 400 });
+      return Response.json({ ok: true, updated: Array.isArray(updated) ? updated.length : 0 });
     }
 
     if (action === "syncRoster") {
@@ -146,7 +159,7 @@ Deno.serve(async (req) => {
       }
       const setRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(companyId)}`, { headers });
       const setRows = await setRes.json();
-      const settings = (Array.isArray(setRows) && setRows[0]) || { work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: false, gps_required: false };
+      const settings = (Array.isArray(setRows) && setRows[0]) || { work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: true, gps_required: true };
       if (settings.gps_enabled && settings.gps_required && (lat == null || lng == null)) {
         return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       }
