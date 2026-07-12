@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles } from "lucide-react";
@@ -54,6 +54,13 @@ export default function Landing() {
           <Logo size={30} />
           <span className="font-heading font-semibold text-lg text-[#3a2f22]">{t("appName")}</span>
         </div>
+        <div className="flex items-center gap-2">
+        <Link
+          to="/pricing"
+          className="px-4 py-1.5 rounded-full bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-body font-semibold hover:opacity-90 transition-opacity"
+        >
+          {t("viewPlans")}
+        </Link>
         <div className="relative">
           <button
             onClick={(e) => { e.stopPropagation(); setLangOpen((v) => !v); }}
@@ -79,6 +86,7 @@ export default function Landing() {
               ))}
             </div>
           )}
+        </div>
         </div>
       </div>
 
@@ -138,6 +146,12 @@ export default function Landing() {
                 </button>
               </form>
               )}
+              <p className="mt-5 text-center text-sm font-body text-[#3a2f22]/55">
+                {t("noAccountYet")}{" "}
+                <Link to="/pricing" className="text-landing-gold font-semibold hover:underline">
+                  {t("viewPlans")}
+                </Link>
+              </p>
           </div>
         </div>
       </div>

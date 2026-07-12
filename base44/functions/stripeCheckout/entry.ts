@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
         line_items: [{ price: priceId, quantity: 1 }],
         customer_email: ownerEmail,
         subscription_data: {
-          trial_period_days: 14,
+          trial_period_days: 120,
         },
         success_url: `${returnUrl}/pricing-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${returnUrl}/pricing`,

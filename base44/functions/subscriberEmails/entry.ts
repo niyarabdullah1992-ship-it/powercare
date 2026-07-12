@@ -3,10 +3,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 // Subscriber email hub for PowerCare:
 // - welcome:            sent when a new company account is created
 // - paymentConfirmed:   sent after a successful Stripe checkout
-// - trialReminderSweep: daily sweep (workflow) — reminds paid accounts 3 days before the 14-day trial ends
+// - trialReminderSweep: daily sweep (workflow) — reminds paid accounts 3 days before the 4-month (120-day) trial ends
 // - broadcast:          platform-owner only — sends site news to every subscriber email
-const TRIAL_DAYS = 14;
-const REMIND_AT_DAY = 11; // 3 days before trial end
+const TRIAL_DAYS = 120;
+const REMIND_AT_DAY = 117; // 3 days before trial end
 
 Deno.serve(async (req) => {
   try {
