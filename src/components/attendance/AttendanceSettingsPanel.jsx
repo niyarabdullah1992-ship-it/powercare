@@ -7,6 +7,7 @@ export default function AttendanceSettingsPanel({ company, currentUser, t }) {
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     base44.functions.invoke("supabaseAttendance", { action: "getSettings", companyId: company.id })
@@ -20,6 +21,7 @@ export default function AttendanceSettingsPanel({ company, currentUser, t }) {
     e.preventDefault();
     setSaving(true);
     setSaved(false);
+    setError("");
     try {
       const res = await base44.functions.invoke("supabaseAttendance", {
         action: "updateSettings",
@@ -32,8 +34,8 @@ export default function AttendanceSettingsPanel({ company, currentUser, t }) {
       });
       if (res?.data?.settings) setSettings(res.data.settings);
       setSaved(true);
-    } catch {
-      // best-effort
+    } catch (err) {
+      setError(err?.response?.data?.error || "Failed to save settings");
     } finally {
       setSaving(false);
     }
@@ -82,6 +84,8 @@ export default function AttendanceSettingsPanel({ company, currentUser, t }) {
         </label>
       )}
       <p className="text-[11px] text-muted-foreground font-body">{t("gpsNote")}</p>
+
+      {error && <p className="text-xs text-destructive font-body whitespace-pre-wrap break-words">{error}</p>}
 
       <div className="flex items-center gap-2">
         <button type="submit" disabled={saving} className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-body disabled:opacity-50">
