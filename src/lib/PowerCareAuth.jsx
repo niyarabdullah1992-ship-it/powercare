@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import {
-  getSession, companyLogin, employeeLogin, switchUser, clearSession, getCompanyData,
+  getSession, startLogin, completeLoginOtp, switchUser, clearSession, getCompanyData,
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
   hydrateBlobFromEntity, BLOB_CATEGORIES, getLastLocalWriteAt, fetchCloudVersions, setAuditActor,
 } from "./store";
@@ -153,10 +153,17 @@ export function AuthProvider({ children }) {
     };
   }, [session?.companyId, refresh]);
 
+  // Step 1: password check — either logs in directly (offline fallback) or returns
+  // { otpRequired, pendingId } after the server emails a one-time verification code.
   const login = async (email, password) => {
-    // Try the company-owner account first, then fall back to a personal employee login.
-    let c = await companyLogin(email, password);
-    if (!c) c = await employeeLogin(email, password);
+    const r = await startLogin(email, password);
+    if (r?.company) refresh();
+    return r;
+  };
+
+  // Step 2: exchanges the emailed code for the real session.
+  const verifyOtp = async (pendingId, code, password) => {
+    const c = await completeLoginOtp(pendingId, code, password);
     if (c) refresh();
     return c;
   };
@@ -177,7 +184,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, company, data, currentUser, login, switchUser: doSwitchUser, logout, refresh, tick, isSyncing }}
+      value={{ session, company, data, currentUser, login, verifyOtp, switchUser: doSwitchUser, logout, refresh, tick, isSyncing }}
     >
       {children}
     </AuthContext.Provider>

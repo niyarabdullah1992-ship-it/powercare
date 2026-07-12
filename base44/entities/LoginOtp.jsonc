@@ -1,0 +1,60 @@
+{
+  "name": "LoginOtp",
+  "type": "object",
+  "properties": {
+    "pendingId": {
+      "type": "string",
+      "description": "Opaque one-time id returned to the client after a successful password check."
+    },
+    "kind": {
+      "type": "string",
+      "description": "'owner' or 'employee'."
+    },
+    "companyId": {
+      "type": "string"
+    },
+    "employeeId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "email": {
+      "type": "string",
+      "description": "Address the code was emailed to."
+    },
+    "codeHash": {
+      "type": "string",
+      "description": "SHA-256 hash of pendingId::code \u2014 the code itself is never stored."
+    },
+    "expiresAt": {
+      "type": "string"
+    },
+    "attempts": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "pendingId",
+    "kind",
+    "companyId",
+    "email",
+    "codeHash",
+    "expiresAt"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": false,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": false
+  }
+}

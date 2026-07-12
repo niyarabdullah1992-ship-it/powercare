@@ -5,16 +5,18 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles } from "lucide-react";
 import Logo from "@/components/Logo";
 import VideoIntro from "@/components/landing/VideoIntro";
+import OtpStep from "@/components/landing/OtpStep";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
 
 export default function Landing() {
   const { t, lang, setLang, languages } = useI18n();
-  const { login, session } = useAuth();
+  const { login, verifyOtp, session } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [otpPending, setOtpPending] = useState(null); // pendingId while awaiting the emailed code
   const [langOpen, setLangOpen] = useState(false);
   const currentLang = languages.find((l) => l.code === lang);
 
@@ -33,8 +35,15 @@ export default function Landing() {
   const handleCompanyLogin = async (e) => {
     e.preventDefault();
     setError("");
-    const c = await login(email, password);
-    if (!c) setError("Invalid credentials");
+    const r = await login(email, password);
+    if (!r) setError("Invalid credentials");
+    else if (r.otpRequired) setOtpPending(r.pendingId);
+    // r.company → session set, useEffect above redirects to /app
+  };
+
+  const handleVerifyOtp = async (code) => {
+    const c = await verifyOtp(otpPending, code, password);
+    return !!c;
   };
 
   return (
@@ -96,6 +105,9 @@ export default function Landing() {
               </span>
             </div>
 
+              {otpPending ? (
+                <OtpStep email={email} onVerify={handleVerifyOtp} onBack={() => setOtpPending(null)} />
+              ) : (
               <form onSubmit={handleCompanyLogin} className="space-y-4">
                 <div>
                   <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("email")}</label>
@@ -125,6 +137,7 @@ export default function Landing() {
                   {t("login")}
                 </button>
               </form>
+              )}
           </div>
         </div>
       </div>

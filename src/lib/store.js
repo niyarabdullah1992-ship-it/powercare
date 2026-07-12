@@ -468,6 +468,84 @@ export async function employeeLogin(email, password) {
   }
 }
 
+/* ----------------------------- two-step login (email OTP) -----------------------------
+   Step 1: startLogin verifies the password server-side; the server emails a 6-digit code
+   and returns a pendingId. Step 2: completeLoginOtp exchanges pendingId + code for the
+   real session token. Offline fallback: owner accounts cached on this device log in
+   directly (no network = no way to email a code). */
+export async function startLogin(email, password) {
+  try {
+    const res = await invokeDirectory({ action: "findAccountByEmail", email, password });
+    if (res?.data?.otpRequired) return { otpRequired: true, pendingId: res.data.pendingId };
+  } catch {
+    // network/backend issue — try employee login, then the local fallback below
+  }
+  try {
+    const res = await invokeDirectory({ action: "employeeLogin", email, password });
+    if (res?.data?.otpRequired) return { otpRequired: true, pendingId: res.data.pendingId };
+  } catch {
+    // ignore — fall through to local fallback
+  }
+  const reg = getRegistry();
+  const company = reg.companies.find(
+    (c) => c.ownerEmail.toLowerCase() === String(email).toLowerCase() && c.ownerPassword === password
+  ) || null;
+  if (!company) return null;
+  const data = getCompanyData(company.id);
+  const director = data?.employees.find((e) => e.role === "director") || null;
+  setSession({ companyId: company.id, userId: director ? director.id : null });
+  return { company };
+}
+
+export async function completeLoginOtp(pendingId, code, typedPassword) {
+  let result = null;
+  try {
+    const res = await invokeDirectory({ action: "verifyLoginOtp", pendingId, code });
+    result = res?.data;
+  } catch {
+    return null; // wrong/expired code (server returned 401) or network failure
+  }
+  if (!result?.token) return null;
+  const reg = getRegistry();
+  if (result.kind === "owner") {
+    const remote = result.company;
+    setCompanyToken(remote.companyId, result.token);
+    let company = reg.companies.find((c) => c.id === remote.companyId);
+    if (company) {
+      if (typedPassword) company.ownerPassword = typedPassword;
+    } else {
+      company = {
+        id: remote.companyId, name: remote.name, ownerEmail: remote.ownerEmail,
+        ownerPassword: typedPassword || null, plan: remote.plan,
+        allowedEmailDomain: remote.allowedEmailDomain || "", createdAt: remote.created_date,
+      };
+      reg.companies.push(company);
+    }
+    saveRegistry(reg);
+    if (!getCompanyData(company.id)) write(companyKey(company.id), emptyCompanyData(company));
+    const data = getCompanyData(company.id);
+    const director = data.employees.find((e) => e.role === "director") || null;
+    setSession({ companyId: company.id, userId: director ? director.id : null });
+    return company;
+  }
+  // employee session
+  const { companyId, employeeId } = result.employee;
+  setCompanyToken(companyId, result.token);
+  let company = reg.companies.find((c) => c.id === companyId);
+  if (!company) {
+    company = {
+      id: companyId, name: result.company?.name || "", ownerEmail: result.company?.ownerEmail || "",
+      ownerPassword: null, plan: result.company?.plan || "Starter",
+      allowedEmailDomain: result.company?.allowedEmailDomain || "", createdAt: new Date().toISOString(),
+    };
+    reg.companies.push(company);
+    saveRegistry(reg);
+  }
+  if (!getCompanyData(companyId)) write(companyKey(companyId), emptyCompanyData(company));
+  setSession({ companyId, userId: employeeId });
+  return company;
+}
+
 // Owner/manager sets (or resets) an employee's personal login password — stored only
 // as a salted hash in the cloud directory, never in localStorage.
 export async function setEmployeePassword(companyId, employeeId, email, password) {

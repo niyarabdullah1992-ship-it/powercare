@@ -24,6 +24,25 @@ async function verifyPassword(password, stored) {
   return stored === password; // legacy plaintext record (upgraded on successful login)
 }
 
+/* ----- login OTP (email second factor) ----- */
+const OTP_TTL_MS = 10 * 60 * 1000;
+async function createLoginOtp(base44, { kind, companyId, employeeId, email }) {
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const pendingId = crypto.randomUUID();
+  await base44.asServiceRole.entities.LoginOtp.create({
+    pendingId, kind, companyId, employeeId: employeeId || null, email,
+    codeHash: await sha256Hex(pendingId + '::' + code),
+    expiresAt: new Date(Date.now() + OTP_TTL_MS).toISOString(), attempts: 0,
+  });
+  await base44.asServiceRole.integrations.Core.SendEmail({
+    to: email,
+    from_name: 'PowerCare',
+    subject: 'PowerCare — رمز التحقق لتسجيل الدخول / Login Verification Code',
+    body: `رمز التحقق الخاص بك هو: ${code}\n\nYour verification code is: ${code}\n\nصالح لمدة 10 دقائق. إذا لم تحاول تسجيل الدخول، تجاهل هذه الرسالة.\nValid for 10 minutes. If you didn't try to log in, ignore this email.`,
+  });
+  return pendingId;
+}
+
 /* ----- session-based authorization ----- */
 const SESSION_TTL_MS = 7 * 24 * 3600 * 1000;
 async function makeSession(base44, companyId, userId, role) {
@@ -118,10 +137,9 @@ Deno.serve(async (req) => {
       if (!String(found.ownerPassword).startsWith('sha256$')) {
         await base44.asServiceRole.entities.CompanyAccount.update(found.id, { ownerPassword: await hashPassword(password) });
       }
-      // Never send the stored password (even hashed) back to the client.
-      const { ownerPassword: _pw, ...safe } = found;
-      const token = await makeSession(base44, found.companyId, null, 'owner');
-      return Response.json({ company: safe, token });
+      // Password verified — second factor: email a one-time code instead of issuing a session.
+      const pendingId = await createLoginOtp(base44, { kind: 'owner', companyId: found.companyId, email: found.ownerEmail });
+      return Response.json({ otpRequired: true, pendingId });
     }
 
     // Per-employee login — each employee signs in with their own email + personal password.
@@ -134,13 +152,39 @@ Deno.serve(async (req) => {
         if (await verifyPassword(password, c.passwordHash)) { match = c; break; }
       }
       if (!match) return Response.json({ employee: null });
-      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: match.companyId });
+      // Password verified — second factor: email a one-time code instead of issuing a session.
+      const pendingId = await createLoginOtp(base44, { kind: 'employee', companyId: match.companyId, employeeId: match.employeeId, email: match.email });
+      return Response.json({ otpRequired: true, pendingId });
+    }
+
+    // Second login step — verifies the emailed code and only then issues the session.
+    if (action === 'verifyLoginOtp') {
+      const { pendingId, code } = body;
+      if (!pendingId || !code) return Response.json({ error: 'Missing fields' }, { status: 400 });
+      const recs = await base44.asServiceRole.entities.LoginOtp.filter({ pendingId });
+      const rec = recs[0];
+      if (!rec || new Date(rec.expiresAt).getTime() < Date.now()) {
+        return Response.json({ error: 'expired' }, { status: 401 });
+      }
+      if ((rec.attempts || 0) >= 5) return Response.json({ error: 'too_many_attempts' }, { status: 401 });
+      const hash = await sha256Hex(pendingId + '::' + String(code).trim());
+      if (hash !== rec.codeHash) {
+        await base44.asServiceRole.entities.LoginOtp.update(rec.id, { attempts: (rec.attempts || 0) + 1 });
+        return Response.json({ error: 'invalid_code' }, { status: 401 });
+      }
+      await base44.asServiceRole.entities.LoginOtp.delete(rec.id);
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: rec.companyId });
       const acc = accounts[0] || {};
-      const token = await makeSession(base44, match.companyId, match.employeeId, 'employee');
+      if (rec.kind === 'owner') {
+        const { ownerPassword: _pw2, ...safe } = acc;
+        const token = await makeSession(base44, rec.companyId, null, 'owner');
+        return Response.json({ kind: 'owner', company: safe, token });
+      }
+      const token = await makeSession(base44, rec.companyId, rec.employeeId, 'employee');
       return Response.json({
-        token,
-        employee: { companyId: match.companyId, employeeId: match.employeeId },
-        company: { companyId: match.companyId, name: acc.name || '', plan: acc.plan || '', allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '' },
+        kind: 'employee', token,
+        employee: { companyId: rec.companyId, employeeId: rec.employeeId },
+        company: { companyId: rec.companyId, name: acc.name || '', plan: acc.plan || '', allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '' },
       });
     }
 
