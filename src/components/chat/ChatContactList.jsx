@@ -1,5 +1,6 @@
 import React from "react";
 import { Users } from "lucide-react";
+import PresenceDot from "@/components/employees/PresenceDot";
 
 export default function ChatContactList({ contacts, activeChat, onSelectGeneral, onSelectContact, t }) {
   return (
@@ -26,7 +27,10 @@ export default function ChatContactList({ contacts, activeChat, onSelectGeneral,
             {c.profile?.avatarUrl ? <img src={c.profile.avatarUrl} alt={c.name} className="w-full h-full object-cover" /> : c.name.charAt(0)}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium font-body truncate">{c.name}</p>
+            <p className="text-sm font-medium font-body truncate flex items-center gap-1.5">
+              <PresenceDot employee={c} />
+              {c.name}
+            </p>
             <p className="text-[11px] text-muted-foreground font-body truncate">{t(c.role)}</p>
           </div>
         </button>

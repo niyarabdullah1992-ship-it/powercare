@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
+import PresenceDot from "@/components/employees/PresenceDot";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -316,6 +317,7 @@ export default function Layout({ children }) {
                           }`}
                         >
                           <UserCircle className="w-4 h-4 shrink-0" strokeWidth={1.5} />
+                          <PresenceDot employee={e} />
                           <span className="truncate">{e.name}</span>
                           <span className="ms-auto text-[10px] text-muted-foreground">{t(e.role)}</span>
                         </button>
