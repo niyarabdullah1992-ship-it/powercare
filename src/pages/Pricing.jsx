@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { createCompany } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, ArrowLeft } from "lucide-react";
 import Logo from "@/components/Logo";
 import SignupDialog from "@/components/pricing/SignupDialog";
 
@@ -61,6 +61,12 @@ export default function Pricing() {
   return (
     <div className="min-h-screen bg-landing-bg px-6 py-12">
       <div className="max-w-6xl mx-auto">
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center gap-1.5 text-sm font-body text-[#3a2f22]/60 hover:text-[#3a2f22] mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 rtl:rotate-180" /> {t("backBtn")}
+        </button>
         <div className="flex items-center gap-2 justify-center mb-3">
           <Logo size={32} />
         </div>
@@ -118,7 +124,7 @@ export default function Pricing() {
                 disabled={loading}
                 className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {loading && activePlan?.id === plan.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (plan.price === 0 ? t("startFree") : t("subscribe"))}
+                {loading && activePlan?.id === plan.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (plan.price === 0 ? t("startFree") : t("startTrialBtn"))}
               </button>
             </div>
           ))}
