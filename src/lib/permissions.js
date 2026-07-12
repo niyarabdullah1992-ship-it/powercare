@@ -139,6 +139,28 @@ export function canManageSchedule(user, data, stationId) {
   return false;
 }
 
+// Privacy rule for full employee profiles (personal data, certificates, salary, leave):
+// everyone sees their own profile; managers see profiles inside their station scope;
+// HR members see profiles inside their HR scope. Regular employees can't open
+// each other's profiles.
+export function canViewEmployeeProfile(viewer, employee, data) {
+  if (!viewer || !employee) return false;
+  if (viewer.id === employee.id) return true;
+  if (["director", "ops_manager"].includes(viewer.role) || viewer.id === data?.ownerId) return true;
+  if (viewer.role === "pgm") {
+    return !employee.stationId || (viewer.managedStations || []).includes(employee.stationId);
+  }
+  if (viewer.role === "station_manager") {
+    const managed = viewer.managedStations?.length ? viewer.managedStations : [viewer.stationId];
+    return managed.includes(employee.stationId);
+  }
+  if (viewer.hrLevelId) {
+    const scope = hrScopeStations(viewer, data);
+    return scope === null || (employee.stationId && scope.includes(employee.stationId));
+  }
+  return false;
+}
+
 // Employees visible to a user (for management views)
 export function visibleEmployees(user, data) {
   const stations = visibleStations(user, data);

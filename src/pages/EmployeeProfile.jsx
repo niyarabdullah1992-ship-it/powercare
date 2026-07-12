@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { canManageEmployees, hasHRPermission } from "@/lib/permissions";
+import { canManageEmployees, hasHRPermission, canViewEmployeeProfile } from "@/lib/permissions";
 import { getRoleLabel } from "@/lib/roles";
-import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle } from "lucide-react";
+import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle, Lock } from "lucide-react";
 import ProfileHero from "@/components/employees/ProfileHero";
 import ProfessionalInfoTab from "@/components/employees/ProfessionalInfoTab";
 import CertificatesTab from "@/components/employees/CertificatesTab";
@@ -34,6 +34,24 @@ export default function EmployeeProfile() {
   if (!employee) return <p className="p-6 text-sm text-muted-foreground font-body">—</p>;
 
   const isSelf = currentUser.id === employee.id;
+
+  // Privacy: full profiles (personal data, certificates, salary, leave) are only
+  // visible to the employee themself, their managers, and in-scope HR.
+  if (!canViewEmployeeProfile(currentUser, employee, data)) {
+    return (
+      <div className="max-w-md mx-auto mt-16 text-center space-y-3 p-8 rounded-xl border border-border bg-card">
+        <Lock className="w-8 h-8 mx-auto text-muted-foreground" />
+        <p className="font-heading font-semibold">{t("confidential")}</p>
+        <p className="text-sm text-muted-foreground font-body">
+          {dir === "rtl"
+            ? "هذا الملف الشخصي خاص — يمكنك فقط عرض ملفك الشخصي. بيانات الزملاء متاحة لمديريهم وللموارد البشرية."
+            : "This profile is private — you can only view your own profile. Colleagues' data is available to their managers and HR."}
+        </p>
+        <button onClick={() => navigate(-1)} className="text-sm text-accent hover:underline font-body">{t("back")}</button>
+      </div>
+    );
+  }
+
   const canManage = canManageEmployees(currentUser) || currentUser.role === "director" || currentUser.role === "ops_manager";
   const canEditSalary = currentUser.role === "director" || hasHRPermission(currentUser, data, "manage_payroll");
   const canApproveLeave = canManage || hasHRPermission(currentUser, data, "manage_leave");
