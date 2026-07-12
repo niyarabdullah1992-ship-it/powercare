@@ -1,7 +1,6 @@
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument } from "pdf-lib";
 import { base44 } from "@/api/base44Client";
-
-const INK = rgb(0.12, 0.16, 0.23);
+import { makeVerificationBadgePng } from "@/lib/verificationBadge";
 
 // Stamps the saved signature onto the LAST page of an uploaded PDF (bottom-right
 // corner) with the date and the encrypted verification ID, then uploads the
@@ -16,7 +15,9 @@ export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot) {
   ]);
   const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   const sigImg = await pdf.embedPng(sigBytes);
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  // Styled verification badge (fingerprint icon + encrypted ID + name & date).
+  const badge = await makeVerificationBadgePng(sigId, signerName);
+  const badgeImg = await pdf.embedPng(badge.bytes);
   const pages = pdf.getPages();
   const page = spot ? pages[Math.min(spot.page - 1, pages.length - 1)] : pages[pages.length - 1];
   const { width, height } = page.getSize();
@@ -32,13 +33,12 @@ export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot) {
     y = 64;
   }
   page.drawImage(sigImg, { x, y, width: sw, height: sh });
-  // Helvetica can't encode Arabic — the drawn/typed signature image already
-  // carries the name, so text lines stay ASCII-safe.
-  const safeName = /^[\u0000-\u00FF]*$/.test(signerName || "") ? signerName : "";
-  page.drawText(`${safeName ? safeName + "  -  " : ""}${new Date().toLocaleDateString("en-GB")}`, {
-    x, y: y - 14, size: 10, font, color: INK,
-  });
-  if (sigId) page.drawText(`ID: ${sigId}`, { x, y: y - 28, size: 9, font, color: INK });
+  // Stamp the verification badge just below the signature.
+  const bw = Math.min(sw * 1.4, width - 16);
+  const bh = bw * badge.ratio;
+  const bx = Math.min(Math.max(x + sw / 2 - bw / 2, 8), width - bw - 8);
+  const by = Math.max(y - bh - 6, 8);
+  page.drawImage(badgeImg, { x: bx, y: by, width: bw, height: bh });
   const out = await pdf.save();
   const file = new File([out], "signed-document.pdf", { type: "application/pdf" });
   const { file_url } = await base44.integrations.Core.UploadFile({ file });

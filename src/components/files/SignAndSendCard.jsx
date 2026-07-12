@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { signPdfFile, imageBlobToPdf } from "@/lib/signPdf";
 import { detectSignatureSpot } from "@/lib/detectSignatureSpot";
 import SignaturePlacementModal from "@/components/files/SignaturePlacementModal";
+import { makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
 
 // Merges the signature onto image documents (bottom-right corner with name & date)
 // and returns the signed PNG blob; PDFs are stamped directly via signPdfFile.
@@ -31,14 +32,14 @@ async function signImageFile(docUrl, sigUrl, signerName, sigId, spot) {
     ? Math.min(Math.max((doc.height * spot.y) / 100 - sh / 2, 8), doc.height - sh - 40)
     : doc.height - sh - 48;
   ctx.drawImage(sig, sx, sy, sw, sh);
-  ctx.fillStyle = "#1e293b";
-  ctx.font = `${Math.max(12, doc.width * 0.018)}px sans-serif`;
-  ctx.textAlign = "right";
-  ctx.fillText(`${signerName} — ${new Date().toLocaleDateString()}`, sx + sw, sy + sh + 16);
-  if (sigId) {
-    ctx.font = `${Math.max(10, doc.width * 0.014)}px monospace`;
-    ctx.fillText(`ID: ${sigId}`, sx + sw, sy + sh + 32);
-  }
+  // Styled verification badge (fingerprint icon + encrypted ID + name & date)
+  // stamped just below the signature.
+  const badge = makeVerificationBadgeCanvas(sigId, signerName);
+  const bw = Math.min(sw * 1.4, doc.width - 16);
+  const bh = bw * (badge.height / badge.width);
+  const bx = Math.min(Math.max(sx + sw / 2 - bw / 2, 8), doc.width - bw - 8);
+  const by = Math.min(sy + sh + 6, doc.height - bh - 8);
+  ctx.drawImage(badge, bx, by, bw, bh);
   return await new Promise((r) => canvas.toBlob(r, "image/png"));
 }
 
