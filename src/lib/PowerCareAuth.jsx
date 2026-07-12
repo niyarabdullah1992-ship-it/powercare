@@ -4,6 +4,7 @@ import {
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
   hydrateBlobFromEntity, BLOB_CATEGORIES, getLastLocalWriteAt, fetchCloudVersions,
 } from "./store";
+import { base44 } from "@/api/base44Client";
 
 // Skip merging in cloud data if this browser wrote locally very recently —
 // gives the in-flight edit a moment to finish syncing before a poll/refresh
@@ -125,6 +126,29 @@ export function AuthProvider({ children }) {
     const interval = setInterval(refresh, 10000);
     return () => clearInterval(interval);
   }, [refresh]);
+
+  // Instant cross-device sync: the backend bumps a tiny SyncSignal record after every
+  // write, and this realtime subscription pulls the changes the moment it fires —
+  // no waiting for the next poll. Also refreshes when the user returns to the tab.
+  useEffect(() => {
+    if (!session?.companyId) return;
+    let unsubscribe = null;
+    try {
+      unsubscribe = base44.entities.SyncSignal.subscribe((event) => {
+        if (event?.data?.companyId === session.companyId) refresh();
+      });
+    } catch {
+      // realtime unavailable — the 10s poll above remains the fallback
+    }
+    const onVisible = () => { if (document.visibilityState !== "hidden") refresh(); };
+    window.addEventListener("focus", onVisible);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      if (typeof unsubscribe === "function") unsubscribe();
+      window.removeEventListener("focus", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [session?.companyId, refresh]);
 
   const login = async (email, password) => {
     // Try the company-owner account first, then fall back to a personal employee login.

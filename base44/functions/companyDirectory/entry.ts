@@ -47,6 +47,23 @@ async function getAuth(base44, body) {
   return { role: s.role, userId: s.userId };
 }
 
+/* ----- realtime change signal ----- */
+// Bumps a tiny public counter after every write so other open devices get an
+// instant realtime event and pull the changes immediately (instead of waiting
+// for the next poll). The signal carries no data beyond companyId + version.
+async function bumpSignal(base44, companyId) {
+  try {
+    const existing = await base44.asServiceRole.entities.SyncSignal.filter({ companyId });
+    if (existing.length) {
+      await base44.asServiceRole.entities.SyncSignal.update(existing[0].id, { version: (existing[0].version || 0) + 1 });
+    } else {
+      await base44.asServiceRole.entities.SyncSignal.create({ companyId, version: 1 });
+    }
+  } catch (e) {
+    console.error('bumpSignal failed:', e.message);
+  }
+}
+
 /* ----- delta sync ----- */
 // Upserts a collection by diff: creates new records, updates only changed ones and
 // deletes removed ones — instead of wiping and re-inserting everything on every sync.
@@ -184,6 +201,7 @@ Deno.serve(async (req) => {
       const incoming = (Array.isArray(employees) ? employees : []).map(({ id, ...rest }) => ({ ...rest, employeeId: id, companyId }));
       const current = await base44.asServiceRole.entities.Employee.filter({ companyId });
       await diffSync(base44.asServiceRole.entities.Employee, current, incoming, 'employeeId');
+      await bumpSignal(base44, companyId);
       return Response.json({ ok: true });
     }
 
@@ -197,6 +215,7 @@ Deno.serve(async (req) => {
       const incoming = (Array.isArray(stations) ? stations : []).map(({ id, ...rest }) => ({ ...rest, stationId: id, companyId }));
       const current = await base44.asServiceRole.entities.Station.filter({ companyId });
       await diffSync(base44.asServiceRole.entities.Station, current, incoming, 'stationId');
+      await bumpSignal(base44, companyId);
       return Response.json({ ok: true });
     }
 
@@ -234,6 +253,7 @@ Deno.serve(async (req) => {
       } else {
         await base44.asServiceRole.entities.CompanyDataBlob.create({ companyId, category, payload: data });
       }
+      await bumpSignal(base44, companyId);
       return Response.json({ ok: true });
     }
 
