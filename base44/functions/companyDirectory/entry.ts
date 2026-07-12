@@ -47,6 +47,38 @@ async function getAuth(base44, body) {
   return { role: s.role, userId: s.userId };
 }
 
+/* ----- delta sync ----- */
+// Upserts a collection by diff: creates new records, updates only changed ones and
+// deletes removed ones — instead of wiping and re-inserting everything on every sync.
+async function diffSync(entity, current, incoming, key) {
+  const seen = new Set();
+  const toDelete = [];
+  const currentByKey = new Map();
+  for (const r of current) {
+    if (seen.has(r[key])) { toDelete.push(r.id); continue; } // stray duplicate
+    seen.add(r[key]);
+    currentByKey.set(r[key], r);
+  }
+  const incomingKeys = new Set(incoming.map((r) => r[key]));
+  const toCreate = [];
+  const toUpdate = [];
+  for (const rec of incoming) {
+    const existing = currentByKey.get(rec[key]);
+    if (!existing) { toCreate.push(rec); continue; }
+    const changed = Object.keys(rec).some((k) => JSON.stringify(rec[k] ?? null) !== JSON.stringify(existing[k] ?? null));
+    if (changed) toUpdate.push({ id: existing.id, ...rec });
+  }
+  for (const [k, r] of currentByKey) if (!incomingKeys.has(k)) toDelete.push(r.id);
+  // Deletion-only changes must still bump a version stamp so other devices notice.
+  if (!toCreate.length && !toUpdate.length && toDelete.length && incoming.length) {
+    const survivor = currentByKey.get(incoming[0][key]);
+    if (survivor) toUpdate.push({ id: survivor.id, ...incoming[0] });
+  }
+  if (toCreate.length) await entity.bulkCreate(toCreate);
+  if (toUpdate.length) await entity.bulkUpdate(toUpdate);
+  for (const id of toDelete) await entity.delete(id);
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -149,13 +181,9 @@ Deno.serve(async (req) => {
 
     if (action === 'syncEmployees') {
       const { employees } = body;
+      const incoming = (Array.isArray(employees) ? employees : []).map(({ id, ...rest }) => ({ ...rest, employeeId: id, companyId }));
       const current = await base44.asServiceRole.entities.Employee.filter({ companyId });
-      if (current.length) await base44.asServiceRole.entities.Employee.deleteMany({ companyId });
-      if (Array.isArray(employees) && employees.length) {
-        await base44.asServiceRole.entities.Employee.bulkCreate(
-          employees.map(({ id, ...rest }) => ({ ...rest, employeeId: id, companyId }))
-        );
-      }
+      await diffSync(base44.asServiceRole.entities.Employee, current, incoming, 'employeeId');
       return Response.json({ ok: true });
     }
 
@@ -166,14 +194,26 @@ Deno.serve(async (req) => {
 
     if (action === 'syncStations') {
       const { stations } = body;
+      const incoming = (Array.isArray(stations) ? stations : []).map(({ id, ...rest }) => ({ ...rest, stationId: id, companyId }));
       const current = await base44.asServiceRole.entities.Station.filter({ companyId });
-      if (current.length) await base44.asServiceRole.entities.Station.deleteMany({ companyId });
-      if (Array.isArray(stations) && stations.length) {
-        await base44.asServiceRole.entities.Station.bulkCreate(
-          stations.map(({ id, ...rest }) => ({ ...rest, stationId: id, companyId }))
-        );
-      }
+      await diffSync(base44.asServiceRole.entities.Station, current, incoming, 'stationId');
       return Response.json({ ok: true });
+    }
+
+    // Lightweight change detection — returns a per-collection version stamp so clients
+    // can skip downloading collections that haven't changed since their last pull.
+    if (action === 'getVersions') {
+      const [emp, st, blobs] = await Promise.all([
+        base44.asServiceRole.entities.Employee.filter({ companyId }, '-updated_date', 1),
+        base44.asServiceRole.entities.Station.filter({ companyId }, '-updated_date', 1),
+        base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId }),
+      ]);
+      const versions = {
+        employees: emp[0]?.updated_date || null,
+        stations: st[0]?.updated_date || null,
+      };
+      for (const b of blobs) versions['blob:' + b.category] = b.updated_date || null;
+      return Response.json({ versions });
     }
 
     if (action === 'getStations') {

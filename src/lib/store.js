@@ -227,6 +227,17 @@ async function syncBlobToEntity(companyId, category, payload) {
   }
 }
 
+// Lightweight per-collection version stamps — used by the auth provider's poll to
+// download only the collections that actually changed since the last pull (delta sync).
+export async function fetchCloudVersions(companyId) {
+  try {
+    const res = await invokeDirectory({ action: "getVersions", companyId });
+    return res?.data?.versions || null;
+  } catch {
+    return null;
+  }
+}
+
 // Fetches the authoritative, persisted array for a category from the real database.
 export async function hydrateBlobFromEntity(companyId, category) {
   try {
