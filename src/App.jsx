@@ -50,6 +50,8 @@ if (typeof window !== "undefined") {
       import('./pages/MyTasks');
       import('./pages/Attendance');
       import('./pages/StationChat');
+      import('./pages/Reports');
+      import('./pages/DailyReport');
       import('./pages/Login');
     });
   });

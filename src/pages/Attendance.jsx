@@ -1,17 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { canCreateTasks, isCompanyOwner, visibleEmployees } from "@/lib/permissions";
+import { Loader2 } from "lucide-react";
 import CheckInOutCard from "@/components/attendance/CheckInOutCard";
 import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDashboard";
-import AttendanceMonthlyReport from "@/components/attendance/AttendanceMonthlyReport";
-import AttendanceSettingsPanel from "@/components/attendance/AttendanceSettingsPanel";
-import AttendanceLocationsPanel from "@/components/attendance/AttendanceLocationsPanel";
-import AttendanceAnalytics from "@/components/attendance/AttendanceAnalytics";
-import AttendanceMapDashboard from "@/components/attendance/AttendanceMapDashboard";
-import ScheduleTab from "@/components/attendance/ScheduleTab";
 import CalendarExportCard from "@/components/calendar/CalendarExportCard";
+
+// Heavy tabs (maps/charts) load only when their tab is actually opened —
+// the page itself now appears instantly with the check-in card + team list.
+const AttendanceMonthlyReport = lazy(() => import("@/components/attendance/AttendanceMonthlyReport"));
+const AttendanceSettingsPanel = lazy(() => import("@/components/attendance/AttendanceSettingsPanel"));
+const AttendanceLocationsPanel = lazy(() => import("@/components/attendance/AttendanceLocationsPanel"));
+const AttendanceAnalytics = lazy(() => import("@/components/attendance/AttendanceAnalytics"));
+const AttendanceMapDashboard = lazy(() => import("@/components/attendance/AttendanceMapDashboard"));
+const ScheduleTab = lazy(() => import("@/components/attendance/ScheduleTab"));
+
+function TabLoader() {
+  return <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>;
+}
 
 export default function Attendance() {
   const { t } = useI18n();
@@ -72,16 +80,18 @@ export default function Attendance() {
           </div>
 
           {tab === "team" && <AttendanceDailyDashboard employees={employees} currentUser={currentUser} t={t} />}
-          {tab === "map" && <AttendanceMapDashboard employees={employees} t={t} />}
-          {tab === "schedule" && <ScheduleTab />}
-          {tab === "report" && <AttendanceMonthlyReport employees={employees} defaultEmployeeId={currentUser.id} t={t} />}
-          {tab === "analytics" && <AttendanceAnalytics employees={employees} t={t} />}
-          {tab === "settings" && canEditSettings && (
-            <div className="space-y-4">
-              <AttendanceLocationsPanel company={company} currentUser={currentUser} t={t} />
-              <AttendanceSettingsPanel company={company} currentUser={currentUser} t={t} />
-            </div>
-          )}
+          <Suspense fallback={<TabLoader />}>
+            {tab === "map" && <AttendanceMapDashboard employees={employees} t={t} />}
+            {tab === "schedule" && <ScheduleTab />}
+            {tab === "report" && <AttendanceMonthlyReport employees={employees} defaultEmployeeId={currentUser.id} t={t} />}
+            {tab === "analytics" && <AttendanceAnalytics employees={employees} t={t} />}
+            {tab === "settings" && canEditSettings && (
+              <div className="space-y-4">
+                <AttendanceLocationsPanel company={company} currentUser={currentUser} t={t} />
+                <AttendanceSettingsPanel company={company} currentUser={currentUser} t={t} />
+              </div>
+            )}
+          </Suspense>
         </div>
       )}
     </div>
