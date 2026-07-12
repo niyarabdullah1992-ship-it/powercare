@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     if (action === "syncRoster") {
       const { companyId, employees } = body;
       if (!companyId || !Array.isArray(employees)) return Response.json({ error: "Missing fields" }, { status: 400 });
-      const rows = employees.map((e) => ({ employee_id: e.id, company_id: companyId, name: e.name, station_id: e.stationId || null }));
+      const rows = employees.map((e) => ({ employee_id: e.id, company_id: companyId, name: e.name, station_id: e.stationId || null, manager_id: e.managerId || null }));
       if (rows.length === 0) return Response.json({ ok: true });
       const res = await fetch(`${SUPABASE_URL}/rest/v1/employees_directory`, {
         method: "POST",
@@ -75,9 +75,60 @@ Deno.serve(async (req) => {
       });
       if (!res.ok) {
         const err = await res.json();
-        return Response.json({ error: err?.message || "Failed to sync roster — run: CREATE TABLE IF NOT EXISTS employees_directory (employee_id text primary key, company_id text, name text, station_id text, updated_at timestamptz default now());" }, { status: 400 });
+        return Response.json({ error: err?.message || "Failed to sync roster — run: CREATE TABLE IF NOT EXISTS employees_directory (employee_id text primary key, company_id text, name text, station_id text, updated_at timestamptz default now()); -- if it already exists: ALTER TABLE employees_directory ADD COLUMN IF NOT EXISTS manager_id text, ADD COLUMN IF NOT EXISTS late_alert_sent_date text;" }, { status: 400 });
       }
       return Response.json({ ok: true });
+    }
+
+    // ---- Instant late-check-in alert: notifies the responsible manager the moment ----
+    // an employee passes (work start time + late threshold) without checking in yet.
+    if (action === "checkLateAlerts") {
+      const date = todayStr();
+      const dirRes = await fetch(`${SUPABASE_URL}/rest/v1/employees_directory?select=*`, { headers });
+      const directory = await dirRes.json();
+      if (!dirRes.ok || !Array.isArray(directory) || directory.length === 0) return Response.json({ ok: true, alerted: 0 });
+
+      const attRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?date=eq.${date}&select=employee_id`, { headers });
+      const attRows = await attRes.json();
+      const checkedIn = new Set((Array.isArray(attRows) ? attRows : []).map((r) => r.employee_id));
+
+      const settingsCache = {};
+      const getSettings = async (companyId) => {
+        if (settingsCache[companyId]) return settingsCache[companyId];
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(companyId)}`, { headers });
+        const rows = await res.json();
+        const s = (Array.isArray(rows) && rows[0]) || { work_start_time: "08:00", late_threshold_minutes: 15 };
+        settingsCache[companyId] = s;
+        return s;
+      };
+
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      let alerted = 0;
+      for (const emp of directory) {
+        if (checkedIn.has(emp.employee_id)) continue;
+        if (emp.late_alert_sent_date === date) continue;
+        if (!emp.manager_id) continue;
+        const settings = await getSettings(emp.company_id);
+        const startMinutes = toMinutes(settings.work_start_time || "08:00");
+        const lateMinutes = nowMinutes - startMinutes;
+        if (lateMinutes <= (settings.late_threshold_minutes || 15)) continue;
+        await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            user_id: emp.manager_id,
+            message: `⏰ ${emp.name || "Employee"} has not checked in — ${lateMinutes} minutes past the allowed time.`,
+          }),
+        });
+        await fetch(`${SUPABASE_URL}/rest/v1/employees_directory?employee_id=eq.${encodeURIComponent(emp.employee_id)}`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ late_alert_sent_date: date }),
+        });
+        alerted++;
+      }
+      return Response.json({ ok: true, alerted });
     }
 
     // ---- Check in / out ----

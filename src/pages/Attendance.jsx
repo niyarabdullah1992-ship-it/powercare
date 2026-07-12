@@ -21,10 +21,15 @@ export default function Attendance() {
 
   useEffect(() => {
     if (!isManager || !company || employees.length === 0) return;
+    const director = data.employees.find((e) => e.role === "director")?.id || null;
+    const managerFor = (e) => {
+      const station = data.stations.find((s) => s.id === e.stationId);
+      return station?.managerId || director;
+    };
     base44.functions.invoke("supabaseAttendance", {
       action: "syncRoster",
       companyId: company.id,
-      employees: employees.map((e) => ({ id: e.id, name: e.name, stationId: e.stationId })),
+      employees: employees.map((e) => ({ id: e.id, name: e.name, stationId: e.stationId, managerId: managerFor(e) })),
     }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isManager, company?.id, employees.length]);
