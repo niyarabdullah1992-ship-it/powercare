@@ -352,6 +352,8 @@ const dict = {
     foldersLabel: "Folders",
     itemsUnit: "items",
     myStation: "My Station",
+    useMyLocation: "Use my current location",
+    tapMapToSet: "Tap the map to place the station marker.",
   },
   ar: {
     dir: "rtl",
@@ -703,6 +705,8 @@ const dict = {
     foldersLabel: "المجلدات",
     itemsUnit: "عنصر",
     myStation: "محطتي",
+    useMyLocation: "استخدم موقعي الحالي",
+    tapMapToSet: "اضغط على الخريطة لتحديد موقع المحطة.",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

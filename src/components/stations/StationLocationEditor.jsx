@@ -1,32 +1,114 @@
 import React, { useState } from "react";
-import { Check, X, MapPin } from "lucide-react";
+import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from "react-leaflet";
+import L from "leaflet";
+import { X, MapPin, LocateFixed, Loader2, Check } from "lucide-react";
+import "leaflet/dist/leaflet.css";
 
-// Inline editor for a station's fixed GPS coordinates + allowed check-in radius —
-// used by attendance location verification to flag employees as inside/outside.
+const markerIcon = new L.Icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+const DEFAULT_CENTER = [24.7136, 46.6753]; // Riyadh
+
+function ClickToPlace({ onPick }) {
+  useMapEvents({ click: (e) => onPick([e.latlng.lat, e.latlng.lng]) });
+  return null;
+}
+
+function Recenter({ pos }) {
+  const map = useMap();
+  React.useEffect(() => {
+    if (pos) map.setView(pos, Math.max(map.getZoom(), 15));
+  }, [pos?.[0], pos?.[1]]);
+  return null;
+}
+
+// Smart map-based picker for a station's GPS location + allowed check-in radius:
+// tap the map to place the marker, or use the device's current location — no
+// manual coordinate typing needed.
 export default function StationLocationEditor({ t, station, onSave, onCancel }) {
-  const [lat, setLat] = useState(station.lat ?? "");
-  const [lng, setLng] = useState(station.lng ?? "");
+  const [pos, setPos] = useState(station.lat != null && station.lng != null ? [station.lat, station.lng] : null);
   const [radius, setRadius] = useState(station.radiusMeters ?? 200);
+  const [locating, setLocating] = useState(false);
+  const [error, setError] = useState("");
+
+  const useMyLocation = () => {
+    setError("");
+    if (!navigator.geolocation) { setError(t("locationDenied")); return; }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (p) => { setPos([p.coords.latitude, p.coords.longitude]); setLocating(false); },
+      () => { setError(t("locationDenied")); setLocating(false); },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
 
   const submit = () => {
     onSave({
-      lat: lat === "" ? null : Number(lat),
-      lng: lng === "" ? null : Number(lng),
+      lat: pos ? pos[0] : null,
+      lng: pos ? pos[1] : null,
       radiusMeters: Number(radius) || 200,
     });
   };
 
   return (
-    <div className="space-y-2 p-2 rounded-md border border-border bg-background">
-      <div className="grid grid-cols-2 gap-1.5">
-        <input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} placeholder={t("stationLat")} className="px-2 py-1 rounded-md border border-input text-xs font-body" />
-        <input type="number" step="any" value={lng} onChange={(e) => setLng(e.target.value)} placeholder={t("stationLng")} className="px-2 py-1 rounded-md border border-input text-xs font-body" />
-      </div>
-      <div className="flex items-center gap-1.5">
-        <input type="number" min="10" value={radius} onChange={(e) => setRadius(e.target.value)} placeholder={t("stationRadius")} className="flex-1 px-2 py-1 rounded-md border border-input text-xs font-body" />
-        <span className="text-[10px] text-muted-foreground shrink-0">{t("metersUnit")}</span>
-        <button onClick={submit} className="p-1 rounded-md hover:bg-accent/10 text-accent"><Check className="w-3.5 h-3.5" /></button>
-        <button onClick={onCancel} className="p-1 rounded-md hover:bg-muted text-muted-foreground"><X className="w-3.5 h-3.5" /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onCancel}>
+      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-lg rounded-xl border border-border bg-card overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <h3 className="font-heading font-semibold text-sm flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-accent" /> {t("setLocation")} — <span dir="auto">{station.name}</span>
+          </h3>
+          <button onClick={onCancel} className="p-1 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
+        </div>
+
+        <div className="px-4 py-2 flex items-center justify-between gap-2 border-b border-border">
+          <p className="text-[11px] text-muted-foreground font-body">{t("tapMapToSet")}</p>
+          <button
+            onClick={useMyLocation}
+            disabled={locating}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent/10 text-accent text-xs font-body hover:bg-accent/20 disabled:opacity-50 shrink-0"
+          >
+            {locating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LocateFixed className="w-3.5 h-3.5" />}
+            {t("useMyLocation")}
+          </button>
+        </div>
+
+        <div className="h-72">
+          <MapContainer center={pos || DEFAULT_CENTER} zoom={pos ? 15 : 6} style={{ height: "100%", width: "100%" }}>
+            <TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <ClickToPlace onPick={setPos} />
+            <Recenter pos={pos} />
+            {pos && <Marker position={pos} icon={markerIcon} />}
+            {pos && <Circle center={pos} radius={Number(radius) || 200} pathOptions={{ color: "#b07d3f", fillOpacity: 0.12 }} />}
+          </MapContainer>
+        </div>
+
+        <div className="px-4 py-3 space-y-2 border-t border-border">
+          {error && <p className="text-xs text-destructive font-body">{error}</p>}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-muted-foreground font-body shrink-0">{t("stationRadius")}</label>
+            <input
+              type="number" min="10"
+              value={radius}
+              onChange={(e) => setRadius(e.target.value)}
+              className="w-24 px-2 py-1.5 rounded-md border border-input text-sm font-body"
+            />
+            <span className="text-xs text-muted-foreground font-body">{t("metersUnit")}</span>
+            <div className="ms-auto flex items-center gap-2">
+              <button onClick={onCancel} className="px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">{t("cancel")}</button>
+              <button
+                onClick={submit}
+                disabled={!pos}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-foreground text-background text-xs font-body disabled:opacity-50"
+              >
+                <Check className="w-3.5 h-3.5" /> {t("save")}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
