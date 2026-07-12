@@ -10,25 +10,27 @@ function minutesBetween(start, end) {
   return mins;
 }
 
-export default function ScheduleStatsBar({ employees, shiftTypes, assignments }) {
+export default function ScheduleStatsBar({ employees, shiftTypes, assignments, monthDates }) {
   const { t } = useI18n();
+  const days = monthDates || [];
   let scheduledMinutes = 0;
   let filledCells = 0;
-  const totalCells = 7 * shiftTypes.length;
+  const totalCells = days.length * shiftTypes.length;
 
-  for (let day = 0; day < 7; day++) {
+  days.forEach((d) => {
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     shiftTypes.forEach((st) => {
-      const ids = assignments?.[day]?.[st.id] || [];
+      const ids = assignments?.[key]?.[st.id] || [];
       if (ids.length > 0) filledCells++;
       scheduledMinutes += ids.length * minutesBetween(st.start, st.end);
     });
-  }
+  });
   const coverage = totalCells > 0 ? Math.round((filledCells / totalCells) * 100) : 0;
   const openShifts = totalCells - filledCells;
 
   const stats = [
     { icon: Users, value: employees.length, sub: t("activeEmployees") },
-    { icon: Clock, value: `${Math.round(scheduledMinutes / 60)}h`, sub: t("thisWeek") },
+    { icon: Clock, value: `${Math.round(scheduledMinutes / 60)}h`, sub: t("thisMonth") },
     { icon: ShieldCheck, value: `${coverage}%`, sub: coverage >= 90 ? t("excellent") : t("coverageRate") },
     { icon: AlertCircle, value: openShifts, sub: t("needCoverage") },
   ];

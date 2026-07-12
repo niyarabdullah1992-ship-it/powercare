@@ -3,12 +3,10 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canManageSchedule } from "@/lib/permissions";
 import { ArrowLeft, CalendarClock, Download } from "lucide-react";
-import StationScheduleEditor from "@/components/schedules/StationScheduleEditor";
+import StationScheduleEditor, { getMonthDates, dateKey } from "@/components/schedules/StationScheduleEditor";
 import { exportCSV } from "@/lib/exportReport";
 
-const DAY_LABELS = ["daySun", "dayMon", "dayTue", "dayWed", "dayThu", "dayFri", "daySat"];
-
-// Weekly station shift schedule — now embedded as a tab inside Attendance instead of
+// Monthly station shift schedule — now embedded as a tab inside Attendance instead of
 // a separate page, since both cover the same "who works when" concept.
 export default function ScheduleTab() {
   const { t } = useI18n();
@@ -29,7 +27,7 @@ export default function ScheduleTab() {
                 <CalendarClock className="w-4 h-4 text-accent" />
                 <h3 className="font-heading font-semibold">{s.name}</h3>
               </div>
-              <p className="text-sm text-muted-foreground font-body">{t("weeklySchedule")}</p>
+              <p className="text-sm text-muted-foreground font-body">{t("monthlySchedule")}</p>
             </button>
           ))}
         </div>
@@ -43,11 +41,13 @@ export default function ScheduleTab() {
   const handleExport = () => {
     const schedule = (data.schedules || []).find((s) => s.stationId === selectedStation);
     const shiftTypes = schedule?.shiftTypes || [];
-    const headers = [t("shift"), ...DAY_LABELS.map((k) => t(k))];
+    const now = new Date();
+    const monthDates = getMonthDates(now.getFullYear(), now.getMonth());
+    const headers = [t("shift"), ...monthDates.map((d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" }))];
     const rows = shiftTypes.map((st) => {
       const shiftCell = `${st.label} (${st.start}–${st.end})`;
-      const dayCells = DAY_LABELS.map((_, dayIndex) => {
-        const ids = schedule?.assignments?.[dayIndex]?.[st.id] || [];
+      const dayCells = monthDates.map((d) => {
+        const ids = schedule?.assignments?.[dateKey(d)]?.[st.id] || [];
         return ids.map((id) => data.employees.find((e) => e.id === id)?.name).filter(Boolean).join(", ");
       });
       return [shiftCell, ...dayCells];
