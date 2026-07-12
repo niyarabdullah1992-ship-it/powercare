@@ -11,6 +11,7 @@ import { badgeFor, nextBadge } from "@/lib/rewards";
 import { getRoleLabel } from "@/lib/roles";
 import { base44 } from "@/api/base44Client";
 import RoleLabelsEditor from "@/components/employees/RoleLabelsEditor";
+import RolesGuide from "@/components/employees/RolesGuide";
 import EmployeePoints from "@/components/employees/EmployeePoints";
 import EmployeePerformance from "@/components/employees/EmployeePerformance";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
@@ -106,6 +107,8 @@ export default function Employees() {
     return (
       <div className="space-y-6">
         <h1 className="font-heading text-3xl font-semibold">{t("employees")}</h1>
+
+        <RolesGuide company={company} />
 
         {(canTransfer || currentUser.role === "director") && (
           <div className="p-4 rounded-xl border border-border bg-card">
