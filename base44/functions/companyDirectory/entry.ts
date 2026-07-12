@@ -4,6 +4,26 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 // the Employee/Station entities themselves are locked down (no public RLS),
 // so this function is the sole gateway and always filters by companyId,
 // preventing one company from ever reading or writing another's records.
+// Passwords are stored as salted SHA-256 hashes ("sha256$<salt>$<hex>") — never plaintext.
+async function sha256Hex(text) {
+  const data = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+async function hashPassword(password, salt) {
+  const s = salt || crypto.randomUUID().replace(/-/g, '');
+  const hex = await sha256Hex(s + '::' + password);
+  return `sha256$${s}$${hex}`;
+}
+async function verifyPassword(password, stored) {
+  if (!stored) return false;
+  if (String(stored).startsWith('sha256$')) {
+    const salt = String(stored).split('$')[1];
+    return (await hashPassword(password, salt)) === stored;
+  }
+  return stored === password; // legacy plaintext record (upgraded on successful login)
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -16,8 +36,19 @@ Deno.serve(async (req) => {
       const { email, password } = body;
       if (!email || !password) return Response.json({ error: 'Missing credentials' }, { status: 400 });
       const all = await base44.asServiceRole.entities.CompanyAccount.list();
-      const found = all.find((c) => c.ownerEmail.toLowerCase() === String(email).toLowerCase() && c.ownerPassword === password);
-      return Response.json({ company: found || null });
+      let found = null;
+      for (const c of all) {
+        if (c.ownerEmail.toLowerCase() !== String(email).toLowerCase()) continue;
+        if (await verifyPassword(password, c.ownerPassword)) { found = c; break; }
+      }
+      if (!found) return Response.json({ company: null });
+      // Legacy plaintext record — upgrade it to a hash now that the login succeeded.
+      if (!String(found.ownerPassword).startsWith('sha256$')) {
+        await base44.asServiceRole.entities.CompanyAccount.update(found.id, { ownerPassword: await hashPassword(password) });
+      }
+      // Never send the stored password (even hashed) back to the client.
+      const { ownerPassword: _pw, ...safe } = found;
+      return Response.json({ company: safe });
     }
 
     if (!companyId) return Response.json({ error: 'Missing companyId' }, { status: 400 });
@@ -82,7 +113,14 @@ Deno.serve(async (req) => {
     if (action === 'syncAccount') {
       const { name, ownerEmail, ownerPassword, plan, allowedEmailDomain } = body;
       const existing = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
-      const fields = { companyId, name, ownerEmail, ownerPassword, plan, allowedEmailDomain: allowedEmailDomain || '' };
+      // Always store a hash — hash incoming plaintext; keep the existing hash if none was sent.
+      let storedPassword = ownerPassword;
+      if (storedPassword && !String(storedPassword).startsWith('sha256$')) {
+        storedPassword = await hashPassword(storedPassword);
+      } else if (!storedPassword && existing.length) {
+        storedPassword = existing[0].ownerPassword;
+      }
+      const fields = { companyId, name, ownerEmail, ownerPassword: storedPassword, plan, allowedEmailDomain: allowedEmailDomain || '' };
       if (existing.length) {
         await base44.asServiceRole.entities.CompanyAccount.update(existing[0].id, fields);
       } else {

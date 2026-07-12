@@ -336,9 +336,11 @@ export async function companyLogin(email, password) {
       const res = await base44.functions.invoke("companyDirectory", { action: "findAccountByEmail", email, password });
       const remote = res?.data?.company;
       if (remote) {
+        // The server verified the credentials but never returns the stored password —
+        // cache the password the user just typed for future local logins on this device.
         company = {
           id: remote.companyId, name: remote.name, ownerEmail: remote.ownerEmail,
-          ownerPassword: remote.ownerPassword, plan: remote.plan, allowedEmailDomain: remote.allowedEmailDomain || "",
+          ownerPassword: password, plan: remote.plan, allowedEmailDomain: remote.allowedEmailDomain || "",
           createdAt: remote.created_date,
         };
         reg.companies.push(company);
