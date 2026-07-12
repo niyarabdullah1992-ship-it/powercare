@@ -8,7 +8,7 @@ import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, HardHat, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, GripVertical, ClipboardCheck, X,
+  Users, HardHat, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, GripVertical, ClipboardCheck, X, FolderOpen,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -97,6 +97,7 @@ export default function Layout({ children }) {
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks") },
     { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling") },
     { to: "/app/chat", icon: MessageSquare, label: t("chat") },
+    { to: "/app/files", icon: FolderOpen, label: t("files") },
 
     { to: "/app/complaints", icon: Megaphone, label: t("allComplaints") },
     { to: "/app/employees", icon: Users, label: t("employees") },

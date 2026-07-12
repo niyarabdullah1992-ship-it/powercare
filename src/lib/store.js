@@ -167,6 +167,7 @@ function emptyCompanyData(meta) {
     anonymousReports: [],
     publicReports: [],
     safety: [],
+    files: [],
     plans: [],
     notifications: [],
     templates: [],
@@ -213,7 +214,7 @@ function saveCompanyData(id, data) {
    Tasks, reports, anonymous reports, safety, plans, schedules and HR levels are synced the same
    way as employees/stations: the localStorage blob stays the instant cache, while each full array
    is additionally persisted to the CompanyDataBlob entity so it survives beyond this browser. */
-export const BLOB_CATEGORIES = ["tasks", "reports", "anonymousReports", "safety", "plans", "schedules", "hrLevels"];
+export const BLOB_CATEGORIES = ["tasks", "reports", "anonymousReports", "safety", "plans", "schedules", "hrLevels", "files"];
 const lastSyncedBlobJSON = {};
 async function syncBlobToEntity(companyId, category, payload) {
   const key = `${companyId}_${category}`;
@@ -937,6 +938,39 @@ export function unassignEmployeeFromShift(companyId, stationId, weekday, shiftTy
     const entry = getOrCreateSchedule(d, stationId);
     if (!entry.assignments[weekday]?.[shiftTypeId]) return;
     entry.assignments[weekday][shiftTypeId] = entry.assignments[weekday][shiftTypeId].filter((id) => id !== employeeId);
+  });
+}
+
+/* ----------------------------- company files (nested folders + documents) -----------------------------
+   A flat node list: every node is either a folder or a file, with parentId pointing at the
+   containing folder (null = root). Folders can nest inside folders without limit. */
+export function addFileFolder(companyId, { name, parentId }) {
+  updateCompany(companyId, (d) => {
+    d.files = d.files || [];
+    d.files.push({ id: uid("fold"), type: "folder", name, parentId: parentId || null, createdAt: new Date().toISOString() });
+  });
+}
+
+export function addCompanyFile(companyId, { name, parentId, url, size, mimeType, uploadedBy }) {
+  updateCompany(companyId, (d) => {
+    d.files = d.files || [];
+    d.files.push({ id: uid("file"), type: "file", name, parentId: parentId || null, url, size, mimeType, uploadedBy, createdAt: new Date().toISOString() });
+  });
+}
+
+// Deletes a node and (for folders) everything nested inside it, at any depth.
+export function deleteFileNode(companyId, nodeId) {
+  updateCompany(companyId, (d) => {
+    d.files = d.files || [];
+    const toRemove = new Set([nodeId]);
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const f of d.files) {
+        if (f.parentId && toRemove.has(f.parentId) && !toRemove.has(f.id)) { toRemove.add(f.id); grew = true; }
+      }
+    }
+    d.files = d.files.filter((f) => !toRemove.has(f.id));
   });
 }
 
