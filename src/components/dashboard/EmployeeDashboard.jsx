@@ -4,6 +4,7 @@ import { useI18n } from "@/lib/i18n";
 import { base44 } from "@/api/base44Client";
 import { ListTodo, CheckCircle2, AlertTriangle, Radio, UserCircle } from "lucide-react";
 import EmployeePoints from "@/components/employees/EmployeePoints";
+import PresenceStatusPicker from "@/components/employees/PresenceStatusPicker";
 
 export default function EmployeeDashboard({ user, company, data }) {
   const { t } = useI18n();
@@ -45,7 +46,10 @@ export default function EmployeeDashboard({ user, company, data }) {
           <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{user.name}</p>
           <h1 className="hero-title text-4xl md:text-5xl">{t("myDay")}</h1>
         </div>
-        <EmployeePoints points={user.points || 0} company={company} />
+        <div className="flex items-center gap-3">
+          <PresenceStatusPicker user={user} />
+          <EmployeePoints points={user.points || 0} company={company} />
+        </div>
       </div>
 
       <div className="p-4 rounded-xl border border-border bg-card flex flex-wrap items-center gap-x-8 gap-y-2">

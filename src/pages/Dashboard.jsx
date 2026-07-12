@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { visibleStations, canSeeAllStations } from "@/lib/permissions";
+import { visibleStations, canSeeAllStations, visibleEmployees } from "@/lib/permissions";
+import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
 import { Radio, AlertTriangle, FileText, TrendingUp } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
 import { formatDate } from "@/lib/dateFormat";
@@ -166,6 +167,8 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      <TeamStatusPanel employees={visibleEmployees(currentUser, data)} t={t} />
 
       {/* Recent activity */}
       <div className="p-6 border border-border bg-card">

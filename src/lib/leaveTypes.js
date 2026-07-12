@@ -30,3 +30,11 @@ export function computeDays(startDate, endDate) {
   if (!startDate || !endDate) return 0;
   return Math.max(1, Math.round((new Date(endDate) - new Date(startDate)) / 86400000) + 1);
 }
+
+// True if this employee has an approved leave request covering today.
+export function isOnLeaveToday(employee) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  return (employee?.leaveRequests || []).some(
+    (r) => r.status === "approved" && r.startDate <= todayStr && r.endDate >= todayStr
+  );
+}

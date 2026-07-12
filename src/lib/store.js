@@ -536,6 +536,15 @@ export function updateEmployeeProfile(companyId, employeeId, profile) {
   });
 }
 
+// Manual presence status the employee sets for themself (online/away/busy/call).
+export function setPresenceStatus(companyId, employeeId, status) {
+  updateCompany(companyId, (d) => {
+    const emp = d.employees.find((e) => e.id === employeeId);
+    if (!emp) return;
+    emp.presenceStatus = status;
+  });
+}
+
 export function addCertificate(companyId, employeeId, cert) {
   updateCompany(companyId, (d) => {
     const emp = d.employees.find((e) => e.id === employeeId);
