@@ -21,7 +21,14 @@ export default function Performance() {
   const stationName = (id) => data.stations.find((s) => s.id === id)?.name || t("hq");
   const roleLabel = (e) => e.customTitle || getRoleLabel(company, e.role, t);
 
-  const ranked = [...data.employees]
+  // Regular employees see only their own station's team — so every member can
+  // compare achievements with their direct colleagues. Managers see everyone.
+  const isManager = currentUser.role !== "employee";
+  const scopedEmployees = isManager
+    ? data.employees
+    : data.employees.filter((e) => (e.stationId || null) === (currentUser.stationId || null));
+
+  const ranked = [...scopedEmployees]
     .map((e) => ({ ...e, points: e.points || 0 }))
     .sort((a, b) => b.points - a.points);
 
@@ -45,9 +52,16 @@ export default function Performance() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="font-heading text-3xl font-semibold flex items-center gap-2">
-          <Trophy className="w-6 h-6" /> {t("performance")}
-        </h1>
+        <div>
+          <h1 className="font-heading text-3xl font-semibold flex items-center gap-2">
+            <Trophy className="w-6 h-6" /> {t("performance")}
+          </h1>
+          {!isManager && (
+            <p className="text-sm text-muted-foreground font-body mt-1">
+              {t("myStation")}: {currentUser.stationId ? stationName(currentUser.stationId) : t("hq")}
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setView("individual")}
@@ -55,6 +69,7 @@ export default function Performance() {
           >
             {t("individualRanking")}
           </button>
+          {isManager && (<>
           <button
             onClick={() => setView("station")}
             className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "station" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
@@ -79,18 +94,21 @@ export default function Performance() {
           >
             {t("individualReport")}
           </button>
+          </>)}
           <button
             onClick={() => setView("achievements")}
             className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "achievements" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
           >
             {t("achievementsBoard")}
           </button>
+          {isManager && (
           <button
             onClick={() => setView("analytics")}
             className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "analytics" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
           >
             {t("analytics")}
           </button>
+          )}
         </div>
       </div>
 
