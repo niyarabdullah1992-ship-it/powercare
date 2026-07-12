@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 
 // Merges the signature onto image documents (bottom-right corner with name & date).
 // Non-image files are sent as-is with the signature attached alongside.
-async function signImageFile(docUrl, sigUrl, signerName) {
+async function signImageFile(docUrl, sigUrl, signerName, sigId) {
   const load = (src) => new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -25,6 +25,10 @@ async function signImageFile(docUrl, sigUrl, signerName) {
   ctx.font = `${Math.max(12, doc.width * 0.018)}px sans-serif`;
   ctx.textAlign = "right";
   ctx.fillText(`${signerName} — ${new Date().toLocaleDateString()}`, doc.width - 24, doc.height - 20);
+  if (sigId) {
+    ctx.font = `${Math.max(10, doc.width * 0.014)}px monospace`;
+    ctx.fillText(`ID: ${sigId}`, doc.width - 24, doc.height - 4);
+  }
   const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
   const file = new File([blob], "signed-document.png", { type: "image/png" });
   const { file_url } = await base44.integrations.Core.UploadFile({ file });
@@ -34,6 +38,7 @@ async function signImageFile(docUrl, sigUrl, signerName) {
 // Upload a document, sign it with your saved signature, and email it to anyone.
 export default function SignAndSendCard({ currentUser, companyName, ar }) {
   const signatureUrl = currentUser?.profile?.signatureUrl || "";
+  const signatureId = currentUser?.profile?.signatureId || "";
   const [doc, setDoc] = useState(null); // { name, url, isImage }
   const [uploading, setUploading] = useState(false);
   const [to, setTo] = useState("");
@@ -65,7 +70,7 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
     try {
       let signedUrl = doc.url;
       if (doc.isImage && signatureUrl) {
-        try { signedUrl = await signImageFile(doc.url, signatureUrl, currentUser.name); } catch { /* fall back to original */ }
+        try { signedUrl = await signImageFile(doc.url, signatureUrl, currentUser.name, signatureId); } catch { /* fall back to original */ }
       }
       const date = new Date().toLocaleString(ar ? "ar" : "en");
       const body = [
@@ -78,6 +83,7 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
         "",
         ar ? `وقّعه: ${currentUser.name}${currentUser.position ? ` — ${currentUser.position}` : ""}` : `Signed by: ${currentUser.name}${currentUser.position ? ` — ${currentUser.position}` : ""}`,
         ar ? `التاريخ: ${date}` : `Date: ${date}`,
+        ...(signatureId ? [ar ? `رقم التحقق المشفّر: ${signatureId}` : `Encrypted verification ID: ${signatureId}`] : []),
         companyName ? (ar ? `الشركة: ${companyName}` : `Company: ${companyName}`) : "",
       ].join("\n");
       await base44.integrations.Core.SendEmail({ from_name: companyName || "PowerCare", to: to.trim(), subject: subject.trim(), body });
