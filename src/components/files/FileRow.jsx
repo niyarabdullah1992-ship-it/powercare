@@ -18,7 +18,7 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function FileRow({ file, onDelete }) {
+export default function FileRow({ file, onDelete, stationName }) {
   const { t, lang } = useI18n();
   const Icon = fileIcon(file.mimeType, file.name);
   return (
@@ -31,6 +31,11 @@ export default function FileRow({ file, onDelete }) {
           {file.uploadedBy ? <> · {t("uploadedBy")} <span dir="auto">{file.uploadedBy}</span></> : null}
         </p>
       </div>
+      {stationName && (
+        <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full bg-accent/10 border border-accent/30 text-accent text-[11px] font-body shrink-0" dir="auto">
+          {stationName}
+        </span>
+      )}
       <a
         href={file.url}
         target="_blank"

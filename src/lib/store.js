@@ -951,10 +951,10 @@ export function addFileFolder(companyId, { name, parentId }) {
   });
 }
 
-export function addCompanyFile(companyId, { name, parentId, url, size, mimeType, uploadedBy }) {
+export function addCompanyFile(companyId, { name, parentId, url, size, mimeType, uploadedBy, stationId }) {
   updateCompany(companyId, (d) => {
     d.files = d.files || [];
-    d.files.push({ id: uid("file"), type: "file", name, parentId: parentId || null, url, size, mimeType, uploadedBy, createdAt: new Date().toISOString() });
+    d.files.push({ id: uid("file"), type: "file", name, parentId: parentId || null, url, size, mimeType, uploadedBy, stationId: stationId || null, createdAt: new Date().toISOString() });
   });
 }
 

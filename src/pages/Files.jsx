@@ -2,9 +2,10 @@ import React, { useState, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { addFileFolder, addCompanyFile, deleteFileNode } from "@/lib/store";
+import { visibleStations } from "@/lib/permissions";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { FolderPlus, Upload, Loader2, ChevronRight, ChevronLeft, Home } from "lucide-react";
+import { FolderPlus, Upload, Loader2, ChevronRight, ChevronLeft, Home, Radio } from "lucide-react";
 import FolderCard from "@/components/files/FolderCard";
 import FileRow from "@/components/files/FileRow";
 import NewFolderDialog from "@/components/files/NewFolderDialog";
@@ -17,11 +18,20 @@ export default function Files() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 
+  // Station scoping: managers/employees tied to stations default to their own station's documents.
+  const myStations = visibleStations(currentUser, data || { stations: [] });
+  const isStationScoped = currentUser?.role === "station_manager" || currentUser?.role === "pgm" || (currentUser?.role === "employee" && currentUser?.stationId);
+  const defaultStation = isStationScoped ? (currentUser.stationId || myStations[0]?.id || "all") : "all";
+  const [stationFilter, setStationFilter] = useState(defaultStation);
+
   const nodes = data?.files || [];
   const currentId = path.length ? path[path.length - 1].id : null;
   const childrenOf = (id) => nodes.filter((n) => (n.parentId || null) === id);
   const folders = childrenOf(currentId).filter((n) => n.type === "folder");
-  const files = childrenOf(currentId).filter((n) => n.type === "file");
+  const matchesStation = (f) =>
+    stationFilter === "all" || (f.stationId || null) === (stationFilter === "hq" ? null : stationFilter);
+  const files = childrenOf(currentId).filter((n) => n.type === "file" && matchesStation(n));
+  const stationName = (id) => data?.stations?.find((s) => s.id === id)?.name || null;
   const Chevron = dir === "rtl" ? ChevronLeft : ChevronRight;
 
   const handleUpload = async (e) => {
@@ -31,9 +41,15 @@ export default function Files() {
     try {
       for (const file of selected) {
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        // Auto-link: the selected station filter wins; otherwise the uploader's own station.
+        const linkedStation =
+          stationFilter !== "all" && stationFilter !== "hq"
+            ? stationFilter
+            : currentUser?.stationId || null;
         addCompanyFile(company.id, {
           name: file.name, parentId: currentId, url: file_url,
           size: file.size, mimeType: file.type, uploadedBy: currentUser?.name || "",
+          stationId: linkedStation,
         });
       }
     } finally {
@@ -83,6 +99,22 @@ export default function Files() {
           {uploading ? t("uploading") : t("uploadFileBtn")}
         </Button>
         <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleUpload} />
+
+        {/* Station filter — station managers land directly on their station's documents */}
+        <div className="flex items-center gap-1.5 ms-auto">
+          <Radio className="w-4 h-4 text-accent shrink-0" strokeWidth={1.5} />
+          <select
+            value={stationFilter}
+            onChange={(e) => setStationFilter(e.target.value)}
+            className="px-3 py-2 rounded-md border border-input bg-card text-sm font-body focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="all">{t("filesAllStations")}</option>
+            <option value="hq">{t("hq")}</option>
+            {myStations.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Folders */}
@@ -109,7 +141,7 @@ export default function Files() {
           <p className="text-xs uppercase tracking-wider text-muted-foreground font-body mb-2">{t("attachments")}</p>
           <div className="space-y-2">
             {files.map((file) => (
-              <FileRow key={file.id} file={file} onDelete={() => deleteFileNode(company.id, file.id)} />
+              <FileRow key={file.id} file={file} stationName={stationName(file.stationId)} onDelete={() => deleteFileNode(company.id, file.id)} />
             ))}
           </div>
         </div>
