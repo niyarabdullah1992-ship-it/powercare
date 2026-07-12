@@ -29,22 +29,25 @@ export function AuthProvider({ children }) {
       // records created on another device/browser eventually show up here too. Local-only
       // records (not yet synced) are kept as-is; server records are merged in additively.
       if (localData) {
+        // Server records are authoritative for anything already synced (so leave requests,
+        // certificates, HR messages, points etc. approved/edited on another device show up
+        // here too). Any local record not yet synced (no server copy yet) is kept as-is.
         hydrateEmployeesFromEntity(s.companyId).then((employees) => {
           if (!employees) return;
           setData((prev) => {
             if (!prev) return prev;
-            const localIds = new Set((prev.employees || []).map((e) => e.id));
-            const merged = [...(prev.employees || []), ...employees.filter((e) => !localIds.has(e.id))];
-            return { ...prev, employees: merged };
+            const serverIds = new Set(employees.map((e) => e.id));
+            const localOnly = (prev.employees || []).filter((e) => !serverIds.has(e.id));
+            return { ...prev, employees: [...employees, ...localOnly] };
           });
         });
         hydrateStationsFromEntity(s.companyId).then((stations) => {
           if (!stations) return;
           setData((prev) => {
             if (!prev) return prev;
-            const localIds = new Set((prev.stations || []).map((st) => st.id));
-            const merged = [...(prev.stations || []), ...stations.filter((st) => !localIds.has(st.id))];
-            return { ...prev, stations: merged };
+            const serverIds = new Set(stations.map((st) => st.id));
+            const localOnly = (prev.stations || []).filter((st) => !serverIds.has(st.id));
+            return { ...prev, stations: [...stations, ...localOnly] };
           });
         });
       }
