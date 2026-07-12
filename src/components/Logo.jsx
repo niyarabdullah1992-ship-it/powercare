@@ -1,6 +1,6 @@
 import React from "react";
 
-const LOGO_URL = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/31dcba9bc_generated_image.png";
+const LOGO_URL = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/df3e1cbab_generated_image.png";
 
 export default function Logo({ size = 36, className = "" }) {
   return (

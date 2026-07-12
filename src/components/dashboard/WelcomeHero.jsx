@@ -8,9 +8,9 @@ export default function WelcomeHero({ name, companyName, t, lang, alerts = [] })
   const hasAlerts = alerts.some((a) => a.value > 0);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-landing-gold/20 bg-gradient-to-br from-[#2a2013] via-[#3a2e1f] to-[#1c150c] p-6 md:p-8">
-      <div className="absolute -top-20 -end-16 w-64 h-64 rounded-full bg-landing-gold/20 blur-[80px] pointer-events-none" />
-      <div className="absolute -bottom-24 -start-10 w-56 h-56 rounded-full bg-landing-gold-deep/20 blur-[80px] pointer-events-none" />
+    <div className="relative overflow-hidden rounded-2xl border border-landing-gold/20 bg-gradient-to-br from-[#6b4f30] via-[#8a6a45] to-[#5c4429] p-6 md:p-8">
+      <div className="absolute -top-20 -end-16 w-64 h-64 rounded-full bg-landing-gold/25 blur-[80px] pointer-events-none" />
+      <div className="absolute -bottom-24 -start-10 w-56 h-56 rounded-full bg-landing-gold-light/20 blur-[80px] pointer-events-none" />
 
       <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div className="flex items-center gap-4">
