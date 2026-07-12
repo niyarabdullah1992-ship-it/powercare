@@ -85,20 +85,28 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
     setSending(true);
     try {
       let signedUrl = doc.url;
-      if (signatureUrl) {
+      if (signatureUrl && (doc.isPdf || doc.isImage)) {
+        // The user's manually chosen spot wins; otherwise AI scans the
+        // document for the blank signature field/frame.
+        let spot = manualSpot;
+        if (!spot) {
+          try { spot = await detectSignatureSpot(doc.url); } catch { spot = null; }
+        }
         try {
-          // The user's manually chosen spot wins; otherwise AI scans the
-          // document for the blank signature field/frame.
-          const spot = manualSpot || ((doc.isPdf || doc.isImage) ? await detectSignatureSpot(doc.url) : null);
           if (doc.isPdf) {
             // Stamp the signature directly onto the detected spot (or last page).
             signedUrl = await signPdfFile(doc.url, signatureUrl, currentUser.name, signatureId, spot);
-          } else if (doc.isImage) {
+          } else {
             // Sign the image, then wrap it into a PDF so the sent file is a PDF.
             const signedBlob = await signImageFile(doc.url, signatureUrl, currentUser.name, signatureId, spot);
             signedUrl = await imageBlobToPdf(signedBlob);
           }
-        } catch { /* fall back to original */ }
+        } catch (err) {
+          console.error("Signature stamping failed:", err);
+          setError(ar ? "تعذّر ختم التوقيع على المستند — حاول مجددًا أو استخدم ملفًا آخر." : "Couldn't stamp the signature onto the document — try again or use a different file.");
+          setSending(false);
+          return;
+        }
       }
       const date = new Date().toLocaleString(ar ? "ar" : "en");
       const body = [
@@ -175,6 +183,8 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
         <SignaturePlacementModal
           doc={doc}
           signatureUrl={signatureUrl}
+          sigId={signatureId}
+          signerName={currentUser?.name}
           ar={ar}
           onConfirm={(spot) => { setManualSpot(spot); setPlacing(false); }}
           onClose={() => setPlacing(false)}

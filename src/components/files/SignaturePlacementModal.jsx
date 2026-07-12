@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, X, MousePointerClick } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
+import { makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -10,7 +11,12 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 // DocuSign-style placement: preview the document's pages and click exactly
 // where the signature should be stamped. Returns { page, x, y } — the center
 // of the signature as percentages measured from the page's top-left corner.
-export default function SignaturePlacementModal({ doc, signatureUrl, ar, onConfirm, onClose }) {
+export default function SignaturePlacementModal({ doc, signatureUrl, sigId, signerName, ar, onConfirm, onClose }) {
+  // Verification badge preview (fingerprint + encrypted ID) shown under the signature.
+  const badgeUrl = React.useMemo(
+    () => (sigId ? makeVerificationBadgeCanvas(sigId, signerName).toDataURL("image/png") : null),
+    [sigId, signerName]
+  );
   const [pdfDoc, setPdfDoc] = useState(null);
   const [page, setPage] = useState(1);
   const [numPages, setNumPages] = useState(1);
@@ -100,6 +106,7 @@ export default function SignaturePlacementModal({ doc, signatureUrl, ar, onConfi
                 ) : (
                   <div className="h-8" />
                 )}
+                {badgeUrl && <img src={badgeUrl} alt="" className="w-full mt-1" draggable={false} />}
               </div>
             )}
           </div>
