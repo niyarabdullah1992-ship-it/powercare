@@ -13,6 +13,7 @@ export default function Pricing() {
   const [activePlan, setActivePlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [billing, setBilling] = useState("monthly");
 
   const PLANS = [
     { id: "free", nameKey: "plan_free", price: 0, features: [t("freeF1"), t("freeF2"), t("freeF3")] },
@@ -38,6 +39,7 @@ export default function Pricing() {
       const res = await base44.functions.invoke("stripeCheckout", {
         action: "createSession",
         plan: activePlan.id,
+        billing,
         companyName,
         ownerEmail,
         returnUrl: window.location.origin,
@@ -65,14 +67,38 @@ export default function Pricing() {
 
         {error && <p className="text-center text-sm text-red-500 font-body mb-6">{error}</p>}
 
+        {/* Billing interval toggle — yearly = 2 months free */}
+        <div className="flex items-center justify-center gap-2 mb-10">
+          <div className="inline-flex items-center bg-white rounded-full p-1 shadow-sm">
+            <button
+              onClick={() => setBilling("monthly")}
+              className={`px-5 py-2 rounded-full text-sm font-body font-medium transition-colors ${billing === "monthly" ? "bg-gradient-to-b from-landing-gold-light to-landing-gold text-white" : "text-[#3a2f22]/60 hover:text-[#3a2f22]"}`}
+            >
+              {t("billMonthly")}
+            </button>
+            <button
+              onClick={() => setBilling("yearly")}
+              className={`px-5 py-2 rounded-full text-sm font-body font-medium transition-colors ${billing === "yearly" ? "bg-gradient-to-b from-landing-gold-light to-landing-gold text-white" : "text-[#3a2f22]/60 hover:text-[#3a2f22]"}`}
+            >
+              {t("billYearly")}
+            </button>
+          </div>
+          <span className="px-3 py-1 rounded-full bg-landing-gold/15 text-landing-gold-deep text-xs font-body font-semibold">
+            {t("yearlySavings")}
+          </span>
+        </div>
+
         <div className="grid md:grid-cols-4 gap-6">
           {PLANS.map((plan) => (
             <div key={plan.id} className="bg-white rounded-2xl p-6 shadow-sm flex flex-col">
               <h3 className="font-heading text-2xl text-[#3a2f22] mb-1">{t(plan.nameKey)}</h3>
               <p className="font-heading text-3xl text-landing-gold mb-1">
-                {plan.price === 0 ? t("plan_free") : `$${plan.price}`}
-                {plan.price > 0 && <span className="text-sm text-[#3a2f22]/40 font-body">{t("perMonth")}</span>}
+                {plan.price === 0 ? t("plan_free") : (billing === "yearly" ? `$${plan.price * 10}` : `$${plan.price}`)}
+                {plan.price > 0 && <span className="text-sm text-[#3a2f22]/40 font-body">{billing === "yearly" ? t("perYear") : t("perMonth")}</span>}
               </p>
+              {plan.price > 0 && billing === "yearly" && (
+                <p className="text-xs text-[#3a2f22]/45 font-body">${plan.price * 10 / 12 % 1 === 0 ? plan.price * 10 / 12 : (plan.price * 10 / 12).toFixed(2)}{t("perMonth")} · {t("billedYearlyNote")}</p>
+              )}
               {plan.price > 0 && (
                 <p className="text-xs text-landing-gold font-body font-medium mb-4">{t("trialBadge")}</p>
               )}

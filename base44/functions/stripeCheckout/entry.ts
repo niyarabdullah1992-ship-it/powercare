@@ -1,9 +1,16 @@
 import Stripe from 'npm:stripe@17.4.0';
 
 const PLAN_PRICES = {
-  starter: 'price_1Tro3sAz7ujPvPWo7k0AlkdX',
-  professional: 'price_1Tro3sAz7ujPvPWoIBbqHn9U',
-  enterprise: 'price_1Tro3sAz7ujPvPWotQRKoAwm',
+  monthly: {
+    starter: 'price_1Tro3sAz7ujPvPWo7k0AlkdX',
+    professional: 'price_1Tro3sAz7ujPvPWoIBbqHn9U',
+    enterprise: 'price_1Tro3sAz7ujPvPWotQRKoAwm',
+  },
+  yearly: {
+    starter: 'price_1TsHYVAz7ujPvPWoBYJSnewC',
+    professional: 'price_1TsHYVAz7ujPvPWoDT5T2QpW',
+    enterprise: 'price_1TsHYVAz7ujPvPWofmRS51uY',
+  },
 };
 
 Deno.serve(async (req) => {
@@ -13,8 +20,9 @@ Deno.serve(async (req) => {
     const action = body.action;
 
     if (action === 'createSession') {
-      const { plan, companyName, ownerEmail, returnUrl } = body;
-      const priceId = PLAN_PRICES[plan];
+      const { plan, companyName, ownerEmail, returnUrl, billing } = body;
+      const interval = billing === 'yearly' ? 'yearly' : 'monthly';
+      const priceId = PLAN_PRICES[interval][plan];
       if (!priceId) return Response.json({ error: 'Invalid plan' }, { status: 400 });
       if (!companyName || !ownerEmail) return Response.json({ error: 'Missing companyName or ownerEmail' }, { status: 400 });
 
@@ -23,7 +31,7 @@ Deno.serve(async (req) => {
         line_items: [{ price: priceId, quantity: 1 }],
         customer_email: ownerEmail,
         subscription_data: {
-          trial_period_days: 180,
+          trial_period_days: 14,
         },
         success_url: `${returnUrl}/pricing-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${returnUrl}/pricing`,
