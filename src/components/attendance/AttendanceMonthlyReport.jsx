@@ -3,6 +3,7 @@ import moment from "moment";
 import { base44 } from "@/api/base44Client";
 import { exportCSV } from "@/lib/exportReport";
 import { FileSpreadsheet } from "lucide-react";
+import MobileSelect from "@/components/mobile/MobileSelect";
 
 const RANGES = [
   { val: "monthly", amount: 1, unit: "months" },
@@ -81,9 +82,12 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
       <h3 className="font-heading text-lg font-semibold">{t("monthlyAttendanceReport")}</h3>
 
       <div className="flex flex-wrap gap-3 items-center">
-        <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body bg-card">
-          {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-        </select>
+        <MobileSelect
+          value={employeeId}
+          onChange={setEmployeeId}
+          placeholder={t("employeeName")}
+          options={employees.map((e) => ({ value: e.id, label: e.name }))}
+        />
         {rows.length > 0 && (
           <button onClick={exportExcel} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
             <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
