@@ -38,6 +38,7 @@ const DailyReport = lazy(() => import('./pages/DailyReport'));
 const Attendance = lazy(() => import('./pages/Attendance'));
 const Files = lazy(() => import('./pages/Files'));
 const Assistant = lazy(() => import('./pages/Assistant'));
+const About = lazy(() => import('./pages/About'));
 
 // After the first page is interactive, quietly download the most-used pages in
 // the background so navigating to them later is instant.
@@ -75,6 +76,7 @@ function AppRoutes() {
     <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/about" element={<About />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/pricing-success" element={<PricingSuccess />} />
       <Route path="/login" element={<Login />} />

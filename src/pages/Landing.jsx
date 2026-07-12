@@ -186,7 +186,7 @@ export default function Landing() {
             <h4 className="font-heading text-lg text-[#3a2f22] mb-3">{t("footerBenefitsHeading")}</h4>
             <ul className="space-y-2 text-sm font-body text-[#3a2f22]/55">
               <li>{t("footerBlog")}</li>
-              <li>{t("footerAbout")}</li>
+              <li><a href="/about" className="hover:text-landing-gold transition-colors">{t("footerAbout")}</a></li>
               <li>{t("footerCareers")}</li>
               <li>{t("footerTerms")}</li>
               <li>{t("footerContact")}</li>
