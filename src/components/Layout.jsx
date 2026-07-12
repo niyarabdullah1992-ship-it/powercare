@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
+import { RefreshCw } from "lucide-react";
 import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
@@ -16,7 +17,7 @@ import SwipeToDeleteItem from "@/components/notifications/SwipeToDeleteItem";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
-  const { currentUser, company, data, switchUser, logout } = useAuth();
+  const { currentUser, company, data, switchUser, logout, isSyncing } = useAuth();
   const navigate = useNavigate();
   const [langOpen, setLangOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -212,6 +213,12 @@ export default function Layout({ children }) {
             </div>
 
             <div className="flex items-center gap-2 md:gap-3">
+              {isSyncing && (
+                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <RefreshCw className="w-3 h-3 animate-spin" strokeWidth={2} />
+                  <span className="hidden sm:inline">{t("syncing") || "Syncing..."}</span>
+                </span>
+              )}
               {/* Language */}
               <div className="relative" ref={langRef}>
                 <button
