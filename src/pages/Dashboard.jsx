@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { visibleStations, canSeeAllStations, visibleEmployees } from "@/lib/permissions";
+import { visibleStations, canSeeAllStations, visibleEmployees, canApproveReports, canReplyAnon } from "@/lib/permissions";
 import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
-import { Radio, AlertTriangle, FileText, TrendingUp } from "lucide-react";
+import WelcomeHero from "@/components/dashboard/WelcomeHero";
+import { Radio, AlertTriangle, FileText, TrendingUp, Bell, Megaphone } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
 import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
@@ -49,13 +50,37 @@ export default function Dashboard() {
   const stations = visibleStations(currentUser, data);
   const stationIds = new Set(stations.map((s) => s.id));
 
+  const unreadNotifs = data.notifications.filter((n) => n.userId === currentUser.id && !n.read).length;
+  const pendingReportsCount = data.reports.filter((r) => stationIds.has(r.stationId) && r.status === "pending").length;
+  const anonOpenCount = data.anonymousReports.filter((a) => stationIds.has(a.stationId) && a.status === "open").length;
+
+  const welcomeAlerts = [
+    { key: "notifications", icon: Bell, label: t("notifications"), value: unreadNotifs },
+    { key: "stoppage", icon: AlertTriangle, label: t("stoppageIssues"), value: stoppageCount },
+    ...(canApproveReports(currentUser) ? [{ key: "reports", icon: FileText, label: t("pendingReports"), value: pendingReportsCount }] : []),
+    ...(canReplyAnon(currentUser) ? [{ key: "anon", icon: Megaphone, label: t("anonymous"), value: anonOpenCount }] : []),
+  ];
+  const welcomeHero = (
+    <WelcomeHero name={currentUser.name} companyName={data.name} t={t} lang={lang} alerts={welcomeAlerts} />
+  );
+
   const isEmployee = currentUser.role === "employee";
 
-  if (isEmployee) return <EmployeeDashboard user={currentUser} company={company} data={data} />;
+  if (isEmployee) return (
+    <div className="space-y-6">
+      {welcomeHero}
+      <EmployeeDashboard user={currentUser} company={company} data={data} />
+    </div>
+  );
 
   // Station-scoped managers get their own station-focused dashboard.
   if (currentUser.role === "station_manager" || currentUser.role === "pgm") {
-    return <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />;
+    return (
+      <div className="space-y-6">
+        {welcomeHero}
+        <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
+      </div>
+    );
   }
 
   const canSeed = currentUser.role === "director" || currentUser.role === "ops_manager";
@@ -105,6 +130,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {welcomeHero}
       <div className="border-b border-border pb-6 flex items-end justify-between flex-wrap gap-3">
         <div>
           <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{data.name}</p>
