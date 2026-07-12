@@ -27,6 +27,27 @@
         "string",
         "null"
       ]
+    },
+    "lat": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Workplace GPS latitude used to verify check-ins."
+    },
+    "lng": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Workplace GPS longitude used to verify check-ins."
+    },
+    "radiusMeters": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Allowed check-in radius around the workplace location, in meters."
     }
   },
   "required": [
