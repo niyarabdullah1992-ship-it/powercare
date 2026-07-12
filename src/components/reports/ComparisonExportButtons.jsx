@@ -1,0 +1,42 @@
+import React from "react";
+import { FileSpreadsheet, Printer } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/PowerCareAuth";
+import { exportExcelColored } from "@/lib/exportExcelColored";
+import { printReport } from "@/lib/printReport";
+
+// Colored Excel + branded PDF export for any comparison table.
+export default function ComparisonExportButtons({ title, headers, rows }) {
+  const { t, dir } = useI18n();
+  const { data, company } = useAuth();
+  if (!rows || rows.length === 0) return null;
+
+  const branding = data?.reportBranding || {};
+  const color = branding.color || "#b07d3f";
+
+  const onExcel = () =>
+    exportExcelColored({ filename: title.replace(/\s+/g, "_"), title, headers, rows, color, dir });
+
+  const onPdf = () =>
+    printReport({
+      title,
+      companyName: company?.name || "",
+      periodLabel: new Date().toLocaleDateString(),
+      dir,
+      stats: [],
+      sections: [{ heading: title, headers, rows }],
+      logoUrl: branding.logoUrl || "",
+      color,
+    });
+
+  return (
+    <div className="flex items-center gap-2">
+      <button onClick={onExcel} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> {t("exportExcel")}
+      </button>
+      <button onClick={onPdf} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+        <Printer className="w-3.5 h-3.5" /> PDF
+      </button>
+    </div>
+  );
+}

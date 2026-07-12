@@ -7,6 +7,7 @@ import { CheckCircle2, Triangle, Square, AlertOctagon } from "lucide-react";
 import StationFilterDropdown from "@/components/reports/StationFilterDropdown";
 import ReportCard from "@/components/reports/ReportCard";
 import ReportTableHead from "@/components/reports/ReportTableHead";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 
 const COLOR_COMPLETED = "#10b981"; // emerald-500
 const COLOR_ONTRACK = "#3b82f6"; // blue-500
@@ -118,6 +119,17 @@ export default function StationComparison() {
         <p className="text-sm text-muted-foreground font-body p-6 text-center border border-border rounded-xl bg-card">{t("selectAtLeastTwo")}</p>
       ) : (
         <>
+          <div className="flex justify-end">
+            <ComparisonExportButtons
+              title={t("stationComparison")}
+              headers={[t("stations"), t("team"), t("completed"), t("inProgress"), t("overdue"), t("points"), t("safetyLevel"), t("incidents")]}
+              rows={compared.map((c) => [
+                c.name, c.team, c.completed, c.onTrack, c.overdue, c.points,
+                t(c.safetyLevel === "red" ? "high" : c.safetyLevel === "amber" ? "medium" : "low"), c.incidents,
+              ])}
+            />
+          </div>
+
           {/* At-a-glance status shapes — color + geometry both signal station health */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {compared.map((c) => {
