@@ -101,9 +101,26 @@ export default function QuickCheckInCard({ currentUser, company }) {
   };
 
   const handleCheckOut = async () => {
+    setError("");
     setLoading(true);
     try {
-      const res = await base44.functions.invoke("supabaseAttendance", { action: "checkOut", employeeId: currentUser.id, shiftEnd: shift?.end });
+      // Location is also required at check-out — same rules as check-in.
+      let c = coords;
+      if ((!settings || settings.gps_enabled) && !c) {
+        c = await getAccuratePosition();
+        if (c) { setCoords(c); setLocState("ready"); }
+        if ((!settings || settings.gps_required) && !c) {
+          setError(t("locationDenied"));
+          setLoading(false);
+          return;
+        }
+      }
+      const res = await base44.functions.invoke("supabaseAttendance", {
+        action: "checkOut",
+        employeeId: currentUser.id,
+        shiftEnd: shift?.end,
+        lat: c?.lat, lng: c?.lng,
+      });
       if (res?.data?.attendance) setAttendance(res.data.attendance);
     } catch { /* best-effort */ } finally {
       setLoading(false);

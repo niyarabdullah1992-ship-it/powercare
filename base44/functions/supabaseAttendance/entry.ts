@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "checkOut") {
-      const { employeeId, shiftEnd } = body;
+      const { employeeId, shiftEnd, lat, lng } = body;
       if (!employeeId) return Response.json({ error: "Missing employeeId" }, { status: 400 });
       const date = todayStr();
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
@@ -236,9 +236,21 @@ Deno.serve(async (req) => {
       const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(row.id)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
-        body: JSON.stringify({ check_out_at: now.toISOString(), work_hours: workHours, early_checkout: earlyCheckout }),
+        body: JSON.stringify({ check_out_at: now.toISOString(), work_hours: workHours, early_checkout: earlyCheckout, check_out_lat: lat ?? null, check_out_lng: lng ?? null }),
       });
-      const updated = await patchRes.json();
+      let updated = await patchRes.json();
+      if (!patchRes.ok && String(updated?.message || "").includes("check_out_lat")) {
+        // Table predates the checkout-location columns — try to add them, then retry without failing the checkout.
+        console.error("checkOut: missing check_out_lat/check_out_lng columns — run: ALTER TABLE attendance ADD COLUMN IF NOT EXISTS check_out_lat numeric, ADD COLUMN IF NOT EXISTS check_out_lng numeric;");
+        const retry = await fetch(`${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(row.id)}`, {
+          method: "PATCH",
+          headers: { ...headers, Prefer: "return=representation" },
+          body: JSON.stringify({ check_out_at: now.toISOString(), work_hours: workHours, early_checkout: earlyCheckout }),
+        });
+        updated = await retry.json();
+        if (!retry.ok) return Response.json({ error: updated?.message || "Failed to check out" }, { status: 400 });
+        return Response.json({ attendance: updated[0] });
+      }
       if (!patchRes.ok) return Response.json({ error: updated?.message || "Failed to check out" }, { status: 400 });
       return Response.json({ attendance: updated[0] });
     }

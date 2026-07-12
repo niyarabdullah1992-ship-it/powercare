@@ -81,9 +81,25 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
   };
 
   const handleCheckOut = async () => {
+    setError("");
     setLoading(true);
     try {
-      const res = await base44.functions.invoke("supabaseAttendance", { action: "checkOut", employeeId: currentUser.id, shiftEnd: shift?.end });
+      // Location is also required at check-out — same rules as check-in.
+      let coords = null;
+      if (!settings || settings.gps_enabled) {
+        coords = await getAccuratePosition();
+        if ((!settings || settings.gps_required) && !coords) {
+          setError(t("locationDenied"));
+          setLoading(false);
+          return;
+        }
+      }
+      const res = await base44.functions.invoke("supabaseAttendance", {
+        action: "checkOut",
+        employeeId: currentUser.id,
+        shiftEnd: shift?.end,
+        lat: coords?.lat, lng: coords?.lng,
+      });
       const att = res?.data?.attendance;
       if (att) { setAttendance(att); onStatusChange?.(att); }
     } catch {
