@@ -4,8 +4,38 @@
 // watchPosition keeps improving the fix and we resolve with the most accurate
 // reading — early once it's good enough.
 const GOOD_ACCURACY_M = 15;
+// Above this, the browser fix is considered too coarse (typical for desktops
+// without GPS) and we try Google's Geolocation API as a smarter fallback.
+const COARSE_ACCURACY_M = 300;
 
-export function getAccuratePosition({ timeoutMs = 20000 } = {}) {
+import { base44 } from "@/api/base44Client";
+
+// Paid Google lookup — called only when the free browser fix is missing/coarse.
+async function googleFallback() {
+  try {
+    const res = await base44.functions.invoke("googleGeolocate", {});
+    const d = res?.data;
+    if (d?.lat != null && d?.lng != null) return { lat: d.lat, lng: d.lng, accuracy: d.accuracy ?? null };
+  } catch {
+    // fallback unavailable — keep whatever the browser gave us
+  }
+  return null;
+}
+
+export async function getAccuratePosition({ timeoutMs = 20000 } = {}) {
+  const browserFix = await getBrowserPosition({ timeoutMs });
+  // Good browser fix → done, no paid call.
+  if (browserFix && browserFix.accuracy != null && browserFix.accuracy <= COARSE_ACCURACY_M) return browserFix;
+  const googleFix = await googleFallback();
+  if (!googleFix) return browserFix;
+  if (!browserFix) return googleFix;
+  // Both available — keep the more accurate one.
+  const bAcc = browserFix.accuracy ?? Infinity;
+  const gAcc = googleFix.accuracy ?? Infinity;
+  return gAcc < bAcc ? googleFix : browserFix;
+}
+
+function getBrowserPosition({ timeoutMs = 20000 } = {}) {
   return new Promise((resolve) => {
     if (!navigator.geolocation) return resolve(null);
     let best = null;
