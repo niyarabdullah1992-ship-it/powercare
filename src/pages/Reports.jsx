@@ -15,7 +15,8 @@ import ReportCard from "@/components/reports/ReportCard";
 import ReportTableHead from "@/components/reports/ReportTableHead";
 import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
-import { Palette } from "lucide-react";
+import ExportCenter from "@/components/reports/ExportCenter";
+import { Palette, Download } from "lucide-react";
 
 const RANGES = [
   { val: "daily", amount: 1, unit: "days" },
@@ -184,6 +185,7 @@ export default function Reports() {
     { key: "tasks", label: t("tasksReport"), icon: ListTodo },
     { key: "leaves", label: t("leaveRequests"), icon: CalendarDays },
     ...(isOwner ? [{ key: "employeeReport", label: t("employeeReport"), icon: UserSquare2 }] : []),
+    ...(isOwner || currentUser.role === "director" ? [{ key: "exportCenter", label: lang === "ar" ? "مركز التنزيل" : "Download Center", icon: Download }] : []),
   ];
 
   return (
@@ -350,6 +352,11 @@ export default function Reports() {
       {/* Employee report tab — owner-only, free comparison across every employee aspect */}
       {tab === "employeeReport" && isOwner && (
         <EmployeeReportTable data={data} company={company} targets={targets} t={t} lang={lang} />
+      )}
+
+      {/* Download Center — every report across all sections, branded exports */}
+      {tab === "exportCenter" && (isOwner || currentUser.role === "director") && (
+        <ExportCenter targets={targets} />
       )}
     </div>
   );
