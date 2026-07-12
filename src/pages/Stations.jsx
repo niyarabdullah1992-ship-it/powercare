@@ -185,7 +185,7 @@ export default function Stations() {
         )}
       </div>
 
-      {showAdd && stationLimitReached && (
+      {canManage && stationLimitReached && (
         <div className="p-4 rounded-xl border border-amber-300 bg-amber-50 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-amber-800 font-body">{t("stationLimitReached")}</p>
           <Link to="/pricing" className="px-3 py-1.5 rounded-md bg-foreground text-background text-xs font-body hover:bg-accent">{t("upgradePlan")}</Link>
