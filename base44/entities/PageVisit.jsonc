@@ -1,0 +1,44 @@
+{
+  "name": "PageVisit",
+  "type": "object",
+  "properties": {
+    "visitorId": {
+      "type": "string",
+      "description": "Anonymous random id stored in the visitor's browser (no PII)."
+    },
+    "path": {
+      "type": "string",
+      "description": "The page path visited, e.g. '/'."
+    },
+    "referrer": {
+      "type": "string",
+      "description": "document.referrer host, if any."
+    },
+    "device": {
+      "type": "string",
+      "description": "'mobile' or 'desktop'."
+    },
+    "day": {
+      "type": "string",
+      "description": "Visit date as YYYY-MM-DD (Asia/Riyadh) for fast daily aggregation."
+    }
+  },
+  "required": [
+    "visitorId",
+    "day"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": false,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": false
+  }
+}

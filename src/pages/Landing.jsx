@@ -6,6 +6,7 @@ import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Faceb
 import Logo from "@/components/Logo";
 import VideoIntro from "@/components/landing/VideoIntro";
 import OtpStep from "@/components/landing/OtpStep";
+import { trackVisit } from "@/lib/trackVisit";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
 
@@ -23,6 +24,11 @@ export default function Landing() {
   useEffect(() => {
     if (session) navigate("/app");
   }, [session, navigate]);
+
+  // Anonymous visit tracking (once per browser session) — powers the Owner Panel stats.
+  useEffect(() => {
+    trackVisit("/");
+  }, []);
 
   useEffect(() => {
     const close = () => setLangOpen(false);

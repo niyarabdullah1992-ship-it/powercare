@@ -8,6 +8,7 @@ import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn, Spark
 import Logo from "@/components/Logo";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import NewsBroadcast from "@/components/owner/NewsBroadcast";
+import VisitorStatsCard from "@/components/owner/VisitorStatsCard";
 
 export default function OwnerPanel() {
   const { t, lang } = useI18n();
@@ -172,6 +173,8 @@ export default function OwnerPanel() {
             </button>
           </form>
         </div>
+
+        <VisitorStatsCard lang={lang} />
 
         <NewsBroadcast />
 
