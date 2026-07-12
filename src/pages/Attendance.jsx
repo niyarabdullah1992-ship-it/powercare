@@ -7,6 +7,7 @@ import CheckInOutCard from "@/components/attendance/CheckInOutCard";
 import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDashboard";
 import AttendanceMonthlyReport from "@/components/attendance/AttendanceMonthlyReport";
 import AttendanceSettingsPanel from "@/components/attendance/AttendanceSettingsPanel";
+import AttendanceLocationsPanel from "@/components/attendance/AttendanceLocationsPanel";
 import AttendanceAnalytics from "@/components/attendance/AttendanceAnalytics";
 import AttendanceMapDashboard from "@/components/attendance/AttendanceMapDashboard";
 import ScheduleTab from "@/components/attendance/ScheduleTab";
@@ -72,7 +73,12 @@ export default function Attendance() {
           {tab === "schedule" && <ScheduleTab />}
           {tab === "report" && <AttendanceMonthlyReport employees={employees} defaultEmployeeId={currentUser.id} t={t} />}
           {tab === "analytics" && <AttendanceAnalytics employees={employees} t={t} />}
-          {tab === "settings" && canEditSettings && <AttendanceSettingsPanel company={company} currentUser={currentUser} t={t} />}
+          {tab === "settings" && canEditSettings && (
+            <div className="space-y-4">
+              <AttendanceLocationsPanel company={company} currentUser={currentUser} t={t} />
+              <AttendanceSettingsPanel company={company} currentUser={currentUser} t={t} />
+            </div>
+          )}
         </div>
       )}
     </div>
