@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
@@ -18,11 +19,13 @@ import SyncStatusIndicator from "@/components/SyncStatusIndicator";
 import ThemeToggle from "@/components/ThemeToggle";
 import { allowedNavFor } from "@/lib/navVisibility";
 import BottomTabBar from "@/components/mobile/BottomTabBar";
+import BackButton from "@/components/mobile/BackButton";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
   const { currentUser, company, data, logout, isSyncing } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [langOpen, setLangOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
@@ -209,6 +212,7 @@ export default function Layout({ children }) {
           <div className="flex items-center justify-between px-4 md:px-8 h-16">
             {/* Mobile nav (scrollable pills) */}
             <div className="md:hidden flex items-center gap-2 overflow-x-auto no-scrollbar">
+              <BackButton />
               <Logo size={32} className="shrink-0" />
             </div>
 
@@ -366,7 +370,20 @@ export default function Layout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 pb-28 md:p-8">{children}</main>
+        <main className="flex-1 p-4 pb-28 md:p-8">
+          {/* Native-style page transition between routes */}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </main>
       </div>
 
       {/* Native-style bottom tab bar (mobile only) */}
