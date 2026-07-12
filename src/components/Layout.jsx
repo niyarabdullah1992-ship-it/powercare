@@ -15,6 +15,7 @@ import Logo from "@/components/Logo";
 import PresenceDot from "@/components/employees/PresenceDot";
 import SwipeToDeleteItem from "@/components/notifications/SwipeToDeleteItem";
 import SyncStatusIndicator from "@/components/SyncStatusIndicator";
+import ThemeToggle from "@/components/ThemeToggle";
 import { allowedNavFor } from "@/lib/navVisibility";
 
 export default function Layout({ children }) {
@@ -217,6 +218,7 @@ export default function Layout({ children }) {
 
             <div className="flex items-center gap-2 md:gap-3">
               <SyncStatusIndicator isSyncing={isSyncing} lang={lang} />
+              <ThemeToggle />
               {/* Language */}
               <div className="relative" ref={langRef}>
                 <button

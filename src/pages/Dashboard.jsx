@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canSeeAllStations, visibleEmployees, canApproveReports, canReplyAnon } from "@/lib/permissions";
 import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
 import WelcomeHero from "@/components/dashboard/WelcomeHero";
+import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import { Radio, AlertTriangle, FileText, TrendingUp, Bell, Megaphone } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
 import { formatDate } from "@/lib/dateFormat";
@@ -130,6 +131,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {welcomeHero}
+      <OnboardingChecklist data={data} lang={lang} />
       <div className="border-b border-border pb-6 flex items-end justify-between flex-wrap gap-3">
         <div>
           <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{data.name}</p>
