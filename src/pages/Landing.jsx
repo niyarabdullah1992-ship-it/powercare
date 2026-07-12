@@ -96,7 +96,6 @@ export default function Landing() {
         <div className="relative px-6 md:px-10 py-16 md:py-24 grid lg:grid-cols-[1.3fr,1fr] gap-10 items-start">
           <div>
             <h1 className="hero-title text-landing-gold text-6xl md:text-8xl uppercase">{t("appName")}</h1>
-            <p className="mt-3 text-sm text-[#3a2f22]/45 font-body">{t("demoNote")}</p>
 
             <div className="mt-10 bg-white rounded-2xl shadow-sm divide-y divide-[#3a2f22]/8 max-w-lg overflow-hidden">
               <FeatureBullet icon={Clock} title={t("feature1")} />
@@ -116,7 +115,7 @@ export default function Landing() {
               {otpPending ? (
                 <OtpStep email={email} onVerify={handleVerifyOtp} onBack={() => setOtpPending(null)} />
               ) : (
-              <form onSubmit={handleCompanyLogin} className="space-y-4">
+              <form onSubmit={handleCompanyLogin} noValidate className="space-y-4">
                 <div>
                   <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("email")}</label>
                   <input

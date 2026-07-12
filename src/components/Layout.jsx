@@ -197,9 +197,6 @@ export default function Layout({ children }) {
             )}
           </Droppable>
         </DragDropContext>
-        <div className="px-4 py-4 border-t border-border">
-          <p className="text-[10px] text-muted-foreground leading-relaxed">{t("demoNote")}</p>
-        </div>
       </aside>
 
       {/* Main */}
