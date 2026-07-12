@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { ListTodo, CheckCircle2, AlertTriangle, Radio, UserCircle } from "lucide-react";
 import EmployeePoints from "@/components/employees/EmployeePoints";
 import PresenceStatusPicker from "@/components/employees/PresenceStatusPicker";
+import QuickCheckInCard from "@/components/attendance/QuickCheckInCard";
 
 export default function EmployeeDashboard({ user, company, data }) {
   const { t } = useI18n();
@@ -51,6 +52,8 @@ export default function EmployeeDashboard({ user, company, data }) {
           <EmployeePoints points={user.points || 0} company={company} />
         </div>
       </div>
+
+      <QuickCheckInCard currentUser={user} company={company} />
 
       <div className="p-4 rounded-xl border border-border bg-card flex flex-wrap items-center gap-x-8 gap-y-2">
         <div className="flex items-center gap-2">
