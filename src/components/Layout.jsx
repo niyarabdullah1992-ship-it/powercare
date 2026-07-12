@@ -14,6 +14,7 @@ import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
 import PresenceDot from "@/components/employees/PresenceDot";
 import SwipeToDeleteItem from "@/components/notifications/SwipeToDeleteItem";
+import { allowedNavFor } from "@/lib/navVisibility";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -109,10 +110,14 @@ export default function Layout({ children }) {
     { to: "/app/reports", icon: FileBarChart2, label: t("tasksReport") },
   ];
 
-  const orderKeys = navOrder.length ? navOrder : navItems.map((i) => i.to);
+  // Role-based visibility: each user only sees the sections their role needs.
+  const allowedNav = allowedNavFor(currentUser);
+  const visibleNavItems = navItems.filter((i) => allowedNav.has(i.to));
+
+  const orderKeys = navOrder.length ? navOrder : visibleNavItems.map((i) => i.to);
   const orderedNavItems = [
-    ...orderKeys.map((to) => navItems.find((i) => i.to === to)).filter(Boolean),
-    ...navItems.filter((i) => !orderKeys.includes(i.to)),
+    ...orderKeys.map((to) => visibleNavItems.find((i) => i.to === to)).filter(Boolean),
+    ...visibleNavItems.filter((i) => !orderKeys.includes(i.to)),
   ];
 
   const onNavDragEnd = (result) => {

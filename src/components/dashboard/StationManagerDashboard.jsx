@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { visibleStations } from "@/lib/permissions";
 import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
+import QuickActions from "@/components/dashboard/QuickActions";
 import { Radio, Users, AlertTriangle, FileText, TrendingUp, MapPin, ShieldCheck } from "lucide-react";
 import { formatDate } from "@/lib/dateFormat";
 
@@ -47,6 +48,8 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
           {t(user.role)}
         </span>
       </div>
+
+      <QuickActions user={user} />
 
       {/* Station cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

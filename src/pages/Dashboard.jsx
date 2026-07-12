@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
 import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
 import StationManagerDashboard from "@/components/dashboard/StationManagerDashboard";
+import QuickActions from "@/components/dashboard/QuickActions";
 import { seedDummyData } from "@/lib/store";
 import { Sparkles } from "lucide-react";
 
@@ -125,6 +126,8 @@ export default function Dashboard() {
           </span>
         </div>
       </div>
+
+      <QuickActions user={currentUser} />
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 border border-border divide-x divide-y divide-border rtl:divide-x-reverse">
