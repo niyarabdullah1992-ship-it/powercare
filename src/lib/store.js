@@ -146,6 +146,16 @@ function saveCompanyData(id, data) {
   syncEmployeesToEntity(id, data.employees);
   syncStationsToEntity(id, data.stations);
   BLOB_CATEGORIES.forEach((category) => syncBlobToEntity(id, category, data[category]));
+  syncBlobToEntity(id, "companyMeta", [{
+    id: "meta",
+    name: data.name,
+    plan: data.plan,
+    directorId: data.directorId,
+    ownerId: data.ownerId,
+    stationChatGroups: data.stationChatGroups,
+    crossStationChatEnabled: data.crossStationChatEnabled,
+    settings: data.settings,
+  }]);
 }
 
 /* ----------------------------- generic collections (real, persisted) -----------------------------

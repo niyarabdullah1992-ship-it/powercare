@@ -62,6 +62,21 @@ export function AuthProvider({ children }) {
             });
           });
         });
+        // Company-wide settings (name, plan, chat groups, rate limits) — single record, server wins.
+        hydrateBlobFromEntity(s.companyId, "companyMeta").then((records) => {
+          const meta = records && records[0];
+          if (!meta) return;
+          setData((prev) => (prev ? {
+            ...prev,
+            name: meta.name ?? prev.name,
+            plan: meta.plan ?? prev.plan,
+            directorId: meta.directorId ?? prev.directorId,
+            ownerId: meta.ownerId ?? prev.ownerId,
+            stationChatGroups: meta.stationChatGroups ?? prev.stationChatGroups,
+            crossStationChatEnabled: meta.crossStationChatEnabled ?? prev.crossStationChatEnabled,
+            settings: meta.settings ?? prev.settings,
+          } : prev));
+        });
       }
     } else {
       setCompany(null);
@@ -72,6 +87,13 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     refresh();
   }, [refresh, tick]);
+
+  // Live cross-device sync: periodically pull the latest persisted data while the app stays open,
+  // so changes made on another device/browser show up here without needing a manual reload.
+  useEffect(() => {
+    const interval = setInterval(refresh, 20000);
+    return () => clearInterval(interval);
+  }, [refresh]);
 
   const login = (email, password) => {
     const c = companyLogin(email, password);
