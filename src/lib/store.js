@@ -149,6 +149,17 @@ export function getCompanyMeta(id) {
   return getRegistry().companies.find((c) => c.id === id) || null;
 }
 
+// Owner-initiated permanent purge: deletes the company account, all employees,
+// stations, credentials, sessions and data blobs from the cloud, then removes
+// the local copy and ends the session. Returns true only if the cloud purge succeeded.
+export async function purgeCompanyAccount(companyId) {
+  const res = await invokeDirectory({ action: "deleteCompanyAccount", companyId, performedBy: auditActor });
+  if (!res?.data?.ok) return false;
+  deleteCompany(companyId);
+  clearSession();
+  return true;
+}
+
 // Owner/director-controlled restriction: only emails ending in this domain may be added
 // as employees for the company (e.g. "@acwa.com"). Empty/null = no restriction.
 export function setAllowedEmailDomain(companyId, domain) {

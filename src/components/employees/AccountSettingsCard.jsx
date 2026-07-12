@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { updateCompany, setEmployeePassword, changeOwnerPassword } from "@/lib/store";
-import { KeyRound, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { updateCompany, setEmployeePassword, changeOwnerPassword, purgeCompanyAccount } from "@/lib/store";
+import { KeyRound, Pencil, Trash2, AlertTriangle, Loader2, Building2 } from "lucide-react";
 
 // Self-service account settings — any signed-in user can change their own
 // display name and login password from their profile page.
@@ -17,6 +17,8 @@ export default function AccountSettingsCard({ employee, company }) {
   const [msg, setMsg] = useState(null);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [ownerStep, setOwnerStep] = useState(0); // 0 = idle, 1 = first confirm, 2 = final confirm
+  const [deleting, setDeleting] = useState(false);
 
   const isOwner = !!company.ownerEmail && (employee.email || "").toLowerCase() === company.ownerEmail.toLowerCase();
 
@@ -69,7 +71,79 @@ export default function AccountSettingsCard({ employee, company }) {
       )}
       {msg && <p className="text-xs text-accent font-body">{msg}</p>}
 
-      {/* Delete account — permanent, requires explicit confirmation. Owner accounts can't be removed here. */}
+      {/* Delete Company Account — owner-only permanent purge with double-confirmation. */}
+      {isOwner && (
+        <div className="pt-3 border-t border-border space-y-2">
+          <h4 className="text-sm font-body font-medium text-destructive flex items-center gap-1.5">
+            <Building2 className="w-3.5 h-3.5" /> {ar ? "حذف حساب الشركة" : "Delete Company Account"}
+          </h4>
+          <p className="text-xs text-muted-foreground font-body">
+            {ar
+              ? "هذا الإجراء يحذف الشركة نهائيًا: جميع المحطات والموظفين وكل البيانات المخزّنة ستُمسح ولا يمكن استرجاعها."
+              : "This permanently purges the company: all stations, employees and every stored data record will be erased and cannot be recovered."}
+          </p>
+          {ownerStep === 0 && (
+            <button
+              onClick={() => setOwnerStep(1)}
+              className="px-4 py-2 rounded-md border border-destructive/50 text-destructive text-sm font-body hover:bg-destructive/10"
+            >
+              {ar ? "حذف حساب الشركة" : "Delete Company Account"}
+            </button>
+          )}
+          {ownerStep === 1 && (
+            <div className="p-3 rounded-lg border border-destructive/40 bg-destructive/5 space-y-2">
+              <p className="text-xs text-destructive font-body flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                {ar
+                  ? "تحذير: سيتم مسح الشركة بالكامل — المحطات، الموظفون، المهام، التقارير وكل البيانات."
+                  : "Warning: the entire company will be wiped — stations, employees, tasks, reports and all data."}
+              </p>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setOwnerStep(2)} className="px-4 py-2 rounded-md border border-destructive text-destructive text-sm font-body hover:bg-destructive/10">
+                  {ar ? "أفهم ذلك — متابعة" : "I understand — continue"}
+                </button>
+                <button onClick={() => setOwnerStep(0)} className="px-4 py-2 rounded-md border border-border text-sm font-body">
+                  {t("cancel")}
+                </button>
+              </div>
+            </div>
+          )}
+          {ownerStep === 2 && (
+            <div className="p-3 rounded-lg border border-destructive bg-destructive/10 space-y-2">
+              <p className="text-xs text-destructive font-body font-medium flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                {ar
+                  ? "التأكيد النهائي: هذا آخر تحذير — لا يمكن التراجع بعد الآن."
+                  : "Final confirmation: this is the last warning — there is no undo after this."}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={deleting}
+                  onClick={async () => {
+                    setDeleting(true);
+                    const ok = await purgeCompanyAccount(company.id).catch(() => false);
+                    setDeleting(false);
+                    if (ok) { logout(); navigate("/"); }
+                    else {
+                      setOwnerStep(0);
+                      setMsg(ar ? "تعذّر حذف حساب الشركة — حاول مجددًا." : "Couldn't delete the company account — please try again.");
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-body disabled:opacity-50"
+                >
+                  {deleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {ar ? "احذف الشركة نهائيًا" : "Permanently delete company"}
+                </button>
+                <button disabled={deleting} onClick={() => setOwnerStep(0)} className="px-4 py-2 rounded-md border border-border text-sm font-body">
+                  {t("cancel")}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Delete account — permanent, requires explicit confirmation (regular employees). */}
       {!isOwner && (
         <div className="pt-3 border-t border-border space-y-2">
           <h4 className="text-sm font-body font-medium text-destructive flex items-center gap-1.5">

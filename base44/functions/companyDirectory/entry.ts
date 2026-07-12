@@ -308,6 +308,35 @@ Deno.serve(async (req) => {
       return Response.json({ payload: existing[0]?.payload || [] });
     }
 
+    // Owner-only permanent purge: removes the company account and every related
+    // record — employees, stations, data blobs, credentials, sessions and signal.
+    if (action === 'deleteCompanyAccount') {
+      if (auth.role !== 'owner') return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const svc = base44.asServiceRole.entities;
+      const wipe = async (entity) => {
+        const records = await entity.filter({ companyId });
+        for (const r of records) await entity.delete(r.id);
+      };
+      try {
+        await wipe(svc.Employee);
+        await wipe(svc.Station);
+        await wipe(svc.CompanyDataBlob);
+        await wipe(svc.EmployeeCredential);
+        await wipe(svc.CompanySession);
+        await wipe(svc.SyncSignal);
+        await wipe(svc.CompanyAccount);
+        await svc.AuditLog.create({
+          companyId, action: 'company_deleted',
+          performedBy: body.performedBy || 'owner',
+          details: 'Company account permanently deleted by owner (all stations, employees and data blobs purged).',
+        });
+      } catch (e) {
+        console.error('deleteCompanyAccount failed:', e.message);
+        return Response.json({ error: e.message }, { status: 500 });
+      }
+      return Response.json({ ok: true });
+    }
+
     if (action === 'logAudit') {
       const { auditAction, performedBy, details } = body;
       await base44.asServiceRole.entities.AuditLog.create({

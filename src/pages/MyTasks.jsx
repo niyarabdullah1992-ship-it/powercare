@@ -411,6 +411,13 @@ export default function MyTasks() {
     const amt = Number(logAmount) || 0;
     if (amt <= 0) return;
     const tg = targets.find((x) => x.id === targetId);
+    // Optimistic update: reflect the new progress immediately, roll back on failure.
+    const prevSnapshot = tg ? { ...tg } : null;
+    const proofFiles = logProofFiles;
+    setTargets((prev) => prev.map((x) => (x.id === targetId ? { ...x, completed_tasks: (x.completed_tasks || 0) + amt } : x)));
+    setLogTarget(null);
+    setLogAmount(1);
+    setLogProofFiles([]);
     try {
       const res = await base44.functions.invoke("supabaseTargets", {
         action: "updateProgress",
@@ -419,7 +426,7 @@ export default function MyTasks() {
         userId: currentUser.id,
         managerId: data.directorId,
         employeeName: currentUser.name,
-        proofFiles: logProofFiles,
+        proofFiles,
       });
       const updatedTarget = res?.data?.target;
       const mgrId = tg?.manager_id || data.directorId;
@@ -434,10 +441,12 @@ export default function MyTasks() {
       if (updatedTarget) {
         setTargets((prev) => prev.map((x) => (x.id === updatedTarget.id ? updatedTarget : x)));
       }
-      setLogTarget(null);
-      setLogAmount(1);
-      setLogProofFiles([]);
     } catch (err) {
+      // Roll back the optimistic progress and restore the log form.
+      if (prevSnapshot) setTargets((prev) => prev.map((x) => (x.id === targetId ? prevSnapshot : x)));
+      setLogTarget(targetId);
+      setLogAmount(amt);
+      setLogProofFiles(proofFiles);
       const code = err?.response?.data?.error;
       alert(code === "PROOF_REQUIRED" ? t("proofRequired") : (code || "Failed to update progress"));
     }
@@ -446,6 +455,9 @@ export default function MyTasks() {
   // Manager reviews an employee's submitted proof — approve grants points, reject requires
   // a written reason (no arbitrary rejections) and is recorded to the audit trail.
   const reviewTarget = async (tg, approve, reason) => {
+    // Optimistic status change: show the review outcome immediately, roll back on failure.
+    const prevSnapshot = { ...tg };
+    setTargets((prev) => prev.map((x) => (x.id === tg.id ? { ...x, status: approve ? "completed" : "active" } : x)));
     try {
       const res = await base44.functions.invoke("supabaseTargets", {
         action: "reviewCompletion",
@@ -478,6 +490,8 @@ export default function MyTasks() {
         }
       }
     } catch (err) {
+      // Roll back the optimistic status change.
+      setTargets((prev) => prev.map((x) => (x.id === tg.id ? prevSnapshot : x)));
       alert(err?.response?.data?.error || "Failed to review");
     }
   };
@@ -485,6 +499,22 @@ export default function MyTasks() {
   const submitComment = async (targetId) => {
     const text = commentText.trim();
     if (!text && commentFiles.length === 0) return;
+    // Optimistic update: render the comment immediately, roll back on failure.
+    const files = commentFiles;
+    const isIssue = markIssue;
+    const optimistic = {
+      id: `tmp_${Date.now()}`,
+      user_id: currentUser.id,
+      user_name: currentUser.name,
+      content: text,
+      files,
+      is_issue: isIssue,
+      created_at: new Date().toISOString(),
+    };
+    setTargets((prev) => prev.map((x) => (x.id === targetId ? { ...x, comments: [...(Array.isArray(x.comments) ? x.comments : []), optimistic] } : x)));
+    setCommentText("");
+    setCommentFiles([]);
+    setMarkIssue(false);
     try {
       const res = await base44.functions.invoke("supabaseTargets", {
         action: "addComment",
@@ -492,15 +522,17 @@ export default function MyTasks() {
         userId: currentUser.id,
         userName: currentUser.name,
         content: text,
-        files: commentFiles,
-        isIssue: markIssue,
+        files,
+        isIssue,
       });
       const updated = res?.data?.comments || [];
       setTargets((prev) => prev.map((x) => (x.id === targetId ? { ...x, comments: updated } : x)));
-      setCommentText("");
-      setCommentFiles([]);
-      setMarkIssue(false);
     } catch (err) {
+      // Remove the optimistic comment and restore the input.
+      setTargets((prev) => prev.map((x) => (x.id === targetId ? { ...x, comments: (Array.isArray(x.comments) ? x.comments : []).filter((c) => c.id !== optimistic.id) } : x)));
+      setCommentText(text);
+      setCommentFiles(files);
+      setMarkIssue(isIssue);
       alert(err?.response?.data?.error || "Failed to add comment");
     }
   };
