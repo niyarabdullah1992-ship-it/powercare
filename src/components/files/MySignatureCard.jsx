@@ -63,19 +63,19 @@ export default function MySignatureCard({ companyId, currentUser, ar }) {
       </p>
       {!editing && signatureUrl ? (
         <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <img src={signatureUrl} alt="signature" className="h-20 max-w-[260px] object-contain bg-white rounded-lg border border-border p-2" />
-            <div className="flex flex-col gap-1.5">
-              <button onClick={() => setEditing(true)} className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-                <PenLine className="w-3.5 h-3.5" /> {ar ? "توقيع جديد" : "New signature"}
-              </button>
-              <button
-                onClick={() => { updateEmployeeProfile(companyId, currentUser.id, { signatureUrl: "", signatureId: "" }); setEditing(true); }}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-border text-xs font-body text-destructive hover:bg-muted"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> {ar ? "حذف" : "Delete"}
-              </button>
-            </div>
+          <div className="w-full bg-white rounded-lg border border-border p-2 flex items-center justify-center">
+            <img src={signatureUrl} alt="signature" className="h-20 max-w-full object-contain" />
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setEditing(true)} className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-border text-xs font-body hover:bg-muted whitespace-nowrap">
+              <PenLine className="w-3.5 h-3.5" /> {ar ? "توقيع جديد" : "New signature"}
+            </button>
+            <button
+              onClick={() => { updateEmployeeProfile(companyId, currentUser.id, { signatureUrl: "", signatureId: "" }); setEditing(true); }}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-border text-xs font-body text-destructive hover:bg-muted whitespace-nowrap"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> {ar ? "حذف" : "Delete"}
+            </button>
           </div>
           {signatureId && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/60 border border-border w-fit">
