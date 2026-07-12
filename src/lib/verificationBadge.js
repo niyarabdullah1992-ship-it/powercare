@@ -67,6 +67,14 @@ export function makeVerificationBadgeCanvas(sigId, signerName) {
   return canvas;
 }
 
+// A fresh, cryptographically random verification ID — unique per signing,
+// so no two signed documents ever share the same number.
+export function generateVerificationId() {
+  const b = crypto.getRandomValues(new Uint8Array(6));
+  const hex = Array.from(b, (x) => x.toString(16).padStart(2, "0").toUpperCase()).join("");
+  return `PWC-${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}`;
+}
+
 // PNG bytes for embedding into a PDF via pdf-lib.
 export async function makeVerificationBadgePng(sigId, signerName) {
   const canvas = makeVerificationBadgeCanvas(sigId, signerName);

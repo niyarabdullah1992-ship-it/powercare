@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { signPdfFile, imageBlobToPdf } from "@/lib/signPdf";
 import { detectSignatureSpot } from "@/lib/detectSignatureSpot";
 import SignaturePlacementModal from "@/components/files/SignaturePlacementModal";
-import { makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
+import { makeVerificationBadgeCanvas, generateVerificationId } from "@/lib/verificationBadge";
 
 // Merges the signature onto image documents (bottom-right corner with name & date)
 // and returns the signed PNG blob; PDFs are stamped directly via signPdfFile.
@@ -72,6 +72,8 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
         url: file_url,
         isImage: file.type.startsWith("image/"),
         isPdf: file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"),
+        // Fresh verification ID per document — never repeats between signings.
+        sigId: generateVerificationId(),
       });
       if (!subject) setSubject(ar ? `مستند موقّع: ${file.name}` : `Signed document: ${file.name}`);
     } finally {
@@ -95,10 +97,10 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
         try {
           if (doc.isPdf) {
             // Stamp the signature directly onto the detected spot (or last page).
-            signedUrl = await signPdfFile(doc.url, signatureUrl, currentUser.name, signatureId, spot);
+            signedUrl = await signPdfFile(doc.url, signatureUrl, currentUser.name, doc.sigId, spot);
           } else {
             // Sign the image, then wrap it into a PDF so the sent file is a PDF.
-            const signedBlob = await signImageFile(doc.url, signatureUrl, currentUser.name, signatureId, spot);
+            const signedBlob = await signImageFile(doc.url, signatureUrl, currentUser.name, doc.sigId, spot);
             signedUrl = await imageBlobToPdf(signedBlob);
           }
         } catch (err) {
@@ -119,7 +121,7 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
         "",
         ar ? `وقّعه: ${currentUser.name}${currentUser.position ? ` — ${currentUser.position}` : ""}` : `Signed by: ${currentUser.name}${currentUser.position ? ` — ${currentUser.position}` : ""}`,
         ar ? `التاريخ: ${date}` : `Date: ${date}`,
-        ...(signatureId ? [ar ? `رقم التحقق المشفّر: ${signatureId}` : `Encrypted verification ID: ${signatureId}`] : []),
+        ...(doc.sigId ? [ar ? `رقم التحقق المشفّر: ${doc.sigId}` : `Encrypted verification ID: ${doc.sigId}`] : []),
         companyName ? (ar ? `الشركة: ${companyName}` : `Company: ${companyName}`) : "",
       ].join("\n");
       await base44.integrations.Core.SendEmail({ from_name: companyName || "PowerCare", to: to.trim(), subject: subject.trim(), body });
@@ -183,7 +185,7 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
         <SignaturePlacementModal
           doc={doc}
           signatureUrl={signatureUrl}
-          sigId={signatureId}
+          sigId={doc.sigId}
           signerName={currentUser?.name}
           ar={ar}
           onConfirm={(spot) => { setManualSpot(spot); setPlacing(false); }}
