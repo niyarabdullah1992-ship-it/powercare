@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/PowerCareAuth";
+import { getTodaysShift } from "@/lib/attendance";
 import { LogIn, LogOut, MapPin, Loader2, Clock } from "lucide-react";
 
 const STATUS_STYLE = {
@@ -11,6 +13,8 @@ const STATUS_STYLE = {
 // Employee-facing daily check-in/check-out widget — also the source of truth MyTasks
 // reads from to gate task actions until attendance has been logged for today.
 export default function CheckInOutCard({ currentUser, company, t, onStatusChange }) {
+  const { data } = useAuth();
+  const shift = getTodaysShift(data, currentUser);
   const [settings, setSettings] = useState(null);
   const [attendance, setAttendance] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -66,6 +70,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         employeeName: currentUser.name,
         stationId: currentUser.stationId || null,
         lat: coords?.lat, lng: coords?.lng,
+        shiftStart: shift?.start,
       });
       const att = res?.data?.attendance;
       if (att) { setAttendance(att); onStatusChange?.(att); }
@@ -79,7 +84,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
   const handleCheckOut = async () => {
     setLoading(true);
     try {
-      const res = await base44.functions.invoke("supabaseAttendance", { action: "checkOut", employeeId: currentUser.id });
+      const res = await base44.functions.invoke("supabaseAttendance", { action: "checkOut", employeeId: currentUser.id, shiftEnd: shift?.end });
       const att = res?.data?.attendance;
       if (att) { setAttendance(att); onStatusChange?.(att); }
     } catch {

@@ -71,55 +71,12 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true });
     }
 
-    // ---- Work schedules (per-employee shift: start/end time + working days) ----
-
-    if (action === "getSchedule") {
-      const { employeeId } = body;
-      if (!employeeId) return Response.json({ error: "Missing employeeId" }, { status: 400 });
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/employee_schedules?employee_id=eq.${encodeURIComponent(employeeId)}`, { headers });
-      const rows = await res.json();
-      if (!res.ok) return Response.json({ schedule: null });
-      return Response.json({ schedule: (Array.isArray(rows) && rows[0]) || null });
-    }
-
-    if (action === "listSchedules") {
-      const { employeeIds } = body;
-      if (!Array.isArray(employeeIds) || employeeIds.length === 0) return Response.json({ schedules: [] });
-      const idsList = employeeIds.map((id) => `"${id}"`).join(",");
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/employee_schedules?employee_id=in.(${idsList})`, { headers });
-      const rows = await res.json();
-      if (!res.ok) return Response.json({ schedules: [] });
-      return Response.json({ schedules: rows || [] });
-    }
-
-    if (action === "upsertSchedule") {
-      if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const { employeeId, companyId, startTime, endTime, workingDays } = body;
-      if (!employeeId || !companyId) return Response.json({ error: "Missing fields" }, { status: 400 });
-      const patch = {
-        employee_id: employeeId,
-        company_id: companyId,
-        start_time: startTime || "08:00",
-        end_time: endTime || "17:00",
-        working_days: Array.isArray(workingDays) ? workingDays.join(",") : (workingDays || "0,1,2,3,4"),
-        updated_at: new Date().toISOString(),
-      };
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/employee_schedules`, {
-        method: "POST",
-        headers: { ...headers, Prefer: "resolution=merge-duplicates,return=representation" },
-        body: JSON.stringify(patch),
-      });
-      const updated = await res.json();
-      if (!res.ok) {
-        return Response.json({ error: updated?.message || "Failed to save schedule — run: CREATE TABLE IF NOT EXISTS employee_schedules (employee_id text primary key, company_id text, start_time text default '08:00', end_time text default '17:00', working_days text default '0,1,2,3,4', updated_at timestamptz default now());" }, { status: 400 });
-      }
-      return Response.json({ schedule: Array.isArray(updated) ? updated[0] : updated });
-    }
-
     // ---- Check in / out ----
+    // Shift start/end times come from the station's existing weekly schedule (Schedules
+    // page) — the frontend resolves the employee's shift for today and passes it in.
 
     if (action === "checkIn") {
-      const { companyId, employeeId, employeeName, stationId, lat, lng } = body;
+      const { companyId, employeeId, employeeName, stationId, lat, lng, shiftStart } = body;
       if (!companyId || !employeeId) return Response.json({ error: "Missing fields" }, { status: 400 });
       const date = todayStr();
       const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
@@ -127,26 +84,17 @@ Deno.serve(async (req) => {
       if (Array.isArray(existing) && existing.length > 0 && existing[0].check_in_at) {
         return Response.json({ error: "ALREADY_CHECKED_IN", attendance: existing[0] }, { status: 400 });
       }
-      const [setRes, schedRes] = await Promise.all([
-        fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(companyId)}`, { headers }),
-        fetch(`${SUPABASE_URL}/rest/v1/employee_schedules?employee_id=eq.${encodeURIComponent(employeeId)}`, { headers }),
-      ]);
+      const setRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(companyId)}`, { headers });
       const setRows = await setRes.json();
-      const schedRows = await schedRes.json();
       const settings = (Array.isArray(setRows) && setRows[0]) || { work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: false, gps_required: false };
-      const schedule = (schedRes.ok && Array.isArray(schedRows) && schedRows[0]) || null;
       if (settings.gps_enabled && settings.gps_required && (lat == null || lng == null)) {
         return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       }
       const now = new Date();
-      const startTime = schedule?.start_time || settings.work_start_time || "08:00";
-      const startMinutes = toMinutes(startTime);
+      const startMinutes = toMinutes(shiftStart || settings.work_start_time || "08:00");
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
       const lateMinutes = Math.max(0, nowMinutes - startMinutes);
-      const dow = now.getDay();
-      const workingDays = schedule?.working_days ? schedule.working_days.split(",").map(Number) : null;
-      const isScheduledToday = !workingDays || workingDays.includes(dow);
-      const status = !isScheduledToday ? "off_day" : lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present";
+      const status = lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present";
       const payload = {
         company_id: companyId,
         employee_id: employeeId,
@@ -188,20 +136,17 @@ Deno.serve(async (req) => {
     }
 
     if (action === "checkOut") {
-      const { employeeId } = body;
+      const { employeeId, shiftEnd } = body;
       if (!employeeId) return Response.json({ error: "Missing employeeId" }, { status: 400 });
       const date = todayStr();
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const rows = await res.json();
       const row = Array.isArray(rows) && rows[0];
       if (!row || !row.check_in_at) return Response.json({ error: "NOT_CHECKED_IN" }, { status: 400 });
-      const schedRes = await fetch(`${SUPABASE_URL}/rest/v1/employee_schedules?employee_id=eq.${encodeURIComponent(employeeId)}`, { headers });
-      const schedRows = await schedRes.json();
-      const schedule = (schedRes.ok && Array.isArray(schedRows) && schedRows[0]) || null;
       const now = new Date();
       const workHours = Math.round(((now.getTime() - new Date(row.check_in_at).getTime()) / 3600000) * 100) / 100;
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
-      const earlyCheckout = !!schedule?.end_time && nowMinutes < toMinutes(schedule.end_time);
+      const earlyCheckout = !!shiftEnd && nowMinutes < toMinutes(shiftEnd);
       const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(row.id)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
@@ -300,27 +245,15 @@ Deno.serve(async (req) => {
 
     if (action === "markAbsentees") {
       // Called by the daily scheduled workflow — marks anyone in the roster with
-      // no attendance row yet today as absent, skipping non-working days per schedule.
+      // no attendance row yet today as absent.
       const date = todayStr();
       const dirRes = await fetch(`${SUPABASE_URL}/rest/v1/employees_directory?select=*`, { headers });
       const directory = await dirRes.json();
       if (!dirRes.ok || !Array.isArray(directory) || directory.length === 0) return Response.json({ ok: true, marked: 0 });
-      const [attRes, schedRes] = await Promise.all([
-        fetch(`${SUPABASE_URL}/rest/v1/attendance?date=eq.${date}&select=employee_id`, { headers }),
-        fetch(`${SUPABASE_URL}/rest/v1/employee_schedules?select=*`, { headers }),
-      ]);
+      const attRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?date=eq.${date}&select=employee_id`, { headers });
       const attRows = await attRes.json();
-      const schedRows = schedRes.ok ? await schedRes.json() : [];
       const already = new Set((Array.isArray(attRows) ? attRows : []).map((r) => r.employee_id));
-      const scheduleByEmployee = Object.fromEntries((Array.isArray(schedRows) ? schedRows : []).map((s) => [s.employee_id, s]));
-      const dow = new Date().getDay();
-      const missing = directory.filter((e) => {
-        if (already.has(e.employee_id)) return false;
-        const sched = scheduleByEmployee[e.employee_id];
-        if (!sched) return true; // no schedule defined — treat every day as a working day
-        const workingDays = (sched.working_days || "").split(",").map(Number);
-        return workingDays.includes(dow);
-      });
+      const missing = directory.filter((e) => !already.has(e.employee_id));
       if (missing.length === 0) return Response.json({ ok: true, marked: 0 });
       const inserts = missing.map((e) => ({
         company_id: e.company_id,

@@ -7,7 +7,6 @@ import CheckInOutCard from "@/components/attendance/CheckInOutCard";
 import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDashboard";
 import AttendanceMonthlyReport from "@/components/attendance/AttendanceMonthlyReport";
 import AttendanceSettingsPanel from "@/components/attendance/AttendanceSettingsPanel";
-import ScheduleEditor from "@/components/attendance/ScheduleEditor";
 import AttendanceAnalytics from "@/components/attendance/AttendanceAnalytics";
 
 export default function Attendance() {
@@ -33,7 +32,6 @@ export default function Attendance() {
 
   const tabs = [
     { key: "team", label: t("teamTab") },
-    { key: "schedules", label: t("scheduleTab") },
     { key: "report", label: t("reportTab") },
     { key: "analytics", label: t("analyticsTab") },
     ...(canEditSettings ? [{ key: "settings", label: t("settingsTab") }] : []),
@@ -60,7 +58,6 @@ export default function Attendance() {
           </div>
 
           {tab === "team" && <AttendanceDailyDashboard employees={employees} currentUser={currentUser} t={t} />}
-          {tab === "schedules" && <ScheduleEditor employees={employees} company={company} t={t} />}
           {tab === "report" && <AttendanceMonthlyReport employees={employees} defaultEmployeeId={currentUser.id} t={t} />}
           {tab === "analytics" && <AttendanceAnalytics employees={employees} t={t} />}
           {tab === "settings" && canEditSettings && <AttendanceSettingsPanel company={company} currentUser={currentUser} t={t} />}
