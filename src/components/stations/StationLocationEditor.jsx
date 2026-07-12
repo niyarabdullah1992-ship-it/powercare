@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
+import { getAccuratePosition } from "@/lib/geo";
 import { X, MapPin, LocateFixed, Loader2, Check } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
@@ -33,17 +34,21 @@ export default function StationLocationEditor({ t, station, onSave, onCancel }) 
   const [pos, setPos] = useState(station.lat != null && station.lng != null ? [station.lat, station.lng] : null);
   const [radius, setRadius] = useState(station.radiusMeters ?? 200);
   const [locating, setLocating] = useState(false);
+  const [accuracy, setAccuracy] = useState(null);
   const [error, setError] = useState("");
 
-  const useMyLocation = () => {
+  // Uses high-accuracy GPS tracking (watchPosition) — keeps refining the fix
+  // until it's precise instead of accepting the first coarse Wi-Fi/IP reading.
+  const useMyLocation = async () => {
     setError("");
+    setAccuracy(null);
     if (!navigator.geolocation) { setError(t("locationDenied")); return; }
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (p) => { setPos([p.coords.latitude, p.coords.longitude]); setLocating(false); },
-      () => { setError(t("locationDenied")); setLocating(false); },
-      { timeout: 10000, enableHighAccuracy: true }
-    );
+    const fix = await getAccuratePosition({ timeoutMs: 20000 });
+    setLocating(false);
+    if (!fix) { setError(t("locationDenied")); return; }
+    setPos([fix.lat, fix.lng]);
+    setAccuracy(fix.accuracy != null ? Math.round(fix.accuracy) : null);
   };
 
   const submit = () => {
@@ -88,6 +93,11 @@ export default function StationLocationEditor({ t, station, onSave, onCancel }) 
 
         <div className="px-4 py-3 space-y-2 border-t border-border">
           {error && <p className="text-xs text-destructive font-body">{error}</p>}
+          {accuracy != null && (
+            <p className={`text-xs font-body ${accuracy <= 30 ? "text-emerald-600" : "text-amber-600"}`}>
+              {t("gpsAccuracy")}: ±{accuracy}{t("metersUnit")}{accuracy > 30 ? ` — ${t("lowAccuracyHint")}` : ""}
+            </p>
+          )}
           <div className="flex items-center gap-2">
             <label className="text-xs text-muted-foreground font-body shrink-0">{t("stationRadius")}</label>
             <input

@@ -3,9 +3,9 @@
 // hundreds of meters off) which wrongly marked employees "outside" their station.
 // watchPosition keeps improving the fix and we resolve with the most accurate
 // reading — early once it's good enough.
-const GOOD_ACCURACY_M = 30;
+const GOOD_ACCURACY_M = 15;
 
-export function getAccuratePosition({ timeoutMs = 12000 } = {}) {
+export function getAccuratePosition({ timeoutMs = 20000 } = {}) {
   return new Promise((resolve) => {
     if (!navigator.geolocation) return resolve(null);
     let best = null;
