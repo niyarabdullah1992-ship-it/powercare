@@ -95,8 +95,7 @@ export default function Layout({ children }) {
     { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling") },
     { to: "/app/chat", icon: MessageSquare, label: t("chat") },
 
-    { to: "/app/anonymous", icon: ShieldQuestion, label: t("anonymous") },
-    { to: "/app/public-complaints", icon: Megaphone, label: t("publicComplaints") },
+    { to: "/app/complaints", icon: Megaphone, label: t("allComplaints") },
     { to: "/app/employees", icon: Users, label: t("employees") },
     { to: "/app/stations", icon: Radio, label: t("stations") },
     { to: "/app/hr", icon: UserCog, label: t("hr") },
