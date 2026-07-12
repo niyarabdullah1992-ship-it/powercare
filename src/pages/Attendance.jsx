@@ -11,6 +11,7 @@ import AttendanceLocationsPanel from "@/components/attendance/AttendanceLocation
 import AttendanceAnalytics from "@/components/attendance/AttendanceAnalytics";
 import AttendanceMapDashboard from "@/components/attendance/AttendanceMapDashboard";
 import ScheduleTab from "@/components/attendance/ScheduleTab";
+import CalendarExportCard from "@/components/calendar/CalendarExportCard";
 
 export default function Attendance() {
   const { t } = useI18n();
@@ -53,6 +54,8 @@ export default function Attendance() {
       <h1 className="font-heading text-3xl font-semibold">{t("attendanceScheduling")}</h1>
 
       <CheckInOutCard currentUser={currentUser} company={company} t={t} />
+
+      <CalendarExportCard data={data} user={currentUser} />
 
       {isManager && (
         <div className="space-y-4">
