@@ -4,6 +4,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification, updateEmployeeProfile, setAllowedEmailDomain } from "@/lib/store";
 import { canManageEmployees, canTransferOwnership, canManageStations, visibleStations, visibleEmployees } from "@/lib/permissions";
+import { canAddEmployee } from "@/lib/planLimits";
 import { Link } from "react-router-dom";
 import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle, Mail, GripVertical } from "lucide-react";
 import { badgeFor, nextBadge } from "@/lib/rewards";
@@ -238,8 +239,11 @@ export default function Employees() {
   if (search) team = team.filter((e) => e.name.toLowerCase().includes(search.toLowerCase()) || e.email.toLowerCase().includes(search.toLowerCase()));
   if (roleFilter !== "all") team = team.filter((e) => e.role === roleFilter);
 
+  const employeeLimitReached = !canAddEmployee(company, data);
+
   const addEmployee = (e) => {
     e.preventDefault();
+    if (employeeLimitReached) return;
     setEmailError("");
     const domain = (company.allowedEmailDomain || "").trim().toLowerCase();
     if (domain && !form.email.toLowerCase().endsWith(domain)) {
@@ -324,7 +328,14 @@ export default function Employees() {
         )}
       </div>
 
-      {showAdd && (
+      {showAdd && employeeLimitReached && (
+        <div className="p-4 rounded-xl border border-amber-300 bg-amber-50 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-amber-800 font-body">{t("employeeLimitReached")}</p>
+          <Link to="/pricing" className="px-3 py-1.5 rounded-md bg-foreground text-background text-xs font-body hover:bg-accent">{t("upgradePlan")}</Link>
+        </div>
+      )}
+
+      {showAdd && !employeeLimitReached && (
         <form onSubmit={addEmployee} className="p-5 rounded-xl border border-border bg-card grid grid-cols-1 md:grid-cols-3 gap-3">
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("title")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
           <div>

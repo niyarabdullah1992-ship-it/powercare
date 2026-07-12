@@ -4,6 +4,8 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { canManageStations, canSeeAllStations, visibleStations } from "@/lib/permissions";
+import { canAddStation } from "@/lib/planLimits";
+import { Link } from "react-router-dom";
 import { Plus, Radio, Building2, Users, Trash2, Pencil, Check, X, BarChart3, GripVertical, MapPin } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import StationAnalyticsModal from "@/components/stations/StationAnalyticsModal";
@@ -28,8 +30,11 @@ export default function Stations() {
   const hqTeam = data.employees.filter((e) => !e.stationId);
   const hqLabel = company?.hqLabel || t("hq");
 
+  const stationLimitReached = !canAddStation(company, data);
+
   const add = (e) => {
     e.preventDefault();
+    if (stationLimitReached) return;
     updateCompany(company.id, (d) => {
       d.stations.push({
         id: "st_" + Math.random().toString(36).slice(2, 9),
@@ -180,7 +185,14 @@ export default function Stations() {
         )}
       </div>
 
-      {showAdd && (
+      {showAdd && stationLimitReached && (
+        <div className="p-4 rounded-xl border border-amber-300 bg-amber-50 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-amber-800 font-body">{t("stationLimitReached")}</p>
+          <Link to="/pricing" className="px-3 py-1.5 rounded-md bg-foreground text-background text-xs font-body hover:bg-accent">{t("upgradePlan")}</Link>
+        </div>
+      )}
+
+      {showAdd && !stationLimitReached && (
         <form onSubmit={add} className="p-5 rounded-xl border border-border bg-card grid grid-cols-1 md:grid-cols-3 gap-3">
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("stationName")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
           <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder={t("location")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />

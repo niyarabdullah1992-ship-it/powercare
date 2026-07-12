@@ -23,7 +23,7 @@ export default function Pricing() {
   ];
 
   const handleFreeSignup = ({ companyName, ownerEmail, ownerPassword }) => {
-    const company = createCompany({ name: companyName, ownerEmail, ownerPassword, plan: "Starter" });
+    const company = createCompany({ name: companyName, ownerEmail, ownerPassword, plan: "Free" });
     navigate("/");
     return company;
   };
