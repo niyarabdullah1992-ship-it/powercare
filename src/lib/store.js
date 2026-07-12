@@ -141,9 +141,22 @@ export function getCompanyData(id) {
   return read(companyKey(id), null);
 }
 function saveCompanyData(id, data) {
+  data.employees = dedupeEmployees(data.employees);
   write(companyKey(id), data);
   syncEmployeesToEntity(id, data.employees);
   syncStationsToEntity(id, data.stations);
+}
+
+// Removes duplicate employee records (e.g. from seeding dummy data more than once) —
+// keeps the first record for any repeated email, so names never appear twice in lists.
+function dedupeEmployees(employees) {
+  const seen = new Set();
+  return (employees || []).filter((e) => {
+    if (!e.email) return true;
+    if (seen.has(e.email)) return false;
+    seen.add(e.email);
+    return true;
+  });
 }
 
 /* ----------------------------- employee database (real, persisted) -----------------------------
@@ -365,6 +378,10 @@ function seedCompanyWithDemoData(companyId) {
 // in (unlike createDemoCompany, this never replaces the employees/stations list).
 export function seedDummyData(companyId) {
   updateCompany(companyId, (d) => {
+    // Guard against duplicate names/emails if dummy data is seeded more than once.
+    const existingEmails = new Set((d.employees || []).map((e) => e.email));
+    if (existingEmails.has("ali@example.com")) return;
+
     const s1 = { id: uid("st"), name: "Station Alpha", location: "Riyadh North", type: "Power", status: "active", managerId: null, createdAt: new Date().toISOString() };
     const s2 = { id: uid("st"), name: "Station Beta", location: "Dammam Coast", type: "Power", status: "active", managerId: null, createdAt: new Date().toISOString() };
     const s3 = { id: uid("st"), name: "Station Gamma", location: "Jeddah Industrial", type: "Water", status: "maintenance", managerId: null, createdAt: new Date().toISOString() };
