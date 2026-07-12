@@ -241,6 +241,8 @@ export default function Stations() {
                         const team = data.employees.filter((e) => e.stationId === s.id);
                         const manager = data.employees.find((e) => e.id === s.managerId);
                         const tasks = data.tasks.filter((tk) => tk.stationId === s.id);
+                        // Station managers can set the GPS location of their own station.
+                        const canSetLocation = canManage || (currentUser.role === "station_manager" && (s.managerId === currentUser.id || currentUser.stationId === s.id));
                         const done = tasks.filter((tk) => tk.status === "completed").length;
                         const pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
                         return (
@@ -310,7 +312,7 @@ export default function Stations() {
                                     <button onClick={() => setAnalyticsFor({ key: s.id, name: s.name, members: team })} className="flex items-center gap-1 text-xs text-accent hover:underline">
                                       <BarChart3 className="w-3.5 h-3.5" /> {t("analytics")}
                                     </button>
-                                    {canManage && (
+                                    {canSetLocation && (
                                       <button onClick={() => setEditingLocationId(s.id)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                                         <MapPin className="w-3.5 h-3.5" /> {s.lat != null && s.lng != null ? t("editLocation") : t("setLocation")}
                                       </button>
