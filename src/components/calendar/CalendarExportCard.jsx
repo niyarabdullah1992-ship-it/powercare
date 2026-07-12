@@ -1,6 +1,6 @@
 import React from "react";
 import { CalendarPlus, FileSpreadsheet } from "lucide-react";
-import { buildPersonalIcs, buildPersonalCsv, downloadIcs, downloadCsv } from "@/lib/icsExport";
+import { buildPersonalCsv, downloadCsv } from "@/lib/icsExport";
 import { useI18n } from "@/lib/i18n";
 
 // One-click export of the user's shifts, approved leave and maintenance plans.
@@ -23,22 +23,13 @@ export default function CalendarExportCard({ data, user }) {
             : "Shifts + leave + maintenance plans. The Excel file opens in Excel and also imports into Google Calendar: Settings → Import & export."}
         </p>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <button
-          onClick={() => downloadCsv(buildPersonalCsv({ data, user }))}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-foreground text-background text-xs font-body"
-        >
-          <FileSpreadsheet className="w-3.5 h-3.5" />
-          {ar ? "ملف Excel (CSV)" : "Excel file (CSV)"}
-        </button>
-        <button
-          onClick={() => downloadIcs(buildPersonalIcs({ data, user }))}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-md border border-border text-xs font-body hover:bg-muted"
-        >
-          <CalendarPlus className="w-3.5 h-3.5" />
-          .ics
-        </button>
-      </div>
+      <button
+        onClick={() => downloadCsv(buildPersonalCsv({ data, user }))}
+        className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-foreground text-background text-xs font-body shrink-0"
+      >
+        <FileSpreadsheet className="w-3.5 h-3.5" />
+        {ar ? "ملف Excel (CSV)" : "Excel file (CSV)"}
+      </button>
     </div>
   );
 }
