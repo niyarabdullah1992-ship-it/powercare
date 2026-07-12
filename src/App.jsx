@@ -37,6 +37,7 @@ const Reports = lazy(() => import('./pages/Reports'));
 const DailyReport = lazy(() => import('./pages/DailyReport'));
 const Attendance = lazy(() => import('./pages/Attendance'));
 const Files = lazy(() => import('./pages/Files'));
+const FileSigning = lazy(() => import('./pages/FileSigning'));
 const Assistant = lazy(() => import('./pages/Assistant'));
 const About = lazy(() => import('./pages/About'));
 
@@ -100,6 +101,7 @@ function AppRoutes() {
       <Route path="/app/daily-report" element={<RequireAuth><DailyReport /></RequireAuth>} />
       <Route path="/app/attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/files" element={<RequireAuth><Files /></RequireAuth>} />
+      <Route path="/app/signing" element={<RequireAuth><FileSigning /></RequireAuth>} />
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
