@@ -41,6 +41,17 @@ function invokeDirectory(payload) {
   const companyId = payload.companyId || read(SESSION_KEY, null)?.companyId;
   return base44.functions.invoke("companyDirectory", { ...payload, sessionToken: companyId ? getCompanyToken(companyId) : null });
 }
+
+/* ----------------------------- audit trail ----------------------------- */
+// Full audit trail: every sensitive mutation below logs who did what. The acting
+// user's name is set by the auth provider whenever the session changes.
+let auditActor = "system";
+export function setAuditActor(name) {
+  auditActor = name || "system";
+}
+function audit(companyId, action, details) {
+  invokeDirectory({ action: "logAudit", companyId, auditAction: action, performedBy: auditActor, details: details || "" }).catch(() => {});
+}
 // The lowest-order HR manager assigned to handle this employee's station (falls
 // back up through cluster/company tiers if no station-level manager is assigned).
 function getStationHRManager(data, employeeId) {
@@ -195,6 +206,12 @@ function saveCompanyData(id, data) {
   data.employees = dedupeEmployees(data.employees);
   lastLocalWriteAt[id] = Date.now();
   write(companyKey(id), data);
+  pushCompanyDataToCloud(id, data);
+}
+
+// Pushes the full company snapshot to the persisted cloud database. Called on every
+// local write, and re-called automatically by the retry loop for anything that failed.
+function pushCompanyDataToCloud(id, data) {
   syncEmployeesToEntity(id, data.employees);
   syncStationsToEntity(id, data.stations);
   BLOB_CATEGORIES.forEach((category) => syncBlobToEntity(id, category, data[category]));
@@ -208,6 +225,25 @@ function saveCompanyData(id, data) {
     crossStationChatEnabled: data.crossStationChatEnabled,
     settings: data.settings,
   }]);
+}
+
+/* ----------------------------- sync retry loop -----------------------------
+   Cloud-first hardening: a failed background sync is no longer silently dropped.
+   The company is marked dirty and the loop below re-pushes its latest snapshot
+   every few seconds until the cloud write succeeds. */
+const pendingResync = new Set();
+function scheduleResync(companyId) {
+  pendingResync.add(companyId);
+}
+if (typeof window !== "undefined") {
+  setInterval(() => {
+    const ids = [...pendingResync];
+    pendingResync.clear();
+    ids.forEach((id) => {
+      const data = getCompanyData(id);
+      if (data) pushCompanyDataToCloud(id, data);
+    });
+  }, 8000);
 }
 
 /* ----------------------------- generic collections (real, persisted) -----------------------------
@@ -224,7 +260,9 @@ async function syncBlobToEntity(companyId, category, payload) {
   try {
     await invokeDirectory({ action: "syncBlob", companyId, category, payload: payload || [] });
   } catch {
-    // best-effort background sync — the localStorage cache remains usable for the running session
+    // failed cloud write — clear the dedupe marker and let the retry loop re-push it
+    lastSyncedBlobJSON[key] = undefined;
+    scheduleResync(companyId);
   }
 }
 
@@ -274,7 +312,9 @@ async function syncEmployeesToEntity(companyId, employees) {
   try {
     await invokeDirectory({ action: "syncEmployees", companyId, employees: employees || [] });
   } catch {
-    // best-effort background sync — the localStorage cache remains usable for the running session
+    // failed cloud write — clear the dedupe marker and let the retry loop re-push it
+    lastSyncedEmployeesJSON[companyId] = undefined;
+    scheduleResync(companyId);
   }
 }
 
@@ -290,7 +330,9 @@ async function syncStationsToEntity(companyId, stations) {
   try {
     await invokeDirectory({ action: "syncStations", companyId, stations: stations || [] });
   } catch {
-    // best-effort background sync — the localStorage cache remains usable for the running session
+    // failed cloud write — clear the dedupe marker and let the retry loop re-push it
+    lastSyncedStationsJSON[companyId] = undefined;
+    scheduleResync(companyId);
   }
 }
 
@@ -679,6 +721,8 @@ export function seedHRDemoHierarchy(companyId) {
 // and sets station.managerId on every selected station so the escalation chain (level 0,
 // see src/lib/escalation.js) and org chart both recognize them everywhere they manage.
 export function assignStationManager(companyId, employeeId, stationIds) {
+  const empName = getCompanyData(companyId)?.employees.find((e) => e.id === employeeId)?.name || "";
+  audit(companyId, "station_manager_assigned", `${empName} assigned as station manager of ${(stationIds || []).length} station(s).`);
   updateCompany(companyId, (d) => {
     const emp = d.employees.find((e) => e.id === employeeId);
     if (!emp) return;
@@ -698,9 +742,37 @@ export function assignStationManager(companyId, employeeId, stationIds) {
 export function updateCompany(companyId, updater) {
   const data = getCompanyData(companyId);
   if (!data) return;
+  // Snapshot key collections so every add/remove/status change is audited
+  // automatically, no matter which page performed the mutation.
+  const beforeEmp = new Map((data.employees || []).map((e) => [e.id, e.name]));
+  const beforeSt = new Map((data.stations || []).map((s) => [s.id, s.name]));
+  const beforeTasks = new Map((data.tasks || []).map((t) => [t.id, t.status]));
   updater(data);
   saveCompanyData(companyId, data);
+  logCollectionDiffs(companyId, data, beforeEmp, beforeSt, beforeTasks);
   return data;
+}
+
+// Automatic audit entries derived from what actually changed during a mutation.
+function logCollectionDiffs(companyId, data, beforeEmp, beforeSt, beforeTasks) {
+  const emps = data.employees || [];
+  const addedEmp = emps.filter((e) => !beforeEmp.has(e.id)).map((e) => e.name);
+  const removedEmp = [...beforeEmp.keys()].filter((id) => !emps.some((e) => e.id === id)).map((id) => beforeEmp.get(id));
+  if (addedEmp.length) audit(companyId, "employee_added", `Added employee(s): ${addedEmp.join(", ")}`);
+  if (removedEmp.length) audit(companyId, "employee_removed", `Removed employee(s): ${removedEmp.join(", ")}`);
+
+  const sts = data.stations || [];
+  const addedSt = sts.filter((s) => !beforeSt.has(s.id)).map((s) => s.name);
+  const removedSt = [...beforeSt.keys()].filter((id) => !sts.some((s) => s.id === id)).map((id) => beforeSt.get(id));
+  if (addedSt.length) audit(companyId, "station_added", `Added station(s): ${addedSt.join(", ")}`);
+  if (removedSt.length) audit(companyId, "station_removed", `Removed station(s): ${removedSt.join(", ")}`);
+
+  (data.tasks || []).forEach((t) => {
+    const prev = beforeTasks.get(t.id);
+    if (prev && prev !== t.status) {
+      audit(companyId, "task_status_changed", `Task "${t.title}": ${prev} → ${t.status}`);
+    }
+  });
 }
 
 export function addNotification(companyId, userId, text) {
@@ -754,6 +826,8 @@ export function removeCertificate(companyId, employeeId, certId) {
 
 // Qualification/certification approval workflow — manager approves or rejects a pending upload.
 export function setCertificateStatus(companyId, employeeId, certId, status, reviewerName) {
+  const empName = getCompanyData(companyId)?.employees.find((e) => e.id === employeeId)?.name || "";
+  audit(companyId, `certificate_${status}`, `Certificate for ${empName} marked "${status}" by ${reviewerName || "manager"}.`);
   updateCompany(companyId, (d) => {
     const emp = d.employees.find((e) => e.id === employeeId);
     if (!emp) return;
@@ -811,6 +885,8 @@ export function submitLeaveRequest(companyId, employeeId, { type, startDate, end
 }
 
 export function setLeaveRequestStatus(companyId, employeeId, requestId, status, reviewerName) {
+  const empName = getCompanyData(companyId)?.employees.find((e) => e.id === employeeId)?.name || "";
+  audit(companyId, `leave_request_${status}`, `Leave request for ${empName} marked "${status}" by ${reviewerName || "manager"}.`);
   updateCompany(companyId, (d) => {
     const emp = d.employees.find((e) => e.id === employeeId);
     if (!emp) return;
@@ -835,6 +911,8 @@ export function setLeaveRequestStatus(companyId, employeeId, requestId, status, 
 }
 
 export function addPoints(companyId, employeeId, points, reason) {
+  const empName = getCompanyData(companyId)?.employees.find((e) => e.id === employeeId)?.name || "";
+  audit(companyId, "points_adjusted", `${Number(points) >= 0 ? "+" : ""}${points} points for ${empName}${reason ? ` — ${reason}` : ""}`);
   updateCompany(companyId, (d) => {
     const emp = d.employees.find((e) => e.id === employeeId);
     if (!emp) return;
@@ -867,6 +945,7 @@ export function getAnonUsage(companyId, employeeId, legacyAnonymousId) {
 
 // Director-only: configure how many anonymous complaints an employee may file per day/week/month.
 export function setAnonRateLimits(companyId, { daily, weekly, monthly } = {}) {
+  audit(companyId, "anon_rate_limits_changed", `Anonymous report limits changed (daily: ${daily}, weekly: ${weekly}, monthly: ${monthly}).`);
   updateCompany(companyId, (d) => {
     d.settings = d.settings || {};
     if (daily != null) d.settings.rateLimitDaily = Number(daily);
@@ -997,6 +1076,7 @@ export function removeStationChatGroup(companyId, groupId) {
 // applies to every station, or pick one or more so the position — and any later suspend/
 // remove/edit on it — only shows in the org chart of those chosen stations.
 export function addHRTier(companyId, { scope, managerName, includeAssistant, assistantName, managerPermissions, assistantPermissions, stationIds }) {
+  audit(companyId, "hr_tier_added", `HR position "${managerName}" (${scope} scope) added to the hierarchy.`);
   updateCompany(companyId, (d) => {
     d.hrLevels = d.hrLevels || [];
     const order = Math.max(0, ...d.hrLevels.map((l) => l.order || 0)) + 1;
@@ -1039,6 +1119,8 @@ export function setHRTierStations(companyId, order, stationIds) {
 // awaiting a reply from the removed tier is automatically redirected to whoever is
 // above it in the chain (escalationLevel numbering naturally shifts up).
 export function removeHRTier(companyId, order) {
+  const tierName = (getCompanyData(companyId)?.hrLevels || []).find((l) => l.order === order && l.role === "manager")?.name || `tier ${order}`;
+  audit(companyId, "hr_tier_removed", `HR position "${tierName}" removed from the hierarchy.`);
   updateCompany(companyId, (d) => {
     const orders = Array.from(new Set((d.hrLevels || []).map((l) => l.order))).sort((a, b) => a - b);
     const removedPosition = orders.indexOf(order) + 1; // escalationLevel: 0 = station manager, 1..N = tiers in order

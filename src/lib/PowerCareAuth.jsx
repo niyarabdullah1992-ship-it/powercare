@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import {
   getSession, companyLogin, employeeLogin, switchUser, clearSession, getCompanyData,
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
-  hydrateBlobFromEntity, BLOB_CATEGORIES, getLastLocalWriteAt, fetchCloudVersions,
+  hydrateBlobFromEntity, BLOB_CATEGORIES, getLastLocalWriteAt, fetchCloudVersions, setAuditActor,
 } from "./store";
 import { base44 } from "@/api/base44Client";
 
@@ -36,6 +36,9 @@ export function AuthProvider({ children }) {
       setCompany(getCompanyMeta(s.companyId));
       const localData = getCompanyData(s.companyId);
       setData(localData);
+      // Keep the audit trail attributed to whoever is actually acting in this session.
+      const actorName = s.userId ? localData?.employees?.find((e) => e.id === s.userId)?.name : null;
+      setAuditActor(actorName || getCompanyMeta(s.companyId)?.ownerEmail || "owner");
       // Always reconcile with the persisted database (not just on an empty cache) so
       // records created on another device/browser eventually show up here too. Local-only
       // records (not yet synced) are kept as-is; server records are merged in additively.
