@@ -24,6 +24,8 @@ export default function Pricing() {
 
   const handleFreeSignup = ({ companyName, ownerEmail, ownerPassword }) => {
     const company = createCompany({ name: companyName, ownerEmail, ownerPassword, plan: "Free" });
+    // Fire-and-forget welcome email to the subscriber's registered address.
+    base44.functions.invoke("subscriberEmails", { action: "welcome", email: ownerEmail, companyName }).catch(() => {});
     navigate("/");
     return company;
   };

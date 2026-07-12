@@ -7,6 +7,7 @@ import { logAudit, fetchAllAuditLog } from "@/lib/auditLog";
 import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn, Sparkles, GitBranch } from "lucide-react";
 import Logo from "@/components/Logo";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
+import NewsBroadcast from "@/components/owner/NewsBroadcast";
 
 export default function OwnerPanel() {
   const { t, lang } = useI18n();
@@ -171,6 +172,8 @@ export default function OwnerPanel() {
             </button>
           </form>
         </div>
+
+        <NewsBroadcast />
 
         <div className="bg-white rounded-2xl p-6 shadow-xl">
           <h3 className="font-heading text-lg font-semibold mb-3 flex items-center gap-2 text-[#3a2f22]">

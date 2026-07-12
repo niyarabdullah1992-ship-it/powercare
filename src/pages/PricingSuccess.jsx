@@ -42,6 +42,9 @@ export default function PricingSuccess() {
       ownerPassword: password,
       plan: PLAN_LABELS[session.plan] || "Starter",
     });
+    // Fire-and-forget subscriber emails: welcome + payment confirmation.
+    base44.functions.invoke("subscriberEmails", { action: "welcome", email: session.ownerEmail, companyName: session.companyName }).catch(() => {});
+    base44.functions.invoke("subscriberEmails", { action: "paymentConfirmed", email: session.ownerEmail, companyName: session.companyName, plan: PLAN_LABELS[session.plan] || "Starter" }).catch(() => {});
     setStatus("success");
     setTimeout(() => navigate("/"), 1500);
   };

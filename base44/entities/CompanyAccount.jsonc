@@ -20,6 +20,11 @@
     },
     "allowedEmailDomain": {
       "type": "string"
+    },
+    "trialReminderSent": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once the trial-ending reminder email has been sent for this account."
     }
   },
   "required": [
