@@ -24,6 +24,29 @@ async function verifyPassword(password, stored) {
   return stored === password; // legacy plaintext record (upgraded on successful login)
 }
 
+/* ----- session-based authorization ----- */
+const SESSION_TTL_MS = 7 * 24 * 3600 * 1000;
+async function makeSession(base44, companyId, userId, role) {
+  const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+  await base44.asServiceRole.entities.CompanySession.create({
+    companyId, token, userId: userId || null, role,
+    expiresAt: new Date(Date.now() + SESSION_TTL_MS).toISOString(),
+  });
+  return token;
+}
+// Validates the caller: either the platform builder (Base44 admin) or a valid
+// session token for this specific company — issued only at a successful login.
+async function getAuth(base44, body) {
+  const user = await base44.auth.me().catch(() => null);
+  if (user && user.role === 'admin') return { role: 'owner', admin: true };
+  const { sessionToken, companyId } = body;
+  if (!sessionToken || !companyId) return null;
+  const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: sessionToken, companyId });
+  const s = sessions[0];
+  if (!s || new Date(s.expiresAt).getTime() < Date.now()) return null;
+  return { role: s.role, userId: s.userId };
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -48,7 +71,8 @@ Deno.serve(async (req) => {
       }
       // Never send the stored password (even hashed) back to the client.
       const { ownerPassword: _pw, ...safe } = found;
-      return Response.json({ company: safe });
+      const token = await makeSession(base44, found.companyId, null, 'owner');
+      return Response.json({ company: safe, token });
     }
 
     // Per-employee login — each employee signs in with their own email + personal password.
@@ -63,13 +87,50 @@ Deno.serve(async (req) => {
       if (!match) return Response.json({ employee: null });
       const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: match.companyId });
       const acc = accounts[0] || {};
+      const token = await makeSession(base44, match.companyId, match.employeeId, 'employee');
       return Response.json({
+        token,
         employee: { companyId: match.companyId, employeeId: match.employeeId },
         company: { companyId: match.companyId, name: acc.name || '', plan: acc.plan || '', allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '' },
       });
     }
 
     if (!companyId) return Response.json({ error: 'Missing companyId' }, { status: 400 });
+
+    /* ----- server-side authorization for all company-scoped actions ----- */
+    const auth = await getAuth(base44, body);
+
+    if (action === 'syncAccount') {
+      const { name, ownerEmail, ownerPassword, plan, allowedEmailDomain } = body;
+      const existing = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
+      // Existing accounts may only be modified by their owner (or the platform builder).
+      if (existing.length && (!auth || auth.role !== 'owner')) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      // Always store a hash — hash incoming plaintext; keep the existing hash if none was sent.
+      let storedPassword = ownerPassword;
+      if (storedPassword && !String(storedPassword).startsWith('sha256$')) {
+        storedPassword = await hashPassword(storedPassword);
+      } else if (!storedPassword && existing.length) {
+        storedPassword = existing[0].ownerPassword;
+      }
+      const fields = { companyId, name, ownerEmail, ownerPassword: storedPassword, plan, allowedEmailDomain: allowedEmailDomain || '' };
+      let token = null;
+      if (existing.length) {
+        await base44.asServiceRole.entities.CompanyAccount.update(existing[0].id, fields);
+      } else {
+        await base44.asServiceRole.entities.CompanyAccount.create(fields);
+        // Brand-new signup — issue the creator an owner session immediately.
+        token = await makeSession(base44, companyId, null, 'owner');
+      }
+      return Response.json({ ok: true, token });
+    }
+
+    if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    // Owner-only actions.
+    if (action === 'setEmployeePassword' && auth.role !== 'owner') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     // Sets (or resets) an employee's personal login password — always stored hashed.
     if (action === 'setEmployeePassword') {
@@ -141,25 +202,6 @@ Deno.serve(async (req) => {
       if (!category) return Response.json({ error: 'Missing category' }, { status: 400 });
       const existing = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
       return Response.json({ payload: existing[0]?.payload || [] });
-    }
-
-    if (action === 'syncAccount') {
-      const { name, ownerEmail, ownerPassword, plan, allowedEmailDomain } = body;
-      const existing = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
-      // Always store a hash — hash incoming plaintext; keep the existing hash if none was sent.
-      let storedPassword = ownerPassword;
-      if (storedPassword && !String(storedPassword).startsWith('sha256$')) {
-        storedPassword = await hashPassword(storedPassword);
-      } else if (!storedPassword && existing.length) {
-        storedPassword = existing[0].ownerPassword;
-      }
-      const fields = { companyId, name, ownerEmail, ownerPassword: storedPassword, plan, allowedEmailDomain: allowedEmailDomain || '' };
-      if (existing.length) {
-        await base44.asServiceRole.entities.CompanyAccount.update(existing[0].id, fields);
-      } else {
-        await base44.asServiceRole.entities.CompanyAccount.create(fields);
-      }
-      return Response.json({ ok: true });
     }
 
     if (action === 'logAudit') {

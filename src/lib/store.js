@@ -23,6 +23,24 @@ function write(key, value) {
 function uid(prefix = "id") {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
 }
+
+/* ----------------------------- cloud auth tokens ----------------------------- */
+// Per-company session tokens issued by the backend at login. Every companyDirectory
+// call attaches the matching token so the server can authorize company-scoped actions.
+const TOKENS_KEY = "powercare_tokens";
+export function getCompanyToken(companyId) {
+  return read(TOKENS_KEY, {})[companyId] || null;
+}
+function setCompanyToken(companyId, token) {
+  if (!companyId || !token) return;
+  const map = read(TOKENS_KEY, {});
+  map[companyId] = token;
+  localStorage.setItem(TOKENS_KEY, JSON.stringify(map));
+}
+function invokeDirectory(payload) {
+  const companyId = payload.companyId || read(SESSION_KEY, null)?.companyId;
+  return base44.functions.invoke("companyDirectory", { ...payload, sessionToken: companyId ? getCompanyToken(companyId) : null });
+}
 // The lowest-order HR manager assigned to handle this employee's station (falls
 // back up through cluster/company tiers if no station-level manager is assigned).
 function getStationHRManager(data, employeeId) {
@@ -94,7 +112,7 @@ export function createCompany({ name, ownerEmail, ownerPassword, plan = "Starter
 // device/browser, not just the one that created the company.
 async function syncAccountToEntity(company) {
   try {
-    await base44.functions.invoke("companyDirectory", {
+    const res = await invokeDirectory({
       action: "syncAccount",
       companyId: company.id,
       name: company.name,
@@ -103,6 +121,8 @@ async function syncAccountToEntity(company) {
       plan: company.plan,
       allowedEmailDomain: company.allowedEmailDomain || "",
     });
+    // Brand-new signups get an owner session token back — keep it for future calls.
+    if (res?.data?.token) setCompanyToken(company.id, res.data.token);
   } catch {
     // best-effort background sync
   }
@@ -201,7 +221,7 @@ async function syncBlobToEntity(companyId, category, payload) {
   if (lastSyncedBlobJSON[key] === json) return;
   lastSyncedBlobJSON[key] = json;
   try {
-    await base44.functions.invoke("companyDirectory", { action: "syncBlob", companyId, category, payload: payload || [] });
+    await invokeDirectory({ action: "syncBlob", companyId, category, payload: payload || [] });
   } catch {
     // best-effort background sync — the localStorage cache remains usable for the running session
   }
@@ -210,7 +230,7 @@ async function syncBlobToEntity(companyId, category, payload) {
 // Fetches the authoritative, persisted array for a category from the real database.
 export async function hydrateBlobFromEntity(companyId, category) {
   try {
-    const res = await base44.functions.invoke("companyDirectory", { action: "getBlob", companyId, category });
+    const res = await invokeDirectory({ action: "getBlob", companyId, category });
     return res?.data?.payload || null;
   } catch {
     return null;
@@ -240,7 +260,7 @@ async function syncEmployeesToEntity(companyId, employees) {
   if (lastSyncedEmployeesJSON[companyId] === json) return;
   lastSyncedEmployeesJSON[companyId] = json;
   try {
-    await base44.functions.invoke("companyDirectory", { action: "syncEmployees", companyId, employees: employees || [] });
+    await invokeDirectory({ action: "syncEmployees", companyId, employees: employees || [] });
   } catch {
     // best-effort background sync — the localStorage cache remains usable for the running session
   }
@@ -256,7 +276,7 @@ async function syncStationsToEntity(companyId, stations) {
   if (lastSyncedStationsJSON[companyId] === json) return;
   lastSyncedStationsJSON[companyId] = json;
   try {
-    await base44.functions.invoke("companyDirectory", { action: "syncStations", companyId, stations: stations || [] });
+    await invokeDirectory({ action: "syncStations", companyId, stations: stations || [] });
   } catch {
     // best-effort background sync — the localStorage cache remains usable for the running session
   }
@@ -265,7 +285,7 @@ async function syncStationsToEntity(companyId, stations) {
 // Fetches the authoritative, persisted station list for a company from the real database.
 export async function hydrateStationsFromEntity(companyId) {
   try {
-    const res = await base44.functions.invoke("companyDirectory", { action: "getStations", companyId });
+    const res = await invokeDirectory({ action: "getStations", companyId });
     const records = res?.data?.stations || [];
     if (!records.length) return null;
     return records.map((r) => ({
@@ -285,7 +305,7 @@ export async function hydrateStationsFromEntity(companyId) {
 // Fetches the authoritative, persisted employee list for a company from the real database.
 export async function hydrateEmployeesFromEntity(companyId) {
   try {
-    const res = await base44.functions.invoke("companyDirectory", { action: "getEmployees", companyId });
+    const res = await invokeDirectory({ action: "getEmployees", companyId });
     const records = res?.data?.employees || [];
     if (!records.length) return null;
     return records.map((r) => ({
@@ -327,29 +347,37 @@ export function clearSession() {
 }
 export async function companyLogin(email, password) {
   const reg = getRegistry();
-  let company = reg.companies.find(
-    (c) => c.ownerEmail.toLowerCase() === String(email).toLowerCase() && c.ownerPassword === password
-  );
-  if (!company) {
-    // Not known on this device — check the cloud directory (cross-device/browser login).
-    try {
-      const res = await base44.functions.invoke("companyDirectory", { action: "findAccountByEmail", email, password });
-      const remote = res?.data?.company;
-      if (remote) {
+  let company = null;
+  try {
+    // Cloud-first: verifies against the hashed cloud directory and issues a session token
+    // the server requires for every subsequent company-scoped read/write.
+    const res = await invokeDirectory({ action: "findAccountByEmail", email, password });
+    const remote = res?.data?.company;
+    if (remote) {
+      setCompanyToken(remote.companyId, res?.data?.token);
+      company = reg.companies.find((c) => c.id === remote.companyId);
+      if (company) {
+        company.ownerPassword = password;
+      } else {
         // The server verified the credentials but never returns the stored password —
-        // cache the password the user just typed for future local logins on this device.
+        // cache the password the user just typed for future offline logins on this device.
         company = {
           id: remote.companyId, name: remote.name, ownerEmail: remote.ownerEmail,
           ownerPassword: password, plan: remote.plan, allowedEmailDomain: remote.allowedEmailDomain || "",
           createdAt: remote.created_date,
         };
         reg.companies.push(company);
-        saveRegistry(reg);
-        if (!getCompanyData(company.id)) write(companyKey(company.id), emptyCompanyData(company));
       }
-    } catch {
-      // network/backend issue — treat as invalid credentials
+      saveRegistry(reg);
+      if (!getCompanyData(company.id)) write(companyKey(company.id), emptyCompanyData(company));
     }
+  } catch {
+    // network/backend issue — fall back to the local registry below
+  }
+  if (!company) {
+    company = reg.companies.find(
+      (c) => c.ownerEmail.toLowerCase() === String(email).toLowerCase() && c.ownerPassword === password
+    ) || null;
   }
   if (!company) return null;
   const data = getCompanyData(company.id);
@@ -362,10 +390,11 @@ export async function companyLogin(email, password) {
 // directory, then opens a session as that employee (works from any device/browser).
 export async function employeeLogin(email, password) {
   try {
-    const res = await base44.functions.invoke("companyDirectory", { action: "employeeLogin", email, password });
+    const res = await invokeDirectory({ action: "employeeLogin", email, password });
     const result = res?.data;
     if (!result?.employee) return null;
     const { companyId, employeeId } = result.employee;
+    setCompanyToken(companyId, result.token);
     const reg = getRegistry();
     let company = reg.companies.find((c) => c.id === companyId);
     if (!company) {
@@ -388,7 +417,7 @@ export async function employeeLogin(email, password) {
 // Owner/manager sets (or resets) an employee's personal login password — stored only
 // as a salted hash in the cloud directory, never in localStorage.
 export async function setEmployeePassword(companyId, employeeId, email, password) {
-  const res = await base44.functions.invoke("companyDirectory", { action: "setEmployeePassword", companyId, employeeId, email, password });
+  const res = await invokeDirectory({ action: "setEmployeePassword", companyId, employeeId, email, password });
   return !!res?.data?.ok;
 }
 
