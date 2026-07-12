@@ -14,6 +14,7 @@ import EmployeeReportTable from "@/components/reports/EmployeeReportTable";
 import ReportCard from "@/components/reports/ReportCard";
 import ReportTableHead from "@/components/reports/ReportTableHead";
 import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
+import ReportBrandingEditor from "@/components/reports/ReportBrandingEditor";
 
 const RANGES = [
   { val: "daily", amount: 1, unit: "days" },
@@ -170,6 +171,8 @@ export default function Reports() {
         { label: t("overdue"), value: overdueCount },
       ],
       sections: [{ heading: t("tasksReport"), headers, rows }],
+      logoUrl: data.reportBranding?.logoUrl || "",
+      color: data.reportBranding?.color || "#b07d3f",
     });
   };
 
@@ -251,6 +254,9 @@ export default function Reports() {
                 <button onClick={printTasksReport} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
                   <Printer className="w-3.5 h-3.5" /> PDF
                 </button>
+                {(isOwner || currentUser.role === "director") && (
+                  <ReportBrandingEditor companyId={company.id} branding={data.reportBranding} lang={lang} />
+                )}
               </div>
             )}
             <ReportCard>

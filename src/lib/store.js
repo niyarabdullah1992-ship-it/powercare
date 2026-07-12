@@ -225,6 +225,7 @@ function pushCompanyDataToCloud(id, data) {
     stationChatGroups: data.stationChatGroups,
     crossStationChatEnabled: data.crossStationChatEnabled,
     settings: data.settings,
+    reportBranding: data.reportBranding,
   }]);
 }
 
