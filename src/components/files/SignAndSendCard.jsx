@@ -1,9 +1,10 @@
 import React, { useState, useRef } from "react";
 import { Send, Upload, Loader2, FileText, CheckCircle2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { signPdfFile, imageBlobToPdf } from "@/lib/signPdf";
 
-// Merges the signature onto image documents (bottom-right corner with name & date).
-// Non-image files are sent as-is with the signature attached alongside.
+// Merges the signature onto image documents (bottom-right corner with name & date)
+// and returns the signed PNG blob; PDFs are stamped directly via signPdfFile.
 async function signImageFile(docUrl, sigUrl, signerName, sigId) {
   const load = (src) => new Promise((resolve, reject) => {
     const img = new Image();
@@ -29,10 +30,7 @@ async function signImageFile(docUrl, sigUrl, signerName, sigId) {
     ctx.font = `${Math.max(10, doc.width * 0.014)}px monospace`;
     ctx.fillText(`ID: ${sigId}`, doc.width - 24, doc.height - 4);
   }
-  const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
-  const file = new File([blob], "signed-document.png", { type: "image/png" });
-  const { file_url } = await base44.integrations.Core.UploadFile({ file });
-  return file_url;
+  return await new Promise((r) => canvas.toBlob(r, "image/png"));
 }
 
 // Upload a document, sign it with your saved signature, and email it to anyone.
@@ -56,7 +54,12 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
     setSent(false);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setDoc({ name: file.name, url: file_url, isImage: file.type.startsWith("image/") });
+      setDoc({
+        name: file.name,
+        url: file_url,
+        isImage: file.type.startsWith("image/"),
+        isPdf: file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"),
+      });
       if (!subject) setSubject(ar ? `مستند موقّع: ${file.name}` : `Signed document: ${file.name}`);
     } finally {
       setUploading(false);
@@ -69,8 +72,17 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
     setSending(true);
     try {
       let signedUrl = doc.url;
-      if (doc.isImage && signatureUrl) {
-        try { signedUrl = await signImageFile(doc.url, signatureUrl, currentUser.name, signatureId); } catch { /* fall back to original */ }
+      if (signatureUrl) {
+        try {
+          if (doc.isPdf) {
+            // Stamp the signature directly onto the last page of the PDF itself.
+            signedUrl = await signPdfFile(doc.url, signatureUrl, currentUser.name, signatureId);
+          } else if (doc.isImage) {
+            // Sign the image, then wrap it into a PDF so the sent file is a PDF.
+            const signedBlob = await signImageFile(doc.url, signatureUrl, currentUser.name, signatureId);
+            signedUrl = await imageBlobToPdf(signedBlob);
+          }
+        } catch { /* fall back to original */ }
       }
       const date = new Date().toLocaleString(ar ? "ar" : "en");
       const body = [
@@ -124,7 +136,7 @@ export default function SignAndSendCard({ currentUser, companyName, ar }) {
         {doc && (
           <span className="flex items-center gap-1.5 text-xs font-body text-muted-foreground truncate">
             <FileText className="w-3.5 h-3.5 shrink-0" /> {doc.name}
-            {doc.isImage && signatureUrl && <span className="text-emerald-600">({ar ? "سيُوقَّع تلقائيًا" : "auto-signed"})</span>}
+            {(doc.isImage || doc.isPdf) && signatureUrl && <span className="text-emerald-600">({ar ? "سيُوقَّع داخل PDF" : "signed as PDF"})</span>}
           </span>
         )}
       </div>
