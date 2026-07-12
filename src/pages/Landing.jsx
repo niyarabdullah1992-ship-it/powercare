@@ -196,10 +196,9 @@ export default function Landing() {
             <h4 className="font-heading text-lg text-[#3a2f22] mb-3">{t("footerContactHeading")}</h4>
             <ul className="space-y-2.5 text-sm font-body text-[#3a2f22]/55">
               <li className="flex items-center gap-2"><ShieldCheck className="w-3.5 h-3.5 text-landing-gold" /> {t("appName")}</li>
-              <li className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-landing-gold" /> +123 455 7890</li>
-              <li className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-landing-gold" /> +123 9053 4700</li>
-              <li className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-landing-gold" /> admin@gulfpower.com</li>
-              <li className="flex items-center gap-2"><Globe className="w-3.5 h-3.5 text-landing-gold" /> www.gulfpower.com</li>
+              <li className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-landing-gold" /> <span dir="ltr">0595414472</span></li>
+              <li className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-landing-gold" /> niyar@powercares.pro</li>
+              <li className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-landing-gold" /> turkialmutarir@gmail.com</li>
             </ul>
           </div>
         </div>
