@@ -3,7 +3,7 @@
 // hundreds of meters off) which wrongly marked employees "outside" their station.
 // watchPosition keeps improving the fix and we resolve with the most accurate
 // reading — early once it's good enough.
-const GOOD_ACCURACY_M = 15;
+const GOOD_ACCURACY_M = 25;
 // Above this, the browser fix is considered too coarse (typical for desktops
 // without GPS) and we try Google's Geolocation API as a smarter fallback.
 const COARSE_ACCURACY_M = 300;
@@ -22,7 +22,7 @@ async function googleFallback() {
   return null;
 }
 
-export async function getAccuratePosition({ timeoutMs = 20000 } = {}) {
+export async function getAccuratePosition({ timeoutMs = 10000 } = {}) {
   const browserFix = await getBrowserPosition({ timeoutMs });
   // Good browser fix → done, no paid call.
   if (browserFix && browserFix.accuracy != null && browserFix.accuracy <= COARSE_ACCURACY_M) return browserFix;

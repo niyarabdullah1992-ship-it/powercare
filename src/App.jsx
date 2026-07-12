@@ -10,31 +10,43 @@ import { AuthProvider as PowerCareAuthProvider, useAuth as usePowerCareAuth } fr
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import OwnerPanel from './pages/OwnerPanel';
+import { lazy, Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
 
+// Landing stays eager so the first paint is instant; every other page is
+// lazy-loaded on demand — the initial bundle shrinks dramatically.
 import Landing from './pages/Landing';
-import Pricing from './pages/Pricing';
-import PricingSuccess from './pages/PricingSuccess';
-import Dashboard from './pages/Dashboard';
-import MyTasks from './pages/MyTasks';
-import StationChat from './pages/StationChat';
-import Complaints from './pages/Complaints';
-import Stations from './pages/Stations';
-import Employees from './pages/Employees';
-import EmployeeProfile from './pages/EmployeeProfile';
-import HR from './pages/HR';
 
-import Safety from './pages/Safety';
-import Performance from './pages/Performance';
-import Reports from './pages/Reports';
-import DailyReport from './pages/DailyReport';
-import Attendance from './pages/Attendance';
-import Files from './pages/Files';
-import Assistant from './pages/Assistant';
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const OwnerPanel = lazy(() => import('./pages/OwnerPanel'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const PricingSuccess = lazy(() => import('./pages/PricingSuccess'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const MyTasks = lazy(() => import('./pages/MyTasks'));
+const StationChat = lazy(() => import('./pages/StationChat'));
+const Complaints = lazy(() => import('./pages/Complaints'));
+const Stations = lazy(() => import('./pages/Stations'));
+const Employees = lazy(() => import('./pages/Employees'));
+const EmployeeProfile = lazy(() => import('./pages/EmployeeProfile'));
+const HR = lazy(() => import('./pages/HR'));
+const Safety = lazy(() => import('./pages/Safety'));
+const Performance = lazy(() => import('./pages/Performance'));
+const Reports = lazy(() => import('./pages/Reports'));
+const DailyReport = lazy(() => import('./pages/DailyReport'));
+const Attendance = lazy(() => import('./pages/Attendance'));
+const Files = lazy(() => import('./pages/Files'));
+const Assistant = lazy(() => import('./pages/Assistant'));
+
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="w-6 h-6 animate-spin text-accent" />
+    </div>
+  );
+}
 
 function RequireAuth({ children }) {
   const { session } = usePowerCareAuth();
@@ -44,6 +56,7 @@ function RequireAuth({ children }) {
 
 function AppRoutes() {
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/pricing" element={<Pricing />} />
@@ -73,6 +86,7 @@ function AppRoutes() {
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    </Suspense>
   );
 }
 
