@@ -27,9 +27,17 @@ export default function EmployeeComparisonView({ t }) {
     })();
   }, [currentUser?.id]);
 
+  // Regular employees compare only within their own station's colleagues;
+  // managers can compare across the whole company.
+  const scopedEmployees = useMemo(() => {
+    if (!data || !currentUser) return [];
+    if (currentUser.role !== "employee") return data.employees;
+    return data.employees.filter((e) => (e.stationId || null) === (currentUser.stationId || null));
+  }, [data, currentUser]);
+
   const rows = useMemo(() => {
     if (!data) return [];
-    return data.employees.map((e) => {
+    return scopedEmployees.map((e) => {
       const memberTargets = targets.filter((tg) => tg.assignment_type === "member" && tg.employee_id === e.id);
       const leaves = e.leaveRequests || [];
       return {
@@ -42,11 +50,11 @@ export default function EmployeeComparisonView({ t }) {
         approvedDays: leaves.filter((r) => r.status === "approved").reduce((sum, r) => sum + (r.days || 0), 0),
       };
     });
-  }, [data, targets]);
+  }, [scopedEmployees, targets]);
 
   if (!data) return null;
 
-  const employees = data.employees.map((e) => ({ id: e.id, name: e.name }));
+  const employees = scopedEmployees.map((e) => ({ id: e.id, name: e.name }));
 
   return <GroupVsGroupComparison rows={rows} employees={employees} t={t} />;
 }
