@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { formatDate, formatDateTime } from "@/lib/dateFormat";
 import { visibleStations, canSeeAllStations, isCompanyOwner } from "@/lib/permissions";
 import moment from "moment";
-import { FileBarChart2, Calendar, AlertTriangle, Building2, ListTodo, CalendarDays, Megaphone, FileSpreadsheet, UserSquare2 } from "lucide-react";
+import { FileBarChart2, Calendar, AlertTriangle, ListTodo, CalendarDays, FileSpreadsheet, UserSquare2 } from "lucide-react";
 import TaskStats from "@/components/tasks/TaskStats";
 import { exportCSV } from "@/lib/exportReport";
 import StationFilterDropdown from "@/components/reports/StationFilterDropdown";
@@ -136,14 +136,6 @@ export default function Reports() {
     .filter((r) => inWindow(r.createdAt))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-  const filteredComplaints = [
-    ...(data.anonymousReports || []).map((r) => ({ ...r, kind: "anonymous" })),
-    ...(data.publicReports || []).map((r) => ({ ...r, kind: "public" })),
-  ]
-    .filter((r) => selectedStations.includes(r.stationId || "hq"))
-    .filter((r) => inWindow(r.createdAt))
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
   const leaveStatusBadge = (status) => ({
     approved: "bg-emerald-100 text-emerald-700 border-emerald-300",
     rejected: "bg-red-100 text-red-700 border-red-300",
@@ -159,22 +151,11 @@ export default function Reports() {
     return { headers, rows };
   };
 
-  const complaintsExportData = () => {
-    const headers = [t("type"), t("station"), t("status"), lang === "ar" ? "التاريخ" : "Date", t("content")];
-    const rows = filteredComplaints.map((r) => [
-      r.kind === "anonymous" ? t("anonymous") : t("publicComplaints"),
-      r.stationId ? stationName(r.stationId) : t("hq"),
-      t(r.status), formatDateTime(r.createdAt, lang), r.message || "",
-    ]);
-    return { headers, rows };
-  };
-
   const isOwner = isCompanyOwner(currentUser, data);
 
   const TABS = [
     { key: "tasks", label: t("tasksReport"), icon: ListTodo },
     { key: "leaves", label: t("leaveRequests"), icon: CalendarDays },
-    { key: "complaints", label: t("allComplaints"), icon: Megaphone },
     ...(isOwner ? [{ key: "employeeReport", label: t("employeeReport"), icon: UserSquare2 }] : []),
   ];
 
@@ -319,42 +300,6 @@ export default function Reports() {
             </div>
           )}
         </ReportCard>
-      )}
-
-      {/* Complaints tab */}
-      {tab === "complaints" && (
-        <>
-        {filteredComplaints.length > 0 && (
-          <div className="flex items-center gap-2">
-            <button onClick={() => { const { headers, rows } = complaintsExportData(); exportCSV(`complaints-report.csv`, headers, rows); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-              <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
-            </button>
-          </div>
-        )}
-        <ReportCard>
-          {filteredComplaints.length === 0 ? (
-            <p className="text-sm text-muted-foreground font-body text-center py-6">{t("noPublicReports")}</p>
-          ) : (
-            <div className="space-y-2 max-h-[32rem] overflow-y-auto">
-              {filteredComplaints.map((r) => (
-                <div key={r.id} className="p-3 rounded-lg border border-border bg-background">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-xs font-body">
-                      <span className="inline-flex px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{r.kind === "anonymous" ? t("anonymous") : t("publicComplaints")}</span>
-                      <span className="inline-flex px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{t(r.type)}</span>
-                      <span className="inline-flex items-center gap-1 text-muted-foreground">
-                        <Building2 className="w-3 h-3" /> {r.stationId ? stationName(r.stationId) : t("hq")}
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground font-body">{formatDateTime(r.createdAt, lang)}</span>
-                  </div>
-                  <p className="text-sm font-body mt-1.5">{r.message}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </ReportCard>
-        </>
       )}
 
       {/* Employee report tab — owner-only, free comparison across every employee aspect */}
