@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-// Workspace connector "PowerCare Calendar" — each app user connects their own Google account.
-const CONNECTOR_ID = "6a5371b507aa7d7761e5390a";
+// Workspace connector "PowerCare Calendar v2" — each app user connects their own Google account.
+const CONNECTOR_ID = "6a537ecedf0deaf86823d8ce";
 
 Deno.serve(async (req) => {
   try {

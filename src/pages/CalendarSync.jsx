@@ -5,7 +5,7 @@ import { CalendarDays, Loader2, Link2, LogIn, Unlink } from "lucide-react";
 import CalendarEventList from "@/components/calendar/CalendarEventList";
 import AddCalendarEvent from "@/components/calendar/AddCalendarEvent";
 
-const CONNECTOR_ID = "6a5371b507aa7d7761e5390a";
+const CONNECTOR_ID = "6a537ecedf0deaf86823d8ce";
 
 export default function CalendarSync() {
   const { lang } = useI18n();
