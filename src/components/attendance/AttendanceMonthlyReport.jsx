@@ -71,16 +71,21 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
                 <th className="py-2 pe-3 text-start">{t("checkIn")}</th>
                 <th className="py-2 pe-3 text-start">{t("checkOut")}</th>
                 <th className="py-2 pe-3 text-start">{t("workHoursLabel")}</th>
+                <th className="py-2 pe-3 text-start">{t("lateMinutesLabel")}</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-b border-border/60">
                   <td className="py-2 pe-3">{r.date}</td>
-                  <td className="py-2 pe-3 text-muted-foreground">{t(`attendanceStatus${r.status.charAt(0).toUpperCase()}${r.status.slice(1)}`)}</td>
+                  <td className="py-2 pe-3 text-muted-foreground">
+                    {t(`attendanceStatus${r.status.charAt(0).toUpperCase()}${r.status.slice(1).replace(/_([a-z])/, (m, c) => c.toUpperCase())}`)}
+                    {r.excused && <span className="ms-1.5 text-emerald-700">({t("excused")})</span>}
+                  </td>
                   <td className="py-2 pe-3 text-muted-foreground">{r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—"}</td>
                   <td className="py-2 pe-3 text-muted-foreground">{r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : "—"}</td>
                   <td className="py-2 pe-3 text-muted-foreground">{r.work_hours ?? "—"}</td>
+                  <td className="py-2 pe-3 text-muted-foreground">{r.status === "late" ? (r.late_minutes ?? "—") : "—"}</td>
                 </tr>
               ))}
             </tbody>

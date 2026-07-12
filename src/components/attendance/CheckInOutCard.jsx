@@ -107,10 +107,19 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
           {t("checkedInAt")} {new Date(attendance.check_in_at).toLocaleTimeString()}
         </p>
       )}
+      {attendance?.status === "late" && Number(attendance.late_minutes) > 0 && (
+        <p className="text-xs text-amber-700 font-body">{t("lateBy")} {attendance.late_minutes} {t("minutesUnit")}</p>
+      )}
+      {attendance?.excused && (
+        <p className="text-xs text-emerald-700 font-body">{t("excused")}</p>
+      )}
       {attendance?.check_out_at && (
         <p className="text-xs text-muted-foreground font-body">
           {t("checkedOutAt")} {new Date(attendance.check_out_at).toLocaleTimeString()}
         </p>
+      )}
+      {attendance?.early_checkout && (
+        <p className="text-xs text-amber-700 font-body">{t("earlyCheckoutLabel")}</p>
       )}
       {error && <p className="text-xs text-destructive font-body">{error}</p>}
 
