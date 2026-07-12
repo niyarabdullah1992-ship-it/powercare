@@ -14,6 +14,7 @@ import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
 import PresenceDot from "@/components/employees/PresenceDot";
 import SwipeToDeleteItem from "@/components/notifications/SwipeToDeleteItem";
+import SyncStatusIndicator from "@/components/SyncStatusIndicator";
 import { allowedNavFor } from "@/lib/navVisibility";
 
 export default function Layout({ children }) {
@@ -219,12 +220,7 @@ export default function Layout({ children }) {
             </div>
 
             <div className="flex items-center gap-2 md:gap-3">
-              {isSyncing && (
-                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <RefreshCw className="w-3 h-3 animate-spin" strokeWidth={2} />
-                  <span className="hidden sm:inline">{t("syncing") || "Syncing..."}</span>
-                </span>
-              )}
+              <SyncStatusIndicator isSyncing={isSyncing} lang={lang} />
               {/* Language */}
               <div className="relative" ref={langRef}>
                 <button

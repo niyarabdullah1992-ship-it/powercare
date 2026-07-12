@@ -232,18 +232,40 @@ function pushCompanyDataToCloud(id, data) {
    The company is marked dirty and the loop below re-pushes its latest snapshot
    every few seconds until the cloud write succeeds. */
 const pendingResync = new Set();
+const syncHealth = { lastSyncedAt: null };
+export function getSyncStatus() {
+  return {
+    pending: pendingResync.size,
+    offline: typeof navigator !== "undefined" && navigator.onLine === false,
+    lastSyncedAt: syncHealth.lastSyncedAt,
+  };
+}
+function markSynced() {
+  syncHealth.lastSyncedAt = Date.now();
+  notify();
+}
 function scheduleResync(companyId) {
   pendingResync.add(companyId);
+  notify();
+}
+function flushResync() {
+  const ids = [...pendingResync];
+  if (!ids.length) return;
+  pendingResync.clear();
+  ids.forEach((id) => {
+    const data = getCompanyData(id);
+    if (data) pushCompanyDataToCloud(id, data);
+  });
+  notify();
 }
 if (typeof window !== "undefined") {
-  setInterval(() => {
-    const ids = [...pendingResync];
-    pendingResync.clear();
-    ids.forEach((id) => {
-      const data = getCompanyData(id);
-      if (data) pushCompanyDataToCloud(id, data);
-    });
-  }, 8000);
+  setInterval(flushResync, 8000);
+  // Push pending changes the moment connectivity returns, and before the tab hides —
+  // so edits made moments before closing/switching tabs still reach the cloud.
+  window.addEventListener("online", flushResync);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushResync();
+  });
 }
 
 /* ----------------------------- generic collections (real, persisted) -----------------------------
@@ -259,6 +281,7 @@ async function syncBlobToEntity(companyId, category, payload) {
   lastSyncedBlobJSON[key] = json;
   try {
     await invokeDirectory({ action: "syncBlob", companyId, category, payload: payload || [] });
+    markSynced();
   } catch {
     // failed cloud write — clear the dedupe marker and let the retry loop re-push it
     lastSyncedBlobJSON[key] = undefined;
@@ -311,6 +334,7 @@ async function syncEmployeesToEntity(companyId, employees) {
   lastSyncedEmployeesJSON[companyId] = json;
   try {
     await invokeDirectory({ action: "syncEmployees", companyId, employees: employees || [] });
+    markSynced();
   } catch {
     // failed cloud write — clear the dedupe marker and let the retry loop re-push it
     lastSyncedEmployeesJSON[companyId] = undefined;
@@ -329,6 +353,7 @@ async function syncStationsToEntity(companyId, stations) {
   lastSyncedStationsJSON[companyId] = json;
   try {
     await invokeDirectory({ action: "syncStations", companyId, stations: stations || [] });
+    markSynced();
   } catch {
     // failed cloud write — clear the dedupe marker and let the retry loop re-push it
     lastSyncedStationsJSON[companyId] = undefined;
@@ -822,35 +847,55 @@ export function updateCompany(companyId, updater) {
   if (!data) return;
   // Snapshot key collections so every add/remove/status change is audited
   // automatically, no matter which page performed the mutation.
-  const beforeEmp = new Map((data.employees || []).map((e) => [e.id, e.name]));
-  const beforeSt = new Map((data.stations || []).map((s) => [s.id, s.name]));
-  const beforeTasks = new Map((data.tasks || []).map((t) => [t.id, t.status]));
+  const before = {
+    emp: new Map((data.employees || []).map((e) => [e.id, e.name])),
+    st: new Map((data.stations || []).map((s) => [s.id, s.name])),
+    stLoc: new Map((data.stations || []).map((s) => [s.id, `${s.lat},${s.lng},${s.radiusMeters}`])),
+    tasks: new Map((data.tasks || []).map((t) => [t.id, t.status])),
+    taskTitles: new Map((data.tasks || []).map((t) => [t.id, t.title])),
+    reports: new Map((data.reports || []).map((r) => [r.id, r.title])),
+    files: new Map((data.files || []).map((f) => [f.id, f.name])),
+    plans: new Map((data.plans || []).map((p) => [p.id, p.title])),
+    schedulesJSON: JSON.stringify(data.schedules || []),
+    settingsJSON: JSON.stringify(data.settings || {}),
+  };
   updater(data);
   saveCompanyData(companyId, data);
-  logCollectionDiffs(companyId, data, beforeEmp, beforeSt, beforeTasks);
+  logCollectionDiffs(companyId, data, before);
   return data;
 }
 
-// Automatic audit entries derived from what actually changed during a mutation.
-function logCollectionDiffs(companyId, data, beforeEmp, beforeSt, beforeTasks) {
-  const emps = data.employees || [];
-  const addedEmp = emps.filter((e) => !beforeEmp.has(e.id)).map((e) => e.name);
-  const removedEmp = [...beforeEmp.keys()].filter((id) => !emps.some((e) => e.id === id)).map((id) => beforeEmp.get(id));
-  if (addedEmp.length) audit(companyId, "employee_added", `Added employee(s): ${addedEmp.join(", ")}`);
-  if (removedEmp.length) audit(companyId, "employee_removed", `Removed employee(s): ${removedEmp.join(", ")}`);
-
-  const sts = data.stations || [];
-  const addedSt = sts.filter((s) => !beforeSt.has(s.id)).map((s) => s.name);
-  const removedSt = [...beforeSt.keys()].filter((id) => !sts.some((s) => s.id === id)).map((id) => beforeSt.get(id));
-  if (addedSt.length) audit(companyId, "station_added", `Added station(s): ${addedSt.join(", ")}`);
-  if (removedSt.length) audit(companyId, "station_removed", `Removed station(s): ${removedSt.join(", ")}`);
+// Automatic audit entries derived from what actually changed during a mutation —
+// covers employees, stations (incl. GPS location), tasks, reports, files, plans,
+// schedules and settings, no matter which page performed the mutation.
+function logCollectionDiffs(companyId, data, before) {
+  const diffList = (map, arr, label, nameOf) => {
+    const added = arr.filter((x) => !map.has(x.id)).map(nameOf).filter(Boolean);
+    const removed = [...map.keys()].filter((id) => !arr.some((x) => x.id === id)).map((id) => map.get(id)).filter(Boolean);
+    if (added.length) audit(companyId, `${label}_added`, `Added ${label}(s): ${added.join(", ")}`);
+    if (removed.length) audit(companyId, `${label}_removed`, `Removed ${label}(s): ${removed.join(", ")}`);
+  };
+  diffList(before.emp, data.employees || [], "employee", (e) => e.name);
+  diffList(before.st, data.stations || [], "station", (s) => s.name);
+  diffList(before.taskTitles, data.tasks || [], "task", (t) => t.title);
+  diffList(before.reports, data.reports || [], "report", (r) => r.title);
+  diffList(before.files, data.files || [], "file", (f) => f.name);
+  diffList(before.plans, data.plans || [], "plan", (p) => p.title);
 
   (data.tasks || []).forEach((t) => {
-    const prev = beforeTasks.get(t.id);
+    const prev = before.tasks.get(t.id);
     if (prev && prev !== t.status) {
       audit(companyId, "task_status_changed", `Task "${t.title}": ${prev} → ${t.status}`);
     }
   });
+  (data.stations || []).forEach((s) => {
+    const prev = before.stLoc.get(s.id);
+    if (prev != null && prev !== `${s.lat},${s.lng},${s.radiusMeters}`) {
+      audit(companyId, "station_location_changed", `Station "${s.name}" GPS location/radius updated.`);
+    }
+  });
+  if (JSON.stringify(data.schedules || []) !== before.schedulesJSON) audit(companyId, "schedule_changed", "Work schedule updated.");
+  if (JSON.stringify(data.settings || {}) !== before.settingsJSON) audit(companyId, "settings_changed", "Company settings updated.");
 }
 
 export function addNotification(companyId, userId, text) {
