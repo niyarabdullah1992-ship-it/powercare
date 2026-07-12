@@ -595,6 +595,24 @@ export async function completeLoginOtp(pendingId, code, typedPassword) {
   return company;
 }
 
+// Owner changes their own account password — verified server-side against the
+// active owner session, stored hashed in the cloud directory.
+export async function changeOwnerPassword(companyId, newPassword) {
+  const reg = getRegistry();
+  const company = reg.companies.find((c) => c.id === companyId);
+  if (!company) return false;
+  const res = await invokeDirectory({
+    action: "syncAccount", companyId,
+    name: company.name, ownerEmail: company.ownerEmail,
+    ownerPassword: newPassword, plan: company.plan,
+    allowedEmailDomain: company.allowedEmailDomain || "",
+  });
+  if (!res?.data?.ok) return false;
+  company.ownerPassword = newPassword;
+  saveRegistry(reg);
+  return true;
+}
+
 // Owner/manager sets (or resets) an employee's personal login password — stored only
 // as a salted hash in the cloud directory, never in localStorage.
 export async function setEmployeePassword(companyId, employeeId, email, password) {

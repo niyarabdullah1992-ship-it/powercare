@@ -12,6 +12,7 @@ import SalaryTab from "@/components/employees/SalaryTab";
 import LeaveTab from "@/components/employees/LeaveTab";
 import HRCommunicationsTab from "@/components/employees/HRCommunicationsTab";
 import LoginAccessCard from "@/components/employees/LoginAccessCard";
+import AccountSettingsCard from "@/components/employees/AccountSettingsCard";
 
 const TABS = [
   { key: "professionalInfo", icon: Briefcase },
@@ -55,7 +56,8 @@ export default function EmployeeProfile() {
         stationName={stationName}
       />
 
-      {canManage && <LoginAccessCard employee={employee} companyId={company.id} />}
+      {isSelf && <AccountSettingsCard employee={employee} company={company} />}
+      {canManage && !isSelf && <LoginAccessCard employee={employee} companyId={company.id} />}
 
       {/* Tab nav */}
       <div className="flex flex-wrap gap-2 p-1.5 rounded-xl border border-border bg-card">

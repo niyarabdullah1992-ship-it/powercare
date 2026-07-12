@@ -220,8 +220,8 @@ Deno.serve(async (req) => {
     }
 
     if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    // Owner-only actions.
-    if (action === 'setEmployeePassword' && auth.role !== 'owner') {
+    // Password changes: allowed for the owner, or for an employee changing their OWN password.
+    if (action === 'setEmployeePassword' && auth.role !== 'owner' && auth.userId !== body.employeeId) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
