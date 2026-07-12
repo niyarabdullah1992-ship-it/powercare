@@ -2,7 +2,7 @@
 // used by the sidebar/mobile nav and the dashboards' quick-access shortcuts.
 
 const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/assistant", "/app/complaints"];
-const MANAGER_EXTRA = ["/app/employees", "/app/stations", "/app/safety", "/app/performance", "/app/reports"];
+const MANAGER_EXTRA = ["/app/employees", "/app/stations", "/app/performance", "/app/reports"];
 const EXEC_EXTRA = ["/app/hr"];
 
 export function allowedNavFor(user) {
