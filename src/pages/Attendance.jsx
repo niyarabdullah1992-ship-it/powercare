@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
-import { canCreateTasks, canManageStations, isCompanyOwner, visibleEmployees } from "@/lib/permissions";
+import { canCreateTasks, isCompanyOwner, visibleEmployees } from "@/lib/permissions";
 import CheckInOutCard from "@/components/attendance/CheckInOutCard";
 import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDashboard";
 import AttendanceMonthlyReport from "@/components/attendance/AttendanceMonthlyReport";
@@ -16,7 +16,8 @@ export default function Attendance() {
   const [tab, setTab] = useState("team");
 
   const isManager = data && currentUser && canCreateTasks(currentUser);
-  const canEditSettings = data && currentUser && (canManageStations(currentUser) || isCompanyOwner(currentUser, data));
+  // Settings visible to any manager (station manager and above) or the company owner.
+  const canEditSettings = data && currentUser && (canCreateTasks(currentUser) || isCompanyOwner(currentUser, data));
   const employees = data && currentUser ? visibleEmployees(currentUser, data) : [];
 
   useEffect(() => {
