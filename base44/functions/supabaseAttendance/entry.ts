@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
     // page) — the frontend resolves the employee's shift for today and passes it in.
 
     if (action === "checkIn") {
-      const { companyId, employeeId, employeeName, stationId, lat, lng, shiftStart, stationLat, stationLng, radiusMeters } = body;
+      const { companyId, employeeId, employeeName, stationId, lat, lng, accuracy, shiftStart, stationLat, stationLng, radiusMeters } = body;
       if (!companyId || !employeeId) return Response.json({ error: "Missing fields" }, { status: 400 });
       const date = todayStr();
       const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
@@ -159,7 +159,10 @@ Deno.serve(async (req) => {
       let distMeters = null;
       if (lat != null && lng != null && stationLat != null && stationLng != null) {
         distMeters = Math.round(distanceMeters(lat, lng, stationLat, stationLng));
-        locationStatus = distMeters <= (radiusMeters || 200) ? "inside" : "outside";
+        // GPS readings carry an accuracy radius — give the employee the benefit of
+        // that margin (capped at 100m) so an imprecise fix isn't wrongly "outside".
+        const accuracyMargin = Math.min(Number(accuracy) || 0, 100);
+        locationStatus = distMeters - accuracyMargin <= (radiusMeters || 200) ? "inside" : "outside";
       }
       const payload = {
         company_id: companyId,

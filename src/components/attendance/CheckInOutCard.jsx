@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { getTodaysShift } from "@/lib/attendance";
+import { getAccuratePosition } from "@/lib/geo";
 import { LogIn, LogOut, MapPin, Loader2, Clock } from "lucide-react";
 
 const STATUS_STYLE = {
@@ -41,23 +42,13 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id, company?.id]);
 
-  const getLocation = () =>
-    new Promise((resolve) => {
-      if (!navigator.geolocation) return resolve(null);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => resolve(null),
-        { timeout: 8000 }
-      );
-    });
-
   const handleCheckIn = async () => {
     setError("");
     setLoading(true);
     try {
       let coords = null;
       if (settings?.gps_enabled) {
-        coords = await getLocation();
+        coords = await getAccuratePosition();
         if (settings.gps_required && !coords) {
           setError(t("locationDenied"));
           setLoading(false);
@@ -71,6 +62,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         employeeName: currentUser.name,
         stationId: currentUser.stationId || null,
         lat: coords?.lat, lng: coords?.lng,
+        accuracy: coords?.accuracy ?? null,
         shiftStart: shift?.start,
         stationLat: station?.lat ?? null,
         stationLng: station?.lng ?? null,

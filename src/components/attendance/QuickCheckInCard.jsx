@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { getTodaysShift } from "@/lib/attendance";
+import { getAccuratePosition } from "@/lib/geo";
 import { LogIn, LogOut, MapPin, Loader2, CheckCircle2, Navigation } from "lucide-react";
 
 function distanceMeters(a, b) {
@@ -44,19 +45,19 @@ export default function QuickCheckInCard({ currentUser, company }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id, company?.id]);
 
-  const locate = () => {
+  const locate = async () => {
     if (!navigator.geolocation) { setLocState("denied"); return; }
     setLocState("locating");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocState("ready"); },
-      () => setLocState("denied"),
-      { timeout: 10000, enableHighAccuracy: true }
-    );
+    const fix = await getAccuratePosition();
+    if (fix) { setCoords(fix); setLocState("ready"); } else setLocState("denied");
   };
 
   const stationCoords = station?.lat != null && station?.lng != null ? { lat: station.lat, lng: station.lng } : null;
   const dist = coords && stationCoords ? distanceMeters(coords, stationCoords) : null;
-  const inRange = dist != null && station?.radiusMeters != null ? dist <= station.radiusMeters : null;
+  // Give the GPS reading the benefit of its own accuracy margin (capped at 100m),
+  // so a slightly imprecise fix doesn't wrongly flag someone standing at the station.
+  const accuracyMargin = Math.min(Number(coords?.accuracy) || 0, 100);
+  const inRange = dist != null && station?.radiusMeters != null ? dist - accuracyMargin <= station.radiusMeters : null;
 
   const handleCheckIn = async () => {
     setError("");
@@ -64,14 +65,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
     try {
       let c = coords;
       if (settings?.gps_enabled && !c) {
-        c = await new Promise((resolve) => {
-          if (!navigator.geolocation) return resolve(null);
-          navigator.geolocation.getCurrentPosition(
-            (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-            () => resolve(null),
-            { timeout: 8000 }
-          );
-        });
+        c = await getAccuratePosition();
         if (c) { setCoords(c); setLocState("ready"); }
         if (settings.gps_required && !c) {
           setError(t("locationDenied"));
@@ -86,6 +80,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
         employeeName: currentUser.name,
         stationId: currentUser.stationId || null,
         lat: c?.lat, lng: c?.lng,
+        accuracy: c?.accuracy ?? null,
         shiftStart: shift?.start,
         stationLat: station?.lat ?? null,
         stationLng: station?.lng ?? null,
