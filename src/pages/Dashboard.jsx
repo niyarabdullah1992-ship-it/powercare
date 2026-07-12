@@ -13,6 +13,7 @@ import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
 import StationManagerDashboard from "@/components/dashboard/StationManagerDashboard";
 import { seedDummyData } from "@/lib/store";
 import { Sparkles } from "lucide-react";
+import PullToRefresh from "@/components/mobile/PullToRefresh";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -20,29 +21,31 @@ export default function Dashboard() {
   const [stoppageCount, setStoppageCount] = useState(0);
   const [seeding, setSeeding] = useState(false);
 
-  useEffect(() => {
+  const loadStoppage = async () => {
     if (!currentUser) return;
-    (async () => {
-      try {
-        const res = await base44.functions.invoke("supabaseTargets", {
-          action: "listTargets",
-          userRole: currentUser.role,
-          userId: currentUser.id,
-          stationId: currentUser.stationId || null,
-          managedStations: currentUser.managedStations || [],
-        });
-        const list = res?.data?.targets || [];
-        let count = 0;
-        for (const tg of list) {
-          for (const c of Array.isArray(tg.comments) ? tg.comments : []) {
-            if (c.is_issue) count++;
-          }
+    try {
+      const res = await base44.functions.invoke("supabaseTargets", {
+        action: "listTargets",
+        userRole: currentUser.role,
+        userId: currentUser.id,
+        stationId: currentUser.stationId || null,
+        managedStations: currentUser.managedStations || [],
+      });
+      const list = res?.data?.targets || [];
+      let count = 0;
+      for (const tg of list) {
+        for (const c of Array.isArray(tg.comments) ? tg.comments : []) {
+          if (c.is_issue) count++;
         }
-        setStoppageCount(count);
-      } catch {
-        setStoppageCount(0);
       }
-    })();
+      setStoppageCount(count);
+    } catch {
+      setStoppageCount(0);
+    }
+  };
+
+  useEffect(() => {
+    loadStoppage();
   }, [currentUser?.id]);
 
   if (!data || !currentUser) return null;
@@ -67,19 +70,23 @@ export default function Dashboard() {
   const isEmployee = currentUser.role === "employee";
 
   if (isEmployee) return (
-    <div className="space-y-6">
-      {welcomeHero}
-      <EmployeeDashboard user={currentUser} company={company} data={data} />
-    </div>
+    <PullToRefresh onRefresh={loadStoppage}>
+      <div className="space-y-6">
+        {welcomeHero}
+        <EmployeeDashboard user={currentUser} company={company} data={data} />
+      </div>
+    </PullToRefresh>
   );
 
   // Station-scoped managers get their own station-focused dashboard.
   if (currentUser.role === "station_manager" || currentUser.role === "pgm") {
     return (
-      <div className="space-y-6">
-        {welcomeHero}
-        <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
-      </div>
+      <PullToRefresh onRefresh={loadStoppage}>
+        <div className="space-y-6">
+          {welcomeHero}
+          <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
+        </div>
+      </PullToRefresh>
     );
   }
 
@@ -129,6 +136,7 @@ export default function Dashboard() {
     .slice(0, 8);
 
   return (
+    <PullToRefresh onRefresh={loadStoppage}>
     <div className="space-y-8">
       {welcomeHero}
       <OnboardingChecklist data={data} lang={lang} />
@@ -219,5 +227,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </PullToRefresh>
   );
 }

@@ -1,4 +1,5 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import MobileSelect from "@/components/mobile/MobileSelect";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { addFileFolder, addCompanyFile, deleteFileNode } from "@/lib/store";
@@ -23,6 +24,13 @@ export default function Files() {
   const isStationScoped = currentUser?.role === "station_manager" || currentUser?.role === "pgm" || (currentUser?.role === "employee" && currentUser?.stationId);
   const defaultStation = isStationScoped ? (currentUser.stationId || myStations[0]?.id || "all") : "all";
   const [stationFilter, setStationFilter] = useState(defaultStation);
+
+  // Re-tapping the Files bottom tab resets the folder navigation to root.
+  useEffect(() => {
+    const onReset = (e) => { if (e.detail === "/app/files") setPath([]); };
+    window.addEventListener("powercare:tab-reset", onReset);
+    return () => window.removeEventListener("powercare:tab-reset", onReset);
+  }, []);
 
   const nodes = data?.files || [];
   const currentId = path.length ? path[path.length - 1].id : null;
@@ -102,17 +110,16 @@ export default function Files() {
         {/* Station filter — station managers land directly on their station's documents */}
         <div className="flex items-center gap-1.5 ms-auto">
           <Radio className="w-4 h-4 text-accent shrink-0" strokeWidth={1.5} />
-          <select
+          <MobileSelect
             value={stationFilter}
-            onChange={(e) => setStationFilter(e.target.value)}
-            className="px-3 py-2 rounded-md border border-input bg-card text-sm font-body focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="all">{t("filesAllStations")}</option>
-            <option value="hq">{t("hq")}</option>
-            {myStations.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
+            onChange={setStationFilter}
+            placeholder={t("filesAllStations")}
+            options={[
+              { value: "all", label: t("filesAllStations") },
+              { value: "hq", label: t("hq") },
+              ...myStations.map((s) => ({ value: s.id, label: s.name })),
+            ]}
+          />
         </div>
       </div>
 

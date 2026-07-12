@@ -149,6 +149,16 @@
   }
 }
 
+/* Native-app feel: safe areas, overscroll and selection */
+@layer utilities {
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .no-select { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+}
+
+html, body { overscroll-behavior-y: none; }
+body { -webkit-tap-highlight-color: transparent; }
+
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 

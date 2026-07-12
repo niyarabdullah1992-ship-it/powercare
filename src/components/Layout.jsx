@@ -17,6 +17,7 @@ import SwipeToDeleteItem from "@/components/notifications/SwipeToDeleteItem";
 import SyncStatusIndicator from "@/components/SyncStatusIndicator";
 import ThemeToggle from "@/components/ThemeToggle";
 import { allowedNavFor } from "@/lib/navVisibility";
+import BottomTabBar from "@/components/mobile/BottomTabBar";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -153,7 +154,7 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-background flex" dir={dir}>
       {/* Sidebar */}
-      <aside className={`hidden md:flex flex-col w-64 ${sidebarSide} top-0 h-screen ${dir === "rtl" ? "border-l" : "border-r"} border-border bg-card sticky`}>
+      <aside className={`hidden md:flex flex-col w-64 ${sidebarSide} top-0 h-screen ${dir === "rtl" ? "border-l" : "border-r"} border-border bg-card sticky pt-safe`}>
         <div className="px-6 py-6 flex items-center gap-2 border-b border-border">
           <Logo size={36} />
           <div>
@@ -164,7 +165,7 @@ export default function Layout({ children }) {
         <DragDropContext onDragEnd={onNavDragEnd}>
           <Droppable droppableId="sidebar-nav">
             {(provided) => (
-              <nav ref={provided.innerRef} {...provided.droppableProps} className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+              <nav ref={provided.innerRef} {...provided.droppableProps} className="flex-1 px-3 py-4 space-y-1 overflow-y-auto no-select">
                 {orderedNavItems.map((item, index) => (
                   <Draggable key={item.to} draggableId={item.to} index={index}>
                     {(dragProvided, dragSnapshot) => (
@@ -204,7 +205,7 @@ export default function Layout({ children }) {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="sticky top-0 z-40 bg-background/90 backdrop-blur border-b border-border">
+        <header className="sticky top-0 z-40 bg-background/90 backdrop-blur border-b border-border pt-safe">
           <div className="flex items-center justify-between px-4 md:px-8 h-16">
             {/* Mobile nav (scrollable pills) */}
             <div className="md:hidden flex items-center gap-2 overflow-x-auto no-scrollbar">
@@ -346,7 +347,7 @@ export default function Layout({ children }) {
           </div>
 
           {/* Mobile nav row */}
-          <div className="md:hidden flex items-center gap-1 overflow-x-auto px-3 pb-2 no-scrollbar">
+          <div className="md:hidden flex items-center gap-1 overflow-x-auto px-3 pb-2 no-scrollbar no-select">
             {orderedNavItems.map((item) => (
               <NavLink
                 key={item.to}
@@ -365,8 +366,11 @@ export default function Layout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 md:p-8">{children}</main>
+        <main className="flex-1 p-4 pb-28 md:p-8">{children}</main>
       </div>
+
+      {/* Native-style bottom tab bar (mobile only) */}
+      <BottomTabBar />
     </div>
   );
 }

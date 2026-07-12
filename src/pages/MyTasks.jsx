@@ -21,6 +21,8 @@ import FolderTree from "@/components/tasks/FolderTree";
 import CommentFiles from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
+import PullToRefresh from "@/components/mobile/PullToRefresh";
+import MobileSelect from "@/components/mobile/MobileSelect";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -104,6 +106,15 @@ export default function MyTasks() {
 
   useEffect(() => {
     fetchFolders();
+  }, []);
+
+  // Re-tapping the Tasks bottom tab resets the station/folder browser to root.
+  useEffect(() => {
+    const onReset = (e) => {
+      if (e.detail === "/app/tasks") { setSelectedStation(null); setFolderPath(null); }
+    };
+    window.addEventListener("powercare:tab-reset", onReset);
+    return () => window.removeEventListener("powercare:tab-reset", onReset);
   }, []);
 
   const addFolderAt = async (parentPath, name) => {
@@ -679,6 +690,7 @@ export default function MyTasks() {
   );
 
   return (
+    <PullToRefresh onRefresh={async () => { await Promise.all([fetchTargets(), fetchFolders()]); }}>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -767,12 +779,14 @@ export default function MyTasks() {
                   ...data.stations.map((s) => ({ value: s.id, label: s.name })),
                 ]}
               />
-              <select name="assignedTo" required defaultValue="" className="px-3 py-2 rounded-md border border-input text-sm font-body">
-                <option value="" disabled>{t("selectEmployee")}</option>
-                {memberCandidates.filter((e) => e.role === "employee" || e.role === "station_manager").map((e) => (
-                  <option key={e.id} value={e.id}>{e.name} — {e.stationId ? stationName(e.stationId) : t("hq")}</option>
-                ))}
-              </select>
+              <MobileSelect
+                name="assignedTo"
+                defaultValue=""
+                placeholder={t("selectEmployee")}
+                options={memberCandidates
+                  .filter((e) => e.role === "employee" || e.role === "station_manager")
+                  .map((e) => ({ value: e.id, label: `${e.name} — ${e.stationId ? stationName(e.stationId) : t("hq")}` }))}
+              />
             </div>
           )}
 
@@ -956,17 +970,18 @@ export default function MyTasks() {
                     className={`w-full ${dir === "rtl" ? "pr-9 pl-3" : "pl-9 pr-3"} py-2 rounded-md border border-input text-sm font-body`}
                   />
                 </div>
-                <select
+                <MobileSelect
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 rounded-md border border-input text-sm font-body bg-card"
-                >
-                  <option value="all">{t("allStatuses")}</option>
-                  <option value="active">{t("inProgress")}</option>
-                  <option value="completed">{t("completed")}</option>
-                  <option value="overdue">{t("overdue")}</option>
-                  <option value="due_today">{t("dueToday")}</option>
-                </select>
+                  onChange={setStatusFilter}
+                  placeholder={t("allStatuses")}
+                  options={[
+                    { value: "all", label: t("allStatuses") },
+                    { value: "active", label: t("inProgress") },
+                    { value: "completed", label: t("completed") },
+                    { value: "overdue", label: t("overdue") },
+                    { value: "due_today", label: t("dueToday") },
+                  ]}
+                />
                 <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                   <button
                     type="button"
@@ -1035,12 +1050,19 @@ export default function MyTasks() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground font-body block mb-1">{t("priority")}</label>
-                <select name="priority" defaultValue={editTarget.priority || "medium"} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body bg-card">
-                  <option value="urgent">{t("urgent")}</option>
-                  <option value="high">{t("high")}</option>
-                  <option value="medium">{t("medium")}</option>
-                  <option value="low">{t("low")}</option>
-                </select>
+                <MobileSelect
+                  key={editTarget.id}
+                  name="priority"
+                  defaultValue={editTarget.priority || "medium"}
+                  placeholder={t("priority")}
+                  className="w-full"
+                  options={[
+                    { value: "urgent", label: t("urgent") },
+                    { value: "high", label: t("high") },
+                    { value: "medium", label: t("medium") },
+                    { value: "low", label: t("low") },
+                  ]}
+                />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground font-body block mb-1">{t("totalTasks")}</label>
@@ -1059,5 +1081,6 @@ export default function MyTasks() {
         </div>
       )}
     </div>
+    </PullToRefresh>
   );
 }

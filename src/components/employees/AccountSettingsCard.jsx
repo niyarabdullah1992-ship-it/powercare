@@ -1,16 +1,22 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, setEmployeePassword, changeOwnerPassword } from "@/lib/store";
-import { KeyRound, Pencil } from "lucide-react";
+import { KeyRound, Pencil, Trash2, AlertTriangle } from "lucide-react";
 
 // Self-service account settings — any signed-in user can change their own
 // display name and login password from their profile page.
 export default function AccountSettingsCard({ employee, company }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const ar = lang === "ar";
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
   const [name, setName] = useState(employee.name);
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const isOwner = !!company.ownerEmail && (employee.email || "").toLowerCase() === company.ownerEmail.toLowerCase();
 
@@ -62,6 +68,55 @@ export default function AccountSettingsCard({ employee, company }) {
         <p className="text-xs text-muted-foreground font-body">{t("emailRequiredForLogin")}</p>
       )}
       {msg && <p className="text-xs text-accent font-body">{msg}</p>}
+
+      {/* Delete account — permanent, requires explicit confirmation. Owner accounts can't be removed here. */}
+      {!isOwner && (
+        <div className="pt-3 border-t border-border space-y-2">
+          <h4 className="text-sm font-body font-medium text-destructive flex items-center gap-1.5">
+            <Trash2 className="w-3.5 h-3.5" /> {ar ? "حذف الحساب" : "Delete account"}
+          </h4>
+          <p className="text-xs text-muted-foreground font-body">
+            {ar
+              ? "حذف الحساب نهائي — ستُزال بيانات الموظف من الشركة ولا يمكن التراجع."
+              : "Deleting this account is permanent — the employee's data is removed from the company and cannot be undone."}
+          </p>
+          {!confirmDelete ? (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="px-4 py-2 rounded-md border border-destructive/50 text-destructive text-sm font-body hover:bg-destructive/10"
+            >
+              {ar ? "حذف الحساب" : "Delete account"}
+            </button>
+          ) : (
+            <div className="p-3 rounded-lg border border-destructive/40 bg-destructive/5 space-y-2">
+              <p className="text-xs text-destructive font-body flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                {ar ? "هل أنت متأكد؟ لا يمكن التراجع عن هذا الإجراء." : "Are you sure? This action cannot be undone."}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    updateCompany(company.id, (d) => {
+                      d.employees = d.employees.filter((e) => e.id !== employee.id);
+                    });
+                    if (currentUser?.id === employee.id) { logout(); navigate("/"); }
+                    else navigate("/app/employees");
+                  }}
+                  className="px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-body"
+                >
+                  {ar ? "نعم، احذف نهائيًا" : "Yes, delete permanently"}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-4 py-2 rounded-md border border-border text-sm font-body"
+                >
+                  {t("cancel")}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
