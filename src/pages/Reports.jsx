@@ -5,9 +5,10 @@ import { base44 } from "@/api/base44Client";
 import { formatDate, formatDateTime } from "@/lib/dateFormat";
 import { visibleStations, canSeeAllStations, isCompanyOwner } from "@/lib/permissions";
 import moment from "moment";
-import { FileBarChart2, Calendar, AlertTriangle, ListTodo, CalendarDays, FileSpreadsheet, UserSquare2 } from "lucide-react";
+import { FileBarChart2, Calendar, AlertTriangle, ListTodo, CalendarDays, FileSpreadsheet, UserSquare2, Printer } from "lucide-react";
 import TaskStats from "@/components/tasks/TaskStats";
 import { exportCSV } from "@/lib/exportReport";
+import { printReport } from "@/lib/printReport";
 import StationFilterDropdown from "@/components/reports/StationFilterDropdown";
 import EmployeeReportTable from "@/components/reports/EmployeeReportTable";
 import ReportCard from "@/components/reports/ReportCard";
@@ -151,6 +152,27 @@ export default function Reports() {
     return { headers, rows };
   };
 
+  // Brand-styled printable report (save as PDF from the print dialog).
+  const printTasksReport = () => {
+    const { headers, rows } = tasksExportData();
+    const completedCount = filteredTasks.filter((tg) => tg.status === "completed").length;
+    const overdueCount = filteredTasks.filter((tg) => tg.status === "overdue").length;
+    const activeCount = filteredTasks.filter((tg) => tg.status === "active").length;
+    printReport({
+      title: t("tasksReport"),
+      companyName: data.name || company?.name || "",
+      periodLabel: `${formatDate(dateWindow.start.toDate(), lang)} — ${formatDate(dateWindow.end.toDate(), lang)}`,
+      dir,
+      stats: [
+        { label: t("total"), value: filteredTasks.length },
+        { label: t("completed"), value: completedCount },
+        { label: t("inProgress"), value: activeCount },
+        { label: t("overdue"), value: overdueCount },
+      ],
+      sections: [{ heading: t("tasksReport"), headers, rows }],
+    });
+  };
+
   const isOwner = isCompanyOwner(currentUser, data);
 
   const TABS = [
@@ -225,6 +247,9 @@ export default function Reports() {
               <div className="flex items-center gap-2">
                 <button onClick={() => { const { headers, rows } = tasksExportData(); exportCSV(`tasks-report.csv`, headers, rows); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
                   <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+                </button>
+                <button onClick={printTasksReport} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+                  <Printer className="w-3.5 h-3.5" /> PDF
                 </button>
               </div>
             )}
