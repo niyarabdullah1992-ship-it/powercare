@@ -2,8 +2,13 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import {
   getSession, companyLogin, switchUser, clearSession, getCompanyData,
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
-  hydrateBlobFromEntity, BLOB_CATEGORIES,
+  hydrateBlobFromEntity, BLOB_CATEGORIES, getLastLocalWriteAt,
 } from "./store";
+
+// Skip merging in cloud data if this browser wrote locally very recently —
+// gives the in-flight edit a moment to finish syncing before a poll/refresh
+// could otherwise overwrite it with a stale server copy (simple conflict guard).
+const RECENT_WRITE_GUARD_MS = 4000;
 
 const AuthContext = createContext(null);
 
@@ -29,7 +34,7 @@ export function AuthProvider({ children }) {
       // Always reconcile with the persisted database (not just on an empty cache) so
       // records created on another device/browser eventually show up here too. Local-only
       // records (not yet synced) are kept as-is; server records are merged in additively.
-      if (localData) {
+      if (localData && Date.now() - getLastLocalWriteAt(s.companyId) > RECENT_WRITE_GUARD_MS) {
         // Server records are authoritative for anything already synced (so leave requests,
         // certificates, HR messages, points etc. approved/edited on another device show up
         // here too). Any local record not yet synced (no server copy yet) is kept as-is.
@@ -91,7 +96,7 @@ export function AuthProvider({ children }) {
   // Live cross-device sync: periodically pull the latest persisted data while the app stays open,
   // so changes made on another device/browser show up here without needing a manual reload.
   useEffect(() => {
-    const interval = setInterval(refresh, 20000);
+    const interval = setInterval(refresh, 10000);
     return () => clearInterval(interval);
   }, [refresh]);
 

@@ -162,8 +162,17 @@ function emptyCompanyData(meta) {
 export function getCompanyData(id) {
   return read(companyKey(id), null);
 }
+// Tracks when this browser last wrote to a company's data, so the periodic
+// cross-device poll (see PowerCareAuth.jsx) can avoid overwriting a very
+// fresh local edit with a stale cloud copy that hasn't finished syncing yet —
+// a simple "recent local edits win" conflict-resolution rule.
+const lastLocalWriteAt = {};
+export function getLastLocalWriteAt(companyId) {
+  return lastLocalWriteAt[companyId] || 0;
+}
 function saveCompanyData(id, data) {
   data.employees = dedupeEmployees(data.employees);
+  lastLocalWriteAt[id] = Date.now();
   write(companyKey(id), data);
   syncEmployeesToEntity(id, data.employees);
   syncStationsToEntity(id, data.stations);
