@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Plus, X } from "lucide-react";
+import React, { useState } from "react";
+import { Plus, X, Check } from "lucide-react";
 import EmployeeAvatar from "./EmployeeAvatar";
 import { assignEmployeeToShift, unassignEmployeeFromShift } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
@@ -7,14 +7,6 @@ import { useI18n } from "@/lib/i18n";
 export default function ScheduleCell({ companyId, stationId, day, shiftTypeId, employeeIds, employees, canManage }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [open]);
 
   const assigned = employees.filter((e) => employeeIds.includes(e.id));
 
@@ -24,7 +16,7 @@ export default function ScheduleCell({ companyId, stationId, day, shiftTypeId, e
   };
 
   return (
-    <div className="space-y-1 relative min-w-[110px]">
+    <div className="space-y-1 min-w-[110px]">
       {assigned.map((emp) => (
         <div key={emp.id} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/60 text-xs font-body">
           <EmployeeAvatar name={emp.name} size={18} />
@@ -38,21 +30,44 @@ export default function ScheduleCell({ companyId, stationId, day, shiftTypeId, e
       ))}
       {canManage && (
         <button
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOpen(true)}
           className="w-full flex items-center justify-center gap-1 px-2 py-1 rounded-md border border-dashed border-border text-[11px] font-body text-muted-foreground hover:border-accent hover:text-accent transition-colors"
         >
           <Plus className="w-3 h-3" /> {t("add")}
         </button>
       )}
+      {/* Native-style overlay panel: bottom sheet on phones, centered on larger screens */}
       {open && (
-        <div ref={ref} className="absolute z-30 top-full mt-1 start-0 w-48 max-h-48 overflow-y-auto rounded-lg border border-landing-gold/30 bg-white shadow-xl p-1.5 space-y-0.5">
-          {employees.map((emp) => (
-            <label key={emp.id} className="flex items-center gap-2 text-xs font-body px-1.5 py-1 rounded hover:bg-muted cursor-pointer">
-              <input type="checkbox" checked={employeeIds.includes(emp.id)} onChange={() => toggle(emp.id)} />
-              {emp.name}
-            </label>
-          ))}
-          {employees.length === 0 && <p className="text-xs text-muted-foreground px-1.5 py-1">{t("noTasks")}</p>}
+        <div
+          className="fixed inset-0 z-[60] bg-black/50 flex items-end sm:items-center sm:justify-center"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="w-full sm:max-w-sm bg-card rounded-t-2xl sm:rounded-xl border border-border max-h-[70vh] overflow-y-auto pb-safe shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="px-4 pt-4 pb-2 text-xs uppercase tracking-wider text-muted-foreground font-body sticky top-0 bg-card">
+              {t("add")}
+            </p>
+            {employees.map((emp) => {
+              const isAssigned = employeeIds.includes(emp.id);
+              return (
+                <button
+                  key={emp.id}
+                  type="button"
+                  onClick={() => toggle(emp.id)}
+                  className={`w-full flex items-center justify-between gap-2 px-4 py-3 text-sm font-body text-start hover:bg-muted ${isAssigned ? "text-accent font-medium" : ""}`}
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    <EmployeeAvatar name={emp.name} size={20} />
+                    <span className="truncate">{emp.name}</span>
+                  </span>
+                  {isAssigned && <Check className="w-4 h-4 shrink-0" />}
+                </button>
+              );
+            })}
+            {employees.length === 0 && <p className="text-sm text-muted-foreground font-body px-4 py-3">{t("noTasks")}</p>}
+          </div>
         </div>
       )}
     </div>
