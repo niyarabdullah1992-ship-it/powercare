@@ -8,6 +8,7 @@ import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDas
 import AttendanceMonthlyReport from "@/components/attendance/AttendanceMonthlyReport";
 import AttendanceSettingsPanel from "@/components/attendance/AttendanceSettingsPanel";
 import AttendanceAnalytics from "@/components/attendance/AttendanceAnalytics";
+import ScheduleTab from "@/components/attendance/ScheduleTab";
 
 export default function Attendance() {
   const { t } = useI18n();
@@ -32,6 +33,7 @@ export default function Attendance() {
 
   const tabs = [
     { key: "team", label: t("teamTab") },
+    { key: "schedule", label: t("scheduleTab") },
     { key: "report", label: t("reportTab") },
     { key: "analytics", label: t("analyticsTab") },
     ...(canEditSettings ? [{ key: "settings", label: t("settingsTab") }] : []),
@@ -39,7 +41,7 @@ export default function Attendance() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-3xl font-semibold">{t("attendance")}</h1>
+      <h1 className="font-heading text-3xl font-semibold">{t("attendanceScheduling")}</h1>
 
       <CheckInOutCard currentUser={currentUser} company={company} t={t} />
 
@@ -58,6 +60,7 @@ export default function Attendance() {
           </div>
 
           {tab === "team" && <AttendanceDailyDashboard employees={employees} currentUser={currentUser} t={t} />}
+          {tab === "schedule" && <ScheduleTab />}
           {tab === "report" && <AttendanceMonthlyReport employees={employees} defaultEmployeeId={currentUser.id} t={t} />}
           {tab === "analytics" && <AttendanceAnalytics employees={employees} t={t} />}
           {tab === "settings" && canEditSettings && <AttendanceSettingsPanel company={company} currentUser={currentUser} t={t} />}

@@ -33,7 +33,6 @@ import Safety from './pages/Safety';
 import Performance from './pages/Performance';
 import Reports from './pages/Reports';
 import DailyReport from './pages/DailyReport';
-import Schedules from './pages/Schedules';
 import Attendance from './pages/Attendance';
 
 function RequireAuth({ children }) {
@@ -69,7 +68,6 @@ function AppRoutes() {
       <Route path="/app/performance" element={<RequireAuth><Performance /></RequireAuth>} />
       <Route path="/app/reports" element={<RequireAuth><Reports /></RequireAuth>} />
       <Route path="/app/daily-report" element={<RequireAuth><DailyReport /></RequireAuth>} />
-      <Route path="/app/schedules" element={<RequireAuth><Schedules /></RequireAuth>} />
       <Route path="/app/attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>

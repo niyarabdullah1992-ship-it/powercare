@@ -7,7 +7,7 @@ import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, HardHat, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, GripVertical, CalendarClock, ClipboardCheck,
+  Users, HardHat, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, GripVertical, ClipboardCheck,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -92,7 +92,7 @@ export default function Layout({ children }) {
     { to: "/app", icon: LayoutDashboard, label: t("dashboard"), end: true },
     { to: "/app/daily-report", icon: FileText, label: t("reports") },
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks") },
-    { to: "/app/attendance", icon: ClipboardCheck, label: t("attendance") },
+    { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling") },
     { to: "/app/chat", icon: MessageSquare, label: t("chat") },
 
     { to: "/app/anonymous", icon: ShieldQuestion, label: t("anonymous") },
@@ -103,7 +103,6 @@ export default function Layout({ children }) {
     { to: "/app/safety", icon: HardHat, label: t("safety") },
     { to: "/app/performance", icon: Trophy, label: t("performance") },
     { to: "/app/reports", icon: FileBarChart2, label: t("tasksReport") },
-    { to: "/app/schedules", icon: CalendarClock, label: t("schedules") },
   ];
 
   const orderKeys = navOrder.length ? navOrder : navItems.map((i) => i.to);

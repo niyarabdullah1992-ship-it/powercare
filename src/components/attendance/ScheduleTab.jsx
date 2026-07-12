@@ -8,7 +8,9 @@ import { exportCSV } from "@/lib/exportReport";
 
 const DAY_LABELS = ["daySun", "dayMon", "dayTue", "dayWed", "dayThu", "dayFri", "daySat"];
 
-export default function Schedules() {
+// Weekly station shift schedule — now embedded as a tab inside Attendance instead of
+// a separate page, since both cover the same "who works when" concept.
+export default function ScheduleTab() {
   const { t } = useI18n();
   const { data, company, currentUser } = useAuth();
   const [selectedStation, setSelectedStation] = useState(null);
@@ -18,11 +20,8 @@ export default function Schedules() {
 
   if (!selectedStation) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="font-heading text-3xl font-semibold">{t("schedules")}</h1>
-          <p className="text-muted-foreground font-body text-sm mt-1">{t("manageScheduleNote")}</p>
-        </div>
+      <div className="space-y-4">
+        <p className="text-muted-foreground font-body text-sm">{t("manageScheduleNote")}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {stations.map((s) => (
             <button key={s.id} onClick={() => setSelectedStation(s.id)} className="text-start p-5 rounded-xl border border-border bg-card hover:border-accent transition-colors space-y-2">
@@ -57,12 +56,12 @@ export default function Schedules() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center gap-3">
         <button onClick={() => setSelectedStation(null)} className="p-2 rounded-md hover:bg-muted shrink-0">
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <h1 className="flex-1 text-center font-heading text-3xl font-semibold">{station?.name}</h1>
+        <h3 className="flex-1 text-center font-heading text-xl font-semibold">{station?.name}</h3>
         <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-landing-gold/40 text-sm font-body hover:bg-landing-gold-light/20 shrink-0 whitespace-nowrap">
           <Download className="w-4 h-4" /> {t("exportExcel")}
         </button>
