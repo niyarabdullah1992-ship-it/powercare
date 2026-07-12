@@ -30,10 +30,10 @@ export default function Landing() {
     }
   }, [langOpen]);
 
-  const handleCompanyLogin = (e) => {
+  const handleCompanyLogin = async (e) => {
     e.preventDefault();
     setError("");
-    const c = login(email, password);
+    const c = await login(email, password);
     if (!c) setError("Invalid credentials");
   };
 

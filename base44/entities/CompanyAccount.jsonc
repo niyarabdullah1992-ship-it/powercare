@@ -1,0 +1,44 @@
+{
+  "name": "CompanyAccount",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string",
+      "description": "Stable client-side company id (matches the registry entry used across the app)."
+    },
+    "name": {
+      "type": "string"
+    },
+    "ownerEmail": {
+      "type": "string"
+    },
+    "ownerPassword": {
+      "type": "string"
+    },
+    "plan": {
+      "type": "string"
+    },
+    "allowedEmailDomain": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "companyId",
+    "ownerEmail",
+    "ownerPassword"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": false,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": false
+  }
+}

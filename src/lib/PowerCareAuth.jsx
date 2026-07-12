@@ -95,8 +95,8 @@ export function AuthProvider({ children }) {
     return () => clearInterval(interval);
   }, [refresh]);
 
-  const login = (email, password) => {
-    const c = companyLogin(email, password);
+  const login = async (email, password) => {
+    const c = await companyLogin(email, password);
     if (c) refresh();
     return c;
   };

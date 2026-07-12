@@ -86,7 +86,26 @@ export function createCompany({ name, ownerEmail, ownerPassword, plan = "Starter
   // seed empty company workspace
   const data = emptyCompanyData(company);
   write(companyKey(id), data);
+  syncAccountToEntity(company);
   return company;
+}
+
+// Persists login credentials/metadata for a company so employees can log in from any
+// device/browser, not just the one that created the company.
+async function syncAccountToEntity(company) {
+  try {
+    await base44.functions.invoke("companyDirectory", {
+      action: "syncAccount",
+      companyId: company.id,
+      name: company.name,
+      ownerEmail: company.ownerEmail,
+      ownerPassword: company.ownerPassword,
+      plan: company.plan,
+      allowedEmailDomain: company.allowedEmailDomain || "",
+    });
+  } catch {
+    // best-effort background sync
+  }
 }
 export function deleteCompany(id) {
   const reg = getRegistry();
@@ -103,7 +122,10 @@ export function getCompanyMeta(id) {
 export function setAllowedEmailDomain(companyId, domain) {
   const reg = getRegistry();
   const c = reg.companies.find((x) => x.id === companyId);
-  if (c) c.allowedEmailDomain = (domain || "").trim();
+  if (c) {
+    c.allowedEmailDomain = (domain || "").trim();
+    syncAccountToEntity(c);
+  }
   saveRegistry(reg);
 }
 
@@ -294,11 +316,30 @@ export function clearSession() {
   localStorage.removeItem(SESSION_KEY);
   notify();
 }
-export function companyLogin(email, password) {
+export async function companyLogin(email, password) {
   const reg = getRegistry();
-  const company = reg.companies.find(
+  let company = reg.companies.find(
     (c) => c.ownerEmail.toLowerCase() === String(email).toLowerCase() && c.ownerPassword === password
   );
+  if (!company) {
+    // Not known on this device — check the cloud directory (cross-device/browser login).
+    try {
+      const res = await base44.functions.invoke("companyDirectory", { action: "findAccountByEmail", email, password });
+      const remote = res?.data?.company;
+      if (remote) {
+        company = {
+          id: remote.companyId, name: remote.name, ownerEmail: remote.ownerEmail,
+          ownerPassword: remote.ownerPassword, plan: remote.plan, allowedEmailDomain: remote.allowedEmailDomain || "",
+          createdAt: remote.created_date,
+        };
+        reg.companies.push(company);
+        saveRegistry(reg);
+        if (!getCompanyData(company.id)) write(companyKey(company.id), emptyCompanyData(company));
+      }
+    } catch {
+      // network/backend issue — treat as invalid credentials
+    }
+  }
   if (!company) return null;
   const data = getCompanyData(company.id);
   // default logged-in user = director

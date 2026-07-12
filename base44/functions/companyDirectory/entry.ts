@@ -9,6 +9,17 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
     const { action, companyId } = body;
+
+    // Cross-device login lookup — doesn't need a companyId yet, since the caller is
+    // trying to discover which company an email/password combination belongs to.
+    if (action === 'findAccountByEmail') {
+      const { email, password } = body;
+      if (!email || !password) return Response.json({ error: 'Missing credentials' }, { status: 400 });
+      const all = await base44.asServiceRole.entities.CompanyAccount.list();
+      const found = all.find((c) => c.ownerEmail.toLowerCase() === String(email).toLowerCase() && c.ownerPassword === password);
+      return Response.json({ company: found || null });
+    }
+
     if (!companyId) return Response.json({ error: 'Missing companyId' }, { status: 400 });
 
     if (action === 'syncEmployees') {
@@ -66,6 +77,18 @@ Deno.serve(async (req) => {
       if (!category) return Response.json({ error: 'Missing category' }, { status: 400 });
       const existing = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
       return Response.json({ payload: existing[0]?.payload || [] });
+    }
+
+    if (action === 'syncAccount') {
+      const { name, ownerEmail, ownerPassword, plan, allowedEmailDomain } = body;
+      const existing = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
+      const fields = { companyId, name, ownerEmail, ownerPassword, plan, allowedEmailDomain: allowedEmailDomain || '' };
+      if (existing.length) {
+        await base44.asServiceRole.entities.CompanyAccount.update(existing[0].id, fields);
+      } else {
+        await base44.asServiceRole.entities.CompanyAccount.create(fields);
+      }
+      return Response.json({ ok: true });
     }
 
     if (action === 'logAudit') {
