@@ -413,6 +413,37 @@ export async function hydrateEmployeesFromEntity(companyId) {
   }
 }
 
+// Guarantees the company has an owner/director user record — brand-new accounts
+// created from the cloud (empty workspace) get one automatically at first login,
+// so the app never opens with a null currentUser (which rendered a blank page).
+function ensureOwnerUser(companyId, company) {
+  let ownerId = null;
+  updateCompany(companyId, (d) => {
+    let owner = d.employees.find((e) => e.role === "director");
+    if (!owner) {
+      const emailName = (company?.ownerEmail || "").split("@")[0] || "Owner";
+      owner = {
+        id: uid("emp"), name: emailName, email: company?.ownerEmail || "",
+        role: "director", stationId: null, anonymousId: hashId(uid("a")),
+        phone: "", createdAt: new Date().toISOString(),
+      };
+      d.employees.push(owner);
+      if (!d.directorId) d.directorId = owner.id;
+      if (!d.ownerId) d.ownerId = owner.id;
+    }
+    ownerId = owner.id;
+  });
+  return ownerId;
+}
+
+// Repairs an owner session saved with no userId (pre-fix logins) so the app
+// stops rendering blank — creates the owner user if needed and re-saves the session.
+export function repairOwnerSession(companyId) {
+  const company = getCompanyMeta(companyId);
+  const userId = ensureOwnerUser(companyId, company);
+  if (userId) setSession({ companyId, userId });
+}
+
 /* ----------------------------- session ----------------------------- */
 export function getSession() {
   return read(SESSION_KEY, null);
@@ -459,10 +490,7 @@ export async function companyLogin(email, password) {
     ) || null;
   }
   if (!company) return null;
-  const data = getCompanyData(company.id);
-  // default logged-in user = director
-  const director = data.employees.find((e) => e.role === "director") || null;
-  setSession({ companyId: company.id, userId: director ? director.id : null });
+  setSession({ companyId: company.id, userId: ensureOwnerUser(company.id, company) });
   return company;
 }
 // Per-employee login — verifies the employee's own credentials against the cloud
@@ -516,9 +544,7 @@ export async function startLogin(email, password) {
     (c) => c.ownerEmail.toLowerCase() === String(email).toLowerCase() && c.ownerPassword === password
   ) || null;
   if (!company) return null;
-  const data = getCompanyData(company.id);
-  const director = data?.employees.find((e) => e.role === "director") || null;
-  setSession({ companyId: company.id, userId: director ? director.id : null });
+  setSession({ companyId: company.id, userId: ensureOwnerUser(company.id, company) });
   return { company };
 }
 
@@ -548,9 +574,7 @@ export async function completeLoginOtp(pendingId, code, typedPassword) {
     }
     saveRegistry(reg);
     if (!getCompanyData(company.id)) write(companyKey(company.id), emptyCompanyData(company));
-    const data = getCompanyData(company.id);
-    const director = data.employees.find((e) => e.role === "director") || null;
-    setSession({ companyId: company.id, userId: director ? director.id : null });
+    setSession({ companyId: company.id, userId: ensureOwnerUser(company.id, company) });
     return company;
   }
   // employee session

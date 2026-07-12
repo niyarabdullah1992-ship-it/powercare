@@ -3,6 +3,7 @@ import {
   getSession, startLogin, completeLoginOtp, switchUser, clearSession, getCompanyData,
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
   hydrateBlobFromEntity, BLOB_CATEGORIES, getLastLocalWriteAt, fetchCloudVersions, setAuditActor,
+  repairOwnerSession,
 } from "./store";
 import { base44 } from "@/api/base44Client";
 
@@ -36,6 +37,12 @@ export function AuthProvider({ children }) {
       setCompany(getCompanyMeta(s.companyId));
       const localData = getCompanyData(s.companyId);
       setData(localData);
+      // Owner sessions saved without a userId (empty new accounts) render a blank
+      // app — create the owner user record and re-save the session once.
+      if (!s.userId && localData) {
+        repairOwnerSession(s.companyId);
+        return;
+      }
       // Keep the audit trail attributed to whoever is actually acting in this session.
       const actorName = s.userId ? localData?.employees?.find((e) => e.id === s.userId)?.name : null;
       setAuditActor(actorName || getCompanyMeta(s.companyId)?.ownerEmail || "owner");
