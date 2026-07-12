@@ -5,15 +5,18 @@ import { addFileFolder, addCompanyFile, deleteFileNode } from "@/lib/store";
 import { visibleStations } from "@/lib/permissions";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { FolderPlus, Upload, Loader2, ChevronRight, ChevronLeft, Home, Radio } from "lucide-react";
+import { FolderPlus, Upload, Loader2, ChevronRight, ChevronLeft, Home, Radio, PenLine } from "lucide-react";
 import FolderCard from "@/components/files/FolderCard";
 import FileRow from "@/components/files/FileRow";
 import NewFolderDialog from "@/components/files/NewFolderDialog";
+import MySignatureCard from "@/components/files/MySignatureCard";
+import SignAndSendCard from "@/components/files/SignAndSendCard";
 
 export default function Files() {
-  const { t, dir } = useI18n();
+  const { t, dir, lang } = useI18n();
   const { company, data, currentUser } = useAuth();
   const [path, setPath] = useState([]); // folder nodes from root down to the open folder
+  const [showSigning, setShowSigning] = useState(false);
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -99,6 +102,14 @@ export default function Files() {
           {uploading ? t("uploading") : t("uploadFileBtn")}
         </Button>
         <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleUpload} />
+        <Button
+          variant={showSigning ? "default" : "outline"}
+          onClick={() => setShowSigning((v) => !v)}
+          className="font-body"
+        >
+          <PenLine className="w-4 h-4 me-2" />
+          {lang === "ar" ? "توقيع الملفات" : "File signing"}
+        </Button>
 
         {/* Station filter — station managers land directly on their station's documents */}
         <div className="flex items-center gap-1.5 ms-auto">
@@ -116,6 +127,14 @@ export default function Files() {
           </select>
         </div>
       </div>
+
+      {/* File signing: personal signature + sign & email any document to anyone */}
+      {showSigning && currentUser && (
+        <div className="grid md:grid-cols-2 gap-4">
+          <MySignatureCard companyId={company.id} currentUser={currentUser} ar={lang === "ar"} />
+          <SignAndSendCard currentUser={currentUser} companyName={data?.name || company?.name || ""} ar={lang === "ar"} />
+        </div>
+      )}
 
       {/* Folders */}
       {folders.length > 0 && (
