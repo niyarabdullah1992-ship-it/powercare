@@ -16,12 +16,30 @@ Deno.serve(async (req) => {
     if (action === 'track') {
       const visitorId = String(body.visitorId || '').slice(0, 64);
       if (!visitorId) return Response.json({ error: 'visitorId required' }, { status: 400 });
+
+      // Resolve visitor location from IP (best-effort, never blocks the visit)
+      let country = '';
+      let city = '';
+      try {
+        const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim();
+        if (ip) {
+          const geoRes = await fetch(`https://ipwho.is/${ip}`, { signal: AbortSignal.timeout(3000) });
+          const geo = await geoRes.json();
+          if (geo && geo.success) {
+            country = String(geo.country || '').slice(0, 80);
+            city = String(geo.city || '').slice(0, 80);
+          }
+        }
+      } catch (_e) { /* geo lookup is optional */ }
+
       await base44.asServiceRole.entities.PageVisit.create({
         visitorId,
         path: String(body.path || '/').slice(0, 200),
         referrer: String(body.referrer || '').slice(0, 200),
         device: body.device === 'mobile' ? 'mobile' : 'desktop',
         day: today,
+        country,
+        city,
       });
       return Response.json({ ok: true });
     }
@@ -53,12 +71,27 @@ Deno.serve(async (req) => {
         days.push({ day: d, visits: dayVisits.length, unique: uniq(dayVisits) });
       }
 
+      // Top visitor locations (by unique visitors, then visits)
+      const locMap = {};
+      for (const v of all) {
+        const key = v.country ? `${v.country}|${v.city || ''}` : null;
+        if (!key) continue;
+        if (!locMap[key]) locMap[key] = { country: v.country, city: v.city || '', visits: 0, visitors: new Set() };
+        locMap[key].visits++;
+        locMap[key].visitors.add(v.visitorId);
+      }
+      const locations = Object.values(locMap)
+        .map((l) => ({ country: l.country, city: l.city, visits: l.visits, unique: l.visitors.size }))
+        .sort((a, b) => b.visits - a.visits)
+        .slice(0, 15);
+
       return Response.json({
         todayVisits: todayVisits.length,
         todayUnique: uniq(todayVisits),
         totalVisits: all.length,
         totalUnique: uniq(all),
         days,
+        locations,
       });
     }
 

@@ -21,6 +21,14 @@
     "day": {
       "type": "string",
       "description": "Visit date as YYYY-MM-DD (Asia/Riyadh) for fast daily aggregation."
+    },
+    "country": {
+      "type": "string",
+      "description": "Visitor country resolved from IP (e.g. 'Saudi Arabia')."
+    },
+    "city": {
+      "type": "string",
+      "description": "Visitor city resolved from IP."
     }
   },
   "required": [

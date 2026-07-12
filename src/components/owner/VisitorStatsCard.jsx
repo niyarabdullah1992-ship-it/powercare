@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { BarChart3, Users, Eye, CalendarDays } from "lucide-react";
+import { BarChart3, Users, Eye, CalendarDays, MapPin } from "lucide-react";
 
 // Owner-only visitor analytics card shown in the Owner Panel.
 export default function VisitorStatsCard({ lang }) {
@@ -65,6 +65,31 @@ export default function VisitorStatsCard({ lang }) {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Visitor locations */}
+          <div>
+            <p className="text-xs text-[#3a2f22]/50 font-body mb-2 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5" /> {ar ? "مواقع الزوار" : "Visitor locations"}
+            </p>
+            {(!stats.locations || stats.locations.length === 0) ? (
+              <p className="text-xs text-[#3a2f22]/40 font-body">
+                {ar ? "لا توجد بيانات مواقع بعد — ستظهر مع الزيارات الجديدة." : "No location data yet — it will appear with new visits."}
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {stats.locations.map((l) => (
+                  <div key={`${l.country}-${l.city}`} className="flex items-center justify-between p-2.5 rounded-lg bg-landing-bg">
+                    <p className="text-sm font-body text-[#3a2f22] truncate">
+                      {l.country}{l.city ? ` — ${l.city}` : ""}
+                    </p>
+                    <p className="text-xs text-[#3a2f22]/50 font-body shrink-0 ms-3">
+                      {l.visits} {ar ? "زيارة" : "visits"} · {l.unique} {ar ? "زائر" : "unique"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
