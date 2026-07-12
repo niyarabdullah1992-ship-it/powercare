@@ -39,6 +39,11 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
 
   useEffect(() => {
     load();
+    // Warm up the GPS chip + permission prompt as soon as the card appears,
+    // so the real fix at check-in time resolves in a second or two.
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(() => {}, () => {}, { enableHighAccuracy: true, timeout: 8000 });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id, company?.id]);
 

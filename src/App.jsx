@@ -40,6 +40,21 @@ const Attendance = lazy(() => import('./pages/Attendance'));
 const Files = lazy(() => import('./pages/Files'));
 const Assistant = lazy(() => import('./pages/Assistant'));
 
+// After the first page is interactive, quietly download the most-used pages in
+// the background so navigating to them later is instant.
+if (typeof window !== "undefined") {
+  window.addEventListener("load", () => {
+    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 2000));
+    idle(() => {
+      import('./pages/Dashboard');
+      import('./pages/MyTasks');
+      import('./pages/Attendance');
+      import('./pages/StationChat');
+      import('./pages/Login');
+    });
+  });
+}
+
 function PageLoader() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
