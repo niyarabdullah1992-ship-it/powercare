@@ -350,24 +350,6 @@ export default function Layout({ children }) {
             </div>
           </div>
 
-          {/* Mobile nav row */}
-          <div className="md:hidden flex items-center gap-1 overflow-x-auto px-3 pb-2 no-scrollbar no-select">
-            {orderedNavItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body whitespace-nowrap ${
-                    isActive ? "bg-foreground text-background" : "bg-muted text-foreground/70"
-                  }`
-                }
-              >
-                <item.icon className="w-3.5 h-3.5" strokeWidth={1.75} />
-                {item.label}
-              </NavLink>
-            ))}
-          </div>
         </header>
 
         <main className="flex-1 p-4 pb-28 md:p-8">
