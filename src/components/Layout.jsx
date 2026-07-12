@@ -19,7 +19,7 @@ import { allowedNavFor } from "@/lib/navVisibility";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
-  const { currentUser, company, data, switchUser, logout, isSyncing } = useAuth();
+  const { currentUser, company, data, logout, isSyncing } = useAuth();
   const navigate = useNavigate();
   const [langOpen, setLangOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -332,23 +332,6 @@ export default function Layout({ children }) {
                         <p className="text-xs text-accent">{t("viewProfile")}</p>
                       </div>
                     </button>
-                    <div className="px-2 py-2 max-h-60 overflow-y-auto">
-                      <p className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground">{t("switchUser")}</p>
-                      {data.employees.map((e) => (
-                        <button
-                          key={e.id}
-                          onClick={() => { switchUser(e.id); setUserOpen(false); }}
-                          className={`w-full text-start px-2 py-1.5 rounded text-sm font-body flex items-center gap-2 hover:bg-muted ${
-                            e.id === currentUser.id ? "text-accent" : "text-foreground"
-                          }`}
-                        >
-                          <UserCircle className="w-4 h-4 shrink-0" strokeWidth={1.5} />
-                          <PresenceDot employee={e} />
-                          <span className="truncate">{e.name}</span>
-                          <span className="ms-auto text-[10px] text-muted-foreground">{t(e.role)}</span>
-                        </button>
-                      ))}
-                    </div>
                     <button
                       onClick={() => { logout(); navigate("/"); }}
                       className="w-full flex items-center gap-2 px-4 py-3 border-t border-border text-sm text-destructive hover:bg-muted font-body"
