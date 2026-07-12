@@ -9,6 +9,7 @@ import ChatBubble from "@/components/chat/ChatBubble";
 import ChatContactList from "@/components/chat/ChatContactList";
 import ChatMediaGallery from "@/components/chat/ChatMediaGallery";
 import ChatGroupManager from "@/components/chat/ChatGroupManager";
+import ChatSearchPanel from "@/components/chat/ChatSearchPanel";
 import CommentFiles from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 
@@ -212,9 +213,18 @@ export default function StationChat() {
                   <div className="flex items-center gap-1 shrink-0">
                     <button onClick={() => setActiveTab("chat")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "chat" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("chat")}</button>
                     <button onClick={() => setActiveTab("media")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "media" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("filesAndMedia")}</button>
+                    <button onClick={() => setActiveTab("search")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "search" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("search")}</button>
                   </div>
                 </div>
-                {activeTab === "media" ? (
+                {activeTab === "search" ? (
+                  <ChatSearchPanel
+                    messages={messages}
+                    tasks={data.tasks || []}
+                    currentUserId={currentUser.id}
+                    t={t}
+                    lang={lang}
+                  />
+                ) : activeTab === "media" ? (
                   <ChatMediaGallery messages={messages} t={t} lang={lang} />
                 ) : (
                   <>
