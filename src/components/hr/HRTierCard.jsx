@@ -67,7 +67,7 @@ export default function HRTierCard({ managerLevel, assistantLevel, scopeType, sc
 
   return (
     <div className="p-4 rounded-xl border border-accent/20 bg-gradient-to-b from-card to-secondary/40 shadow-sm space-y-3">
-      <h4 className="font-heading text-base tracking-wide">{scopeName}</h4>
+      <h4 dir="auto" className="font-heading text-base tracking-wide">{scopeName}</h4>
       {managerLevel && (
         <HRSlotRow
           label={levelName(managerLevel, lang)}

@@ -58,7 +58,7 @@ export default function HRSlotRow({ label, roleTag, employees, canManage, onAdd,
                 </>
               ) : (
                 <>
-                  <span className="truncate font-heading text-[13px]">{e.name}{e.position ? <span className="text-muted-foreground font-body"> — {e.position}</span> : ""}</span>
+                  <span dir="auto" className="truncate font-body text-[13px]">{e.name}{e.position ? <span className="text-muted-foreground font-body"> — {e.position}</span> : ""}</span>
                   {canManage && (
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => startEdit(e)} className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title={t("edit")}>
