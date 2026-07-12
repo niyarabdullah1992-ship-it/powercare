@@ -8,6 +8,7 @@ import PerformanceAnalytics from "@/components/performance/PerformanceAnalytics"
 import BadgeLegend from "@/components/performance/BadgeLegend";
 import StationComparison from "@/components/performance/StationComparison";
 import EmployeeComparisonView from "@/components/performance/EmployeeComparisonView";
+import EmployeeSingleReport from "@/components/performance/EmployeeSingleReport";
 
 export default function Performance() {
   const { t, dir } = useI18n();
@@ -73,6 +74,12 @@ export default function Performance() {
             {t("employeeComparison")}
           </button>
           <button
+            onClick={() => setView("individualReport")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "individualReport" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {t("individualReport")}
+          </button>
+          <button
             onClick={() => setView("achievements")}
             className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "achievements" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
           >
@@ -89,9 +96,10 @@ export default function Performance() {
 
       {view === "comparison" && <StationComparison />}
       {view === "employeeComparison" && <EmployeeComparisonView t={t} />}
+      {view === "individualReport" && <EmployeeSingleReport t={t} />}
 
       {/* Badge tiers legend */}
-      {view !== "comparison" && view !== "employeeComparison" && <BadgeLegend />}
+      {view !== "comparison" && view !== "employeeComparison" && view !== "individualReport" && <BadgeLegend />}
 
       {view === "individual" && (
         <div className="space-y-2">
