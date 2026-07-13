@@ -53,11 +53,13 @@ export async function getAccuratePosition({ timeoutMs = 10000 } = {}) {
     return warmFix;
   }
   const browserFix = await getBrowserPosition({ timeoutMs });
+  // No browser fix means the user denied (or has no) location access — never
+  // substitute a network-based guess; location permission is mandatory.
+  if (!browserFix) return null;
   // Good browser fix → done, no paid call.
-  if (browserFix && browserFix.accuracy != null && browserFix.accuracy <= COARSE_ACCURACY_M) return browserFix;
+  if (browserFix.accuracy != null && browserFix.accuracy <= COARSE_ACCURACY_M) return browserFix;
   const googleFix = await googleFallback();
   if (!googleFix) return browserFix;
-  if (!browserFix) return googleFix;
   // Both available — keep the more accurate one.
   const bAcc = browserFix.accuracy ?? Infinity;
   const gAcc = googleFix.accuracy ?? Infinity;

@@ -66,17 +66,17 @@ export default function QuickCheckInCard({ currentUser, company }) {
     setError("");
     setLoading(true);
     try {
-      // GPS is on by default platform-wide — always request the location before
-      // checking in, even if the settings call failed, and block without it.
+      // Location is MANDATORY before check-in — no location, no check-in.
       let c = coords;
-      if ((!settings || settings.gps_enabled) && !c) {
+      if (!c) {
         c = await getAccuratePosition();
         if (c) { setCoords(c); setLocState("ready"); }
-        if ((!settings || settings.gps_required) && !c) {
-          setError(t("locationDenied"));
-          setLoading(false);
-          return;
-        }
+      }
+      if (!c) {
+        setLocState("denied");
+        setError(t("locationDenied"));
+        setLoading(false);
+        return;
       }
       const res = await base44.functions.invoke("supabaseAttendance", {
         action: "checkIn",
@@ -104,16 +104,17 @@ export default function QuickCheckInCard({ currentUser, company }) {
     setError("");
     setLoading(true);
     try {
-      // Location is also required at check-out — same rules as check-in.
+      // Location is also MANDATORY at check-out — same rule as check-in.
       let c = coords;
-      if ((!settings || settings.gps_enabled) && !c) {
+      if (!c) {
         c = await getAccuratePosition();
         if (c) { setCoords(c); setLocState("ready"); }
-        if ((!settings || settings.gps_required) && !c) {
-          setError(t("locationDenied"));
-          setLoading(false);
-          return;
-        }
+      }
+      if (!c) {
+        setLocState("denied");
+        setError(t("locationDenied"));
+        setLoading(false);
+        return;
       }
       const res = await base44.functions.invoke("supabaseAttendance", {
         action: "checkOut",
