@@ -1,7 +1,10 @@
+import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
+
 const MANAGER_ROLES = ["director", "ops_manager", "pgm", "station_manager"];
 
 Deno.serve(async (req) => {
   try {
+    const base44 = createClientFromRequest(req);
     const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "").replace(/\/rest\/v\d+$/, "");
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!SUPABASE_URL || !SERVICE_KEY) {
@@ -93,38 +96,53 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true });
     }
 
-    // ---- Instant late-check-in alert: notifies the responsible manager the moment ----
-    // an employee passes (work start time + late threshold) without checking in yet.
+    // ---- Instant late-check-in alert: only employees assigned to a shift today ----
+    // are eligible, preventing owners, off-duty staff, and unscheduled employees from
+    // receiving false absence alerts.
     if (action === "checkLateAlerts") {
-      const date = todayStr();
+      const now = new Date();
+      const dateParts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+      }).formatToParts(now).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+      const date = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+      const nowMinutes = Number(dateParts.hour) * 60 + Number(dateParts.minute);
+      const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Riyadh", weekday: "short" }).format(now);
+      const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
       const dirRes = await fetch(`${SUPABASE_URL}/rest/v1/employees_directory?select=*`, { headers });
       const directory = await dirRes.json();
       if (!dirRes.ok || !Array.isArray(directory) || directory.length === 0) return Response.json({ ok: true, alerted: 0 });
 
       const attRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?date=eq.${date}&select=employee_id`, { headers });
       const attRows = await attRes.json();
-      const checkedIn = new Set((Array.isArray(attRows) ? attRows : []).map((r) => r.employee_id));
-
+      const checkedIn = new Set((Array.isArray(attRows) ? attRows : []).map((row) => row.employee_id));
       const settingsCache = {};
+      const schedulesCache = {};
       const getSettings = async (companyId) => {
         if (settingsCache[companyId]) return settingsCache[companyId];
         const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(companyId)}`, { headers });
         const rows = await res.json();
-        const s = (Array.isArray(rows) && rows[0]) || { work_start_time: "08:00", late_threshold_minutes: 15 };
-        settingsCache[companyId] = s;
-        return s;
+        settingsCache[companyId] = (Array.isArray(rows) && rows[0]) || { late_threshold_minutes: 15 };
+        return settingsCache[companyId];
+      };
+      const getSchedules = async (companyId) => {
+        if (schedulesCache[companyId]) return schedulesCache[companyId];
+        const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "schedules" });
+        schedulesCache[companyId] = blobs[0]?.payload || [];
+        return schedulesCache[companyId];
       };
 
-      const now = new Date();
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
       let alerted = 0;
       for (const emp of directory) {
-        if (checkedIn.has(emp.employee_id)) continue;
-        if (emp.late_alert_sent_date === date) continue;
-        if (!emp.manager_id) continue;
+        if (checkedIn.has(emp.employee_id) || emp.late_alert_sent_date === date || !emp.manager_id) continue;
+        const schedules = await getSchedules(emp.company_id);
+        const stationSchedule = schedules.find((schedule) => schedule.stationId === emp.station_id);
+        const shift = (stationSchedule?.shiftTypes || []).find((item) =>
+          (stationSchedule.assignments?.[dayIndex]?.[item.id] || []).includes(emp.employee_id)
+        );
+        if (!shift) continue;
         const settings = await getSettings(emp.company_id);
-        const startMinutes = toMinutes(settings.work_start_time || "08:00");
-        const lateMinutes = nowMinutes - startMinutes;
+        const lateMinutes = nowMinutes - toMinutes(shift.start);
         if (lateMinutes <= (settings.late_threshold_minutes || 15)) continue;
         await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
           method: "POST",

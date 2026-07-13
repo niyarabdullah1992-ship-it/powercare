@@ -21,6 +21,7 @@ import { allowedNavFor } from "@/lib/navVisibility";
 import BottomTabBar from "@/components/mobile/BottomTabBar";
 import BackButton from "@/components/mobile/BackButton";
 import ProductFeedbackPrompt from "@/components/ProductFeedbackPrompt";
+import { shouldShowNotification } from "@/lib/notificationFilters";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -65,7 +66,9 @@ export default function Layout({ children }) {
           action: "listNotifications",
           userId: currentUser.id,
         });
-        const remote = res.data?.notifications || [];
+        const remote = (res.data?.notifications || []).filter((notification) =>
+          shouldShowNotification(notification.message, data)
+        );
         const current = getCompanyData(company.id);
         if (!current) return;
         const existing = new Set(
@@ -142,7 +145,9 @@ export default function Layout({ children }) {
     if (company) localStorage.setItem(`powercare_nav_order_${company.id}`, JSON.stringify(newOrder));
   };
 
-  const myNotifs = data.notifications.filter((n) => n.userId === currentUser.id);
+  const myNotifs = data.notifications.filter(
+    (notification) => notification.userId === currentUser.id && shouldShowNotification(notification.text, data)
+  );
   const unread = myNotifs.filter((n) => !n.read).length;
 
   const markAllRead = () => {
