@@ -3,17 +3,19 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { formatDateTime } from "@/lib/dateFormat";
-import { visibleStations, canSeeAllStations } from "@/lib/permissions";
+import { visibleStations, canSeeAllStations, isCompanyOwner } from "@/lib/permissions";
 import moment from "moment";
-import { FileText, ListTodo, AlertTriangle, Activity, Building2 } from "lucide-react";
+import { FileText, ListTodo, AlertTriangle, Activity, Building2, Palette } from "lucide-react";
 import ReportCard from "@/components/reports/ReportCard";
+import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
 
 export default function DailyReport() {
   const { t, lang } = useI18n();
-  const { data, currentUser } = useAuth();
+  const { data, currentUser, company } = useAuth();
   const [targets, setTargets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showBranding, setShowBranding] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -97,15 +99,37 @@ export default function DailyReport() {
     { icon: AlertTriangle, label: t("todayIssues"), value: totalIssuesToday },
     { icon: Activity, label: t("todayActions"), value: todaysActions.length },
   ];
+  const canEditBranding = isCompanyOwner(currentUser, data) || currentUser.role === "director";
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-3xl font-semibold flex items-center gap-2">
-          <FileText className="w-6 h-6" /> {t("reports")}
-        </h1>
-        <p className="text-muted-foreground font-body text-sm mt-1">{t("dailyReportNote")}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="font-heading text-3xl font-semibold flex items-center gap-2">
+            <FileText className="w-6 h-6" /> {t("reports")}
+          </h1>
+          <p className="text-muted-foreground font-body text-sm mt-1">{t("dailyReportNote")}</p>
+        </div>
+        {canEditBranding && (
+          <button
+            onClick={() => setShowBranding((value) => !value)}
+            className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-body hover:bg-muted"
+          >
+            <Palette className="h-3.5 w-3.5 text-accent" />
+            {lang === "ar" ? "إعدادات الهوية" : "Brand settings"}
+          </button>
+        )}
       </div>
+
+      {showBranding && canEditBranding && (
+        <BrandingSettingsCard
+          companyId={company.id}
+          branding={data.reportBranding}
+          companyName={data.name || company?.name || ""}
+          lang={lang}
+          onClose={() => setShowBranding(false)}
+        />
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {stats.map((s) => (
