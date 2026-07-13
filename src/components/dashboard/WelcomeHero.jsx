@@ -2,15 +2,19 @@ import React, { useRef, useState } from "react";
 import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
 import { updateEmployeeProfile } from "@/lib/store";
-import { Loader2 } from "lucide-react";
+import { Loader2, Images } from "lucide-react";
 import Logo from "@/components/Logo";
+import BannerGallery from "@/components/employees/BannerGallery";
 
 // Calm, artistic welcome banner shown right after login — greets the user and
 // surfaces the day's most important alerts without feeling noisy.
 export default function WelcomeHero({ name, companyName, t, lang, alerts = [], employee, companyId }) {
   const hasAlerts = alerts.some((a) => a.value > 0);
   const photoInput = useRef(null);
+  const bannerInput = useRef(null);
   const [uploading, setUploading] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const bannerUrl = employee?.profile?.bannerUrl;
 
   const changePhoto = async (file) => {
     if (!file || !employee || !companyId) return;
@@ -24,10 +28,35 @@ export default function WelcomeHero({ name, companyName, t, lang, alerts = [], e
     }
   };
 
+  const changeBanner = async (file) => {
+    if (!file || !employee || !companyId) return;
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    updateEmployeeProfile(companyId, employee.id, { bannerUrl: file_url });
+    if (bannerInput.current) bannerInput.current.value = "";
+  };
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-landing-gold/20 bg-primary p-6 shadow-xl shadow-primary/10 md:p-8">
+      {bannerUrl && (
+        <>
+          <img src={bannerUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-primary/70" />
+        </>
+      )}
       <div className="absolute -top-20 -end-16 w-64 h-64 rounded-full bg-landing-gold/25 blur-[80px] pointer-events-none" />
       <div className="absolute -bottom-24 -start-10 w-56 h-56 rounded-full bg-landing-gold-light/20 blur-[80px] pointer-events-none" />
+
+      {employee && companyId && (
+        <button
+          type="button"
+          onClick={() => setGalleryOpen(true)}
+          className="absolute end-4 top-4 z-10 flex items-center gap-1.5 rounded-full border border-landing-gold/40 bg-black/30 px-2.5 py-1.5 text-xs font-body text-landing-gold-light backdrop-blur-md transition hover:bg-black/50"
+          title={lang === "ar" ? "تغيير الغلاف" : "Change banner"}
+        >
+          <Images className="h-3.5 w-3.5" /> {lang === "ar" ? "الغلاف" : "Banner"}
+        </button>
+      )}
+      <input ref={bannerInput} type="file" accept="image/*" className="hidden" onChange={(e) => changeBanner(e.target.files?.[0])} />
 
       <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div className="flex items-center gap-4">
@@ -77,6 +106,14 @@ export default function WelcomeHero({ name, companyName, t, lang, alerts = [], e
           <p className="text-white/50 font-body text-sm">{t("noNotifications")}</p>
         )}
       </div>
+
+      {galleryOpen && (
+        <BannerGallery
+          onSelect={(url) => updateEmployeeProfile(companyId, employee.id, { bannerUrl: url })}
+          onUpload={() => bannerInput.current?.click()}
+          onClose={() => setGalleryOpen(false)}
+        />
+      )}
     </div>
   );
 }
