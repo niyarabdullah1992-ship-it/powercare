@@ -1,10 +1,10 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 
 // Company-scoped Employee/Station access. Runs with the service role only —
 // the Employee/Station entities themselves are locked down (no public RLS),
 // so this function is the sole gateway and always filters by companyId,
 // preventing one company from ever reading or writing another's records.
-// Passwords are stored as salted SHA-256 hashes ("sha256$<salt>$<hex>") — never plaintext.
+// Passwords are stored as slow PBKDF2 hashes; legacy SHA-256 hashes are upgraded after a valid login. Plaintext is never stored.
 async function sha256Hex(text) {
   const data = new TextEncoder().encode(text);
   const buf = await crypto.subtle.digest('SHA-256', data);
@@ -15,19 +15,37 @@ async function hashPassword(password, salt) {
   const hex = await sha256Hex(s + '::' + password);
   return `sha256$${s}$${hex}`;
 }
+async function pbkdf2Password(password, salt, iterations = 210000) {
+  const s = salt || crypto.randomUUID().replace(/-/g, '');
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', hash: 'SHA-256', salt: new TextEncoder().encode(s), iterations },
+    key, 256,
+  );
+  const hex = Array.from(new Uint8Array(bits)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  return `pbkdf2$${iterations}$${s}$${hex}`;
+}
 async function verifyPassword(password, stored) {
   if (!stored) return false;
+  if (String(stored).startsWith('pbkdf2$')) {
+    const [, rounds, salt] = String(stored).split('$');
+    return (await pbkdf2Password(password, salt, Number(rounds))) === stored;
+  }
   if (String(stored).startsWith('sha256$')) {
     const salt = String(stored).split('$')[1];
     return (await hashPassword(password, salt)) === stored;
   }
-  return stored === password; // legacy plaintext record (upgraded on successful login)
+  return stored === password;
 }
 
 /* ----- login OTP (email second factor) ----- */
 const OTP_TTL_MS = 10 * 60 * 1000;
 async function createLoginOtp(base44, { kind, companyId, employeeId, email }) {
-  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const oldCodes = await base44.asServiceRole.entities.LoginOtp.filter({ email });
+  for (const old of oldCodes) await base44.asServiceRole.entities.LoginOtp.delete(old.id);
+  const random = new Uint32Array(1);
+  crypto.getRandomValues(random);
+  const code = String(100000 + (random[0] % 900000));
   const pendingId = crypto.randomUUID();
   await base44.asServiceRole.entities.LoginOtp.create({
     pendingId, kind, companyId, employeeId: employeeId || null, email,
@@ -133,9 +151,9 @@ Deno.serve(async (req) => {
         if (await verifyPassword(password, c.ownerPassword)) { found = c; break; }
       }
       if (!found) return Response.json({ company: null });
-      // Legacy plaintext record — upgrade it to a hash now that the login succeeded.
-      if (!String(found.ownerPassword).startsWith('sha256$')) {
-        await base44.asServiceRole.entities.CompanyAccount.update(found.id, { ownerPassword: await hashPassword(password) });
+      // Upgrade legacy plaintext/SHA-256 records to slow PBKDF2 after a valid login.
+      if (!String(found.ownerPassword).startsWith('pbkdf2$')) {
+        await base44.asServiceRole.entities.CompanyAccount.update(found.id, { ownerPassword: await pbkdf2Password(password) });
       }
       // Password verified — second factor: email a one-time code instead of issuing a session.
       const pendingId = await createLoginOtp(base44, { kind: 'owner', companyId: found.companyId, email: found.ownerEmail });
@@ -200,10 +218,10 @@ Deno.serve(async (req) => {
       if (existing.length && (!auth || auth.role !== 'owner')) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
       }
-      // Always store a hash — hash incoming plaintext; keep the existing hash if none was sent.
+      // Always store a slow PBKDF2 hash; keep the existing hash if no password was sent.
       let storedPassword = ownerPassword;
-      if (storedPassword && !String(storedPassword).startsWith('sha256$')) {
-        storedPassword = await hashPassword(storedPassword);
+      if (storedPassword && !String(storedPassword).startsWith('pbkdf2$')) {
+        storedPassword = await pbkdf2Password(storedPassword);
       } else if (!storedPassword && existing.length) {
         storedPassword = existing[0].ownerPassword;
       }
@@ -220,6 +238,13 @@ Deno.serve(async (req) => {
     }
 
     if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (action === 'revokeSession') {
+      const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: body.sessionToken, companyId });
+      for (const session of sessions) await base44.asServiceRole.entities.CompanySession.delete(session.id);
+      return Response.json({ ok: true });
+    }
+
     // Password changes: allowed for the owner, or for an employee changing their OWN password.
     if (action === 'setEmployeePassword' && auth.role !== 'owner' && auth.userId !== body.employeeId) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
@@ -229,7 +254,7 @@ Deno.serve(async (req) => {
     if (action === 'setEmployeePassword') {
       const { employeeId, email, password } = body;
       if (!employeeId || !email || !password) return Response.json({ error: 'Missing fields' }, { status: 400 });
-      const stored = await hashPassword(password);
+      const stored = await pbkdf2Password(password);
       const fields = { companyId, employeeId, email: String(email).toLowerCase(), passwordHash: stored };
       const existing = await base44.asServiceRole.entities.EmployeeCredential.filter({ companyId, employeeId });
       if (existing.length) {

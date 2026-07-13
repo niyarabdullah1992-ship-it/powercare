@@ -3,7 +3,7 @@ import {
   getSession, startLogin, completeLoginOtp, switchUser, clearSession, getCompanyData,
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
   hydrateBlobFromEntity, BLOB_CATEGORIES, getLastLocalWriteAt, fetchCloudVersions, setAuditActor,
-  repairOwnerSession,
+  repairOwnerSession, cacheCloudData,
 } from "./store";
 import { base44 } from "@/api/base44Client";
 
@@ -64,22 +64,20 @@ export function AuthProvider({ children }) {
           if (changed("employees")) hydrationTasks.push(
             hydrateEmployeesFromEntity(s.companyId).then((employees) => {
               if (!employees) return;
+              cacheCloudData(s.companyId, { employees });
               setData((prevData) => {
                 if (!prevData) return prevData;
-                const serverIds = new Set(employees.map((e) => e.id));
-                const localOnly = (prevData.employees || []).filter((e) => !serverIds.has(e.id));
-                return { ...prevData, employees: [...employees, ...localOnly] };
+                return { ...prevData, employees };
               });
             })
           );
           if (changed("stations")) hydrationTasks.push(
             hydrateStationsFromEntity(s.companyId).then((stations) => {
               if (!stations) return;
+              cacheCloudData(s.companyId, { stations });
               setData((prevData) => {
                 if (!prevData) return prevData;
-                const serverIds = new Set(stations.map((st) => st.id));
-                const localOnly = (prevData.stations || []).filter((st) => !serverIds.has(st.id));
-                return { ...prevData, stations: [...stations, ...localOnly] };
+                return { ...prevData, stations };
               });
             })
           );
@@ -87,13 +85,9 @@ export function AuthProvider({ children }) {
             if (!changed("blob:" + category)) return;
             hydrationTasks.push(
               hydrateBlobFromEntity(s.companyId, category).then((records) => {
-                if (!records || records.length === 0) return;
-                setData((prevData) => {
-                  if (!prevData) return prevData;
-                  const serverIds = new Set(records.map((r) => r.id));
-                  const localOnly = (prevData[category] || []).filter((r) => !serverIds.has(r.id));
-                  return { ...prevData, [category]: [...records, ...localOnly] };
-                });
+                if (!records) return;
+                cacheCloudData(s.companyId, { [category]: records });
+                setData((prevData) => (prevData ? { ...prevData, [category]: records } : prevData));
               })
             );
           });
@@ -102,6 +96,13 @@ export function AuthProvider({ children }) {
             hydrateBlobFromEntity(s.companyId, "companyMeta").then((records) => {
               const meta = records && records[0];
               if (!meta) return;
+              const metaUpdates = {
+                name: meta.name, plan: meta.plan, directorId: meta.directorId,
+                ownerId: meta.ownerId, stationChatGroups: meta.stationChatGroups,
+                crossStationChatEnabled: meta.crossStationChatEnabled,
+                settings: meta.settings, reportBranding: meta.reportBranding,
+              };
+              cacheCloudData(s.companyId, Object.fromEntries(Object.entries(metaUpdates).filter(([, value]) => value !== undefined)));
               setData((prevData) => (prevData ? {
                 ...prevData,
                 name: meta.name ?? prevData.name,
@@ -111,7 +112,8 @@ export function AuthProvider({ children }) {
                 stationChatGroups: meta.stationChatGroups ?? prevData.stationChatGroups,
                 crossStationChatEnabled: meta.crossStationChatEnabled ?? prevData.crossStationChatEnabled,
                 settings: meta.settings ?? prevData.settings,
-              } : prevData));
+                reportBranding: meta.reportBranding ?? prevData.reportBranding,
+                } : prevData));
             })
           );
           Promise.allSettled(hydrationTasks).then(() => {

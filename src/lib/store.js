@@ -99,10 +99,21 @@ export function subscribe(fn) {
 
 /* ----------------------------- registry ----------------------------- */
 export function getRegistry() {
-  return read(REGISTRY_KEY, { companies: [] });
+  const registry = read(REGISTRY_KEY, { companies: [] });
+  const sanitized = {
+    ...registry,
+    companies: (registry.companies || []).map(({ ownerPassword: _password, ...company }) => company),
+  };
+  if (JSON.stringify(registry) !== JSON.stringify(sanitized)) {
+    localStorage.setItem(REGISTRY_KEY, JSON.stringify(sanitized));
+  }
+  return sanitized;
 }
 function saveRegistry(reg) {
-  write(REGISTRY_KEY, reg);
+  write(REGISTRY_KEY, {
+    ...reg,
+    companies: (reg.companies || []).map(({ ownerPassword: _password, ...company }) => company),
+  });
 }
 export function listCompanies() {
   return getRegistry().companies;
@@ -196,6 +207,7 @@ function emptyCompanyData(meta) {
     templates: [],
     targets: [],
     hrLevels: [],
+    hrClusters: [],
     schedules: [],
     stationChatGroups: [],
     settings: { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30 },
@@ -206,6 +218,14 @@ function emptyCompanyData(meta) {
 export function getCompanyData(id) {
   return read(companyKey(id), null);
 }
+
+// Persists authoritative cloud reads into the local cache without re-uploading
+// them or emitting a write event, preventing stale local data from resurfacing.
+export function cacheCloudData(companyId, updates) {
+  const current = getCompanyData(companyId);
+  if (!current) return;
+  localStorage.setItem(companyKey(companyId), JSON.stringify({ ...current, ...updates }));
+}
 // Tracks when this browser last wrote to a company's data, so the periodic
 // cross-device poll (see PowerCareAuth.jsx) can avoid overwriting a very
 // fresh local edit with a stale cloud copy that hasn't finished syncing yet —
@@ -214,11 +234,21 @@ const lastLocalWriteAt = {};
 export function getLastLocalWriteAt(companyId) {
   return lastLocalWriteAt[companyId] || 0;
 }
+const cloudPushTimers = {};
+function scheduleCompanyPush(id, data) {
+  clearTimeout(cloudPushTimers[id]);
+  const snapshot = JSON.parse(JSON.stringify(data));
+  cloudPushTimers[id] = setTimeout(() => {
+    delete cloudPushTimers[id];
+    pushCompanyDataToCloud(id, snapshot);
+  }, 300);
+}
+
 function saveCompanyData(id, data) {
   data.employees = dedupeEmployees(data.employees);
   lastLocalWriteAt[id] = Date.now();
   write(companyKey(id), data);
-  pushCompanyDataToCloud(id, data);
+  scheduleCompanyPush(id, data);
 }
 
 // Pushes the full company snapshot to the persisted cloud database. Called on every
@@ -285,7 +315,10 @@ if (typeof window !== "undefined") {
    Tasks, reports, anonymous reports, safety, plans, schedules and HR levels are synced the same
    way as employees/stations: the localStorage blob stays the instant cache, while each full array
    is additionally persisted to the CompanyDataBlob entity so it survives beyond this browser. */
-export const BLOB_CATEGORIES = ["tasks", "reports", "anonymousReports", "safety", "plans", "schedules", "hrLevels", "files"];
+export const BLOB_CATEGORIES = [
+  "tasks", "reports", "anonymousReports", "publicReports", "safety", "plans",
+  "schedules", "hrLevels", "hrClusters", "files", "notifications", "templates", "targets",
+];
 const lastSyncedBlobJSON = {};
 async function syncBlobToEntity(companyId, category, payload) {
   const key = `${companyId}_${category}`;
@@ -379,7 +412,6 @@ export async function hydrateStationsFromEntity(companyId) {
   try {
     const res = await invokeDirectory({ action: "getStations", companyId });
     const records = res?.data?.stations || [];
-    if (!records.length) return null;
     return records.map((r) => ({
       id: r.stationId,
       name: r.name,
@@ -399,7 +431,6 @@ export async function hydrateEmployeesFromEntity(companyId) {
   try {
     const res = await invokeDirectory({ action: "getEmployees", companyId });
     const records = res?.data?.employees || [];
-    if (!records.length) return null;
     return records.map((r) => ({
       id: r.employeeId,
       name: r.name,
@@ -465,46 +496,18 @@ export function setSession(session) {
   write(SESSION_KEY, session);
 }
 export function clearSession() {
+  const session = getSession();
+  if (session?.companyId) invokeDirectory({ action: "revokeSession", companyId: session.companyId }).catch(() => {});
+  const tokens = read(TOKENS_KEY, {});
+  if (session?.companyId) delete tokens[session.companyId];
+  localStorage.setItem(TOKENS_KEY, JSON.stringify(tokens));
   localStorage.removeItem(SESSION_KEY);
   notify();
 }
 export async function companyLogin(email, password) {
-  const reg = getRegistry();
-  let company = null;
-  try {
-    // Cloud-first: verifies against the hashed cloud directory and issues a session token
-    // the server requires for every subsequent company-scoped read/write.
-    const res = await invokeDirectory({ action: "findAccountByEmail", email, password });
-    const remote = res?.data?.company;
-    if (remote) {
-      setCompanyToken(remote.companyId, res?.data?.token);
-      company = reg.companies.find((c) => c.id === remote.companyId);
-      if (company) {
-        company.ownerPassword = password;
-      } else {
-        // The server verified the credentials but never returns the stored password —
-        // cache the password the user just typed for future offline logins on this device.
-        company = {
-          id: remote.companyId, name: remote.name, ownerEmail: remote.ownerEmail,
-          ownerPassword: password, plan: remote.plan, allowedEmailDomain: remote.allowedEmailDomain || "",
-          createdAt: remote.created_date,
-        };
-        reg.companies.push(company);
-      }
-      saveRegistry(reg);
-      if (!getCompanyData(company.id)) write(companyKey(company.id), emptyCompanyData(company));
-    }
-  } catch {
-    // network/backend issue — fall back to the local registry below
-  }
-  if (!company) {
-    company = reg.companies.find(
-      (c) => c.ownerEmail.toLowerCase() === String(email).toLowerCase() && c.ownerPassword === password
-    ) || null;
-  }
-  if (!company) return null;
-  setSession({ companyId: company.id, userId: ensureOwnerUser(company.id, company) });
-  return company;
+  // Legacy entry point retained for compatibility, but it no longer permits
+  // password-only or offline login. Every login must complete the OTP flow.
+  return startLogin(email, password);
 }
 // Per-employee login — verifies the employee's own credentials against the cloud
 // directory, then opens a session as that employee (works from any device/browser).
@@ -552,13 +555,8 @@ export async function startLogin(email, password) {
   } catch {
     // ignore — fall through to local fallback
   }
-  const reg = getRegistry();
-  const company = reg.companies.find(
-    (c) => c.ownerEmail.toLowerCase() === String(email).toLowerCase() && c.ownerPassword === password
-  ) || null;
-  if (!company) return null;
-  setSession({ companyId: company.id, userId: ensureOwnerUser(company.id, company) });
-  return { company };
+  // No offline password fallback: OTP completion is mandatory for every account.
+  return null;
 }
 
 export async function completeLoginOtp(pendingId, code, typedPassword) {
@@ -575,13 +573,11 @@ export async function completeLoginOtp(pendingId, code, typedPassword) {
     const remote = result.company;
     setCompanyToken(remote.companyId, result.token);
     let company = reg.companies.find((c) => c.id === remote.companyId);
-    if (company) {
-      if (typedPassword) company.ownerPassword = typedPassword;
-    } else {
+    if (!company) {
       company = {
         id: remote.companyId, name: remote.name, ownerEmail: remote.ownerEmail,
-        ownerPassword: typedPassword || null, plan: remote.plan,
-        allowedEmailDomain: remote.allowedEmailDomain || "", createdAt: remote.created_date,
+        plan: remote.plan, allowedEmailDomain: remote.allowedEmailDomain || "",
+        createdAt: remote.created_date,
       };
       reg.companies.push(company);
     }
@@ -621,7 +617,6 @@ export async function changeOwnerPassword(companyId, newPassword) {
     allowedEmailDomain: company.allowedEmailDomain || "",
   });
   if (!res?.data?.ok) return false;
-  company.ownerPassword = newPassword;
   saveRegistry(reg);
   return true;
 }

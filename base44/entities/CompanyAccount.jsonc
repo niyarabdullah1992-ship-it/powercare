@@ -13,7 +13,8 @@
       "type": "string"
     },
     "ownerPassword": {
-      "type": "string"
+      "type": "string",
+      "description": "Server-only PBKDF2 password hash. Plaintext passwords are never stored."
     },
     "plan": {
       "type": "string"
