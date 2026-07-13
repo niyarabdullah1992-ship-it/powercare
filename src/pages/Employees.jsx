@@ -14,6 +14,7 @@ import RoleLabelsEditor from "@/components/employees/RoleLabelsEditor";
 import RolesGuide from "@/components/employees/RolesGuide";
 import EmployeePoints from "@/components/employees/EmployeePoints";
 import EmployeePerformance from "@/components/employees/EmployeePerformance";
+import EmployeeAccessGuide from "@/components/employees/EmployeeAccessGuide";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import AuditLogPanel from "@/components/audit/AuditLogPanel";
 import StationCombobox from "@/components/stations/StationCombobox";
@@ -340,6 +341,7 @@ export default function Employees() {
 
       {showAdd && !employeeLimitReached && (
         <form onSubmit={addEmployee} className="p-5 rounded-xl border border-border bg-card grid grid-cols-1 md:grid-cols-3 gap-3">
+          <EmployeeAccessGuide t={t} />
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("title")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
           <div>
             <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t("email")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
