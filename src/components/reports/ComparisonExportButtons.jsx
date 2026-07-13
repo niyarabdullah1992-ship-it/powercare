@@ -8,6 +8,7 @@ import { printReport } from "@/lib/printReport";
 // Colored Excel + branded PDF export for any comparison table.
 export default function ComparisonExportButtons({ title, headers, rows }) {
   const { t, dir } = useI18n();
+  const pdfLabel = dir === "rtl" ? "تصدير PDF" : "Export PDF";
   const { data, company } = useAuth();
   const hasRows = Array.isArray(rows) && rows.length > 0;
   const branding = data?.reportBranding || {};
@@ -34,7 +35,7 @@ export default function ComparisonExportButtons({ title, headers, rows }) {
         <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> {t("exportExcel")}
       </button>
       <button disabled={!hasRows} onClick={onPdf} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed">
-        <Printer className="w-3.5 h-3.5" /> PDF
+        <Printer className="w-3.5 h-3.5" /> {pdfLabel}
       </button>
     </div>
   );

@@ -81,6 +81,12 @@ export default function Attendance() {
 
       <CalendarExportCard data={data} user={currentUser} />
 
+      {!isManager && (
+        <Suspense fallback={<TabLoader />}>
+          <AttendanceMonthlyReport employees={[currentUser]} defaultEmployeeId={currentUser.id} t={t} />
+        </Suspense>
+      )}
+
       {isManager && (
         <div className="space-y-4">
           <div className="flex gap-2 border-b border-border overflow-x-auto no-scrollbar">
