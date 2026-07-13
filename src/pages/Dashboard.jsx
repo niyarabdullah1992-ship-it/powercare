@@ -11,8 +11,6 @@ import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
 import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
 import StationManagerDashboard from "@/components/dashboard/StationManagerDashboard";
-import { seedDummyData } from "@/lib/store";
-import { Sparkles } from "lucide-react";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { queryClientInstance } from "@/lib/query-client";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
@@ -21,7 +19,6 @@ export default function Dashboard() {
   const { t, lang } = useI18n();
   const { data, currentUser, company, refresh } = useAuth();
   const [stoppageCount, setStoppageCount] = useState(0);
-  const [seeding, setSeeding] = useState(false);
   const [showBranding, setShowBranding] = useState(false);
 
   const loadStoppage = async () => {
@@ -101,14 +98,6 @@ export default function Dashboard() {
     );
   }
 
-  const canSeed = currentUser.role === "director" || currentUser.role === "ops_manager";
-  const handleSeed = () => {
-    if (seeding) return;
-    setSeeding(true);
-    seedDummyData(company.id);
-    setSeeding(false);
-  };
-
   // Manager dashboard
   const tasks = data.tasks.filter((tk) => stationIds.has(tk.stationId));
   const reports = data.reports.filter((r) => stationIds.has(r.stationId));
@@ -167,16 +156,6 @@ export default function Dashboard() {
           <h1 className="hero-title text-4xl md:text-5xl">{t("overview")}</h1>
         </div>
         <div className="flex items-center gap-3">
-          {canSeed && (
-            <button
-              onClick={handleSeed}
-              disabled={seeding}
-              className="flex items-center gap-1.5 text-xs font-body text-accent hover:text-accent/70 disabled:opacity-50"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              {t("fillDemoData")}
-            </button>
-          )}
           {canEditBranding && (
             <button
               onClick={() => setShowBranding((value) => !value)}
