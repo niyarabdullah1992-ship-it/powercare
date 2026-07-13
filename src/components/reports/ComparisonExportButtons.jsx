@@ -9,8 +9,7 @@ import { printReport } from "@/lib/printReport";
 export default function ComparisonExportButtons({ title, headers, rows }) {
   const { t, dir } = useI18n();
   const { data, company } = useAuth();
-  if (!rows || rows.length === 0) return null;
-
+  const hasRows = Array.isArray(rows) && rows.length > 0;
   const branding = data?.reportBranding || {};
   const color = branding.color || "#b07d3f";
 
@@ -31,10 +30,10 @@ export default function ComparisonExportButtons({ title, headers, rows }) {
 
   return (
     <div className="flex items-center gap-2">
-      <button onClick={onExcel} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+      <button disabled={!hasRows} onClick={onExcel} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed">
         <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> {t("exportExcel")}
       </button>
-      <button onClick={onPdf} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+      <button disabled={!hasRows} onClick={onPdf} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed">
         <Printer className="w-3.5 h-3.5" /> PDF
       </button>
     </div>

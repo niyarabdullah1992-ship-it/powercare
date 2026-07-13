@@ -105,31 +105,30 @@ export default function StationComparison() {
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm text-muted-foreground font-body">{t("compareStationsNote")}</p>
-        <StationFilterDropdown
-          t={t}
-          options={data.stations.map((s) => ({ key: s.id, label: s.name }))}
-          selected={selected}
-          onToggle={toggle}
-          onSelectAll={() => setSelected(data.stations.map((s) => s.id))}
-          onClearAll={() => setSelected([])}
-        />
+        <div className="flex items-center gap-2 flex-wrap">
+          <ComparisonExportButtons
+            title={t("stationComparison")}
+            headers={[t("stations"), t("team"), t("completed"), t("inProgress"), t("overdue"), t("points"), t("safetyLevel"), t("incidents")]}
+            rows={compared.map((c) => [
+              c.name, c.team, c.completed, c.onTrack, c.overdue, c.points,
+              t(c.safetyLevel === "red" ? "high" : c.safetyLevel === "amber" ? "medium" : "low"), c.incidents,
+            ])}
+          />
+          <StationFilterDropdown
+            t={t}
+            options={data.stations.map((s) => ({ key: s.id, label: s.name }))}
+            selected={selected}
+            onToggle={toggle}
+            onSelectAll={() => setSelected(data.stations.map((s) => s.id))}
+            onClearAll={() => setSelected([])}
+          />
+        </div>
       </div>
 
       {selected.length < 2 ? (
         <p className="text-sm text-muted-foreground font-body p-6 text-center border border-border rounded-xl bg-card">{t("selectAtLeastTwo")}</p>
       ) : (
         <>
-          <div className="flex justify-end">
-            <ComparisonExportButtons
-              title={t("stationComparison")}
-              headers={[t("stations"), t("team"), t("completed"), t("inProgress"), t("overdue"), t("points"), t("safetyLevel"), t("incidents")]}
-              rows={compared.map((c) => [
-                c.name, c.team, c.completed, c.onTrack, c.overdue, c.points,
-                t(c.safetyLevel === "red" ? "high" : c.safetyLevel === "amber" ? "medium" : "low"), c.incidents,
-              ])}
-            />
-          </div>
-
           {/* At-a-glance status shapes — color + geometry both signal station health */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {compared.map((c) => {

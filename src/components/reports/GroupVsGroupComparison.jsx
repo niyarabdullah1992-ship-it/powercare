@@ -55,18 +55,19 @@ export default function GroupVsGroupComparison({ rows, employees, t }) {
         <GroupPicker label={t("groupB")} employees={employees} selected={groupB} onToggle={toggleB} accent="bg-foreground" disabledIds={groupA} />
       </ReportCard>
 
+      <div className="flex justify-end">
+        <ComparisonExportButtons
+          title={t("groupVsGroup")}
+          headers={[t("category"), t("groupA"), t("groupB")]}
+          rows={groupA.length > 0 && groupB.length > 0 ? metrics.map((m) => [m.label, m.va, m.vb]) : []}
+        />
+      </div>
+
       <ReportCard>
         {groupA.length === 0 || groupB.length === 0 ? (
           <p className="text-sm text-muted-foreground font-body text-center py-6">{t("selectAtLeastTwo")}</p>
         ) : (
           <>
-          <div className="flex justify-end mb-3">
-            <ComparisonExportButtons
-              title={t("groupVsGroup")}
-              headers={[t("category"), t("groupA"), t("groupB")]}
-              rows={metrics.map((m) => [m.label, m.va, m.vb])}
-            />
-          </div>
           <table className="w-full text-sm font-body">
             <thead>
               <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wider">
