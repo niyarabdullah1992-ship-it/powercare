@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles } from "lucide-react";
+import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, Download } from "lucide-react";
 import Logo from "@/components/Logo";
 import VideoIntro from "@/components/landing/VideoIntro";
 import OtpStep from "@/components/landing/OtpStep";
@@ -225,6 +225,12 @@ export default function Landing() {
             <ul className="space-y-2 text-sm font-body text-[#3a2f22]/55">
               <li>{t("footerBlog")}</li>
               <li><a href="/about" className="hover:text-landing-gold transition-colors">{t("footerAbout")}</a></li>
+              <li>
+                <Link to="/powercare-presentation" className="inline-flex items-center gap-2 font-semibold text-landing-gold underline underline-offset-4 transition-colors hover:text-landing-gold-deep">
+                  <Download className="h-3.5 w-3.5" />
+                  {lang === "ar" ? "تنزيل ملف عرض PowerCare" : "Download PowerCare presentation"}
+                </Link>
+              </li>
               <li>{t("footerCareers")}</li>
               <li>{t("footerTerms")}</li>
               <li>{t("footerContact")}</li>
