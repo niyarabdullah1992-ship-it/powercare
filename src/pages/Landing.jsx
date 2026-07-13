@@ -58,6 +58,13 @@ export default function Landing() {
     return !!c;
   };
 
+  const handleResendOtp = async () => {
+    const result = await login(email, password);
+    if (!result?.otpRequired) return false;
+    setOtpPending(result.pendingId);
+    return true;
+  };
+
   return (
     <div className="min-h-screen bg-landing-bg font-body text-primary">
       {/* Top bar */}
@@ -125,7 +132,7 @@ export default function Landing() {
             </div>
 
               {otpPending ? (
-                <OtpStep email={email} onVerify={handleVerifyOtp} onBack={() => setOtpPending(null)} />
+                <OtpStep email={email} onVerify={handleVerifyOtp} onResend={handleResendOtp} onBack={() => setOtpPending(null)} />
               ) : resetOpen ? (
                 <PasswordResetForm initialEmail={email} onDone={(value) => { setEmail(value); setResetOpen(false); setError(""); }} onBack={() => setResetOpen(false)} />
               ) : (
