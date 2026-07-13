@@ -1,19 +1,22 @@
 import { PDFDocument } from "pdf-lib";
 import { base44 } from "@/api/base44Client";
-import { makeVerificationBadgePng } from "@/lib/verificationBadge";
+import { makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
 
-// Stamps the saved signature onto the LAST page of an uploaded PDF (bottom-right
-// corner) with the date and the encrypted verification ID, then uploads the
-// signed copy and returns its URL.
-// `spot` (optional, from detectSignatureSpot): { page, x, y } — percentages from
-// the top-left where the signature's center should land. Falls back to the
-// bottom-right of the last page when absent.
-export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot) {
+// Renders the verification badge to PNG bytes using an ALREADY-LOADED QR image
+// (prefetched while the user was choosing the file) — no network wait here.
+async function badgePngBytes(sigId, signerName, qrImg) {
+  const canvas = makeVerificationBadgeCanvas(sigId, signerName, qrImg);
+  const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
+  return { bytes: await blob.arrayBuffer(), ratio: canvas.height / canvas.width };
+}
+
+// Stamps the verification badge onto the PDF, uploads the signed copy and
+// returns { url, bytes } — bytes are used to hash the file locally without
+// re-downloading it.
+export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot, qrImg) {
   const pdfBytes = await fetch(docUrl).then((r) => r.arrayBuffer());
   const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
-  // Only the verification badge is stamped (fingerprint icon + encrypted ID +
-  // signer name & date) — the name lives inside the rectangle itself.
-  const badge = await makeVerificationBadgePng(sigId, signerName);
+  const badge = await badgePngBytes(sigId, signerName, qrImg);
   const badgeImg = await pdf.embedPng(badge.bytes);
   const pages = pdf.getPages();
   const page = spot ? pages[Math.min(spot.page - 1, pages.length - 1)] : pages[pages.length - 1];
@@ -22,7 +25,7 @@ export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot) {
   const bh = bw * badge.ratio;
   let bx, by;
   if (spot) {
-    // Center the badge on the chosen/detected spot (spot.y measured from top).
+    // Center the badge on the chosen spot (spot.y measured from top).
     bx = Math.min(Math.max((width * spot.x) / 100 - bw / 2, 8), width - bw - 8);
     by = Math.min(Math.max(height - (height * spot.y) / 100 - bh / 2, 8), height - bh - 8);
   } else {
@@ -33,11 +36,11 @@ export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot) {
   const out = await pdf.save();
   const file = new File([out], "signed-document.pdf", { type: "application/pdf" });
   const { file_url } = await base44.integrations.Core.UploadFile({ file });
-  return file_url;
+  return { url: file_url, bytes: out };
 }
 
 // Wraps an already-signed image (PNG blob) into a one-page PDF sized to the
-// image, uploads it and returns its URL — so the emailed file is always a PDF.
+// image, uploads it and returns { url, bytes }.
 export async function imageBlobToPdf(blob) {
   const bytes = await blob.arrayBuffer();
   const pdf = await PDFDocument.create();
@@ -47,5 +50,5 @@ export async function imageBlobToPdf(blob) {
   const out = await pdf.save();
   const file = new File([out], "signed-document.pdf", { type: "application/pdf" });
   const { file_url } = await base44.integrations.Core.UploadFile({ file });
-  return file_url;
+  return { url: file_url, bytes: out };
 }

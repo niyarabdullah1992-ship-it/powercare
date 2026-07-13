@@ -109,7 +109,7 @@ export async function loadBadgeQr(sigId) {
   try {
     const res = await fetch(
       `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=1&data=${encodeURIComponent(verificationUrlFor(sigId))}`,
-      { signal: AbortSignal.timeout(8000) }
+      { signal: AbortSignal.timeout(5000) }
     );
     if (!res.ok) return null;
     const blob = await res.blob();
