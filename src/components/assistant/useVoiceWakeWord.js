@@ -46,8 +46,18 @@ export default function useVoiceWakeWord({ enabled, lang, onCommand }) {
         setAwake(false); awakeRef.current = false;
       }
     };
+    let stopped = false;
+    let restartTimer = null;
+    const restart = () => {
+      if (stopped || !enabledRef.current) { setListening(false); return; }
+      try { rec.start(); } catch {
+        // Recognition engine not ready yet — retry shortly instead of giving up.
+        restartTimer = setTimeout(restart, 400);
+      }
+    };
     rec.onend = () => {
-      if (enabledRef.current) { try { rec.start(); } catch { /* already running */ } }
+      // Browsers stop recognition after silence/inactivity — always restart while enabled.
+      if (!stopped && enabledRef.current) restartTimer = setTimeout(restart, 250);
       else setListening(false);
     };
     rec.onerror = (e) => {
@@ -56,9 +66,12 @@ export default function useVoiceWakeWord({ enabled, lang, onCommand }) {
         setDenied(true);
         setListening(false);
       }
+      // Other errors (no-speech, aborted, network) are transient — onend will restart.
     };
-    try { rec.start(); } catch { /* ignore double-start */ }
+    restart();
     return () => {
+      stopped = true;
+      clearTimeout(restartTimer);
       rec.onend = null;
       try { rec.stop(); } catch { /* ignore */ }
       setListening(false); setAwake(false); awakeRef.current = false;

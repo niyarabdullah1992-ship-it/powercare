@@ -15,6 +15,11 @@ export default function VoiceControl({ onCommand }) {
     if (awake) speak(ar ? "نعم، تفضل" : "Yes, go ahead", lang);
   }, [awake, ar, lang]);
 
+  // If the browser denied the microphone, flip the button back off so its state is honest.
+  useEffect(() => {
+    if (denied) setEnabled(false);
+  }, [denied]);
+
   if (!supported) return null;
 
   const status = denied
