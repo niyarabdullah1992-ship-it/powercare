@@ -156,6 +156,14 @@ async function syncAccountToEntity(company) {
 export async function syncCompanyAccount(company) {
   return syncAccountToEntity(company);
 }
+
+export function activateCompanySession(company) {
+  const userId = ensureOwnerUser(company.id, company);
+  if (!userId) return false;
+  setSession({ companyId: company.id, userId });
+  return true;
+}
+
 export function deleteCompany(id) {
   const reg = getRegistry();
   reg.companies = reg.companies.filter((c) => c.id !== id);
@@ -554,6 +562,7 @@ export async function employeeLogin(email, password) {
 export async function startLogin(email, password) {
   try {
     const res = await invokeDirectory({ action: "findAccountByEmail", email, password });
+    if (res?.data?.token && res.data.kind === "owner") return { company: finishOwnerLogin(res.data) };
     if (res?.data?.otpRequired) return { otpRequired: true, pendingId: res.data.pendingId };
   } catch {
     // network/backend issue — try employee login, then the local fallback below

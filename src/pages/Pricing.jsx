@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { createCompany, syncCompanyAccount } from "@/lib/store";
+import { activateCompanySession, createCompany, syncCompanyAccount } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
 import { Check, Loader2, ArrowLeft } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -52,8 +52,9 @@ export default function Pricing() {
       return false;
     }
     pendingCompanyRef.current = null;
+    activateCompanySession(company);
     base44.functions.invoke("subscriberEmails", { action: "welcome", email: company.ownerEmail, companyName: company.name }).catch(() => {});
-    navigate("/");
+    navigate("/app");
     return true;
   };
 
