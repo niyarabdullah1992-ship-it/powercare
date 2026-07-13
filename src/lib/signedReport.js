@@ -108,13 +108,24 @@ function drawReportCanvas({ title, companyName, dir, headers, rows }) {
   return canvas;
 }
 
-export async function generateSignedReport({ title, companyName, dir, headers, rows, signerName, signerId, companyId, signatureUrl }) {
+export async function generateSignedReport({ title, companyName, dir, headers, rows, signerName, signerId, companyId, signatureUrl, logoUrl }) {
   const canvas = drawReportCanvas({ title, companyName, dir, headers, rows });
   const ctx = canvas.getContext("2d");
 
-  // Stamp the handwritten signature + verification badge in the bottom corner.
+  // Add the company logo to the report header without replacing PowerCare's verification identity.
   const sigId = generateVerificationId();
-  const [qr, sigImg] = await Promise.all([loadBadgeQr(sigId), loadImage(signatureUrl)]);
+  const [qr, sigImg, logoImg] = await Promise.all([loadBadgeQr(sigId), loadImage(signatureUrl), loadImage(logoUrl)]);
+  if (logoImg) {
+    const maxW = 96;
+    const maxH = 72;
+    const scale = Math.min(maxW / logoImg.width, maxH / logoImg.height);
+    const width = logoImg.width * scale;
+    const height = logoImg.height * scale;
+    const x = dir === "rtl" ? 48 : canvas.width - 48 - width;
+    ctx.drawImage(logoImg, x, 34 + (maxH - height) / 2, width, height);
+  }
+
+  // Stamp the handwritten signature + verification badge in the bottom corner.
   const badge = makeVerificationBadgeCanvas(sigId, signerName, qr);
   const bw = 520;
   const bh = bw * (badge.height / badge.width);

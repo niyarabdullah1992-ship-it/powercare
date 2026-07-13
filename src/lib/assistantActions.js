@@ -69,6 +69,8 @@ export async function executeAssistantAction(action, { data, company, currentUse
         periodLabel: new Date().toLocaleDateString(document.documentElement.dir === "rtl" ? "ar" : "en-GB"),
         dir: document.documentElement.dir,
         sections: [{ heading: action.reportTitle || dataset, headers: Object.keys(rows[0]), rows: rows.map((r) => Object.values(r)) }],
+        logoUrl: data.reportBranding?.logoUrl || "",
+        color: data.reportBranding?.color || "#b07d3f",
       });
       return { ok: true, message: t("aiPdfDone") };
     }
@@ -96,6 +98,7 @@ export async function executeAssistantAction(action, { data, company, currentUse
       signatureUrl: currentUser?.profile?.signatureUrl || "",
       signerId: currentUser.id,
       companyId: company.id,
+      logoUrl: data.reportBranding?.logoUrl || "",
     });
     return { ok: true, message: `${t("aiReportSigned")} ${verificationId}` };
   }

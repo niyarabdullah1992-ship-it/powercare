@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { visibleStations, canSeeAllStations, visibleEmployees, canApproveReports, canReplyAnon } from "@/lib/permissions";
+import { visibleStations, canSeeAllStations, visibleEmployees, canApproveReports, canReplyAnon, isCompanyOwner } from "@/lib/permissions";
 import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
 import WelcomeHero from "@/components/dashboard/WelcomeHero";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
-import { Radio, AlertTriangle, FileText, TrendingUp, Bell, Megaphone } from "lucide-react";
+import { Radio, AlertTriangle, FileText, TrendingUp, Bell, Megaphone, Palette } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
 import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
@@ -15,12 +15,14 @@ import { seedDummyData } from "@/lib/store";
 import { Sparkles } from "lucide-react";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { queryClientInstance } from "@/lib/query-client";
+import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
   const { data, currentUser, company, refresh } = useAuth();
   const [stoppageCount, setStoppageCount] = useState(0);
   const [seeding, setSeeding] = useState(false);
+  const [showBranding, setShowBranding] = useState(false);
 
   const loadStoppage = async () => {
     if (!currentUser) return;
@@ -76,6 +78,7 @@ export default function Dashboard() {
   );
 
   const isEmployee = currentUser.role === "employee";
+  const canEditBranding = isCompanyOwner(currentUser, data) || currentUser.role === "director";
 
   if (isEmployee) return (
     <PullToRefresh onRefresh={handleRefresh}>
@@ -164,11 +167,30 @@ export default function Dashboard() {
               {lang === "ar" ? "تعبئة ببيانات وهمية" : "Fill with demo data"}
             </button>
           )}
+          {canEditBranding && (
+            <button
+              onClick={() => setShowBranding((value) => !value)}
+              className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-body hover:bg-muted"
+            >
+              <Palette className="h-3.5 w-3.5 text-accent" />
+              {lang === "ar" ? "إعدادات الشعار" : "Logo settings"}
+            </button>
+          )}
           <span className="px-3 py-1.5 rounded-full border border-accent/30 bg-accent/10 text-accent text-xs font-body tracking-wide">
             {t(currentUser.role)}
           </span>
         </div>
       </div>
+
+      {showBranding && canEditBranding && (
+        <BrandingSettingsCard
+          companyId={company.id}
+          branding={data.reportBranding}
+          companyName={data.name || company?.name || ""}
+          lang={lang}
+          onClose={() => setShowBranding(false)}
+        />
+      )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 border border-border divide-x divide-y divide-border rtl:divide-x-reverse">
