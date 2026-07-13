@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { PenLine } from "lucide-react";
@@ -13,8 +13,12 @@ export default function FileSigning() {
   const { lang } = useI18n();
   const { company, data, currentUser } = useAuth();
   const ar = lang === "ar";
+  const [savedSignature, setSavedSignature] = useState(null);
 
   if (!currentUser || !company) return null;
+  const signingUser = savedSignature
+    ? { ...currentUser, profile: { ...(currentUser.profile || {}), ...savedSignature } }
+    : currentUser;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -30,8 +34,8 @@ export default function FileSigning() {
       </div>
       <HowSigningWorks ar={ar} />
       <div className="grid md:grid-cols-2 gap-4">
-        <MySignatureCard companyId={company.id} currentUser={currentUser} ar={ar} />
-        <SignAndSendCard currentUser={currentUser} companyId={company.id} companyName={data?.name || company?.name || ""} ar={ar} />
+        <MySignatureCard companyId={company.id} currentUser={currentUser} ar={ar} onSaved={setSavedSignature} />
+        <SignAndSendCard currentUser={signingUser} companyId={company.id} companyName={data?.name || company?.name || ""} ar={ar} />
       </div>
       <VerifyDocumentCard ar={ar} />
     </div>

@@ -25,9 +25,10 @@ function dataUrlToBlob(dataUrl) {
 
 // Each employee's personal signature: drawn or typed once, stored on their
 // profile with a unique encrypted ID, and reused for signing documents.
-export default function MySignatureCard({ companyId, currentUser, ar }) {
-  const signatureUrl = currentUser?.profile?.signatureUrl || "";
-  const signatureId = currentUser?.profile?.signatureId || "";
+export default function MySignatureCard({ companyId, currentUser, ar, onSaved }) {
+  const [localSignature, setLocalSignature] = useState(null);
+  const signatureUrl = localSignature?.signatureUrl ?? currentUser?.profile?.signatureUrl ?? "";
+  const signatureId = localSignature?.signatureId ?? currentUser?.profile?.signatureId ?? "";
   const [editing, setEditing] = useState(!signatureUrl);
   const [mode, setMode] = useState("type"); // "type" | "draw"
   const [saving, setSaving] = useState(false);
@@ -42,14 +43,15 @@ export default function MySignatureCard({ companyId, currentUser, ar }) {
       const file = new File([blob], "signature.png", { type: "image/png" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const sigId = await generateSignatureId(currentUser.id);
-      updateEmployeeProfile(companyId, currentUser.id, {
+      const savedProfile = {
         signatureUrl: file_url,
         signatureId: sigId,
-        // The name shown inside the verification badge — updates whenever
-        // the signature is re-saved with a new name.
         signatureName: typedName || currentUser.name,
         signatureUpdatedAt: new Date().toISOString(),
-      });
+      };
+      updateEmployeeProfile(companyId, currentUser.id, savedProfile);
+      setLocalSignature(savedProfile);
+      onSaved?.(savedProfile);
       setEditing(false);
     } catch {
       setError(ar ? "تعذّر حفظ التوقيع؛ حاول مرة أخرى." : "Couldn't save the signature; try again.");
@@ -84,7 +86,13 @@ export default function MySignatureCard({ companyId, currentUser, ar }) {
               <PenLine className="w-3.5 h-3.5" /> {ar ? "توقيع جديد" : "New signature"}
             </button>
             <button
-              onClick={() => { updateEmployeeProfile(companyId, currentUser.id, { signatureUrl: "", signatureId: "" }); setEditing(true); }}
+              onClick={() => {
+                const cleared = { signatureUrl: "", signatureId: "" };
+                updateEmployeeProfile(companyId, currentUser.id, cleared);
+                setLocalSignature(cleared);
+                onSaved?.(cleared);
+                setEditing(true);
+              }}
               className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-border text-xs font-body text-destructive hover:bg-muted whitespace-nowrap"
             >
               <Trash2 className="w-3.5 h-3.5" /> {ar ? "حذف" : "Delete"}
