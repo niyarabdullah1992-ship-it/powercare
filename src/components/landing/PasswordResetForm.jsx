@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Loader2, MailCheck } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { requestOwnerPasswordReset, resetOwnerPassword } from "@/lib/store";
+import { base44 } from "@/api/base44Client";
+import GoogleIcon from "@/components/GoogleIcon";
 
 export default function PasswordResetForm({ initialEmail, onDone, onBack }) {
   const { lang } = useI18n();
@@ -35,7 +37,7 @@ export default function PasswordResetForm({ initialEmail, onDone, onBack }) {
       } else if (await resetOwnerPassword(pendingId, code, password, email.trim())) onDone(email.trim());
       else setError(ar ? "تعذّر التغيير؛ اطلب رمزًا جديدًا وحاول مرة أخرى" : "Reset failed; request a new code and try again");
     } catch {
-      setError(ar ? "تعذّر الاتصال؛ حاول مرة أخرى" : "Connection failed; try again");
+      setError(ar ? "تعذّر إرسال الرمز؛ استخدم الدخول عبر Google" : "The code could not be sent; continue with Google");
     } finally {
       setLoading(false);
     }
@@ -47,6 +49,11 @@ export default function PasswordResetForm({ initialEmail, onDone, onBack }) {
       <input type="password" minLength={6} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder={ar ? "كلمة مرور جديدة" : "New password"} className="w-full rounded-lg bg-landing-bg px-3 py-3 text-primary outline-none focus:ring-2 focus:ring-landing-gold" />
     </>}
     {error && <p className="text-center text-sm text-destructive">{error}</p>}
+    {!pendingId && (
+      <button type="button" onClick={() => base44.auth.loginWithProvider("google", "/?google_login=1")} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/30 py-3 text-sm font-semibold text-primary hover:bg-landing-bg">
+        <GoogleIcon className="h-5 w-5" /> {ar ? "الدخول باستخدام Google" : "Continue with Google"}
+      </button>
+    )}
     <button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-lg bg-landing-gold py-3 text-sm font-semibold text-white disabled:opacity-50">{loading && <Loader2 className="h-4 w-4 animate-spin" />}{pendingId ? (ar ? "تعيين كلمة المرور" : "Set new password") : (ar ? "إرسال الرمز" : "Send code")}</button>
     <button type="button" onClick={onBack} className="w-full text-center text-xs text-primary/60 hover:text-primary">{ar ? "رجوع" : "Back"}</button>
   </form>;
