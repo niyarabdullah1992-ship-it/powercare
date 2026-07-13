@@ -80,12 +80,12 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-landing-bg font-body text-[#f3e9d6]">
+    <div className="min-h-screen bg-landing-bg font-body text-primary">
       {/* Top bar */}
       <div className="sticky top-0 z-50 flex items-center justify-between border-b border-landing-gold/15 bg-landing-bg/90 px-4 py-3 backdrop-blur-xl sm:px-6 md:px-10 md:py-4">
         <div className="flex items-center gap-2">
           <Logo size={30} />
-          <span className="font-heading font-semibold text-lg text-[#f3e9d6]">{t("appName")}</span>
+          <span className="font-heading font-semibold text-lg text-primary">{t("appName")}</span>
         </div>
         <div className="flex items-center gap-2">
         <Link
@@ -97,20 +97,20 @@ export default function Landing() {
         <div className="relative">
           <button
             onClick={(e) => { e.stopPropagation(); setLangOpen((v) => !v); }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-landing-gold/25 bg-landing-olive-card text-sm font-body text-[#f3e9d6]/90 hover:bg-landing-olive-card/70 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-landing-gold/25 bg-white text-sm font-body text-[#3a2f22]/90 hover:bg-white/70 transition-colors"
           >
             <Globe className="w-4 h-4" strokeWidth={1.75} />
             <span>{currentLang?.flag} {currentLang?.code.toUpperCase()}</span>
             <ChevronDown className={`w-3.5 h-3.5 transition-transform ${langOpen ? "rotate-180" : ""}`} strokeWidth={1.75} />
           </button>
           {langOpen && (
-            <div className="absolute end-0 mt-2 w-48 rounded-md border border-landing-gold/20 bg-landing-olive-card shadow-lg z-50 overflow-hidden max-h-72 overflow-y-auto">
+            <div className="absolute end-0 mt-2 w-48 rounded-md border border-landing-gold/20 bg-white shadow-lg z-50 overflow-hidden max-h-72 overflow-y-auto">
               {languages.map((l) => (
                 <button
                   key={l.code}
                   onClick={() => { setLang(l.code); setLangOpen(false); }}
                   className={`w-full flex items-center justify-between px-3 py-2 text-sm font-body transition-colors ${
-                    lang === l.code ? "bg-landing-gold text-white" : "text-[#f3e9d6]/80 hover:bg-landing-bg"
+                    lang === l.code ? "bg-landing-gold text-white" : "text-[#3a2f22]/80 hover:bg-landing-bg"
                   }`}
                 >
                   <span>{l.flag} {l.code.toUpperCase()}</span>
@@ -125,12 +125,12 @@ export default function Landing() {
 
       {/* Hero */}
       <div className="relative overflow-hidden">
-        <img src={PATTERN_IMG} alt="" className="absolute inset-0 w-full h-full object-cover opacity-10" />
+        <img src={PATTERN_IMG} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 md:px-10 md:py-24 lg:grid-cols-[1.15fr,0.85fr] lg:gap-16">
           <div className="text-center lg:text-start">
             <h1 className="hero-title break-words text-5xl uppercase text-landing-gold sm:text-6xl md:text-8xl">{t("appName")}</h1>
 
-            <div className="mx-auto mt-8 max-w-lg divide-y divide-[#f3e9d6]/8 overflow-hidden rounded-2xl border border-landing-gold/15 bg-landing-olive-card shadow-sm lg:mx-0 lg:mt-10">
+            <div className="mx-auto mt-8 max-w-lg divide-y divide-[#3a2f22]/8 overflow-hidden rounded-2xl border border-landing-gold/15 bg-white shadow-sm lg:mx-0 lg:mt-10">
               <FeatureBullet icon={Clock} title={t("feature1")} />
               <FeatureBullet icon={TrendingUp} title={t("feature2")} />
               <FeatureBullet icon={ShieldCheck} title={t("feature3")} />
@@ -138,9 +138,9 @@ export default function Landing() {
           </div>
 
           {/* Login card */}
-          <div className="rounded-2xl border border-landing-gold/15 bg-landing-olive-card p-5 shadow-xl shadow-[#f3e9d6]/10 sm:p-7">
+          <div className="rounded-2xl border border-landing-gold/15 bg-white p-5 shadow-xl shadow-[#3a2f22]/10 sm:p-7">
             <div className="flex items-center gap-2 mb-6">
-              <span className="flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-body bg-landing-bg text-[#f3e9d6]">
+              <span className="flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-body bg-landing-bg text-[#3a2f22]">
                 <LogIn className="w-4 h-4" strokeWidth={1.75} /> {t("companyLogin")}
               </span>
             </div>
@@ -151,29 +151,29 @@ export default function Landing() {
                 <PasswordResetForm initialEmail={email} onDone={(value) => { setEmail(value); setResetOpen(false); setError(""); }} onBack={() => setResetOpen(false)} />
               ) : (
               <div className="space-y-4">
-                <button type="button" onClick={handleGoogleLogin} disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-3 text-sm font-semibold text-[#f3e9d6] hover:bg-landing-bg disabled:opacity-50">
+                <button type="button" onClick={handleGoogleLogin} disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-3 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg disabled:opacity-50">
                   <GoogleIcon className="h-5 w-5" /> {lang === "ar" ? "الدخول باستخدام Google" : "Continue with Google"}
                 </button>
-                <div className="flex items-center gap-3 text-xs text-[#f3e9d6]/40"><span className="h-px flex-1 bg-landing-gold/20" />{lang === "ar" ? "أو" : "or"}<span className="h-px flex-1 bg-landing-gold/20" /></div>
+                <div className="flex items-center gap-3 text-xs text-[#3a2f22]/40"><span className="h-px flex-1 bg-landing-gold/20" />{lang === "ar" ? "أو" : "or"}<span className="h-px flex-1 bg-landing-gold/20" /></div>
               <form onSubmit={handleCompanyLogin} noValidate className="space-y-4">
                 <div>
-                  <label className="block text-xs font-body text-[#f3e9d6]/55 mb-1.5">{t("email")}</label>
+                  <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("email")}</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full px-3 py-2.5 rounded-lg border border-transparent bg-landing-bg text-[#f3e9d6] font-body text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
+                    className="w-full px-3 py-2.5 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] font-body text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-body text-[#f3e9d6]/55 mb-1.5">{t("password")}</label>
+                  <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("password")}</label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full px-3 py-2.5 rounded-lg border border-transparent bg-landing-bg text-[#f3e9d6] font-body text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
+                    className="w-full px-3 py-2.5 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] font-body text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
                   />
                 </div>
                 {error && <p className="text-sm text-red-500 font-body">{error}</p>}
@@ -190,7 +190,7 @@ export default function Landing() {
               </form>
               </div>
               )}
-              <p className="mt-5 text-center text-sm font-body text-[#f3e9d6]/55">
+              <p className="mt-5 text-center text-sm font-body text-[#3a2f22]/55">
                 {t("noAccountYet")}{" "}
                 <Link to="/pricing" className="text-landing-gold font-semibold hover:underline">
                   {t("viewPlans")}
@@ -203,14 +203,14 @@ export default function Landing() {
       <VideoIntro />
 
       {/* Gold gradient section: brand mark + benefits + footer */}
-      <div className="bg-gradient-to-b from-[#1c1408] via-[#120d05] to-landing-bg px-6 md:px-10 pt-16 pb-4">
+      <div className="bg-gradient-to-b from-landing-gold-light via-landing-gold-deep to-landing-bg px-6 md:px-10 pt-16 pb-4">
         <div className="flex flex-col items-center">
           <Logo size={72} />
-          <h2 className="hero-title text-[#f3e9d6] text-5xl md:text-6xl mt-3 mb-10">{t("appName")}</h2>
+          <h2 className="hero-title text-primary text-5xl md:text-6xl mt-3 mb-10">{t("appName")}</h2>
         </div>
 
         {/* Ribbon */}
-        <div className="max-w-3xl mx-auto flex items-center justify-center gap-3 bg-white/5 border border-landing-gold/20 rounded-full px-6 py-3 text-center text-sm font-body mb-14">
+        <div className="max-w-3xl mx-auto flex items-center justify-center gap-3 bg-black/15 rounded-full px-6 py-3 text-center text-sm font-body mb-14">
           <Sparkles className="w-4 h-4 text-white/70 shrink-0" strokeWidth={1.75} />
           <p>
             <span className="text-white font-semibold">{t("benefitAnnounce")}</span>{" "}
@@ -227,13 +227,13 @@ export default function Landing() {
         </div>
 
         {/* Footer */}
-        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10 mt-16 pt-10 border-t border-[#f3e9d6]/10">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10 mt-16 pt-10 border-t border-[#3a2f22]/10">
           <div>
-            <h3 className="font-heading text-2xl text-[#f3e9d6] mb-3">{t("appName")}</h3>
-            <p className="text-sm text-[#f3e9d6]/55 font-body leading-relaxed">
+            <h3 className="font-heading text-2xl text-[#3a2f22] mb-3">{t("appName")}</h3>
+            <p className="text-sm text-[#3a2f22]/55 font-body leading-relaxed">
               {t("footerDescription")}
             </p>
-            <div className="flex items-center gap-4 mt-5 text-[#f3e9d6]/60">
+            <div className="flex items-center gap-4 mt-5 text-[#3a2f22]/60">
               <Facebook className="w-4 h-4" strokeWidth={1.75} />
               <Twitter className="w-4 h-4" strokeWidth={1.75} />
               <XIcon className="w-4 h-4" strokeWidth={1.75} />
@@ -241,8 +241,8 @@ export default function Landing() {
             </div>
           </div>
           <div>
-            <h4 className="font-heading text-lg text-[#f3e9d6] mb-3">{t("footerBenefitsHeading")}</h4>
-            <ul className="space-y-2 text-sm font-body text-[#f3e9d6]/55">
+            <h4 className="font-heading text-lg text-[#3a2f22] mb-3">{t("footerBenefitsHeading")}</h4>
+            <ul className="space-y-2 text-sm font-body text-[#3a2f22]/55">
               <li>{t("footerBlog")}</li>
               <li><a href="/about" className="hover:text-landing-gold transition-colors">{t("footerAbout")}</a></li>
               <li>
@@ -257,8 +257,8 @@ export default function Landing() {
             </ul>
           </div>
           <div>
-            <h4 className="font-heading text-lg text-[#f3e9d6] mb-3">{t("footerContactHeading")}</h4>
-            <ul className="space-y-2.5 text-sm font-body text-[#f3e9d6]/55">
+            <h4 className="font-heading text-lg text-[#3a2f22] mb-3">{t("footerContactHeading")}</h4>
+            <ul className="space-y-2.5 text-sm font-body text-[#3a2f22]/55">
               <li className="flex items-center gap-2"><ShieldCheck className="w-3.5 h-3.5 text-landing-gold" /> {t("appName")}</li>
               <li className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-landing-gold" /> <span dir="ltr">0595414472</span></li>
               <li className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-landing-gold" /> niyar@powercares.pro</li>
@@ -277,7 +277,7 @@ function FeatureBullet({ icon: Icon, title }) {
       <span className="w-9 h-9 rounded-full border border-landing-gold/40 flex items-center justify-center shrink-0 text-landing-gold">
         <Icon className="w-4 h-4" strokeWidth={1.75} />
       </span>
-      <p className="text-[#f3e9d6]/80 font-body text-sm leading-relaxed">{title}</p>
+      <p className="text-[#3a2f22]/80 font-body text-sm leading-relaxed">{title}</p>
     </div>
   );
 }
@@ -288,8 +288,8 @@ function BenefitCard({ icon: Icon, title, text }) {
       <span className="w-12 h-12 rounded-xl bg-landing-bg flex items-center justify-center mb-4 text-landing-gold">
         <Icon className="w-5 h-5" strokeWidth={1.5} />
       </span>
-      <h3 className="font-heading text-xl text-[#f3e9d6] mb-2">{title}</h3>
-      <p className="text-sm text-[#f3e9d6]/55 font-body leading-relaxed">{text}</p>
+      <h3 className="font-heading text-xl text-[#3a2f22] mb-2">{title}</h3>
+      <p className="text-sm text-[#3a2f22]/55 font-body leading-relaxed">{text}</p>
     </div>
   );
 }

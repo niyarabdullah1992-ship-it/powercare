@@ -92,7 +92,7 @@ export default function Pricing() {
       <div className="max-w-6xl mx-auto">
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-1.5 text-sm font-body text-[#f3e9d6]/60 hover:text-[#f3e9d6] mb-4"
+          className="flex items-center gap-1.5 text-sm font-body text-[#3a2f22]/60 hover:text-[#3a2f22] mb-4"
         >
           <ArrowLeft className="w-4 h-4 rtl:rotate-180" /> {t("backBtn")}
         </button>
@@ -100,22 +100,22 @@ export default function Pricing() {
           <Logo size={32} />
         </div>
         <h1 className="hero-title text-landing-gold text-5xl md:text-6xl text-center mb-3">{t("pricingHeading")}</h1>
-        <p className="text-center text-[#f3e9d6]/55 font-body mb-12">{t("pricingSubheading")}</p>
+        <p className="text-center text-[#3a2f22]/55 font-body mb-12">{t("pricingSubheading")}</p>
 
         {error && <p className="text-center text-sm text-red-500 font-body mb-6">{error}</p>}
 
         {/* Billing interval toggle — yearly = 2 months free */}
         <div className="flex items-center justify-center gap-2 mb-10">
-          <div className="inline-flex items-center bg-landing-olive-card rounded-full p-1 shadow-sm">
+          <div className="inline-flex items-center bg-white rounded-full p-1 shadow-sm">
             <button
               onClick={() => setBilling("monthly")}
-              className={`px-5 py-2 rounded-full text-sm font-body font-medium transition-colors ${billing === "monthly" ? "bg-gradient-to-b from-landing-gold-light to-landing-gold text-white" : "text-[#f3e9d6]/60 hover:text-[#f3e9d6]"}`}
+              className={`px-5 py-2 rounded-full text-sm font-body font-medium transition-colors ${billing === "monthly" ? "bg-gradient-to-b from-landing-gold-light to-landing-gold text-white" : "text-[#3a2f22]/60 hover:text-[#3a2f22]"}`}
             >
               {t("billMonthly")}
             </button>
             <button
               onClick={() => setBilling("yearly")}
-              className={`px-5 py-2 rounded-full text-sm font-body font-medium transition-colors ${billing === "yearly" ? "bg-gradient-to-b from-landing-gold-light to-landing-gold text-white" : "text-[#f3e9d6]/60 hover:text-[#f3e9d6]"}`}
+              className={`px-5 py-2 rounded-full text-sm font-body font-medium transition-colors ${billing === "yearly" ? "bg-gradient-to-b from-landing-gold-light to-landing-gold text-white" : "text-[#3a2f22]/60 hover:text-[#3a2f22]"}`}
             >
               {t("billYearly")}
             </button>
@@ -127,14 +127,14 @@ export default function Pricing() {
 
         <div className="grid md:grid-cols-4 gap-6">
           {PLANS.map((plan) => (
-            <div key={plan.id} className="bg-landing-olive-card rounded-2xl p-6 shadow-sm flex flex-col">
-              <h3 className="font-heading text-2xl text-[#f3e9d6] mb-1">{t(plan.nameKey)}</h3>
+            <div key={plan.id} className="bg-white rounded-2xl p-6 shadow-sm flex flex-col">
+              <h3 className="font-heading text-2xl text-[#3a2f22] mb-1">{t(plan.nameKey)}</h3>
               <p className="font-heading text-3xl text-landing-gold mb-1">
                 {plan.price === 0 ? t("plan_free") : (billing === "yearly" ? `$${plan.price * 10}` : `$${plan.price}`)}
-                {plan.price > 0 && <span className="text-sm text-[#f3e9d6]/40 font-body">{billing === "yearly" ? t("perYear") : t("perMonth")}</span>}
+                {plan.price > 0 && <span className="text-sm text-[#3a2f22]/40 font-body">{billing === "yearly" ? t("perYear") : t("perMonth")}</span>}
               </p>
               {plan.price > 0 && billing === "yearly" && (
-                <p className="text-xs text-[#f3e9d6]/45 font-body">${plan.price * 10 / 12 % 1 === 0 ? plan.price * 10 / 12 : (plan.price * 10 / 12).toFixed(2)}{t("perMonth")} · {t("billedYearlyNote")}</p>
+                <p className="text-xs text-[#3a2f22]/45 font-body">${plan.price * 10 / 12 % 1 === 0 ? plan.price * 10 / 12 : (plan.price * 10 / 12).toFixed(2)}{t("perMonth")} · {t("billedYearlyNote")}</p>
               )}
               {plan.price > 0 && (
                 <p className="text-xs text-landing-gold font-body font-medium mb-4">{t("trialBadge")}</p>
@@ -142,7 +142,7 @@ export default function Pricing() {
               {plan.price === 0 && <div className="mb-4" />}
               <ul className="space-y-2 mb-6 flex-1">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-[#f3e9d6]/70 font-body">
+                  <li key={f} className="flex items-start gap-2 text-sm text-[#3a2f22]/70 font-body">
                     <Check className="w-4 h-4 text-landing-gold shrink-0 mt-0.5" strokeWidth={2} />
                     {f}
                   </li>

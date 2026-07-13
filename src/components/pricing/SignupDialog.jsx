@@ -21,20 +21,20 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-      <div className="bg-landing-olive-card border border-landing-gold/20 rounded-2xl p-6 shadow-xl max-w-sm w-full relative">
-        <button onClick={onClose} className="absolute top-4 end-4 text-[#f3e9d6]/40 hover:text-[#f3e9d6]">
+      <div className="bg-white rounded-2xl p-6 shadow-xl max-w-sm w-full relative">
+        <button onClick={onClose} className="absolute top-4 end-4 text-[#3a2f22]/40 hover:text-[#3a2f22]">
           <X className="w-4 h-4" />
         </button>
-        <h3 className="font-heading text-xl text-[#f3e9d6] mb-1">{t(plan.nameKey)}</h3>
-        <p className="text-sm text-[#f3e9d6]/55 font-body mb-5">
+        <h3 className="font-heading text-xl text-[#3a2f22] mb-1">{t(plan.nameKey)}</h3>
+        <p className="text-sm text-[#3a2f22]/55 font-body mb-5">
           {isFree ? t("signupFreeDesc") : t("signupPaidDesc")}
         </p>
         {!googleEmail && (
           <>
-            <button type="button" onClick={onGoogle} className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-2.5 text-sm font-semibold text-[#f3e9d6] hover:bg-landing-bg">
+            <button type="button" onClick={onGoogle} className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-2.5 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg">
               <GoogleIcon className="h-5 w-5" /> {lang === "ar" ? "المتابعة باستخدام Google" : "Continue with Google"}
             </button>
-            <div className="mb-3 flex items-center gap-3 text-xs text-[#f3e9d6]/40"><span className="h-px flex-1 bg-landing-gold/20" />{lang === "ar" ? "أو" : "or"}<span className="h-px flex-1 bg-landing-gold/20" /></div>
+            <div className="mb-3 flex items-center gap-3 text-xs text-[#3a2f22]/40"><span className="h-px flex-1 bg-landing-gold/20" />{lang === "ar" ? "أو" : "or"}<span className="h-px flex-1 bg-landing-gold/20" /></div>
           </>
         )}
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -43,7 +43,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
             onChange={(e) => setCompanyName(e.target.value)}
             placeholder={t("companyNamePlaceholder")}
             required
-            className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#f3e9d6] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
+            className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
           />
           <input
             type="email"
@@ -52,7 +52,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
             disabled={!!googleEmail}
             placeholder={t("emailPlaceholder")}
             required
-            className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#f3e9d6] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
+            className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
           />
           {isFree && !googleEmail && (
             <input
@@ -62,7 +62,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
               placeholder={t("passwordPlaceholder")}
               minLength={6}
               required
-              className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#f3e9d6] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
+              className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
             />
           )}
           {error && <p className="text-xs text-red-500 font-body">{error}</p>}
