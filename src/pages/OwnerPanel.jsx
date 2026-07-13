@@ -9,6 +9,7 @@ import Logo from "@/components/Logo";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import NewsBroadcast from "@/components/owner/NewsBroadcast";
 import VisitorStatsCard from "@/components/owner/VisitorStatsCard";
+import SubscriptionsPanel from "@/components/owner/SubscriptionsPanel";
 
 export default function OwnerPanel() {
   const { t, lang } = useI18n();
@@ -173,6 +174,8 @@ export default function OwnerPanel() {
             </button>
           </form>
         </div>
+
+        <SubscriptionsPanel lang={lang} />
 
         <VisitorStatsCard lang={lang} />
 
