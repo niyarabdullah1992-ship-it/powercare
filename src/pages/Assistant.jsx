@@ -51,12 +51,12 @@ AVAILABLE ACTIONS (include them in "actions" when the user asks you to do someth
 - {"type":"update_task_status","taskTitle":"<existing task title>","newStatus":"pending"|"in_progress"|"completed"|"stopped"} — changes a task's status.
 - {"type":"sign_report","dataset":"employees"|"tasks"|"targets"|"reports"|"stations"|"safety"|"plans"|"schedules"|"complaints"|"files"|"hr"|"leaves"|"certificates"|"performance"|"attendance","reportTitle":"<title in the user's language>"} — generates the report, stamps the user's SIGNATURE + verified badge (encrypted verification ID + QR code + SHA-256 fingerprint registered in the verification registry) INSIDE the file and downloads the signed PDF automatically.
   CRITICAL: if the user's request contains ANY signing word — sign / توقيع / وقّع / وقع / اعتماد / اعتمد / ختم — you MUST use sign_report (NOT export_data), even though the request also mentions تقرير/PDF. Never combine sign_report with export_data for the same request.
-- {"type":"open_page","page":"dashboard"|"tasks"|"attendance"|"reports"|"performance"|"employees"|"stations"|"hr"|"complaints"|"chat"|"files"|"daily_report"|"help"|"signing"|"verify"} — opens any main PowerCare section in a NEW TAB (the conversation stays open). Use it when the user asks to navigate to a section.
+- {"type":"open_page","page":"dashboard"|"tasks"|"attendance"|"reports"|"performance"|"employees"|"stations"|"hr"|"complaints"|"chat"|"files"|"daily_report"|"help"|"signing"|"verify"} — opens a PowerCare section in a NEW TAB. Use this action ONLY for a direct navigation command such as "open", "go to", "افتح", "اذهب" or "انتقل". NEVER use it for a question, explanation, analysis, or merely mentioning a section.
 
 DOCUMENT SIGNING & VERIFICATION (you know this feature well):
 - The platform's File Signing section lets every employee save a personal signature, then sign any PDF/image document. Signing stamps a verification badge (encrypted verification ID + QR code) on the document and registers the signed file's SHA-256 fingerprint in a verification registry.
 - Anyone can verify a signed document by scanning the badge QR or uploading the file on the verification page — the file's fingerprint is compared to the registry. A match = authentic; a mismatch = tampered or the badge was copied from another file. Even a one-character change after signing is detected.
-- When the user asks to sign or verify a document, explain briefly and include the open_page action to take them there.
+- Explain signing and verification questions without opening any page. Include open_page only when the user explicitly asks to open or navigate to that page.
 
 Rules:
 - When the user asks you to DO something covered by an action, include it in "actions" and confirm briefly in "answer". Never say you can't export or execute — you can.
@@ -108,7 +108,9 @@ Answer the last user question.`,
       // plain export action is upgraded to a signed report — never rely on the
       // model alone to pick the right action.
       const wantsSign = /توقيع|توقيعي|وق[ّ]?ع|اعتماد|اعتمد|ختم|sign/i.test(q);
+      const wantsNavigation = /افتح|اذهب|انتقل|ودني|خذني|روح|open|go to|navigate|take me|öffne|gehe|ouvre|aller à|abre|ve a|abrir|ir para|открой|перейди|開いて|移動して|열어|이동해/i.test(q);
       for (const rawAction of res?.actions || []) {
+        if (rawAction.type === "open_page" && !wantsNavigation) continue;
         const action = wantsSign && rawAction.type === "export_data"
           ? { ...rawAction, type: "sign_report" }
           : rawAction;
