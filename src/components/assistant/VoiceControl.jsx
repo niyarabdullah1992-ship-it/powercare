@@ -4,6 +4,25 @@ import { useI18n } from "@/lib/i18n";
 import useVoiceWakeWord from "./useVoiceWakeWord";
 import speak from "./speak";
 
+// Short two-tone chime confirming the microphone actually started listening.
+function playListeningChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [[660, 0], [990, 0.14]].forEach(([freq, at]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.15, ctx.currentTime + at);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + at + 0.12);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime + at);
+      osc.stop(ctx.currentTime + at + 0.13);
+    });
+    setTimeout(() => ctx.close(), 500);
+  } catch { /* audio not available */ }
+}
+
 export default function VoiceControl({ onCommand }) {
   const { lang } = useI18n();
   const [enabled, setEnabled] = useState(false);
@@ -19,6 +38,11 @@ export default function VoiceControl({ onCommand }) {
   useEffect(() => {
     if (denied) setEnabled(false);
   }, [denied]);
+
+  // Audible confirmation the moment listening actually starts.
+  useEffect(() => {
+    if (enabled && listening) playListeningChime();
+  }, [enabled, listening]);
 
   if (!supported) return null;
 
