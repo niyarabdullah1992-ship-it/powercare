@@ -21,7 +21,7 @@ export default function LoginAccessCard({ employee, companyId }) {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card/55 p-5 shadow-2xl backdrop-blur-2xl">
+    <div className="rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center gap-2 mb-1">
         <KeyRound className="w-4 h-4 text-accent" />
         <h3 className="font-heading text-lg">{t("loginAccess")}</h3>

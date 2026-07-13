@@ -27,9 +27,9 @@ export default function ProfileHero({ employee, companyId, canEdit, roleLabel, s
   };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border bg-card/55 shadow-2xl backdrop-blur-2xl">
+    <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <div
-        className="h-28 bg-accent/10 bg-cover bg-center"
+        className="h-28 bg-secondary bg-cover bg-center"
         style={profile.bannerUrl ? { backgroundImage: `url(${profile.bannerUrl})` } : undefined}
       >
         {canEdit && (

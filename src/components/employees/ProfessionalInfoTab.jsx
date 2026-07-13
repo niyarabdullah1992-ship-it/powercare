@@ -47,7 +47,7 @@ export default function ProfessionalInfoTab({ employee, companyId, canEdit, fall
       )}
 
       {GROUPS.map((group) => (
-        <div key={group.label} className="space-y-4 rounded-xl border border-border bg-card/45 p-5 backdrop-blur-xl">
+        <div key={group.label} className="space-y-4 rounded-xl border border-border bg-card p-5">
           <h3 className="font-heading font-semibold text-sm text-muted-foreground uppercase tracking-wide">{t(group.label)}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {group.fields.map(({ key, icon: Icon, type, area }) => (
@@ -62,7 +62,7 @@ export default function ProfessionalInfoTab({ employee, companyId, canEdit, fall
                     <input type={type || "text"} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
                   )
                 ) : (
-                  <p className="min-h-[42px] rounded-lg border border-border bg-background/35 px-3 py-2 text-sm font-body">{profile[key] || (key === "position" ? fallbackPosition : "") || "—"}</p>
+                  <p className="min-h-[42px] rounded-lg border border-border bg-background px-3 py-2 text-sm font-body">{profile[key] || (key === "position" ? fallbackPosition : "") || "—"}</p>
                 )}
               </div>
             ))}

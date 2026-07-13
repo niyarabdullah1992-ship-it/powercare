@@ -632,6 +632,15 @@ export async function setEmployeePassword(companyId, employeeId, email, password
   return !!res?.data?.ok;
 }
 
+export async function deleteEmployeeAccount(companyId, employeeId) {
+  const res = await invokeDirectory({ action: "deleteEmployeeAccount", companyId, employeeId });
+  if (!res?.data?.ok) return false;
+  updateCompany(companyId, (data) => {
+    data.employees = data.employees.filter((employee) => employee.id !== employeeId);
+  });
+  return true;
+}
+
 export function switchUser(userId) {
   const s = getSession();
   if (!s) return;

@@ -43,7 +43,7 @@ export default function LeaveTab({ employee, companyId, currentUser, isSelf, can
       {canApprove && <LeaveTotalsEditor employee={employee} companyId={companyId} />}
 
       {isSelf && (
-        <form onSubmit={submit} className="space-y-3 rounded-xl border border-border bg-card/45 p-5 backdrop-blur-xl">
+        <form onSubmit={submit} className="space-y-3 rounded-xl border border-border bg-card p-5">
           <h3 className="font-heading font-semibold">{t("submitRequest")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <select value={type} onChange={(e) => setType(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body">

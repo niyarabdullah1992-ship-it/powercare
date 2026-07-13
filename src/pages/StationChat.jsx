@@ -10,6 +10,7 @@ import ChatContactList from "@/components/chat/ChatContactList";
 import ChatMediaGallery from "@/components/chat/ChatMediaGallery";
 import ChatGroupManager from "@/components/chat/ChatGroupManager";
 import ChatSearchPanel from "@/components/chat/ChatSearchPanel";
+import CompanyEmailComposer from "@/components/chat/CompanyEmailComposer";
 import CommentFiles from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 
@@ -170,6 +171,7 @@ export default function StationChat() {
           {isOwner && (
             <ChatGroupManager t={t} stations={data.stations} groups={chatGroups} onAdd={addChatGroup} onDelete={deleteChatGroup} />
           )}
+          <CompanyEmailComposer employees={data.employees} currentUser={currentUser} companyId={company.id} />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {stationRooms.map((r) => (
               <button key={r.key} onClick={() => setSelectedStation(r.key)} className="flex items-center gap-3 p-4 rounded-lg border border-border hover:bg-muted transition text-start">
@@ -215,9 +217,14 @@ export default function StationChat() {
                     <button onClick={() => setActiveTab("chat")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "chat" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("chat")}</button>
                     <button onClick={() => setActiveTab("media")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "media" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("filesAndMedia")}</button>
                     <button onClick={() => setActiveTab("search")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "search" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("search")}</button>
+                    <button onClick={() => setActiveTab("email")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "email" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("email")}</button>
                   </div>
                 </div>
-                {activeTab === "search" ? (
+                {activeTab === "email" ? (
+                  <div className="flex-1 overflow-y-auto p-5">
+                    <CompanyEmailComposer employees={data.employees} currentUser={currentUser} companyId={company.id} />
+                  </div>
+                ) : activeTab === "search" ? (
                   <ChatSearchPanel
                     messages={messages}
                     tasks={data.tasks || []}

@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
     const { companyId, sessionToken, to, subject, text } = body;
-    if (!to || !subject || !text) {
+    if (!companyId || !to || !subject || !text) {
       return Response.json({ error: 'Missing fields' }, { status: 400 });
     }
 
@@ -29,6 +29,11 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
       }
     }
+
+    // The shared company mailbox may only send to employees registered in this company.
+    const employees = await base44.asServiceRole.entities.Employee.filter({ companyId });
+    const recipient = employees.find((employee) => String(employee.email || '').toLowerCase() === String(to).toLowerCase());
+    if (!recipient) return Response.json({ error: 'Recipient must be a company employee' }, { status: 403 });
 
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
     const msg = createMimeMessage();

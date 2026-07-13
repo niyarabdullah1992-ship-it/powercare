@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { updateCompany, addNotification, updateEmployeeProfile, setAllowedEmailDomain } from "@/lib/store";
+import { updateCompany, addNotification, updateEmployeeProfile, setAllowedEmailDomain, deleteEmployeeAccount } from "@/lib/store";
 import { canManageEmployees, canTransferOwnership, canManageStations, visibleStations, visibleEmployees } from "@/lib/permissions";
 import { canAddEmployee } from "@/lib/planLimits";
 import { Link } from "react-router-dom";
@@ -77,6 +77,7 @@ export default function Employees() {
 
   if (!data || !currentUser) return null;
   const canManage = canManageEmployees(currentUser);
+  const canDeleteAccounts = !!currentUser.hrLevelId;
   const canTransfer = canTransferOwnership(currentUser);
   const stations = visibleStations(currentUser, data);
   // Station managers can only add employees / station managers to their own station
@@ -283,10 +284,8 @@ export default function Employees() {
     setPgmStations([]);
   };
 
-  const removeEmployee = (id) => {
-    updateCompany(company.id, (d) => {
-      d.employees = d.employees.filter((x) => x.id !== id);
-    });
+  const removeEmployee = async (id) => {
+    await deleteEmployeeAccount(company.id, id);
   };
 
   const moveEmployee = (id, newStationId) => {
@@ -459,7 +458,7 @@ export default function Employees() {
               {e.id !== currentUser.id && (
                 <button onClick={() => switchUser(e.id)} className="text-xs text-accent font-body hover:underline">{t("switchUser")}</button>
               )}
-              {canManage && (
+              {canDeleteAccounts && e.id !== currentUser.id && e.id !== data.ownerId && (
                 <ConfirmDeleteDialog
                   onConfirm={() => removeEmployee(e.id)}
                   trigger={
