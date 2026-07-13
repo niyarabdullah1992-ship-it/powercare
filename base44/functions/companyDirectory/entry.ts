@@ -191,9 +191,11 @@ Deno.serve(async (req) => {
       const { pendingId, code, newPassword } = body;
       const email = String(body.email || '').trim().toLowerCase();
       if ((!pendingId && !email) || !code || String(newPassword || '').length < 6) return Response.json({ error: 'Invalid fields' }, { status: 400 });
-      let recs = pendingId ? await base44.asServiceRole.entities.LoginOtp.filter({ pendingId }) : [];
-      if (!recs[0] && email) {
-        recs = await base44.asServiceRole.entities.LoginOtp.filter({ email }, '-created_date', 1);
+      let recs = email
+        ? await base44.asServiceRole.entities.LoginOtp.filter({ email, kind: 'owner_reset' }, '-created_date', 1)
+        : [];
+      if (!recs[0] && pendingId) {
+        recs = await base44.asServiceRole.entities.LoginOtp.filter({ pendingId });
       }
       const rec = recs[0];
       if (!rec || rec.kind !== 'owner_reset' || new Date(rec.expiresAt).getTime() < Date.now() || (rec.attempts || 0) >= 5) {
