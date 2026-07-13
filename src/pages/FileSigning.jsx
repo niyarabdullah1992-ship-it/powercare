@@ -6,6 +6,7 @@ import MySignatureCard from "@/components/files/MySignatureCard";
 import SignAndSendCard from "@/components/files/SignAndSendCard";
 import VerifyDocumentCard from "@/components/files/VerifyDocumentCard";
 import HowSigningWorks from "@/components/files/HowSigningWorks";
+import SigningSteps from "@/components/files/SigningSteps";
 
 // Standalone File Signing section: every employee keeps a personal signature and
 // can sign & email documents to anyone directly from the platform.
@@ -32,6 +33,7 @@ export default function FileSigning() {
             : "Save your personal signature, then sign any document and email it to anyone."}
         </p>
       </div>
+      <SigningSteps ar={ar} />
       <HowSigningWorks ar={ar} />
       <div className="grid md:grid-cols-2 gap-4">
         <MySignatureCard companyId={company.id} currentUser={currentUser} ar={ar} onSaved={setSavedSignature} />
