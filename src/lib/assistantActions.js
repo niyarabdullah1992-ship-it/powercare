@@ -61,14 +61,23 @@ export async function executeAssistantAction(action, { data, company, currentUse
   if (action.type === "export_data") {
     const dataset = norm(action.dataset);
     const rows = await datasetRows(action, data, currentUser);
-    if (!rows || !rows.length) return { ok: false, message: t("aiNoData") };
+    const isBlankSchedule = dataset === "schedules" && (!rows || !rows.length);
+    if ((!rows || !rows.length) && !isBlankSchedule) return { ok: false, message: t("aiNoData") };
+
+    const headers = isBlankSchedule
+      ? [t("employeeName"), t("station"), t("date"), t("shift"), t("workStartTime"), t("workEndTime")]
+      : Object.keys(rows[0]);
+    const tableRows = isBlankSchedule
+      ? Array.from({ length: 12 }, () => headers.map(() => ""))
+      : rows.map((r) => Object.values(r));
+
     if (norm(action.format) === "pdf") {
       printReport({
         title: action.reportTitle || dataset,
         companyName: data.name || "",
         periodLabel: new Date().toLocaleDateString(document.documentElement.dir === "rtl" ? "ar" : "en-GB"),
         dir: document.documentElement.dir,
-        sections: [{ heading: action.reportTitle || dataset, headers: Object.keys(rows[0]), rows: rows.map((r) => Object.values(r)) }],
+        sections: [{ heading: action.reportTitle || dataset, headers, rows: tableRows }],
         logoUrl: data.reportBranding?.logoUrl || "",
         color: data.reportBranding?.color || "#b07d3f",
       });
@@ -77,8 +86,8 @@ export async function executeAssistantAction(action, { data, company, currentUse
     exportExcelColored({
       filename: `${dataset}_${new Date().toISOString().slice(0, 10)}`,
       title: action.reportTitle || dataset,
-      headers: Object.keys(rows[0]),
-      rows: rows.map((r) => Object.values(r)),
+      headers,
+      rows: tableRows,
       color: data.reportBranding?.color || "#b07d3f",
       dir: document.documentElement.dir,
     });
