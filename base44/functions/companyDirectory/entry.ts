@@ -304,24 +304,47 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true });
     }
 
-    // Password changes: allowed for the owner, or for an employee changing their OWN password.
-    if (action === 'setEmployeePassword' && auth.role !== 'owner' && auth.userId !== body.employeeId) {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // Sets (or resets) an employee's personal login password — always stored hashed.
+    // Password changes are allowed for the owner, the employee themself, or a
+    // company-wide director/operations manager creating access for their team.
     if (action === 'setEmployeePassword') {
       const { employeeId, email, password } = body;
       if (!employeeId || !email || !password) return Response.json({ error: 'Missing fields' }, { status: 400 });
+      let canSetPassword = auth.role === 'owner' || auth.userId === employeeId;
+      if (!canSetPassword && auth.userId) {
+        const actors = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: auth.userId });
+        canSetPassword = ['director', 'ops_manager'].includes(actors[0]?.role);
+      }
+      if (!canSetPassword) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
+      const normalizedEmail = String(email).trim().toLowerCase();
       const stored = await pbkdf2Password(password);
-      const fields = { companyId, employeeId, email: String(email).toLowerCase(), passwordHash: stored };
+      const fields = { companyId, employeeId, email: normalizedEmail, passwordHash: stored };
       const existing = await base44.asServiceRole.entities.EmployeeCredential.filter({ companyId, employeeId });
       if (existing.length) {
         await base44.asServiceRole.entities.EmployeeCredential.update(existing[0].id, fields);
       } else {
         await base44.asServiceRole.entities.EmployeeCredential.create(fields);
       }
-      return Response.json({ ok: true });
+
+      let emailSent = false;
+      try {
+        const [employees, accounts] = await Promise.all([
+          base44.asServiceRole.entities.Employee.filter({ companyId, employeeId }),
+          base44.asServiceRole.entities.CompanyAccount.filter({ companyId }),
+        ]);
+        const employeeName = employees[0]?.name || normalizedEmail;
+        const companyName = accounts[0]?.name || 'PowerCare';
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: normalizedEmail,
+          from_name: 'PowerCare',
+          subject: 'مرحبًا بك في PowerCare / Welcome to PowerCare',
+          body: `مرحبًا ${employeeName}،\n\nتهانينا، تم تجهيز حسابك في شركة ${companyName} على منصة PowerCare.\nيمكنك تسجيل الدخول باستخدام هذا البريد الإلكتروني وكلمة المرور المؤقتة التي يزوّدك بها مدير الشركة. بعد إدخالها سيصلك رمز تحقق صالح لمدة 10 دقائق.\n\nWelcome ${employeeName},\n\nYour account for ${companyName} is ready on PowerCare. Sign in with this email address and the temporary password provided securely by your company manager. A 10-minute verification code will then be sent to your email.`,
+        });
+        emailSent = true;
+      } catch (emailError) {
+        console.error('Employee welcome email failed:', emailError.message);
+      }
+      return Response.json({ ok: true, emailSent });
     }
 
     if (action === 'syncEmployees') {

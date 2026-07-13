@@ -642,8 +642,12 @@ export async function changeOwnerPassword(companyId, newPassword) {
 // Owner/manager sets (or resets) an employee's personal login password — stored only
 // as a salted hash in the cloud directory, never in localStorage.
 export async function setEmployeePassword(companyId, employeeId, email, password) {
-  const res = await invokeDirectory({ action: "setEmployeePassword", companyId, employeeId, email, password });
-  return !!res?.data?.ok;
+  try {
+    const res = await invokeDirectory({ action: "setEmployeePassword", companyId, employeeId, email, password });
+    return !!res?.data?.ok;
+  } catch {
+    return false;
+  }
 }
 
 export async function deleteEmployeeAccount(companyId, employeeId) {
