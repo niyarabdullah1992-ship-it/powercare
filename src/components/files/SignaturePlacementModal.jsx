@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, X, MousePointerClick } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 // DocuSign-style placement: preview the document's pages and click exactly
 // where the signature should be stamped. Returns { page, x, y } — the center
@@ -21,6 +19,7 @@ export default function SignaturePlacementModal({ doc, signatureUrl, sigId, sign
   const [page, setPage] = useState(1);
   const [numPages, setNumPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [spot, setSpot] = useState(null); // { page, x, y } in %
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
@@ -30,10 +29,22 @@ export default function SignaturePlacementModal({ doc, signatureUrl, sigId, sign
     if (!doc.isPdf) { setLoading(false); return; }
     let cancelled = false;
     (async () => {
-      const loaded = await pdfjsLib.getDocument(doc.url).promise;
-      if (cancelled) return;
-      setPdfDoc(loaded);
-      setNumPages(loaded.numPages);
+      try {
+        setLoadError(false);
+        const bytes = await fetch(doc.url).then((response) => {
+          if (!response.ok) throw new Error("PDF download failed");
+          return response.arrayBuffer();
+        });
+        const loaded = await pdfjsLib.getDocument({ data: bytes }).promise;
+        if (cancelled) return;
+        setPdfDoc(loaded);
+        setNumPages(loaded.numPages);
+      } catch {
+        if (!cancelled) {
+          setLoadError(true);
+          setLoading(false);
+        }
+      }
     })();
     return () => { cancelled = true; };
   }, [doc.url, doc.isPdf]);
@@ -93,6 +104,11 @@ export default function SignaturePlacementModal({ doc, signatureUrl, sigId, sign
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center bg-white/70">
                 <Loader2 className="w-5 h-5 animate-spin text-accent" />
+              </div>
+            )}
+            {loadError && (
+              <div className="min-h-64 flex items-center justify-center p-6 text-center text-sm text-muted-foreground font-body">
+                {ar ? "تعذّر عرض معاينة الملف. أغلق النافذة وسيُضاف التوقيع أسفل الصفحة تلقائيًا." : "Couldn't preview this file. Close this window and the signature will be placed at the bottom automatically."}
               </div>
             )}
             {/* Signature preview at the chosen spot */}
