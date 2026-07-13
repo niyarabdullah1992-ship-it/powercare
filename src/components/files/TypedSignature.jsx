@@ -44,6 +44,14 @@ export default function TypedSignature({ ar, defaultName = "", onSave, saving })
         placeholder={ar ? "اكتب اسمك…" : "Type your name…"}
         className="w-full max-w-[420px] px-3 py-2 rounded-md border border-input bg-background text-sm font-body focus:outline-none focus:ring-2 focus:ring-ring"
       />
+      <button
+        type="button"
+        disabled={!name.trim() || saving}
+        onClick={save}
+        className="flex w-full max-w-[420px] items-center justify-center gap-1.5 rounded-md bg-foreground px-4 py-2.5 text-sm font-body text-background disabled:opacity-40"
+      >
+        <Check className="w-4 h-4" /> {saving ? (ar ? "جارٍ حفظ التوقيع…" : "Saving signature…") : ar ? "حفظ التوقيع وتفعيله" : "Save & activate signature"}
+      </button>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-[560px]">
         {FONTS.map((f) => (
           <button
@@ -59,14 +67,6 @@ export default function TypedSignature({ ar, defaultName = "", onSave, saving })
           </button>
         ))}
       </div>
-      <button
-        type="button"
-        disabled={!name.trim() || saving}
-        onClick={save}
-        className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-foreground text-background text-xs font-body disabled:opacity-40"
-      >
-        <Check className="w-3.5 h-3.5" /> {saving ? (ar ? "جارٍ الحفظ…" : "Saving…") : ar ? "حفظ التوقيع" : "Save signature"}
-      </button>
     </div>
   );
 }
