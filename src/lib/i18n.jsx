@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 
 // Focused UI string set, fully translated for 9 languages.
 const dict = {
@@ -419,6 +420,10 @@ const dict = {
     rolesGuideRename: "The director can rename every grade to match your company (via the \"Customize position titles\" button above), and the new names appear everywhere in the app.",
     rolesGuideCustomTitle: "On top of the grade, each employee can be given a free job title (e.g. \"Senior Electrical Technician\") using the pencil next to their name card.",
     rolesGuideHrNote: "Need extra positions with custom permissions (HR, supervisors, escalation levels)? Create them freely from the page:",
+    fillDemoData: "Fill with demo data", logoSettings: "Logo settings", sixMonthsLabel: "6 months",
+    onboardingWelcome: "Welcome — let's set up your company", onboardingStationTitle: "Add your first station", onboardingStationDesc: "Stations are the work sites your employees belong to.", onboardingEmployeeTitle: "Add your employees", onboardingEmployeeDesc: "Add your team and set their grades and permissions.", onboardingLocationTitle: "Set the workplace location", onboardingLocationDesc: "Enables GPS check-in verification for attendance.",
+    brandingTitle: "Reports & PDF branding", brandingDesc: "Your logo and color are applied automatically to every printed report, PDF and colored Excel export.", companyLogo: "Company logo", noLogo: "No logo", uploadLogo: "Upload logo", removeLogo: "Remove", brandColor: "Brand color", customColor: "Custom", preview: "Preview", tasksReportPreview: "Tasks Report", statLabel: "Stat", brandingSaved: "Saved ✓", saveBranding: "Save & apply to all reports",
+    fileSigning: "File Signing", userGuide: "User Guide", syncPendingTitle: "Changes waiting to upload", syncPending: "Pending sync", syncing: "Syncing...", syncSavedTitle: "All data saved to the cloud", synced: "Synced", toggleTheme: "Toggle theme",
   },
   ar: {
     dir: "rtl",
@@ -837,6 +842,10 @@ const dict = {
     rolesGuideRename: "يستطيع المدير إعادة تسمية كل درجة بما يناسب شركتكم (من زر \"تخصيص مسميات المناصب\" في الأعلى)، وتظهر الأسماء الجديدة في كل أنحاء التطبيق.",
     rolesGuideCustomTitle: "إضافة إلى الدرجة، يمكن إعطاء كل موظف مسمى وظيفي حر (مثل \"فني كهرباء أول\") من أيقونة القلم بجانب بطاقة اسمه.",
     rolesGuideHrNote: "تحتاج مناصب إضافية بصلاحيات مخصصة (موارد بشرية، مشرفون، مستويات تصعيد)؟ أنشئها بحرية من صفحة:",
+    fillDemoData: "تعبئة ببيانات وهمية", logoSettings: "إعدادات الشعار", sixMonthsLabel: "٦ أشهر",
+    onboardingWelcome: "أهلًا بك — لنجهّز شركتك", onboardingStationTitle: "أضف محطتك الأولى", onboardingStationDesc: "المحطات هي مقرات العمل التي ينتمي إليها الموظفون.", onboardingEmployeeTitle: "أضف موظفيك", onboardingEmployeeDesc: "أضف فريقك وحدد درجاتهم الوظيفية وصلاحياتهم.", onboardingLocationTitle: "حدد موقع العمل على الخريطة", onboardingLocationDesc: "لتفعيل التحقق من الحضور عبر GPS عند تسجيل الموظفين.",
+    brandingTitle: "هوية التقارير وملفات PDF", brandingDesc: "الشعار واللون المختاران يُطبَّقان تلقائيًا على جميع التقارير المطبوعة وملفات PDF وملفات الإكسل الملوّنة.", companyLogo: "شعار الشركة", noLogo: "لا شعار", uploadLogo: "رفع شعار", removeLogo: "إزالة", brandColor: "لون الهوية", customColor: "لون مخصص", preview: "معاينة", tasksReportPreview: "تقرير المهام", statLabel: "إحصائية", brandingSaved: "تم الحفظ ✓", saveBranding: "حفظ وتطبيق على كل التقارير",
+    fileSigning: "توقيع الملفات", userGuide: "دليل الاستخدام", syncPendingTitle: "تغييرات بانتظار الرفع للسحابة", syncPending: "بانتظار المزامنة", syncing: "جارٍ المزامنة...", syncSavedTitle: "كل البيانات محفوظة في السحابة", synced: "متزامن", toggleTheme: "تبديل المظهر",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
@@ -1517,9 +1526,17 @@ export const LANGUAGES = [
 
 const I18nContext = createContext(null);
 
+const GENERATED_VERSION = "v2";
+const GENERATED_KEY = `powercare_generated_translations_${GENERATED_VERSION}`;
+const PRESERVED_KEYS = new Set(["dir", "appName", "plan_starter", "plan_pro", "plan_ent"]);
+
 export function I18nProvider({ children }) {
   const [lang, setLang] = useState(() => localStorage.getItem("powercare_lang") || "en");
-  const t = (key) => dict[lang]?.[key] ?? dict.en[key] ?? key;
+  const [generated, setGenerated] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(GENERATED_KEY) || "{}"); } catch { return {}; }
+  });
+  const [isTranslating, setIsTranslating] = useState(false);
+  const t = (key) => generated[lang]?.[key] ?? dict[lang]?.[key] ?? (lang === "en" ? dict.en[key] : "…") ?? key;
   const dir = dict[lang]?.dir || "ltr";
 
   useEffect(() => {
@@ -1528,8 +1545,32 @@ export function I18nProvider({ children }) {
     document.documentElement.lang = lang;
   }, [lang, dir]);
 
+  useEffect(() => {
+    if (lang === "en" || lang === "ar" || isTranslating) return;
+    const missing = Object.fromEntries(Object.entries(dict.en).filter(([key, value]) => !PRESERVED_KEYS.has(key) && !generated[lang]?.[key] && (!dict[lang]?.[key] || dict[lang][key] === value)));
+    if (!Object.keys(missing).length) return;
+    let cancelled = false;
+    setIsTranslating(true);
+    base44.integrations.Core.InvokeLLM({
+      prompt: `Translate every value in this JSON object into ${LANGUAGES.find((item) => item.code === lang)?.label}. Return every key unchanged. Use natural professional UI language. Keep product names such as PowerCare, Niro, PDF, Excel and GPS unchanged. Do not include any English explanation or markdown. JSON: ${JSON.stringify(missing)}`,
+      response_json_schema: {
+        type: "object",
+        properties: { translations: { type: "object", additionalProperties: { type: "string" } } },
+        required: ["translations"],
+      },
+    }).then((result) => {
+      if (cancelled || !result?.translations) return;
+      setGenerated((current) => {
+        const next = { ...current, [lang]: { ...(current[lang] || {}), ...result.translations } };
+        localStorage.setItem(GENERATED_KEY, JSON.stringify(next));
+        return next;
+      });
+    }).finally(() => { if (!cancelled) setIsTranslating(false); });
+    return () => { cancelled = true; };
+  }, [lang, generated, isTranslating]);
+
   return (
-    <I18nContext.Provider value={{ lang, setLang, t, dir, languages: LANGUAGES }}>
+    <I18nContext.Provider value={{ lang, setLang, t, dir, languages: LANGUAGES, isTranslating }}>
       {children}
     </I18nContext.Provider>
   );

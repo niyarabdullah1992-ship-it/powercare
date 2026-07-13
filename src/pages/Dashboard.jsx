@@ -19,7 +19,6 @@ import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
-  const localText = (ar, en, ja) => lang === "ar" ? ar : lang === "ja" ? ja : en;
   const { data, currentUser, company, refresh } = useAuth();
   const [stoppageCount, setStoppageCount] = useState(0);
   const [seeding, setSeeding] = useState(false);
@@ -165,7 +164,7 @@ export default function Dashboard() {
               className="flex items-center gap-1.5 text-xs font-body text-accent hover:text-accent/70 disabled:opacity-50"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              {localText("تعبئة ببيانات وهمية", "Fill with demo data", "デモデータを入力")}
+              {t("fillDemoData")}
             </button>
           )}
           {canEditBranding && (
@@ -174,7 +173,7 @@ export default function Dashboard() {
               className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-body hover:bg-muted"
             >
               <Palette className="h-3.5 w-3.5 text-accent" />
-              {localText("إعدادات الشعار", "Logo settings", "ロゴ設定")}
+              {t("logoSettings")}
             </button>
           )}
           <span className="px-3 py-1.5 rounded-full border border-accent/30 bg-accent/10 text-accent text-xs font-body tracking-wide">
@@ -212,7 +211,7 @@ export default function Dashboard() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-border">
         <div className="p-6 bg-card">
-          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{localText("٦ أشهر", "6 months", "6か月")}</p>
+          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{t("sixMonthsLabel")}</p>
           <h3 className="hero-title text-2xl mb-5">{t("taskCompletion")}</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={chartData}>

@@ -3,27 +3,26 @@ import { Link } from "react-router-dom";
 import { CheckCircle2, Circle, ArrowRight, ArrowLeft } from "lucide-react";
 
 // Guided first steps for new companies — hidden automatically once everything is set up.
-export default function OnboardingChecklist({ data, lang }) {
+export default function OnboardingChecklist({ data, lang, t }) {
   const ar = lang === "ar";
-  const text = (arabic, english, japanese) => ar ? arabic : lang === "ja" ? japanese : english;
   const steps = [
     {
       done: data.stations.length > 0,
       to: "/app/stations",
-      title: text("أضف محطتك الأولى", "Add your first station", "最初のステーションを追加"),
-      desc: text("المحطات هي مقرات العمل التي ينتمي إليها الموظفون.", "Stations are the work sites your employees belong to.", "ステーションは従業員が所属する勤務拠点です。"),
+      title: t("onboardingStationTitle"),
+      desc: t("onboardingStationDesc"),
     },
     {
       done: data.employees.length > 1,
       to: "/app/employees",
-      title: text("أضف موظفيك", "Add your employees", "従業員を追加"),
-      desc: text("أضف فريقك وحدد درجاتهم الوظيفية وصلاحياتهم.", "Add your team and set their grades and permissions.", "チームを追加し、職位と権限を設定します。"),
+      title: t("onboardingEmployeeTitle"),
+      desc: t("onboardingEmployeeDesc"),
     },
     {
       done: data.stations.some((s) => s.lat && s.lng),
       to: "/app/attendance",
-      title: text("حدد موقع العمل على الخريطة", "Set the workplace location", "勤務先の場所を設定"),
-      desc: text("لتفعيل التحقق من الحضور عبر GPS عند تسجيل الموظفين.", "Enables GPS check-in verification for attendance.", "出勤時のGPS位置確認を有効にします。"),
+      title: t("onboardingLocationTitle"),
+      desc: t("onboardingLocationDesc"),
     },
   ];
 
@@ -36,7 +35,7 @@ export default function OnboardingChecklist({ data, lang }) {
       <div className="px-6 pt-5 pb-4 border-b border-border">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h3 className="font-heading text-xl font-semibold">
-            {text("أهلًا بك — لنجهّز شركتك", "Welcome — let's set up your company", "ようこそ — 会社の設定を始めましょう")}
+            {t("onboardingWelcome")}
           </h3>
           <span className="text-xs font-body text-muted-foreground">{doneCount}/{steps.length}</span>
         </div>
