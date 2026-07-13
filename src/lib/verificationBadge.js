@@ -1,9 +1,12 @@
 // Draws the "Encrypted verification ID" badge (fingerprint icon + framed ID +
-// signer name & date) onto a canvas — exactly like the card shown in the app —
-// so it can be stamped into PDFs and images. Canvas text supports Arabic names.
-export function makeVerificationBadgeCanvas(sigId, signerName) {
+// signer name & date + QR code) onto a canvas — so it can be stamped into PDFs
+// and images. Canvas text supports Arabic names.
+// The QR encodes the verification ID; the file's SHA-256 hash is registered in
+// the platform's verification registry, so a badge copied onto another file
+// will always fail verification (hash mismatch).
+export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   const scale = 2;
-  const W = 470, H = signerName ? 128 : 96;
+  const W = 560, H = signerName ? 128 : 96;
   const canvas = document.createElement("canvas");
   canvas.width = W * scale;
   canvas.height = H * scale;
@@ -49,6 +52,24 @@ export function makeVerificationBadgeCanvas(sigId, signerName) {
   ctx.fillStyle = "#b07d3f";
   ctx.fill();
 
+  // QR code box on the right side of the card
+  const q = H - 20;
+  const qx = W - q - 12, qy = 10;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(qx, qy, q, q);
+  ctx.strokeStyle = "#e3d9c8";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(qx, qy, q, q);
+  if (qrImg) {
+    ctx.drawImage(qrImg, qx + 3, qy + 3, q - 6, q - 6);
+  } else {
+    ctx.fillStyle = "#c9bda6";
+    ctx.font = "600 12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("QR", qx + q / 2, qy + q / 2 + 4);
+    ctx.textAlign = "left";
+  }
+
   // Texts
   const tx = 82;
   ctx.fillStyle = "#8a7d6a";
@@ -75,9 +96,31 @@ export function generateVerificationId() {
   return `PWC-${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}`;
 }
 
-// PNG bytes for embedding into a PDF via pdf-lib.
+// Loads a QR image encoding the verification ID (best-effort — badge still
+// renders without it if the QR service is unreachable).
+export async function loadBadgeQr(sigId) {
+  try {
+    const res = await fetch(
+      `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=1&data=${encodeURIComponent(sigId)}`
+    );
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    return await new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  } catch {
+    return null;
+  }
+}
+
+// PNG bytes for embedding into a PDF via pdf-lib (includes the QR code).
 export async function makeVerificationBadgePng(sigId, signerName) {
-  const canvas = makeVerificationBadgeCanvas(sigId, signerName);
+  const qr = await loadBadgeQr(sigId);
+  const canvas = makeVerificationBadgeCanvas(sigId, signerName, qr);
   const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
   return { bytes: await blob.arrayBuffer(), ratio: canvas.height / canvas.width };
 }

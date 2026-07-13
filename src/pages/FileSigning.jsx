@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { PenLine } from "lucide-react";
 import MySignatureCard from "@/components/files/MySignatureCard";
 import SignAndSendCard from "@/components/files/SignAndSendCard";
+import VerifyDocumentCard from "@/components/files/VerifyDocumentCard";
 
 // Standalone File Signing section: every employee keeps a personal signature and
 // can sign & email documents to anyone directly from the platform.
@@ -28,8 +29,9 @@ export default function FileSigning() {
       </div>
       <div className="grid md:grid-cols-2 gap-4">
         <MySignatureCard companyId={company.id} currentUser={currentUser} ar={ar} />
-        <SignAndSendCard currentUser={currentUser} companyName={data?.name || company?.name || ""} ar={ar} />
+        <SignAndSendCard currentUser={currentUser} companyId={company.id} companyName={data?.name || company?.name || ""} ar={ar} />
       </div>
+      <VerifyDocumentCard ar={ar} />
     </div>
   );
 }
