@@ -31,19 +31,19 @@ export default function WelcomeHero({ name, companyName, t, lang, alerts = [], e
 
       <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div className="flex items-center gap-4">
-          <div className="relative shrink-0">
+          <div className="relative h-16 w-16 shrink-0">
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-landing-gold/40 bg-white/10 p-2.5 shadow-lg">
+              {employee?.profile?.avatarUrl ? <img src={employee.profile.avatarUrl} alt={name} className="h-full w-full rounded-full object-cover" /> : <Logo size={34} />}
+            </div>
             <button
               type="button"
               onClick={() => photoInput.current?.click()}
               disabled={uploading || !employee}
-              className="group relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-landing-gold/40 bg-white/10 p-2.5 shadow-lg transition hover:border-landing-gold disabled:cursor-default"
+              className="absolute -bottom-1 -end-1 flex h-6 w-6 items-center justify-center rounded-full border border-white/30 bg-foreground text-background shadow-md transition hover:bg-foreground/80 disabled:cursor-default"
               title={t("uploadPhoto")}
               aria-label={t("uploadPhoto")}
             >
-              {employee?.profile?.avatarUrl ? <img src={employee.profile.avatarUrl} alt={name} className="h-full w-full rounded-full object-cover" /> : <Logo size={34} />}
-              <span className="absolute inset-x-0 bottom-0 flex h-6 items-center justify-center bg-black/65 text-white">
-                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
-              </span>
+              {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
             </button>
             <input ref={photoInput} type="file" accept="image/*" className="hidden" onChange={(e) => changePhoto(e.target.files?.[0])} />
           </div>
