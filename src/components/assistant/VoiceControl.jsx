@@ -26,8 +26,23 @@ function playListeningChime() {
 export default function VoiceControl({ onCommand }) {
   const { lang } = useI18n();
   const [enabled, setEnabled] = useState(false);
+  const [micDenied, setMicDenied] = useState(false);
   const { supported, listening, awake, denied } = useVoiceWakeWord({ enabled, lang, onCommand });
   const ar = lang === "ar";
+
+  const toggle = async () => {
+    if (enabled) { setEnabled(false); return; }
+    setMicDenied(false);
+    // Explicitly request the microphone first — this shows the browser's permission
+    // prompt and surfaces a clear message instead of silently shutting off.
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((t) => t.stop());
+      setEnabled(true);
+    } catch {
+      setMicDenied(true);
+    }
+  };
 
   // Audible acknowledgment when the wake word is heard alone.
   useEffect(() => {
@@ -46,8 +61,8 @@ export default function VoiceControl({ onCommand }) {
 
   if (!supported) return null;
 
-  const status = denied
-    ? (ar ? "تم رفض إذن الميكروفون" : "Microphone permission denied")
+  const status = (denied || micDenied)
+    ? (ar ? "المتصفح رفض الميكروفون — افتح التطبيق في نافذة مستقلة واسمح بالميكروفون" : "Microphone blocked — open the app in its own tab and allow the microphone")
     : awake
       ? (ar ? "نيرو يستمع… تفضل" : "Niro is listening… go ahead")
       : listening
@@ -57,13 +72,13 @@ export default function VoiceControl({ onCommand }) {
   return (
     <div className="ms-auto flex items-center gap-2">
       {status && (
-        <span className={`hidden sm:block text-xs font-body ${awake ? "text-accent font-semibold" : "text-muted-foreground"}`}>
+        <span className={`max-w-[200px] text-xs font-body leading-tight ${awake ? "text-accent font-semibold" : (denied || micDenied) ? "text-red-500" : "text-muted-foreground"}`}>
           {status}
         </span>
       )}
       <button
         type="button"
-        onClick={() => { setEnabled((v) => !v); }}
+        onClick={toggle}
         aria-label={ar ? "الاستماع الصوتي" : "Voice listening"}
         className={`relative p-2.5 rounded-full border transition-colors ${
           enabled
