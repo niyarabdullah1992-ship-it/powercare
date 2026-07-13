@@ -40,10 +40,14 @@ export async function generateSignedReport({ title, companyName, dir, headers, r
   document.body.appendChild(el);
   let canvas;
   try {
-    canvas = await html2canvas(el, { scale: 2, backgroundColor: "#ffffff" });
+    // Long reports: cap the canvas height so rendering never exceeds browser
+    // canvas limits (which would silently produce an empty/unsigned file).
+    const scale = Math.min(2, Math.max(1, 14000 / Math.max(el.scrollHeight, 1)));
+    canvas = await html2canvas(el, { scale, backgroundColor: "#ffffff" });
   } finally {
     el.remove();
   }
+  if (!canvas || !canvas.height) throw new Error("Report rendering failed");
 
   // Stamp the user's handwritten signature + verification badge in the bottom corner.
   const sigId = generateVerificationId();
@@ -63,6 +67,7 @@ export async function generateSignedReport({ title, companyName, dir, headers, r
 
   // Wrap into a PDF, fingerprint it and register in the verification registry.
   const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
+  if (!blob) throw new Error("Report image too large to sign");
   const { bytes } = await imageBlobToPdf(blob);
   const fileHash = await sha256HexOfBuffer(bytes);
   await base44.functions.invoke("signedDocs", {

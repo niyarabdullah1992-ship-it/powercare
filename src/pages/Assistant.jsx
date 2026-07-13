@@ -93,7 +93,14 @@ Answer the last user question.`,
         },
       });
       let text = res?.answer || "";
-      for (const action of res?.actions || []) {
+      // Guaranteed signing: if the user's message contains a signing word, any
+      // plain export action is upgraded to a signed report — never rely on the
+      // model alone to pick the right action.
+      const wantsSign = /توقيع|توقيعي|وق[ّ]?ع|اعتماد|اعتمد|ختم|sign/i.test(q);
+      for (const rawAction of res?.actions || []) {
+        const action = wantsSign && rawAction.type === "export_data"
+          ? { ...rawAction, type: "sign_report" }
+          : rawAction;
         let result;
         try {
           result = await executeAssistantAction(action, { data, company, currentUser, t });
