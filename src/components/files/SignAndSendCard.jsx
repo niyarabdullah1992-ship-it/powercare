@@ -4,12 +4,12 @@ import { base44 } from "@/api/base44Client";
 import { signPdfFile, imageBlobToPdf } from "@/lib/signPdf";
 import SignaturePlacementModal from "@/components/files/SignaturePlacementModal";
 import { makeVerificationBadgeCanvas, generateVerificationId, loadBadgeQr } from "@/lib/verificationBadge";
-import { sha256HexOfUrl } from "@/lib/fileHash";
+import { sha256HexOfBuffer } from "@/lib/fileHash";
 import SignedDocActions from "@/components/files/SignedDocActions";
 
 // Merges the verification badge (with QR) onto image documents and returns the
 // signed PNG blob; PDFs are stamped directly via signPdfFile.
-async function signImageFile(docUrl, signerName, sigId, spot) {
+async function signImageFile(docUrl, signerName, sigId, spot, qr) {
   const load = (src) => new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -23,7 +23,6 @@ async function signImageFile(docUrl, signerName, sigId, spot) {
   canvas.height = doc.height;
   const ctx = canvas.getContext("2d");
   ctx.drawImage(doc, 0, 0);
-  const qr = await loadBadgeQr(sigId);
   const badge = makeVerificationBadgeCanvas(sigId, signerName, qr);
   const bw = Math.min(Math.max(220, doc.width * 0.3), doc.width - 16);
   const bh = bw * (badge.height / badge.width);
@@ -62,13 +61,16 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
     setError("");
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      // Fresh verification ID per document — never repeats between signings.
+      const sigId = generateVerificationId();
       setDoc({
         name: file.name,
         url: file_url,
         isImage: file.type.startsWith("image/"),
         isPdf: file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"),
-        // Fresh verification ID per document — never repeats between signings.
-        sigId: generateVerificationId(),
+        sigId,
+        // Prefetch the QR while the user decides — signing won't wait for it.
+        qrPromise: loadBadgeQr(sigId).catch(() => null),
       });
     } finally {
       setUploading(false);
@@ -84,17 +86,18 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
       // unless the user picked a spot manually.
       const spot = manualSpot;
       setStage(ar ? "جارٍ ختم المستند بالتوقيع ورمز QR…" : "Stamping the document…");
-      let signedUrl;
+      const qr = await (doc.qrPromise || null);
+      let signedUrl, signedBytes;
       if (doc.isPdf) {
-        signedUrl = await signPdfFile(doc.url, signatureUrl, signerName, doc.sigId, spot);
+        ({ url: signedUrl, bytes: signedBytes } = await signPdfFile(doc.url, signatureUrl, signerName, doc.sigId, spot, qr));
       } else {
-        const signedBlob = await signImageFile(doc.url, signerName, doc.sigId, spot);
-        signedUrl = await imageBlobToPdf(signedBlob);
+        const signedBlob = await signImageFile(doc.url, signerName, doc.sigId, spot, qr);
+        ({ url: signedUrl, bytes: signedBytes } = await imageBlobToPdf(signedBlob));
       }
       // Fingerprint the FINAL signed file and register it in the verification
       // registry — this is what makes badge reuse / tampering detectable.
       setStage(ar ? "جارٍ تسجيل بصمة الملف…" : "Registering the file fingerprint…");
-      const fileHash = await sha256HexOfUrl(signedUrl);
+      const fileHash = await sha256HexOfBuffer(signedBytes);
       await base44.functions.invoke("signedDocs", {
         action: "register",
         verificationId: doc.sigId,
