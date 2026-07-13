@@ -5,13 +5,14 @@ import { getCompanyToken } from "@/lib/store";
 
 export async function logAudit(companyId, action, performedBy, details) {
   try {
+    const safeDetails = String(details || "").slice(0, 1000);
     await base44.functions.invoke("companyDirectory", {
       action: "logAudit",
       companyId: companyId || "platform",
       sessionToken: getCompanyToken(companyId),
       auditAction: action,
       performedBy: performedBy || "unknown",
-      details: details || "",
+      details: safeDetails,
     });
   } catch {
     // best-effort — never block the actual operation on logging failure

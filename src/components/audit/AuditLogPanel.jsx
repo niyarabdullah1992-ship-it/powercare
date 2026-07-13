@@ -11,6 +11,7 @@ export default function AuditLogPanel({ companyId }) {
   const [query, setQuery] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
 
   const load = () => {
     setRefreshing(true);
@@ -38,6 +39,14 @@ export default function AuditLogPanel({ companyId }) {
   };
 
   if (!logs) return null;
+
+  const cleanDetails = (log) => {
+    const details = log.details || "";
+    if (!/_(added|removed)$/.test(log.action || "") || !details.includes(":")) return details;
+    const [prefix, ...rest] = details.split(":");
+    const uniqueNames = [...new Set(rest.join(":").split(",").map((name) => name.trim()).filter(Boolean))];
+    return `${prefix}: ${uniqueNames.slice(0, 8).join(", ")}${uniqueNames.length > 8 ? ` +${uniqueNames.length - 8}` : ""}`;
+  };
 
   return (
     <div className="p-4 rounded-xl border border-border bg-card space-y-3">
@@ -83,17 +92,25 @@ export default function AuditLogPanel({ companyId }) {
         </p>
       ) : (
         <div className="space-y-2 max-h-96 overflow-y-auto">
-          {filtered.map((l) => (
-            <div key={l.id} className="text-xs font-body p-2 rounded-md bg-muted/50">
-              <div className="flex items-center gap-2">
-                <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent text-[10px]">{l.action}</span>
-                <p className="text-foreground flex-1" dir="auto">{l.details || ""}</p>
+          {filtered.map((l) => {
+            const details = cleanDetails(l);
+            const long = details.length > 220;
+            const expanded = expandedId === l.id;
+            return (
+              <div key={l.id} className="text-xs font-body p-3 rounded-lg bg-muted/50">
+                <div className="flex items-start gap-2">
+                  <span className="px-1.5 py-0.5 rounded bg-accent/10 text-accent text-[10px] shrink-0">{l.action}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-foreground break-words ${long && !expanded ? "line-clamp-3" : ""}`} dir="auto">{details}</p>
+                    {long && <button onClick={() => setExpandedId(expanded ? null : l.id)} className="mt-1 text-[10px] text-accent hover:underline">{expanded ? (ar ? "عرض أقل" : "Show less") : (ar ? "عرض التفاصيل" : "Show details")}</button>}
+                  </div>
+                </div>
+                <p className="text-muted-foreground mt-2" dir="auto">
+                  {l.performedBy} · {new Date(l.created_date).toLocaleString(ar ? "ar" : "en")}
+                </p>
               </div>
-              <p className="text-muted-foreground mt-1" dir="auto">
-                {l.performedBy} · {new Date(l.created_date).toLocaleString(ar ? "ar" : "en")}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

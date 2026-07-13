@@ -51,7 +51,8 @@ export function setAuditActor(name) {
   auditActor = name || "system";
 }
 function audit(companyId, action, details) {
-  invokeDirectory({ action: "logAudit", companyId, auditAction: action, performedBy: auditActor, details: details || "" }).catch(() => {});
+  const safeDetails = String(details || "").slice(0, 1000);
+  invokeDirectory({ action: "logAudit", companyId, auditAction: action, performedBy: auditActor, details: safeDetails }).catch(() => {});
 }
 // The lowest-order HR manager assigned to handle this employee's station (falls
 // back up through cluster/company tiers if no station-level manager is assigned).
@@ -957,11 +958,16 @@ function emailNewEvents(companyId, data, before) {
 // covers employees, stations (incl. GPS location), tasks, reports, files, plans,
 // schedules and settings, no matter which page performed the mutation.
 function logCollectionDiffs(companyId, data, before) {
+  const summarizeNames = (names) => {
+    const unique = [...new Set(names)];
+    const visible = unique.slice(0, 8);
+    return `${visible.join(", ")}${unique.length > visible.length ? ` +${unique.length - visible.length} more` : ""}`;
+  };
   const diffList = (map, arr, label, nameOf) => {
     const added = arr.filter((x) => !map.has(x.id)).map(nameOf).filter(Boolean);
     const removed = [...map.keys()].filter((id) => !arr.some((x) => x.id === id)).map((id) => map.get(id)).filter(Boolean);
-    if (added.length) audit(companyId, `${label}_added`, `Added ${label}(s): ${added.join(", ")}`);
-    if (removed.length) audit(companyId, `${label}_removed`, `Removed ${label}(s): ${removed.join(", ")}`);
+    if (added.length) audit(companyId, `${label}_added`, `Added ${label}(s): ${summarizeNames(added)}`);
+    if (removed.length) audit(companyId, `${label}_removed`, `Removed ${label}(s): ${summarizeNames(removed)}`);
   };
   diffList(before.emp, data.employees || [], "employee", (e) => e.name);
   diffList(before.st, data.stations || [], "station", (s) => s.name);
