@@ -42,6 +42,14 @@ export function executeAssistantAction(action, { data, company, currentUser, t }
     return { ok: true, message: t("aiExportDone") };
   }
 
+  if (action.type === "open_page") {
+    const routes = { signing: "/app/signing", verify: "/verify" };
+    const path = routes[norm(action.page)];
+    if (!path) return { ok: false, message: t("aiActionFailed") };
+    setTimeout(() => { window.location.href = path; }, 1200);
+    return { ok: true, message: t("aiOpeningPage") };
+  }
+
   if (action.type === "create_task") {
     if (!canWrite) return { ok: false, message: t("aiNoPermission") };
     const station = data.stations.find((s) => matches(s.name, action.station || ""));

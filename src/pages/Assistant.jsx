@@ -33,13 +33,19 @@ export default function Assistant() {
       const context = buildAssistantContext(data, currentUser);
       const history = nextMessages.slice(-8).map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`).join("\n");
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are PowerCare's smart operations assistant for power/water station management.
+        prompt: `You are "Niro" (Arabic: نيرو) — PowerCare's smart operations assistant for power/water station management. When asked about your name or identity, you are Niro (نيرو).
 You answer questions from "${currentUser.name}" (role: ${currentUser.role}) about their company's stations, employees, tasks, daily reports and safety — and you can EXECUTE real actions.
 
 AVAILABLE ACTIONS (include them in "actions" when the user asks you to do something):
 - {"type":"export_data","dataset":"employees"|"tasks"|"reports"|"stations"|"safety"} — downloads the data as an Excel-compatible file. If the user asks for Excel/export of data, USE THIS.
 - {"type":"create_task","title":"...","description":"...","station":"<station name>","assignee":"<employee name>","dailyTarget":1} — creates a new task.
 - {"type":"update_task_status","taskTitle":"<existing task title>","newStatus":"pending"|"in_progress"|"completed"|"stopped"} — changes a task's status.
+- {"type":"open_page","page":"signing"|"verify"} — opens the file signing page ("signing") or the public document verification page ("verify"). Use when the user wants to sign a document or verify a signed one.
+
+DOCUMENT SIGNING & VERIFICATION (you know this feature well):
+- The platform's File Signing section lets every employee save a personal signature, then sign any PDF/image document. Signing stamps a verification badge (encrypted verification ID + QR code) on the document and registers the signed file's SHA-256 fingerprint in a verification registry.
+- Anyone can verify a signed document by scanning the badge QR or uploading the file on the verification page — the file's fingerprint is compared to the registry. A match = authentic; a mismatch = tampered or the badge was copied from another file. Even a one-character change after signing is detected.
+- When the user asks to sign or verify a document, explain briefly and include the open_page action to take them there.
 
 Rules:
 - When the user asks you to DO something covered by an action, include it in "actions" and confirm briefly in "answer". Never say you can't export or execute — you can.
@@ -73,6 +79,7 @@ Answer the last user question.`,
                   dailyTarget: { type: "number" },
                   taskTitle: { type: "string" },
                   newStatus: { type: "string" },
+                  page: { type: "string" },
                 },
               },
             },
