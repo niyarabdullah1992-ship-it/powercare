@@ -568,9 +568,9 @@ export async function requestOwnerPasswordReset(email) {
   return res?.data?.pendingId || null;
 }
 
-export async function resetOwnerPassword(pendingId, code, newPassword) {
+export async function resetOwnerPassword(pendingId, code, newPassword, email) {
   try {
-    const res = await invokeDirectory({ action: "resetOwnerPassword", pendingId, code, newPassword });
+    const res = await invokeDirectory({ action: "resetOwnerPassword", pendingId, code, newPassword, email });
     return !!res?.data?.ok;
   } catch {
     return false;

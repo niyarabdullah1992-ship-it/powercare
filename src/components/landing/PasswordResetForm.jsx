@@ -18,7 +18,7 @@ export default function PasswordResetForm({ initialEmail, onDone, onBack }) {
       const id = await requestOwnerPasswordReset(email);
       if (id) setPendingId(id); else setError(ar ? "تعذّر إرسال الرمز" : "Could not send the code");
     } else if (password.length < 6) setError(ar ? "كلمة المرور 6 أحرف على الأقل" : "Use at least 6 characters");
-    else if (await resetOwnerPassword(pendingId, code, password)) onDone(email);
+    else if (await resetOwnerPassword(pendingId, code, password, email)) onDone(email);
     else setError(ar ? "الرمز غير صحيح أو منتهي الصلاحية" : "Invalid or expired code");
     setLoading(false);
   };

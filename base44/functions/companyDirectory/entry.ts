@@ -189,13 +189,17 @@ Deno.serve(async (req) => {
 
     if (action === 'resetOwnerPassword') {
       const { pendingId, code, newPassword } = body;
-      if (!pendingId || !code || String(newPassword || '').length < 6) return Response.json({ error: 'Invalid fields' }, { status: 400 });
-      const recs = await base44.asServiceRole.entities.LoginOtp.filter({ pendingId });
+      const email = String(body.email || '').trim().toLowerCase();
+      if ((!pendingId && !email) || !code || String(newPassword || '').length < 6) return Response.json({ error: 'Invalid fields' }, { status: 400 });
+      let recs = pendingId ? await base44.asServiceRole.entities.LoginOtp.filter({ pendingId }) : [];
+      if (!recs[0] && email) {
+        recs = await base44.asServiceRole.entities.LoginOtp.filter({ email }, '-created_date', 1);
+      }
       const rec = recs[0];
       if (!rec || rec.kind !== 'owner_reset' || new Date(rec.expiresAt).getTime() < Date.now() || (rec.attempts || 0) >= 5) {
         return Response.json({ error: 'invalid_or_expired' }, { status: 401 });
       }
-      const codeHash = await sha256Hex(pendingId + '::' + String(code).trim());
+      const codeHash = await sha256Hex(rec.pendingId + '::' + String(code).trim());
       if (codeHash !== rec.codeHash) {
         await base44.asServiceRole.entities.LoginOtp.update(rec.id, { attempts: (rec.attempts || 0) + 1 });
         return Response.json({ error: 'invalid_code' }, { status: 401 });
