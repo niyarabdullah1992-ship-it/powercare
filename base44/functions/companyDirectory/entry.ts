@@ -175,6 +175,38 @@ Deno.serve(async (req) => {
       return Response.json({ otpRequired: true, pendingId });
     }
 
+    // Secure owner password recovery: requesting a reset never reveals whether an email exists.
+    if (action === 'requestOwnerPasswordReset') {
+      const email = String(body.email || '').trim().toLowerCase();
+      if (!email) return Response.json({ error: 'Missing email' }, { status: 400 });
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.list();
+      const account = accounts.find((item) => String(item.ownerEmail || '').trim().toLowerCase() === email);
+      const pendingId = account
+        ? await createLoginOtp(base44, { kind: 'owner_reset', companyId: account.companyId, email: account.ownerEmail })
+        : crypto.randomUUID();
+      return Response.json({ ok: true, pendingId });
+    }
+
+    if (action === 'resetOwnerPassword') {
+      const { pendingId, code, newPassword } = body;
+      if (!pendingId || !code || String(newPassword || '').length < 6) return Response.json({ error: 'Invalid fields' }, { status: 400 });
+      const recs = await base44.asServiceRole.entities.LoginOtp.filter({ pendingId });
+      const rec = recs[0];
+      if (!rec || rec.kind !== 'owner_reset' || new Date(rec.expiresAt).getTime() < Date.now() || (rec.attempts || 0) >= 5) {
+        return Response.json({ error: 'invalid_or_expired' }, { status: 401 });
+      }
+      const codeHash = await sha256Hex(pendingId + '::' + String(code).trim());
+      if (codeHash !== rec.codeHash) {
+        await base44.asServiceRole.entities.LoginOtp.update(rec.id, { attempts: (rec.attempts || 0) + 1 });
+        return Response.json({ error: 'invalid_code' }, { status: 401 });
+      }
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: rec.companyId });
+      if (!accounts[0]) return Response.json({ error: 'Account not found' }, { status: 404 });
+      await base44.asServiceRole.entities.CompanyAccount.update(accounts[0].id, { ownerPassword: await pbkdf2Password(String(newPassword)) });
+      await base44.asServiceRole.entities.LoginOtp.delete(rec.id);
+      return Response.json({ ok: true });
+    }
+
     // Second login step — verifies the emailed code and only then issues the session.
     if (action === 'verifyLoginOtp') {
       const { pendingId, code } = body;

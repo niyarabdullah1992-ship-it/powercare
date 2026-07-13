@@ -6,6 +6,7 @@ import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Faceb
 import Logo from "@/components/Logo";
 import VideoIntro from "@/components/landing/VideoIntro";
 import OtpStep from "@/components/landing/OtpStep";
+import PasswordResetForm from "@/components/landing/PasswordResetForm";
 import { trackVisit } from "@/lib/trackVisit";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
@@ -19,6 +20,7 @@ export default function Landing() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [otpPending, setOtpPending] = useState(null); // pendingId while awaiting the emailed code
+  const [resetOpen, setResetOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const currentLang = languages.find((l) => l.code === lang);
 
@@ -45,7 +47,7 @@ export default function Landing() {
     setError("");
     setSubmitting(true);
     const r = await login(email, password);
-    if (!r) setError("Invalid credentials");
+    if (!r) setError(lang === "ar" ? "البريد أو كلمة المرور غير صحيحة" : "Incorrect email or password");
     else if (r.otpRequired) setOtpPending(r.pendingId);
     setSubmitting(false);
     // r.company → session set, useEffect above redirects to /app
@@ -124,6 +126,8 @@ export default function Landing() {
 
               {otpPending ? (
                 <OtpStep email={email} onVerify={handleVerifyOtp} onBack={() => setOtpPending(null)} />
+              ) : resetOpen ? (
+                <PasswordResetForm initialEmail={email} onDone={(value) => { setEmail(value); setResetOpen(false); setError(""); }} onBack={() => setResetOpen(false)} />
               ) : (
               <form onSubmit={handleCompanyLogin} noValidate className="space-y-4">
                 <div>
@@ -153,6 +157,9 @@ export default function Landing() {
                   className="w-full py-3 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white font-body text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-wait"
                 >
                   {submitting ? t("pleaseWaitBtn") : t("login")}
+                </button>
+                <button type="button" onClick={() => { setResetOpen(true); setError(""); }} className="w-full text-center text-xs font-body text-primary/60 hover:text-landing-gold">
+                  {lang === "ar" ? "نسيت كلمة المرور؟" : "Forgot password?"}
                 </button>
               </form>
               )}

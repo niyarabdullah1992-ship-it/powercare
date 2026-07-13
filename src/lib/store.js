@@ -563,6 +563,20 @@ export async function startLogin(email, password) {
   return null;
 }
 
+export async function requestOwnerPasswordReset(email) {
+  const res = await invokeDirectory({ action: "requestOwnerPasswordReset", email: String(email || "").trim().toLowerCase() });
+  return res?.data?.pendingId || null;
+}
+
+export async function resetOwnerPassword(pendingId, code, newPassword) {
+  try {
+    const res = await invokeDirectory({ action: "resetOwnerPassword", pendingId, code, newPassword });
+    return !!res?.data?.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function completeLoginOtp(pendingId, code, typedPassword) {
   let result = null;
   try {
