@@ -3,6 +3,8 @@ import moment from "moment";
 import { base44 } from "@/api/base44Client";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
+import { useI18n } from "@/lib/i18n";
+import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 
 const RANGES = [
   { val: "monthly", amount: 1, unit: "months" },
@@ -15,6 +17,8 @@ const RANGES = [
 // Per-employee attendance report with present/late/absent/hours totals, a flexible
 // date-range filter (monthly / 3mo / 6mo / yearly / custom), and Excel export.
 export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, t }) {
+  const { lang } = useI18n();
+  const { format } = useTimeFormat();
   const [employeeId, setEmployeeId] = useState(defaultEmployeeId || employees[0]?.id || "");
   const [range, setRange] = useState("monthly");
   const [customStart, setCustomStart] = useState("");
@@ -67,8 +71,8 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
   const exportHeaders = [t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("lateMinutesLabel")];
   const exportRows = rows.map((r) => [
     r.date, statusLabel(r) + (r.excused ? ` (${t("excused")})` : ""),
-    r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—",
-    r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : "—",
+    r.check_in_at ? formatTime(r.check_in_at, format, lang) : "—",
+    r.check_out_at ? formatTime(r.check_out_at, format, lang) : "—",
     r.work_hours ?? "—", r.status === "late" ? (r.late_minutes ?? "—") : "—",
   ]);
 
@@ -153,8 +157,8 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
                     {statusLabel(r)}
                     {r.excused && <span className="ms-1.5 text-emerald-700">({t("excused")})</span>}
                   </td>
-                  <td data-label={t("checkIn")} className="py-2 pe-3 text-muted-foreground">{r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—"}</td>
-                  <td data-label={t("checkOut")} className="py-2 pe-3 text-muted-foreground">{r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : "—"}</td>
+                  <td data-label={t("checkIn")} className="py-2 pe-3 text-muted-foreground">{r.check_in_at ? formatTime(r.check_in_at, format, lang) : "—"}</td>
+                  <td data-label={t("checkOut")} className="py-2 pe-3 text-muted-foreground">{r.check_out_at ? formatTime(r.check_out_at, format, lang) : "—"}</td>
                   <td data-label={t("workHoursLabel")} className="py-2 pe-3 text-muted-foreground">{r.work_hours ?? "—"}</td>
                   <td data-label={t("lateMinutesLabel")} className="py-2 pe-3 text-muted-foreground">{r.status === "late" ? (r.late_minutes ?? "—") : "—"}</td>
                 </tr>

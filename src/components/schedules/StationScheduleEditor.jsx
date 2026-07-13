@@ -6,6 +6,7 @@ import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import ShiftTypeEditor from "./ShiftTypeEditor";
 import ScheduleCell from "./ScheduleCell";
 import ScheduleStatsBar from "./ScheduleStatsBar";
+import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 
 const DAY_KEYS = ["daySun", "dayMon", "dayTue", "dayWed", "dayThu", "dayFri", "daySat"];
 
@@ -21,6 +22,7 @@ export function getMonthDates(year, month) {
 export default function StationScheduleEditor({ companyId, stationId, canManage }) {
   const { data } = useAuth();
   const { t, lang } = useI18n();
+  const { format } = useTimeFormat();
   const [cursor, setCursor] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
@@ -82,7 +84,7 @@ export default function StationScheduleEditor({ companyId, stationId, canManage 
               <tr key={st.id} className="border-b border-border last:border-0 align-top">
                 <td className="p-3 font-body sticky start-0 bg-card">
                   <p className="font-semibold text-sm">{st.label}</p>
-                  <p className="text-xs text-muted-foreground">{st.start} – {st.end}</p>
+                  <p className="text-xs text-muted-foreground">{formatTime(st.start, format, lang)} – {formatTime(st.end, format, lang)}</p>
                 </td>
                 {monthDates.map((d) => {
                   const key = dateKey(d);

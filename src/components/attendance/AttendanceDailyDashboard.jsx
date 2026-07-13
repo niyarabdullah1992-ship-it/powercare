@@ -3,6 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { MapPin } from "lucide-react";
 import LocationMapModal from "@/components/attendance/LocationMapModal";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
+import { useI18n } from "@/lib/i18n";
+import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 
 const STATUS_STYLE = {
   present: "bg-emerald-100 text-emerald-700 border-emerald-300",
@@ -15,6 +17,8 @@ const STATUS_STYLE = {
 // Manager-facing daily attendance table — merges the visible employee roster (local
 // data) with today's attendance rows (Supabase) so unrecorded employees still show up.
 export default function AttendanceDailyDashboard({ employees, currentUser, t }) {
+  const { lang } = useI18n();
+  const { format } = useTimeFormat();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mapRow, setMapRow] = useState(null);
@@ -62,7 +66,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, t }) 
           headers={[t("employeeName"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("locationStatus")]}
           rows={employees.map((e) => {
             const r = byEmployee[e.id];
-            return [e.name, r?.status || "not_yet", r?.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—", r?.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : "—", r?.work_hours ?? "—", r?.location_status || "—"];
+            return [e.name, r?.status || "not_yet", r?.check_in_at ? formatTime(r.check_in_at, format, lang) : "—", r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—", r?.work_hours ?? "—", r?.location_status || "—"];
           })}
         />
       </div>
@@ -108,8 +112,8 @@ export default function AttendanceDailyDashboard({ employees, currentUser, t }) 
                         )}
                       </div>
                     </td>
-                    <td className="py-2 pe-3 text-muted-foreground">{r?.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—"}</td>
-                    <td className="py-2 pe-3 text-muted-foreground">{r?.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : "—"}</td>
+                    <td className="py-2 pe-3 text-muted-foreground">{r?.check_in_at ? formatTime(r.check_in_at, format, lang) : "—"}</td>
+                    <td className="py-2 pe-3 text-muted-foreground">{r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—"}</td>
                     <td className="py-2 pe-3 text-muted-foreground">{r?.work_hours ?? "—"}</td>
                     <td className="py-2 pe-3">
                       {r?.location_status ? (

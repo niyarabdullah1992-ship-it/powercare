@@ -8,6 +8,7 @@ import CheckInOutCard from "@/components/attendance/CheckInOutCard";
 import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDashboard";
 import CalendarExportCard from "@/components/calendar/CalendarExportCard";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
+import TimeFormatToggle from "@/components/attendance/TimeFormatToggle";
 import { queryClientInstance } from "@/lib/query-client";
 
 // Heavy tabs (maps/charts) load only when their tab is actually opened —
@@ -24,7 +25,7 @@ function TabLoader() {
 }
 
 export default function Attendance() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { data, currentUser, company, refresh } = useAuth();
   const [tab, setTab] = useState("team");
 
@@ -73,7 +74,10 @@ export default function Attendance() {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-6">
-      <h1 className="font-heading text-3xl font-semibold">{t("attendanceScheduling")}</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-heading text-3xl font-semibold">{t("attendanceScheduling")}</h1>
+        <TimeFormatToggle lang={lang} />
+      </div>
 
       <CheckInOutCard currentUser={currentUser} company={company} t={t} />
 

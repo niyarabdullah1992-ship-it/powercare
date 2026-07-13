@@ -5,11 +5,13 @@ import { visibleStations, canManageSchedule } from "@/lib/permissions";
 import { ArrowLeft, CalendarClock } from "lucide-react";
 import StationScheduleEditor, { getMonthDates, dateKey } from "@/components/schedules/StationScheduleEditor";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
+import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 
 // Monthly station shift schedule — now embedded as a tab inside Attendance instead of
 // a separate page, since both cover the same "who works when" concept.
 export default function ScheduleTab() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const { format } = useTimeFormat();
   const { data, company, currentUser } = useAuth();
   const [selectedStation, setSelectedStation] = useState(null);
 
@@ -44,7 +46,7 @@ export default function ScheduleTab() {
   const monthDates = getMonthDates(now.getFullYear(), now.getMonth());
   const exportHeaders = [t("shift"), ...monthDates.map((d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" }))];
   const exportRows = shiftTypes.map((st) => [
-    `${st.label} (${st.start}–${st.end})`,
+    `${st.label} (${formatTime(st.start, format, lang)}–${formatTime(st.end, format, lang)})`,
     ...monthDates.map((d) => {
       const ids = schedule?.assignments?.[dateKey(d)]?.[st.id] || [];
       return ids.map((id) => data.employees.find((e) => e.id === id)?.name).filter(Boolean).join(", ");

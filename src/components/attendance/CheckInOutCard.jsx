@@ -3,6 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { getTodaysShift } from "@/lib/attendance";
 import { getAccuratePosition, startGeoWarmup } from "@/lib/geo";
+import { useI18n } from "@/lib/i18n";
+import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 import { LogIn, LogOut, MapPin, Loader2, Clock } from "lucide-react";
 
 const STATUS_STYLE = {
@@ -15,6 +17,8 @@ const STATUS_STYLE = {
 // reads from to gate task actions until attendance has been logged for today.
 export default function CheckInOutCard({ currentUser, company, t, onStatusChange }) {
   const { data } = useAuth();
+  const { lang } = useI18n();
+  const { format } = useTimeFormat();
   const shift = getTodaysShift(data, currentUser);
   const station = data?.stations?.find((s) => s.id === currentUser.stationId);
   const [settings, setSettings] = useState(null);
@@ -125,7 +129,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
 
       {attendance?.check_in_at && (
         <p className="text-xs text-muted-foreground font-body">
-          {t("checkedInAt")} {new Date(attendance.check_in_at).toLocaleTimeString()}
+          {t("checkedInAt")} {formatTime(attendance.check_in_at, format, lang)}
         </p>
       )}
       {attendance?.status === "late" && Number(attendance.late_minutes) > 0 && (
@@ -136,7 +140,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
       )}
       {attendance?.check_out_at && (
         <p className="text-xs text-muted-foreground font-body">
-          {t("checkedOutAt")} {new Date(attendance.check_out_at).toLocaleTimeString()}
+          {t("checkedOutAt")} {formatTime(attendance.check_out_at, format, lang)}
         </p>
       )}
       {attendance?.early_checkout && (

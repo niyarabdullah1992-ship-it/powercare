@@ -1,10 +1,14 @@
 import React, { useState } from "react";
 import { Sun, Sunset, Moon, Pencil, Trash2, Check } from "lucide-react";
 import { updateShiftType, removeShiftType } from "@/lib/store";
+import { useI18n } from "@/lib/i18n";
+import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 
 const ICONS = [Sun, Sunset, Moon];
 
 export default function ShiftTypeEditor({ companyId, stationId, shiftType, index, canManage }) {
+  const { lang } = useI18n();
+  const { format } = useTimeFormat();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ label: shiftType.label, start: shiftType.start, end: shiftType.end });
   const Icon = ICONS[index % ICONS.length];
@@ -41,7 +45,7 @@ export default function ShiftTypeEditor({ companyId, stationId, shiftType, index
     >
       <Icon className="w-3.5 h-3.5 text-accent" />
       <span className="font-semibold">{shiftType.label}</span>
-      <span className="text-muted-foreground">{shiftType.start} – {shiftType.end}</span>
+      <span className="text-muted-foreground">{formatTime(shiftType.start, format, lang)} – {formatTime(shiftType.end, format, lang)}</span>
       {canManage && <Pencil className="w-3 h-3 text-muted-foreground" />}
     </button>
   );
