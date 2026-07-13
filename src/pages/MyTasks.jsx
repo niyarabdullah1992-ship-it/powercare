@@ -18,6 +18,7 @@ import StationCombobox from "@/components/stations/StationCombobox";
 import TaskStats from "@/components/tasks/TaskStats";
 import TaskCard from "@/components/tasks/TaskCard";
 import FolderTree from "@/components/tasks/FolderTree";
+import SectionPicker from "@/components/tasks/SectionPicker";
 import CommentFiles from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
@@ -844,24 +845,16 @@ export default function MyTasks() {
             <p className="text-xs text-muted-foreground font-body">{t("hqTeamNote")}</p>
           )}
 
-          {/* Section — external folder to organize tasks into */}
+          {/* Section — searchable existing folders or a new section name */}
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> {t("section")}</p>
-            {existingSections.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
-                {existingSections.map((sec) => (
-                  <button
-                    key={sec}
-                    type="button"
-                    onClick={() => setSectionValue(sec)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${sectionValue === sec ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-                  >
-                    {sec}
-                  </button>
-                ))}
-              </div>
-            )}
-            <input name="section" value={sectionValue} onChange={(e) => setSectionValue(e.target.value)} placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <SectionPicker
+              value={sectionValue}
+              onChange={setSectionValue}
+              options={existingSections}
+              placeholder={t("sectionName")}
+              ar={lang === "ar"}
+            />
             <p className="text-[11px] text-muted-foreground font-body mt-1">{t("sectionTaskTypeHint")}</p>
           </div>
 
