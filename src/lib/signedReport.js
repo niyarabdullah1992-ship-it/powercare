@@ -24,7 +24,18 @@ function buildReportElement({ title, companyName, dir, headers, rows }) {
   return el;
 }
 
-export async function generateSignedReport({ title, companyName, dir, headers, rows, signerName, signerId, companyId }) {
+function loadImage(src) {
+  return new Promise((resolve) => {
+    if (!src) return resolve(null);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+export async function generateSignedReport({ title, companyName, dir, headers, rows, signerName, signerId, companyId, signatureUrl }) {
   const el = buildReportElement({ title, companyName, dir, headers, rows });
   document.body.appendChild(el);
   let canvas;
@@ -34,14 +45,21 @@ export async function generateSignedReport({ title, companyName, dir, headers, r
     el.remove();
   }
 
-  // Stamp the verification badge in the bottom corner.
+  // Stamp the user's handwritten signature + verification badge in the bottom corner.
   const sigId = generateVerificationId();
-  const qr = await loadBadgeQr(sigId);
+  const [qr, sigImg] = await Promise.all([loadBadgeQr(sigId), loadImage(signatureUrl)]);
   const badge = makeVerificationBadgeCanvas(sigId, signerName, qr);
   const ctx = canvas.getContext("2d");
   const bw = Math.min(620, canvas.width * 0.38);
   const bh = bw * (badge.height / badge.width);
-  ctx.drawImage(badge, canvas.width - bw - 48, canvas.height - bh - 48, bw, bh);
+  const bx = canvas.width - bw - 48;
+  const by = canvas.height - bh - 48;
+  if (sigImg) {
+    const sw = bw * 0.55;
+    const sh = sw * (sigImg.height / sigImg.width);
+    ctx.drawImage(sigImg, bx + (bw - sw) / 2, Math.max(by - sh - 8, 0), sw, sh);
+  }
+  ctx.drawImage(badge, bx, by, bw, bh);
 
   // Wrap into a PDF, fingerprint it and register in the verification registry.
   const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));

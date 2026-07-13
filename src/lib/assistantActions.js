@@ -68,6 +68,7 @@ export async function executeAssistantAction(action, { data, company, currentUse
       headers: Object.keys(rows[0]),
       rows: rows.map((r) => Object.values(r)),
       signerName: currentUser?.profile?.signatureName || currentUser.name,
+      signatureUrl: currentUser?.profile?.signatureUrl || "",
       signerId: currentUser.id,
       companyId: company.id,
     });

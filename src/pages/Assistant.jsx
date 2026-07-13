@@ -37,10 +37,11 @@ export default function Assistant() {
 You answer questions from "${currentUser.name}" (role: ${currentUser.role}) about their company's stations, employees, tasks, daily reports and safety — and you can EXECUTE real actions.
 
 AVAILABLE ACTIONS (include them in "actions" when the user asks you to do something):
-- {"type":"export_data","dataset":"employees"|"tasks"|"reports"|"stations"|"safety","format":"excel"|"pdf","reportTitle":"<title in the user's language>"} — exports the data. "excel" downloads an Excel-compatible file; "pdf" opens a brand-styled printable report (user saves as PDF). If the user asks for PDF/BDF/print/تقرير, use "pdf"; for Excel/اكسل use "excel". Works for ANY section.
+- {"type":"export_data","dataset":"employees"|"tasks"|"reports"|"stations"|"safety","format":"excel"|"pdf","reportTitle":"<title in the user's language>"} — exports the data WITHOUT a signature. "excel" downloads an Excel-compatible file; "pdf" opens a brand-styled printable report. Use ONLY when the user does NOT mention signing.
 - {"type":"create_task","title":"...","description":"...","station":"<station name>","assignee":"<employee name>","dailyTarget":1} — creates a new task.
 - {"type":"update_task_status","taskTitle":"<existing task title>","newStatus":"pending"|"in_progress"|"completed"|"stopped"} — changes a task's status.
-- {"type":"sign_report","dataset":"employees"|"tasks"|"reports"|"stations"|"safety","reportTitle":"<title in the user's language>"} — generates the report, stamps it with the user's VERIFIED SIGNATURE BADGE (encrypted verification ID + QR code + SHA-256 fingerprint registered in the verification registry) and downloads the signed PDF automatically. Use this whenever the user asks to SIGN a report (توقيع تقرير) — no manual steps needed.
+- {"type":"sign_report","dataset":"employees"|"tasks"|"reports"|"stations"|"safety","reportTitle":"<title in the user's language>"} — generates the report, stamps the user's SIGNATURE + verified badge (encrypted verification ID + QR code + SHA-256 fingerprint registered in the verification registry) INSIDE the file and downloads the signed PDF automatically.
+  CRITICAL: if the user's request contains ANY signing word — sign / توقيع / وقّع / وقع / اعتماد / اعتمد / ختم — you MUST use sign_report (NOT export_data), even though the request also mentions تقرير/PDF. Never combine sign_report with export_data for the same request.
 - {"type":"open_page","page":"signing"|"verify"} — opens the file signing page ("signing") or the public document verification page ("verify") in a NEW TAB (the conversation stays open). Use when the user wants to sign their OWN uploaded document or verify a signed file.
 
 DOCUMENT SIGNING & VERIFICATION (you know this feature well):
@@ -93,7 +94,13 @@ Answer the last user question.`,
       });
       let text = res?.answer || "";
       for (const action of res?.actions || []) {
-        const result = await executeAssistantAction(action, { data, company, currentUser, t });
+        let result;
+        try {
+          result = await executeAssistantAction(action, { data, company, currentUser, t });
+        } catch (err) {
+          console.error("Assistant action failed:", action?.type, err);
+          result = { ok: false, message: t("aiActionFailed") };
+        }
         text += `\n\n${result.ok ? "✅" : "⚠️"} ${result.message}`;
       }
       setMessages((prev) => [...prev, { role: "assistant", text }]);
