@@ -16,7 +16,28 @@ export default function SignedDocActions({ signed, currentUser, companyName, ar 
   const [chatTarget, setChatTarget] = useState("general");
   const [chatSending, setChatSending] = useState(false);
   const [chatSent, setChatSent] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
+
+  // Force a real download (an <a download> is ignored for cross-origin URLs).
+  const downloadFile = async () => {
+    setDownloading(true);
+    try {
+      const blob = await fetch(signed.url).then((r) => r.blob());
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `signed-${signed.name.replace(/\.[^.]+$/, "")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(signed.url, "_blank");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const stationKey = currentUser.stationId || "hq";
   const stationMates = (data?.employees || []).filter(
@@ -93,12 +114,13 @@ export default function SignedDocActions({ signed, currentUser, companyName, ar 
       </div>
 
       {/* Download */}
-      <a
-        href={signed.url} target="_blank" rel="noopener noreferrer" download
-        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border border-border text-xs font-body hover:bg-muted"
+      <button
+        onClick={downloadFile} disabled={downloading}
+        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md border border-border text-xs font-body hover:bg-muted disabled:opacity-40"
       >
-        <Download className="w-3.5 h-3.5" /> {ar ? "تنزيل الملف الموقّع" : "Download signed file"}
-      </a>
+        {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+        {ar ? "تنزيل الملف الموقّع" : "Download signed file"}
+      </button>
 
       {/* Email — one or more recipients */}
       <div className="space-y-2 pt-1 border-t border-border">

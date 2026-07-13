@@ -37,6 +37,21 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true, id: rec.id });
     }
 
+    if (action === 'lookup') {
+      const verificationId = String(body.verificationId || '').slice(0, 40);
+      if (!verificationId) return Response.json({ error: 'verificationId required' }, { status: 400 });
+      const rows = await Docs.filter({ verificationId });
+      if (rows.length === 0) return Response.json({ found: false });
+      const r = rows[0];
+      return Response.json({
+        found: true,
+        verificationId: r.verificationId,
+        signerName: r.signerName,
+        fileName: r.fileName,
+        signedAt: r.signedAt || r.created_date,
+      });
+    }
+
     if (action === 'verify') {
       const fileHash = String(body.fileHash || '').toLowerCase().slice(0, 64);
       if (!/^[0-9a-f]{64}$/.test(fileHash)) {

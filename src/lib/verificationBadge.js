@@ -96,12 +96,19 @@ export function generateVerificationId() {
   return `PWC-${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}`;
 }
 
-// Loads a QR image encoding the verification ID (best-effort — badge still
+// Public verification URL for a signed document — scanning the badge QR opens
+// this page, which shows the signature details and lets anyone upload the file
+// to compare its SHA-256 hash against the registry.
+export function verificationUrlFor(sigId) {
+  return `${window.location.origin}/verify?id=${encodeURIComponent(sigId)}`;
+}
+
+// Loads a QR image encoding the verification URL (best-effort — badge still
 // renders without it if the QR service is unreachable).
 export async function loadBadgeQr(sigId) {
   try {
     const res = await fetch(
-      `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=1&data=${encodeURIComponent(sigId)}`
+      `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=1&data=${encodeURIComponent(verificationUrlFor(sigId))}`
     );
     if (!res.ok) return null;
     const blob = await res.blob();

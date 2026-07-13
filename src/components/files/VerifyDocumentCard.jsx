@@ -5,10 +5,10 @@ import { sha256HexOfFile } from "@/lib/fileHash";
 
 // Verify a document's authenticity: upload the file → compute SHA-256 locally →
 // compare against the signing registry → Valid / Tampered / Not registered.
-export default function VerifyDocumentCard({ ar }) {
+export default function VerifyDocumentCard({ ar, initialId = "" }) {
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState(null);
-  const [verId, setVerId] = useState("");
+  const [verId, setVerId] = useState(initialId);
   const fileRef = useRef(null);
 
   const handleFile = async (e) => {
