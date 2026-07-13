@@ -22,6 +22,9 @@ export default function useVoiceWakeWord({ enabled, lang, onCommand }) {
       setListening(false); setAwake(false); awakeRef.current = false;
       return;
     }
+    // Fresh attempt — clear any previous denial so the toggle doesn't get stuck
+    // in an on/off loop after a one-time failure.
+    setDenied(false);
     const rec = new SR();
     rec.lang = lang === "ar" ? "ar-SA" : "en-US";
     rec.continuous = true;
@@ -61,7 +64,7 @@ export default function useVoiceWakeWord({ enabled, lang, onCommand }) {
       else setListening(false);
     };
     rec.onerror = (e) => {
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed" || e.error === "audio-capture") {
         enabledRef.current = false;
         setDenied(true);
         setListening(false);
