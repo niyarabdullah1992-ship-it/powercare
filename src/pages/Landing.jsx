@@ -231,12 +231,6 @@ export default function Landing() {
                   {lang === "ar" ? "تنزيل ملف عرض PowerCare" : "Download PowerCare presentation"}
                 </Link>
               </li>
-              <li>
-                <Link to="/powercare-feasibility" className="inline-flex items-center gap-2 font-semibold text-landing-gold underline underline-offset-4 transition-colors hover:text-landing-gold-deep">
-                  <Download className="h-3.5 w-3.5" />
-                  {lang === "ar" ? "تنزيل دراسة الجدوى والتسويق" : "Download feasibility study"}
-                </Link>
-              </li>
               <li>{t("footerCareers")}</li>
               <li>{t("footerTerms")}</li>
               <li>{t("footerContact")}</li>
