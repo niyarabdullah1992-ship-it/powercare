@@ -13,16 +13,34 @@ export default function PasswordResetForm({ initialEmail, onDone, onBack }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const submit = async (e) => {
-    e.preventDefault(); setLoading(true); setError("");
-    if (!pendingId) {
-      const id = await requestOwnerPasswordReset(email);
-      if (id) setPendingId(id); else setError(ar ? "تعذّر إرسال الرمز" : "Could not send the code");
-    } else if (password.length < 6) setError(ar ? "كلمة المرور 6 أحرف على الأقل" : "Use at least 6 characters");
-    else if (await resetOwnerPassword(pendingId, code, password, email)) onDone(email);
-    else setError(ar ? "الرمز غير صحيح أو منتهي الصلاحية" : "Invalid or expired code");
-    setLoading(false);
+    e.preventDefault();
+    setError("");
+    if (!pendingId && !email.trim()) {
+      setError(ar ? "أدخل البريد الإلكتروني" : "Enter your email");
+      return;
+    }
+    if (pendingId && code.length !== 6) {
+      setError(ar ? "أدخل رمز التحقق المكوّن من 6 أرقام" : "Enter the 6-digit verification code");
+      return;
+    }
+    if (pendingId && password.length < 6) {
+      setError(ar ? "كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل" : "Use at least 6 characters");
+      return;
+    }
+    setLoading(true);
+    try {
+      if (!pendingId) {
+        const id = await requestOwnerPasswordReset(email.trim());
+        if (id) setPendingId(id); else setError(ar ? "تعذّر إرسال الرمز" : "Could not send the code");
+      } else if (await resetOwnerPassword(pendingId, code, password, email.trim())) onDone(email.trim());
+      else setError(ar ? "تعذّر التغيير؛ اطلب رمزًا جديدًا وحاول مرة أخرى" : "Reset failed; request a new code and try again");
+    } catch {
+      setError(ar ? "تعذّر الاتصال؛ حاول مرة أخرى" : "Connection failed; try again");
+    } finally {
+      setLoading(false);
+    }
   };
-  return <form onSubmit={submit} className="space-y-4">
+  return <form onSubmit={submit} noValidate className="space-y-4">
     <div className="text-center"><MailCheck className="mx-auto h-6 w-6 text-landing-gold" /><p className="mt-2 text-sm text-primary/70">{pendingId ? (ar ? "أدخل الرمز المرسل وكلمة المرور الجديدة" : "Enter the emailed code and a new password") : (ar ? "سنرسل رمز استعادة إلى بريدك" : "We'll email you a recovery code")}</p></div>
     {!pendingId ? <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={ar ? "البريد الإلكتروني" : "Email"} className="w-full rounded-lg bg-landing-bg px-3 py-3 text-primary outline-none focus:ring-2 focus:ring-landing-gold" /> : <>
       <input inputMode="numeric" maxLength={6} required value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} placeholder="••••••" dir="ltr" className="w-full rounded-lg bg-landing-bg px-3 py-3 text-center text-xl tracking-[0.5em] text-primary outline-none focus:ring-2 focus:ring-landing-gold" />
