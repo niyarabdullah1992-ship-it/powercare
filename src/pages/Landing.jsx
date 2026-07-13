@@ -57,12 +57,12 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-landing-bg font-body text-[#3a2f22]">
+    <div className="min-h-screen bg-landing-bg font-body text-primary">
       {/* Top bar */}
       <div className="sticky top-0 z-50 flex items-center justify-between border-b border-landing-gold/15 bg-landing-bg/90 px-4 py-3 backdrop-blur-xl sm:px-6 md:px-10 md:py-4">
         <div className="flex items-center gap-2">
           <Logo size={30} />
-          <span className="font-heading font-semibold text-lg text-[#3a2f22]">{t("appName")}</span>
+          <span className="font-heading font-semibold text-lg text-primary">{t("appName")}</span>
         </div>
         <div className="flex items-center gap-2">
         <Link
@@ -172,7 +172,7 @@ export default function Landing() {
       <div className="bg-gradient-to-b from-landing-gold-light via-landing-gold-deep to-landing-bg px-6 md:px-10 pt-16 pb-4">
         <div className="flex flex-col items-center">
           <Logo size={72} />
-          <h2 className="hero-title text-[#3a2f22] text-5xl md:text-6xl mt-3 mb-10">{t("appName")}</h2>
+          <h2 className="hero-title text-primary text-5xl md:text-6xl mt-3 mb-10">{t("appName")}</h2>
         </div>
 
         {/* Ribbon */}

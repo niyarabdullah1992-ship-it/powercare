@@ -7,15 +7,15 @@
 @layer base {
   :root {
     --background: 36 56% 96%;
-    --foreground: 30 26% 18%;
+    --foreground: 28 30% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 30 26% 18%;
+    --card-foreground: 28 30% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 30 26% 18%;
-    --primary: 30 26% 18%;
+    --popover-foreground: 28 30% 15%;
+    --primary: 28 30% 15%;
     --primary-foreground: 36 56% 97%;
     --secondary: 36 40% 92%;
-    --secondary-foreground: 30 26% 18%;
+    --secondary-foreground: 28 30% 15%;
     --muted: 36 30% 92%;
     --muted-foreground: 30 15% 45%;
     --accent: 32 48% 52%;
@@ -36,15 +36,15 @@
     --font-display: 'Cormorant Garamond', ui-serif, Georgia, serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 30 26% 18%;
-    --sidebar-primary: 32 48% 52%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-foreground: 28 30% 15%;
+    --sidebar-primary: 28 30% 15%;
+    --sidebar-primary-foreground: 36 56% 97%;
     --sidebar-accent: 36 40% 94%;
-    --sidebar-accent-foreground: 30 26% 18%;
+    --sidebar-accent-foreground: 28 30% 15%;
     --sidebar-border: 36 25% 88%;
     --sidebar-ring: 32 48% 52%;
     --landing-bg: 36 56% 96%;
-    --landing-olive: 33 42% 60%;
+    --landing-olive: 28 30% 15%;
     --landing-olive-card: 0 0% 100%;
     --landing-gold: 32 48% 52%;
     --landing-gold-light: 35 60% 76%;
