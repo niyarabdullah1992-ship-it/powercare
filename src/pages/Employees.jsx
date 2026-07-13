@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification, updateEmployeeProfile, setAllowedEmailDomain, deleteEmployeeAccount } from "@/lib/store";
-import { canManageEmployees, canTransferOwnership, canManageStations, visibleStations, visibleEmployees } from "@/lib/permissions";
+import { canManageEmployees, isCompanyOwner, canManageStations, visibleStations, visibleEmployees } from "@/lib/permissions";
 import { canAddEmployee } from "@/lib/planLimits";
 import { Link } from "react-router-dom";
 import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle, Mail, GripVertical, Users } from "lucide-react";
@@ -78,7 +78,7 @@ export default function Employees() {
   if (!data || !currentUser) return null;
   const canManage = canManageEmployees(currentUser);
   const canDeleteAccounts = !!currentUser.hrLevelId;
-  const canTransfer = canTransferOwnership(currentUser);
+  const canTransfer = isCompanyOwner(currentUser, data);
   const stations = visibleStations(currentUser, data);
   // Station managers can only add employees / station managers to their own station
   const allowedRoles = currentUser.role === "station_manager" ? ["employee", "station_manager"] : ROLES;
@@ -117,15 +117,15 @@ export default function Employees() {
         {(canTransfer || currentUser.role === "director") && (
           <div className="p-4 rounded-xl border border-border bg-card">
             <div className="flex flex-wrap gap-2">
+              {currentUser.role === "director" && (
+                <button onClick={() => setShowTransfer("director")} className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+                  <UserCog className="w-3.5 h-3.5" /> {t("transferDirector")}
+                </button>
+              )}
               {canTransfer && (
-                <>
-                  <button onClick={() => setShowTransfer("director")} className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-                    <UserCog className="w-3.5 h-3.5" /> {t("transferDirector")}
-                  </button>
-                  <button onClick={() => setShowTransfer("ownership")} className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-                    <KeyRound className="w-3.5 h-3.5" /> {t("transferOwnership")}
-                  </button>
-                </>
+                <button onClick={() => setShowTransfer("ownership")} className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+                  <KeyRound className="w-3.5 h-3.5" /> {t("transferOwnership")}
+                </button>
               )}
               {currentUser.role === "director" && <RoleLabelsEditor company={company} />}
             </div>
