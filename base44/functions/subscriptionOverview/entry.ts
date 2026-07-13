@@ -22,7 +22,9 @@ Deno.serve(async (req) => {
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'), { apiVersion: '2024-06-20' });
 
     // Registered companies (to match subscriptions to company names).
-    const accounts = await base44.asServiceRole.entities.CompanyAccount.list('-created_date', 500);
+    const allAccounts = await base44.asServiceRole.entities.CompanyAccount.list('-created_date', 500);
+    // Preview/demo companies are excluded from the subscriptions view.
+    const accounts = allAccounts.filter((a) => !(a.ownerEmail || '').endsWith('@powercare-demo.com'));
     const byEmail = {};
     for (const a of accounts) {
       const key = (a.ownerEmail || '').toLowerCase();
