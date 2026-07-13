@@ -65,6 +65,7 @@ export default function ProfileHero({ employee, companyId, canEdit, roleLabel, s
       {galleryOpen && (
         <BannerGallery
           onSelect={(url) => updateEmployeeProfile(companyId, employee.id, { bannerUrl: url })}
+          onUpload={() => bannerInput.current?.click()}
           onClose={() => setGalleryOpen(false)}
         />
       )}
