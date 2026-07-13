@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, X, MousePointerClick } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 // DocuSign-style placement: preview the document's pages and click exactly
 // where the signature should be stamped. Returns { page, x, y } — the center
