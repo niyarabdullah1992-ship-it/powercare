@@ -2,7 +2,6 @@ import React, { useState, useRef } from "react";
 import { PenLine, Upload, Loader2, FileText, MousePointerClick, ShieldCheck } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { signPdfFile, imageBlobToPdf } from "@/lib/signPdf";
-import { detectSignatureSpot } from "@/lib/detectSignatureSpot";
 import SignaturePlacementModal from "@/components/files/SignaturePlacementModal";
 import { makeVerificationBadgeCanvas, generateVerificationId, loadBadgeQr } from "@/lib/verificationBadge";
 import { sha256HexOfUrl } from "@/lib/fileHash";
@@ -81,11 +80,9 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
     setError("");
     setSigning(true);
     try {
-      let spot = manualSpot;
-      if (!spot) {
-        setStage(ar ? "جارٍ تحديد مكان التوقيع تلقائيًا…" : "Detecting signature spot…");
-        try { spot = await detectSignatureSpot(doc.url); } catch { spot = null; }
-      }
+      // Instant signing: no AI wait — the badge goes to the bottom corner
+      // unless the user picked a spot manually.
+      const spot = manualSpot;
       setStage(ar ? "جارٍ ختم المستند بالتوقيع ورمز QR…" : "Stamping the document…");
       let signedUrl;
       if (doc.isPdf) {
@@ -113,7 +110,7 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
       setError(
         err?.response?.data?.error === "SIGNATURE_REUSE"
           ? (ar ? "رقم التحقق مستخدم مسبقًا — أعد رفع الملف." : "Verification ID already used — re-upload the file.")
-          : ar ? "تعذّر توقيع المستند — حاول مجددًا أو استخدم ملفًا آخر." : "Couldn't sign the document — try again or use a different file."
+          : (ar ? "تعذّر توقيع المستند — " : "Couldn't sign the document — ") + (err?.message || (ar ? "حاول مجددًا." : "try again."))
       );
     } finally {
       setSigning(false);
@@ -159,7 +156,7 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
             <span className="text-[11px] text-muted-foreground font-body">
               {manualSpot
                 ? (ar ? `تم التحديد — صفحة ${manualSpot.page}` : `Spot set — page ${manualSpot.page}`)
-                : ar ? "أو اتركه ليحدده الذكاء الاصطناعي تلقائيًا" : "or leave it for AI to detect automatically"}
+                : ar ? "أو اتركه ليوضع في أسفل الصفحة تلقائيًا" : "or leave it to be placed at the bottom automatically"}
             </span>
           </div>
           <button
@@ -170,13 +167,7 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
             {signing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PenLine className="w-3.5 h-3.5" />}
             {signing ? (stage || (ar ? "جارٍ التوقيع والتسجيل…" : "Signing & registering…")) : ar ? "توقيع المستند" : "Sign document"}
           </button>
-          {!manualSpot && (
-            <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 font-body">
-              {ar
-                ? "⏱ تنبيه: التحقق والتحديد التلقائي لمكان التوقيع يستغرق حتى ١٢ ثانية تقريبًا — حدّد المكان يدويًا ليتم التوقيع فورًا."
-                : "⏱ Note: verification & auto-detection of the signature spot takes up to ~12 seconds — pick the spot manually for instant signing."}
-            </p>
-          )}
+
         </>
       )}
 
