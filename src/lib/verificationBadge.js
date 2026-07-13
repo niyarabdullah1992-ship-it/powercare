@@ -108,7 +108,8 @@ export function verificationUrlFor(sigId) {
 export async function loadBadgeQr(sigId) {
   try {
     const res = await fetch(
-      `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=1&data=${encodeURIComponent(verificationUrlFor(sigId))}`
+      `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=1&data=${encodeURIComponent(verificationUrlFor(sigId))}`,
+      { signal: AbortSignal.timeout(8000) }
     );
     if (!res.ok) return null;
     const blob = await res.blob();

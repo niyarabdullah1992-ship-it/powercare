@@ -6,7 +6,10 @@ import { base44 } from "@/api/base44Client";
 // TOP-LEFT of the page, or null when nothing is found / detection fails.
 export async function detectSignatureSpot(fileUrl) {
   try {
-    const res = await base44.integrations.Core.InvokeLLM({
+    // Never let AI detection block signing for more than 25s — fall back to
+    // the default corner placement instead.
+    const timeout = new Promise((resolve) => setTimeout(() => resolve(null), 25000));
+    const res = await Promise.race([timeout, base44.integrations.Core.InvokeLLM({
       prompt: `You are analyzing a document that a person needs to sign.
 Find the blank area intended for the signature — for example an empty box or frame,
 a horizontal signature line, or the empty space directly next to/below a label like
@@ -28,7 +31,7 @@ Prefer the area explicitly meant for the signer over any other blank space.`,
         },
         required: ["found"],
       },
-    });
+    })]);
     if (res?.found && typeof res.x_percent === "number" && typeof res.y_percent === "number") {
       return { page: Math.max(1, Math.round(res.page || 1)), x: res.x_percent, y: res.y_percent };
     }

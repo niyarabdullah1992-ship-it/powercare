@@ -47,6 +47,7 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
   const [doc, setDoc] = useState(null); // { name, url, isImage, isPdf, sigId }
   const [uploading, setUploading] = useState(false);
   const [signing, setSigning] = useState(false);
+  const [stage, setStage] = useState("");
   const [signed, setSigned] = useState(null); // { url, hash, verificationId, name }
   const [error, setError] = useState("");
   const [placing, setPlacing] = useState(false);
@@ -82,8 +83,10 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
     try {
       let spot = manualSpot;
       if (!spot) {
+        setStage(ar ? "جارٍ تحديد مكان التوقيع تلقائيًا…" : "Detecting signature spot…");
         try { spot = await detectSignatureSpot(doc.url); } catch { spot = null; }
       }
+      setStage(ar ? "جارٍ ختم المستند بالتوقيع ورمز QR…" : "Stamping the document…");
       let signedUrl;
       if (doc.isPdf) {
         signedUrl = await signPdfFile(doc.url, signatureUrl, signerName, doc.sigId, spot);
@@ -93,6 +96,7 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
       }
       // Fingerprint the FINAL signed file and register it in the verification
       // registry — this is what makes badge reuse / tampering detectable.
+      setStage(ar ? "جارٍ تسجيل بصمة الملف…" : "Registering the file fingerprint…");
       const fileHash = await sha256HexOfUrl(signedUrl);
       await base44.functions.invoke("signedDocs", {
         action: "register",
@@ -113,6 +117,7 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
       );
     } finally {
       setSigning(false);
+      setStage("");
     }
   };
 
@@ -163,8 +168,15 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
             className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-foreground text-background text-xs font-body disabled:opacity-40"
           >
             {signing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PenLine className="w-3.5 h-3.5" />}
-            {signing ? (ar ? "جارٍ التوقيع والتسجيل…" : "Signing & registering…") : ar ? "توقيع المستند" : "Sign document"}
+            {signing ? (stage || (ar ? "جارٍ التوقيع والتسجيل…" : "Signing & registering…")) : ar ? "توقيع المستند" : "Sign document"}
           </button>
+          {signing && !manualSpot && (
+            <p className="text-[11px] text-muted-foreground font-body">
+              {ar
+                ? "التحديد التلقائي قد يستغرق حتى ٢٥ ثانية — حدّد المكان يدويًا ليتم التوقيع فورًا."
+                : "Auto-detection can take up to 25s — pick the spot manually for instant signing."}
+            </p>
+          )}
         </>
       )}
 
