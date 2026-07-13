@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { base44 } from "@/api/base44Client";
 import { updateEmployeeProfile } from "@/lib/store";
-import { Camera, Mail, Building2, Loader2, X } from "lucide-react";
+import { Mail, Building2, Loader2, X } from "lucide-react";
 
 export default function ProfileHero({ employee, companyId, canEdit, roleLabel, stationName }) {
   const { t } = useI18n();
@@ -29,26 +29,25 @@ export default function ProfileHero({ employee, companyId, canEdit, roleLabel, s
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <div
-        className="h-28 bg-secondary bg-cover bg-center"
+        className={`relative h-28 bg-secondary bg-cover bg-center ${canEdit ? "cursor-pointer" : ""}`}
         style={profile.bannerUrl ? { backgroundImage: `url(${profile.bannerUrl})` } : undefined}
+        onClick={() => canEdit && uploading !== "bannerUrl" && bannerInput.current?.click()}
+        role={canEdit ? "button" : undefined}
+        tabIndex={canEdit ? 0 : undefined}
+        onKeyDown={(e) => { if (canEdit && (e.key === "Enter" || e.key === " ")) bannerInput.current?.click(); }}
+        aria-label={canEdit ? t("uploadBanner") : undefined}
       >
-        {canEdit && (
-          <div className="absolute end-3 top-3 flex items-center gap-1.5">
-            <button type="button" onClick={() => bannerInput.current?.click()} disabled={uploading === "bannerUrl"} className="flex items-center gap-1.5 rounded-full border border-border bg-background/70 px-2.5 py-1.5 text-[10px] font-body text-foreground backdrop-blur-xl disabled:opacity-60">
-              {uploading === "bannerUrl" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />} {t("uploadBanner")}
-            </button>
-            {profile.bannerUrl && <button type="button" onClick={() => remove("bannerUrl")} className="rounded-full border border-border bg-background/70 p-1.5 text-foreground backdrop-blur-xl" title={t("removeFile")}><X className="h-3.5 w-3.5" /></button>}
-          </div>
-        )}
+        {uploading === "bannerUrl" && <span className="absolute inset-0 flex items-center justify-center bg-background/40"><Loader2 className="h-5 w-5 animate-spin" /></span>}
+        {canEdit && profile.bannerUrl && <button type="button" onClick={(e) => { e.stopPropagation(); remove("bannerUrl"); }} className="absolute end-3 top-3 rounded-full border border-border bg-background/70 p-1.5 text-foreground backdrop-blur-xl" title={t("removeFile")}><X className="h-3.5 w-3.5" /></button>}
         <input ref={bannerInput} type="file" accept="image/*" className="hidden" onChange={(e) => upload(e.target.files?.[0], "bannerUrl")} />
       </div>
 
       <div className="-mt-12 flex flex-col items-center px-5 pb-7 text-center">
         <div className="relative h-24 w-24 shrink-0">
-          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-foreground font-heading text-3xl font-medium text-background shadow-xl ring-4 ring-card">
+          <button type="button" onClick={() => canEdit && avatarInput.current?.click()} disabled={!canEdit || uploading === "avatarUrl"} className={`flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-foreground font-heading text-3xl font-medium text-background shadow-xl ring-4 ring-card ${canEdit ? "cursor-pointer transition hover:opacity-90" : "cursor-default"}`} title={canEdit ? t("uploadPhoto") : undefined} aria-label={canEdit ? t("uploadPhoto") : undefined}>
             {profile.avatarUrl ? <img src={profile.avatarUrl} alt={employee.name} className="h-full w-full object-cover" /> : employee.name.charAt(0)}
-          </div>
-          {canEdit && <button type="button" onClick={() => avatarInput.current?.click()} disabled={uploading === "avatarUrl"} className="absolute bottom-0 end-0 z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-card bg-accent text-accent-foreground shadow-lg transition hover:opacity-90 disabled:opacity-60" title={t("uploadPhoto")} aria-label={t("uploadPhoto")}>{uploading === "avatarUrl" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}</button>}
+            {uploading === "avatarUrl" && <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40"><Loader2 className="h-5 w-5 animate-spin text-white" /></span>}
+          </button>
           {canEdit && profile.avatarUrl && <button type="button" onClick={() => remove("avatarUrl")} className="absolute -top-1 -end-1 rounded-full bg-destructive p-1 text-destructive-foreground shadow-md" title={t("removeFile")}><X className="h-3 w-3" /></button>}
           <input ref={avatarInput} type="file" accept="image/*" className="hidden" onChange={(e) => upload(e.target.files?.[0], "avatarUrl")} />
         </div>

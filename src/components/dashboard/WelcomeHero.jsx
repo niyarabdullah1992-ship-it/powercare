@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
 import { updateEmployeeProfile } from "@/lib/store";
-import { Camera, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Logo from "@/components/Logo";
 
 // Calm, artistic welcome banner shown right after login — greets the user and
@@ -32,18 +32,16 @@ export default function WelcomeHero({ name, companyName, t, lang, alerts = [], e
       <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div className="flex items-center gap-4">
           <div className="relative h-16 w-16 shrink-0">
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-landing-gold/40 bg-white/10 p-2.5 shadow-lg">
-              {employee?.profile?.avatarUrl ? <img src={employee.profile.avatarUrl} alt={name} className="h-full w-full rounded-full object-cover" /> : <Logo size={34} />}
-            </div>
             <button
               type="button"
               onClick={() => photoInput.current?.click()}
               disabled={uploading || !employee}
-              className="absolute -bottom-1 -end-1 flex h-6 w-6 items-center justify-center rounded-full border border-white/30 bg-foreground text-background shadow-md transition hover:bg-foreground/80 disabled:cursor-default"
+              className="flex h-16 w-16 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-landing-gold/40 bg-white/10 p-2.5 shadow-lg transition hover:border-landing-gold hover:opacity-90 disabled:cursor-default"
               title={t("uploadPhoto")}
               aria-label={t("uploadPhoto")}
             >
-              {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
+              {employee?.profile?.avatarUrl ? <img src={employee.profile.avatarUrl} alt={name} className="h-full w-full rounded-full object-cover" /> : <Logo size={34} />}
+              {uploading && <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40"><Loader2 className="h-4 w-4 animate-spin text-white" /></span>}
             </button>
             <input ref={photoInput} type="file" accept="image/*" className="hidden" onChange={(e) => changePhoto(e.target.files?.[0])} />
           </div>
