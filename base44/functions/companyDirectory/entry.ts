@@ -145,8 +145,8 @@ Deno.serve(async (req) => {
       const user = await base44.auth.me().catch(() => null);
       const email = String(user?.email || '').trim().toLowerCase();
       if (!email) return Response.json({ error: 'Google authentication required' }, { status: 401 });
-      const accounts = await base44.asServiceRole.entities.CompanyAccount.list();
-      const found = accounts.find((item) => String(item.ownerEmail || '').trim().toLowerCase() === email);
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email }, '-created_date');
+      const found = accounts[0];
       if (!found) return Response.json({ error: 'No company is linked to this Google account' }, { status: 404 });
       const { ownerPassword: _password, ...safe } = found;
       const token = await makeSession(base44, found.companyId, null, 'owner');
@@ -156,13 +156,13 @@ Deno.serve(async (req) => {
     // Cross-device login lookup — doesn't need a companyId yet, since the caller is
     // trying to discover which company an email/password combination belongs to.
     if (action === 'findAccountByEmail') {
-      const { email, password } = body;
+      const email = String(body.email || '').trim().toLowerCase();
+      const { password } = body;
       if (!email || !password) return Response.json({ error: 'Missing credentials' }, { status: 400 });
-      const all = await base44.asServiceRole.entities.CompanyAccount.list();
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email }, '-created_date');
       let found = null;
-      for (const c of all) {
-        if (c.ownerEmail.toLowerCase() !== String(email).toLowerCase()) continue;
-        if (await verifyPassword(password, c.ownerPassword)) { found = c; break; }
+      for (const account of accounts) {
+        if (await verifyPassword(password, account.ownerPassword)) { found = account; break; }
       }
       if (!found) return Response.json({ company: null });
       // Upgrade legacy plaintext/SHA-256 records to slow PBKDF2 after a valid login.
@@ -195,8 +195,8 @@ Deno.serve(async (req) => {
     if (action === 'requestOwnerPasswordReset') {
       const email = String(body.email || '').trim().toLowerCase();
       if (!email) return Response.json({ error: 'Missing email' }, { status: 400 });
-      const accounts = await base44.asServiceRole.entities.CompanyAccount.list();
-      const account = accounts.find((item) => String(item.ownerEmail || '').trim().toLowerCase() === email);
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email }, '-created_date');
+      const account = accounts[0];
       const pendingId = account
         ? await createLoginOtp(base44, { kind: 'owner_reset', companyId: account.companyId, email: account.ownerEmail })
         : crypto.randomUUID();
