@@ -15,7 +15,7 @@ async function hashPassword(password, salt) {
   const hex = await sha256Hex(s + '::' + password);
   return `sha256$${s}$${hex}`;
 }
-async function pbkdf2Password(password, salt, iterations = 210000) {
+async function pbkdf2Password(password, salt, iterations = 100000) {
   const s = salt || crypto.randomUUID().replace(/-/g, '');
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits(
