@@ -1,27 +1,17 @@
-import html2canvas from "html2canvas";
 import { base44 } from "@/api/base44Client";
 import { makeVerificationBadgeCanvas, generateVerificationId, loadBadgeQr } from "@/lib/verificationBadge";
 import { imageBlobToPdf } from "@/lib/signPdf";
 import { sha256HexOfBuffer } from "@/lib/fileHash";
 
-// Renders a brand-styled report as HTML (full Arabic/RTL support), converts it
-// to canvas, stamps the verification badge and registers the file fingerprint —
-// then downloads the signed PDF. One call = report + signature + verification.
-function buildReportElement({ title, companyName, dir, headers, rows }) {
-  const esc = (v) => String(v ?? "");
-  const el = document.createElement("div");
-  el.setAttribute("dir", dir);
-  el.style.cssText = "position:absolute;left:-99999px;top:0;width:1000px;background:#fff;padding:40px 40px 200px;font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#3a2e22;";
-  el.innerHTML = `
-    <div style="border-bottom:3px solid #b07d3f;padding-bottom:16px;margin-bottom:20px;">
-      <h1 style="font-size:24px;margin:0;">${esc(title)}</h1>
-      <p style="font-size:13px;color:#8a7660;margin:6px 0 0;">${esc(companyName)} — ${new Date().toLocaleDateString(dir === "rtl" ? "ar" : "en-GB")}</p>
-    </div>
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <thead><tr>${headers.map((h) => `<th style="background:#b07d3f1a;text-align:start;padding:8px 9px;border-bottom:2px solid #b07d3f;color:#55483a;font-size:11.5px;">${esc(h)}</th>`).join("")}</tr></thead>
-      <tbody>${rows.map((r, i) => `<tr>${r.map((c) => `<td style="padding:8px 9px;border-bottom:1px solid #b07d3f22;${i % 2 ? "background:#b07d3f08;" : ""}">${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody>
-    </table>`;
-  return el;
+// Draws the report DIRECTLY on canvas (title + table + signature + verification
+// badge) — fully deterministic, full Arabic/RTL support, no HTML rendering step
+// that could silently fail. The badge and signature are part of the file pixels.
+
+function clip(ctx, text, maxW) {
+  let s = String(text ?? "");
+  if (ctx.measureText(s).width <= maxW) return s;
+  while (s.length > 1 && ctx.measureText(s + "…").width > maxW) s = s.slice(0, -1);
+  return s + "…";
 }
 
 function loadImage(src) {
@@ -35,33 +25,84 @@ function loadImage(src) {
   });
 }
 
-export async function generateSignedReport({ title, companyName, dir, headers, rows, signerName, signerId, companyId, signatureUrl }) {
-  const el = buildReportElement({ title, companyName, dir, headers, rows });
-  document.body.appendChild(el);
-  let canvas;
-  try {
-    // Long reports: cap the canvas height so rendering never exceeds browser
-    // canvas limits (which would silently produce an empty/unsigned file).
-    const scale = Math.min(2, Math.max(1, 14000 / Math.max(el.scrollHeight, 1)));
-    canvas = await html2canvas(el, { scale, backgroundColor: "#ffffff" });
-  } finally {
-    el.remove();
-  }
-  if (!canvas || !canvas.height) throw new Error("Report rendering failed");
+function drawReportCanvas({ title, companyName, dir, headers, rows }) {
+  const W = 1400;
+  const rowH = 38;
+  const tableTop = 150;
+  const footerSpace = 320; // reserved for signature + badge
+  const H = tableTop + (rows.length + 1) * rowH + footerSpace;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  const rtl = dir === "rtl";
 
-  // Stamp the user's handwritten signature + verification badge in the bottom corner.
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+  ctx.direction = rtl ? "rtl" : "ltr";
+  ctx.textAlign = rtl ? "right" : "left";
+  const xTitle = rtl ? W - 48 : 48;
+
+  // Header
+  ctx.fillStyle = "#3a2e22";
+  ctx.font = "600 34px Tahoma, Arial, sans-serif";
+  ctx.fillText(title, xTitle, 62);
+  ctx.fillStyle = "#8a7660";
+  ctx.font = "18px Tahoma, Arial, sans-serif";
+  ctx.fillText(`${companyName} — ${new Date().toLocaleDateString(rtl ? "ar" : "en-GB")}`, xTitle, 96);
+  ctx.strokeStyle = "#b07d3f";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(48, 114);
+  ctx.lineTo(W - 48, 114);
+  ctx.stroke();
+
+  // Table
+  const colW = (W - 96) / headers.length;
+  const cellX = (i) => (rtl ? W - 48 - i * colW - 10 : 48 + i * colW + 10);
+
+  ctx.fillStyle = "rgba(176,125,63,0.14)";
+  ctx.fillRect(48, tableTop - 26, W - 96, rowH);
+  ctx.fillStyle = "#55483a";
+  ctx.font = "600 16px Tahoma, Arial, sans-serif";
+  headers.forEach((h, i) => ctx.fillText(clip(ctx, h, colW - 20), cellX(i), tableTop));
+
+  ctx.font = "15px Tahoma, Arial, sans-serif";
+  rows.forEach((r, ri) => {
+    const y = tableTop + (ri + 1) * rowH;
+    if (ri % 2) {
+      ctx.fillStyle = "rgba(176,125,63,0.05)";
+      ctx.fillRect(48, y - 26, W - 96, rowH);
+    }
+    ctx.fillStyle = "#3a2e22";
+    r.forEach((c, ci) => ctx.fillText(clip(ctx, c, colW - 20), cellX(ci), y));
+    ctx.strokeStyle = "rgba(176,125,63,0.18)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(48, y + 11);
+    ctx.lineTo(W - 48, y + 11);
+    ctx.stroke();
+  });
+
+  return canvas;
+}
+
+export async function generateSignedReport({ title, companyName, dir, headers, rows, signerName, signerId, companyId, signatureUrl }) {
+  const canvas = drawReportCanvas({ title, companyName, dir, headers, rows });
+  const ctx = canvas.getContext("2d");
+
+  // Stamp the handwritten signature + verification badge in the bottom corner.
   const sigId = generateVerificationId();
   const [qr, sigImg] = await Promise.all([loadBadgeQr(sigId), loadImage(signatureUrl)]);
   const badge = makeVerificationBadgeCanvas(sigId, signerName, qr);
-  const ctx = canvas.getContext("2d");
-  const bw = Math.min(620, canvas.width * 0.38);
+  const bw = 520;
   const bh = bw * (badge.height / badge.width);
   const bx = canvas.width - bw - 48;
-  const by = canvas.height - bh - 48;
+  const by = canvas.height - bh - 40;
   if (sigImg) {
-    const sw = bw * 0.55;
+    const sw = bw * 0.5;
     const sh = sw * (sigImg.height / sigImg.width);
-    ctx.drawImage(sigImg, bx + (bw - sw) / 2, Math.max(by - sh - 8, 0), sw, sh);
+    ctx.drawImage(sigImg, bx + (bw - sw) / 2, Math.max(by - sh - 6, 0), sw, sh);
   }
   ctx.drawImage(badge, bx, by, bw, bh);
 
