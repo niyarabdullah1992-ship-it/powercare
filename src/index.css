@@ -43,12 +43,12 @@
     --sidebar-accent-foreground: 28 30% 15%;
     --sidebar-border: 36 25% 88%;
     --sidebar-ring: 32 48% 52%;
-    --landing-bg: 36 56% 96%;
-    --landing-olive: 28 30% 15%;
-    --landing-olive-card: 0 0% 100%;
-    --landing-gold: 32 48% 52%;
-    --landing-gold-light: 35 60% 76%;
-    --landing-gold-deep: 28 50% 45%;
+    --landing-bg: 40 30% 4%;
+    --landing-olive: 42 45% 88%;
+    --landing-olive-card: 38 28% 8%;
+    --landing-gold: 42 68% 52%;
+    --landing-gold-light: 45 80% 65%;
+    --landing-gold-deep: 38 60% 40%;
   }
 
   .dark {

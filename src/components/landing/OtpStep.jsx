@@ -41,10 +41,10 @@ export default function OtpStep({ email, onVerify, onResend, onBack }) {
         <span className="w-11 h-11 rounded-full bg-landing-bg flex items-center justify-center text-landing-gold">
           <MailCheck className="w-5 h-5" strokeWidth={1.75} />
         </span>
-        <p className="text-sm font-body text-[#3a2f22]/70">
+        <p className="text-sm font-body text-[#f3e9d6]/70">
           {ar ? "أرسلنا رمز تحقق مكوّنًا من 6 أرقام إلى" : "We sent a 6-digit verification code to"}
         </p>
-        <p className="text-sm font-body font-semibold text-[#3a2f22]" dir="ltr">{email}</p>
+        <p className="text-sm font-body font-semibold text-[#f3e9d6]" dir="ltr">{email}</p>
       </div>
       <input
         type="text"
@@ -55,9 +55,9 @@ export default function OtpStep({ email, onVerify, onResend, onBack }) {
         placeholder="••••••"
         autoFocus
         dir="ltr"
-        className="w-full px-3 py-3 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] font-body text-center text-xl tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-landing-gold"
+        className="w-full px-3 py-3 rounded-lg border border-transparent bg-landing-bg text-[#f3e9d6] font-body text-center text-xl tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-landing-gold"
       />
-      <p className="text-xs text-center text-[#3a2f22]/55">{ar ? "إذا طلبت الرمز أكثر من مرة، استخدم أحدث رمز وصلك فقط." : "If you requested more than one code, only the newest code will work."}</p>
+      <p className="text-xs text-center text-[#f3e9d6]/55">{ar ? "إذا طلبت الرمز أكثر من مرة، استخدم أحدث رمز وصلك فقط." : "If you requested more than one code, only the newest code will work."}</p>
       {notice && <p className="text-sm text-landing-gold-deep font-body text-center">{notice}</p>}
       {error && <p className="text-sm text-red-500 font-body text-center">{error}</p>}
       <button
@@ -79,7 +79,7 @@ export default function OtpStep({ email, onVerify, onResend, onBack }) {
       <button
         type="button"
         onClick={onBack}
-        className="w-full text-center text-xs font-body text-[#3a2f22]/50 hover:text-[#3a2f22]"
+        className="w-full text-center text-xs font-body text-[#f3e9d6]/50 hover:text-[#f3e9d6]"
       >
         {ar ? "رجوع" : "Back"}
       </button>
