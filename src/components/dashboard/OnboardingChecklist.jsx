@@ -28,6 +28,7 @@ export default function OnboardingChecklist({ data, lang, t }) {
 
   if (steps.every((s) => s.done)) return null;
   const doneCount = steps.filter((s) => s.done).length;
+  const nextIndex = steps.findIndex((s) => !s.done);
   const Arrow = ar ? ArrowLeft : ArrowRight;
 
   return (
@@ -48,7 +49,8 @@ export default function OnboardingChecklist({ data, lang, t }) {
           <Link
             key={i}
             to={s.to}
-            className={`flex items-center gap-4 px-6 py-4 hover:bg-muted/50 transition-colors ${s.done ? "opacity-60" : ""}`}
+            aria-current={i === nextIndex ? "step" : undefined}
+            className={`flex items-center gap-4 px-6 py-4 transition-colors ${s.done ? "opacity-60 hover:bg-muted/50" : i === nextIndex ? "bg-accent/10 hover:bg-accent/15" : "hover:bg-muted/50"}`}
           >
             {s.done ? (
               <CheckCircle2 className="w-5 h-5 text-accent shrink-0" />
@@ -59,7 +61,12 @@ export default function OnboardingChecklist({ data, lang, t }) {
               <p className={`text-sm font-body font-semibold ${s.done ? "line-through" : ""}`}>{s.title}</p>
               <p className="text-xs text-muted-foreground font-body">{s.desc}</p>
             </div>
-            {!s.done && <Arrow className="w-4 h-4 text-accent shrink-0" />}
+            {!s.done && (
+              <span className="flex items-center gap-2 text-accent shrink-0">
+                <span className="text-[10px] font-semibold">{i + 1}</span>
+                <Arrow className="w-4 h-4" />
+              </span>
+            )}
           </Link>
         ))}
       </div>

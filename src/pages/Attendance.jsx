@@ -3,13 +3,14 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { canCreateTasks, isCompanyOwner, visibleEmployees } from "@/lib/permissions";
-import { Loader2 } from "lucide-react";
+import { ClipboardCheck, Loader2 } from "lucide-react";
 import CheckInOutCard from "@/components/attendance/CheckInOutCard";
 import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDashboard";
 import CalendarExportCard from "@/components/calendar/CalendarExportCard";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import TimeFormatToggle from "@/components/attendance/TimeFormatToggle";
 import { queryClientInstance } from "@/lib/query-client";
+import PageHeader from "@/components/PageHeader";
 
 // Heavy tabs (maps/charts) load only when their tab is actually opened —
 // the page itself now appears instantly with the check-in card + team list.
@@ -74,10 +75,7 @@ export default function Attendance() {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="font-heading text-3xl font-semibold">{t("attendanceScheduling")}</h1>
-        <TimeFormatToggle lang={lang} />
-      </div>
+      <PageHeader title={t("attendanceScheduling")} icon={ClipboardCheck} actions={<TimeFormatToggle lang={lang} />} />
 
       <CheckInOutCard currentUser={currentUser} company={company} t={t} />
 
@@ -85,12 +83,12 @@ export default function Attendance() {
 
       {isManager && (
         <div className="space-y-4">
-          <div className="flex gap-2 border-b border-border">
+          <div className="flex gap-2 border-b border-border overflow-x-auto no-scrollbar">
             {tabs.map((tb) => (
               <button
                 key={tb.key}
                 onClick={() => setTab(tb.key)}
-                className={`px-3 py-2 text-sm font-body border-b-2 -mb-px transition ${tab === tb.key ? "border-foreground text-foreground font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                className={`px-3 py-2 text-sm font-body border-b-2 -mb-px transition whitespace-nowrap shrink-0 ${tab === tb.key ? "border-foreground text-foreground font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
               >
                 {tb.label}
               </button>

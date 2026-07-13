@@ -11,6 +11,7 @@ import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import StationAnalyticsModal from "@/components/stations/StationAnalyticsModal";
 import StationTypeEditor from "@/components/stations/StationTypeEditor";
 import StationLocationEditor from "@/components/stations/StationLocationEditor";
+import PageHeader from "@/components/PageHeader";
 
 export default function Stations() {
   const { t } = useI18n();
@@ -173,17 +174,16 @@ export default function Stations() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-heading text-3xl font-semibold">{t("stations")}</h1>
-          <p className="text-muted-foreground font-body text-sm mt-1">{stations.length} {t("stations").toLowerCase()}</p>
-        </div>
-        {canManage && (
-          <button onClick={() => setShowAdd((o) => !o)} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">
+      <PageHeader
+        title={t("stations")}
+        description={`${stations.length} ${t("stations").toLowerCase()}`}
+        icon={Radio}
+        actions={canManage && (
+          <button onClick={() => setShowAdd((open) => !open)} className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-foreground text-background text-sm font-body hover:bg-accent transition-colors">
             <Plus className="w-4 h-4" /> {t("addStation")}
           </button>
         )}
-      </div>
+      />
 
       {canManage && stationLimitReached && (
         <div className="p-4 rounded-xl border border-amber-300 bg-amber-50 flex flex-wrap items-center justify-between gap-3">

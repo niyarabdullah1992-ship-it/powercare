@@ -6,7 +6,7 @@ import { updateCompany, addNotification, updateEmployeeProfile, setAllowedEmailD
 import { canManageEmployees, canTransferOwnership, canManageStations, visibleStations, visibleEmployees } from "@/lib/permissions";
 import { canAddEmployee } from "@/lib/planLimits";
 import { Link } from "react-router-dom";
-import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle, Mail, GripVertical } from "lucide-react";
+import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle, Mail, GripVertical, Users } from "lucide-react";
 import { badgeFor, nextBadge } from "@/lib/rewards";
 import { getRoleLabel } from "@/lib/roles";
 import { base44 } from "@/api/base44Client";
@@ -19,6 +19,8 @@ import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import AuditLogPanel from "@/components/audit/AuditLogPanel";
 import StationCombobox from "@/components/stations/StationCombobox";
 import { logAudit } from "@/lib/auditLog";
+import PageHeader from "@/components/PageHeader";
+import MobileSelect from "@/components/mobile/MobileSelect";
 
 const ROLES = ["employee", "station_manager", "pgm", "ops_manager", "director"];
 
@@ -107,7 +109,7 @@ export default function Employees() {
   if (!selectedStation) {
     return (
       <div className="space-y-6">
-        <h1 className="font-heading text-3xl font-semibold">{t("employees")}</h1>
+        <PageHeader title={t("employees")} description={`${visibleEmployees(currentUser, data).length} ${t("employees").toLowerCase()}`} icon={Users} />
 
         <RolesGuide company={company} />
 
@@ -321,10 +323,13 @@ export default function Employees() {
           <Search className="w-4 h-4 absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("search")} className="w-full ps-9 pe-3 py-2 rounded-md border border-input text-sm font-body" />
         </div>
-        <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body">
-          <option value="all">{t("all")}</option>
-          {ROLES.map((r) => <option key={r} value={r}>{getRoleLabel(company, r, t)}</option>)}
-        </select>
+        <MobileSelect
+          value={roleFilter}
+          onChange={setRoleFilter}
+          placeholder={t("all")}
+          className="min-w-40"
+          options={[{ value: "all", label: t("all") }, ...ROLES.map((role) => ({ value: role, label: getRoleLabel(company, role, t) }))]}
+        />
         {canManage && (
           <button onClick={() => setShowAdd((o) => !o)} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">
             <Plus className="w-4 h-4" /> {t("addEmployee")}
@@ -347,9 +352,12 @@ export default function Employees() {
             <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t("email")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             {emailError && <p className="text-xs text-destructive font-body mt-1">{emailError}</p>}
           </div>
-          <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="px-3 py-2 rounded-md border border-input text-sm font-body">
-            {allowedRoles.map((r) => <option key={r} value={r}>{getRoleLabel(company, r, t)}</option>)}
-          </select>
+          <MobileSelect
+            value={form.role}
+            onChange={(role) => setForm({ ...form, role })}
+            placeholder={t("role")}
+            options={allowedRoles.map((role) => ({ value: role, label: getRoleLabel(company, role, t) }))}
+          />
           {form.role === "pgm" && (
             <div className="md:col-span-3 p-3 rounded-md border border-border bg-background space-y-2">
               <p className="text-xs text-muted-foreground font-body">{t("selectStation")}</p>
@@ -534,10 +542,13 @@ function TransferModal({ type, onClose }) {
         <h3 className="font-heading text-xl font-semibold">{type === "director" ? t("transferDirector") : t("transferOwnership")}</h3>
         <div>
           <label className="block text-xs text-muted-foreground font-body mb-1">{t("select")}</label>
-          <select value={target} onChange={(e) => setTarget(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
-            <option value="">—</option>
-            {candidates.map((e) => <option key={e.id} value={e.id}>{e.name} ({getRoleLabel(company, e.role, t)})</option>)}
-          </select>
+          <MobileSelect
+            value={target}
+            onChange={setTarget}
+            placeholder={t("select")}
+            className="w-full"
+            options={[{ value: "", label: "—" }, ...candidates.map((employee) => ({ value: employee.id, label: `${employee.name} (${getRoleLabel(company, employee.role, t)})` }))]}
+          />
         </div>
         {type === "ownership" && !target && (
           <div className="space-y-2 pt-2 border-t border-border">
