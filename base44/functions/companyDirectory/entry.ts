@@ -283,13 +283,18 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true });
     }
 
-    // Employee account deletion is reserved for assigned HR staff. It also revokes
-    // credentials and active sessions so the removed employee cannot sign in again.
+    // Employee account deletion is available to the company owner and assigned HR staff.
+    // It also revokes credentials and active sessions so the removed employee cannot sign in again.
     if (action === 'deleteEmployeeAccount') {
       const { employeeId } = body;
-      if (!employeeId || !auth.userId || auth.userId === employeeId) return Response.json({ error: 'Forbidden' }, { status: 403 });
-      const actors = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: auth.userId });
-      if (!actors[0]?.hrLevelId) return Response.json({ error: 'HR access required' }, { status: 403 });
+      if (!employeeId || (auth.userId && auth.userId === employeeId)) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      let performedBy = 'Company owner';
+      if (auth.role !== 'owner') {
+        if (!auth.userId) return Response.json({ error: 'Forbidden' }, { status: 403 });
+        const actors = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: auth.userId });
+        if (!actors[0]?.hrLevelId) return Response.json({ error: 'HR access required' }, { status: 403 });
+        performedBy = actors[0].name || 'HR';
+      }
       const targets = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId });
       if (!targets.length) return Response.json({ error: 'Employee not found' }, { status: 404 });
       const meta = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: 'companyMeta' });
@@ -299,7 +304,7 @@ Deno.serve(async (req) => {
       for (const record of credentials) await base44.asServiceRole.entities.EmployeeCredential.delete(record.id);
       for (const session of sessions) await base44.asServiceRole.entities.CompanySession.delete(session.id);
       for (const target of targets) await base44.asServiceRole.entities.Employee.delete(target.id);
-      await base44.asServiceRole.entities.AuditLog.create({ companyId, action: 'employee_account_deleted', performedBy: actors[0].name || 'HR', details: `Employee account deleted: ${targets[0].name || employeeId}.` });
+      await base44.asServiceRole.entities.AuditLog.create({ companyId, action: 'employee_account_deleted', performedBy, details: `Employee account deleted: ${targets[0].name || employeeId}.` });
       await bumpSignal(base44, companyId);
       return Response.json({ ok: true });
     }

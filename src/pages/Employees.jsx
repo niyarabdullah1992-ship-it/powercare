@@ -77,8 +77,8 @@ export default function Employees() {
 
   if (!data || !currentUser) return null;
   const canManage = canManageEmployees(currentUser);
-  const canDeleteAccounts = !!currentUser.hrLevelId;
   const canTransfer = isCompanyOwner(currentUser, data);
+  const canDeleteAccounts = canTransfer || !!currentUser.hrLevelId;
   const stations = visibleStations(currentUser, data);
   // Station managers can only add employees / station managers to their own station
   const allowedRoles = currentUser.role === "station_manager" ? ["employee", "station_manager"] : ROLES;

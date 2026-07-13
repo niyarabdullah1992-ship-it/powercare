@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { canManageEmployees, hasHRPermission, canViewEmployeeProfile } from "@/lib/permissions";
+import { canManageEmployees, hasHRPermission, canViewEmployeeProfile, isCompanyOwner } from "@/lib/permissions";
 import { getRoleLabel } from "@/lib/roles";
 import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle, Lock } from "lucide-react";
 import ProfileHero from "@/components/employees/ProfileHero";
@@ -35,6 +35,7 @@ export default function EmployeeProfile() {
   if (!employee) return <p className="p-6 text-sm text-muted-foreground font-body">—</p>;
 
   const isSelf = currentUser.id === employee.id;
+  const canDeleteAccount = !isSelf && employee.id !== data.ownerId && (isCompanyOwner(currentUser, data) || !!currentUser.hrLevelId);
 
   // Privacy: full profiles (personal data, certificates, salary, leave) are only
   // visible to the employee themself, their managers, and in-scope HR.
@@ -102,7 +103,7 @@ export default function EmployeeProfile() {
             />
             {isSelf && <AccountSettingsCard employee={employee} company={company} />}
             {canManage && !isSelf && <LoginAccessCard employee={employee} companyId={company.id} />}
-            {!!currentUser.hrLevelId && !isSelf && <DeleteEmployeeAccountCard employee={employee} companyId={company.id} />}
+            {canDeleteAccount && <DeleteEmployeeAccountCard employee={employee} companyId={company.id} />}
           </aside>
         </div>
       </div>

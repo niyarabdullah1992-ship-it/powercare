@@ -28,7 +28,7 @@ export default function DeleteEmployeeAccountCard({ employee, companyId }) {
   return (
     <div className="rounded-2xl border border-destructive/30 bg-card p-5 space-y-3">
       <h3 className="flex items-center gap-2 font-heading font-semibold text-destructive"><Trash2 className="h-4 w-4" />{ar ? "حذف حساب الموظف" : "Delete employee account"}</h3>
-      <p className="text-xs text-muted-foreground">{ar ? "متاح لمسؤولي الموارد البشرية فقط، ويوقف دخول الموظف نهائيًا." : "Available only to HR staff and permanently revokes employee access."}</p>
+      <p className="text-xs text-muted-foreground">{ar ? "متاح لمالك الشركة ومسؤولي الموارد البشرية، ويوقف دخول الموظف نهائيًا." : "Available to the company owner and HR staff, and permanently revokes employee access."}</p>
       <ConfirmDeleteDialog onConfirm={remove} title={ar ? "حذف حساب الموظف؟" : "Delete employee account?"} description={ar ? "سيتم حذف الحساب وبيانات الدخول ولا يمكن التراجع." : "The account and login access will be deleted permanently."} trigger={<button disabled={deleting} className="flex items-center gap-2 rounded-md border border-destructive px-3 py-2 text-sm text-destructive disabled:opacity-50">{deleting && <Loader2 className="h-4 w-4 animate-spin" />}{ar ? "حذف الحساب" : "Delete account"}</button>} />
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
