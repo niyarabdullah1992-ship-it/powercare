@@ -130,6 +130,15 @@ export default function Landing() {
           <div className="text-center lg:text-start">
             <h1 className="hero-title break-words text-5xl uppercase text-landing-gold sm:text-6xl md:text-8xl">{t("appName")}</h1>
 
+            <div className="mx-auto mt-8 max-w-lg overflow-hidden rounded-2xl border border-landing-gold/15 shadow-lg lg:mx-0">
+              <img
+                src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/098e1f42d_generated_image.png"
+                alt={lang === "ar" ? "موظفة سعيدة تعمل على منصة PowerCare" : "Happy employee working with PowerCare"}
+                className="h-56 w-full object-cover sm:h-64"
+                loading="lazy"
+              />
+            </div>
+
             <div className="mx-auto mt-8 max-w-lg divide-y divide-[#3a2f22]/8 overflow-hidden rounded-2xl border border-landing-gold/15 bg-white shadow-sm lg:mx-0 lg:mt-10">
               <FeatureBullet icon={Clock} title={t("feature1")} />
               <FeatureBullet icon={TrendingUp} title={t("feature2")} />
