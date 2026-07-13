@@ -1509,6 +1509,9 @@ const dict = {
     backBtn: "뒤로",
     noAccountYet: "계정이 없으신가요?",
     videoHeading: "PowerCare 소개 영상", videoText: "PowerCare는 정밀함만큼 사람을 중요하게 여기는 조직을 위한 통합 플랫폼입니다. 스테이션, 팀, 일정, 보고서, 사내 소통을 하나의 세련된 공간으로 통합하며, 고급 건축에서 비롯된 철학을 따릅니다. 원자재의 고요한 힘과 현대 기술의 명료함이 만나고, 지속 가능성과 평온한 웰빙이 그 핵심에 있습니다.", narrationCta: "우리의 이야기 듣기",
+    attendanceScheduling: "출퇴근 및 일정", chat: "채팅", files: "파일", fileSigning: "파일 서명", aiAssistant: "AI 도우미", allComplaints: "민원 및 신고", hr: "인사 관리", tasksReport: "작업 보고서", userGuide: "사용 안내서", viewProfile: "프로필 보기",
+    companyFiles: "회사 파일", filesNote: "회사의 문서 보관함입니다. 폴더와 하위 폴더를 만들고 어디서든 파일을 업로드할 수 있습니다.", newFolder: "새 폴더", folderName: "폴더 이름", uploadFileBtn: "파일 업로드", uploading: "업로드 중…", filesAllStations: "모든 현장", foldersLabel: "폴더", emptyFolderNote: "이 폴더는 비어 있습니다. 폴더를 만들거나 파일을 업로드하세요.", itemsUnit: "개 항목", uploadedBy: "업로더", downloadFile: "다운로드",
+    syncPendingTitle: "클라우드 업로드를 기다리는 변경 사항", syncPending: "동기화 대기 중", syncing: "동기화 중...", syncSavedTitle: "모든 데이터가 클라우드에 저장되었습니다", synced: "동기화됨", toggleTheme: "테마 전환",
   },
 };
 
@@ -1536,7 +1539,9 @@ export function I18nProvider({ children }) {
     try { return JSON.parse(localStorage.getItem(GENERATED_KEY) || "{}"); } catch { return {}; }
   });
   const [isTranslating, setIsTranslating] = useState(false);
-  const t = (key) => generated[lang]?.[key] ?? dict[lang]?.[key] ?? (lang === "en" ? dict.en[key] : "…") ?? key;
+  const t = (key) => lang === "en"
+    ? (dict.en[key] ?? key)
+    : ((dict[lang]?.[key] !== dict.en[key] ? dict[lang]?.[key] : undefined) ?? generated[lang]?.[key] ?? dict[lang]?.[key] ?? "…");
   const dir = dict[lang]?.dir || "ltr";
 
   useEffect(() => {
@@ -1546,28 +1551,38 @@ export function I18nProvider({ children }) {
   }, [lang, dir]);
 
   useEffect(() => {
-    if (lang === "en" || lang === "ar" || isTranslating) return;
-    const missing = Object.fromEntries(Object.entries(dict.en).filter(([key, value]) => !PRESERVED_KEYS.has(key) && !generated[lang]?.[key] && (!dict[lang]?.[key] || dict[lang][key] === value)));
-    if (!Object.keys(missing).length) return;
+    if (lang === "en" || lang === "ar") return;
+    const missing = Object.entries(dict.en).filter(([key, value]) => !PRESERVED_KEYS.has(key) && !generated[lang]?.[key] && (!dict[lang]?.[key] || dict[lang][key] === value));
+    if (!missing.length) return;
     let cancelled = false;
     setIsTranslating(true);
-    base44.integrations.Core.InvokeLLM({
-      prompt: `Translate every value in this JSON object into ${LANGUAGES.find((item) => item.code === lang)?.label}. Return every key unchanged. Use natural professional UI language. Keep product names such as PowerCare, Niro, PDF, Excel and GPS unchanged. Do not include any English explanation or markdown. JSON: ${JSON.stringify(missing)}`,
-      response_json_schema: {
-        type: "object",
-        properties: { translations: { type: "object", additionalProperties: { type: "string" } } },
-        required: ["translations"],
-      },
-    }).then((result) => {
-      if (cancelled || !result?.translations) return;
-      setGenerated((current) => {
-        const next = { ...current, [lang]: { ...(current[lang] || {}), ...result.translations } };
-        localStorage.setItem(GENERATED_KEY, JSON.stringify(next));
-        return next;
-      });
-    }).finally(() => { if (!cancelled) setIsTranslating(false); });
-    return () => { cancelled = true; };
-  }, [lang, generated, isTranslating]);
+
+    (async () => {
+      for (let index = 0; index < missing.length && !cancelled; index += 40) {
+        const batch = Object.fromEntries(missing.slice(index, index + 40));
+        const result = await base44.integrations.Core.InvokeLLM({
+          prompt: `Translate every value in this JSON object into ${LANGUAGES.find((item) => item.code === lang)?.label}. Return every key unchanged. Use natural professional UI language. Keep product names such as PowerCare, Niro, PDF, Excel and GPS unchanged. Do not include any English explanation or markdown. JSON: ${JSON.stringify(batch)}`,
+          response_json_schema: {
+            type: "object",
+            properties: { translations: { type: "object", additionalProperties: { type: "string" } } },
+            required: ["translations"],
+          },
+        });
+        if (!result?.translations || cancelled) continue;
+        setGenerated((current) => {
+          const next = { ...current, [lang]: { ...(current[lang] || {}), ...result.translations } };
+          localStorage.setItem(GENERATED_KEY, JSON.stringify(next));
+          return next;
+        });
+      }
+      if (!cancelled) setIsTranslating(false);
+    })();
+
+    return () => {
+      cancelled = true;
+      setIsTranslating(false);
+    };
+  }, [lang]);
 
   return (
     <I18nContext.Provider value={{ lang, setLang, t, dir, languages: LANGUAGES, isTranslating }}>
