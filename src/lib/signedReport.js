@@ -2,6 +2,7 @@ import { base44 } from "@/api/base44Client";
 import { makeVerificationBadgeCanvas, generateVerificationId, loadBadgeQr } from "@/lib/verificationBadge";
 import { imageBlobToPdf } from "@/lib/signPdf";
 import { sha256HexOfBuffer } from "@/lib/fileHash";
+import { PDF_THEME } from "@/lib/pdfTheme";
 
 // Draws the report DIRECTLY on canvas (title + table + signature + verification
 // badge) — fully deterministic, full Arabic/RTL support, no HTML rendering step
@@ -27,9 +28,9 @@ function loadImage(src) {
 
 function drawReportCanvas({ title, companyName, dir, headers, rows }) {
   const W = 1400;
-  const rowH = 38;
-  const tableTop = 150;
-  const footerSpace = 320; // reserved for signature + badge
+  const rowH = 42;
+  const tableTop = 190;
+  const footerSpace = 340; // reserved for signature + badge
   const H = tableTop + (rows.length + 1) * rowH + footerSpace;
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -39,50 +40,70 @@ function drawReportCanvas({ title, companyName, dir, headers, rows }) {
 
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = PDF_THEME.ink;
+  ctx.fillRect(0, 0, W * 0.72, 10);
+  ctx.fillStyle = PDF_THEME.gold;
+  ctx.fillRect(W * 0.72, 0, W * 0.28, 10);
   ctx.direction = rtl ? "rtl" : "ltr";
   ctx.textAlign = rtl ? "right" : "left";
-  const xTitle = rtl ? W - 48 : 48;
+  const xTitle = rtl ? W - 120 : 120;
 
-  // Header
-  ctx.fillStyle = "#3a2e22";
-  ctx.font = "600 34px Tahoma, Arial, sans-serif";
-  ctx.fillText(title, xTitle, 62);
-  ctx.fillStyle = "#8a7660";
-  ctx.font = "18px Tahoma, Arial, sans-serif";
-  ctx.fillText(`${companyName} — ${new Date().toLocaleDateString(rtl ? "ar" : "en-GB")}`, xTitle, 96);
-  ctx.strokeStyle = "#b07d3f";
-  ctx.lineWidth = 3;
+  // PowerCare identity and report header
+  ctx.strokeStyle = PDF_THEME.gold;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(rtl ? W - 100 : 48, 40, 52, 52);
+  ctx.fillStyle = PDF_THEME.gold;
+  ctx.font = "700 17px Georgia, serif";
+  ctx.textAlign = "center";
+  ctx.fillText("PC", rtl ? W - 74 : 74, 73);
+  ctx.textAlign = rtl ? "right" : "left";
+  ctx.fillStyle = PDF_THEME.gold;
+  ctx.font = "700 13px Tahoma, Arial, sans-serif";
+  ctx.fillText("POWERCARE • SIGNED REPORT", xTitle, 46);
+  ctx.fillStyle = PDF_THEME.ink;
+  ctx.font = "600 34px Georgia, Tahoma, serif";
+  ctx.fillText(title, xTitle, 86);
+  ctx.fillStyle = PDF_THEME.muted;
+  ctx.font = "17px Tahoma, Arial, sans-serif";
+  ctx.fillText(`${companyName} — ${new Date().toLocaleDateString(rtl ? "ar-SA" : "en-GB")}`, xTitle, 120);
+  ctx.strokeStyle = PDF_THEME.line;
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(48, 114);
-  ctx.lineTo(W - 48, 114);
+  ctx.moveTo(48, 148);
+  ctx.lineTo(W - 48, 148);
   ctx.stroke();
 
   // Table
   const colW = (W - 96) / headers.length;
   const cellX = (i) => (rtl ? W - 48 - i * colW - 10 : 48 + i * colW + 10);
 
-  ctx.fillStyle = "rgba(176,125,63,0.14)";
-  ctx.fillRect(48, tableTop - 26, W - 96, rowH);
-  ctx.fillStyle = "#55483a";
-  ctx.font = "600 16px Tahoma, Arial, sans-serif";
+  ctx.fillStyle = PDF_THEME.ink;
+  ctx.fillRect(48, tableTop - 28, W - 96, rowH);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "600 15px Tahoma, Arial, sans-serif";
   headers.forEach((h, i) => ctx.fillText(clip(ctx, h, colW - 20), cellX(i), tableTop));
 
   ctx.font = "15px Tahoma, Arial, sans-serif";
   rows.forEach((r, ri) => {
     const y = tableTop + (ri + 1) * rowH;
     if (ri % 2) {
-      ctx.fillStyle = "rgba(176,125,63,0.05)";
-      ctx.fillRect(48, y - 26, W - 96, rowH);
+      ctx.fillStyle = PDF_THEME.cream;
+      ctx.fillRect(48, y - 28, W - 96, rowH);
     }
-    ctx.fillStyle = "#3a2e22";
+    ctx.fillStyle = PDF_THEME.ink;
     r.forEach((c, ci) => ctx.fillText(clip(ctx, c, colW - 20), cellX(ci), y));
-    ctx.strokeStyle = "rgba(176,125,63,0.18)";
+    ctx.strokeStyle = PDF_THEME.line;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(48, y + 11);
     ctx.lineTo(W - 48, y + 11);
     ctx.stroke();
   });
+
+  ctx.fillStyle = PDF_THEME.muted;
+  ctx.font = "13px Tahoma, Arial, sans-serif";
+  ctx.textAlign = rtl ? "right" : "left";
+  ctx.fillText("PowerCare • Secure verified document", rtl ? W - 48 : 48, H - 24);
 
   return canvas;
 }
