@@ -40,7 +40,8 @@ AVAILABLE ACTIONS (include them in "actions" when the user asks you to do someth
 - {"type":"export_data","dataset":"employees"|"tasks"|"reports"|"stations"|"safety","format":"excel"|"pdf","reportTitle":"<title in the user's language>"} — exports the data. "excel" downloads an Excel-compatible file; "pdf" opens a brand-styled printable report (user saves as PDF). If the user asks for PDF/BDF/print/تقرير, use "pdf"; for Excel/اكسل use "excel". Works for ANY section.
 - {"type":"create_task","title":"...","description":"...","station":"<station name>","assignee":"<employee name>","dailyTarget":1} — creates a new task.
 - {"type":"update_task_status","taskTitle":"<existing task title>","newStatus":"pending"|"in_progress"|"completed"|"stopped"} — changes a task's status.
-- {"type":"open_page","page":"signing"|"verify"} — opens the file signing page ("signing") or the public document verification page ("verify") in a NEW TAB (the conversation stays open). Use when the user wants to sign a document or verify a signed one. TIP: to sign a report, first export it as "pdf", then open the signing page.
+- {"type":"sign_report","dataset":"employees"|"tasks"|"reports"|"stations"|"safety","reportTitle":"<title in the user's language>"} — generates the report, stamps it with the user's VERIFIED SIGNATURE BADGE (encrypted verification ID + QR code + SHA-256 fingerprint registered in the verification registry) and downloads the signed PDF automatically. Use this whenever the user asks to SIGN a report (توقيع تقرير) — no manual steps needed.
+- {"type":"open_page","page":"signing"|"verify"} — opens the file signing page ("signing") or the public document verification page ("verify") in a NEW TAB (the conversation stays open). Use when the user wants to sign their OWN uploaded document or verify a signed file.
 
 DOCUMENT SIGNING & VERIFICATION (you know this feature well):
 - The platform's File Signing section lets every employee save a personal signature, then sign any PDF/image document. Signing stamps a verification badge (encrypted verification ID + QR code) on the document and registers the signed file's SHA-256 fingerprint in a verification registry.
@@ -92,7 +93,7 @@ Answer the last user question.`,
       });
       let text = res?.answer || "";
       for (const action of res?.actions || []) {
-        const result = executeAssistantAction(action, { data, company, currentUser, t });
+        const result = await executeAssistantAction(action, { data, company, currentUser, t });
         text += `\n\n${result.ok ? "✅" : "⚠️"} ${result.message}`;
       }
       setMessages((prev) => [...prev, { role: "assistant", text }]);

@@ -1,6 +1,7 @@
 import { updateCompany } from "@/lib/store";
 import { buildAssistantContext } from "./assistantContext";
 import { printReport } from "@/lib/printReport";
+import { generateSignedReport } from "@/lib/signedReport";
 
 // Executes real actions requested by the AI assistant (exports, task creation, status updates).
 // Every write action is permission-gated; exports only include data the user can already see.
@@ -24,20 +25,24 @@ function downloadCSV(filename, rows) {
 const norm = (s) => String(s || "").trim().toLowerCase();
 const matches = (a, b) => norm(a).includes(norm(b)) || norm(b).includes(norm(a));
 
-export function executeAssistantAction(action, { data, company, currentUser, t }) {
+function datasetRows(action, data, currentUser) {
+  const ctx = buildAssistantContext(data, currentUser);
+  const map = {
+    employees: ctx.employees,
+    tasks: ctx.tasks,
+    reports: ctx.dailyReports.map(({ content, ...r }) => r),
+    stations: ctx.stations,
+    safety: ctx.safety.map((s) => ({ ...s, hazards: (s.hazards || []).join(" | ") })),
+  };
+  return map[norm(action.dataset)];
+}
+
+export async function executeAssistantAction(action, { data, company, currentUser, t }) {
   const canWrite = WRITE_ROLES.includes(currentUser.role);
 
   if (action.type === "export_data") {
-    const ctx = buildAssistantContext(data, currentUser);
     const dataset = norm(action.dataset);
-    const map = {
-      employees: ctx.employees,
-      tasks: ctx.tasks,
-      reports: ctx.dailyReports.map(({ content, ...r }) => r),
-      stations: ctx.stations,
-      safety: ctx.safety.map((s) => ({ ...s, hazards: (s.hazards || []).join(" | ") })),
-    };
-    const rows = map[dataset];
+    const rows = datasetRows(action, data, currentUser);
     if (!rows || !rows.length) return { ok: false, message: t("aiNoData") };
     if (norm(action.format) === "pdf") {
       printReport({
@@ -51,6 +56,22 @@ export function executeAssistantAction(action, { data, company, currentUser, t }
     }
     downloadCSV(`${dataset}_${new Date().toISOString().slice(0, 10)}.csv`, rows);
     return { ok: true, message: t("aiExportDone") };
+  }
+
+  if (action.type === "sign_report") {
+    const rows = datasetRows(action, data, currentUser);
+    if (!rows || !rows.length) return { ok: false, message: t("aiNoData") };
+    const { verificationId } = await generateSignedReport({
+      title: action.reportTitle || action.dataset,
+      companyName: data.name || "",
+      dir: document.documentElement.dir,
+      headers: Object.keys(rows[0]),
+      rows: rows.map((r) => Object.values(r)),
+      signerName: currentUser?.profile?.signatureName || currentUser.name,
+      signerId: currentUser.id,
+      companyId: company.id,
+    });
+    return { ok: true, message: `${t("aiReportSigned")} ${verificationId}` };
   }
 
   if (action.type === "open_page") {
