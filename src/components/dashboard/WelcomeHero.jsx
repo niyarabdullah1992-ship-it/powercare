@@ -1,11 +1,28 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { formatDate } from "@/lib/dateFormat";
+import { base44 } from "@/api/base44Client";
+import { updateEmployeeProfile } from "@/lib/store";
+import { Camera, Loader2 } from "lucide-react";
 import Logo from "@/components/Logo";
 
 // Calm, artistic welcome banner shown right after login — greets the user and
 // surfaces the day's most important alerts without feeling noisy.
-export default function WelcomeHero({ name, companyName, t, lang, alerts = [] }) {
+export default function WelcomeHero({ name, companyName, t, lang, alerts = [], employee, companyId }) {
   const hasAlerts = alerts.some((a) => a.value > 0);
+  const photoInput = useRef(null);
+  const [uploading, setUploading] = useState(false);
+
+  const changePhoto = async (file) => {
+    if (!file || !employee || !companyId) return;
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      updateEmployeeProfile(companyId, employee.id, { avatarUrl: file_url });
+    } finally {
+      setUploading(false);
+      if (photoInput.current) photoInput.current.value = "";
+    }
+  };
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-landing-gold/20 bg-gradient-to-br from-[#6b4f30] via-[#8a6a45] to-[#5c4429] p-6 md:p-8">
@@ -14,8 +31,21 @@ export default function WelcomeHero({ name, companyName, t, lang, alerts = [] })
 
       <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div className="flex items-center gap-4">
-          <div className="shrink-0 bg-white/5 border border-landing-gold/30 rounded-full p-2.5">
-            <Logo size={34} />
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => photoInput.current?.click()}
+              disabled={uploading || !employee}
+              className="group relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-landing-gold/40 bg-white/10 p-2.5 shadow-lg transition hover:border-landing-gold disabled:cursor-default"
+              title={t("uploadPhoto")}
+              aria-label={t("uploadPhoto")}
+            >
+              {employee?.profile?.avatarUrl ? <img src={employee.profile.avatarUrl} alt={name} className="h-full w-full rounded-full object-cover" /> : <Logo size={34} />}
+              <span className="absolute inset-x-0 bottom-0 flex h-6 items-center justify-center bg-black/65 text-white">
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+              </span>
+            </button>
+            <input ref={photoInput} type="file" accept="image/*" className="hidden" onChange={(e) => changePhoto(e.target.files?.[0])} />
           </div>
           <div>
             <p className="text-[11px] tracking-widest-xl uppercase text-landing-gold-light/70 font-body mb-1">
