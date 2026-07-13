@@ -73,7 +73,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
       if (att) { setAttendance(att); onStatusChange?.(att); }
     } catch (err) {
       const code = err?.response?.data?.error;
-      setError(code === "GPS_REQUIRED" ? t("locationDenied") : (code || "Failed to check in"));
+      setError(code === "GPS_REQUIRED" ? t("locationDenied") : code === "STATION_LOCATION_REQUIRED" ? t("locationNotSet") : code === "OUTSIDE_STATION" ? t("outsideLocation") : (code || "Failed to check in"));
     } finally {
       setLoading(false);
     }
@@ -94,12 +94,17 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         action: "checkOut",
         employeeId: currentUser.id,
         shiftEnd: shift?.end,
-        lat: coords?.lat, lng: coords?.lng,
+        lat: coords.lat, lng: coords.lng,
+        accuracy: coords.accuracy ?? null,
+        stationLat: station?.lat ?? null,
+        stationLng: station?.lng ?? null,
+        radiusMeters: station?.radiusMeters ?? null,
       });
       const att = res?.data?.attendance;
       if (att) { setAttendance(att); onStatusChange?.(att); }
-    } catch {
-      // best-effort
+    } catch (err) {
+      const code = err?.response?.data?.error;
+      setError(code === "GPS_REQUIRED" ? t("locationDenied") : code === "STATION_LOCATION_REQUIRED" ? t("locationNotSet") : code === "OUTSIDE_STATION" ? t("outsideLocation") : (code || "Failed to check out"));
     } finally {
       setLoading(false);
     }

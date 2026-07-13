@@ -16,8 +16,9 @@ const markerIcon = new L.Icon({
 // opened from the manager's daily attendance table.
 export default function LocationMapModal({ row, t, onClose }) {
   const empPos = row.check_in_lat != null && row.check_in_lng != null ? [row.check_in_lat, row.check_in_lng] : null;
+  const checkoutPos = row.check_out_lat != null && row.check_out_lng != null ? [row.check_out_lat, row.check_out_lng] : null;
   const stationPos = row.station_lat != null && row.station_lng != null ? [row.station_lat, row.station_lng] : null;
-  const center = empPos || stationPos || [0, 0];
+  const center = empPos || checkoutPos || stationPos || [0, 0];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
@@ -32,7 +33,8 @@ export default function LocationMapModal({ row, t, onClose }) {
         <div className="h-72 relative">
           <MapContainer center={center} zoom={16} style={{ height: "100%", width: "100%" }}>
             <GoogleTiles />
-            {empPos && <Marker position={empPos} icon={markerIcon}><Popup>{t("employeeLocation")}</Popup></Marker>}
+            {empPos && <Marker position={empPos} icon={markerIcon}><Popup>{t("checkIn")} — {t("employeeLocation")}</Popup></Marker>}
+            {checkoutPos && <Marker position={checkoutPos} icon={markerIcon}><Popup>{t("checkOut")} — {t("employeeLocation")}</Popup></Marker>}
             {stationPos && <Marker position={stationPos} icon={markerIcon}><Popup>{t("stationLocation")}</Popup></Marker>}
           </MapContainer>
         </div>

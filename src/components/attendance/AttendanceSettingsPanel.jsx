@@ -29,8 +29,8 @@ export default function AttendanceSettingsPanel({ company, currentUser, t }) {
         userRole: currentUser.role,
         workStartTime: settings.work_start_time,
         lateThresholdMinutes: settings.late_threshold_minutes,
-        gpsEnabled: settings.gps_enabled,
-        gpsRequired: settings.gps_required,
+        gpsEnabled: true,
+        gpsRequired: true,
       });
       if (res?.data?.settings) setSettings(res.data.settings);
       setSaved(true);
@@ -65,24 +65,6 @@ export default function AttendanceSettingsPanel({ company, currentUser, t }) {
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm font-body">
-        <input
-          type="checkbox"
-          checked={!!settings.gps_enabled}
-          onChange={(e) => setSettings({ ...settings, gps_enabled: e.target.checked, gps_required: e.target.checked ? settings.gps_required : false })}
-        />
-        {t("enableGps")}
-      </label>
-      {settings.gps_enabled && (
-        <label className="flex items-center gap-2 text-sm font-body ps-6">
-          <input
-            type="checkbox"
-            checked={!!settings.gps_required}
-            onChange={(e) => setSettings({ ...settings, gps_required: e.target.checked })}
-          />
-          {t("gpsRequiredToggle")}
-        </label>
-      )}
       <p className="text-[11px] text-muted-foreground font-body">{t("gpsNote")}</p>
 
       {error && <p className="text-xs text-destructive font-body whitespace-pre-wrap break-words">{error}</p>}

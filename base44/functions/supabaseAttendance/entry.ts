@@ -160,22 +160,24 @@ Deno.serve(async (req) => {
       const setRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(companyId)}`, { headers });
       const setRows = await setRes.json();
       const settings = (Array.isArray(setRows) && setRows[0]) || { work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: true, gps_required: true };
-      if (settings.gps_enabled && settings.gps_required && (lat == null || lng == null)) {
+      if (lat == null || lng == null) {
         return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
+      }
+      if (stationLat == null || stationLng == null) {
+        return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
       }
       const now = new Date();
       const startMinutes = toMinutes(shiftStart || settings.work_start_time || "08:00");
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
       const lateMinutes = Math.max(0, nowMinutes - startMinutes);
       const status = lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present";
-      let locationStatus = null;
-      let distMeters = null;
-      if (lat != null && lng != null && stationLat != null && stationLng != null) {
-        distMeters = Math.round(distanceMeters(lat, lng, stationLat, stationLng));
-        // GPS readings carry an accuracy radius — give the employee the benefit of
-        // that margin (capped at 100m) so an imprecise fix isn't wrongly "outside".
-        const accuracyMargin = Math.min(Number(accuracy) || 0, 100);
-        locationStatus = distMeters - accuracyMargin <= (radiusMeters || 200) ? "inside" : "outside";
+      const distMeters = Math.round(distanceMeters(lat, lng, stationLat, stationLng));
+      // GPS readings carry an accuracy radius — give the employee the benefit of
+      // that margin (capped at 100m) so an imprecise fix isn't wrongly "outside".
+      const accuracyMargin = Math.min(Number(accuracy) || 0, 100);
+      const locationStatus = distMeters - accuracyMargin <= (radiusMeters || 200) ? "inside" : "outside";
+      if (locationStatus !== "inside") {
+        return Response.json({ error: "OUTSIDE_STATION", distanceMeters: distMeters }, { status: 400 });
       }
       const payload = {
         company_id: companyId,
@@ -222,8 +224,15 @@ Deno.serve(async (req) => {
     }
 
     if (action === "checkOut") {
-      const { employeeId, shiftEnd, lat, lng } = body;
+      const { employeeId, shiftEnd, lat, lng, accuracy, stationLat, stationLng, radiusMeters } = body;
       if (!employeeId) return Response.json({ error: "Missing employeeId" }, { status: 400 });
+      if (lat == null || lng == null) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
+      if (stationLat == null || stationLng == null) return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
+      const checkoutDistance = Math.round(distanceMeters(lat, lng, stationLat, stationLng));
+      const accuracyMargin = Math.min(Number(accuracy) || 0, 100);
+      if (checkoutDistance - accuracyMargin > (radiusMeters || 200)) {
+        return Response.json({ error: "OUTSIDE_STATION", distanceMeters: checkoutDistance }, { status: 400 });
+      }
       const date = todayStr();
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const rows = await res.json();
@@ -236,23 +245,14 @@ Deno.serve(async (req) => {
       const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(row.id)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
-        body: JSON.stringify({ check_out_at: now.toISOString(), work_hours: workHours, early_checkout: earlyCheckout, check_out_lat: lat ?? null, check_out_lng: lng ?? null }),
+        body: JSON.stringify({ check_out_at: now.toISOString(), work_hours: workHours, early_checkout: earlyCheckout, check_out_lat: lat, check_out_lng: lng }),
       });
-      let updated = await patchRes.json();
-      if (!patchRes.ok && String(updated?.message || "").includes("check_out_lat")) {
-        // Table predates the checkout-location columns — try to add them, then retry without failing the checkout.
-        console.error("checkOut: missing check_out_lat/check_out_lng columns — run: ALTER TABLE attendance ADD COLUMN IF NOT EXISTS check_out_lat numeric, ADD COLUMN IF NOT EXISTS check_out_lng numeric;");
-        const retry = await fetch(`${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(row.id)}`, {
-          method: "PATCH",
-          headers: { ...headers, Prefer: "return=representation" },
-          body: JSON.stringify({ check_out_at: now.toISOString(), work_hours: workHours, early_checkout: earlyCheckout }),
-        });
-        updated = await retry.json();
-        if (!retry.ok) return Response.json({ error: updated?.message || "Failed to check out" }, { status: 400 });
-        return Response.json({ attendance: updated[0] });
+      const updated = await patchRes.json();
+      if (!patchRes.ok) {
+        console.error("checkOut failed:", updated?.message || updated);
+        return Response.json({ error: updated?.message || "Failed to save checkout location" }, { status: 400 });
       }
-      if (!patchRes.ok) return Response.json({ error: updated?.message || "Failed to check out" }, { status: 400 });
-      return Response.json({ attendance: updated[0] });
+      return Response.json({ attendance: updated[0], checkoutDistance });
     }
 
     // ---- Manager: excuse a late/absent record (keeps the record, removes the penalty) ----

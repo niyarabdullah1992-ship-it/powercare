@@ -94,7 +94,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
       if (res?.data?.attendance) setAttendance(res.data.attendance);
     } catch (err) {
       const code = err?.response?.data?.error;
-      setError(code === "GPS_REQUIRED" ? t("locationDenied") : (code || t("aiActionFailed")));
+      setError(code === "GPS_REQUIRED" ? t("locationDenied") : code === "STATION_LOCATION_REQUIRED" ? t("locationNotSet") : code === "OUTSIDE_STATION" ? t("outsideLocation") : (code || t("aiActionFailed")));
     } finally {
       setLoading(false);
     }
@@ -120,10 +120,17 @@ export default function QuickCheckInCard({ currentUser, company }) {
         action: "checkOut",
         employeeId: currentUser.id,
         shiftEnd: shift?.end,
-        lat: c?.lat, lng: c?.lng,
+        lat: c.lat, lng: c.lng,
+        accuracy: c.accuracy ?? null,
+        stationLat: station?.lat ?? null,
+        stationLng: station?.lng ?? null,
+        radiusMeters: station?.radiusMeters ?? null,
       });
       if (res?.data?.attendance) setAttendance(res.data.attendance);
-    } catch { /* best-effort */ } finally {
+    } catch (err) {
+      const code = err?.response?.data?.error;
+      setError(code === "GPS_REQUIRED" ? t("locationDenied") : code === "STATION_LOCATION_REQUIRED" ? t("locationNotSet") : code === "OUTSIDE_STATION" ? t("outsideLocation") : (code || t("aiActionFailed")));
+    } finally {
       setLoading(false);
     }
   };
