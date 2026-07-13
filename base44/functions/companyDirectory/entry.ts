@@ -1,4 +1,38 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
+import { createMimeMessage } from 'npm:mimetext@3.0.24';
+
+// System emails (OTP codes, welcome messages) go out through the app's connected
+// Gmail account, because the built-in email service refuses recipients who are
+// not registered platform users — which owners/employees usually are not.
+function toBase64Url(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function sendSystemEmail(base44, { to, subject, body }) {
+  try {
+    const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
+    const msg = createMimeMessage();
+    msg.setSender({ name: 'PowerCare', addr: 'no-reply@powercare.app' });
+    msg.setRecipient(to);
+    msg.setSubject(subject);
+    msg.addMessage({ contentType: 'text/plain', data: body });
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw: toBase64Url(msg.asRaw()) }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data?.error?.message || `Gmail send failed (${res.status})`);
+    }
+    return;
+  } catch (gmailError) {
+    console.error('Gmail system email failed, falling back to Core.SendEmail:', gmailError.message);
+    await base44.asServiceRole.integrations.Core.SendEmail({ to, from_name: 'PowerCare', subject, body });
+  }
+}
 
 // Company-scoped Employee/Station access. Runs with the service role only —
 // the Employee/Station entities themselves are locked down (no public RLS),
@@ -52,9 +86,8 @@ async function createLoginOtp(base44, { kind, companyId, employeeId, email }) {
     codeHash: await sha256Hex(pendingId + '::' + code),
     expiresAt: new Date(Date.now() + OTP_TTL_MS).toISOString(), attempts: 0,
   });
-  await base44.asServiceRole.integrations.Core.SendEmail({
+  await sendSystemEmail(base44, {
     to: email,
-    from_name: 'PowerCare',
     subject: 'PowerCare — رمز التحقق لتسجيل الدخول / Login Verification Code',
     body: `رمز التحقق الخاص بك هو: ${code}\n\nYour verification code is: ${code}\n\nصالح لمدة 10 دقائق. إذا لم تحاول تسجيل الدخول، تجاهل هذه الرسالة.\nValid for 10 minutes. If you didn't try to log in, ignore this email.`,
   });
@@ -355,9 +388,8 @@ Deno.serve(async (req) => {
         ]);
         const employeeName = employees[0]?.name || normalizedEmail;
         const companyName = accounts[0]?.name || 'PowerCare';
-        await base44.asServiceRole.integrations.Core.SendEmail({
+        await sendSystemEmail(base44, {
           to: normalizedEmail,
-          from_name: 'PowerCare',
           subject: 'مرحبًا بك في PowerCare / Welcome to PowerCare',
           body: `مرحبًا ${employeeName}،\n\nتهانينا، تم تجهيز حسابك في شركة ${companyName} على منصة PowerCare.\nيمكنك تسجيل الدخول باستخدام هذا البريد الإلكتروني وكلمة المرور المؤقتة التي يزوّدك بها مدير الشركة. بعد إدخالها سيصلك رمز تحقق صالح لمدة 10 دقائق.\n\nWelcome ${employeeName},\n\nYour account for ${companyName} is ready on PowerCare. Sign in with this email address and the temporary password provided securely by your company manager. A 10-minute verification code will then be sent to your email.`,
         });
