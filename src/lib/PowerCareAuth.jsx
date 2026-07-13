@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
   // Per-collection version stamps from the last successful pull — lets each poll skip
   // downloading collections that haven't changed on the server (delta sync).
   const lastVersionsRef = useRef({});
+  const syncInFlightRef = useRef(false);
 
   useEffect(() => {
     const refresh = () => setTick((t) => t + 1);
@@ -49,7 +50,8 @@ export function AuthProvider({ children }) {
       // Always reconcile with the persisted database (not just on an empty cache) so
       // records created on another device/browser eventually show up here too. Local-only
       // records (not yet synced) are kept as-is; server records are merged in additively.
-      if (localData && Date.now() - getLastLocalWriteAt(s.companyId) > RECENT_WRITE_GUARD_MS) {
+      if (localData && !syncInFlightRef.current && Date.now() - getLastLocalWriteAt(s.companyId) > RECENT_WRITE_GUARD_MS) {
+        syncInFlightRef.current = true;
         // Server records are authoritative for anything already synced (so leave requests,
         // certificates, HR messages, points etc. approved/edited on another device show up
         // here too). Any local record not yet synced (no server copy yet) is kept as-is.
@@ -118,6 +120,7 @@ export function AuthProvider({ children }) {
           );
           Promise.allSettled(hydrationTasks).then(() => {
             if (versions) lastVersionsRef.current[s.companyId] = versions;
+            syncInFlightRef.current = false;
             setIsSyncing(false);
           });
         });
@@ -135,7 +138,10 @@ export function AuthProvider({ children }) {
   // Live cross-device sync: periodically pull the latest persisted data while the app stays open,
   // so changes made on another device/browser show up here without needing a manual reload.
   useEffect(() => {
-    const interval = setInterval(refresh, 10000);
+    const poll = () => {
+      if (document.visibilityState === "visible" && navigator.onLine !== false) refresh();
+    };
+    const interval = setInterval(poll, 30000);
     return () => clearInterval(interval);
   }, [refresh]);
 

@@ -17,6 +17,7 @@ export default function Landing() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [otpPending, setOtpPending] = useState(null); // pendingId while awaiting the emailed code
   const [langOpen, setLangOpen] = useState(false);
   const currentLang = languages.find((l) => l.code === lang);
@@ -40,10 +41,13 @@ export default function Landing() {
 
   const handleCompanyLogin = async (e) => {
     e.preventDefault();
+    if (submitting) return;
     setError("");
+    setSubmitting(true);
     const r = await login(email, password);
     if (!r) setError("Invalid credentials");
     else if (r.otpRequired) setOtpPending(r.pendingId);
+    setSubmitting(false);
     // r.company → session set, useEffect above redirects to /app
   };
 
@@ -145,9 +149,10 @@ export default function Landing() {
                 {error && <p className="text-sm text-red-500 font-body">{error}</p>}
                 <button
                   type="submit"
-                  className="w-full py-3 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white font-body text-sm font-semibold hover:opacity-90 transition-opacity"
+                  disabled={submitting}
+                  className="w-full py-3 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white font-body text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-wait"
                 >
-                  {t("login")}
+                  {submitting ? t("pleaseWaitBtn") : t("login")}
                 </button>
               </form>
               )}

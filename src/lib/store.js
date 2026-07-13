@@ -419,6 +419,9 @@ export async function hydrateStationsFromEntity(companyId) {
       type: r.type,
       status: r.status,
       managerId: r.managerId,
+      lat: r.lat,
+      lng: r.lng,
+      radiusMeters: r.radiusMeters,
       createdAt: r.created_date,
     }));
   } catch {

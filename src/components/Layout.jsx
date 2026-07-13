@@ -32,6 +32,7 @@ export default function Layout({ children }) {
   const langRef = useRef(null);
   const notifRef = useRef(null);
   const userRef = useRef(null);
+  const notificationPollInFlightRef = useRef(false);
   const [navOrder, setNavOrder] = useState([]);
 
   useEffect(() => {
@@ -56,6 +57,8 @@ export default function Layout({ children }) {
   useEffect(() => {
     if (!currentUser || !company) return;
     const poll = async () => {
+      if (notificationPollInFlightRef.current || document.visibilityState !== "visible" || navigator.onLine === false) return;
+      notificationPollInFlightRef.current = true;
       try {
         const res = await base44.functions.invoke("supabaseTargets", {
           action: "listNotifications",
@@ -89,10 +92,12 @@ export default function Layout({ children }) {
         }
       } catch {
         // Supabase not configured or unreachable — silent
+      } finally {
+        notificationPollInFlightRef.current = false;
       }
     };
     poll();
-    const interval = setInterval(poll, 15000);
+    const interval = setInterval(poll, 30000);
     return () => clearInterval(interval);
   }, [currentUser?.id, company?.id]);
 

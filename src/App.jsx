@@ -47,17 +47,14 @@ const Verify = lazy(() => import('./pages/Verify'));
 // the background so navigating to them later is instant.
 if (typeof window !== "undefined") {
   window.addEventListener("load", () => {
-    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 2000));
+    if (!localStorage.getItem("powercare_session")) return;
+    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 5000));
     idle(() => {
-      import('./pages/Dashboard');
       import('./pages/MyTasks');
       import('./pages/Attendance');
-      import('./pages/StationChat');
       import('./pages/Reports');
-      import('./pages/DailyReport');
-      import('./pages/Login');
     });
-  });
+  }, { once: true });
 }
 
 function PageLoader() {
