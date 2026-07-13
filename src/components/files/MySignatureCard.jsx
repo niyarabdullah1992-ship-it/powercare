@@ -14,6 +14,15 @@ async function generateSignatureId(userId) {
   return `PWC-${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}`;
 }
 
+function dataUrlToBlob(dataUrl) {
+  const [header, encoded] = dataUrl.split(",");
+  const mime = header.match(/data:(.*?);base64/)?.[1] || "image/png";
+  const binary = atob(encoded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
 // Each employee's personal signature: drawn or typed once, stored on their
 // profile with a unique encrypted ID, and reused for signing documents.
 export default function MySignatureCard({ companyId, currentUser, ar }) {
@@ -23,11 +32,13 @@ export default function MySignatureCard({ companyId, currentUser, ar }) {
   const [mode, setMode] = useState("type"); // "type" | "draw"
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
 
   const saveSignature = async (dataUrl, typedName) => {
     setSaving(true);
+    setError("");
     try {
-      const blob = await (await fetch(dataUrl)).blob();
+      const blob = dataUrlToBlob(dataUrl);
       const file = new File([blob], "signature.png", { type: "image/png" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const sigId = await generateSignatureId(currentUser.id);
@@ -40,6 +51,8 @@ export default function MySignatureCard({ companyId, currentUser, ar }) {
         signatureUpdatedAt: new Date().toISOString(),
       });
       setEditing(false);
+    } catch {
+      setError(ar ? "تعذّر حفظ التوقيع؛ حاول مرة أخرى." : "Couldn't save the signature; try again.");
     } finally {
       setSaving(false);
     }
@@ -111,6 +124,7 @@ export default function MySignatureCard({ companyId, currentUser, ar }) {
           ) : (
             <SignaturePad ar={ar} onSave={saveSignature} saving={saving} />
           )}
+          {error && <p className="text-xs text-destructive font-body">{error}</p>}
         </div>
       )}
     </div>
