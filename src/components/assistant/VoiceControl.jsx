@@ -1,14 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Mic, MicOff } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import useVoiceWakeWord from "./useVoiceWakeWord";
+import speak from "./speak";
 
 export default function VoiceControl({ onCommand }) {
   const { lang } = useI18n();
   const [enabled, setEnabled] = useState(false);
   const { supported, listening, awake, denied } = useVoiceWakeWord({ enabled, lang, onCommand });
-  if (!supported) return null;
   const ar = lang === "ar";
+
+  // Audible acknowledgment when the wake word is heard alone.
+  useEffect(() => {
+    if (awake) speak(ar ? "نعم، تفضل" : "Yes, go ahead", lang);
+  }, [awake, ar, lang]);
+
+  if (!supported) return null;
 
   const status = denied
     ? (ar ? "تم رفض إذن الميكروفون" : "Microphone permission denied")

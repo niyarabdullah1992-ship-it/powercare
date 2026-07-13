@@ -8,9 +8,10 @@ import AssistantMessage from "@/components/assistant/AssistantMessage";
 import SuggestedQuestions from "@/components/assistant/SuggestedQuestions";
 import VoiceControl from "@/components/assistant/VoiceControl";
 import { Sparkles, Send, Loader2 } from "lucide-react";
+import speak from "@/components/assistant/speak";
 
 export default function Assistant() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -43,7 +44,7 @@ export default function Assistant() {
 
   if (!data || !currentUser) return null;
 
-  const ask = async (question) => {
+  const ask = async (question, fromVoice = false) => {
     const q = question.trim();
     if (!q || loading) return;
     setInput("");
@@ -147,8 +148,10 @@ Answer the last user question.`,
         text += `\n\n${result.ok ? "✅" : "⚠️"} ${result.message}`;
       }
       setMessages((prev) => [...prev, { role: "assistant", text }]);
+      if (fromVoice) speak(text, lang);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", text: t("aiError") }]);
+      if (fromVoice) speak(t("aiError"), lang);
     }
     setLoading(false);
   };
@@ -163,7 +166,7 @@ Answer the last user question.`,
           <h1 className="font-heading text-2xl font-semibold">{t("aiAssistant")}</h1>
           <p className="text-xs text-muted-foreground font-body">{t("aiAssistantDesc")}</p>
         </div>
-        <VoiceControl onCommand={ask} />
+        <VoiceControl onCommand={(cmd) => ask(cmd, true)} />
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-3 pb-4">
