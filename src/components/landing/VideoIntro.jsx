@@ -3,7 +3,7 @@ import { Play, Pause, Volume2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import Logo from "@/components/Logo";
 
-const VIDEO_URL = "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/1e0ba7e23__.mp4";
+const VIDEO_URL = "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/7b1b2e430_Promo_Video.mp4";
 const NARRATION_URL_AR = "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/8111ff65d_3e21a84a0_speech.mp3";
 const NARRATION_URL_EN = "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/a71af389e_speech.mp3";
 
