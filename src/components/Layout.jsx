@@ -23,6 +23,7 @@ import BackButton from "@/components/mobile/BackButton";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
+  const localized = (arabic, english, japanese) => lang === "ar" ? arabic : lang === "ja" ? japanese : english;
   const { currentUser, company, data, logout, isSyncing } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -105,7 +106,7 @@ export default function Layout({ children }) {
     { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling") },
     { to: "/app/chat", icon: MessageSquare, label: t("chat") },
     { to: "/app/files", icon: FolderOpen, label: t("files") },
-    { to: "/app/signing", icon: PenLine, label: lang === "ar" ? "توقيع الملفات" : "File Signing" },
+    { to: "/app/signing", icon: PenLine, label: localized("توقيع الملفات", "File Signing", "ファイル署名") },
     { to: "/app/assistant", icon: Sparkles, label: t("aiAssistant") },
     { to: "/app/complaints", icon: Megaphone, label: t("allComplaints") },
     { to: "/app/employees", icon: Users, label: t("employees") },
@@ -113,7 +114,7 @@ export default function Layout({ children }) {
     { to: "/app/hr", icon: UserCog, label: t("hr") },
     { to: "/app/performance", icon: Trophy, label: t("performance") },
     { to: "/app/reports", icon: FileBarChart2, label: t("tasksReport") },
-    { to: "/app/help", icon: HelpCircle, label: lang === "ar" ? "دليل الاستخدام" : "User Guide" },
+    { to: "/app/help", icon: HelpCircle, label: localized("دليل الاستخدام", "User Guide", "利用ガイド") },
   ];
 
   // Role-based visibility: each user only sees the sections their role needs.
