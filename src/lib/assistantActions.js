@@ -1,5 +1,6 @@
 import { updateCompany } from "@/lib/store";
 import { buildAssistantContext } from "./assistantContext";
+import { printReport } from "@/lib/printReport";
 
 // Executes real actions requested by the AI assistant (exports, task creation, status updates).
 // Every write action is permission-gated; exports only include data the user can already see.
@@ -38,6 +39,16 @@ export function executeAssistantAction(action, { data, company, currentUser, t }
     };
     const rows = map[dataset];
     if (!rows || !rows.length) return { ok: false, message: t("aiNoData") };
+    if (norm(action.format) === "pdf") {
+      printReport({
+        title: action.reportTitle || dataset,
+        companyName: data.name || "",
+        periodLabel: new Date().toLocaleDateString(document.documentElement.dir === "rtl" ? "ar" : "en-GB"),
+        dir: document.documentElement.dir,
+        sections: [{ heading: action.reportTitle || dataset, headers: Object.keys(rows[0]), rows: rows.map((r) => Object.values(r)) }],
+      });
+      return { ok: true, message: t("aiPdfDone") };
+    }
     downloadCSV(`${dataset}_${new Date().toISOString().slice(0, 10)}.csv`, rows);
     return { ok: true, message: t("aiExportDone") };
   }
@@ -46,7 +57,7 @@ export function executeAssistantAction(action, { data, company, currentUser, t }
     const routes = { signing: "/app/signing", verify: "/verify" };
     const path = routes[norm(action.page)];
     if (!path) return { ok: false, message: t("aiActionFailed") };
-    setTimeout(() => { window.location.href = path; }, 1200);
+    window.open(path, "_blank");
     return { ok: true, message: t("aiOpeningPage") };
   }
 
