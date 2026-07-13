@@ -53,16 +53,16 @@ export default function BottomTabBar() {
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-card/95 backdrop-blur border-t border-border pb-safe no-select">
-      <div className="flex">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl no-select md:hidden">
+      <div className="flex px-1 pt-1">
         {tabs.map((tab) => {
           const active = matchesTab(tab, location.pathname);
           return (
             <button
               key={tab.to}
               onClick={() => openTab(tab)}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[48px] min-w-[44px] text-[10px] font-body transition-colors ${
-                active ? "text-accent" : "text-muted-foreground"
+              className={`relative flex min-h-[52px] min-w-[44px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-2 text-[10px] font-body transition-colors ${
+                active ? "bg-accent/10 text-accent" : "text-muted-foreground hover:bg-muted"
               }`}
             >
               <tab.icon className="w-5 h-5" strokeWidth={1.75} />

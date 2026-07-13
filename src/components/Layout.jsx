@@ -164,7 +164,7 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-background flex" dir={dir}>
       {/* Sidebar */}
-      <aside className={`hidden md:flex flex-col w-64 ${sidebarSide} top-0 h-screen ${dir === "rtl" ? "border-l" : "border-r"} border-border bg-card sticky pt-safe`}>
+      <aside className={`hidden md:flex flex-col w-64 ${sidebarSide} top-0 h-screen ${dir === "rtl" ? "border-l" : "border-r"} sticky border-border bg-card/95 shadow-sm pt-safe`}>
         <div className="px-6 py-6 flex items-center gap-2 border-b border-border">
           <Logo size={36} />
           <div>
@@ -182,7 +182,7 @@ export default function Layout({ children }) {
                       <div
                         ref={dragProvided.innerRef}
                         {...dragProvided.draggableProps}
-                        className={`flex items-center rounded-md ${dragSnapshot.isDragging ? "shadow-lg bg-card" : ""}`}
+                        className={`flex items-center rounded-xl ${dragSnapshot.isDragging ? "shadow-lg bg-card" : ""}`}
                       >
                         <span {...dragProvided.dragHandleProps} className="px-1 text-muted-foreground hover:text-foreground cursor-grab shrink-0">
                           <GripVertical className="w-3.5 h-3.5" />
@@ -191,9 +191,9 @@ export default function Layout({ children }) {
                           to={item.to}
                           end={item.end}
                           className={({ isActive }) =>
-                            `flex-1 flex items-center gap-3 px-2 py-2.5 rounded-md text-sm font-body transition-colors ${
+                            `flex-1 flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-sm font-body transition-colors ${
                               isActive
-                                ? "bg-foreground text-background"
+                                ? "bg-primary text-primary-foreground shadow-sm"
                                 : "text-foreground/70 hover:bg-muted hover:text-foreground"
                             }`
                           }
@@ -216,7 +216,7 @@ export default function Layout({ children }) {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <header className="sticky top-0 z-40 bg-background/90 backdrop-blur border-b border-border pt-safe">
-          <div className="flex items-center justify-between px-4 md:px-8 h-16">
+          <div className="flex h-16 items-center justify-between px-4 md:h-[68px] md:px-8">
             {/* Mobile nav (scrollable pills) */}
             <div className="md:hidden flex items-center gap-2 overflow-x-auto no-scrollbar">
               <BackButton />
@@ -364,6 +364,7 @@ export default function Layout({ children }) {
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={location.pathname}
+              className="mx-auto w-full max-w-[1600px]"
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}

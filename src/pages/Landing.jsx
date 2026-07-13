@@ -59,7 +59,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-landing-bg font-body text-[#3a2f22]">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 md:px-10 py-4 border-b border-landing-gold/15">
+      <div className="sticky top-0 z-50 flex items-center justify-between border-b border-landing-gold/15 bg-landing-bg/90 px-4 py-3 backdrop-blur-xl sm:px-6 md:px-10 md:py-4">
         <div className="flex items-center gap-2">
           <Logo size={30} />
           <span className="font-heading font-semibold text-lg text-[#3a2f22]">{t("appName")}</span>
@@ -103,11 +103,11 @@ export default function Landing() {
       {/* Hero */}
       <div className="relative overflow-hidden">
         <img src={PATTERN_IMG} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
-        <div className="relative px-6 md:px-10 py-16 md:py-24 grid lg:grid-cols-[1.3fr,1fr] gap-10 items-start">
-          <div>
-            <h1 className="hero-title text-landing-gold text-6xl md:text-8xl uppercase">{t("appName")}</h1>
+        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 md:px-10 md:py-24 lg:grid-cols-[1.15fr,0.85fr] lg:gap-16">
+          <div className="text-center lg:text-start">
+            <h1 className="hero-title break-words text-5xl uppercase text-landing-gold sm:text-6xl md:text-8xl">{t("appName")}</h1>
 
-            <div className="mt-10 bg-white rounded-2xl shadow-sm divide-y divide-[#3a2f22]/8 max-w-lg overflow-hidden">
+            <div className="mx-auto mt-8 max-w-lg divide-y divide-[#3a2f22]/8 overflow-hidden rounded-2xl border border-landing-gold/15 bg-white shadow-sm lg:mx-0 lg:mt-10">
               <FeatureBullet icon={Clock} title={t("feature1")} />
               <FeatureBullet icon={TrendingUp} title={t("feature2")} />
               <FeatureBullet icon={ShieldCheck} title={t("feature3")} />
@@ -115,7 +115,7 @@ export default function Landing() {
           </div>
 
           {/* Login card */}
-          <div className="bg-white rounded-2xl p-6 shadow-xl">
+          <div className="rounded-2xl border border-landing-gold/15 bg-white p-5 shadow-xl shadow-[#3a2f22]/10 sm:p-7">
             <div className="flex items-center gap-2 mb-6">
               <span className="flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-body bg-landing-bg text-[#3a2f22]">
                 <LogIn className="w-4 h-4" strokeWidth={1.75} /> {t("companyLogin")}

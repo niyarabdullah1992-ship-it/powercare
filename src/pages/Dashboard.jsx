@@ -203,7 +203,7 @@ export default function Dashboard() {
       )}
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 border border-border divide-x divide-y divide-border rtl:divide-x-reverse">
+      <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-border shadow-sm divide-x divide-y divide-border rtl:divide-x-reverse lg:grid-cols-4">
         {stats.map((s, i) => (
           <div key={s.label} className="p-6 bg-card hover:bg-muted/40 transition-colors">
             <div className="flex items-center justify-between mb-5">
@@ -219,8 +219,8 @@ export default function Dashboard() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-border">
-        <div className="p-6 bg-card">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{t("sixMonthsLabel")}</p>
           <h3 className="hero-title text-2xl mb-5">{t("taskCompletion")}</h3>
           <ResponsiveContainer width="100%" height={220}>
@@ -234,7 +234,7 @@ export default function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="p-6 bg-card">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{t("taskCompletion")}</p>
           <h3 className="hero-title text-2xl mb-5">{t("productivityTrend")}</h3>
           <ResponsiveContainer width="100%" height={220}>
@@ -253,7 +253,7 @@ export default function Dashboard() {
       <TeamStatusPanel employees={visibleEmployees(currentUser, data)} t={t} />
 
       {/* Recent activity */}
-      <div className="p-6 border border-border bg-card">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
         <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{formatDate(new Date(), lang, { month: "short" })}</p>
         <h3 className="hero-title text-2xl mb-4">{t("recentActivity")}</h3>
         <div className="divide-y divide-border">
