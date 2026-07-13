@@ -242,6 +242,10 @@ export default function Landing() {
             <p className="text-sm text-[#3a2f22]/55 font-body leading-relaxed">
               {t("footerDescription")}
             </p>
+            <Link to="/powercare-presentation" className="mt-4 inline-flex items-center gap-2 rounded-full border border-landing-gold/40 px-4 py-2 text-sm font-body font-semibold text-landing-gold transition-colors hover:bg-landing-gold hover:text-white">
+              <Download className="h-3.5 w-3.5" />
+              {lang === "ar" ? "تنزيل ملف عرض PowerCare" : "Download PowerCare presentation"}
+            </Link>
             <div className="flex items-center gap-4 mt-5 text-[#3a2f22]/60">
               <Facebook className="w-4 h-4" strokeWidth={1.75} />
               <Twitter className="w-4 h-4" strokeWidth={1.75} />
@@ -254,12 +258,6 @@ export default function Landing() {
             <ul className="space-y-2 text-sm font-body text-[#3a2f22]/55">
               <li>{t("footerBlog")}</li>
               <li><a href="/about" className="hover:text-landing-gold transition-colors">{t("footerAbout")}</a></li>
-              <li>
-                <Link to="/powercare-presentation" className="inline-flex items-center gap-2 font-semibold text-landing-gold underline underline-offset-4 transition-colors hover:text-landing-gold-deep">
-                  <Download className="h-3.5 w-3.5" />
-                  {lang === "ar" ? "تنزيل ملف عرض PowerCare" : "Download PowerCare presentation"}
-                </Link>
-              </li>
               <li>{t("footerCareers")}</li>
               <li>{t("footerTerms")}</li>
               <li>{t("footerContact")}</li>
