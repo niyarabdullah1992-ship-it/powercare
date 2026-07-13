@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { createCompany, syncCompanyAccount } from "@/lib/store";
@@ -14,6 +14,7 @@ export default function Pricing() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [billing, setBilling] = useState("monthly");
+  const [googleEmail, setGoogleEmail] = useState("");
   const pendingCompanyRef = useRef(null);
 
   const PLANS = [
@@ -23,10 +24,25 @@ export default function Pricing() {
     { id: "enterprise", nameKey: "plan_ent", price: 249, features: [t("entF1"), t("entF2"), t("entF3")] },
   ];
 
-  const handleFreeSignup = async ({ companyName, ownerEmail, ownerPassword }) => {
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("google_signup")) return;
+    const saved = JSON.parse(sessionStorage.getItem("powercare_google_signup") || "null");
+    sessionStorage.removeItem("powercare_google_signup");
+    if (!saved) return;
+    setBilling(saved.billing || "monthly");
+    setActivePlan(PLANS.find((plan) => plan.id === saved.planId) || null);
+    base44.auth.me().then((user) => setGoogleEmail(user.email || "")).catch(() => setError(lang === "ar" ? "تعذر تسجيل Google." : "Google sign-up could not be completed."));
+  }, []);
+
+  const handleGoogleSignup = () => {
+    sessionStorage.setItem("powercare_google_signup", JSON.stringify({ planId: activePlan.id, billing }));
+    base44.auth.loginWithProvider("google", "/pricing?google_signup=1");
+  };
+
+  const handleFreeSignup = async ({ companyName, ownerEmail, ownerPassword, authMethod }) => {
     setError("");
     const company = pendingCompanyRef.current || createCompany(
-      { name: companyName, ownerEmail, ownerPassword, plan: "Free" },
+      { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: "Free" },
       { sync: false }
     );
     pendingCompanyRef.current = company;
@@ -41,7 +57,7 @@ export default function Pricing() {
     return true;
   };
 
-  const handlePaidSignup = async ({ companyName, ownerEmail }) => {
+  const handlePaidSignup = async ({ companyName, ownerEmail, authMethod }) => {
     if (window.self !== window.top) {
       setError(t("checkoutIframeError"));
       return;
@@ -55,6 +71,7 @@ export default function Pricing() {
         billing,
         companyName,
         ownerEmail,
+        authMethod,
         returnUrl: window.location.origin,
       });
       if (res.data?.url) {
@@ -144,9 +161,12 @@ export default function Pricing() {
 
       {activePlan && (
         <SignupDialog
+          key={`${activePlan.id}-${googleEmail}`}
           plan={activePlan}
           onClose={() => { pendingCompanyRef.current = null; setActivePlan(null); setError(""); }}
           onSubmit={activePlan.price === 0 ? handleFreeSignup : handlePaidSignup}
+          onGoogle={handleGoogleSignup}
+          googleEmail={googleEmail}
           error={error}
         />
       )}

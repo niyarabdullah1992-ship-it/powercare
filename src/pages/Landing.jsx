@@ -8,12 +8,14 @@ import VideoIntro from "@/components/landing/VideoIntro";
 import OtpStep from "@/components/landing/OtpStep";
 import PasswordResetForm from "@/components/landing/PasswordResetForm";
 import { trackVisit } from "@/lib/trackVisit";
+import { base44 } from "@/api/base44Client";
+import GoogleIcon from "@/components/GoogleIcon";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
 
 export default function Landing() {
   const { t, lang, setLang, languages } = useI18n();
-  const { login, verifyOtp, session } = useAuth();
+  const { login, loginWithGoogle, verifyOtp, session } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,6 +29,18 @@ export default function Landing() {
   useEffect(() => {
     if (session) navigate("/app");
   }, [session, navigate]);
+
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("google_login")) return;
+    setSubmitting(true);
+    loginWithGoogle().then((company) => {
+      if (!company) setError(lang === "ar" ? "لا توجد شركة مرتبطة بحساب Google هذا" : "No company is linked to this Google account");
+    }).finally(() => setSubmitting(false));
+  }, []);
+
+  const handleGoogleLogin = () => {
+    base44.auth.loginWithProvider("google", "/?google_login=1");
+  };
 
   // Anonymous visit tracking (once per browser session) — powers the Owner Panel stats.
   useEffect(() => {
@@ -136,6 +150,11 @@ export default function Landing() {
               ) : resetOpen ? (
                 <PasswordResetForm initialEmail={email} onDone={(value) => { setEmail(value); setResetOpen(false); setError(""); }} onBack={() => setResetOpen(false)} />
               ) : (
+              <div className="space-y-4">
+                <button type="button" onClick={handleGoogleLogin} disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-3 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg disabled:opacity-50">
+                  <GoogleIcon className="h-5 w-5" /> {lang === "ar" ? "الدخول باستخدام Google" : "Continue with Google"}
+                </button>
+                <div className="flex items-center gap-3 text-xs text-[#3a2f22]/40"><span className="h-px flex-1 bg-landing-gold/20" />{lang === "ar" ? "أو" : "or"}<span className="h-px flex-1 bg-landing-gold/20" /></div>
               <form onSubmit={handleCompanyLogin} noValidate className="space-y-4">
                 <div>
                   <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("email")}</label>
@@ -169,6 +188,7 @@ export default function Landing() {
                   {lang === "ar" ? "نسيت كلمة المرور؟" : "Forgot password?"}
                 </button>
               </form>
+              </div>
               )}
               <p className="mt-5 text-center text-sm font-body text-[#3a2f22]/55">
                 {t("noAccountYet")}{" "}

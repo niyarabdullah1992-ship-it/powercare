@@ -44,7 +44,7 @@ export default function PricingSuccess() {
     const company = pendingCompanyRef.current || createCompany({
       name: session.companyName,
       ownerEmail: session.ownerEmail,
-      ownerPassword: password,
+      ownerPassword: session.authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : password,
       plan: PLAN_LABELS[session.plan] || "Starter",
     }, { sync: false });
     pendingCompanyRef.current = company;
@@ -79,15 +79,17 @@ export default function PricingSuccess() {
             <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
             <p className="text-sm text-[#3a2f22]/60 font-body">{t("paymentConfirmedText")}</p>
             <form onSubmit={finishSetup} className="space-y-3 text-start">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={t("choosePasswordPlaceholder")}
-                minLength={6}
-                required
-                className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
-              />
+              {session.authMethod !== "google" && (
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={t("choosePasswordPlaceholder")}
+                  minLength={6}
+                  required
+                  className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
+                />
+              )}
               {setupError && <p className="text-xs text-red-500 font-body">{setupError}</p>}
               <button disabled={submitting} type="submit" className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
                 {submitting ? t("pleaseWaitBtn") : t("finishSetupBtn")}

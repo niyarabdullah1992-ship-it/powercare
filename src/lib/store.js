@@ -582,6 +582,34 @@ export async function resetOwnerPassword(pendingId, code, newPassword, email) {
   }
 }
 
+function finishOwnerLogin(result) {
+  const remote = result.company;
+  const reg = getRegistry();
+  setCompanyToken(remote.companyId, result.token);
+  let company = reg.companies.find((c) => c.id === remote.companyId);
+  if (!company) {
+    company = {
+      id: remote.companyId, name: remote.name, ownerEmail: remote.ownerEmail,
+      plan: remote.plan, allowedEmailDomain: remote.allowedEmailDomain || "",
+      createdAt: remote.created_date,
+    };
+    reg.companies.push(company);
+  }
+  saveRegistry(reg);
+  if (!getCompanyData(company.id)) write(companyKey(company.id), emptyCompanyData(company));
+  setSession({ companyId: company.id, userId: ensureOwnerUser(company.id, company) });
+  return company;
+}
+
+export async function googleCompanyLogin() {
+  try {
+    const res = await invokeDirectory({ action: "googleOwnerLogin" });
+    return res?.data?.token ? finishOwnerLogin(res.data) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function completeLoginOtp(pendingId, code, typedPassword) {
   let result = null;
   try {
@@ -591,24 +619,8 @@ export async function completeLoginOtp(pendingId, code, typedPassword) {
     return null; // wrong/expired code (server returned 401) or network failure
   }
   if (!result?.token) return null;
+  if (result.kind === "owner") return finishOwnerLogin(result);
   const reg = getRegistry();
-  if (result.kind === "owner") {
-    const remote = result.company;
-    setCompanyToken(remote.companyId, result.token);
-    let company = reg.companies.find((c) => c.id === remote.companyId);
-    if (!company) {
-      company = {
-        id: remote.companyId, name: remote.name, ownerEmail: remote.ownerEmail,
-        plan: remote.plan, allowedEmailDomain: remote.allowedEmailDomain || "",
-        createdAt: remote.created_date,
-      };
-      reg.companies.push(company);
-    }
-    saveRegistry(reg);
-    if (!getCompanyData(company.id)) write(companyKey(company.id), emptyCompanyData(company));
-    setSession({ companyId: company.id, userId: ensureOwnerUser(company.id, company) });
-    return company;
-  }
   // employee session
   const { companyId, employeeId } = result.employee;
   setCompanyToken(companyId, result.token);

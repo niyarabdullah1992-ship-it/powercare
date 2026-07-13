@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const action = body.action;
 
     if (action === 'createSession') {
-      const { plan, companyName, ownerEmail, returnUrl, billing } = body;
+      const { plan, companyName, ownerEmail, returnUrl, billing, authMethod } = body;
       const interval = billing === 'yearly' ? 'yearly' : 'monthly';
       const priceId = PLAN_PRICES[interval][plan];
       if (!priceId) return Response.json({ error: 'Invalid plan' }, { status: 400 });
@@ -40,6 +40,7 @@ Deno.serve(async (req) => {
           plan,
           companyName,
           ownerEmail,
+          authMethod: authMethod === 'google' ? 'google' : 'password',
         },
       });
 
@@ -55,6 +56,7 @@ Deno.serve(async (req) => {
         plan: session.metadata?.plan,
         companyName: session.metadata?.companyName,
         ownerEmail: session.metadata?.ownerEmail,
+        authMethod: session.metadata?.authMethod || 'password',
       });
     }
 

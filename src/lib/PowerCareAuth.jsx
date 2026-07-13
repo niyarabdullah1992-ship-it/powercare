@@ -3,7 +3,7 @@ import {
   getSession, startLogin, completeLoginOtp, switchUser, clearSession, getCompanyData,
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
   hydrateBlobFromEntity, BLOB_CATEGORIES, getLastLocalWriteAt, fetchCloudVersions, setAuditActor,
-  repairOwnerSession, cacheCloudData,
+  repairOwnerSession, cacheCloudData, googleCompanyLogin,
 } from "./store";
 import { base44 } from "@/api/base44Client";
 
@@ -183,6 +183,12 @@ export function AuthProvider({ children }) {
     return c;
   };
 
+  const loginWithGoogle = async () => {
+    const company = await googleCompanyLogin();
+    if (company) refresh();
+    return company;
+  };
+
   const doSwitchUser = (userId) => {
     switchUser(userId);
     refresh();
@@ -199,7 +205,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, company, data, currentUser, login, verifyOtp, switchUser: doSwitchUser, logout, refresh, tick, isSyncing }}
+      value={{ session, company, data, currentUser, login, loginWithGoogle, verifyOtp, switchUser: doSwitchUser, logout, refresh, tick, isSyncing }}
     >
       {children}
     </AuthContext.Provider>

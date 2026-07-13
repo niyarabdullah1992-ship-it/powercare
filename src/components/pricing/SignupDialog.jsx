@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import GoogleIcon from "@/components/GoogleIcon";
 
-export default function SignupDialog({ plan, onClose, onSubmit, error }) {
-  const { t } = useI18n();
+export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, googleEmail, error }) {
+  const { t, lang } = useI18n();
   const [companyName, setCompanyName] = useState("");
-  const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState(googleEmail || "");
   const [ownerPassword, setOwnerPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -14,7 +15,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, error }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    await onSubmit({ companyName, ownerEmail, ownerPassword });
+    await onSubmit({ companyName, ownerEmail, ownerPassword, authMethod: googleEmail ? "google" : "password" });
     setSubmitting(false);
   };
 
@@ -28,6 +29,14 @@ export default function SignupDialog({ plan, onClose, onSubmit, error }) {
         <p className="text-sm text-[#3a2f22]/55 font-body mb-5">
           {isFree ? t("signupFreeDesc") : t("signupPaidDesc")}
         </p>
+        {!googleEmail && (
+          <>
+            <button type="button" onClick={onGoogle} className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-2.5 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg">
+              <GoogleIcon className="h-5 w-5" /> {lang === "ar" ? "المتابعة باستخدام Google" : "Continue with Google"}
+            </button>
+            <div className="mb-3 flex items-center gap-3 text-xs text-[#3a2f22]/40"><span className="h-px flex-1 bg-landing-gold/20" />{lang === "ar" ? "أو" : "or"}<span className="h-px flex-1 bg-landing-gold/20" /></div>
+          </>
+        )}
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
             value={companyName}
@@ -40,11 +49,12 @@ export default function SignupDialog({ plan, onClose, onSubmit, error }) {
             type="email"
             value={ownerEmail}
             onChange={(e) => setOwnerEmail(e.target.value)}
+            disabled={!!googleEmail}
             placeholder={t("emailPlaceholder")}
             required
             className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
           />
-          {isFree && (
+          {isFree && !googleEmail && (
             <input
               type="password"
               value={ownerPassword}

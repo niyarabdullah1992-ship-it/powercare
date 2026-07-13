@@ -139,6 +139,20 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action, companyId } = body;
 
+    // Google-authenticated owners can enter without a password or email OTP because
+    // the platform has already verified their Google identity.
+    if (action === 'googleOwnerLogin') {
+      const user = await base44.auth.me().catch(() => null);
+      const email = String(user?.email || '').trim().toLowerCase();
+      if (!email) return Response.json({ error: 'Google authentication required' }, { status: 401 });
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.list();
+      const found = accounts.find((item) => String(item.ownerEmail || '').trim().toLowerCase() === email);
+      if (!found) return Response.json({ error: 'No company is linked to this Google account' }, { status: 404 });
+      const { ownerPassword: _password, ...safe } = found;
+      const token = await makeSession(base44, found.companyId, null, 'owner');
+      return Response.json({ kind: 'owner', company: safe, token });
+    }
+
     // Cross-device login lookup — doesn't need a companyId yet, since the caller is
     // trying to discover which company an email/password combination belongs to.
     if (action === 'findAccountByEmail') {
