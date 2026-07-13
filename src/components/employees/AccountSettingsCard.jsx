@@ -46,7 +46,7 @@ export default function AccountSettingsCard({ employee, company }) {
   };
 
   return (
-    <div className="p-5 border border-border rounded-xl bg-card space-y-4">
+    <div className="space-y-4 rounded-2xl border border-border bg-card/55 p-5 shadow-2xl backdrop-blur-2xl">
       <h3 className="font-heading font-semibold">{t("myAccount")}</h3>
       <div className="flex flex-wrap items-end gap-2">
         <div className="flex-1 min-w-[200px]">

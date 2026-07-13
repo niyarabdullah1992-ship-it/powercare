@@ -28,7 +28,7 @@ export default function HRCommunicationsTab({ employee, companyId, currentUser, 
   };
 
   return (
-    <div className="p-5 rounded-xl border border-border bg-card space-y-3">
+    <div className="space-y-3 rounded-xl border border-border bg-card/45 p-5 backdrop-blur-xl">
       <h3 className="font-heading font-semibold">{t("hrCommunications")}</h3>
       <div className="space-y-2 max-h-96 overflow-y-auto">
         {messages.length === 0 ? (

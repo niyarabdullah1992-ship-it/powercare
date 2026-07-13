@@ -35,7 +35,7 @@ export default function SalaryTab({ employee, companyId, canEdit }) {
 
   return (
     <div className="space-y-4">
-      <div className="p-5 rounded-xl border border-border bg-card space-y-4">
+      <div className="space-y-4 rounded-xl border border-border bg-card/45 p-5 backdrop-blur-xl">
         <div className="flex items-center justify-between">
           <h3 className="font-heading font-semibold">{t("salary")}</h3>
           {canEdit && (
@@ -68,7 +68,7 @@ export default function SalaryTab({ employee, companyId, canEdit }) {
         )}
       </div>
 
-      <div className="p-5 rounded-xl border border-border bg-card space-y-3">
+      <div className="space-y-3 rounded-xl border border-border bg-card/45 p-5 backdrop-blur-xl">
         <h3 className="font-heading font-semibold">{t("salaryCertificate")}</h3>
         {profile.salaryCertificateUrl ? (
           <a href={profile.salaryCertificateUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-body hover:underline">

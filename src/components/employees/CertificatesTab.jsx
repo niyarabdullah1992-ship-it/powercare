@@ -13,13 +13,13 @@ const STATUS_TONE = {
 
 function CertGroup({ title, items, canEdit, canApprove, onRemove, onDecide, t }) {
   return (
-    <div className="p-5 rounded-xl border border-border bg-card space-y-3">
+    <div className="space-y-3 rounded-xl border border-border bg-card/45 p-5 backdrop-blur-xl">
       <h3 className="flex items-center gap-2 font-heading font-semibold">
         <Award className="w-4 h-4 text-accent" /> {title}
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {items.map((c) => (
-          <div key={c.id} className="flex items-center justify-between gap-2 p-3 rounded-lg border border-border bg-background">
+          <div key={c.id} className="flex items-center justify-between gap-2 rounded-xl border border-border bg-background/35 p-3">
             <div className="min-w-0 flex-1">
               <a href={c.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-body hover:underline truncate">
                 <FileText className="w-4 h-4 text-accent shrink-0" /> {c.name}
@@ -90,7 +90,7 @@ export default function CertificatesTab({ employee, companyId, canEdit, canAppro
   return (
     <div className="space-y-4">
       {certs.length === 0 && (
-        <div className="p-5 rounded-xl border border-border bg-card">
+        <div className="rounded-xl border border-border bg-card/45 p-5 backdrop-blur-xl">
           <p className="text-sm text-muted-foreground font-body">{t("noCertificates")}</p>
         </div>
       )}
@@ -119,7 +119,7 @@ export default function CertificatesTab({ employee, companyId, canEdit, canAppro
       )}
 
       {canEdit && (
-        <div className="p-4 rounded-xl border border-border bg-card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
+        <div className="grid grid-cols-1 items-start gap-3 rounded-xl border border-border bg-card/45 p-4 backdrop-blur-xl sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col">
             <label className="block text-xs text-muted-foreground font-body mb-1">{t("certificateName")}</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body h-9" />

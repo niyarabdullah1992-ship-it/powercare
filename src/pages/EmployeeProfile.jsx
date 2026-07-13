@@ -60,43 +60,53 @@ export default function EmployeeProfile() {
   const fallbackPosition = employee.customTitle || getRoleLabel(company, employee.role, t);
 
   return (
-    <div className="space-y-6">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
-        <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
-      </button>
+    <div
+      className="dark -m-4 min-h-[calc(100vh-4rem)] bg-background bg-cover bg-center bg-fixed p-4 text-foreground md:-m-8 md:p-8"
+      style={{ backgroundImage: "url(https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/4ab7b4d6b_generated_image.png)" }}
+    >
+      <div className="mx-auto max-w-7xl space-y-5">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 rounded-full border border-border bg-card/60 px-3 py-2 text-sm text-muted-foreground backdrop-blur-xl transition-colors hover:text-foreground">
+          <ArrowLeft className={`h-4 w-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
+        </button>
 
-      {/* Hero card */}
-      <ProfileHero
-        employee={employee}
-        companyId={company.id}
-        canEdit={isSelf || canManage}
-        roleLabel={employee.profile?.position || fallbackPosition}
-        stationName={stationName}
-      />
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
+          <main className="space-y-5 lg:col-start-1 lg:row-start-1">
+            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card/55 p-2 shadow-2xl backdrop-blur-2xl sm:grid-cols-5">
+              {TABS.map(({ key, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className={`flex min-h-14 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-body transition-colors ${
+                    tab === key ? "bg-accent text-accent-foreground shadow-lg" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" /> {t(key)}
+                </button>
+              ))}
+            </div>
 
-      {isSelf && <AccountSettingsCard employee={employee} company={company} />}
-      {canManage && !isSelf && <LoginAccessCard employee={employee} companyId={company.id} />}
+            <section className="rounded-2xl border border-border bg-card/45 p-4 shadow-2xl backdrop-blur-2xl md:p-6">
+              {tab === "professionalInfo" && <ProfessionalInfoTab employee={employee} companyId={company.id} canEdit={canManage} fallbackPosition={fallbackPosition} />}
+              {tab === "certificates" && <CertificatesTab employee={employee} companyId={company.id} canEdit={isSelf || canManage} canApprove={canApproveCerts} currentUser={currentUser} />}
+              {tab === "salary" && <SalaryTab employee={employee} companyId={company.id} canEdit={canEditSalary} />}
+              {tab === "leave" && <LeaveTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canApprove={canApproveLeave} />}
+              {tab === "communications" && <HRCommunicationsTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canReply={canManage} />}
+            </section>
+          </main>
 
-      {/* Tab nav */}
-      <div className="flex flex-wrap gap-2 p-1.5 rounded-xl border border-border bg-card">
-        {TABS.map(({ key, icon: Icon }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-body transition-colors ${
-              tab === key ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            <Icon className="w-4 h-4" /> {t(key)}
-          </button>
-        ))}
+          <aside className="space-y-5 lg:col-start-2 lg:row-start-1">
+            <ProfileHero
+              employee={employee}
+              companyId={company.id}
+              canEdit={isSelf || canManage}
+              roleLabel={employee.profile?.position || fallbackPosition}
+              stationName={stationName}
+            />
+            {isSelf && <AccountSettingsCard employee={employee} company={company} />}
+            {canManage && !isSelf && <LoginAccessCard employee={employee} companyId={company.id} />}
+          </aside>
+        </div>
       </div>
-
-      {tab === "professionalInfo" && <ProfessionalInfoTab employee={employee} companyId={company.id} canEdit={canManage} fallbackPosition={fallbackPosition} />}
-      {tab === "certificates" && <CertificatesTab employee={employee} companyId={company.id} canEdit={isSelf || canManage} canApprove={canApproveCerts} currentUser={currentUser} />}
-      {tab === "salary" && <SalaryTab employee={employee} companyId={company.id} canEdit={canEditSalary} />}
-      {tab === "leave" && <LeaveTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canApprove={canApproveLeave} />}
-      {tab === "communications" && <HRCommunicationsTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canReply={canManage} />}
     </div>
   );
 }
