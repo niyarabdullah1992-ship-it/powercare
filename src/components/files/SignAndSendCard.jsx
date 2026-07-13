@@ -170,11 +170,11 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
             {signing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PenLine className="w-3.5 h-3.5" />}
             {signing ? (stage || (ar ? "جارٍ التوقيع والتسجيل…" : "Signing & registering…")) : ar ? "توقيع المستند" : "Sign document"}
           </button>
-          {signing && !manualSpot && (
-            <p className="text-[11px] text-muted-foreground font-body">
+          {!manualSpot && (
+            <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 font-body">
               {ar
-                ? "التحديد التلقائي قد يستغرق حتى ٢٥ ثانية — حدّد المكان يدويًا ليتم التوقيع فورًا."
-                : "Auto-detection can take up to 25s — pick the spot manually for instant signing."}
+                ? "⏱ تنبيه: التحقق والتحديد التلقائي لمكان التوقيع يستغرق حتى ١٢ ثانية تقريبًا — حدّد المكان يدويًا ليتم التوقيع فورًا."
+                : "⏱ Note: verification & auto-detection of the signature spot takes up to ~12 seconds — pick the spot manually for instant signing."}
             </p>
           )}
         </>
