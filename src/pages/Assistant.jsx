@@ -6,6 +6,7 @@ import { buildAssistantContext } from "@/lib/assistantContext";
 import { executeAssistantAction } from "@/lib/assistantActions";
 import AssistantMessage from "@/components/assistant/AssistantMessage";
 import SuggestedQuestions from "@/components/assistant/SuggestedQuestions";
+import VoiceControl from "@/components/assistant/VoiceControl";
 import { Sparkles, Send, Loader2 } from "lucide-react";
 
 export default function Assistant() {
@@ -162,6 +163,7 @@ Answer the last user question.`,
           <h1 className="font-heading text-2xl font-semibold">{t("aiAssistant")}</h1>
           <p className="text-xs text-muted-foreground font-body">{t("aiAssistantDesc")}</p>
         </div>
+        <VoiceControl onCommand={ask} />
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-3 pb-4">
