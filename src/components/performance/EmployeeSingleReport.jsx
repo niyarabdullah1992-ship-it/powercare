@@ -6,6 +6,7 @@ import { getRoleLabel } from "@/lib/roles";
 import { Search, Award, CheckCircle2, Clock, FileBadge, CalendarDays } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import moment from "moment";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 
 // Full performance report for a single selected employee — points, badge, tasks,
 // certificates, leave, and a completed-tasks trend over the last 6 months.
@@ -118,6 +119,17 @@ export default function EmployeeSingleReport({ t }) {
             )}
           </div>
         )}
+      </div>
+
+      <div className="flex justify-end">
+        <ComparisonExportButtons
+          title={`${t("individualReport")} — ${emp.name}`}
+          headers={[t("category"), t("title"), t("status")]}
+          rows={[
+            ...stats.map((s) => [t("individualReport"), s.label, s.value]),
+            ...trend.map((r) => [t("productivityTrend"), r.label, r.total]),
+          ]}
+        />
       </div>
 
       {/* Profile header */}

@@ -9,6 +9,7 @@ import {
 import { Calendar, TrendingUp, Users, Building2, BarChart3 } from "lucide-react";
 import moment from "moment";
 import IssuesList from "@/components/performance/IssuesList";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 
 const RANGES = [
   { val: "daily", bucket: "day", count: 14 },
@@ -170,6 +171,18 @@ export default function PerformanceAnalytics() {
             <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="px-2.5 py-1.5 rounded-md border border-input text-xs font-body" />
           </div>
         )}
+      </div>
+
+      <div className="flex justify-end">
+        <ComparisonExportButtons
+          title={t("analytics")}
+          headers={[t("category"), t("title"), t("completedTasks")]}
+          rows={[
+            ...buckets.map((r) => [t("productivityTrend"), r.label, r.total]),
+            ...perEmployee.map((r) => [t("perEmployee"), r.name, r.value]),
+            ...perStation.map((r) => [t("perStation"), r.name, r.value]),
+          ]}
+        />
       </div>
 
       {/* Summary cards */}

@@ -10,6 +10,7 @@ import StationComparison from "@/components/performance/StationComparison";
 import EmployeeComparisonView from "@/components/performance/EmployeeComparisonView";
 import EmployeeSingleReport from "@/components/performance/EmployeeSingleReport";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { isCompanyOwner } from "@/lib/permissions";
 import { Palette } from "lucide-react";
 
@@ -135,6 +136,25 @@ export default function Performance() {
           lang={lang}
           onClose={() => setShowBranding(false)}
         />
+      )}
+
+      {(view === "individual" || view === "achievements") && (
+        <div className="flex justify-end">
+          <ComparisonExportButtons
+            title={view === "achievements" ? t("achievementsBoard") : t("individualRanking")}
+            headers={["#", t("employeeName"), t("station"), t("points")]}
+            rows={ranked.map((e, i) => [i + 1, e.name, e.stationId ? stationName(e.stationId) : t("hq"), e.points])}
+          />
+        </div>
+      )}
+      {view === "station" && (
+        <div className="flex justify-end">
+          <ComparisonExportButtons
+            title={t("stationRanking")}
+            headers={["#", t("stations"), t("members"), t("points")]}
+            rows={[{ name: t("hq"), points: hqTotal, memberCount: hqMembers.length }, ...stationTotals].map((s, i) => [i + 1, s.name, s.memberCount, s.points])}
+          />
+        </div>
       )}
 
       {view === "comparison" && <StationComparison />}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 
 // Manager-only analytics: attendance rate and late frequency compared across the team.
 export default function AttendanceAnalytics({ employees, t }) {
@@ -37,7 +38,14 @@ export default function AttendanceAnalytics({ employees, t }) {
     <div className="p-5 rounded-xl border border-border bg-card space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h3 className="font-heading text-lg font-semibold">{t("employeeComparisonLabel")}</h3>
-        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body" />
+        <div className="flex items-center gap-2 flex-wrap">
+          <ComparisonExportButtons
+            title={`${t("employeeComparisonLabel")} — ${month}`}
+            headers={[t("employeeName"), t("attendanceRateLabel"), t("lateFrequencyLabel"), t("avgLateMinutes")]}
+            rows={chartData.map((r) => [r.name, `${r.attendanceRate}%`, r.lateCount, r.avgLateMinutes])}
+          />
+          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body" />
+        </div>
       </div>
 
       <div className="p-3 rounded-lg border border-border bg-muted inline-block">

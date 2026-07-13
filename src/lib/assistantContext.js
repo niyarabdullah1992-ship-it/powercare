@@ -10,7 +10,7 @@ export function buildAssistantContext(data, currentUser) {
 
   const employees = data.employees
     .filter((e) => !e.stationId ? canSeeAllStations(currentUser) : stationIds.has(e.stationId))
-    .map((e) => ({ name: e.name, role: e.role, position: e.position || undefined, station: stationName(e.stationId), points: e.points || 0 }));
+    .map((e) => ({ id: e.id, name: e.name, role: e.role, position: e.position || undefined, station: stationName(e.stationId), points: e.points || 0 }));
 
   const empName = (id) => data.employees.find((e) => e.id === id)?.name || "—";
 
@@ -28,13 +28,28 @@ export function buildAssistantContext(data, currentUser) {
     .filter((s) => stationIds.has(s.stationId))
     .map((s) => ({ station: stationName(s.stationId), level: s.level, incidents: s.incidents, hazards: s.hazards }));
 
+  const visibleEmployeeIds = new Set(employees.map((e) => e.id));
+  const plans = (data.plans || []).filter((p) => !p.stationId || stationIds.has(p.stationId)).map((p) => ({ title: p.title, station: stationName(p.stationId), startDate: p.startDate, endDate: p.endDate, status: p.status, notes: p.notes }));
+  const schedules = (data.schedules || []).filter((s) => stationIds.has(s.stationId)).map((s) => ({ station: stationName(s.stationId), shifts: (s.shiftTypes || []).map((x) => `${x.label}: ${x.start}-${x.end}`).join(" | ") }));
+  const complaints = (data.anonymousReports || []).filter((r) => !r.stationId || stationIds.has(r.stationId)).map((r) => ({ station: stationName(r.stationId), type: r.type, priority: r.priority, status: r.status, escalationLevel: r.escalationLevel || 0, message: r.message, createdAt: r.createdAt }));
+  const files = (data.files || []).filter((f) => !f.stationId || stationIds.has(f.stationId)).map((f) => ({ name: f.name, type: f.type, station: stationName(f.stationId), mimeType: f.mimeType, createdAt: f.createdAt }));
+  const targets = (data.targets || []).filter((x) => !x.stationId || stationIds.has(x.stationId)).map((x) => ({ title: x.title, station: stationName(x.stationId), assignee: empName(x.assignedTo), target: x.totalTasks || x.task_target, completed: x.completed || x.completed_tasks, deadline: x.deadline || x.end_date, status: x.status }));
+  const employeeDetails = (data.employees || []).filter((e) => visibleEmployeeIds.has(e.id) && (currentUser.role !== "employee" || e.id === currentUser.id)).map((e) => ({ employee: e.name, certificates: (e.certificates || []).map((c) => c.name || c.title).join(" | "), leaveRequests: (e.leaveRequests || []).map((r) => `${r.type}:${r.status}:${r.days || 0}`).join(" | ") }));
+
   return {
     company: data.name,
     today: new Date().toISOString().slice(0, 10),
-    stations: stations.map((s) => ({ name: s.name, location: s.location, type: s.type, status: s.status, manager: empName(s.managerId) })),
+    stations: stations.map((s) => ({ name: s.name, location: s.location, type: s.type, status: s.status, manager: empName(s.managerId), gpsConfigured: s.lat != null && s.lng != null, radiusMeters: s.radiusMeters })),
     employees,
     tasks,
+    targets,
     dailyReports: reports,
     safety,
+    plans,
+    schedules,
+    complaints,
+    files,
+    employeeDetails,
+    hrStructure: (data.hrLevels || []).map((h) => ({ name: h.name, role: h.role, scope: h.scope, order: h.order, active: h.active !== false })),
   };
 }

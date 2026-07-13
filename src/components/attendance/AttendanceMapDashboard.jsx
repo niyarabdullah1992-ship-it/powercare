@@ -5,6 +5,7 @@ import { MapContainer, CircleMarker, Circle, Marker, Popup, useMap } from "react
 import GoogleTiles from "@/components/maps/GoogleTiles";
 import L from "leaflet";
 import { Loader2, MapPin } from "lucide-react";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import "leaflet/dist/leaflet.css";
 
 const stationIcon = new L.Icon({
@@ -75,6 +76,11 @@ export default function AttendanceMapDashboard({ employees, t }) {
           ))}
         </select>
         {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+        <ComparisonExportButtons
+          title={`${t("mapTab")} — ${date}`}
+          headers={[t("employeeName"), t("checkIn"), t("locationStatus"), t("distanceMeters"), "Latitude", "Longitude"]}
+          rows={located.map((r) => [r.employee_name || r.employee_id, r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—", r.location_status || "—", r.distance_meters ?? "—", r.check_in_lat, r.check_in_lng])}
+        />
         <div className="flex items-center gap-3 text-xs font-body ms-auto">
           <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-500" /> {t("insideLocation")} ({insideCount})</span>
           <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-500" /> {t("outsideLocation")} ({outsideCount})</span>

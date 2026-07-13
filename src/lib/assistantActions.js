@@ -2,6 +2,8 @@ import { updateCompany } from "@/lib/store";
 import { buildAssistantContext } from "./assistantContext";
 import { printReport } from "@/lib/printReport";
 import { generateSignedReport } from "@/lib/signedReport";
+import { base44 } from "@/api/base44Client";
+import { exportExcelColored } from "@/lib/exportExcelColored";
 
 // Executes real actions requested by the AI assistant (exports, task creation, status updates).
 // Every write action is permission-gated; exports only include data the user can already see.
@@ -25,16 +27,32 @@ function downloadCSV(filename, rows) {
 const norm = (s) => String(s || "").trim().toLowerCase();
 const matches = (a, b) => norm(a).includes(norm(b)) || norm(b).includes(norm(a));
 
-function datasetRows(action, data, currentUser) {
+async function datasetRows(action, data, currentUser) {
   const ctx = buildAssistantContext(data, currentUser);
+  const dataset = norm(action.dataset);
+  if (dataset === "attendance") {
+    const ids = ctx.employees.map((e) => e.id);
+    if (!ids.length) return [];
+    const res = await base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: ids });
+    return (res?.data?.rows || []).map((r) => ({ employee: r.employee_name, status: r.status, checkIn: r.check_in_at, checkOut: r.check_out_at, workHours: r.work_hours, location: r.location_status }));
+  }
   const map = {
-    employees: ctx.employees,
+    employees: ctx.employees.map(({ id, ...e }) => e),
     tasks: ctx.tasks,
+    targets: ctx.targets,
     reports: ctx.dailyReports.map(({ content, ...r }) => r),
     stations: ctx.stations,
     safety: ctx.safety.map((s) => ({ ...s, hazards: (s.hazards || []).join(" | ") })),
+    plans: ctx.plans,
+    schedules: ctx.schedules,
+    complaints: ctx.complaints,
+    files: ctx.files,
+    hr: ctx.hrStructure,
+    leaves: ctx.employeeDetails.map((e) => ({ employee: e.employee, leaveRequests: e.leaveRequests })),
+    certificates: ctx.employeeDetails.map((e) => ({ employee: e.employee, certificates: e.certificates })),
+    performance: ctx.employees.map(({ id, name, station, points }) => ({ name, station, points })),
   };
-  return map[norm(action.dataset)];
+  return map[dataset];
 }
 
 export async function executeAssistantAction(action, { data, company, currentUser, t }) {
@@ -42,7 +60,7 @@ export async function executeAssistantAction(action, { data, company, currentUse
 
   if (action.type === "export_data") {
     const dataset = norm(action.dataset);
-    const rows = datasetRows(action, data, currentUser);
+    const rows = await datasetRows(action, data, currentUser);
     if (!rows || !rows.length) return { ok: false, message: t("aiNoData") };
     if (norm(action.format) === "pdf") {
       printReport({
@@ -54,12 +72,19 @@ export async function executeAssistantAction(action, { data, company, currentUse
       });
       return { ok: true, message: t("aiPdfDone") };
     }
-    downloadCSV(`${dataset}_${new Date().toISOString().slice(0, 10)}.csv`, rows);
+    exportExcelColored({
+      filename: `${dataset}_${new Date().toISOString().slice(0, 10)}`,
+      title: action.reportTitle || dataset,
+      headers: Object.keys(rows[0]),
+      rows: rows.map((r) => Object.values(r)),
+      color: data.reportBranding?.color || "#b07d3f",
+      dir: document.documentElement.dir,
+    });
     return { ok: true, message: t("aiExportDone") };
   }
 
   if (action.type === "sign_report") {
-    const rows = datasetRows(action, data, currentUser);
+    const rows = await datasetRows(action, data, currentUser);
     if (!rows || !rows.length) return { ok: false, message: t("aiNoData") };
     const { verificationId } = await generateSignedReport({
       title: action.reportTitle || action.dataset,
@@ -76,7 +101,13 @@ export async function executeAssistantAction(action, { data, company, currentUse
   }
 
   if (action.type === "open_page") {
-    const routes = { signing: "/app/signing", verify: "/verify" };
+    const routes = {
+      dashboard: "/app", tasks: "/app/tasks", attendance: "/app/attendance",
+      reports: "/app/reports", performance: "/app/performance", employees: "/app/employees",
+      stations: "/app/stations", hr: "/app/hr", complaints: "/app/complaints",
+      chat: "/app/chat", files: "/app/files", daily_report: "/app/daily-report",
+      help: "/app/help", signing: "/app/signing", verify: "/verify",
+    };
     const path = routes[norm(action.page)];
     if (!path) return { ok: false, message: t("aiActionFailed") };
     window.open(path, "_blank");

@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import moment from "moment";
 import { base44 } from "@/api/base44Client";
-import { exportCSV } from "@/lib/exportReport";
-import { FileSpreadsheet } from "lucide-react";
 import MobileSelect from "@/components/mobile/MobileSelect";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 
 const RANGES = [
   { val: "monthly", amount: 1, unit: "months" },
@@ -65,17 +64,13 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
 
   const statusLabel = (r) => t(`attendanceStatus${r.status.charAt(0).toUpperCase()}${r.status.slice(1).replace(/_([a-z])/, (m, c) => c.toUpperCase())}`);
 
-  const exportExcel = () => {
-    const employeeName = employees.find((e) => e.id === employeeId)?.name || "";
-    const headers = [t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("lateMinutesLabel")];
-    const dataRows = rows.map((r) => [
-      r.date, statusLabel(r) + (r.excused ? ` (${t("excused")})` : ""),
-      r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—",
-      r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : "—",
-      r.work_hours ?? "—", r.status === "late" ? (r.late_minutes ?? "—") : "—",
-    ]);
-    exportCSV(`attendance-${employeeName}-${dateWindow.startDate}_${dateWindow.endDate}.csv`, headers, dataRows);
-  };
+  const exportHeaders = [t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("lateMinutesLabel")];
+  const exportRows = rows.map((r) => [
+    r.date, statusLabel(r) + (r.excused ? ` (${t("excused")})` : ""),
+    r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—",
+    r.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : "—",
+    r.work_hours ?? "—", r.status === "late" ? (r.late_minutes ?? "—") : "—",
+  ]);
 
   return (
     <div className="p-5 rounded-xl border border-border bg-card space-y-4">
@@ -88,11 +83,11 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
           placeholder={t("employeeName")}
           options={employees.map((e) => ({ value: e.id, label: e.name }))}
         />
-        {rows.length > 0 && (
-          <button onClick={exportExcel} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-            <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
-          </button>
-        )}
+        <ComparisonExportButtons
+          title={`${t("monthlyAttendanceReport")} — ${employees.find((e) => e.id === employeeId)?.name || ""}`}
+          headers={exportHeaders}
+          rows={exportRows}
+        />
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">

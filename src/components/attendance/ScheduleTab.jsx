@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canManageSchedule } from "@/lib/permissions";
-import { ArrowLeft, CalendarClock, Download } from "lucide-react";
+import { ArrowLeft, CalendarClock } from "lucide-react";
 import StationScheduleEditor, { getMonthDates, dateKey } from "@/components/schedules/StationScheduleEditor";
-import { exportCSV } from "@/lib/exportReport";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 
 // Monthly station shift schedule — now embedded as a tab inside Attendance instead of
 // a separate page, since both cover the same "who works when" concept.
@@ -38,22 +38,18 @@ export default function ScheduleTab() {
   const station = data.stations.find((s) => s.id === selectedStation);
   const canManage = canManageSchedule(currentUser, data, selectedStation);
 
-  const handleExport = () => {
-    const schedule = (data.schedules || []).find((s) => s.stationId === selectedStation);
-    const shiftTypes = schedule?.shiftTypes || [];
-    const now = new Date();
-    const monthDates = getMonthDates(now.getFullYear(), now.getMonth());
-    const headers = [t("shift"), ...monthDates.map((d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" }))];
-    const rows = shiftTypes.map((st) => {
-      const shiftCell = `${st.label} (${st.start}–${st.end})`;
-      const dayCells = monthDates.map((d) => {
-        const ids = schedule?.assignments?.[dateKey(d)]?.[st.id] || [];
-        return ids.map((id) => data.employees.find((e) => e.id === id)?.name).filter(Boolean).join(", ");
-      });
-      return [shiftCell, ...dayCells];
-    });
-    exportCSV(`${station?.name || "schedule"}.csv`, headers, rows);
-  };
+  const schedule = (data.schedules || []).find((s) => s.stationId === selectedStation);
+  const shiftTypes = schedule?.shiftTypes || [];
+  const now = new Date();
+  const monthDates = getMonthDates(now.getFullYear(), now.getMonth());
+  const exportHeaders = [t("shift"), ...monthDates.map((d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" }))];
+  const exportRows = shiftTypes.map((st) => [
+    `${st.label} (${st.start}–${st.end})`,
+    ...monthDates.map((d) => {
+      const ids = schedule?.assignments?.[dateKey(d)]?.[st.id] || [];
+      return ids.map((id) => data.employees.find((e) => e.id === id)?.name).filter(Boolean).join(", ");
+    }),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -62,9 +58,7 @@ export default function ScheduleTab() {
           <ArrowLeft className="w-4 h-4" />
         </button>
         <h3 className="flex-1 text-center font-heading text-xl font-semibold">{station?.name}</h3>
-        <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-landing-gold/40 text-sm font-body hover:bg-landing-gold-light/20 shrink-0 whitespace-nowrap">
-          <Download className="w-4 h-4" /> {t("exportExcel")}
-        </button>
+        <ComparisonExportButtons title={`${t("monthlySchedule")} — ${station?.name || ""}`} headers={exportHeaders} rows={exportRows} />
       </div>
       <StationScheduleEditor companyId={company.id} stationId={selectedStation} canManage={canManage} />
     </div>

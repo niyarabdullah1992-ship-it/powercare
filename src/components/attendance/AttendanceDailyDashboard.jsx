@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { MapPin } from "lucide-react";
 import LocationMapModal from "@/components/attendance/LocationMapModal";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 
 const STATUS_STYLE = {
   present: "bg-emerald-100 text-emerald-700 border-emerald-300",
@@ -54,7 +55,17 @@ export default function AttendanceDailyDashboard({ employees, currentUser, t }) 
 
   return (
     <div className="p-5 rounded-xl border border-border bg-card space-y-3">
-      <h3 className="font-heading text-lg font-semibold">{t("dailyAttendance")}</h3>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h3 className="font-heading text-lg font-semibold">{t("dailyAttendance")}</h3>
+        <ComparisonExportButtons
+          title={t("dailyAttendance")}
+          headers={[t("employeeName"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("locationStatus")]}
+          rows={employees.map((e) => {
+            const r = byEmployee[e.id];
+            return [e.name, r?.status || "not_yet", r?.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—", r?.check_out_at ? new Date(r.check_out_at).toLocaleTimeString() : "—", r?.work_hours ?? "—", r?.location_status || "—"];
+          })}
+        />
+      </div>
       {loading ? (
         <p className="text-sm text-muted-foreground font-body">…</p>
       ) : employees.length === 0 ? (

@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { formatDateTime } from "@/lib/dateFormat";
 import { AlertTriangle } from "lucide-react";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 
 // Lists free-text "stoppage issue" comments reported across task targets.
 export default function IssuesList() {
@@ -42,9 +43,16 @@ export default function IssuesList() {
 
   return (
     <div className="p-5 rounded-xl border border-border bg-card">
-      <h3 className="font-heading text-base font-semibold flex items-center gap-2 mb-4">
-        <AlertTriangle className="w-4 h-4" /> {t("stoppageIssues")}
-      </h3>
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+        <h3 className="font-heading text-base font-semibold flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4" /> {t("stoppageIssues")}
+        </h3>
+        <ComparisonExportButtons
+          title={t("stoppageIssues")}
+          headers={[t("employeeName"), t("title"), t("date"), t("description")]}
+          rows={issues.map((c) => [c.user_name || "—", c.taskTitle, c.created_at ? formatDateTime(c.created_at, lang) : "—", c.content])}
+        />
+      </div>
       {loading ? (
         <p className="text-sm text-muted-foreground font-body">…</p>
       ) : issues.length === 0 ? (
