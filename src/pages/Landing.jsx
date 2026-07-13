@@ -158,7 +158,7 @@ export default function Landing() {
                 >
                   {submitting ? t("pleaseWaitBtn") : t("login")}
                 </button>
-                <button type="button" onClick={() => { setResetOpen(true); setError(""); }} className="w-full text-center text-xs font-body text-primary/60 hover:text-landing-gold">
+                <button type="button" onClick={() => { setResetOpen(true); setError(""); }} className="w-full cursor-pointer text-center text-sm font-body font-semibold text-landing-gold underline underline-offset-4 hover:text-landing-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-gold">
                   {lang === "ar" ? "نسيت كلمة المرور؟" : "Forgot password?"}
                 </button>
               </form>
