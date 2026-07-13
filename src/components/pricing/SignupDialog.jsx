@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
-export default function SignupDialog({ plan, onClose, onSubmit }) {
+export default function SignupDialog({ plan, onClose, onSubmit, error }) {
   const { t } = useI18n();
   const [companyName, setCompanyName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
@@ -50,10 +50,12 @@ export default function SignupDialog({ plan, onClose, onSubmit }) {
               value={ownerPassword}
               onChange={(e) => setOwnerPassword(e.target.value)}
               placeholder={t("passwordPlaceholder")}
+              minLength={6}
               required
               className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
             />
           )}
+          {error && <p className="text-xs text-red-500 font-body">{error}</p>}
           <button
             type="submit"
             disabled={submitting}

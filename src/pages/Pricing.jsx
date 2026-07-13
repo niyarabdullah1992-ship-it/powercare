@@ -1,19 +1,20 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { createCompany } from "@/lib/store";
+import { createCompany, syncCompanyAccount } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
 import { Check, Loader2, ArrowLeft } from "lucide-react";
 import Logo from "@/components/Logo";
 import SignupDialog from "@/components/pricing/SignupDialog";
 
 export default function Pricing() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const navigate = useNavigate();
   const [activePlan, setActivePlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [billing, setBilling] = useState("monthly");
+  const pendingCompanyRef = useRef(null);
 
   const PLANS = [
     { id: "free", nameKey: "plan_free", price: 0, features: [t("freeF1"), t("freeF2"), t("freeF3")] },
@@ -22,12 +23,22 @@ export default function Pricing() {
     { id: "enterprise", nameKey: "plan_ent", price: 249, features: [t("entF1"), t("entF2"), t("entF3")] },
   ];
 
-  const handleFreeSignup = ({ companyName, ownerEmail, ownerPassword }) => {
-    const company = createCompany({ name: companyName, ownerEmail, ownerPassword, plan: "Free" });
-    // Fire-and-forget welcome email to the subscriber's registered address.
-    base44.functions.invoke("subscriberEmails", { action: "welcome", email: ownerEmail, companyName }).catch(() => {});
+  const handleFreeSignup = async ({ companyName, ownerEmail, ownerPassword }) => {
+    setError("");
+    const company = pendingCompanyRef.current || createCompany(
+      { name: companyName, ownerEmail, ownerPassword, plan: "Free" },
+      { sync: false }
+    );
+    pendingCompanyRef.current = company;
+    const saved = await syncCompanyAccount(company);
+    if (!saved) {
+      setError(lang === "ar" ? "تعذر حفظ حساب الشركة. يرجى المحاولة مرة أخرى." : "The company account could not be saved. Please try again.");
+      return false;
+    }
+    pendingCompanyRef.current = null;
+    base44.functions.invoke("subscriberEmails", { action: "welcome", email: company.ownerEmail, companyName: company.name }).catch(() => {});
     navigate("/");
-    return company;
+    return true;
   };
 
   const handlePaidSignup = async ({ companyName, ownerEmail }) => {
@@ -134,8 +145,9 @@ export default function Pricing() {
       {activePlan && (
         <SignupDialog
           plan={activePlan}
-          onClose={() => setActivePlan(null)}
+          onClose={() => { pendingCompanyRef.current = null; setActivePlan(null); setError(""); }}
           onSubmit={activePlan.price === 0 ? handleFreeSignup : handlePaidSignup}
+          error={error}
         />
       )}
     </div>

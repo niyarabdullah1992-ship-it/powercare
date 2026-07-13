@@ -119,16 +119,16 @@ function saveRegistry(reg) {
 export function listCompanies() {
   return getRegistry().companies;
 }
-export function createCompany({ name, ownerEmail, ownerPassword, plan = "Starter", allowedEmailDomain = "" }) {
+export function createCompany({ name, ownerEmail, ownerPassword, plan = "Starter", allowedEmailDomain = "" }, { sync = true } = {}) {
   const reg = getRegistry();
   const id = uid("comp");
-  const company = { id, name, ownerEmail, ownerPassword, plan, allowedEmailDomain: allowedEmailDomain.trim(), createdAt: new Date().toISOString() };
+  const company = { id, name: name.trim(), ownerEmail: ownerEmail.trim().toLowerCase(), ownerPassword, plan, allowedEmailDomain: allowedEmailDomain.trim(), createdAt: new Date().toISOString() };
   reg.companies.push(company);
   saveRegistry(reg);
   // seed empty company workspace
   const data = emptyCompanyData(company);
   write(companyKey(id), data);
-  syncAccountToEntity(company);
+  if (sync) syncAccountToEntity(company);
   return company;
 }
 
@@ -147,9 +147,14 @@ async function syncAccountToEntity(company) {
     });
     // Brand-new signups get an owner session token back — keep it for future calls.
     if (res?.data?.token) setCompanyToken(company.id, res.data.token);
+    return !!res?.data?.ok;
   } catch {
-    // best-effort background sync
+    return false;
   }
+}
+
+export async function syncCompanyAccount(company) {
+  return syncAccountToEntity(company);
 }
 export function deleteCompany(id) {
   const reg = getRegistry();

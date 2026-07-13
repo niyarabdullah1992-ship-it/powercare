@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { createCompany } from "@/lib/store";
+import { createCompany, syncCompanyAccount } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -14,6 +14,9 @@ export default function PricingSuccess() {
   const [status, setStatus] = useState("verifying"); // verifying | password | success | error
   const [password, setPassword] = useState("");
   const [session, setSession] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [setupError, setSetupError] = useState("");
+  const pendingCompanyRef = useRef(null);
 
   useEffect(() => {
     const sessionId = new URLSearchParams(window.location.search).get("session_id");
@@ -34,18 +37,28 @@ export default function PricingSuccess() {
       .catch(() => setStatus("error"));
   }, []);
 
-  const finishSetup = (e) => {
+  const finishSetup = async (e) => {
     e.preventDefault();
-    createCompany({
+    setSubmitting(true);
+    setSetupError("");
+    const company = pendingCompanyRef.current || createCompany({
       name: session.companyName,
       ownerEmail: session.ownerEmail,
       ownerPassword: password,
       plan: PLAN_LABELS[session.plan] || "Starter",
-    });
-    // Fire-and-forget subscriber emails: welcome + payment confirmation.
-    base44.functions.invoke("subscriberEmails", { action: "welcome", email: session.ownerEmail, companyName: session.companyName }).catch(() => {});
-    base44.functions.invoke("subscriberEmails", { action: "paymentConfirmed", email: session.ownerEmail, companyName: session.companyName, plan: PLAN_LABELS[session.plan] || "Starter" }).catch(() => {});
+    }, { sync: false });
+    pendingCompanyRef.current = company;
+    const saved = await syncCompanyAccount(company);
+    if (!saved) {
+      setSetupError(t("checkoutGenericError"));
+      setSubmitting(false);
+      return;
+    }
+    pendingCompanyRef.current = null;
+    base44.functions.invoke("subscriberEmails", { action: "welcome", email: company.ownerEmail, companyName: company.name }).catch(() => {});
+    base44.functions.invoke("subscriberEmails", { action: "paymentConfirmed", email: company.ownerEmail, companyName: company.name, plan: company.plan }).catch(() => {});
     setStatus("success");
+    setSubmitting(false);
     setTimeout(() => navigate("/"), 1500);
   };
 
@@ -71,11 +84,13 @@ export default function PricingSuccess() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t("choosePasswordPlaceholder")}
+                minLength={6}
                 required
                 className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
               />
-              <button type="submit" className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity">
-                {t("finishSetupBtn")}
+              {setupError && <p className="text-xs text-red-500 font-body">{setupError}</p>}
+              <button disabled={submitting} type="submit" className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+                {submitting ? t("pleaseWaitBtn") : t("finishSetupBtn")}
               </button>
             </form>
           </>
