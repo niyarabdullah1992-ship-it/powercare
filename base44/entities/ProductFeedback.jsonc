@@ -1,0 +1,35 @@
+{
+  "name": "ProductFeedback",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "message": {
+      "type": "string"
+    },
+    "page": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "companyId",
+    "rating"
+  ],
+  "rls": {
+    "create": true,
+    "read": false,
+    "update": {
+      "data.companyId": "__feedback_locked__"
+    },
+    "delete": false
+  }
+}

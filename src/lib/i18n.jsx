@@ -424,6 +424,7 @@ const dict = {
     onboardingWelcome: "Welcome — let's set up your company", onboardingStationTitle: "Add your first station", onboardingStationDesc: "Stations are the work sites your employees belong to.", onboardingEmployeeTitle: "Add your employees", onboardingEmployeeDesc: "Add your team and set their grades and permissions.", onboardingLocationTitle: "Set the workplace location", onboardingLocationDesc: "Enables GPS check-in verification for attendance.",
     brandingTitle: "Reports & PDF branding", brandingDesc: "Your logo and color are applied automatically to every printed report, PDF and colored Excel export.", companyLogo: "Company logo", noLogo: "No logo", uploadLogo: "Upload logo", removeLogo: "Remove", brandColor: "Brand color", customColor: "Custom", preview: "Preview", tasksReportPreview: "Tasks Report", statLabel: "Stat", brandingSaved: "Saved ✓", saveBranding: "Save & apply to all reports",
     fileSigning: "File Signing", userGuide: "User Guide", syncPendingTitle: "Changes waiting to upload", syncPending: "Pending sync", syncing: "Syncing...", syncSavedTitle: "All data saved to the cloud", synced: "Synced", toggleTheme: "Toggle theme",
+    feedbackQuestion: "How has your PowerCare experience been?", feedbackPlaceholder: "What is the one thing we should improve?", 
   },
   ar: {
     dir: "rtl",
@@ -846,6 +847,7 @@ const dict = {
     onboardingWelcome: "أهلًا بك — لنجهّز شركتك", onboardingStationTitle: "أضف محطتك الأولى", onboardingStationDesc: "المحطات هي مقرات العمل التي ينتمي إليها الموظفون.", onboardingEmployeeTitle: "أضف موظفيك", onboardingEmployeeDesc: "أضف فريقك وحدد درجاتهم الوظيفية وصلاحياتهم.", onboardingLocationTitle: "حدد موقع العمل على الخريطة", onboardingLocationDesc: "لتفعيل التحقق من الحضور عبر GPS عند تسجيل الموظفين.",
     brandingTitle: "هوية التقارير وملفات PDF", brandingDesc: "الشعار واللون المختاران يُطبَّقان تلقائيًا على جميع التقارير المطبوعة وملفات PDF وملفات الإكسل الملوّنة.", companyLogo: "شعار الشركة", noLogo: "لا شعار", uploadLogo: "رفع شعار", removeLogo: "إزالة", brandColor: "لون الهوية", customColor: "لون مخصص", preview: "معاينة", tasksReportPreview: "تقرير المهام", statLabel: "إحصائية", brandingSaved: "تم الحفظ ✓", saveBranding: "حفظ وتطبيق على كل التقارير",
     fileSigning: "توقيع الملفات", userGuide: "دليل الاستخدام", syncPendingTitle: "تغييرات بانتظار الرفع للسحابة", syncPending: "بانتظار المزامنة", syncing: "جارٍ المزامنة...", syncSavedTitle: "كل البيانات محفوظة في السحابة", synced: "متزامن", toggleTheme: "تبديل المظهر",
+    feedbackQuestion: "كيف كانت تجربتك مع PowerCare؟", feedbackPlaceholder: "ما أهم شيء تريد منا تحسينه؟", 
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",

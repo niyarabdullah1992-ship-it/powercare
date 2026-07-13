@@ -6,6 +6,7 @@ import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import { formatDateTime } from "@/lib/dateFormat";
 import { NO_SECTION } from "@/lib/taskFolders";
 import EscalationSteps from "@/components/escalation/EscalationSteps";
+import MobileSelect from "@/components/mobile/MobileSelect";
 
 // A single task target card — progress, comments, and management actions.
 export default function TaskCard({
@@ -64,7 +65,7 @@ export default function TaskCard({
     : "bg-yellow-400";
 
   return (
-    <div className={`p-4 rounded-lg border space-y-3 transition-colors ${cardBorder}`}>
+    <div className={`p-4 sm:p-5 rounded-xl border space-y-3 shadow-sm transition-colors ${cardBorder}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium font-body">{tg.title || t("setTarget")}</p>
@@ -93,16 +94,13 @@ export default function TaskCard({
           </span>
           {canManage && (
             <div className="flex items-center gap-1 mt-1">
-              <select
+              <MobileSelect
                 value={tg.section || NO_SECTION}
-                onChange={(e) => moveTaskToSection(tg, e.target.value)}
-                title={t("moveToSection")}
-                className="text-[11px] px-1.5 py-1 rounded-md border border-input bg-card font-body max-w-[130px]"
-              >
-                {allSectionFolders.map((f) => (
-                  <option key={f.key} value={f.key}>{f.name}</option>
-                ))}
-              </select>
+                onChange={(value) => moveTaskToSection(tg, value)}
+                placeholder={t("moveToSection")}
+                options={allSectionFolders.map((folder) => ({ value: folder.key, label: folder.name }))}
+                className="max-w-[150px] px-2 py-1 text-[11px]"
+              />
               <button onClick={() => setEditTarget(tg)} className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title={t("edit")}>
                 <Pencil className="w-3.5 h-3.5" />
               </button>

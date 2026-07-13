@@ -149,6 +149,16 @@
   }
 }
 
+/* Respect reduced-motion preferences across the public site and app. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Native-app feel: safe areas, overscroll and selection */
 @layer utilities {
   .pt-safe { padding-top: env(safe-area-inset-top); }

@@ -23,6 +23,7 @@ import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import MobileSelect from "@/components/mobile/MobileSelect";
+import PageHeader from "@/components/PageHeader";
 import { queryClientInstance } from "@/lib/query-client";
 
 const DATE_PRESETS = [
@@ -729,19 +730,18 @@ export default function MyTasks() {
       refresh();
     }}>
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-heading text-3xl font-semibold">{t("myTasks")}</h1>
-        </div>
-        {canCreateTasks(currentUser) && (
+      <PageHeader
+        title={t("myTasks")}
+        icon={Target}
+        actions={canCreateTasks(currentUser) && (
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-foreground text-background text-sm font-body hover:bg-accent transition-colors"
           >
             <Plus className="w-4 h-4" /> {t("newTaskTarget")}
           </button>
         )}
-      </div>
+      />
 
       {!checkedInToday && (
         <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50 flex items-center justify-between gap-3">
@@ -945,7 +945,9 @@ export default function MyTasks() {
 
         <AnimatePresence mode="wait">
         {targetsLoading ? (
-          <p className="text-sm text-muted-foreground font-body">…</p>
+          <div className="space-y-3 py-2" aria-label={t("loading") || "Loading"}>
+            {[1, 2, 3].map((item) => <div key={item} className="h-20 rounded-lg bg-muted animate-pulse" />)}
+          </div>
         ) : !selectedStation ? (
           stationGroups.length === 0 ? (
             <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>

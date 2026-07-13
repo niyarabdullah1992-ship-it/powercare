@@ -12,6 +12,7 @@ import { printReport } from "@/lib/printReport";
 import StationFilterDropdown from "@/components/reports/StationFilterDropdown";
 import EmployeeReportTable from "@/components/reports/EmployeeReportTable";
 import ReportCard from "@/components/reports/ReportCard";
+import PageHeader from "@/components/PageHeader";
 import ReportTableHead from "@/components/reports/ReportTableHead";
 import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
@@ -190,13 +191,9 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-3xl font-semibold flex items-center gap-2">
-          <FileBarChart2 className="w-6 h-6" /> {t("tasksReport")}
-        </h1>
-        <p className="text-muted-foreground font-body text-sm mt-1">{t("tasksReportNote")}</p>
-      </div>
+      <PageHeader title={t("tasksReport")} description={t("tasksReportNote")} icon={FileBarChart2} />
 
+      <div className="rounded-xl border border-border bg-card p-4 space-y-4 shadow-sm">
       {/* Section tabs */}
       <div className="flex items-center gap-1.5 flex-wrap">
         {TABS.map((tb) => (
@@ -243,10 +240,14 @@ export default function Reports() {
         )}
       </div>
 
+      </div>
+
       {/* Tasks tab */}
       {tab === "tasks" && (
         loading ? (
-          <p className="text-sm text-muted-foreground font-body">…</p>
+          <div className="space-y-3" aria-label={t("loading") || "Loading"}>
+            {[1, 2, 3].map((item) => <div key={item} className="h-16 rounded-xl bg-muted animate-pulse" />)}
+          </div>
         ) : (
           <>
             {filteredTasks.length > 0 && <TaskStats targets={filteredTasks} t={t} />}

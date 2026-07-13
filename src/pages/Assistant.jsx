@@ -15,6 +15,26 @@ export default function Assistant() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
+  const loadedConversationRef = useRef("");
+  const conversationKey = company?.id && currentUser?.id
+    ? `powercare_niro_${company.id}_${currentUser.id}`
+    : "";
+
+  useEffect(() => {
+    if (!conversationKey) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem(conversationKey) || "[]");
+      setMessages(Array.isArray(saved) ? saved.slice(-20) : []);
+    } catch {
+      setMessages([]);
+    }
+    loadedConversationRef.current = conversationKey;
+  }, [conversationKey]);
+
+  useEffect(() => {
+    if (!conversationKey || loadedConversationRef.current !== conversationKey) return;
+    localStorage.setItem(conversationKey, JSON.stringify(messages.slice(-20)));
+  }, [messages, conversationKey]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -60,6 +80,7 @@ DOCUMENT SIGNING & VERIFICATION (you know this feature well):
 
 Rules:
 - When the user asks you to DO something covered by an action, include it in "actions" and confirm briefly in "answer". Never say you can't export or execute — you can.
+- If an action request is missing a required detail that cannot be safely inferred (such as which station, employee, task, dataset, or file format), ask exactly one short clarifying question in "answer" and return no actions. Never guess and execute the wrong action.
 - Answer ONLY based on the company data below. If the data doesn't contain the answer, say so briefly.
 - You understand the complete PowerCare site and all permitted sections in COMPANY DATA: stations, employees, tasks, targets, reports, safety, plans, schedules, attendance, performance, complaints, files, HR, leave and certificates.
 - Every analytical/readings section supports exactly two export formats: PDF and Excel. Treat "BDF" as a typo for "PDF". When asked, choose the matching export_data action and dataset.

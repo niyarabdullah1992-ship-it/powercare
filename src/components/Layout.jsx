@@ -20,6 +20,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { allowedNavFor } from "@/lib/navVisibility";
 import BottomTabBar from "@/components/mobile/BottomTabBar";
 import BackButton from "@/components/mobile/BackButton";
+import ProductFeedbackPrompt from "@/components/ProductFeedbackPrompt";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -376,6 +377,7 @@ export default function Layout({ children }) {
 
       {/* Native-style bottom tab bar (mobile only) */}
       <BottomTabBar />
+      <ProductFeedbackPrompt companyId={company.id} role={currentUser.role} />
     </div>
   );
 }

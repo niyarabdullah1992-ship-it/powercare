@@ -125,18 +125,28 @@ export default function Dashboard() {
     { icon: FileText, label: t("pendingReports"), value: pendingReports, color: "text-foreground" },
   ];
 
-  // 6-month synthetic chart data
-  const monthLabels = [];
+  // Real six-month task activity — stable across renders and based on company data.
+  const monthBuckets = [];
   for (let i = 5; i >= 0; i--) {
-    const d = new Date();
-    d.setMonth(d.getMonth() - i);
-    monthLabels.push(formatDate(d, lang, { month: "short" }));
+    const date = new Date();
+    date.setDate(1);
+    date.setMonth(date.getMonth() - i);
+    monthBuckets.push({
+      key: `${date.getFullYear()}-${date.getMonth()}`,
+      label: formatDate(date, lang, { month: "short" }),
+    });
   }
-  const chartData = monthLabels.map((m, i) => ({
-    month: m,
-    completed: Math.round(20 + Math.random() * 30 + i * 2),
-    pending: Math.round(5 + Math.random() * 12),
-  }));
+  const chartData = monthBuckets.map(({ key, label }) => {
+    const monthlyTasks = tasks.filter((task) => {
+      const date = new Date(task.createdAt);
+      return `${date.getFullYear()}-${date.getMonth()}` === key;
+    });
+    return {
+      month: label,
+      completed: monthlyTasks.filter((task) => task.status === "completed").length,
+      pending: monthlyTasks.filter((task) => task.status !== "completed").length,
+    };
+  });
 
   const recent = [
     ...tasks.map((tk) => ({ type: "task", text: `${tk.title} — ${t(tk.status)}`, at: tk.createdAt })),
