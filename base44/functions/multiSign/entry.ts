@@ -164,6 +164,23 @@ Deno.serve(async (req) => {
       return Response.json({ requests: mine });
     }
 
+    if (action === 'delete') {
+      const { companyId, sessionToken } = body;
+      if (!(await authSession(base44, companyId, sessionToken))) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      const rec = await Docs.get(String(body.requestId || '')).catch(() => null);
+      if (!rec || rec.companyId !== companyId) {
+        return Response.json({ error: 'Not found' }, { status: 404 });
+      }
+      // Only the creator may delete their own request.
+      if (rec.creatorId !== String(body.userId || '')) {
+        return Response.json({ error: 'Only the creator can delete this request' }, { status: 403 });
+      }
+      await Docs.delete(rec.id);
+      return Response.json({ ok: true });
+    }
+
     // ---- PUBLIC (token-authorized) actions ----
     const resolveToken = async (token) => {
       const [id, part] = String(token || '').split('.');

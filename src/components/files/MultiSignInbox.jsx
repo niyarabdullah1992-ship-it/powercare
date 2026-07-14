@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Inbox, Loader2, PenLine, Download, RefreshCw, CheckCircle2, Clock } from "lucide-react";
+import { Inbox, Loader2, PenLine, Download, RefreshCw, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 // Lists group-signing requests: documents waiting for MY signature, plus
@@ -26,6 +26,23 @@ export default function MultiSignInbox({ currentUser, companyId, ar, refreshKey 
   }, [companyId, currentUser.id, currentUser.email]);
 
   useEffect(() => { load(); }, [load, refreshKey]);
+
+  const [deletingId, setDeletingId] = useState(null);
+  const remove = async (r) => {
+    if (!window.confirm(ar ? `حذف طلب التوقيع "${r.fileName}"؟` : `Delete the signature request "${r.fileName}"?`)) return;
+    setDeletingId(r.id);
+    try {
+      await base44.functions.invoke("multiSign", {
+        action: "delete",
+        companyId,
+        userId: currentUser.id,
+        requestId: r.id,
+      });
+      setRequests((rows) => rows.filter((x) => x.id !== r.id));
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (requests === null) {
     return (
@@ -62,6 +79,16 @@ export default function MultiSignInbox({ currentUser, companyId, ar, refreshKey 
             <a href={r.docUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border text-[11px] font-body hover:bg-muted">
               <Download className="w-3 h-3" /> {ar ? "النسخة النهائية" : "Final copy"}
             </a>
+          )}
+          {r.isCreator && (
+            <button
+              onClick={() => remove(r)}
+              disabled={deletingId === r.id}
+              className="p-1.5 rounded-md border border-border text-destructive hover:bg-destructive/10 disabled:opacity-40"
+              aria-label={ar ? "حذف الطلب" : "Delete request"}
+            >
+              {deletingId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            </button>
           )}
         </div>
       </div>
