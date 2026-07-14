@@ -126,7 +126,7 @@ export default function Layout({ children }) {
   ];
 
   // Role-based visibility: each user only sees the sections their role needs.
-  const allowedNav = allowedNavFor(currentUser);
+  const allowedNav = allowedNavFor(currentUser, data?.plan || company?.plan);
   const visibleNavItems = navItems.filter((i) => allowedNav.has(i.to));
 
   const orderKeys = navOrder.length ? navOrder : visibleNavItems.map((i) => i.to);

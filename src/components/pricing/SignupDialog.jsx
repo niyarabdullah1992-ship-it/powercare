@@ -11,6 +11,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
   const [submitting, setSubmitting] = useState(false);
 
   const isFree = plan.price === 0;
+  const isIndividual = !!plan.individual;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +26,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
         <button onClick={onClose} className="absolute top-4 end-4 text-[#3a2f22]/40 hover:text-[#3a2f22]">
           <X className="w-4 h-4" />
         </button>
-        <h3 className="font-heading text-xl text-[#3a2f22] mb-1">{t(plan.nameKey)}</h3>
+        <h3 className="font-heading text-xl text-[#3a2f22] mb-1">{plan.name || t(plan.nameKey)}</h3>
         <p className="text-sm text-[#3a2f22]/55 font-body mb-5">
           {isFree ? t("signupFreeDesc") : t("signupPaidDesc")}
         </p>
@@ -41,7 +42,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
           <input
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
-            placeholder={t("companyNamePlaceholder")}
+            placeholder={isIndividual ? (lang === "ar" ? "اسمك الكامل" : "Your full name") : t("companyNamePlaceholder")}
             required
             className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
           />

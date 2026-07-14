@@ -14,6 +14,7 @@ import StationManagerDashboard from "@/components/dashboard/StationManagerDashbo
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { queryClientInstance } from "@/lib/query-client";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
+import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -73,6 +74,18 @@ export default function Dashboard() {
   const welcomeHero = (
     <WelcomeHero name={currentUser.name} companyName={data.name} t={t} lang={lang} alerts={welcomeAlerts} employee={currentUser} companyId={company.id} />
   );
+
+  // Individual (personal) workspaces get a focused personal dashboard.
+  if (String(data.plan || company?.plan || "").toLowerCase() === "individual") {
+    return (
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="space-y-6">
+          {welcomeHero}
+          <IndividualDashboard data={data} lang={lang} />
+        </div>
+      </PullToRefresh>
+    );
+  }
 
   const isEmployee = currentUser.role === "employee";
   const canEditBranding = isCompanyOwner(currentUser, data) || currentUser.role === "director";

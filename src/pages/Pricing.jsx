@@ -14,6 +14,7 @@ export default function Pricing() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [billing, setBilling] = useState("monthly");
+  const [audience, setAudience] = useState("company");
   const [googleEmail, setGoogleEmail] = useState("");
   const pendingCompanyRef = useRef(null);
 
@@ -24,13 +25,28 @@ export default function Pricing() {
     { id: "enterprise", nameKey: "plan_ent", price: 249, features: [t("entF1"), t("entF2"), t("entF3")] },
   ];
 
+  const INDIVIDUAL_PLANS = [
+    {
+      id: "individual",
+      individual: true,
+      name: lang === "ar" ? "فرد" : "Individual",
+      price: 0,
+      features: lang === "ar"
+        ? ["مساحة عمل شخصية خاصة بك", "مهام يومية مع مجلدات وتنظيم", "المساعد الذكي Niro", "التوقيع الرقمي بشارة تحقق مشفّرة", "ملفاتك ومستنداتك الخاصة"]
+        : ["Your own personal workspace", "Daily tasks with folders & organization", "Niro AI assistant", "Digital signing with encrypted verification", "Your private files & documents"],
+    },
+  ];
+
+  const shownPlans = audience === "individual" ? INDIVIDUAL_PLANS : PLANS;
+
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has("google_signup")) return;
     const saved = JSON.parse(sessionStorage.getItem("powercare_google_signup") || "null");
     sessionStorage.removeItem("powercare_google_signup");
     if (!saved) return;
     setBilling(saved.billing || "monthly");
-    setActivePlan(PLANS.find((plan) => plan.id === saved.planId) || null);
+    if (saved.planId === "individual") setAudience("individual");
+    setActivePlan([...PLANS, ...INDIVIDUAL_PLANS].find((plan) => plan.id === saved.planId) || null);
     base44.auth.me().then((user) => setGoogleEmail(user.email || "")).catch(() => setError(lang === "ar" ? "تعذر تسجيل Google." : "Google sign-up could not be completed."));
   }, []);
 
@@ -42,7 +58,7 @@ export default function Pricing() {
   const handleFreeSignup = async ({ companyName, ownerEmail, ownerPassword, authMethod }) => {
     setError("");
     const company = pendingCompanyRef.current || createCompany(
-      { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: "Free" },
+      { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: activePlan?.id === "individual" ? "Individual" : "Free" },
       { sync: false }
     );
     pendingCompanyRef.current = company;
@@ -104,8 +120,26 @@ export default function Pricing() {
 
         {error && <p className="text-center text-sm text-red-500 font-body mb-6">{error}</p>}
 
+        {/* Audience toggle — companies vs. individuals */}
+        <div className="flex items-center justify-center mb-6">
+          <div className="inline-flex items-center bg-white rounded-full p-1 shadow-sm">
+            {[
+              { key: "company", ar: "🏢 للشركات", en: "🏢 For Companies" },
+              { key: "individual", ar: "👤 للأفراد", en: "👤 For Individuals" },
+            ].map((a) => (
+              <button
+                key={a.key}
+                onClick={() => setAudience(a.key)}
+                className={`px-5 py-2 rounded-full text-sm font-body font-medium transition-colors ${audience === a.key ? "bg-gradient-to-b from-landing-gold-light to-landing-gold text-white" : "text-[#3a2f22]/60 hover:text-[#3a2f22]"}`}
+              >
+                {lang === "ar" ? a.ar : a.en}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Billing interval toggle — yearly = 2 months free */}
-        <div className="flex items-center justify-center gap-2 mb-10">
+        <div className={`items-center justify-center gap-2 mb-10 ${audience === "company" ? "flex" : "hidden"}`}>
           <div className="inline-flex items-center bg-white rounded-full p-1 shadow-sm">
             <button
               onClick={() => setBilling("monthly")}
@@ -125,10 +159,10 @@ export default function Pricing() {
           </span>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-6">
-          {PLANS.map((plan) => (
+        <div className={audience === "individual" ? "grid max-w-sm mx-auto" : "grid md:grid-cols-4 gap-6"}>
+          {shownPlans.map((plan) => (
             <div key={plan.id} className="bg-white rounded-2xl p-6 shadow-sm flex flex-col">
-              <h3 className="font-heading text-2xl text-[#3a2f22] mb-1">{t(plan.nameKey)}</h3>
+              <h3 className="font-heading text-2xl text-[#3a2f22] mb-1">{plan.name || t(plan.nameKey)}</h3>
               <p className="font-heading text-3xl text-landing-gold mb-1">
                 {plan.price === 0 ? t("plan_free") : (billing === "yearly" ? `$${plan.price * 10}` : `$${plan.price}`)}
                 {plan.price > 0 && <span className="text-sm text-[#3a2f22]/40 font-body">{billing === "yearly" ? t("perYear") : t("perMonth")}</span>}

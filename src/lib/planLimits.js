@@ -1,6 +1,7 @@
 // Plan limits — mirrors what each pricing tier advertises on the Pricing page.
 // null = unlimited.
 const PLAN_LIMITS = {
+  individual: { stations: 1, employees: 1 },
   free: { stations: 1, employees: 5 },
   starter: { stations: 5, employees: 30 },
   professional: { stations: null, employees: null },
