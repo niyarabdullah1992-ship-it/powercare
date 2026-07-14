@@ -20,12 +20,16 @@
         "role": "admin"
       }
     },
-    "read": true,
+    "read": null,
     "update": {
       "user_condition": {
         "role": "admin"
       }
     },
-    "delete": false
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
   }
 }

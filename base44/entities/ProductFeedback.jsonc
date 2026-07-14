@@ -25,11 +25,21 @@
     "rating"
   ],
   "rls": {
-    "create": true,
-    "read": false,
-    "update": {
-      "data.companyId": "__feedback_locked__"
+    "create": null,
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
     },
-    "delete": false
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
   }
 }
