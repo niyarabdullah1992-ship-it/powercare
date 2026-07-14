@@ -45,7 +45,8 @@ export async function makeSignatureStamp(sigDataUrl, name) {
 // slot rows along the bottom of the last page. When `badge` is provided (last
 // signer), the verification badge is stamped at the top-right of the last
 // page too. Uploads and returns { url, bytes }.
-export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot) {
+export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot, sizeScale = 1) {
+  const scale = Math.min(Math.max(Number(sizeScale) || 1, 0.5), 2);
   const pdfBytes = await fetch(docUrl).then((r) => r.arrayBuffer());
   const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   const pages = pdf.getPages();
@@ -58,7 +59,7 @@ export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot) {
     // Assigned spot: stamp centered on the exact point the creator chose.
     const page = pages[Math.min(Math.max(Math.round(spot.page), 1), pages.length) - 1];
     const { width, height } = page.getSize();
-    const sw = Math.min(130, width * 0.24);
+    const sw = Math.min(130, width * 0.24) * scale;
     const sh = sw * (195 / 360);
     const cx = (Number(spot.x) / 100) * width;
     const cy = height - (Number(spot.y) / 100) * height;
@@ -68,7 +69,7 @@ export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot) {
   } else {
     // Fallback: signatures line up in rows along the bottom of the last page.
     const { width } = lastPage.getSize();
-    const sw = Math.min(130, width * 0.28);
+    const sw = Math.min(130, width * 0.28) * scale;
     const sh = sw * (195 / 360);
     const perRow = Math.max(1, Math.floor((width - 32) / (sw + 12)));
     const col = slotIndex % perRow;

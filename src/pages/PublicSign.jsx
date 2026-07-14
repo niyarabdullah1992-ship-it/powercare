@@ -20,6 +20,7 @@ export default function PublicSign() {
   const [done, setDone] = useState(null); // { completed, docUrl }
   const [error, setError] = useState("");
   const [mode, setMode] = useState("type"); // "type" | "draw"
+  const [sigSize, setSigSize] = useState(100); // signature size, % (50–200)
 
   const [loadError, setLoadError] = useState("");
 
@@ -55,7 +56,7 @@ export default function PublicSign() {
         const qr = await loadBadgeQr(fresh.verificationId).catch(() => null);
         badge = { sigId: fresh.verificationId, name: fresh.signerNames.slice(0, 60), qr };
       }
-      const { url, bytes } = await stampOnPdf(fresh.docUrl, stamp, fresh.signedCount, badge, fresh.signer.spot);
+      const { url, bytes } = await stampOnPdf(fresh.docUrl, stamp, fresh.signedCount, badge, fresh.signer.spot, sigSize / 100);
 
       setStage(ar ? "جارٍ حفظ التوقيع…" : "Saving your signature…");
       const fileHash = fresh.isLast ? await sha256HexOfBuffer(bytes) : "";
@@ -191,6 +192,21 @@ export default function PublicSign() {
           >
             <PenLine className="w-3.5 h-3.5" /> {ar ? "رسم التوقيع" : "Draw"}
           </button>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-body">
+            <span>{ar ? "حجم التوقيع على المستند" : "Signature size on the document"}</span>
+            <span dir="ltr">{sigSize}%</span>
+          </div>
+          <input
+            type="range"
+            min={50}
+            max={200}
+            step={10}
+            value={sigSize}
+            onChange={(e) => setSigSize(Number(e.target.value))}
+            className="w-full accent-current"
+          />
         </div>
         {mode === "type" ? (
           <TypedSignature ar={ar} defaultName={info.signer.name || ""} onSave={sign} saving={signing} />
