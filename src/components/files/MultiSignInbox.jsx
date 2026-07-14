@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Inbox, Loader2, PenLine, Download, RefreshCw, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 
 // Lists group-signing requests: documents waiting for MY signature, plus
 // requests I created with each signer's live status.
@@ -29,7 +30,6 @@ export default function MultiSignInbox({ currentUser, companyId, ar, refreshKey 
 
   const [deletingId, setDeletingId] = useState(null);
   const remove = async (r) => {
-    if (!window.confirm(ar ? `حذف طلب التوقيع "${r.fileName}"؟` : `Delete the signature request "${r.fileName}"?`)) return;
     setDeletingId(r.id);
     try {
       await base44.functions.invoke("multiSign", {
@@ -81,14 +81,22 @@ export default function MultiSignInbox({ currentUser, companyId, ar, refreshKey 
             </a>
           )}
           {r.isCreator && (
-            <button
-              onClick={() => remove(r)}
-              disabled={deletingId === r.id}
-              className="p-1.5 rounded-md border border-border text-destructive hover:bg-destructive/10 disabled:opacity-40"
-              aria-label={ar ? "حذف الطلب" : "Delete request"}
-            >
-              {deletingId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-            </button>
+            <ConfirmDeleteDialog
+              title={ar ? "حذف طلب التوقيع؟" : "Delete signature request?"}
+              description={ar
+                ? `سيُحذف طلب التوقيع "${r.fileName}" نهائيًا وتتوقف روابط التوقيع المرسلة عن العمل.`
+                : `The signature request "${r.fileName}" will be permanently deleted and its signing links will stop working.`}
+              onConfirm={() => remove(r)}
+              trigger={
+                <button
+                  disabled={deletingId === r.id}
+                  className="p-1.5 rounded-md border border-border text-destructive hover:bg-destructive/10 disabled:opacity-40"
+                  aria-label={ar ? "حذف الطلب" : "Delete request"}
+                >
+                  {deletingId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                </button>
+              }
+            />
           )}
         </div>
       </div>
