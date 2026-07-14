@@ -1,5 +1,5 @@
 import React from "react";
-import { History } from "lucide-react";
+import { History, MapPin } from "lucide-react";
 
 const durMin = (r) => Math.max(0, Math.round(((r.checkOut ? new Date(r.checkOut).getTime() : Date.now()) - new Date(r.checkIn).getTime()) / 60000));
 const fmtDur = (min) => `${Math.floor(min / 60)}h ${min % 60}m`;
@@ -46,7 +46,14 @@ export default function AttendanceInsights({ records, placeName, ar }) {
             {records.slice(0, 20).map((r) => (
               <div key={r.id} className="py-2.5 flex items-center justify-between gap-3 text-sm font-body">
                 <div className="min-w-0">
-                  <p className="font-medium truncate">{placeName(r.placeId)}</p>
+                  <p className="font-medium truncate flex items-center gap-1.5">
+                    {placeName(r)}
+                    {r.lat != null && (
+                      <a href={`https://www.google.com/maps?q=${r.lat},${r.lng}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-accent hover:opacity-70" aria-label="map">
+                        <MapPin className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </p>
                   <p className="text-xs text-muted-foreground">{r.date}</p>
                 </div>
                 <div className="text-end shrink-0">

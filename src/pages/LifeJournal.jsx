@@ -6,6 +6,7 @@ import { BookOpen, Plus } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import JournalEntryCard from "@/components/individual/JournalEntryCard";
 import StreakCard from "@/components/individual/StreakCard";
+import ExportButtons from "@/components/individual/ExportButtons";
 import WeeklySummaryCard from "@/components/individual/WeeklySummaryCard";
 
 const uid = () => `jrn_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
@@ -48,7 +49,22 @@ export default function LifeJournal() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <PageHeader title={ar ? "تقارير حياتي" : "My Life Journal"} icon={BookOpen} />
+      <PageHeader
+        title={ar ? "تقارير حياتي" : "My Life Journal"}
+        icon={BookOpen}
+        actions={
+          <ExportButtons
+            title={ar ? "تقارير حياتي" : "My Life Journal"}
+            filename="my-life-journal"
+            headers={ar ? ["التاريخ", "الحالة", "التقرير"] : ["Date", "Mood", "Report"]}
+            rows={entries.map((e2) => {
+              const m = MOODS.find((m2) => m2.key === e2.mood);
+              return [e2.date, m ? `${m.emoji} ${ar ? m.ar : m.en}` : "", e2.text];
+            })}
+            ar={ar}
+          />
+        }
+      />
 
       <StreakCard data={data} ar={ar} />
 

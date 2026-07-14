@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany } from "@/lib/store";
 import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight, CheckCircle2, Circle } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
+import ExportButtons from "@/components/individual/ExportButtons";
 
 const uid = () => `pln_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
 const localDate = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -54,7 +55,21 @@ export default function DayPlanner() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <PageHeader title={ar ? "جدولي اليومي" : "Day Planner"} icon={CalendarDays} />
+      <PageHeader
+        title={ar ? "جدولي اليومي" : "Day Planner"}
+        icon={CalendarDays}
+        actions={
+          <ExportButtons
+            title={ar ? "جدولي اليومي" : "My Day Planner"}
+            filename="my-day-planner"
+            headers={ar ? ["التاريخ", "الوقت", "العنصر", "الحالة"] : ["Date", "Time", "Item", "Status"]}
+            rows={[...(data.plannerItems || [])]
+              .sort((a, b) => (b.date + (b.time || "")).localeCompare(a.date + (a.time || "")))
+              .map((i) => [i.date, i.time || "", i.title, i.done ? (ar ? "منجز ✓" : "Done ✓") : (ar ? "غير منجز" : "Not done")])}
+            ar={ar}
+          />
+        }
+      />
 
       {/* Date navigation */}
       <div className="p-4 rounded-2xl border border-border bg-card flex items-center justify-between gap-3 flex-wrap">
