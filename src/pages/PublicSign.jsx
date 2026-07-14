@@ -84,6 +84,15 @@ export default function PublicSign() {
           <p className="font-heading font-semibold">PowerCare</p>
         </div>
         {children}
+        {/* Conversion CTA — every external signer is a potential customer */}
+        <div className="pt-4 border-t border-border text-center space-y-1.5">
+          <p className="text-[11px] text-muted-foreground font-body">
+            {ar ? "أعجبتك التجربة؟ وقّع مستنداتك أنت أيضًا مع أي شخص — بالعربية وبشهادة تحقق مشفّرة." : "Like this? Sign your own documents with anyone — with an encrypted verification badge."}
+          </p>
+          <a href="/pricing" className="inline-block text-xs font-body font-semibold text-accent hover:underline">
+            {ar ? "ابدأ مجانًا مع PowerCare ←" : "Start free with PowerCare →"}
+          </a>
+        </div>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, Download } from "lucide-react";
 import Logo from "@/components/Logo";
 import VideoIntro from "@/components/landing/VideoIntro";
+import NiroShowcase from "@/components/landing/NiroShowcase";
 import OtpStep from "@/components/landing/OtpStep";
 import PasswordResetForm from "@/components/landing/PasswordResetForm";
 import { trackVisit } from "@/lib/trackVisit";
@@ -210,6 +211,9 @@ export default function Landing() {
       </div>
 
       <VideoIntro />
+
+      {/* Niro live demo — the AI planner sells itself */}
+      <NiroShowcase lang={lang} />
 
       {/* Gold gradient section: brand mark + benefits + footer */}
       <div className="bg-gradient-to-b from-landing-gold-light via-landing-gold-deep to-landing-bg px-6 md:px-10 pt-16 pb-4">

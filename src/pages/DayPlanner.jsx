@@ -8,6 +8,7 @@ import ExportButtons from "@/components/individual/ExportButtons";
 import NiroPlanBox from "@/components/individual/NiroPlanBox";
 import DayTimeGrid from "@/components/individual/DayTimeGrid";
 import DayLinksBar from "@/components/individual/DayLinksBar";
+import PlannerTemplates from "@/components/individual/PlannerTemplates";
 import usePersonalTargets from "@/hooks/usePersonalTargets";
 
 const uid = () => `pln_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
@@ -55,6 +56,11 @@ export default function DayPlanner() {
 
   const remove = (id) => updateCompany(company.id, (d) => {
     d.plannerItems = (d.plannerItems || []).filter((x) => x.id !== id);
+  });
+
+  const applyTemplate = (tplItems) => updateCompany(company.id, (d) => {
+    d.plannerItems = d.plannerItems || [];
+    tplItems.forEach(([tm, ttl]) => d.plannerItems.push({ id: uid(), date, time: tm, title: ttl, done: false, createdAt: new Date().toISOString() }));
   });
 
   const dayLabel = new Date(date + "T00:00:00").toLocaleDateString(ar ? "ar-SA" : "en-GB", { weekday: "long", day: "numeric", month: "long" });
@@ -128,6 +134,9 @@ export default function DayPlanner() {
           <Plus className="w-4 h-4" /> {t("add")}
         </button>
       </form>
+
+      {/* Ready-made templates when the day is empty */}
+      {items.length === 0 && <PlannerTemplates ar={ar} onApply={applyTemplate} />}
 
       {/* Hour grid — same schedule look as the company shift schedule */}
       <DayTimeGrid items={items} visits={visits} onToggle={toggle} onRemove={remove} onPickTime={setTime} ar={ar} />

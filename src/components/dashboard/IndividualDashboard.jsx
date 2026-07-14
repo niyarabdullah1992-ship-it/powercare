@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ListTodo, PenLine, Sparkles, FolderOpen, CheckCircle2, Clock, CalendarDays, ClipboardCheck, BookOpen } from "lucide-react";
 import StreakCard from "@/components/individual/StreakCard";
+import WeeklyShareCard from "@/components/individual/WeeklyShareCard";
 
 export default function IndividualDashboard({ data, lang }) {
   const ar = lang === "ar";
@@ -37,6 +38,9 @@ export default function IndividualDashboard({ data, lang }) {
           </div>
         ))}
       </div>
+
+      {/* Shareable weekly achievement card */}
+      <WeeklyShareCard data={data} ar={ar} />
 
       <div className="grid sm:grid-cols-2 gap-4">
         {shortcuts.map((sc) => (
