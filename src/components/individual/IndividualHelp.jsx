@@ -1,6 +1,6 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n";
-import { HelpCircle, LayoutDashboard, ListTodo, CalendarDays, ClipboardCheck, PenLine, FolderOpen, Sparkles, BookOpen } from "lucide-react";
+import { HelpCircle, LayoutDashboard, ListTodo, CalendarDays, ClipboardCheck, PenLine, FolderOpen, Sparkles, BookOpen, Users } from "lucide-react";
 import HelpSection from "@/components/help/HelpSection";
 
 export default function IndividualHelp() {
@@ -49,6 +49,23 @@ export default function IndividualHelp() {
       steps: ar
         ? ["ارفع مستند PDF ووقّعه بتوقيعك المرسوم أو المكتوب.", "يُختم المستند بشارة تحقق مشفّرة برقم فريد يمكن التحقق منه لاحقًا."]
         : ["Upload a PDF and sign it with your drawn or typed signature.", "The document is stamped with an encrypted verification badge and a unique ID anyone can verify later."],
+    },
+    {
+      icon: Users,
+      title: ar ? "التوقيع الجماعي" : "Group Signing",
+      steps: ar
+        ? [
+            "من قسم «توقيع الملفات» ارفع PDF وأضف الموقّعين — أسماء وإيميلات أي أشخاص (حتى 100 موقّع).",
+            "يمكنك تحديد مكان توقيع كل شخص على المستند، ولصق عدة إيميلات دفعة واحدة.",
+            "يستلم كل موقّع رابطًا خاصًا بالبريد ويوقّع من متصفحه دون حساب — بالكتابة أو الرسم.",
+            "عند اكتمال الجميع تُسجَّل بصمة الملف النهائية ويصلك إشعار مع النسخة الموقّعة.",
+          ]
+        : [
+            "From File Signing, upload a PDF and add signers — names and emails of anyone (up to 100 signers).",
+            "You can assign each signer's spot on the document and paste multiple emails at once.",
+            "Each signer receives a personal link by email and signs from their browser without an account — typed or drawn.",
+            "Once everyone signs, the final file fingerprint is registered and you get the signed copy by email.",
+          ],
     },
     {
       icon: FolderOpen,
