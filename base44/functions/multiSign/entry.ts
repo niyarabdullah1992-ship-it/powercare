@@ -34,8 +34,16 @@ async function authSession(base44, companyId, sessionToken) {
 async function sendMail(base44, to, subject, bodyText) {
   try {
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
+    // Microsoft (Outlook/Hotmail) rejects mail whose From address doesn't match
+    // the sending Gmail account (SPF/DKIM spoof detection) — always send from
+    // the real connected address.
+    const prof = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    const senderAddr = prof?.emailAddress;
+    if (!senderAddr) throw new Error('gmail profile unavailable');
     const msg = createMimeMessage();
-    msg.setSender({ name: 'PowerCare', addr: 'no-reply@powercare.app' });
+    msg.setSender({ name: 'PowerCare', addr: senderAddr });
     msg.setRecipient(to);
     msg.setSubject(subject);
     msg.addMessage({ contentType: 'text/plain', data: bodyText });
