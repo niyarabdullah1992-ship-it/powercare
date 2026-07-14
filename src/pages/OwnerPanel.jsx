@@ -175,6 +175,13 @@ export default function OwnerPanel() {
           </form>
         </div>
 
+        <button
+          onClick={() => navigate("/owner-subscribers")}
+          className="w-full py-3 rounded-2xl bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold shadow-xl hover:opacity-90 transition-opacity"
+        >
+          {lang === "ar" ? "📊 تحليلات المشتركين — التحكم الكامل" : "📊 Subscribers Analytics — Full Control"}
+        </button>
+
         <SubscriptionsPanel lang={lang} />
 
         <VisitorStatsCard lang={lang} />

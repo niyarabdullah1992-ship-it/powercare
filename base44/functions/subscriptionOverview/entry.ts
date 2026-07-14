@@ -21,6 +21,31 @@ Deno.serve(async (req) => {
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'), { apiVersion: '2024-06-20' });
 
+    // Optional admin actions (POST body with { action, ... }); no action → overview.
+    let body: Record<string, unknown> = {};
+    try { body = await req.json(); } catch { /* empty body → overview */ }
+
+    if (body.action === 'cancelAtPeriodEnd') {
+      await stripe.subscriptions.update(String(body.subscriptionId), { cancel_at_period_end: true });
+      return Response.json({ ok: true });
+    }
+    if (body.action === 'reactivate') {
+      await stripe.subscriptions.update(String(body.subscriptionId), { cancel_at_period_end: false });
+      return Response.json({ ok: true });
+    }
+    if (body.action === 'cancelNow') {
+      await stripe.subscriptions.cancel(String(body.subscriptionId));
+      return Response.json({ ok: true });
+    }
+    if (body.action === 'updateAccount') {
+      const patch: Record<string, unknown> = {};
+      if (body.plan !== undefined) patch.plan = body.plan;
+      if (body.subscriptionStart !== undefined) patch.subscriptionStart = body.subscriptionStart || null;
+      if (body.subscriptionEnd !== undefined) patch.subscriptionEnd = body.subscriptionEnd || null;
+      await base44.asServiceRole.entities.CompanyAccount.update(String(body.accountId), patch);
+      return Response.json({ ok: true });
+    }
+
     // Registered companies (to match subscriptions to company names).
     const allAccounts = await base44.asServiceRole.entities.CompanyAccount.list('-created_date', 500);
     // Preview/demo companies are excluded from the subscriptions view.
@@ -55,6 +80,7 @@ Deno.serve(async (req) => {
       const endTs = (s.trial_end && s.status === 'trialing' ? s.trial_end : s.current_period_end) * 1000;
       return {
         id: s.id,
+        accountId: account?.id || null,
         companyName: account?.name || s.metadata?.companyName || '',
         email,
         plan: priceInfo.plan || account?.plan || '—',
@@ -73,7 +99,20 @@ Deno.serve(async (req) => {
     const subEmails = new Set(rows.map((r) => r.email.toLowerCase()).filter(Boolean));
     const noSub = accounts
       .filter((a) => a.ownerEmail && !subEmails.has(a.ownerEmail.toLowerCase()))
-      .map((a) => ({ companyName: a.name || '', email: a.ownerEmail, plan: a.plan || 'Free', status: 'no_subscription' }));
+      .map((a) => {
+        const startTs = a.subscriptionStart ? Date.parse(a.subscriptionStart) : null;
+        const endTs = a.subscriptionEnd ? Date.parse(a.subscriptionEnd) : null;
+        return {
+          accountId: a.id,
+          companyName: a.name || '',
+          email: a.ownerEmail,
+          plan: a.plan || 'Free',
+          status: 'no_subscription',
+          startedAt: startTs,
+          endsAt: endTs,
+          daysLeft: endTs ? Math.ceil((endTs - now) / 86400000) : null,
+        };
+      });
 
     const active = rows.filter((r) => r.status === 'active' || r.status === 'trialing');
     const summary = {

@@ -26,6 +26,20 @@
       "type": "boolean",
       "default": false,
       "description": "True once the trial-ending reminder email has been sent for this account."
+    },
+    "subscriptionStart": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Manual subscription start date (YYYY-MM-DD) set by the platform owner for non-Stripe accounts."
+    },
+    "subscriptionEnd": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Manual subscription end date (YYYY-MM-DD) set by the platform owner for non-Stripe accounts."
     }
   },
   "required": [

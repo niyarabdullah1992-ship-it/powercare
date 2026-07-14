@@ -22,6 +22,7 @@ const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const OwnerPanel = lazy(() => import('./pages/OwnerPanel'));
+const OwnerSubscribers = lazy(() => import('./pages/OwnerSubscribers'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const PricingSuccess = lazy(() => import('./pages/PricingSuccess'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -92,6 +93,7 @@ function AppRoutes() {
       <Route path="/powercare-presentation" element={<PowerCarePresentation />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/owner-panel" element={<OwnerPanel />} />
+        <Route path="/owner-subscribers" element={<OwnerSubscribers />} />
       </Route>
       <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/app/tasks" element={<RequireAuth><MyTasks /></RequireAuth>} />
