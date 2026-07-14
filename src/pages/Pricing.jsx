@@ -202,6 +202,7 @@ export default function Pricing() {
           onGoogle={handleGoogleSignup}
           googleEmail={googleEmail}
           error={error}
+          onSwitchToIndividual={() => { setAudience("individual"); setActivePlan(INDIVIDUAL_PLANS[0]); setError(""); }}
         />
       )}
     </div>
