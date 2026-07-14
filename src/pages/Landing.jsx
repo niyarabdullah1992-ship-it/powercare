@@ -39,7 +39,7 @@ export default function Landing() {
   }, []);
 
   const handleGoogleLogin = () => {
-    base44.auth.loginWithProvider("google", "/?google_login=1");
+    base44.auth.loginWithProvider("sso", "/?google_login=1");
   };
 
   // Anonymous visit tracking (once per browser session) — powers the Owner Panel stats.

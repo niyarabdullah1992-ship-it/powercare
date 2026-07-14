@@ -50,7 +50,7 @@ export default function PasswordResetForm({ initialEmail, onDone, onBack }) {
     </>}
     {error && <p className="text-center text-sm text-destructive">{error}</p>}
     {!pendingId && (
-      <button type="button" onClick={() => base44.auth.loginWithProvider("google", "/?google_login=1")} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/30 py-3 text-sm font-semibold text-primary hover:bg-landing-bg">
+      <button type="button" onClick={() => base44.auth.loginWithProvider("sso", "/?google_login=1")} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/30 py-3 text-sm font-semibold text-primary hover:bg-landing-bg">
         <GoogleIcon className="h-5 w-5" /> {ar ? "الدخول باستخدام Google" : "Continue with Google"}
       </button>
     )}
