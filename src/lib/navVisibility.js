@@ -5,7 +5,7 @@ const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/ap
 const MANAGER_EXTRA = ["/app/employees", "/app/stations", "/app/reports"];
 const EXEC_EXTRA = ["/app/hr"];
 // Individual (personal) workspaces: only the personal-productivity sections.
-const INDIVIDUAL = ["/app", "/app/tasks", "/app/planner", "/app/attendance", "/app/journal", "/app/files", "/app/signing", "/app/assistant", "/app/help"];
+const INDIVIDUAL = ["/app", "/app/tasks", "/app/planner", "/app/calendar", "/app/attendance", "/app/journal", "/app/files", "/app/signing", "/app/assistant", "/app/help"];
 
 export function allowedNavFor(user, plan) {
   if (String(plan || "").toLowerCase() === "individual") return new Set(INDIVIDUAL);

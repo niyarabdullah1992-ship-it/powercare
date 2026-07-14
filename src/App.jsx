@@ -41,6 +41,7 @@ const FileSigning = lazy(() => import('./pages/FileSigning'));
 const Assistant = lazy(() => import('./pages/Assistant'));
 const DayPlanner = lazy(() => import('./pages/DayPlanner'));
 const LifeJournal = lazy(() => import('./pages/LifeJournal'));
+const MonthlyCalendar = lazy(() => import('./pages/MonthlyCalendar'));
 const About = lazy(() => import('./pages/About'));
 const Help = lazy(() => import('./pages/Help'));
 const Verify = lazy(() => import('./pages/Verify'));
@@ -114,6 +115,7 @@ function AppRoutes() {
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
       <Route path="/app/planner" element={<RequireAuth><DayPlanner /></RequireAuth>} />
       <Route path="/app/journal" element={<RequireAuth><LifeJournal /></RequireAuth>} />
+      <Route path="/app/calendar" element={<RequireAuth><MonthlyCalendar /></RequireAuth>} />
       <Route path="/app/help" element={<RequireAuth><Help /></RequireAuth>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>

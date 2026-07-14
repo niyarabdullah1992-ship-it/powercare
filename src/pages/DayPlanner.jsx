@@ -5,6 +5,7 @@ import { updateCompany } from "@/lib/store";
 import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight, CheckCircle2, Circle } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import ExportButtons from "@/components/individual/ExportButtons";
+import NiroPlanBox from "@/components/individual/NiroPlanBox";
 
 const uid = () => `pln_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
 const localDate = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -102,6 +103,9 @@ export default function DayPlanner() {
           </div>
         </div>
       )}
+
+      {/* Niro AI day planning */}
+      <NiroPlanBox companyId={company.id} date={date} ar={ar} />
 
       {/* Add item */}
       <form onSubmit={addItem} className="p-4 rounded-2xl border border-border bg-card flex gap-2 flex-wrap">

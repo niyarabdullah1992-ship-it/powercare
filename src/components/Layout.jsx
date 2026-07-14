@@ -9,8 +9,9 @@ import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, GripVertical, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, CalendarDays, HelpCircle, BookOpen,
+  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, GripVertical, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, CalendarDays, HelpCircle, BookOpen, Calendar,
 } from "lucide-react";
+import PlannerReminders from "@/components/individual/PlannerReminders";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
 import PresenceDot from "@/components/employees/PresenceDot";
@@ -114,6 +115,7 @@ export default function Layout({ children }) {
     { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling") },
     { to: "/app/planner", icon: CalendarDays, label: t("dayPlanner") },
     { to: "/app/journal", icon: BookOpen, label: t("lifeJournal") },
+    { to: "/app/calendar", icon: Calendar, label: lang === "ar" ? "التقويم الشهري" : "Monthly Calendar" },
     { to: "/app/chat", icon: MessageSquare, label: t("chat") },
     { to: "/app/files", icon: FolderOpen, label: t("files") },
     { to: "/app/signing", icon: PenLine, label: t("fileSigning") },
@@ -385,6 +387,9 @@ export default function Layout({ children }) {
 
       {/* Native-style bottom tab bar (mobile only) */}
       <BottomTabBar />
+      {String(data?.plan || company?.plan || "").toLowerCase() === "individual" && (
+        <PlannerReminders data={data} ar={lang === "ar"} />
+      )}
       <ProductFeedbackPrompt companyId={company.id} role={currentUser.role} />
     </div>
   );
