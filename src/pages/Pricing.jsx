@@ -52,7 +52,9 @@ export default function Pricing() {
 
   const handleGoogleSignup = () => {
     sessionStorage.setItem("powercare_google_signup", JSON.stringify({ planId: activePlan.id, billing }));
-    base44.auth.loginWithProvider("google", "/pricing?google_signup=1");
+    // Google sign-in goes through the app's configured SSO provider —
+    // direct "google" social login is disabled when a custom SSO is set.
+    base44.auth.loginWithProvider("sso", "/pricing?google_signup=1");
   };
 
   const handleFreeSignup = async ({ companyName, ownerEmail, ownerPassword, authMethod }) => {
