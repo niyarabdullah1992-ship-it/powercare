@@ -29,7 +29,8 @@ export default function SocialLoginButtons() {
 
   return (
     <div className="space-y-3 mb-6">
-      <Button variant="outline" className="w-full h-12 text-sm font-medium" onClick={() => login("google")}>
+      {/* Google sign-in goes through the app's configured SSO provider (Google Workspace) */}
+      <Button variant="outline" className="w-full h-12 text-sm font-medium" onClick={() => login("sso")}>
         <GoogleIcon className="w-5 h-5 mr-2" />
         Continue with Google
       </Button>
