@@ -10,6 +10,7 @@ import PasswordResetForm from "@/components/landing/PasswordResetForm";
 import { trackVisit } from "@/lib/trackVisit";
 import { base44 } from "@/api/base44Client";
 import GoogleIcon from "@/components/GoogleIcon";
+import { MicrosoftIcon, AppleIcon } from "@/components/ProviderIcons";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
 
@@ -38,8 +39,8 @@ export default function Landing() {
     }).finally(() => setSubmitting(false));
   }, []);
 
-  const handleGoogleLogin = () => {
-    base44.auth.loginWithProvider("sso", "/?google_login=1");
+  const handleSocialLogin = (provider) => {
+    base44.auth.loginWithProvider(provider, "/?google_login=1");
   };
 
   // Anonymous visit tracking (once per browser session) — powers the Owner Panel stats.
@@ -160,8 +161,14 @@ export default function Landing() {
                 <PasswordResetForm initialEmail={email} onDone={(value) => { setEmail(value); setResetOpen(false); setError(""); }} onBack={() => setResetOpen(false)} />
               ) : (
               <div className="space-y-4">
-                <button type="button" onClick={handleGoogleLogin} disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-3 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg disabled:opacity-50">
+                <button type="button" onClick={() => handleSocialLogin("sso")} disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-3 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg disabled:opacity-50">
                   <GoogleIcon className="h-5 w-5" /> {lang === "ar" ? "الدخول باستخدام Google" : "Continue with Google"}
+                </button>
+                <button type="button" onClick={() => handleSocialLogin("apple")} disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-3 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg disabled:opacity-50">
+                  <AppleIcon className="h-5 w-5" /> {lang === "ar" ? "الدخول باستخدام Apple" : "Continue with Apple"}
+                </button>
+                <button type="button" onClick={() => handleSocialLogin("microsoft")} disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-3 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg disabled:opacity-50">
+                  <MicrosoftIcon className="h-5 w-5" /> {lang === "ar" ? "الدخول باستخدام Microsoft" : "Continue with Microsoft"}
                 </button>
                 <div className="flex items-center gap-3 text-xs text-[#3a2f22]/40"><span className="h-px flex-1 bg-landing-gold/20" />{lang === "ar" ? "أو" : "or"}<span className="h-px flex-1 bg-landing-gold/20" /></div>
               <form onSubmit={handleCompanyLogin} noValidate className="space-y-4">
