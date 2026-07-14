@@ -2,6 +2,16 @@ import React, { useState, useRef } from "react";
 import { Users, Upload, Loader2, FileText, Plus, X, Send, Copy, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { generateVerificationId } from "@/lib/verificationBadge";
+import { appParams } from "@/lib/app-params";
+
+// Emailed signing links must point to the real app domain — inside the editor
+// preview, window.location.origin is the preview frame, not the published app.
+const signingBaseUrl = () => {
+  try {
+    if (appParams.appBaseUrl) return String(appParams.appBaseUrl).replace(/\/+$/, "");
+  } catch { /* fall through */ }
+  return window.location.origin;
+};
 
 // Create a multi-party signature request: upload a PDF, add signers
 // (company members or any external email) — each gets a personal signing link.
@@ -54,7 +64,7 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
         docUrl: doc.url,
         verificationId: generateVerificationId(),
         signers: validSigners,
-        appUrl: window.location.origin,
+        appUrl: signingBaseUrl(),
         lang: ar ? "ar" : "en",
       });
       setResult(res.data);

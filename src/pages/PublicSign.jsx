@@ -19,11 +19,21 @@ export default function PublicSign() {
   const [done, setDone] = useState(null); // { completed, docUrl }
   const [error, setError] = useState("");
 
+  const [loadError, setLoadError] = useState("");
+
   useEffect(() => {
     if (!token) { setNotFound(true); return; }
     base44.functions.invoke("multiSign", { action: "getByToken", token })
       .then((res) => setInfo(res.data))
-      .catch(() => setNotFound(true));
+      .catch((err) => {
+        const status = err?.response?.status;
+        if (status !== 404) {
+          // A network / server problem — not a bad link. Say so instead of
+          // blaming the link.
+          setLoadError(err?.response?.data?.error || err.message || "");
+        }
+        setNotFound(true);
+      });
   }, [token]);
 
   const sign = async (sigDataUrl) => {
@@ -78,7 +88,23 @@ export default function PublicSign() {
   if (notFound) {
     return (
       <Shell>
-        <p className="text-sm text-destructive font-body">{ar ? "رابط التوقيع غير صالح أو منتهي." : "This signing link is invalid or expired."}</p>
+        {loadError ? (
+          <>
+            <p className="text-sm text-destructive font-body">
+              {ar ? "تعذّر تحميل المستند — حدث خطأ مؤقت." : "Couldn't load the document — a temporary error occurred."}
+            </p>
+            <p className="text-xs text-muted-foreground font-body" dir="ltr">{loadError}</p>
+            <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-md bg-foreground text-background text-xs font-body">
+              {ar ? "إعادة المحاولة" : "Try again"}
+            </button>
+          </>
+        ) : (
+          <p className="text-sm text-destructive font-body">
+            {ar
+              ? "رابط التوقيع غير صالح أو منتهي — ربما أُلغي الطلب أو أُنشئ رابط أحدث. اطلب من المرسل إرسال طلب توقيع جديد."
+              : "This signing link is invalid or expired — the request may have been cancelled or replaced. Ask the sender to send a new signature request."}
+          </p>
+        )}
       </Shell>
     );
   }
