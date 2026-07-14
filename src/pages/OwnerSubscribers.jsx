@@ -59,7 +59,7 @@ export default function OwnerSubscribers() {
   const summary = data?.summary;
   const allRows = [...(data?.subscriptions || []), ...(data?.companiesWithoutSubscription || [])];
   const rows = allRows.filter((r) => {
-    if (statusFilter === "active" && !(r.status === "active" || r.status === "trialing")) return false;
+    if (statusFilter === "active" && !(r.status === "active" || r.status === "trialing" || r.status === "manual_active")) return false;
     if (statusFilter === "problem" && !(r.status === "past_due" || r.status === "unpaid" || r.status === "canceled")) return false;
     if (statusFilter === "none" && r.status !== "no_subscription") return false;
     const q = search.trim().toLowerCase();

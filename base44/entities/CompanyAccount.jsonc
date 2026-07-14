@@ -40,6 +40,13 @@
         "null"
       ],
       "description": "Manual subscription end date (YYYY-MM-DD) set by the platform owner for non-Stripe accounts."
+    },
+    "customPrice": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Monthly price (USD) for a manually-managed Custom plan, set by the platform owner."
     }
   },
   "required": [

@@ -9,6 +9,7 @@ export default function EditSubscriptionDialog({ open, onOpenChange, row, ar, on
   const [plan, setPlan] = useState(row.plan || "Free");
   const [start, setStart] = useState(toInput(row.startedAt));
   const [end, setEnd] = useState(toInput(row.endsAt));
+  const [customPrice, setCustomPrice] = useState(row.customPrice ?? "");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -16,6 +17,7 @@ export default function EditSubscriptionDialog({ open, onOpenChange, row, ar, on
       setPlan(row.plan || "Free");
       setStart(toInput(row.startedAt));
       setEnd(toInput(row.endsAt));
+      setCustomPrice(row.customPrice ?? "");
     }
   }, [open, row]);
 
@@ -28,6 +30,7 @@ export default function EditSubscriptionDialog({ open, onOpenChange, row, ar, on
         plan,
         subscriptionStart: start,
         subscriptionEnd: end,
+        customPrice: plan === "Custom" && customPrice !== "" ? Number(customPrice) : null,
       });
       await onSaved();
       onOpenChange(false);
@@ -53,8 +56,20 @@ export default function EditSubscriptionDialog({ open, onOpenChange, row, ar, on
               <option>Starter</option>
               <option>Professional</option>
               <option>Enterprise</option>
+              <option value="Custom">{ar ? "مخصص (Custom)" : "Custom"}</option>
             </select>
           </div>
+          {plan === "Custom" && (
+            <div>
+              <label className="block text-xs text-[#3a2f22]/55 mb-1">{ar ? "السعر الشهري المخصص ($)" : "Custom monthly price ($)"}</label>
+              <input type="number" min="0" step="0.01" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)}
+                placeholder={ar ? "مثال: 199" : "e.g. 199"}
+                className="w-full px-3 py-2 rounded-lg bg-landing-bg text-[#3a2f22] text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold" />
+              <p className="text-[11px] text-[#3a2f22]/40 mt-1">
+                {ar ? "الاشتراك المخصص تتحكم فيه يدويًا: حدّد السعر وتاريخ البداية والنهاية، ويُحتسب نشطًا حتى تاريخ النهاية." : "Custom plans are managed manually: set the price and start/end dates; it counts as active until the end date."}
+              </p>
+            </div>
+          )}
           <div>
             <label className="block text-xs text-[#3a2f22]/55 mb-1">{ar ? "تاريخ بداية الاشتراك" : "Subscription start date"}</label>
             <input type="date" value={start} onChange={(e) => setStart(e.target.value)}

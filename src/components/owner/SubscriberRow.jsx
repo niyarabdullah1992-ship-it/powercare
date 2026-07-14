@@ -11,6 +11,11 @@ const STATUS_STYLES = {
   canceled: "bg-gray-200 text-gray-600",
   incomplete: "bg-amber-100 text-amber-700",
   no_subscription: "bg-gray-100 text-gray-500",
+  manual_active: "bg-emerald-100 text-emerald-700",
+};
+
+const STATUS_EN = {
+  manual_active: "active (manual)",
 };
 
 const STATUS_AR = {
@@ -21,6 +26,7 @@ const STATUS_AR = {
   canceled: "ملغى",
   incomplete: "غير مكتمل",
   no_subscription: "بدون اشتراك",
+  manual_active: "نشط (يدوي)",
 };
 
 export default function SubscriberRow({ row, ar, onChanged }) {
@@ -52,11 +58,13 @@ export default function SubscriberRow({ row, ar, onChanged }) {
         </div>
       </td>
       <td className="px-4 py-3 text-[#3a2f22]/70" data-label={ar ? "الباقة" : "Plan"}>
-        {row.plan}{row.billing ? ` · ${ar ? (row.billing === "yearly" ? "سنوي" : "شهري") : row.billing}` : ""}
+        {row.plan === "Custom" ? (ar ? "مخصص" : "Custom") : row.plan}
+        {row.billing ? ` · ${ar ? (row.billing === "yearly" ? "سنوي" : "شهري") : row.billing}` : ""}
+        {row.plan === "Custom" && row.customPrice != null ? ` · $${row.customPrice}/${ar ? "شهر" : "mo"}` : ""}
       </td>
       <td className="px-4 py-3" data-label={ar ? "الحالة" : "Status"}>
         <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_STYLES[row.status] || "bg-gray-100 text-gray-600"}`}>
-          {ar ? (STATUS_AR[row.status] || row.status) : row.status}
+          {ar ? (STATUS_AR[row.status] || row.status) : (STATUS_EN[row.status] || row.status)}
         </span>
         {row.cancelAtPeriodEnd && (
           <span className="block text-[10px] text-red-500 mt-0.5">{ar ? "يُلغى عند نهاية الفترة" : "cancels at period end"}</span>

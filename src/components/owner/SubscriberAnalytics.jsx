@@ -2,7 +2,7 @@ import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { DollarSign, TrendingUp } from "lucide-react";
 
-const PLAN_COLORS = { Free: "#c8bba8", Starter: "#d4a95c", Professional: "#b3873a", Enterprise: "#3a2f22" };
+const PLAN_COLORS = { Free: "#c8bba8", Starter: "#d4a95c", Professional: "#b3873a", Enterprise: "#3a2f22", Custom: "#7c9a6d" };
 
 export default function SubscriberAnalytics({ data, ar }) {
   const summary = data?.summary;

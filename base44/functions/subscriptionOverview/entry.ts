@@ -42,6 +42,7 @@ Deno.serve(async (req) => {
       if (body.plan !== undefined) patch.plan = body.plan;
       if (body.subscriptionStart !== undefined) patch.subscriptionStart = body.subscriptionStart || null;
       if (body.subscriptionEnd !== undefined) patch.subscriptionEnd = body.subscriptionEnd || null;
+      if (body.customPrice !== undefined) patch.customPrice = body.customPrice === null || body.customPrice === '' ? null : Number(body.customPrice);
       await base44.asServiceRole.entities.CompanyAccount.update(String(body.accountId), patch);
       return Response.json({ ok: true });
     }
@@ -102,15 +103,19 @@ Deno.serve(async (req) => {
       .map((a) => {
         const startTs = a.subscriptionStart ? Date.parse(a.subscriptionStart) : null;
         const endTs = a.subscriptionEnd ? Date.parse(a.subscriptionEnd) : null;
+        // A manually-managed subscription (e.g. Custom plan) with a future end date counts as active.
+        const manualActive = !!endTs && endTs > now && (a.plan || 'Free') !== 'Free';
         return {
           accountId: a.id,
           companyName: a.name || '',
           email: a.ownerEmail,
           plan: a.plan || 'Free',
-          status: 'no_subscription',
+          status: manualActive ? 'manual_active' : 'no_subscription',
           startedAt: startTs,
           endsAt: endTs,
           daysLeft: endTs ? Math.ceil((endTs - now) / 86400000) : null,
+          amount: a.customPrice ?? null,
+          customPrice: a.customPrice ?? null,
         };
       });
 
@@ -129,8 +134,10 @@ Deno.serve(async (req) => {
       },
     };
 
-    // Monthly recurring revenue from active/trialing subscriptions.
-    summary.mrr = Math.round(active.reduce((sum, r) => sum + (r.amount ? (r.billing === 'yearly' ? r.amount / 12 : r.amount) : 0), 0) * 100) / 100;
+    // Monthly recurring revenue from active/trialing subscriptions + manually-managed custom plans.
+    const manualMrr = noSub.filter((r) => r.status === 'manual_active').reduce((sum, r) => sum + (r.customPrice || 0), 0);
+    summary.mrr = Math.round((active.reduce((sum, r) => sum + (r.amount ? (r.billing === 'yearly' ? r.amount / 12 : r.amount) : 0), 0) + manualMrr) * 100) / 100;
+    summary.manualActive = noSub.filter((r) => r.status === 'manual_active').length;
 
     // Company signups per month (growth chart).
     const growthMap: Record<string, number> = {};
