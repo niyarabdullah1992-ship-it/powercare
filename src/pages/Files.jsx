@@ -14,6 +14,9 @@ import NewFolderDialog from "@/components/files/NewFolderDialog";
 export default function Files() {
   const { t, dir, lang } = useI18n();
   const { company, data, currentUser } = useAuth();
+  // Individual (personal) workspaces: no company or station concepts.
+  const isIndividual = String(data?.plan || company?.plan || "").toLowerCase() === "individual";
+  const pageTitle = isIndividual ? (lang === "ar" ? "ملفاتي" : "My Files") : t("companyFiles");
   const [path, setPath] = useState([]); // folder nodes from root down to the open folder
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -69,8 +72,10 @@ export default function Files() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="font-heading text-2xl md:text-3xl font-semibold">{t("companyFiles")}</h1>
-        <p className="text-sm text-muted-foreground font-body mt-1">{t("filesNote")}</p>
+        <h1 className="font-heading text-2xl md:text-3xl font-semibold">{pageTitle}</h1>
+        <p className="text-sm text-muted-foreground font-body mt-1">
+          {isIndividual ? (lang === "ar" ? "احفظ ونظّم مستنداتك الخاصة في مجلدات." : "Store and organize your personal documents in folders.") : t("filesNote")}
+        </p>
       </div>
 
       {/* Breadcrumb */}
@@ -80,7 +85,7 @@ export default function Files() {
           className={`flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted ${path.length === 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}
         >
           <Home className="w-3.5 h-3.5" />
-          {t("companyFiles")}
+          {pageTitle}
         </button>
         {path.map((folder, i) => (
           <React.Fragment key={folder.id}>
@@ -107,7 +112,8 @@ export default function Files() {
           {uploading ? t("uploading") : t("uploadFileBtn")}
         </Button>
         <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleUpload} />
-        {/* Station filter — station managers land directly on their station's documents */}
+        {/* Station filter — hidden for individuals (no station concept) */}
+        {!isIndividual && (
         <div className="flex items-center gap-1.5 ms-auto">
           <Radio className="w-4 h-4 text-accent shrink-0" strokeWidth={1.5} />
           <MobileSelect
@@ -121,6 +127,7 @@ export default function Files() {
             ]}
           />
         </div>
+        )}
       </div>
 
       {/* Folders */}
@@ -147,7 +154,7 @@ export default function Files() {
           <p className="text-xs uppercase tracking-wider text-muted-foreground font-body mb-2">{t("attachments")}</p>
           <div className="space-y-2">
             {files.map((file) => (
-              <FileRow key={file.id} file={file} stationName={stationName(file.stationId)} onDelete={() => deleteFileNode(company.id, file.id)} />
+              <FileRow key={file.id} file={file} stationName={isIndividual ? null : stationName(file.stationId)} onDelete={() => deleteFileNode(company.id, file.id)} />
             ))}
           </div>
         </div>
