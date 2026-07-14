@@ -1,0 +1,157 @@
+import React, { useEffect, useState } from "react";
+import { PenLine, Loader2, FileText, ShieldCheck, Download, ExternalLink, CheckCircle2 } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import SignaturePad from "@/components/files/SignaturePad";
+import Logo from "@/components/Logo";
+import { makeSignatureStamp, stampOnPdf } from "@/lib/multiSignStamp";
+import { loadBadgeQr } from "@/lib/verificationBadge";
+import { sha256HexOfBuffer } from "@/lib/fileHash";
+
+// Public signing page: opened from a personal signing link (email or in-app).
+// Works for company members AND external people — no login required.
+export default function PublicSign() {
+  const token = new URLSearchParams(window.location.search).get("token") || "";
+  const ar = (navigator.language || "").startsWith("ar");
+  const [info, setInfo] = useState(null);
+  const [notFound, setNotFound] = useState(false);
+  const [signing, setSigning] = useState(false);
+  const [stage, setStage] = useState("");
+  const [done, setDone] = useState(null); // { completed, docUrl }
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!token) { setNotFound(true); return; }
+    base44.functions.invoke("multiSign", { action: "getByToken", token })
+      .then((res) => setInfo(res.data))
+      .catch(() => setNotFound(true));
+  }, [token]);
+
+  const sign = async (sigDataUrl) => {
+    setError("");
+    setSigning(true);
+    try {
+      // Re-fetch the freshest version right before stamping — other signers may
+      // have signed in the meantime (parallel signing).
+      setStage(ar ? "جارٍ تجهيز أحدث نسخة…" : "Fetching the latest version…");
+      const fresh = (await base44.functions.invoke("multiSign", { action: "getByToken", token })).data;
+      if (fresh.signer.status === "signed") throw new Error(ar ? "وقّعت هذا المستند مسبقًا." : "You already signed this document.");
+
+      setStage(ar ? "جارٍ ختم توقيعك على المستند…" : "Stamping your signature…");
+      const stamp = await makeSignatureStamp(sigDataUrl, fresh.signer.name);
+      let badge = null;
+      if (fresh.isLast && fresh.verificationId) {
+        const qr = await loadBadgeQr(fresh.verificationId).catch(() => null);
+        badge = { sigId: fresh.verificationId, name: fresh.signerNames.slice(0, 60), qr };
+      }
+      const { url, bytes } = await stampOnPdf(fresh.docUrl, stamp, fresh.signedCount, badge);
+
+      setStage(ar ? "جارٍ حفظ التوقيع…" : "Saving your signature…");
+      const fileHash = fresh.isLast ? await sha256HexOfBuffer(bytes) : "";
+      const res = await base44.functions.invoke("multiSign", {
+        action: "submitSignature",
+        token,
+        newDocUrl: url,
+        fileHash,
+        lang: ar ? "ar" : "en",
+      });
+      setDone({ completed: res.data.completed, docUrl: url });
+    } catch (err) {
+      setError((ar ? "تعذّر التوقيع — " : "Couldn't sign — ") + (err?.response?.data?.error || err.message));
+    } finally {
+      setSigning(false);
+      setStage("");
+    }
+  };
+
+  const Shell = ({ children }) => (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4" dir={ar ? "rtl" : "ltr"}>
+      <div className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-sm p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <Logo size={34} />
+          <p className="font-heading font-semibold">PowerCare</p>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+
+  if (notFound) {
+    return (
+      <Shell>
+        <p className="text-sm text-destructive font-body">{ar ? "رابط التوقيع غير صالح أو منتهي." : "This signing link is invalid or expired."}</p>
+      </Shell>
+    );
+  }
+  if (!info) {
+    return (
+      <Shell>
+        <p className="flex items-center gap-2 text-sm text-muted-foreground font-body">
+          <Loader2 className="w-4 h-4 animate-spin" /> {ar ? "جارٍ تحميل المستند…" : "Loading the document…"}
+        </p>
+      </Shell>
+    );
+  }
+
+  if (done || info.signer.status === "signed") {
+    const finalUrl = done?.docUrl || info.docUrl;
+    const completed = done ? done.completed : info.status === "completed";
+    return (
+      <Shell>
+        <p className="flex items-center gap-2 text-sm text-emerald-700 font-body">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          {ar ? "تم تسجيل توقيعك بنجاح." : "Your signature has been recorded."}
+        </p>
+        {completed ? (
+          <>
+            <p className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2 font-body">
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+              {ar ? "وقّع جميع الأطراف وسُجّلت بصمة الملف النهائية." : "All parties signed and the final fingerprint was registered."}
+            </p>
+            <a href={finalUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-foreground text-background text-xs font-body">
+              <Download className="w-3.5 h-3.5" /> {ar ? "تنزيل النسخة النهائية" : "Download final copy"}
+            </a>
+          </>
+        ) : (
+          <p className="text-xs text-muted-foreground font-body">
+            {ar ? "بانتظار بقية الموقّعين — سيصل إشعار عند اكتمال الجميع." : "Waiting for the remaining signers — a notification is sent once everyone signs."}
+          </p>
+        )}
+      </Shell>
+    );
+  }
+
+  return (
+    <Shell>
+      <div>
+        <h1 className="font-heading text-xl font-semibold flex items-center gap-2">
+          <PenLine className="w-5 h-5 text-accent" /> {ar ? "طلب توقيع" : "Signature request"}
+        </h1>
+        <p className="text-xs text-muted-foreground font-body mt-1">
+          {ar
+            ? `${info.creatorName} يطلب توقيعك على المستند التالي (${info.signedCount}/${info.totalCount} وقّعوا):`
+            : `${info.creatorName} asked you to sign the following document (${info.signedCount}/${info.totalCount} signed):`}
+        </p>
+      </div>
+
+      <a href={info.docUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border hover:bg-muted text-xs font-body">
+        <FileText className="w-4 h-4 text-accent shrink-0" />
+        <span className="truncate flex-1">{info.fileName}</span>
+        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+      </a>
+
+      <div>
+        <p className="text-xs font-medium font-body mb-2">
+          {ar ? `${info.signer.name} — ارسم توقيعك هنا:` : `${info.signer.name} — draw your signature here:`}
+        </p>
+        <SignaturePad ar={ar} onSave={sign} saving={signing} />
+      </div>
+
+      {signing && (
+        <p className="flex items-center gap-2 text-xs text-muted-foreground font-body">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> {stage}
+        </p>
+      )}
+      {error && <p className="text-xs text-destructive font-body">{error}</p>}
+    </Shell>
+  );
+}

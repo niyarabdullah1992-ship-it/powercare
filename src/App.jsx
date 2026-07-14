@@ -45,6 +45,7 @@ const MonthlyCalendar = lazy(() => import('./pages/MonthlyCalendar'));
 const About = lazy(() => import('./pages/About'));
 const Help = lazy(() => import('./pages/Help'));
 const Verify = lazy(() => import('./pages/Verify'));
+const PublicSign = lazy(() => import('./pages/PublicSign'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 const PowerCarePresentation = lazy(() => import('./pages/PowerCarePresentation'));
@@ -90,6 +91,7 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/verify" element={<Verify />} />
+      <Route path="/sign" element={<PublicSign />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/powercare-presentation" element={<PowerCarePresentation />} />

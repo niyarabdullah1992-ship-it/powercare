@@ -7,6 +7,8 @@ import SignAndSendCard from "@/components/files/SignAndSendCard";
 import VerifyDocumentCard from "@/components/files/VerifyDocumentCard";
 import HowSigningWorks from "@/components/files/HowSigningWorks";
 import SigningSteps from "@/components/files/SigningSteps";
+import MultiSignCard from "@/components/files/MultiSignCard";
+import MultiSignInbox from "@/components/files/MultiSignInbox";
 
 // Standalone File Signing section: every employee keeps a personal signature and
 // can sign & email documents to anyone directly from the platform.
@@ -15,6 +17,7 @@ export default function FileSigning() {
   const { company, data, currentUser } = useAuth();
   const ar = lang === "ar";
   const [savedSignature, setSavedSignature] = useState(null);
+  const [multiRefresh, setMultiRefresh] = useState(0);
 
   if (!currentUser || !company) return null;
   const signingUser = savedSignature
@@ -38,6 +41,16 @@ export default function FileSigning() {
       <div className="grid md:grid-cols-2 gap-4">
         <MySignatureCard companyId={company.id} currentUser={currentUser} ar={ar} onSaved={setSavedSignature} />
         <SignAndSendCard currentUser={signingUser} companyId={company.id} companyName={data?.name || company?.name || ""} ar={ar} />
+      </div>
+      <div className="grid md:grid-cols-2 gap-4">
+        <MultiSignCard
+          currentUser={currentUser}
+          companyId={company.id}
+          employees={data?.employees || []}
+          ar={ar}
+          onCreated={() => setMultiRefresh((n) => n + 1)}
+        />
+        <MultiSignInbox currentUser={currentUser} companyId={company.id} ar={ar} refreshKey={multiRefresh} />
       </div>
       <VerifyDocumentCard ar={ar} />
     </div>

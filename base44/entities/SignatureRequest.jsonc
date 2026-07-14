@@ -1,0 +1,70 @@
+{
+  "name": "SignatureRequest",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company (tenant) this request belongs to."
+    },
+    "creatorId": {
+      "type": "string",
+      "description": "Employee/owner id of the person who created the request."
+    },
+    "creatorName": {
+      "type": "string"
+    },
+    "creatorEmail": {
+      "type": "string"
+    },
+    "fileName": {
+      "type": "string"
+    },
+    "docUrl": {
+      "type": "string",
+      "description": "URL of the LATEST version of the document (updated after each signature)."
+    },
+    "verificationId": {
+      "type": "string",
+      "description": "Verification ID stamped as a badge once all parties have signed."
+    },
+    "finalHash": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "SHA-256 of the fully-signed final file."
+    },
+    "status": {
+      "type": "string",
+      "description": "'pending' or 'completed'."
+    },
+    "signers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "[{ token, name, email, status: 'pending'|'signed', signedAt }]"
+    }
+  },
+  "required": [
+    "companyId",
+    "creatorId",
+    "fileName",
+    "docUrl"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": false,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": false
+  }
+}
