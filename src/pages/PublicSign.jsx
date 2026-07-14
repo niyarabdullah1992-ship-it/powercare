@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { PenLine, Loader2, FileText, ShieldCheck, Download, ExternalLink, CheckCircle2 } from "lucide-react";
+import { PenLine, Loader2, FileText, ShieldCheck, Download, ExternalLink, CheckCircle2, Keyboard } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import SignaturePad from "@/components/files/SignaturePad";
+import TypedSignature from "@/components/files/TypedSignature";
 import Logo from "@/components/Logo";
 import { makeSignatureStamp, stampOnPdf } from "@/lib/multiSignStamp";
 import { loadBadgeQr } from "@/lib/verificationBadge";
@@ -18,6 +19,7 @@ export default function PublicSign() {
   const [stage, setStage] = useState("");
   const [done, setDone] = useState(null); // { completed, docUrl }
   const [error, setError] = useState("");
+  const [mode, setMode] = useState("type"); // "type" | "draw"
 
   const [loadError, setLoadError] = useState("");
 
@@ -165,18 +167,36 @@ export default function PublicSign() {
         <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
       </a>
 
-      <div>
-        <p className="text-xs font-medium font-body mb-2">
-          {ar ? `${info.signer.name} — ارسم توقيعك هنا:` : `${info.signer.name} — draw your signature here:`}
+      <div className="space-y-3">
+        <p className="text-xs font-medium font-body">
+          {ar ? `${info.signer.name} — أضف توقيعك هنا:` : `${info.signer.name} — add your signature here:`}
         </p>
         {info.signer.spot && (
-          <p className="text-[11px] text-muted-foreground font-body mb-2">
+          <p className="text-[11px] text-muted-foreground font-body">
             {ar
               ? `سيُوضع توقيعك تلقائيًا في المكان المخصّص لك (صفحة ${info.signer.spot.page}) — لا يمكن التوقيع في مكان آخر.`
               : `Your signature will be placed automatically at your assigned spot (page ${info.signer.spot.page}) — signing elsewhere isn't possible.`}
           </p>
         )}
-        <SignaturePad ar={ar} onSave={sign} saving={signing} />
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setMode("type")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "type" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            <Keyboard className="w-3.5 h-3.5" /> {ar ? "كتابة الاسم" : "Type name"}
+          </button>
+          <button
+            onClick={() => setMode("draw")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "draw" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            <PenLine className="w-3.5 h-3.5" /> {ar ? "رسم التوقيع" : "Draw"}
+          </button>
+        </div>
+        {mode === "type" ? (
+          <TypedSignature ar={ar} defaultName={info.signer.name || ""} onSave={sign} saving={signing} />
+        ) : (
+          <SignaturePad ar={ar} onSave={sign} saving={signing} />
+        )}
       </div>
 
       {signing && (
