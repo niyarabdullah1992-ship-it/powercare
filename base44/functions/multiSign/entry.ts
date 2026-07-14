@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       if (!(await authSession(base44, companyId, sessionToken))) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
       }
-      const signersIn = Array.isArray(body.signers) ? body.signers.slice(0, 10) : [];
+      const signersIn = Array.isArray(body.signers) ? body.signers.slice(0, 100) : [];
       const signers = signersIn
         .map((s) => ({
           token: rid(),
