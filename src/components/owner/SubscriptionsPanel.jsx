@@ -82,10 +82,12 @@ export default function SubscriptionsPanel({ lang }) {
             ))}
           </div>
 
-          <div className="flex gap-3 text-xs font-body text-[#3a2f22]/60">
+          <div className="flex flex-wrap gap-3 text-xs font-body text-[#3a2f22]/60">
+            <span>{ar ? "مجاني" : "Free"}: <b>{summary.byPlan.Free ?? 0}</b></span>
             <span>Starter: <b>{summary.byPlan.Starter}</b></span>
             <span>Professional: <b>{summary.byPlan.Professional}</b></span>
             <span>Enterprise: <b>{summary.byPlan.Enterprise}</b></span>
+            <span>{ar ? "مخصص" : "Custom"}: <b>{summary.byPlan.Custom ?? 0}</b></span>
           </div>
 
           <div className="space-y-2 max-h-80 overflow-y-auto">

@@ -128,9 +128,11 @@ Deno.serve(async (req) => {
       canceled: rows.filter((r) => r.status === 'canceled').length,
       endingSoon: active.filter((r) => r.daysLeft != null && r.daysLeft <= 14 && (r.cancelAtPeriodEnd || r.status === 'trialing')).length,
       byPlan: {
+        Free: accounts.filter((a) => !a.plan || a.plan === 'Free').length,
         Starter: active.filter((r) => r.plan === 'Starter').length,
         Professional: active.filter((r) => r.plan === 'Professional').length,
         Enterprise: active.filter((r) => r.plan === 'Enterprise').length,
+        Custom: noSub.filter((r) => r.plan === 'Custom' && r.status === 'manual_active').length,
       },
     };
 
