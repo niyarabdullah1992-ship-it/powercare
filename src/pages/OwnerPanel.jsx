@@ -9,7 +9,7 @@ import Logo from "@/components/Logo";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import NewsBroadcast from "@/components/owner/NewsBroadcast";
 import VisitorStatsCard from "@/components/owner/VisitorStatsCard";
-import SubscriptionsPanel from "@/components/owner/SubscriptionsPanel";
+import SubscribersDashboard from "@/components/owner/SubscribersDashboard";
 
 export default function OwnerPanel() {
   const { t, lang } = useI18n();
@@ -18,6 +18,7 @@ export default function OwnerPanel() {
   const [companies, setCompanies] = useState([]);
   const [form, setForm] = useState({ name: "", ownerEmail: "", ownerPassword: "", plan: "Starter", allowedEmailDomain: "" });
   const [auditLogs, setAuditLogs] = useState([]);
+  const [tab, setTab] = useState("manage");
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => setUser(null));
@@ -92,8 +93,8 @@ export default function OwnerPanel() {
   };
 
   return (
-    <div className="min-h-screen bg-landing-bg px-6 py-10">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-landing-bg px-4 py-10 sm:px-6" dir={lang === "ar" ? "rtl" : "ltr"}>
+      <div className={`mx-auto space-y-6 ${tab === "money" ? "max-w-5xl" : "max-w-2xl"}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Logo size={28} />
@@ -109,6 +110,26 @@ export default function OwnerPanel() {
           </button>
         </div>
 
+        <div className="flex bg-white rounded-2xl p-1 shadow-sm">
+          {[
+            { key: "manage", ar: "🏢 الإدارة", en: "🏢 Management" },
+            { key: "money", ar: "💰 المال والمشتركون", en: "💰 Money & Subscribers" },
+          ].map((tb) => (
+            <button
+              key={tb.key}
+              onClick={() => setTab(tb.key)}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-body font-semibold transition-colors ${
+                tab === tb.key ? "bg-gradient-to-b from-landing-gold-light to-landing-gold text-white" : "text-[#3a2f22]/60 hover:text-[#3a2f22]"
+              }`}
+            >
+              {lang === "ar" ? tb.ar : tb.en}
+            </button>
+          ))}
+        </div>
+
+        {tab === "money" && <SubscribersDashboard ar={lang === "ar"} />}
+
+        {tab === "manage" && (<>
         <div className="bg-white rounded-2xl p-6 shadow-xl space-y-6">
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -175,15 +196,6 @@ export default function OwnerPanel() {
           </form>
         </div>
 
-        <button
-          onClick={() => navigate("/owner-subscribers")}
-          className="w-full py-3 rounded-2xl bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold shadow-xl hover:opacity-90 transition-opacity"
-        >
-          {lang === "ar" ? "📊 تحليلات المشتركين — التحكم الكامل" : "📊 Subscribers Analytics — Full Control"}
-        </button>
-
-        <SubscriptionsPanel lang={lang} />
-
         <VisitorStatsCard lang={lang} />
 
         <NewsBroadcast />
@@ -205,6 +217,7 @@ export default function OwnerPanel() {
             </div>
           )}
         </div>
+        </>)}
       </div>
     </div>
   );
