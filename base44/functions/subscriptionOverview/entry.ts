@@ -129,8 +129,19 @@ Deno.serve(async (req) => {
       },
     };
 
+    // Monthly recurring revenue from active/trialing subscriptions.
+    summary.mrr = Math.round(active.reduce((sum, r) => sum + (r.amount ? (r.billing === 'yearly' ? r.amount / 12 : r.amount) : 0), 0) * 100) / 100;
+
+    // Company signups per month (growth chart).
+    const growthMap: Record<string, number> = {};
+    for (const a of accounts) {
+      const m = (a.created_date || '').slice(0, 7);
+      if (m) growthMap[m] = (growthMap[m] || 0) + 1;
+    }
+    const growth = Object.entries(growthMap).sort(([x], [y]) => x.localeCompare(y)).map(([month, count]) => ({ month, count }));
+
     rows.sort((a, b) => (a.daysLeft ?? 99999) - (b.daysLeft ?? 99999));
-    return Response.json({ summary, subscriptions: rows, companiesWithoutSubscription: noSub });
+    return Response.json({ summary, subscriptions: rows, companiesWithoutSubscription: noSub, growth });
   } catch (error) {
     console.error('subscriptionOverview error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

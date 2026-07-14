@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
-import { ShieldAlert, ArrowLeft, RefreshCw, Loader2, Users } from "lucide-react";
+import { ShieldAlert, ArrowLeft, RefreshCw, Loader2, Users, Search } from "lucide-react";
 import Logo from "@/components/Logo";
 import SubscriberRow from "@/components/owner/SubscriberRow";
+import SubscriberAnalytics from "@/components/owner/SubscriberAnalytics";
 
 export default function OwnerSubscribers() {
   const { lang } = useI18n();
@@ -14,6 +15,8 @@ export default function OwnerSubscribers() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => setUser(null));
@@ -54,7 +57,15 @@ export default function OwnerSubscribers() {
   }
 
   const summary = data?.summary;
-  const rows = [...(data?.subscriptions || []), ...(data?.companiesWithoutSubscription || [])];
+  const allRows = [...(data?.subscriptions || []), ...(data?.companiesWithoutSubscription || [])];
+  const rows = allRows.filter((r) => {
+    if (statusFilter === "active" && !(r.status === "active" || r.status === "trialing")) return false;
+    if (statusFilter === "problem" && !(r.status === "past_due" || r.status === "unpaid" || r.status === "canceled")) return false;
+    if (statusFilter === "none" && r.status !== "no_subscription") return false;
+    const q = search.trim().toLowerCase();
+    if (q && !(r.companyName || "").toLowerCase().includes(q) && !(r.email || "").toLowerCase().includes(q)) return false;
+    return true;
+  });
   const stats = summary ? [
     { label: ar ? "الشركات المسجلة" : "Registered companies", value: summary.totalCompanies },
     { label: ar ? "اشتراكات نشطة" : "Active subscriptions", value: summary.activeSubscriptions },
@@ -99,6 +110,38 @@ export default function OwnerSubscribers() {
                   <p className="text-[11px] font-body text-[#3a2f22]/50 mt-1 leading-tight">{s.label}</p>
                 </div>
               ))}
+            </div>
+
+            <SubscriberAnalytics data={data} ar={ar} />
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3a2f22]/35" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={ar ? "بحث باسم الشركة أو الإيميل…" : "Search by company or email…"}
+                  className="w-full ps-9 pe-3 py-2.5 rounded-xl bg-white shadow-sm text-sm font-body text-[#3a2f22] focus:outline-none focus:ring-2 focus:ring-landing-gold"
+                />
+              </div>
+              <div className="flex gap-1.5">
+                {[
+                  { key: "all", ar: "الكل", en: "All" },
+                  { key: "active", ar: "نشط", en: "Active" },
+                  { key: "problem", ar: "متعثر/ملغى", en: "Issues" },
+                  { key: "none", ar: "بدون اشتراك", en: "No sub" },
+                ].map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setStatusFilter(f.key)}
+                    className={`px-3 py-2 rounded-xl text-xs font-body font-semibold transition-colors ${
+                      statusFilter === f.key ? "bg-landing-gold text-white" : "bg-white text-[#3a2f22]/60 shadow-sm hover:text-[#3a2f22]"
+                    }`}
+                  >
+                    {ar ? f.ar : f.en}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
