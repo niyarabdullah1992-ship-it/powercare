@@ -238,6 +238,13 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
           <p className="text-emerald-700 font-medium">
             {ar ? "أُرسلت روابط التوقيع بالبريد — ويمكنك نسخها ومشاركتها مباشرة:" : "Signing links emailed — you can also copy and share them directly:"}
           </p>
+          {(result.emailFailed || []).length > 0 && (
+            <p className="text-amber-700">
+              {ar
+                ? `تعذّر إرسال البريد إلى: ${result.emailFailed.join("، ")} — انسخ الرابط وأرسله لهم يدويًا.`
+                : `Email couldn't be delivered to: ${result.emailFailed.join(", ")} — copy the link and share it with them manually.`}
+            </p>
+          )}
           {Object.entries(result.links || {}).map(([email, link]) => (
             <div key={email} className="flex items-center gap-2">
               <span className="truncate text-muted-foreground" dir="ltr">{email}</span>

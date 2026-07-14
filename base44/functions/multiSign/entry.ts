@@ -1,4 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
+import { createMimeMessage } from 'npm:mimetext@3.0.24';
+
+function toBase64Url(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
 // Multi-party document signing:
 // - create: an authenticated company user uploads a document and invites several
@@ -21,7 +29,26 @@ async function authSession(base44, companyId, sessionToken) {
   return !!(s && new Date(s.expiresAt).getTime() > Date.now());
 }
 
+// Send via the connected Gmail account first (works for ANY external address —
+// gmail, outlook, corporate…); fall back to the platform mailer if Gmail fails.
 async function sendMail(base44, to, subject, bodyText) {
+  try {
+    const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
+    const msg = createMimeMessage();
+    msg.setSender({ name: 'PowerCare', addr: 'no-reply@powercare.app' });
+    msg.setRecipient(to);
+    msg.setSubject(subject);
+    msg.addMessage({ contentType: 'text/plain', data: bodyText });
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw: toBase64Url(msg.asRaw()) }),
+    });
+    if (res.ok) return true;
+    console.error('multiSign gmail send failed for', to, JSON.stringify(await res.json().catch(() => ({}))));
+  } catch (e) {
+    console.error('multiSign gmail unavailable:', e.message);
+  }
   try {
     await base44.asServiceRole.integrations.Core.SendEmail({
       from_name: 'PowerCare',
@@ -29,8 +56,10 @@ async function sendMail(base44, to, subject, bodyText) {
       subject,
       body: bodyText,
     });
+    return true;
   } catch (e) {
     console.error('multiSign email failed for', to, e.message);
+    return false;
   }
 }
 
@@ -80,11 +109,12 @@ Deno.serve(async (req) => {
       const appUrl = String(body.appUrl || '').replace(/\/+$/, '').slice(0, 300);
       const ar = body.lang === 'ar';
       const links = {};
+      const emailFailed = [];
       for (const s of signers) {
         const link = `${appUrl}/sign?token=${rec.id}.${s.token}`;
         links[s.email] = link;
         if (appUrl) {
-          await sendMail(
+          const ok = await sendMail(
             base44,
             s.email,
             ar ? `طلب توقيع: ${rec.fileName}` : `Signature request: ${rec.fileName}`,
@@ -92,9 +122,10 @@ Deno.serve(async (req) => {
               ? `مرحبًا ${s.name}،\n\nطلب منك ${rec.creatorName} التوقيع على المستند "${rec.fileName}".\n\nللتوقيع افتح الرابط التالي:\n${link}\n\n— PowerCare`
               : `Hello ${s.name},\n\n${rec.creatorName} asked you to sign the document "${rec.fileName}".\n\nOpen this link to sign:\n${link}\n\n— PowerCare`
           );
+          if (!ok) emailFailed.push(s.email);
         }
       }
-      return Response.json({ ok: true, requestId: rec.id, links });
+      return Response.json({ ok: true, requestId: rec.id, links, emailFailed });
     }
 
     if (action === 'list') {
