@@ -37,10 +37,10 @@ async function sendMail(base44, to, subject, bodyText) {
     // Microsoft (Outlook/Hotmail) rejects mail whose From address doesn't match
     // the sending Gmail account (SPF/DKIM spoof detection) — always send from
     // the real connected address.
-    const prof = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+    const prof = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
       headers: { Authorization: `Bearer ${accessToken}` },
     }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-    const senderAddr = prof?.emailAddress;
+    const senderAddr = prof?.email;
     if (!senderAddr) throw new Error('gmail profile unavailable');
     const msg = createMimeMessage();
     msg.setSender({ name: 'PowerCare', addr: senderAddr });
