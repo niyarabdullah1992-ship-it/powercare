@@ -26,6 +26,7 @@ import PullToRefresh from "@/components/mobile/PullToRefresh";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import PageHeader from "@/components/PageHeader";
 import { queryClientInstance } from "@/lib/query-client";
+import { toast } from "@/components/ui/use-toast";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -97,7 +98,8 @@ export default function MyTasks() {
 
   // Task actions are gated on today's attendance being checked in (see src/lib/attendance.js).
   useEffect(() => {
-    if (!currentUser || isIndividual) return;
+    if (!currentUser) return;
+    if (isIndividual) { setCheckedInToday(true); return; }
     getTodayAttendance(currentUser.id).then((att) => setCheckedInToday(isCheckedIn(att)));
   }, [currentUser?.id, isIndividual]);
 
@@ -418,7 +420,10 @@ export default function MyTasks() {
   };
 
   const logCompleted = async (targetId) => {
-    if (!checkedInToday) { alert(t("mustCheckInFirst")); return; }
+    if (!isIndividual && !checkedInToday) {
+      toast({ description: t("mustCheckInFirst"), variant: "destructive" });
+      return;
+    }
     const amt = Number(logAmount) || 0;
     if (amt <= 0) return;
     const tg = targets.find((x) => x.id === targetId);
@@ -752,7 +757,7 @@ export default function MyTasks() {
         )}
       />
 
-      {!checkedInToday && (
+      {!isIndividual && !checkedInToday && (
         <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50 flex items-center justify-between gap-3">
           <p className="text-sm text-amber-800 font-body flex items-center gap-2"><ClipboardCheck className="w-4 h-4" /> {t("mustCheckInFirst")}</p>
           <Link to="/app/attendance" className="text-xs font-body text-accent hover:underline whitespace-nowrap">{t("goToAttendance")}</Link>
