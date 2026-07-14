@@ -154,9 +154,6 @@ export default function Pricing() {
               {t("billYearly")}
             </button>
           </div>
-          <span className="px-3 py-1 rounded-full bg-landing-gold/15 text-landing-gold-deep text-xs font-body font-semibold">
-            {t("yearlySavings")}
-          </span>
         </div>
 
         <div className={audience === "individual" ? "grid max-w-sm mx-auto" : "grid md:grid-cols-4 gap-6"}>
