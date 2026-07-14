@@ -36,6 +36,7 @@ export default function MonthGrid({ year, month, selected, onSelect, marks, t })
                 {m?.p ? <span className="w-1.5 h-1.5 rounded-full bg-accent" /> : null}
                 {m?.j ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> : null}
                 {m?.v ? <span className="w-1.5 h-1.5 rounded-full bg-sky-500" /> : null}
+                {m?.t ? <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> : null}
               </span>
             </button>
           );

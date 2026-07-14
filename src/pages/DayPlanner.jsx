@@ -2,10 +2,13 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany } from "@/lib/store";
-import { CalendarDays, Plus, Trash2, ChevronLeft, ChevronRight, CheckCircle2, Circle } from "lucide-react";
+import { CalendarDays, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import ExportButtons from "@/components/individual/ExportButtons";
 import NiroPlanBox from "@/components/individual/NiroPlanBox";
+import DayTimeGrid from "@/components/individual/DayTimeGrid";
+import DayLinksBar from "@/components/individual/DayLinksBar";
+import usePersonalTargets from "@/hooks/usePersonalTargets";
 
 const uid = () => `pln_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
 const localDate = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -17,6 +20,7 @@ export default function DayPlanner() {
   const [date, setDate] = useState(localDate());
   const [time, setTime] = useState("");
   const [title, setTitle] = useState("");
+  const targets = usePersonalTargets();
 
   if (!data || !company) return null;
 
@@ -24,6 +28,7 @@ export default function DayPlanner() {
     .filter((i) => i.date === date)
     .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
   const doneCount = items.filter((i) => i.done).length;
+  const visits = (data.personalAttendance || []).filter((r) => r.date === date);
 
   const shiftDay = (delta) => {
     const d = new Date(date + "T00:00:00");
@@ -91,6 +96,9 @@ export default function DayPlanner() {
         <p className="text-sm font-heading font-semibold">{dayLabel}</p>
       </div>
 
+      {/* Day at a glance — links to tasks, visits and journal for this date */}
+      <DayLinksBar date={date} data={data} targets={targets} ar={ar} hide={["planner"]} />
+
       {/* Progress */}
       {items.length > 0 && (
         <div className="p-4 rounded-2xl border border-border bg-card">
@@ -121,31 +129,8 @@ export default function DayPlanner() {
         </button>
       </form>
 
-      {/* Timeline */}
-      <div className="p-5 rounded-2xl border border-border bg-card">
-        {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground font-body text-center py-6">
-            {t("noPlannerItems")}
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {items.map((item) => (
-              <div key={item.id} className={`flex items-center gap-3 p-3 rounded-xl border transition ${item.done ? "border-border bg-muted/50 opacity-60" : "border-border bg-background"}`}>
-                <button onClick={() => toggle(item.id)} className="shrink-0 text-accent" aria-label="toggle done">
-                  {item.done ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5 text-muted-foreground" />}
-                </button>
-                {item.time && (
-                  <span className="shrink-0 px-2.5 py-1 rounded-full bg-accent/10 text-accent text-xs font-body font-medium" dir="ltr">{item.time}</span>
-                )}
-                <p className={`flex-1 text-sm font-body min-w-0 truncate ${item.done ? "line-through" : ""}`}>{item.title}</p>
-                <button onClick={() => remove(item.id)} className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-muted" aria-label="delete">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Hour grid — same schedule look as the company shift schedule */}
+      <DayTimeGrid items={items} visits={visits} onToggle={toggle} onRemove={remove} onPickTime={setTime} ar={ar} />
     </div>
   );
 }

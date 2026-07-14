@@ -8,6 +8,8 @@ import JournalEntryCard from "@/components/individual/JournalEntryCard";
 import StreakCard from "@/components/individual/StreakCard";
 import ExportButtons from "@/components/individual/ExportButtons";
 import WeeklySummaryCard from "@/components/individual/WeeklySummaryCard";
+import DayLinksBar from "@/components/individual/DayLinksBar";
+import usePersonalTargets from "@/hooks/usePersonalTargets";
 
 const uid = () => `jrn_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
 const localDate = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -26,6 +28,7 @@ export default function LifeJournal() {
   const ar = lang === "ar";
   const [mood, setMood] = useState("good");
   const [text, setText] = useState("");
+  const targets = usePersonalTargets();
 
   if (!data || !company) return null;
 
@@ -69,6 +72,9 @@ export default function LifeJournal() {
       <StreakCard data={data} ar={ar} />
 
       <WeeklySummaryCard data={data} ar={ar} />
+
+      {/* Today at a glance — links journal with tasks, planner and visits */}
+      <DayLinksBar date={localDate()} data={data} targets={targets} ar={ar} hide={["journal"]} />
 
       {/* New entry */}
       <form onSubmit={addEntry} className="p-5 rounded-2xl border border-border bg-card space-y-4">

@@ -6,6 +6,8 @@ import { ClipboardCheck, LogIn, LogOut, Timer, MapPin, Loader2 } from "lucide-re
 import PageHeader from "@/components/PageHeader";
 import AttendanceInsights from "@/components/individual/AttendanceInsights";
 import ExportButtons from "@/components/individual/ExportButtons";
+import DayLinksBar from "@/components/individual/DayLinksBar";
+import usePersonalTargets from "@/hooks/usePersonalTargets";
 
 const uid = () => `patt_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
 const localDate = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -18,6 +20,7 @@ export default function IndividualAttendance() {
   const [pinLocation, setPinLocation] = useState(true);
   const [locating, setLocating] = useState(false);
   const [, setNow] = useState(Date.now());
+  const targets = usePersonalTargets();
 
   const records = data?.personalAttendance || [];
   const openRec = records.find((r) => !r.checkOut);
@@ -139,6 +142,9 @@ export default function IndividualAttendance() {
           </div>
         )}
       </div>
+
+      {/* Today at a glance — links attendance with tasks, planner and journal */}
+      <DayLinksBar date={localDate()} data={data} targets={targets} ar={ar} hide={["visits"]} />
 
       <AttendanceInsights records={records} placeName={recPlace} ar={ar} />
     </div>
