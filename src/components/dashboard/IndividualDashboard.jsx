@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ListTodo, PenLine, Sparkles, FolderOpen, CheckCircle2, Clock, CalendarDays, ClipboardCheck } from "lucide-react";
+import { ListTodo, PenLine, Sparkles, FolderOpen, CheckCircle2, Clock, CalendarDays, ClipboardCheck, BookOpen } from "lucide-react";
 
 export default function IndividualDashboard({ data, lang }) {
   const ar = lang === "ar";
@@ -18,6 +18,7 @@ export default function IndividualDashboard({ data, lang }) {
     { to: "/app/tasks", icon: ListTodo, title: ar ? "مهامي" : "My Tasks", desc: ar ? "نظّم مهامك اليومية في مجلدات" : "Organize your daily tasks in folders" },
     { to: "/app/planner", icon: CalendarDays, title: ar ? "جدولي اليومي" : "Day Planner", desc: ar ? "رتّب يومك ونظّم وقتك ساعة بساعة" : "Plan and organize your day hour by hour" },
     { to: "/app/attendance", icon: ClipboardCheck, title: ar ? "حضوري" : "My Attendance", desc: ar ? "سجّل حضورك لمقرك وتابع ساعاتك ووقت دخولك وخروجك" : "Check in at your own place and track your hours in and out" },
+    { to: "/app/journal", icon: BookOpen, title: ar ? "تقارير حياتي" : "My Life Journal", desc: ar ? "سجّل تقرير يومك وحالتك وراجع سجل حياتك" : "Record your daily report and mood, and look back at your life log" },
     { to: "/app/signing", icon: PenLine, title: ar ? "التوقيع الرقمي" : "Digital Signing", desc: ar ? "وقّع مستنداتك بشارة تحقق مشفّرة" : "Sign documents with an encrypted verification badge" },
     { to: "/app/assistant", icon: Sparkles, title: ar ? "المساعد الذكي" : "AI Assistant", desc: ar ? "اسأل Niro لتنظيم يومك وإنجاز أعمالك" : "Ask Niro to organize your day and get things done" },
     { to: "/app/files", icon: FolderOpen, title: ar ? "ملفاتي" : "My Files", desc: ar ? "احفظ ونظّم مستنداتك الخاصة" : "Store and organize your personal documents" },

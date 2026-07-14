@@ -1,6 +1,6 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n";
-import { HelpCircle, LayoutDashboard, ListTodo, CalendarDays, ClipboardCheck, PenLine, FolderOpen, Sparkles } from "lucide-react";
+import { HelpCircle, LayoutDashboard, ListTodo, CalendarDays, ClipboardCheck, PenLine, FolderOpen, Sparkles, BookOpen } from "lucide-react";
 import HelpSection from "@/components/help/HelpSection";
 
 export default function IndividualHelp() {
@@ -35,6 +35,13 @@ export default function IndividualHelp() {
       steps: ar
         ? ["أضف المقرات التي تقضي وقتك فيها (المنزل، المكتب، المقهى...).", "سجّل حضورك عند الوصول وخروجك عند المغادرة.", "تابع تحليل وقتك: ساعات اليوم والأسبوع ومتوسط وقت دخولك."]
         : ["Add the places where you spend your time (home, office, café...).", "Check in when you arrive and check out when you leave.", "See your time analysis: daily and weekly hours and your average check-in time."],
+    },
+    {
+      icon: BookOpen,
+      title: ar ? "تقارير حياتي" : "My Life Journal",
+      steps: ar
+        ? ["اكتب تقرير يومك في أي وقت: ماذا أنجزت وماذا تعلمت وكيف تشعر.", "اختر حالتك المزاجية مع كل تقرير وراجع سجل أيامك السابقة متى شئت."]
+        : ["Write your day's report anytime: what you accomplished, learned and how you feel.", "Pick your mood with each report and look back through your past days whenever you like."],
     },
     {
       icon: PenLine,

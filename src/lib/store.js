@@ -227,6 +227,7 @@ function emptyCompanyData(meta) {
     personalPlaces: [],
     personalAttendance: [],
     plannerItems: [],
+    journalEntries: [],
     settings: { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30 },
   };
 }
@@ -335,7 +336,7 @@ if (typeof window !== "undefined") {
 export const BLOB_CATEGORIES = [
   "tasks", "reports", "anonymousReports", "publicReports", "safety", "plans",
   "schedules", "hrLevels", "hrClusters", "files", "notifications", "templates", "targets",
-  "personalPlaces", "personalAttendance", "plannerItems",
+  "personalPlaces", "personalAttendance", "plannerItems", "journalEntries",
 ];
 const lastSyncedBlobJSON = {};
 async function syncBlobToEntity(companyId, category, payload) {
