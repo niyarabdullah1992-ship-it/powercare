@@ -18,7 +18,35 @@ Deno.serve(async (req) => {
       Authorization: `Bearer ${SERVICE_KEY}`,
       "Content-Type": "application/json",
     };
-    const isManager = MANAGER_ROLES.includes(body.userRole);
+    // ---- Server-side authorization ----
+    // Roles are never trusted from the request body. The caller must present the
+    // session token issued at login; the role is derived from the server's own
+    // Employee record. Scheduled-workflow sweeps run without a user session.
+    const SWEEP_ACTIONS = ["checkLateAlerts", "markAbsentees"];
+    let auth = null;
+    if (!SWEEP_ACTIONS.includes(action)) {
+      const platformUser = await base44.auth.me().catch(() => null);
+      if (platformUser && platformUser.role === "admin") {
+        auth = { admin: true, isManager: true, role: "owner", companyId: body.companyId || null, userId: body.userId || null };
+      } else {
+        const { sessionToken, companyId } = body;
+        if (sessionToken && companyId) {
+          const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: sessionToken, companyId });
+          const s = sessions[0];
+          if (s && new Date(s.expiresAt).getTime() > Date.now()) {
+            if (s.role === "owner") {
+              auth = { isManager: true, role: "owner", companyId, userId: s.userId || null };
+            } else {
+              const emps = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: s.userId });
+              const emp = emps[0] || null;
+              auth = { isManager: MANAGER_ROLES.includes(emp?.role), role: emp?.role || "employee", companyId, userId: s.userId };
+            }
+          }
+        }
+      }
+      if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const isManager = !!auth?.isManager;
     const todayStr = () => new Date().toISOString().slice(0, 10);
     const toMinutes = (hhmm) => {
       const parts = (hhmm || "").split(":").map(Number);
@@ -169,6 +197,10 @@ Deno.serve(async (req) => {
     if (action === "checkIn") {
       const { companyId, employeeId, employeeName, stationId, lat, lng, accuracy, shiftStart, stationLat, stationLng, radiusMeters } = body;
       if (!companyId || !employeeId) return Response.json({ error: "Missing fields" }, { status: 400 });
+      // Employees may only check in as themselves — identity comes from the session.
+      if (!isManager && auth?.userId && employeeId !== auth.userId) {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
       const date = todayStr();
       const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const existing = await existingRes.json();
@@ -244,6 +276,10 @@ Deno.serve(async (req) => {
     if (action === "checkOut") {
       const { employeeId, shiftEnd, lat, lng, accuracy, stationLat, stationLng, radiusMeters } = body;
       if (!employeeId) return Response.json({ error: "Missing employeeId" }, { status: 400 });
+      // Employees may only check out as themselves — identity comes from the session.
+      if (!isManager && auth?.userId && employeeId !== auth.userId) {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
       if (lat == null || lng == null) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       if (stationLat == null || stationLng == null) return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
       const checkoutDistance = Math.round(distanceMeters(lat, lng, stationLat, stationLng));

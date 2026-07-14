@@ -41,15 +41,78 @@ Deno.serve(async (req) => {
       "Content-Type": "application/json",
     };
 
-    // Permission helper: managers can create; employees see only their own.
-    const isManager = MANAGER_ROLES.includes(body.userRole);
+    // ---- Server-side authorization ----
+    // Roles are never trusted from the request body. The caller must present the
+    // session token issued at login; the role is derived from the server's own
+    // Employee record. The scheduled escalation sweep runs without a user session.
+    let auth = null;
+    if (action !== "runEscalationSweep") {
+      const platformUser = await base44.auth.me().catch(() => null);
+      if (platformUser && platformUser.role === "admin") {
+        auth = { admin: true, isManager: true, role: "owner", companyId: body.companyId || null, userId: body.userId || null };
+      } else {
+        const { sessionToken, companyId } = body;
+        if (sessionToken && companyId) {
+          const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: sessionToken, companyId });
+          const s = sessions[0];
+          if (s && new Date(s.expiresAt).getTime() > Date.now()) {
+            if (s.role === "owner") {
+              auth = { isManager: true, role: "owner", companyId, userId: s.userId || null };
+            } else {
+              const emps = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: s.userId });
+              const emp = emps[0] || null;
+              auth = {
+                isManager: MANAGER_ROLES.includes(emp?.role), role: emp?.role || "employee",
+                companyId, userId: s.userId, stationId: emp?.stationId || null,
+                managedStations: Array.isArray(emp?.managedStations) ? emp.managedStations : [],
+              };
+            }
+          }
+        }
+      }
+      if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const isManager = !!auth?.isManager;
+
+    // ---- Multi-tenant boundary ----
+    // The shared targets table has no company column, so membership is resolved
+    // against the validated company's own employees and stations.
+    const getCompanyScope = async () => {
+      const [emps, sts] = await Promise.all([
+        base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId }),
+        base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId }),
+      ]);
+      return {
+        employeeIds: new Set(emps.map((e) => e.employeeId)),
+        stationIds: new Set(sts.map((s) => s.stationId)),
+      };
+    };
+    const targetInScope = (tg, scope) =>
+      scope.employeeIds.has(tg.employee_id) || scope.employeeIds.has(tg.manager_id) ||
+      scope.stationIds.has(tg.station_id) || scope.stationIds.has(tg.assignment_id);
+    // Fetches one target and verifies it belongs to the caller's company.
+    const getScopedTarget = async (targetId) => {
+      const getRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, { headers });
+      const rows = await getRes.json();
+      const tg = Array.isArray(rows) && rows[0];
+      if (!tg) return null;
+      if (auth?.admin || !auth?.companyId) return tg;
+      const scope = await getCompanyScope();
+      return targetInScope(tg, scope) ? tg : null;
+    };
 
     if (action === "listTargets") {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?order=created_at.desc`, { headers });
-      const rows = await res.json();
+      let rows = await res.json();
+      if (!Array.isArray(rows)) rows = [];
+      // Strict tenant boundary: only this company's targets are ever processed or returned.
+      if (!auth.admin) {
+        const scope = await getCompanyScope();
+        rows = rows.filter((tg) => targetInScope(tg, scope));
+      }
       // Overdue detection: auto-close targets past their end date
       const now = Date.now();
-      for (const tg of rows || []) {
+      for (const tg of rows) {
         if (tg.status === "active" && new Date(tg.end_date).getTime() < now) {
           // notify manager
           await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
@@ -82,9 +145,9 @@ Deno.serve(async (req) => {
       }
       if (isManager) {
         // PGM sees only managed stations; station_manager sees only their station
-        if (body.userRole === "pgm") {
-          const managed = new Set(body.managedStations || []);
-          const filtered = (rows || []).filter((tg) => {
+        if (auth.role === "pgm") {
+          const managed = new Set(auth.managedStations || []);
+          const filtered = rows.filter((tg) => {
             const key = tg.assignment_type === "station_team" ? (tg.assignment_id || tg.station_id)
               : tg.assignment_type === "hq_team" ? "hq"
               : (tg.station_id || tg.employee_id);
@@ -92,9 +155,9 @@ Deno.serve(async (req) => {
           });
           return Response.json({ targets: filtered });
         }
-        if (body.userRole === "station_manager") {
-          const myStation = body.stationId;
-          const filtered = (rows || []).filter((tg) => {
+        if (auth.role === "station_manager") {
+          const myStation = auth.stationId;
+          const filtered = rows.filter((tg) => {
             if (tg.assignment_type === "station_team") return tg.assignment_id === myStation;
             if (tg.assignment_type === "member") return tg.station_id === myStation;
             return false;
@@ -103,14 +166,14 @@ Deno.serve(async (req) => {
         }
         return Response.json({ targets: rows });
       }
-      // Employee: filter by assignment type
-      const myStation = body.stationId || null;
-      const filtered = (rows || []).filter((tg) => {
-        if (tg.assignment_type === "member") return tg.employee_id === body.userId;
+      // Employee: filter by assignment type (identity from the session, not the body)
+      const myStation = auth.stationId || null;
+      const filtered = rows.filter((tg) => {
+        if (tg.assignment_type === "member") return tg.employee_id === auth.userId;
         if (tg.assignment_type === "station_team") return tg.assignment_id === myStation;
         if (tg.assignment_type === "hq_team") return !myStation;
         // legacy rows without assignment_type
-        return tg.employee_id === body.userId;
+        return tg.employee_id === auth.userId;
       });
       return Response.json({ targets: filtered });
     }
@@ -199,13 +262,8 @@ Deno.serve(async (req) => {
       if (!targetId || !amount) {
         return Response.json({ error: "Missing fields" }, { status: 400 });
       }
-      // Fetch current target
-      const getRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`,
-        { headers }
-      );
-      const rows = await getRes.json();
-      const tg = rows[0];
+      // Fetch current target (company-scoped)
+      const tg = await getScopedTarget(targetId);
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
       const newCompleted = Math.min(tg.completed_tasks + Number(amount), tg.task_target);
       const reachesTarget = newCompleted >= tg.task_target;
@@ -263,9 +321,7 @@ Deno.serve(async (req) => {
       if (!approve && !(reason || "").trim()) {
         return Response.json({ error: "REASON_REQUIRED" }, { status: 400 });
       }
-      const getRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, { headers });
-      const rows = await getRes.json();
-      const tg = rows[0];
+      const tg = await getScopedTarget(targetId);
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
       const patch: Record<string, unknown> = approve
         ? { status: "completed" }
@@ -311,14 +367,12 @@ Deno.serve(async (req) => {
     if (action === "disputeRejection") {
       const { targetId, employeeId, employeeName, message, escalationLevel, notifyUserIds } = body;
       if (!targetId || !(message || "").trim()) return Response.json({ error: "Missing fields" }, { status: 400 });
-      const getRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, { headers });
-      const rows = await getRes.json();
-      const tg = rows[0];
+      const tg = await getScopedTarget(targetId);
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
       const comments = Array.isArray(tg.comments) ? tg.comments : [];
       comments.push({
         id: crypto.randomUUID(),
-        user_id: employeeId,
+        user_id: auth?.userId || employeeId,
         user_name: employeeName || "Employee",
         content: `🚩 ${message.trim()}`,
         files: [],
@@ -354,8 +408,13 @@ Deno.serve(async (req) => {
     }
 
     if (action === "deleteTarget") {
+      if (!isManager) {
+        return Response.json({ error: "Forbidden: only managers can delete targets" }, { status: 403 });
+      }
       const { targetId } = body;
       if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
+      const tg = await getScopedTarget(targetId);
+      if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
       await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
         method: "DELETE",
         headers,
@@ -369,6 +428,8 @@ Deno.serve(async (req) => {
       }
       const { targetId, title, description, steps, priority, endDate, taskTarget, section, taskType } = body;
       if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
+      const existingTg = await getScopedTarget(targetId);
+      if (!existingTg) return Response.json({ error: "Target not found" }, { status: 404 });
       const patch: Record<string, unknown> = {};
       if (title !== undefined) patch.title = title;
       if (description !== undefined) patch.description = description;
@@ -391,8 +452,10 @@ Deno.serve(async (req) => {
     }
 
     if (action === "listNotifications") {
+      // Signed-in employees can only read their own notifications.
+      const notifUserId = auth?.userId || body.userId;
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/notifications?user_id=eq.${encodeURIComponent(body.userId)}&order=created_at.desc&limit=20`,
+        `${SUPABASE_URL}/rest/v1/notifications?user_id=eq.${encodeURIComponent(notifUserId)}&order=created_at.desc&limit=20`,
         { headers }
       );
       const rows = await res.json();
@@ -404,12 +467,7 @@ Deno.serve(async (req) => {
       if (!targetId || (!content && (!files || files.length === 0))) {
         return Response.json({ error: "Missing fields" }, { status: 400 });
       }
-      const getRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`,
-        { headers }
-      );
-      const rows = await getRes.json();
-      const tg = rows[0];
+      const tg = await getScopedTarget(targetId);
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
       const comments = Array.isArray(tg.comments) ? tg.comments : [];
       const cleanFiles = Array.isArray(files)
