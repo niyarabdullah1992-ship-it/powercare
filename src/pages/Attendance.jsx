@@ -11,6 +11,7 @@ import PullToRefresh from "@/components/mobile/PullToRefresh";
 import TimeFormatToggle from "@/components/attendance/TimeFormatToggle";
 import { queryClientInstance } from "@/lib/query-client";
 import PageHeader from "@/components/PageHeader";
+import IndividualAttendance from "@/components/individual/IndividualAttendance";
 
 // Heavy tabs (maps/charts) load only when their tab is actually opened —
 // the page itself now appears instantly with the check-in card + team list.
@@ -62,6 +63,12 @@ export default function Attendance() {
   };
 
   if (!data || !currentUser) return null;
+
+  // Individual (personal) workspaces get their own simple place-based attendance —
+  // no stations, GPS verification or team dashboards.
+  if (String(data?.plan || company?.plan || "").toLowerCase() === "individual") {
+    return <IndividualAttendance />;
+  }
 
   const tabs = [
     { key: "team", label: t("teamTab") },

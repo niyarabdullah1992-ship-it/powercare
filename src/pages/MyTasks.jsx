@@ -69,6 +69,9 @@ export default function MyTasks() {
   const [sectionValue, setSectionValue] = useState("");
   const [checkedInToday, setCheckedInToday] = useState(true);
 
+  // Individual (personal) workspaces: no stations, no attendance gate, no escalation.
+  const isIndividual = String(data?.plan || company?.plan || "").toLowerCase() === "individual";
+
   const fetchTargets = async () => {
     if (!currentUser) return;
     setTargetsLoading(true);
@@ -94,9 +97,14 @@ export default function MyTasks() {
 
   // Task actions are gated on today's attendance being checked in (see src/lib/attendance.js).
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || isIndividual) return;
     getTodayAttendance(currentUser.id).then((att) => setCheckedInToday(isCheckedIn(att)));
-  }, [currentUser?.id]);
+  }, [currentUser?.id, isIndividual]);
+
+  // Individuals go straight into their personal folder browser and self-assign tasks.
+  useEffect(() => {
+    if (isIndividual) { setSelectedStation("hq"); setAssignType("hq_team"); }
+  }, [isIndividual]);
 
   const fetchFolders = async () => {
     try {
@@ -114,11 +122,11 @@ export default function MyTasks() {
   // Re-tapping the Tasks bottom tab resets the station/folder browser to root.
   useEffect(() => {
     const onReset = (e) => {
-      if (e.detail === "/app/tasks") { setSelectedStation(null); setFolderPath(null); }
+      if (e.detail === "/app/tasks") { setSelectedStation(isIndividual ? "hq" : null); setFolderPath(null); }
     };
     window.addEventListener("powercare:tab-reset", onReset);
     return () => window.removeEventListener("powercare:tab-reset", onReset);
-  }, []);
+  }, [isIndividual]);
 
   const addFolderAt = async (parentPath, name) => {
     if (!selectedStation) return;
@@ -754,7 +762,7 @@ export default function MyTasks() {
       {/* Statistics overview */}
       {!targetsLoading && targets.length > 0 && <TaskStats targets={targets} t={t} />}
 
-      {targets.some((tg) => tg.status === "active" && Array.isArray(tg.comments) && tg.comments.some((c) => c.is_rejection || c.is_dispute)) && (
+      {!isIndividual && targets.some((tg) => tg.status === "active" && Array.isArray(tg.comments) && tg.comments.some((c) => c.is_rejection || c.is_dispute)) && (
         <EscalationInfoBox t={t} />
       )}
 
@@ -781,7 +789,8 @@ export default function MyTasks() {
             </div>
           </div>
 
-          {/* Assignment type selector */}
+          {/* Assignment type selector — hidden for individuals (tasks are self-assigned) */}
+          {!isIndividual && (
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{t("assignTo")}</p>
             <div className="flex flex-wrap gap-2">
@@ -800,8 +809,9 @@ export default function MyTasks() {
                 </button>
               ))}
             </div>
-            <input type="hidden" name="assignType" value={assignType} />
           </div>
+          )}
+          <input type="hidden" name="assignType" value={assignType} />
 
           {/* Conditional assignment fields */}
           {assignType === "member" && (
@@ -841,7 +851,7 @@ export default function MyTasks() {
             </>
           )}
 
-          {assignType === "hq_team" && (
+          {assignType === "hq_team" && !isIndividual && (
             <p className="text-xs text-muted-foreground font-body">{t("hqTeamNote")}</p>
           )}
 
@@ -982,14 +992,18 @@ export default function MyTasks() {
             transition={{ duration: 0.22, ease: "easeOut" }}
             className="space-y-3"
           >
-            <button
-              onClick={() => { setSelectedStation(null); setFolderPath(null); }}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground"
-            >
-              <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
-            </button>
+            {!isIndividual && (
+              <>
+                <button
+                  onClick={() => { setSelectedStation(null); setFolderPath(null); }}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground"
+                >
+                  <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
+                </button>
 
-            <h3 className="font-heading font-semibold">{selectedStationName}</h3>
+                <h3 className="font-heading font-semibold">{selectedStationName}</h3>
+              </>
+            )}
 
             {hasAnyContent && (
               <div className="flex flex-col sm:flex-row gap-2">

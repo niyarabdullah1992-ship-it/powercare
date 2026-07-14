@@ -112,6 +112,7 @@ export default function Layout({ children }) {
     { to: "/app/daily-report", icon: FileText, label: t("reports") },
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks") },
     { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling") },
+    { to: "/app/planner", icon: CalendarDays, label: t("dayPlanner") },
     { to: "/app/chat", icon: MessageSquare, label: t("chat") },
     { to: "/app/files", icon: FolderOpen, label: t("files") },
     { to: "/app/signing", icon: PenLine, label: t("fileSigning") },
