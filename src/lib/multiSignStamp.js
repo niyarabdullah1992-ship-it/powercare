@@ -39,34 +39,51 @@ export async function makeSignatureStamp(sigDataUrl, name) {
   return canvas.toDataURL("image/png");
 }
 
-// Stamps one signer's composed stamp onto the LAST page of the PDF at the
-// slot for their index (signatures line up in rows along the bottom).
-// When `badge` is provided (last signer), the verification badge is stamped
-// at the top-right of the last page too. Uploads and returns { url, bytes }.
-export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge) {
+// Stamps one signer's composed stamp onto the PDF. When `spot` is provided
+// ({ page, x, y } — creator-assigned position, in % from the page's top-left),
+// the signature is stamped ONLY there; otherwise it falls back to the shared
+// slot rows along the bottom of the last page. When `badge` is provided (last
+// signer), the verification badge is stamped at the top-right of the last
+// page too. Uploads and returns { url, bytes }.
+export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot) {
   const pdfBytes = await fetch(docUrl).then((r) => r.arrayBuffer());
   const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
-  const page = pdf.getPages()[pdf.getPageCount() - 1];
-  const { width, height } = page.getSize();
+  const pages = pdf.getPages();
+  const lastPage = pages[pages.length - 1];
 
   const stampBytes = await fetch(stampDataUrl).then((r) => r.arrayBuffer());
   const stampImg = await pdf.embedPng(stampBytes);
-  const sw = Math.min(130, width * 0.28);
-  const sh = sw * (195 / 360);
-  const perRow = Math.max(1, Math.floor((width - 32) / (sw + 12)));
-  const col = slotIndex % perRow;
-  const row = Math.floor(slotIndex / perRow);
-  const x = 16 + col * (sw + 12);
-  const y = Math.max(16, 28 + row * (sh + 12));
-  page.drawImage(stampImg, { x, y, width: sw, height: sh });
+
+  if (spot && spot.page >= 1) {
+    // Assigned spot: stamp centered on the exact point the creator chose.
+    const page = pages[Math.min(Math.max(Math.round(spot.page), 1), pages.length) - 1];
+    const { width, height } = page.getSize();
+    const sw = Math.min(130, width * 0.24);
+    const sh = sw * (195 / 360);
+    const cx = (Number(spot.x) / 100) * width;
+    const cy = height - (Number(spot.y) / 100) * height;
+    const x = Math.min(Math.max(cx - sw / 2, 4), width - sw - 4);
+    const y = Math.min(Math.max(cy - sh / 2, 4), height - sh - 4);
+    page.drawImage(stampImg, { x, y, width: sw, height: sh });
+  } else {
+    // Fallback: signatures line up in rows along the bottom of the last page.
+    const { width } = lastPage.getSize();
+    const sw = Math.min(130, width * 0.28);
+    const sh = sw * (195 / 360);
+    const perRow = Math.max(1, Math.floor((width - 32) / (sw + 12)));
+    const col = slotIndex % perRow;
+    const row = Math.floor(slotIndex / perRow);
+    lastPage.drawImage(stampImg, { x: 16 + col * (sw + 12), y: Math.max(16, 28 + row * (sh + 12)), width: sw, height: sh });
+  }
 
   if (badge) {
+    const { width, height } = lastPage.getSize();
     const badgeCanvas = makeVerificationBadgeCanvas(badge.sigId, badge.name, badge.qr);
     const badgeBlob = await new Promise((r) => badgeCanvas.toBlob(r, "image/png"));
     const badgeImg = await pdf.embedPng(await badgeBlob.arrayBuffer());
     const bw = Math.min(220, width * 0.38);
     const bh = bw * (badgeCanvas.height / badgeCanvas.width);
-    page.drawImage(badgeImg, { x: width - bw - 20, y: height - bh - 20, width: bw, height: bh });
+    lastPage.drawImage(badgeImg, { x: width - bw - 20, y: height - bh - 20, width: bw, height: bh });
   }
 
   const out = await pdf.save();

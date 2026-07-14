@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
-import { Users, Upload, Loader2, FileText, Plus, X, Send, Copy, Check } from "lucide-react";
+import { Users, Upload, Loader2, FileText, Plus, X, Send, Copy, Check, MousePointerClick, CheckCircle2 } from "lucide-react";
+import MultiSignPlacementModal from "@/components/files/MultiSignPlacementModal";
 import { base44 } from "@/api/base44Client";
 import { generateVerificationId } from "@/lib/verificationBadge";
 import { appParams } from "@/lib/app-params";
@@ -23,6 +24,8 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
   const [result, setResult] = useState(null); // { links }
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
+  const [placing, setPlacing] = useState(false);
+  const [spots, setSpots] = useState({}); // { [validSignerIndex]: {page,x,y} }
   const fileRef = useRef(null);
 
   const handleUpload = async (e) => {
@@ -34,6 +37,7 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       setDoc({ name: file.name, url: file_url });
+      setSpots({});
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -63,13 +67,14 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
         fileName: doc.name,
         docUrl: doc.url,
         verificationId: generateVerificationId(),
-        signers: validSigners,
+        signers: validSigners.map((s, i) => ({ ...s, spot: spots[i] || null })),
         appUrl: signingBaseUrl(),
         lang: ar ? "ar" : "en",
       });
       setResult(res.data);
       setDoc(null);
       setSigners([{ name: "", email: "" }]);
+      setSpots({});
       onCreated?.();
     } catch (err) {
       setError((ar ? "تعذّر إنشاء الطلب — " : "Couldn't create the request — ") + (err?.response?.data?.error || err.message));
@@ -150,6 +155,30 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
           </button>
         )}
       </div>
+
+      {/* Optional: assign each signer a fixed spot on the document */}
+      {doc && validSigners.length > 0 && (
+        <button onClick={() => setPlacing(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-border text-xs font-body hover:bg-muted">
+          {Object.keys(spots).length >= validSigners.length && validSigners.length > 0 ? (
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          ) : (
+            <MousePointerClick className="w-3.5 h-3.5 text-accent" />
+          )}
+          {Object.keys(spots).length >= validSigners.length
+            ? ar ? "أماكن التواقيع محدّدة — تعديل" : "Signing spots set — edit"
+            : ar ? "تحديد مكان توقيع كل شخص (اختياري)" : "Assign each signer's spot (optional)"}
+        </button>
+      )}
+      {placing && doc && (
+        <MultiSignPlacementModal
+          docUrl={doc.url}
+          signers={validSigners}
+          initialSpots={spots}
+          ar={ar}
+          onConfirm={(s) => { setSpots(s); setPlacing(false); }}
+          onClose={() => setPlacing(false)}
+        />
+      )}
 
       <button
         onClick={send}

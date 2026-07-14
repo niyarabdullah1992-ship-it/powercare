@@ -53,7 +53,7 @@ export default function PublicSign() {
         const qr = await loadBadgeQr(fresh.verificationId).catch(() => null);
         badge = { sigId: fresh.verificationId, name: fresh.signerNames.slice(0, 60), qr };
       }
-      const { url, bytes } = await stampOnPdf(fresh.docUrl, stamp, fresh.signedCount, badge);
+      const { url, bytes } = await stampOnPdf(fresh.docUrl, stamp, fresh.signedCount, badge, fresh.signer.spot);
 
       setStage(ar ? "جارٍ حفظ التوقيع…" : "Saving your signature…");
       const fileHash = fresh.isLast ? await sha256HexOfBuffer(bytes) : "";
@@ -169,6 +169,13 @@ export default function PublicSign() {
         <p className="text-xs font-medium font-body mb-2">
           {ar ? `${info.signer.name} — ارسم توقيعك هنا:` : `${info.signer.name} — draw your signature here:`}
         </p>
+        {info.signer.spot && (
+          <p className="text-[11px] text-muted-foreground font-body mb-2">
+            {ar
+              ? `سيُوضع توقيعك تلقائيًا في المكان المخصّص لك (صفحة ${info.signer.spot.page}) — لا يمكن التوقيع في مكان آخر.`
+              : `Your signature will be placed automatically at your assigned spot (page ${info.signer.spot.page}) — signing elsewhere isn't possible.`}
+          </p>
+        )}
         <SignaturePad ar={ar} onSave={sign} saving={signing} />
       </div>
 

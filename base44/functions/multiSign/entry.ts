@@ -54,6 +54,11 @@ Deno.serve(async (req) => {
           email: String(s.email || '').toLowerCase().trim().slice(0, 160),
           status: 'pending',
           signedAt: null,
+          // Creator-assigned signing spot: this signer may ONLY sign here.
+          spot:
+            s.spot && typeof s.spot === 'object'
+              ? { page: Math.max(1, Number(s.spot.page) || 1), x: Number(s.spot.x) || 0, y: Number(s.spot.y) || 0 }
+              : null,
         }))
         .filter((s) => s.name && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.email));
       if (signers.length === 0 || !body.docUrl || !body.fileName) {
@@ -141,7 +146,7 @@ Deno.serve(async (req) => {
         docUrl: rec.docUrl,
         status: rec.status,
         verificationId: rec.verificationId,
-        signer: { name: signer.name, email: signer.email, status: signer.status },
+        signer: { name: signer.name, email: signer.email, status: signer.status, spot: signer.spot || null },
         signedCount: (rec.signers || []).filter((s) => s.status === 'signed').length,
         totalCount: (rec.signers || []).length,
         isLast: signer.status === 'pending' && pending.length === 1,
