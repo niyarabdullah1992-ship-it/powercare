@@ -25,6 +25,8 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
   const [placing, setPlacing] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState("");
   const [spots, setSpots] = useState({}); // { [validSignerIndex]: {page,x,y} }
   const fileRef = useRef(null);
 
@@ -53,6 +55,27 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
   };
 
   const validSigners = signers.filter((s) => s.name.trim() && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.email.trim()));
+
+  // Bulk add: paste any emails (one per line, or comma/space separated).
+  // Optional name before the email: "Ahmed <a@x.com>" or "Ahmed, a@x.com".
+  const addBulk = () => {
+    const found = [];
+    for (const line of bulkText.split(/\n/)) {
+      const emails = line.match(/[^@\s,;<>"]+@[^@\s,;<>"]+\.[^@\s,;<>"]+/g) || [];
+      for (const email of emails) {
+        const name = line.replace(email, "").replace(/[<>,;"]/g, "").trim() || email.split("@")[0];
+        found.push({ name, email: email.toLowerCase() });
+      }
+    }
+    if (found.length === 0) return;
+    setSigners((rows) => {
+      const existing = new Set(rows.map((r) => r.email.toLowerCase().trim()).filter(Boolean));
+      const fresh = found.filter((f) => !existing.has(f.email) && (existing.add(f.email), true));
+      return [...rows.filter((r) => r.name.trim() || r.email.trim()), ...fresh].slice(0, 100);
+    });
+    setBulkText("");
+    setBulkOpen(false);
+  };
 
   const send = async () => {
     setError("");
@@ -149,10 +172,31 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
             )}
           </div>
         ))}
-        {signers.length < 10 && (
-          <button onClick={() => setSigners((rows) => [...rows, { name: "", email: "" }])} className="flex items-center gap-1 text-xs text-accent font-body hover:underline">
-            <Plus className="w-3.5 h-3.5" /> {ar ? "إضافة موقّع" : "Add signer"}
-          </button>
+        {signers.length < 100 && (
+          <div className="flex items-center gap-4">
+            <button onClick={() => setSigners((rows) => [...rows, { name: "", email: "" }])} className="flex items-center gap-1 text-xs text-accent font-body hover:underline">
+              <Plus className="w-3.5 h-3.5" /> {ar ? "إضافة موقّع" : "Add signer"}
+            </button>
+            <button onClick={() => setBulkOpen((o) => !o)} className="flex items-center gap-1 text-xs text-accent font-body hover:underline">
+              <Users className="w-3.5 h-3.5" /> {ar ? "لصق عدة إيميلات" : "Paste multiple emails"}
+            </button>
+            <span className="text-[10px] text-muted-foreground font-body">{signers.length}/100</span>
+          </div>
+        )}
+        {bulkOpen && (
+          <div className="space-y-2">
+            <textarea
+              value={bulkText}
+              onChange={(e) => setBulkText(e.target.value)}
+              rows={4}
+              dir="ltr"
+              placeholder={ar ? "إيميل في كل سطر — ويمكنك كتابة الاسم قبله، مثال:\nAhmed <ahmed@gmail.com>\nsara@example.com" : "One email per line — optionally with a name, e.g.:\nAhmed <ahmed@gmail.com>\nsara@example.com"}
+              className="w-full px-3 py-2 rounded-md border border-border bg-background text-xs font-body font-mono"
+            />
+            <button onClick={addBulk} disabled={!bulkText.trim()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted disabled:opacity-40">
+              <Plus className="w-3.5 h-3.5" /> {ar ? "إضافة الكل" : "Add all"}
+            </button>
+          </div>
         )}
       </div>
 
