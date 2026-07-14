@@ -5,6 +5,8 @@ import { updateCompany } from "@/lib/store";
 import { BookOpen, Plus } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import JournalEntryCard from "@/components/individual/JournalEntryCard";
+import StreakCard from "@/components/individual/StreakCard";
+import WeeklySummaryCard from "@/components/individual/WeeklySummaryCard";
 
 const uid = () => `jrn_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
 const localDate = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -47,6 +49,10 @@ export default function LifeJournal() {
   return (
     <div className="space-y-6 max-w-3xl">
       <PageHeader title={ar ? "تقارير حياتي" : "My Life Journal"} icon={BookOpen} />
+
+      <StreakCard data={data} ar={ar} />
+
+      <WeeklySummaryCard data={data} ar={ar} />
 
       {/* New entry */}
       <form onSubmit={addEntry} className="p-5 rounded-2xl border border-border bg-card space-y-4">

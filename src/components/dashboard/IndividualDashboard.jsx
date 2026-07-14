@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { ListTodo, PenLine, Sparkles, FolderOpen, CheckCircle2, Clock, CalendarDays, ClipboardCheck, BookOpen } from "lucide-react";
+import StreakCard from "@/components/individual/StreakCard";
 
 export default function IndividualDashboard({ data, lang }) {
   const ar = lang === "ar";
@@ -26,6 +27,7 @@ export default function IndividualDashboard({ data, lang }) {
 
   return (
     <div className="space-y-6">
+      <StreakCard data={data} ar={ar} />
       <div className="grid grid-cols-3 overflow-hidden rounded-2xl border border-border shadow-sm divide-x divide-border rtl:divide-x-reverse">
         {stats.map((s) => (
           <div key={s.label} className="p-5 bg-card text-center">
