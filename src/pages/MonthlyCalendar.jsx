@@ -11,7 +11,7 @@ const localDate = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() 
 
 // Unified monthly calendar for individuals: planner items + journal entries + visits.
 export default function MonthlyCalendar() {
-  const { lang, dir } = useI18n();
+  const { t, lang, dir } = useI18n();
   const { data } = useAuth();
   const ar = lang === "ar";
   const now = new Date();
@@ -38,34 +38,34 @@ export default function MonthlyCalendar() {
     setMonth(d.getMonth());
   };
 
-  const monthLabel = new Date(year, month, 1).toLocaleDateString(ar ? "ar-SA" : "en-GB", { month: "long", year: "numeric" });
+  const monthLabel = new Date(year, month, 1).toLocaleDateString(ar ? "ar-SA" : lang, { month: "long", year: "numeric" });
   const fmtTime = (iso) => new Date(iso).toLocaleTimeString(ar ? "ar-SA" : "en-GB", { hour: "2-digit", minute: "2-digit" });
-  const moodOf = (key) => { const m = MOODS.find((x) => x.key === key); return m ? `${m.emoji} ${ar ? m.ar : m.en}` : ""; };
+  const moodOf = (key) => { const m = MOODS.find((x) => x.key === key); return m ? `${m.emoji} ${t(m.labelKey)}` : ""; };
 
   // Combined month export — one row per event, sorted by date.
   const exportRows = [
-    ...plans.map((i) => [i.date, ar ? "مخطط اليوم" : "Planner", i.time || "", i.title, i.done ? (ar ? "منجز ✓" : "Done ✓") : (ar ? "غير منجز" : "Not done")]),
-    ...journal.map((e) => [e.date, ar ? "يوميات" : "Journal", "", e.text, moodOf(e.mood)]),
-    ...visits.map((r) => [r.date, ar ? "زيارة" : "Visit", fmtTime(r.checkIn), r.place || "", r.checkOut ? fmtTime(r.checkOut) : (ar ? "جارٍ" : "ongoing")]),
+    ...plans.map((i) => [i.date, t("dayPlanner"), i.time || "", i.title, i.done ? t("doneMark") : t("notDoneMark")]),
+    ...journal.map((e) => [e.date, t("lifeJournal"), "", e.text, moodOf(e.mood)]),
+    ...visits.map((r) => [r.date, t("visitsLabel"), fmtTime(r.checkIn), r.place || "", r.checkOut ? fmtTime(r.checkOut) : t("indOngoing")]),
   ].sort((a, b) => String(a[0]).localeCompare(String(b[0])));
 
   const dayPlans = plans.filter((i) => i.date === selected).sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
   const dayJournal = journal.filter((e) => e.date === selected);
   const dayVisits = visits.filter((r) => r.date === selected);
   const dayEmpty = dayPlans.length + dayJournal.length + dayVisits.length === 0;
-  const selectedLabel = new Date(selected + "T00:00:00").toLocaleDateString(ar ? "ar-SA" : "en-GB", { weekday: "long", day: "numeric", month: "long" });
+  const selectedLabel = new Date(selected + "T00:00:00").toLocaleDateString(ar ? "ar-SA" : lang, { weekday: "long", day: "numeric", month: "long" });
 
   return (
     <div className="space-y-6 max-w-3xl">
       <PageHeader
-        title={ar ? "التقويم الشهري" : "Monthly Calendar"}
+        title={t("monthlyCalendar")}
         icon={Calendar}
-        description={ar ? "مهامك ويومياتك وزياراتك في مكان واحد." : "Your plans, journal and visits in one place."}
+        description={t("monthlyCalendarDesc")}
         actions={
           <ExportButtons
-            title={`${ar ? "التقويم الشهري" : "Monthly Calendar"} — ${monthLabel}`}
+            title={`${t("monthlyCalendar")} — ${monthLabel}`}
             filename={`monthly-calendar-${prefix}`}
-            headers={ar ? ["التاريخ", "النوع", "الوقت", "التفاصيل", "الحالة"] : ["Date", "Type", "Time", "Details", "Status"]}
+            headers={[t("date"), t("typeLabel"), t("timeLabel"), t("detailsLabel"), t("status")]}
             rows={exportRows}
             ar={ar}
           />
@@ -83,11 +83,11 @@ export default function MonthlyCalendar() {
             <ChevronRight className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} />
           </button>
         </div>
-        <MonthGrid year={year} month={month} selected={selected} onSelect={setSelected} marks={marks} ar={ar} />
+        <MonthGrid year={year} month={month} selected={selected} onSelect={setSelected} marks={marks} t={t} />
         <div className="flex flex-wrap gap-4 pt-1 text-xs font-body text-muted-foreground">
-          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-accent" /> {ar ? "مخطط اليوم" : "Planner"}</span>
-          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> {ar ? "يوميات" : "Journal"}</span>
-          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-sky-500" /> {ar ? "زيارات" : "Visits"}</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-accent" /> {t("dayPlanner")}</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> {t("lifeJournal")}</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-sky-500" /> {t("visitsLabel")}</span>
         </div>
       </div>
 
@@ -95,7 +95,7 @@ export default function MonthlyCalendar() {
       <div className="p-5 rounded-2xl border border-border bg-card space-y-4">
         <h3 className="font-heading font-semibold">{selectedLabel}</h3>
         {dayEmpty ? (
-          <p className="text-sm text-muted-foreground font-body">{ar ? "لا توجد أنشطة في هذا اليوم." : "No activity on this day."}</p>
+          <p className="text-sm text-muted-foreground font-body">{t("noActivityDay")}</p>
         ) : (
           <>
             {dayPlans.map((i) => (

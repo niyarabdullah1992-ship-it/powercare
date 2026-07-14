@@ -13,15 +13,15 @@ const uid = () => `jrn_${Math.random().toString(36).slice(2, 9)}${Date.now().toS
 const localDate = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export const MOODS = [
-  { key: "great", emoji: "😄", ar: "رائع", en: "Great" },
-  { key: "good", emoji: "🙂", ar: "جيد", en: "Good" },
-  { key: "ok", emoji: "😐", ar: "عادي", en: "Okay" },
-  { key: "tired", emoji: "😔", ar: "متعب", en: "Tired" },
-  { key: "bad", emoji: "😞", ar: "سيء", en: "Bad" },
+  { key: "great", emoji: "😄", ar: "رائع", en: "Great", labelKey: "moodGreat" },
+  { key: "good", emoji: "🙂", ar: "جيد", en: "Good", labelKey: "moodGood" },
+  { key: "ok", emoji: "😐", ar: "عادي", en: "Okay", labelKey: "moodOk" },
+  { key: "tired", emoji: "😔", ar: "متعب", en: "Tired", labelKey: "moodTired" },
+  { key: "bad", emoji: "😞", ar: "سيء", en: "Bad", labelKey: "moodBad" },
 ];
 
 export default function LifeJournal() {
-  const { lang } = useI18n();
+  const { t, lang } = useI18n();
   const { data, company } = useAuth();
   const ar = lang === "ar";
   const [mood, setMood] = useState("good");
@@ -50,16 +50,16 @@ export default function LifeJournal() {
   return (
     <div className="space-y-6 max-w-3xl">
       <PageHeader
-        title={ar ? "تقارير حياتي" : "My Life Journal"}
+        title={t("lifeJournal")}
         icon={BookOpen}
         actions={
           <ExportButtons
-            title={ar ? "تقارير حياتي" : "My Life Journal"}
+            title={t("lifeJournal")}
             filename="my-life-journal"
-            headers={ar ? ["التاريخ", "الحالة", "التقرير"] : ["Date", "Mood", "Report"]}
+            headers={[t("date"), t("moodLabel"), t("reportLabel")]}
             rows={entries.map((e2) => {
               const m = MOODS.find((m2) => m2.key === e2.mood);
-              return [e2.date, m ? `${m.emoji} ${ar ? m.ar : m.en}` : "", e2.text];
+              return [e2.date, m ? `${m.emoji} ${t(m.labelKey)}` : "", e2.text];
             })}
             ar={ar}
           />
@@ -73,7 +73,7 @@ export default function LifeJournal() {
       {/* New entry */}
       <form onSubmit={addEntry} className="p-5 rounded-2xl border border-border bg-card space-y-4">
         <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground font-body mb-2">{ar ? "كيف كان يومك؟" : "How was your day?"}</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground font-body mb-2">{t("indHowWasDay")}</p>
           <div className="flex flex-wrap gap-2">
             {MOODS.map((m) => (
               <button
@@ -82,7 +82,7 @@ export default function LifeJournal() {
                 onClick={() => setMood(m.key)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mood === m.key ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
               >
-                <span>{m.emoji}</span> {ar ? m.ar : m.en}
+                <span>{m.emoji}</span> {t(m.labelKey)}
               </button>
             ))}
           </div>
@@ -91,23 +91,21 @@ export default function LifeJournal() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={4}
-          placeholder={ar
-            ? "اكتب تقرير يومك... ماذا أنجزت؟ ماذا تعلمت؟ كيف تشعر؟"
-            : "Write your day's report... What did you accomplish? What did you learn? How do you feel?"}
+          placeholder={t("indJournalPlaceholder")}
           className="w-full px-3 py-2.5 rounded-xl border border-input text-sm font-body bg-background resize-y"
         />
         <button type="submit" disabled={!text.trim()} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold hover:bg-accent transition-colors disabled:opacity-40">
-          <Plus className="w-4 h-4" /> {ar ? "حفظ تقرير اليوم" : "Save today's report"}
+          <Plus className="w-4 h-4" /> {t("indSaveReport")}
         </button>
       </form>
 
       {/* Past entries */}
       <div className="space-y-3">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground font-body">{ar ? "سجل حياتك" : "Your life log"} ({entries.length})</p>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground font-body">{t("indLifeLog")} ({entries.length})</p>
         {entries.length === 0 ? (
           <div className="p-6 rounded-2xl border border-border bg-card text-center">
             <p className="text-sm text-muted-foreground font-body">
-              {ar ? "لا توجد تقارير بعد — اكتب أول تقرير عن يومك أعلاه." : "No reports yet — write your first daily report above."}
+              {t("indNoReports")}
             </p>
           </div>
         ) : (

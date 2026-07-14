@@ -11,11 +11,11 @@ const uid = () => `patt_${Math.random().toString(36).slice(2, 9)}${Date.now().to
 const localDate = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export default function IndividualAttendance() {
-  const { lang } = useI18n();
+  const { t, lang } = useI18n();
   const { data, company } = useAuth();
   const ar = lang === "ar";
   const [place, setPlace] = useState("");
-  const [pinLocation, setPinLocation] = useState(false);
+  const [pinLocation, setPinLocation] = useState(true);
   const [locating, setLocating] = useState(false);
   const [, setNow] = useState(Date.now());
 
@@ -74,20 +74,18 @@ export default function IndividualAttendance() {
   const durMin = (r) => Math.max(0, Math.round(((r.checkOut ? new Date(r.checkOut).getTime() : Date.now()) - new Date(r.checkIn).getTime()) / 60000));
   const exportRows = records.map((r) => [
     r.date, recPlace(r), fmtTime(r.checkIn),
-    r.checkOut ? fmtTime(r.checkOut) : (ar ? "جارٍ الآن" : "ongoing"),
+    r.checkOut ? fmtTime(r.checkOut) : t("indOngoing"),
     `${Math.floor(durMin(r) / 60)}h ${durMin(r) % 60}m`,
     r.lat != null ? `${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}` : "",
   ]);
-  const exportHeaders = ar
-    ? ["التاريخ", "المكان", "دخول", "خروج", "المدة", "الموقع"]
-    : ["Date", "Place", "In", "Out", "Duration", "Location"];
+  const exportHeaders = [t("date"), t("place"), t("checkIn"), t("checkOut"), t("duration"), t("locationStatus")];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={ar ? "حضوري" : "My Attendance"}
+        title={t("myAttendance")}
         icon={ClipboardCheck}
-        actions={<ExportButtons title={ar ? "سجل حضوري" : "My Attendance Log"} filename="my-attendance" headers={exportHeaders} rows={exportRows} ar={ar} />}
+        actions={<ExportButtons title={t("myAttendance")} filename="my-attendance" headers={exportHeaders} rows={exportRows} ar={ar} />}
       />
 
       <div className="p-5 rounded-2xl border border-border bg-card">
@@ -96,20 +94,20 @@ export default function IndividualAttendance() {
             <div>
               <p className="text-sm font-body text-muted-foreground flex items-center gap-1.5">
                 <Timer className="w-4 h-4 text-accent" />
-                {ar ? "أنت الآن في" : "You're checked in at"} <span className="font-medium text-foreground">{recPlace(openRec)}</span>
+                {t("indCheckedInAt")} <span className="font-medium text-foreground">{recPlace(openRec)}</span>
                 {openRec.lat != null && <MapPin className="w-3.5 h-3.5 text-accent" />}
               </p>
               <p className="hero-title text-3xl mt-1">{Math.floor(elapsedMin / 60)}h {elapsedMin % 60}m</p>
-              <p className="text-xs text-muted-foreground font-body mt-1">{ar ? "منذ الساعة" : "Since"} {fmtTime(openRec.checkIn)}</p>
+              <p className="text-xs text-muted-foreground font-body mt-1">{t("indSince")} {fmtTime(openRec.checkIn)}</p>
             </div>
             <button onClick={checkOut} className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 transition-opacity">
-              <LogOut className="w-4 h-4" /> {ar ? "تسجيل خروج" : "Check Out"}
+              <LogOut className="w-4 h-4" /> {t("checkOut")}
             </button>
           </div>
         ) : (
           <div className="space-y-3">
             <p className="text-xs uppercase tracking-wider text-muted-foreground font-body">
-              {ar ? "أين أنت الآن؟" : "Where are you right now?"}
+              {t("indWhereNow")}
             </p>
             {suggestions.length > 0 && (
               <div className="flex flex-wrap gap-2">
@@ -125,18 +123,18 @@ export default function IndividualAttendance() {
                 value={place}
                 onChange={(e) => setPlace(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && checkIn()}
-                placeholder={ar ? "اكتب اسم المكان (المنزل، المكتب، النادي، مقهى...)" : "Type the place name (Home, Office, Gym, Café...)"}
+                placeholder={t("indPlacePlaceholder")}
                 className="flex-1 min-w-[200px] px-3 py-2.5 rounded-xl border border-input text-sm font-body bg-background"
               />
               <button onClick={checkIn} disabled={!place.trim() || locating} className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold hover:bg-accent transition-colors disabled:opacity-40">
                 {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-                {locating ? (ar ? "تحديد الموقع..." : "Locating...") : (ar ? "سجّل زيارتي" : "Log my visit")}
+                {locating ? t("gettingLocation") : t("indLogVisit")}
               </button>
             </div>
             <label className="flex items-center gap-2 text-xs font-body text-muted-foreground cursor-pointer w-fit">
               <input type="checkbox" checked={pinLocation} onChange={(e) => setPinLocation(e.target.checked)} className="accent-current" />
               <MapPin className="w-3.5 h-3.5 text-accent" />
-              {ar ? "تثبيت موقعي الجغرافي مع الزيارة (اختياري)" : "Pin my GPS location with this visit (optional)"}
+              {t("indPinGps")}
             </label>
           </div>
         )}

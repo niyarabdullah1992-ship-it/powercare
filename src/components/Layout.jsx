@@ -115,7 +115,7 @@ export default function Layout({ children }) {
     { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling") },
     { to: "/app/planner", icon: CalendarDays, label: t("dayPlanner") },
     { to: "/app/journal", icon: BookOpen, label: t("lifeJournal") },
-    { to: "/app/calendar", icon: Calendar, label: lang === "ar" ? "التقويم الشهري" : "Monthly Calendar" },
+    { to: "/app/calendar", icon: Calendar, label: t("monthlyCalendar") },
     { to: "/app/chat", icon: MessageSquare, label: t("chat") },
     { to: "/app/files", icon: FolderOpen, label: t("files") },
     { to: "/app/signing", icon: PenLine, label: t("fileSigning") },
@@ -388,7 +388,7 @@ export default function Layout({ children }) {
       {/* Native-style bottom tab bar (mobile only) */}
       <BottomTabBar />
       {String(data?.plan || company?.plan || "").toLowerCase() === "individual" && (
-        <PlannerReminders data={data} ar={lang === "ar"} />
+        <PlannerReminders data={data} />
       )}
       <ProductFeedbackPrompt companyId={company.id} role={currentUser.role} />
     </div>

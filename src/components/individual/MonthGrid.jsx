@@ -3,18 +3,18 @@ import React from "react";
 const localDate = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 // Month calendar grid — colored dots mark planner items, journal entries and visits.
-export default function MonthGrid({ year, month, selected, onSelect, marks, ar }) {
+export default function MonthGrid({ year, month, selected, onSelect, marks, t }) {
   const startPad = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const fmt = (d) => `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-  const weekdays = ar ? ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const weekdays = [t("daySun"), t("dayMon"), t("dayTue"), t("dayWed"), t("dayThu"), t("dayFri"), t("daySat")];
   const today = localDate();
 
   return (
     <div>
       <div className="grid grid-cols-7 mb-1">
         {weekdays.map((w) => (
-          <p key={w} className="text-center text-[10px] uppercase tracking-wider text-muted-foreground font-body py-1">{w}</p>
+          <p key={w} className="text-center text-[10px] uppercase tracking-wider text-muted-foreground font-body py-1 truncate px-0.5">{w}</p>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-1">

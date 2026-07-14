@@ -11,7 +11,7 @@ const uid = () => `pln_${Math.random().toString(36).slice(2, 9)}${Date.now().toS
 const localDate = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export default function DayPlanner() {
-  const { lang, dir } = useI18n();
+  const { t, lang, dir } = useI18n();
   const { data, company } = useAuth();
   const ar = lang === "ar";
   const [date, setDate] = useState(localDate());
@@ -57,16 +57,16 @@ export default function DayPlanner() {
   return (
     <div className="space-y-6 max-w-3xl">
       <PageHeader
-        title={ar ? "جدولي اليومي" : "Day Planner"}
+        title={t("dayPlanner")}
         icon={CalendarDays}
         actions={
           <ExportButtons
-            title={ar ? "جدولي اليومي" : "My Day Planner"}
+            title={t("dayPlanner")}
             filename="my-day-planner"
-            headers={ar ? ["التاريخ", "الوقت", "العنصر", "الحالة"] : ["Date", "Time", "Item", "Status"]}
+            headers={[t("date"), t("timeLabel"), t("itemLabel"), t("status")]}
             rows={[...(data.plannerItems || [])]
               .sort((a, b) => (b.date + (b.time || "")).localeCompare(a.date + (a.time || "")))
-              .map((i) => [i.date, i.time || "", i.title, i.done ? (ar ? "منجز ✓" : "Done ✓") : (ar ? "غير منجز" : "Not done")])}
+              .map((i) => [i.date, i.time || "", i.title, i.done ? t("doneMark") : t("notDoneMark")])}
             ar={ar}
           />
         }
@@ -84,7 +84,7 @@ export default function DayPlanner() {
           </button>
           {date !== localDate() && (
             <button onClick={() => setDate(localDate())} className="px-3 py-1.5 rounded-full text-xs font-body border border-border hover:bg-muted">
-              {ar ? "اليوم" : "Today"}
+              {t("today")}
             </button>
           )}
         </div>
@@ -95,7 +95,7 @@ export default function DayPlanner() {
       {items.length > 0 && (
         <div className="p-4 rounded-2xl border border-border bg-card">
           <div className="flex items-center justify-between text-xs font-body text-muted-foreground mb-2">
-            <span>{ar ? "إنجاز اليوم" : "Day progress"}</span>
+            <span>{t("dayProgress")}</span>
             <span>{doneCount}/{items.length}</span>
           </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -105,7 +105,7 @@ export default function DayPlanner() {
       )}
 
       {/* Niro AI day planning */}
-      <NiroPlanBox companyId={company.id} date={date} ar={ar} />
+      <NiroPlanBox companyId={company.id} date={date} />
 
       {/* Add item */}
       <form onSubmit={addItem} className="p-4 rounded-2xl border border-border bg-card flex gap-2 flex-wrap">
@@ -113,11 +113,11 @@ export default function DayPlanner() {
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder={ar ? "ماذا ستفعل؟ (مثل: رياضة، اجتماع، قراءة...)" : "What will you do? (e.g. Gym, Meeting, Reading...)"}
+          placeholder={t("plannerPlaceholder")}
           className="flex-1 min-w-[180px] px-3 py-2 rounded-md border border-input text-sm font-body bg-background"
         />
         <button type="submit" className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent transition-colors">
-          <Plus className="w-4 h-4" /> {ar ? "إضافة" : "Add"}
+          <Plus className="w-4 h-4" /> {t("add")}
         </button>
       </form>
 
@@ -125,7 +125,7 @@ export default function DayPlanner() {
       <div className="p-5 rounded-2xl border border-border bg-card">
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground font-body text-center py-6">
-            {ar ? "لا توجد عناصر لهذا اليوم — أضف أول عنصر ونظّم يومك." : "Nothing planned for this day — add your first item and organize your day."}
+            {t("noPlannerItems")}
           </p>
         ) : (
           <div className="space-y-2">

@@ -1,10 +1,13 @@
 import { useEffect } from "react";
+import { useI18n } from "@/lib/i18n";
 import { toast } from "@/components/ui/use-toast";
 
 const localDate = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 // Smart reminders: in-app toast ~15 minutes before a timed planner item (once per item).
-export default function PlannerReminders({ data, ar }) {
+export default function PlannerReminders({ data }) {
+  const { t } = useI18n();
+
   useEffect(() => {
     const check = () => {
       const today = localDate();
@@ -20,17 +23,15 @@ export default function PlannerReminders({ data, ar }) {
         if (localStorage.getItem(key)) continue;
         localStorage.setItem(key, "1");
         toast({
-          title: ar ? "⏰ تذكير من جدولك" : "⏰ Planner reminder",
-          description: ar
-            ? (diff === 0 ? `حان وقت "${item.title}" الآن (${item.time})` : `"${item.title}" بعد ${diff} دقيقة (${item.time})`)
-            : (diff === 0 ? `"${item.title}" starts now (${item.time})` : `"${item.title}" in ${diff} min (${item.time})`),
+          title: t("reminderTitle"),
+          description: `"${item.title}" ${diff === 0 ? t("reminderStartsNow") : `${t("reminderInMin")} ${diff} ${t("minutesUnit")}`} (${item.time})`,
         });
       }
     };
     check();
     const iv = setInterval(check, 60000);
     return () => clearInterval(iv);
-  }, [data?.plannerItems, ar]);
+  }, [data?.plannerItems, t]);
 
   return null;
 }
