@@ -87,7 +87,15 @@ export default function CopyrightDoc() {
           </p>
           <div className="pt-10 grid grid-cols-2 gap-8 text-sm">
             <div>
-              <p className="text-neutral-500 mb-8">الاسم والتوقيع:</p>
+              <p className="text-neutral-500 mb-2">الاسم والتوقيع:</p>
+              <div className="mb-2">
+                <p className="text-3xl leading-relaxed text-neutral-800" style={{ fontFamily: "'Aref Ruqaa', serif" }}>
+                  {AUTHOR.nameAr}
+                </p>
+                <p className="text-xl text-neutral-700 -mt-1" dir="ltr" style={{ fontFamily: "'Great Vibes', cursive" }}>
+                  Niyar Abdullah Suwailem Alraniawi
+                </p>
+              </div>
               <p className="border-t border-neutral-400 pt-2 font-bold">{AUTHOR.nameAr}</p>
             </div>
             <div>
