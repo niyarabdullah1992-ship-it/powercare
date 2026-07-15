@@ -10,14 +10,44 @@ function toBase64Url(str) {
   for (const b of bytes) bin += String.fromCharCode(b);
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
-async function sendSystemEmail(base44, { to, subject, body }) {
+
+// Branded HTML email template — gold header, clean card, bilingual-friendly.
+const EMAIL_LOGO = 'https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/df3e1cbab_generated_image.png';
+function emailHtml({ title, lines = [], code = null, footerNote = '' }) {
+  const paragraphs = lines.map((l) => `<p style="margin:0 0 12px;font-size:14px;line-height:1.8;color:#4a3d2c;" dir="auto">${l}</p>`).join('');
+  const codeBlock = code
+    ? `<div style="margin:24px 0;text-align:center;"><span style="display:inline-block;padding:14px 28px;border-radius:12px;background:#faf4e8;border:1px solid #e3cfa8;font-size:30px;letter-spacing:10px;font-weight:700;color:#8a5f1e;" dir="ltr">${code}</span></div>`
+    : '';
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5efe4;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5efe4;padding:32px 12px;"><tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #eadfc9;">
+      <tr><td style="background:linear-gradient(180deg,#d8b578,#b8863e);padding:26px;text-align:center;">
+        <img src="${EMAIL_LOGO}" width="52" height="52" alt="PowerCare" style="display:block;margin:0 auto 8px;" />
+        <div style="font-size:20px;font-weight:700;color:#ffffff;font-family:Georgia,serif;letter-spacing:1px;">PowerCare</div>
+      </td></tr>
+      <tr><td style="padding:30px 30px 10px;">
+        <h1 style="margin:0 0 16px;font-size:18px;color:#3a2f22;font-family:Georgia,serif;" dir="auto">${title}</h1>
+        ${paragraphs}${codeBlock}
+      </td></tr>
+      <tr><td style="padding:18px 30px 26px;border-top:1px solid #f0e8d8;">
+        <p style="margin:0;font-size:12px;color:#a08c6a;text-align:center;" dir="auto">${footerNote || 'PowerCare — إدارة ذكية لفريقك ومهامك · Smart workforce management'}</p>
+      </td></tr>
+    </table>
+  </td></tr></table></body></html>`;
+}
+
+async function sendSystemEmail(base44, { to, subject, body, html }) {
   try {
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
     const msg = createMimeMessage();
     msg.setSender({ name: 'PowerCare', addr: 'no-reply@powercare.app' });
     msg.setRecipient(to);
     msg.setSubject(subject);
-    msg.addMessage({ contentType: 'text/plain', data: body });
+    if (html) {
+      msg.addMessage({ contentType: 'text/html', data: html });
+    } else {
+      msg.addMessage({ contentType: 'text/plain', data: body });
+    }
     const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -90,6 +120,15 @@ async function createLoginOtp(base44, { kind, companyId, employeeId, email }) {
     to: email,
     subject: 'PowerCare — رمز التحقق لتسجيل الدخول / Login Verification Code',
     body: `رمز التحقق الخاص بك هو: ${code}\n\nYour verification code is: ${code}\n\nصالح لمدة 10 دقائق. إذا لم تحاول تسجيل الدخول، تجاهل هذه الرسالة.\nValid for 10 minutes. If you didn't try to log in, ignore this email.`,
+    html: emailHtml({
+      title: 'رمز التحقق لتسجيل الدخول · Login Verification Code',
+      lines: [
+        'استخدم الرمز التالي لإتمام تسجيل الدخول إلى حسابك:',
+        'Use the code below to complete signing in to your account:',
+      ],
+      code,
+      footerNote: 'الرمز صالح لمدة 10 دقائق · Valid for 10 minutes — إذا لم تحاول تسجيل الدخول تجاهل هذه الرسالة · If you didn\'t try to log in, ignore this email.',
+    }),
   });
   return pendingId;
 }
@@ -439,6 +478,15 @@ Deno.serve(async (req) => {
           to: normalizedEmail,
           subject: 'مرحبًا بك في PowerCare / Welcome to PowerCare',
           body: `مرحبًا ${employeeName}،\n\nتهانينا، تم تجهيز حسابك في شركة ${companyName} على منصة PowerCare.\nيمكنك تسجيل الدخول باستخدام هذا البريد الإلكتروني وكلمة المرور المؤقتة التي يزوّدك بها مدير الشركة. بعد إدخالها سيصلك رمز تحقق صالح لمدة 10 دقائق.\n\nWelcome ${employeeName},\n\nYour account for ${companyName} is ready on PowerCare. Sign in with this email address and the temporary password provided securely by your company manager. A 10-minute verification code will then be sent to your email.`,
+          html: emailHtml({
+            title: `مرحبًا بك في PowerCare · Welcome to PowerCare`,
+            lines: [
+              `مرحبًا <b>${employeeName}</b>، تهانينا! تم تجهيز حسابك في شركة <b>${companyName}</b> على منصة PowerCare.`,
+              'يمكنك تسجيل الدخول باستخدام هذا البريد الإلكتروني وكلمة المرور المؤقتة التي يزوّدك بها مدير الشركة، وسيصلك بعدها رمز تحقق صالح لمدة 10 دقائق.',
+              `Welcome <b>${employeeName}</b> — your account for <b>${companyName}</b> is ready on PowerCare.`,
+              'Sign in with this email and the temporary password provided by your company manager. A 10-minute verification code will then be emailed to you.',
+            ],
+          }),
         });
         emailSent = true;
       } catch (emailError) {
