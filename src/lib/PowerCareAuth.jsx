@@ -15,9 +15,18 @@ const RECENT_WRITE_GUARD_MS = 4000;
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(null);
-  const [company, setCompany] = useState(null);
-  const [data, setData] = useState(null);
+  // Read the saved session synchronously on first render — otherwise a direct
+  // visit to /app redirects logged-in users to the landing page before the
+  // first effect has a chance to restore the session.
+  const [session, setSession] = useState(() => getSession());
+  const [company, setCompany] = useState(() => {
+    const s = getSession();
+    return s?.companyId ? getCompanyMeta(s.companyId) : null;
+  });
+  const [data, setData] = useState(() => {
+    const s = getSession();
+    return s?.companyId ? getCompanyData(s.companyId) : null;
+  });
   const [tick, setTick] = useState(0); // force refresh on store changes
   const [isSyncing, setIsSyncing] = useState(false); // true while pulling the latest data from the cloud
   // Per-collection version stamps from the last successful pull — lets each poll skip
