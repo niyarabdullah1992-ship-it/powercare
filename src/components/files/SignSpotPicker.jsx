@@ -5,16 +5,55 @@ import * as pdfjsLib from "pdfjs-dist";
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 // Signer-side spot picker: the signer clicks anywhere on the document to
-// choose where their own signature will be stamped.
-export default function SignSpotPicker({ docUrl, initialSpot, signerName, ar, onConfirm, onClose }) {
+// choose where their own signature will be stamped. Pinch with two fingers
+// (or use the slider) to resize the signature.
+export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100, signerName, ar, onConfirm, onClose }) {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [page, setPage] = useState(initialSpot?.page || 1);
   const [numPages, setNumPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [spot, setSpot] = useState(initialSpot || null); // {page,x,y}
+  const [scale, setScale] = useState(initialScale); // signature size % (50–200)
+  const scaleRef = useRef(initialScale);
+  scaleRef.current = scale;
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
+
+  // Pinch-to-resize: two fingers on the preview adjust the signature size.
+  // Attached natively with { passive: false } so preventDefault blocks the
+  // browser's page-zoom only during a two-finger pinch — scrolling stays free.
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    let startDist = 0;
+    let startScale = 100;
+    const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const onTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        startDist = dist(e.touches);
+        startScale = scaleRef.current;
+      }
+    };
+    const onTouchMove = (e) => {
+      if (e.touches.length === 2 && startDist > 0) {
+        if (e.cancelable) e.preventDefault();
+        const next = Math.round(startScale * (dist(e.touches) / startDist));
+        setScale(Math.min(200, Math.max(50, next)));
+      }
+    };
+    const onTouchEnd = () => { startDist = 0; };
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    el.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,7 +108,7 @@ export default function SignSpotPicker({ docUrl, initialSpot, signerName, ar, on
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <p className="text-sm font-body font-medium flex items-center gap-1.5">
             <MousePointerClick className="w-4 h-4 text-accent" />
-            {ar ? "انقر على المكان الذي تريد التوقيع فيه" : "Click where you want to sign"}
+            {ar ? "انقر على مكان التوقيع — واقرص بإصبعين للتكبير/التصغير" : "Tap where you want to sign — pinch to resize"}
           </p>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
         </div>
@@ -93,7 +132,7 @@ export default function SignSpotPicker({ docUrl, initialSpot, signerName, ar, on
                 style={{
                   left: `${spot.x}%`,
                   top: `${spot.y}%`,
-                  width: "22%",
+                  width: `${22 * (scale / 100)}%`,
                   transform: "translate(-50%, -50%)",
                   border: "2px solid #b45309",
                   backgroundColor: "#b453091a",
@@ -104,6 +143,23 @@ export default function SignSpotPicker({ docUrl, initialSpot, signerName, ar, on
               </div>
             )}
           </div>
+        </div>
+
+        {/* Size control — mirrors the pinch gesture for non-touch devices */}
+        <div className="px-4 py-2.5 border-t border-border space-y-1">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-body">
+            <span>{ar ? "حجم التوقيع" : "Signature size"}</span>
+            <span dir="ltr">{scale}%</span>
+          </div>
+          <input
+            type="range"
+            min={50}
+            max={200}
+            step={5}
+            value={scale}
+            onChange={(e) => setScale(Number(e.target.value))}
+            className="w-full accent-current"
+          />
         </div>
 
         <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-border">
@@ -123,7 +179,7 @@ export default function SignSpotPicker({ docUrl, initialSpot, signerName, ar, on
               {ar ? "إلغاء" : "Cancel"}
             </button>
             <button
-              onClick={() => onConfirm(spot)}
+              onClick={() => onConfirm(spot, scale)}
               disabled={!spot}
               className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-foreground text-background text-xs font-body disabled:opacity-40"
             >

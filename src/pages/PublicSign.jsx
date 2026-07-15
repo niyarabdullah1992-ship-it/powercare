@@ -247,9 +247,10 @@ export default function PublicSign() {
         <SignSpotPicker
           docUrl={info.docUrl}
           initialSpot={chosenSpot || info.signer.spot || null}
+          initialScale={sigSize}
           signerName={info.signer.name}
           ar={ar}
-          onConfirm={(spot) => { setChosenSpot(spot); setShowSpotPicker(false); }}
+          onConfirm={(spot, scale) => { setChosenSpot(spot); setSigSize(scale); setShowSpotPicker(false); }}
           onClose={() => setShowSpotPicker(false)}
         />
       )}
