@@ -34,6 +34,7 @@ const Employees = lazy(() => import('./pages/Employees'));
 const EmployeeProfile = lazy(() => import('./pages/EmployeeProfile'));
 const HR = lazy(() => import('./pages/HR'));
 const Payroll = lazy(() => import('./pages/Payroll'));
+const Integrations = lazy(() => import('./pages/Integrations'));
 const Performance = lazy(() => import('./pages/Performance'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Safety = lazy(() => import('./pages/Safety'));
@@ -127,6 +128,7 @@ function AppRoutes() {
       <Route path="/app/employees/:employeeId" element={<RequireAuth><EmployeeProfile /></RequireAuth>} />
       <Route path="/app/hr" element={<RequireAuth><HR /></RequireAuth>} />
       <Route path="/app/payroll" element={<RequireAuth><Payroll /></RequireAuth>} />
+      <Route path="/app/integrations" element={<RequireAuth><Integrations /></RequireAuth>} />
       <Route path="/app/performance" element={<RequireAuth><Performance /></RequireAuth>} />
       <Route path="/app/reports" element={<RequireAuth><Reports /></RequireAuth>} />
       <Route path="/app/safety" element={<RequireAuth><Safety /></RequireAuth>} />

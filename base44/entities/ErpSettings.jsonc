@@ -1,0 +1,53 @@
+{
+  "name": "ErpSettings",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company (tenant) these ERP integration settings belong to."
+    },
+    "apiKey": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "API key external ERP systems use to read this company's data via the erpApi function."
+    },
+    "webhookUrl": {
+      "type": "string",
+      "description": "External ERP endpoint that receives event notifications (POST, HMAC-signed)."
+    },
+    "webhookEvents": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Event names to deliver (empty = all): employee_added, task_created, report_created, payroll_item_paid."
+    }
+  },
+  "required": [
+    "companyId"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
