@@ -3,7 +3,7 @@
 
 const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/signing", "/app/assistant", "/app/complaints", "/app/performance", "/app/help"];
 const MANAGER_EXTRA = ["/app/employees", "/app/stations", "/app/reports", "/app/safety"];
-const EXEC_EXTRA = ["/app/hr", "/app/executive"];
+const EXEC_EXTRA = ["/app/hr", "/app/executive", "/app/payroll"];
 // Individual (personal) workspaces: verified digital signing only.
 const INDIVIDUAL = ["/app/signing", "/app/help"];
 
