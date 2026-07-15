@@ -193,10 +193,14 @@ Deno.serve(async (req) => {
       const { password } = body;
       if (!email || !password) return Response.json({ error: 'Missing credentials' }, { status: 400 });
       const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email }, '-created_date');
-      let found = null;
+      // One email may own several accounts (e.g. a company AND a personal/individual
+      // workspace) — collect every account this password unlocks so the client can
+      // let the user pick which one to enter after the OTP step.
+      const matches = [];
       for (const account of accounts) {
-        if (await verifyPassword(password, account.ownerPassword)) { found = account; break; }
+        if (await verifyPassword(password, account.ownerPassword)) matches.push(account);
       }
+      const found = matches[0] || null;
       if (!found) return Response.json({ company: null });
       // Upgrade legacy plaintext/SHA-256 records to slow PBKDF2 after a valid login.
       if (!String(found.ownerPassword).startsWith('pbkdf2$')) {
@@ -205,7 +209,10 @@ Deno.serve(async (req) => {
       // Password verified — second factor for owners too: email a one-time code
       // instead of issuing the session directly (OTP is mandatory for everyone).
       const pendingId = await createLoginOtp(base44, { kind: 'owner', companyId: found.companyId, email: found.ownerEmail });
-      return Response.json({ otpRequired: true, pendingId });
+      return Response.json({
+        otpRequired: true, pendingId,
+        accounts: matches.map((a) => ({ companyId: a.companyId, name: a.name, plan: a.plan })),
+      });
     }
 
     // Per-employee login — each employee signs in with their own email + personal password.
@@ -277,11 +284,18 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'invalid_code' }, { status: 401 });
       }
       await base44.asServiceRole.entities.LoginOtp.delete(rec.id);
-      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: rec.companyId });
+      // Owner emails may own multiple accounts — honor the account the user chose,
+      // but only if that account really belongs to the same verified email.
+      let targetCompanyId = rec.companyId;
+      if (rec.kind === 'owner' && body.chooseCompanyId && body.chooseCompanyId !== rec.companyId) {
+        const chosen = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: body.chooseCompanyId, ownerEmail: rec.email });
+        if (chosen[0]) targetCompanyId = body.chooseCompanyId;
+      }
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: targetCompanyId });
       const acc = accounts[0] || {};
       if (rec.kind === 'owner') {
         const { ownerPassword: _pw2, ...safe } = acc;
-        const token = await makeSession(base44, rec.companyId, null, 'owner');
+        const token = await makeSession(base44, targetCompanyId, null, 'owner');
         return Response.json({ kind: 'owner', company: safe, token });
       }
       const token = await makeSession(base44, rec.companyId, rec.employeeId, 'employee');

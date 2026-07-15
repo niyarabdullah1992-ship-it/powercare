@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { MailCheck, Loader2 } from "lucide-react";
+import { MailCheck, Loader2, Building2, User, Check } from "lucide-react";
 
 // Second login step: the user types the 6-digit code that was emailed to them.
-export default function OtpStep({ email, onVerify, onResend, onBack }) {
+// When one email owns several workspaces (company + individual), an account
+// picker appears so the user chooses which one to enter.
+export default function OtpStep({ email, accounts = [], onVerify, onResend, onBack }) {
   const { lang } = useI18n();
   const ar = lang === "ar";
   const [code, setCode] = useState("");
+  const [chosenId, setChosenId] = useState(accounts[0]?.companyId || null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -16,7 +19,7 @@ export default function OtpStep({ email, onVerify, onResend, onBack }) {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const ok = await onVerify(code.trim());
+    const ok = await onVerify(code.trim(), chosenId);
     setLoading(false);
     if (!ok) setError(ar ? "الرمز غير صحيح أو منتهي الصلاحية" : "Invalid or expired code");
   };
@@ -46,6 +49,38 @@ export default function OtpStep({ email, onVerify, onResend, onBack }) {
         </p>
         <p className="text-sm font-body font-semibold text-[#3a2f22]" dir="ltr">{email}</p>
       </div>
+      {accounts.length > 1 && (
+        <div className="space-y-2">
+          <p className="text-xs font-body text-[#3a2f22]/60 text-center">
+            {ar ? "هذا البريد مرتبط بأكثر من حساب — اختر الحساب الذي تريد الدخول إليه:" : "This email has more than one account — choose which one to enter:"}
+          </p>
+          {accounts.map((a) => {
+            const isIndividual = String(a.plan || "").toLowerCase() === "individual";
+            const selected = chosenId === a.companyId;
+            return (
+              <button
+                key={a.companyId}
+                type="button"
+                onClick={() => setChosenId(a.companyId)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-start transition-colors ${
+                  selected ? "border-landing-gold bg-landing-gold/10" : "border-landing-gold/20 bg-landing-bg hover:border-landing-gold/40"
+                }`}
+              >
+                <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-landing-gold shrink-0">
+                  {isIndividual ? <User className="w-4 h-4" strokeWidth={1.75} /> : <Building2 className="w-4 h-4" strokeWidth={1.75} />}
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-body font-semibold text-[#3a2f22] truncate">{a.name || a.companyId}</span>
+                  <span className="block text-xs font-body text-[#3a2f22]/55">
+                    {isIndividual ? (ar ? "حساب فردي" : "Individual account") : (ar ? `شركة — ${a.plan || ""}` : `Company — ${a.plan || ""}`)}
+                  </span>
+                </span>
+                {selected && <Check className="w-4 h-4 text-landing-gold shrink-0" strokeWidth={2.5} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
       <input
         type="text"
         inputMode="numeric"

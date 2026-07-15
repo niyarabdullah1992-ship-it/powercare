@@ -216,8 +216,8 @@ export function AuthProvider({ children }) {
   };
 
   // Step 2: exchanges the emailed code for the real session.
-  const verifyOtp = async (pendingId, code, password) => {
-    const c = await completeLoginOtp(pendingId, code, password);
+  const verifyOtp = async (pendingId, code, password, chooseCompanyId) => {
+    const c = await completeLoginOtp(pendingId, code, password, chooseCompanyId);
     if (c) refresh();
     return c;
   };

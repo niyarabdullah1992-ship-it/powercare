@@ -595,7 +595,7 @@ export async function startLogin(email, password) {
   try {
     const res = await invokeDirectory({ action: "findAccountByEmail", email, password });
     if (res?.data?.token && res.data.kind === "owner") return { company: finishOwnerLogin(res.data) };
-    if (res?.data?.otpRequired) return { otpRequired: true, pendingId: res.data.pendingId };
+    if (res?.data?.otpRequired) return { otpRequired: true, pendingId: res.data.pendingId, accounts: res.data.accounts || [] };
   } catch {
     // network/backend issue — try employee login, then the local fallback below
   }
@@ -635,9 +635,16 @@ function finishOwnerLogin(result) {
       createdAt: remote.created_date,
     };
     reg.companies.push(company);
+  } else {
+    // Refresh stale local meta — a locally-cached plan/name from an old login must
+    // never override the server's authoritative account record.
+    company.name = remote.name ?? company.name;
+    company.plan = remote.plan ?? company.plan;
+    company.allowedEmailDomain = remote.allowedEmailDomain ?? company.allowedEmailDomain;
   }
   saveRegistry(reg);
   if (!getCompanyData(company.id)) write(companyKey(company.id), emptyCompanyData(company));
+  else cacheCloudData(company.id, { name: remote.name, plan: remote.plan });
   setSession({ companyId: company.id, userId: ensureOwnerUser(company.id, company) });
   return company;
 }
@@ -651,10 +658,10 @@ export async function googleCompanyLogin() {
   }
 }
 
-export async function completeLoginOtp(pendingId, code, typedPassword) {
+export async function completeLoginOtp(pendingId, code, typedPassword, chooseCompanyId) {
   let result = null;
   try {
-    const res = await invokeDirectory({ action: "verifyLoginOtp", pendingId, code });
+    const res = await invokeDirectory({ action: "verifyLoginOtp", pendingId, code, chooseCompanyId: chooseCompanyId || null });
     result = res?.data;
   } catch {
     return null; // wrong/expired code (server returned 401) or network failure

@@ -24,6 +24,7 @@ export default function Landing() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [otpPending, setOtpPending] = useState(null); // pendingId while awaiting the emailed code
+  const [otpAccounts, setOtpAccounts] = useState([]); // all accounts this email+password unlocks
   const [resetOpen, setResetOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const currentLang = languages.find((l) => l.code === lang);
@@ -64,13 +65,13 @@ export default function Landing() {
     setSubmitting(true);
     const r = await login(email, password);
     if (!r) setError(t("errBadCredentials"));
-    else if (r.otpRequired) setOtpPending(r.pendingId);
+    else if (r.otpRequired) { setOtpPending(r.pendingId); setOtpAccounts(r.accounts || []); }
     setSubmitting(false);
     // r.company → session set, useEffect above redirects to /app
   };
 
-  const handleVerifyOtp = async (code) => {
-    const c = await verifyOtp(otpPending, code, password);
+  const handleVerifyOtp = async (code, chooseCompanyId) => {
+    const c = await verifyOtp(otpPending, code, password, chooseCompanyId);
     return !!c;
   };
 
@@ -78,6 +79,7 @@ export default function Landing() {
     const result = await login(email, password);
     if (!result?.otpRequired) return false;
     setOtpPending(result.pendingId);
+    setOtpAccounts(result.accounts || []);
     return true;
   };
 
@@ -161,7 +163,7 @@ export default function Landing() {
             </div>
 
               {otpPending ? (
-                <OtpStep email={email} onVerify={handleVerifyOtp} onResend={handleResendOtp} onBack={() => setOtpPending(null)} />
+                <OtpStep email={email} accounts={otpAccounts} onVerify={handleVerifyOtp} onResend={handleResendOtp} onBack={() => setOtpPending(null)} />
               ) : resetOpen ? (
                 <PasswordResetForm initialEmail={email} onDone={(value) => { setEmail(value); setResetOpen(false); setError(""); }} onBack={() => setResetOpen(false)} />
               ) : (
