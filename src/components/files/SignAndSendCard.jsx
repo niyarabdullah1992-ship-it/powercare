@@ -9,7 +9,8 @@ import SignedDocActions from "@/components/files/SignedDocActions";
 
 // Merges the verification badge (with QR) onto image documents and returns the
 // signed PNG blob; PDFs are stamped directly via signPdfFile.
-async function signImageFile(docUrl, signerName, sigId, spot, qr) {
+async function signImageFile(docUrl, signerName, sigId, spot, qr, sizeScale = 1) {
+  const sc = Math.min(Math.max(Number(sizeScale) || 1, 0.5), 2);
   const load = (src) => new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -24,7 +25,7 @@ async function signImageFile(docUrl, signerName, sigId, spot, qr) {
   const ctx = canvas.getContext("2d");
   ctx.drawImage(doc, 0, 0);
   const badge = makeVerificationBadgeCanvas(sigId, signerName, qr);
-  const bw = Math.min(Math.max(220, doc.width * 0.3), doc.width - 16);
+  const bw = Math.min(Math.max(220, doc.width * 0.3) * sc, doc.width - 16);
   const bh = bw * (badge.height / badge.width);
   const bx = spot
     ? Math.min(Math.max((doc.width * spot.x) / 100 - bw / 2, 8), doc.width - bw - 8)
@@ -50,6 +51,7 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
   const [error, setError] = useState("");
   const [placing, setPlacing] = useState(false);
   const [manualSpot, setManualSpot] = useState(null);
+  const [sigSize, setSigSize] = useState(100); // signature size % (50–200)
   const fileRef = useRef(null);
 
   const handleUpload = async (e) => {
@@ -89,9 +91,9 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
       const qr = await (doc.qrPromise || null);
       let signedUrl, signedBytes;
       if (doc.isPdf) {
-        ({ url: signedUrl, bytes: signedBytes } = await signPdfFile(doc.url, signatureUrl, signerName, doc.sigId, spot, qr));
+        ({ url: signedUrl, bytes: signedBytes } = await signPdfFile(doc.url, signatureUrl, signerName, doc.sigId, spot, qr, sigSize / 100));
       } else {
-        const signedBlob = await signImageFile(doc.url, signerName, doc.sigId, spot, qr);
+        const signedBlob = await signImageFile(doc.url, signerName, doc.sigId, spot, qr, sigSize / 100);
         ({ url: signedUrl, bytes: signedBytes } = await imageBlobToPdf(signedBlob));
       }
       // Fingerprint the FINAL signed file and register it in the verification
@@ -181,7 +183,8 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
           sigId={doc.sigId}
           signerName={signerName}
           ar={ar}
-          onConfirm={(spot) => { setManualSpot(spot); setPlacing(false); }}
+          initialScale={sigSize}
+          onConfirm={(spot, scale) => { setManualSpot(spot); if (scale) setSigSize(scale); setPlacing(false); }}
           onClose={() => setPlacing(false)}
         />
       )}

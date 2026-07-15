@@ -13,7 +13,8 @@ async function badgePngBytes(sigId, signerName, qrImg) {
 // Stamps the verification badge onto the PDF, uploads the signed copy and
 // returns { url, bytes } — bytes are used to hash the file locally without
 // re-downloading it.
-export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot, qrImg) {
+export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot, qrImg, sizeScale = 1) {
+  const sc = Math.min(Math.max(Number(sizeScale) || 1, 0.5), 2);
   const pdfBytes = await fetch(docUrl).then((r) => r.arrayBuffer());
   const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   const badge = await badgePngBytes(sigId, signerName, qrImg);
@@ -21,7 +22,7 @@ export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot, qrImg
   const pages = pdf.getPages();
   const page = spot ? pages[Math.min(spot.page - 1, pages.length - 1)] : pages[pages.length - 1];
   const { width, height } = page.getSize();
-  const bw = Math.min(240, width * 0.42);
+  const bw = Math.min(240, width * 0.42) * sc;
   const bh = bw * badge.ratio;
   let bx, by;
   if (spot) {

@@ -8,7 +8,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLi
 // DocuSign-style placement: preview the document's pages and click exactly
 // where the signature should be stamped. Returns { page, x, y } — the center
 // of the signature as percentages measured from the page's top-left corner.
-export default function SignaturePlacementModal({ doc, signatureUrl, sigId, signerName, ar, onConfirm, onClose }) {
+export default function SignaturePlacementModal({ doc, signatureUrl, sigId, signerName, ar, initialScale = 100, onConfirm, onClose }) {
   // Verification badge preview (fingerprint + encrypted ID) shown under the signature.
   const badgeUrl = React.useMemo(
     () => (sigId ? makeVerificationBadgeCanvas(sigId, signerName).toDataURL("image/png") : null),
@@ -20,8 +20,44 @@ export default function SignaturePlacementModal({ doc, signatureUrl, sigId, sign
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [spot, setSpot] = useState(null); // { page, x, y } in %
+  const [scale, setScale] = useState(initialScale); // signature size % (50–200)
+  const scaleRef = useRef(initialScale);
+  scaleRef.current = scale;
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
+
+  // Pinch-to-resize: two fingers on the preview adjust the signature size.
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    let startDist = 0;
+    let startScale = 100;
+    const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const onTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        startDist = dist(e.touches);
+        startScale = scaleRef.current;
+      }
+    };
+    const onTouchMove = (e) => {
+      if (e.touches.length === 2 && startDist > 0) {
+        if (e.cancelable) e.preventDefault();
+        const next = Math.round(startScale * (dist(e.touches) / startDist));
+        setScale(Math.min(200, Math.max(50, next)));
+      }
+    };
+    const onTouchEnd = () => { startDist = 0; };
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    el.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, []);
 
   // Load the PDF once.
   useEffect(() => {
@@ -87,14 +123,14 @@ export default function SignaturePlacementModal({ doc, signatureUrl, sigId, sign
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <p className="text-sm font-body font-medium flex items-center gap-1.5">
             <MousePointerClick className="w-4 h-4 text-accent" />
-            {ar ? "انقر على المكان الذي تريد وضع التوقيع فيه" : "Click where you want to place the signature"}
+            {ar ? "انقر على مكان التوقيع — واقرص بإصبعين للتكبير/التصغير" : "Tap where you want the signature — pinch to resize"}
           </p>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
         </div>
 
         {/* Page preview */}
-        <div className="flex-1 overflow-auto bg-muted/50 p-4">
-          <div ref={wrapRef} onClick={handleClick} className="relative mx-auto max-w-full cursor-crosshair bg-white shadow-md">
+        <div className="flex-1 min-h-0 overflow-auto overscroll-contain bg-muted/50 p-4" style={{ WebkitOverflowScrolling: "touch" }}>
+          <div ref={wrapRef} onClick={handleClick} className="relative mx-auto max-w-full cursor-crosshair bg-white shadow-md" style={{ touchAction: "pan-y" }}>
             {doc.isPdf ? (
               <canvas ref={canvasRef} className="block w-full" />
             ) : (
@@ -114,7 +150,7 @@ export default function SignaturePlacementModal({ doc, signatureUrl, sigId, sign
             {spot && spot.page === page && (
               <div
                 className="absolute pointer-events-none border-2 border-accent rounded-md bg-accent/10 p-1"
-                style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: "24%", transform: "translate(-50%, -50%)" }}
+                style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${24 * (scale / 100)}%`, transform: "translate(-50%, -50%)" }}
               >
                 {badgeUrl ? (
                   <img src={badgeUrl} alt="" className="w-full" draggable={false} />
@@ -124,6 +160,23 @@ export default function SignaturePlacementModal({ doc, signatureUrl, sigId, sign
               </div>
             )}
           </div>
+        </div>
+
+        {/* Size control — mirrors the pinch gesture for non-touch devices */}
+        <div className="px-4 py-2.5 border-t border-border space-y-1">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-body">
+            <span>{ar ? "حجم التوقيع" : "Signature size"}</span>
+            <span dir="ltr">{scale}%</span>
+          </div>
+          <input
+            type="range"
+            min={50}
+            max={200}
+            step={5}
+            value={scale}
+            onChange={(e) => setScale(Number(e.target.value))}
+            className="w-full accent-current"
+          />
         </div>
 
         {/* Footer */}
@@ -144,7 +197,7 @@ export default function SignaturePlacementModal({ doc, signatureUrl, sigId, sign
               {ar ? "إلغاء" : "Cancel"}
             </button>
             <button
-              onClick={() => onConfirm(spot)}
+              onClick={() => onConfirm(spot, scale)}
               disabled={!spot}
               className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-foreground text-background text-xs font-body disabled:opacity-40"
             >
