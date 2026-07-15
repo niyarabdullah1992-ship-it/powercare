@@ -1,19 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, FileBarChart2 } from "lucide-react";
+import { ShieldCheck, FileBarChart2, ClipboardCheck, Archive } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations } from "@/lib/permissions";
 import { updateSafetyRecord, recordSafetyIncident } from "@/lib/store";
 import PageHeader from "@/components/PageHeader";
 import StationSafetyCard from "@/components/safety/StationSafetyCard";
+import RecordSmartArchive from "@/components/RecordSmartArchive";
 
 // HSE management section: safety data is entered and approved per station here,
 // then the HSE reports (inside Comprehensive Reports) are calculated from it.
 export default function Safety() {
-  const { lang } = useI18n();
+  const { lang, dir } = useI18n();
   const { data, currentUser, company } = useAuth();
   const ar = lang === "ar";
+  const [tab, setTab] = useState("manage");
 
   if (!data || !currentUser) return null;
 
@@ -36,27 +38,63 @@ export default function Safety() {
         icon={ShieldCheck}
       />
 
-      <Link to="/app/reports" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-        <FileBarChart2 className="w-3.5 h-3.5" />
-        {ar ? "عرض تقارير السلامة ضمن التقارير الشاملة" : "View HSE reports in Comprehensive Reports"}
-      </Link>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {stations.map((station) => (
-          <StationSafetyCard
-            key={station.id}
-            station={station}
-            rec={recFor(station.id)}
-            canEdit={canEdit}
-            lang={lang}
-            onUpdate={(updates) => handleUpdate(station.id, updates)}
-            onApprove={() => handleApprove(station.id)}
-            onIncident={(desc) => recordSafetyIncident(company.id, station.id, desc)}
-          />
-        ))}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-1.5">
+          {[
+            { key: "manage", icon: ClipboardCheck, label: ar ? "إدارة السلامة" : "Manage" },
+            { key: "archive", icon: Archive, label: ar ? "الأرشيف الذكي" : "Smart Archive" },
+          ].map((tb) => (
+            <button
+              key={tb.key}
+              onClick={() => setTab(tb.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${tab === tb.key ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+            >
+              <tb.icon className="w-3.5 h-3.5" /> {tb.label}
+            </button>
+          ))}
+        </div>
+        <Link to="/app/reports" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+          <FileBarChart2 className="w-3.5 h-3.5" />
+          {ar ? "عرض تقارير السلامة ضمن التقارير الشاملة" : "View HSE reports in Comprehensive Reports"}
+        </Link>
       </div>
-      {stations.length === 0 && (
-        <p className="text-sm text-muted-foreground font-body text-center py-8">{ar ? "لا توجد محطات بعد — أضف محطة أولًا." : "No stations yet — add a station first."}</p>
+
+      {tab === "archive" ? (
+        // Smart archive — every logged safety incident, filed under Year → Month folders.
+        <RecordSmartArchive
+          items={stations.flatMap((station) =>
+            ((recFor(station.id)?.incidentLog) || []).map((i, idx) => ({
+              id: `${station.id}_${i.at || idx}`,
+              date: i.at,
+              title: station.name,
+              text: i.description || "",
+              badge: ar ? "حادث" : "Incident",
+            }))
+          )}
+          lang={lang}
+          dir={dir}
+          emptyLabel={ar ? "لا توجد حوادث مؤرشفة — يُؤرشف كل حادث تلقائيًا حسب شهره." : "No archived incidents — each incident is auto-filed by its month."}
+        />
+      ) : (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {stations.map((station) => (
+              <StationSafetyCard
+                key={station.id}
+                station={station}
+                rec={recFor(station.id)}
+                canEdit={canEdit}
+                lang={lang}
+                onUpdate={(updates) => handleUpdate(station.id, updates)}
+                onApprove={() => handleApprove(station.id)}
+                onIncident={(desc) => recordSafetyIncident(company.id, station.id, desc)}
+              />
+            ))}
+          </div>
+          {stations.length === 0 && (
+            <p className="text-sm text-muted-foreground font-body text-center py-8">{ar ? "لا توجد محطات بعد — أضف محطة أولًا." : "No stations yet — add a station first."}</p>
+          )}
+        </>
       )}
     </div>
   );
