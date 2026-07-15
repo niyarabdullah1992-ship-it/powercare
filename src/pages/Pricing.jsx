@@ -77,7 +77,7 @@ export default function Pricing() {
       pendingCompanyRef.current = null;
       deleteCompany(company.id);
       setError(saved === "email_exists"
-        ? (lang === "ar" ? "هذا البريد الإلكتروني مسجّل مسبقًا — يرجى تسجيل الدخول بدلًا من إنشاء حساب جديد." : "This email is already registered — please sign in instead of creating a new account.")
+        ? (lang === "ar" ? "لديك حساب من نفس النوع مسجّل بهذا البريد — يرجى تسجيل الدخول بدلًا من إنشاء حساب جديد." : "This email already has an account of this type — please sign in instead of creating a new one.")
         : (lang === "ar" ? "تعذر حفظ حساب الشركة. يرجى المحاولة مرة أخرى." : "The company account could not be saved. Please try again."));
       return false;
     }
@@ -112,7 +112,7 @@ export default function Pricing() {
       }
     } catch (e) {
       setError(e?.response?.data?.error === "email_exists"
-        ? (lang === "ar" ? "هذا البريد الإلكتروني مسجّل مسبقًا — يرجى تسجيل الدخول بدلًا من إنشاء حساب جديد." : "This email is already registered — please sign in instead of creating a new account.")
+        ? (lang === "ar" ? "لديك حساب شركة مسجّل بهذا البريد — يرجى تسجيل الدخول بدلًا من إنشاء حساب جديد." : "This email already has a company account — please sign in instead of creating a new one.")
         : t("checkoutGenericError"));
     } finally {
       setLoading(false);

@@ -27,10 +27,12 @@ Deno.serve(async (req) => {
       if (!priceId) return Response.json({ error: 'Invalid plan' }, { status: 400 });
       if (!companyName || !ownerEmail) return Response.json({ error: 'Missing companyName or ownerEmail' }, { status: 400 });
 
-      // Block duplicate signups: this email already owns a company account.
+      // Block duplicate signups: this email already owns another COMPANY account.
+      // An existing individual workspace does not block a paid company signup.
       const base44 = createClientFromRequest(req);
       const dupes = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: String(ownerEmail).trim().toLowerCase() });
-      if (dupes.length) return Response.json({ error: 'email_exists' }, { status: 409 });
+      const companyDupes = dupes.filter((d) => String(d.plan || '').toLowerCase() !== 'individual');
+      if (companyDupes.length) return Response.json({ error: 'email_exists' }, { status: 409 });
 
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',

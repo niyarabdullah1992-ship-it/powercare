@@ -332,12 +332,15 @@ Deno.serve(async (req) => {
       } else if (!storedPassword && existing.length) {
         storedPassword = existing[0].ownerPassword;
       }
-      // Block duplicate signups: a brand-new account may not reuse an email that
-      // already owns another company account.
+      // Block duplicate signups of the SAME kind only: one email may own both an
+      // individual workspace AND a company account (the login picker lets the
+      // user choose), but not two accounts of the same kind.
       if (!existing.length) {
         const email = String(ownerEmail || '').trim().toLowerCase();
         const dupes = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email });
-        if (dupes.length) return Response.json({ error: 'email_exists' }, { status: 409 });
+        const newIsIndividual = String(plan || '').toLowerCase() === 'individual';
+        const sameKind = dupes.some((d) => (String(d.plan || '').toLowerCase() === 'individual') === newIsIndividual);
+        if (sameKind) return Response.json({ error: 'email_exists' }, { status: 409 });
       }
       const fields = { companyId, name, ownerEmail, ownerPassword: storedPassword, plan, allowedEmailDomain: allowedEmailDomain || '' };
       let token = null;
