@@ -102,7 +102,7 @@ export default function Landing() {
             className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-landing-gold/25 bg-white text-sm font-body text-[#3a2f22]/90 hover:bg-white/70 transition-colors"
           >
             <Globe className="w-4 h-4" strokeWidth={1.75} />
-            <span>{currentLang?.flag} {currentLang?.code.toUpperCase()}</span>
+            <span>{currentLang?.flag} {currentLang?.label}</span>
             <ChevronDown className={`w-3.5 h-3.5 transition-transform ${langOpen ? "rotate-180" : ""}`} strokeWidth={1.75} />
           </button>
           {langOpen && (
@@ -115,7 +115,7 @@ export default function Landing() {
                     lang === l.code ? "bg-landing-gold text-white" : "text-[#3a2f22]/80 hover:bg-landing-bg"
                   }`}
                 >
-                  <span>{l.flag} {l.code.toUpperCase()}</span>
+                  <span>{l.flag} {l.label}</span>
                   {lang === l.code && <Check className="w-3.5 h-3.5" strokeWidth={2} />}
                 </button>
               ))}
