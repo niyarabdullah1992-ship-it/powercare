@@ -3,6 +3,7 @@ import { Droppable, Draggable } from "@hello-pangea/dnd";
 import { ChevronRight, Home, Folder, Plus, Pencil, Trash2, GripVertical, ListTodo } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import { getParentPath, getLeafName } from "@/lib/taskFolders";
+import { groupTasksByPeriod, SCOPE_BADGES } from "@/lib/taskTimeScope";
 
 // Flat folder browser (no visual nesting): shows only the current folder's own
 // subfolders and tasks as independent cards. Opening a subfolder navigates into
@@ -23,6 +24,9 @@ export default function FolderTree({
     .filter((f) => f.station_id === stationId && getParentPath(f.path) === currentPath)
     .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
   const directTasks = filterTasks(tasksAll.filter((tg) => (tg.section || null) === currentPath));
+  const ar = dir === "rtl";
+  // Time-scope archive: annual goals first, then half-year, quarters, then months.
+  const periodGroups = groupTasksByPeriod(directTasks, ar);
   const isEmpty = children.length === 0 && directTasks.length === 0;
   const key = currentPath || "root";
 
@@ -199,15 +203,34 @@ export default function FolderTree({
             className={`space-y-3 rounded-lg transition-colors ${snapshot.isDraggingOver ? "bg-accent/10 ring-2 ring-accent/30 p-1.5" : ""}`}
             style={{ minHeight: 10 }}
           >
-            {directTasks.map((tg, idx) => (
-              <Draggable key={tg.id} draggableId={`task::${tg.id}`} index={idx} isDragDisabled={!canManage}>
-                {(taskProvided, taskSnapshot) => (
-                  <div ref={taskProvided.innerRef} {...taskProvided.draggableProps} {...taskProvided.dragHandleProps} className={taskSnapshot.isDragging ? "opacity-90 shadow-lg" : ""}>
-                    {renderTask(tg)}
-                  </div>
-                )}
-              </Draggable>
-            ))}
+            {(() => {
+              let runningIdx = 0;
+              return periodGroups.map((grp) => {
+                const badge = SCOPE_BADGES[grp.scope.type];
+                return (
+                  <React.Fragment key={grp.key}>
+                    <div className="flex items-center gap-2 pt-2">
+                      <p className={`text-xs font-body font-semibold ${grp.scope.type === "yearly" ? "text-amber-700" : "text-muted-foreground"}`}>{grp.label}</p>
+                      <span className={`px-2 py-0.5 rounded-full border text-[10px] font-body ${badge.cls}`}>{ar ? badge.ar : badge.en}</span>
+                      <span className="h-px flex-1 bg-border" />
+                      <span className="text-[10px] text-muted-foreground font-body">{grp.tasks.length}</span>
+                    </div>
+                    {grp.tasks.map((tg) => {
+                      const idx = runningIdx++;
+                      return (
+                        <Draggable key={tg.id} draggableId={`task::${tg.id}`} index={idx} isDragDisabled={!canManage}>
+                          {(taskProvided, taskSnapshot) => (
+                            <div ref={taskProvided.innerRef} {...taskProvided.draggableProps} {...taskProvided.dragHandleProps} className={taskSnapshot.isDragging ? "opacity-90 shadow-lg" : ""}>
+                              {renderTask(tg)}
+                            </div>
+                          )}
+                        </Draggable>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              });
+            })()}
             {provided.placeholder}
           </div>
         )}
