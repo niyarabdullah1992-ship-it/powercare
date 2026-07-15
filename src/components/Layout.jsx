@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, GripVertical, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, CalendarDays, HelpCircle, BookOpen, Calendar,
+  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, CalendarDays, HelpCircle, BookOpen, Calendar,
 } from "lucide-react";
 import PlannerReminders from "@/components/individual/PlannerReminders";
 import { toast } from "@/components/ui/use-toast";
@@ -172,44 +172,44 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-background flex" dir={dir}>
-      {/* Sidebar */}
-      <aside className={`hidden md:flex flex-col w-64 ${sidebarSide} top-0 h-screen ${dir === "rtl" ? "border-l" : "border-r"} sticky border-border bg-card/95 shadow-sm pt-safe`}>
-        <div className="px-6 py-6 flex items-center gap-2 border-b border-border">
-          <Logo size={36} />
-          <div>
-            <p className="font-heading font-semibold text-lg leading-none">{t("appName")}</p>
-            <p className="text-[10px] text-muted-foreground mt-1 truncate max-w-[160px]">{company.name}</p>
-          </div>
+      {/* Sidebar — slim dark icon rail (WorkForce-style) */}
+      <aside className={`hidden md:flex flex-col items-center w-[76px] ${sidebarSide} top-0 h-screen sticky bg-landing-olive pt-safe z-40`}>
+        <div className="py-5 flex items-center justify-center">
+          <span className="w-11 h-11 rounded-2xl bg-white/10 flex items-center justify-center">
+            <Logo size={30} />
+          </span>
         </div>
         <DragDropContext onDragEnd={onNavDragEnd}>
           <Droppable droppableId="sidebar-nav">
             {(provided) => (
-              <nav ref={provided.innerRef} {...provided.droppableProps} className="flex-1 px-3 py-4 space-y-1 overflow-y-auto no-select">
+              <nav ref={provided.innerRef} {...provided.droppableProps} className="flex-1 w-full px-3 py-2 flex flex-col items-center gap-1.5 overflow-y-auto no-scrollbar no-select">
                 {orderedNavItems.map((item, index) => (
                   <Draggable key={item.to} draggableId={item.to} index={index}>
                     {(dragProvided, dragSnapshot) => (
                       <div
                         ref={dragProvided.innerRef}
                         {...dragProvided.draggableProps}
-                        className={`flex items-center rounded-xl ${dragSnapshot.isDragging ? "shadow-lg bg-card" : ""}`}
+                        {...dragProvided.dragHandleProps}
+                        className={`group relative ${dragSnapshot.isDragging ? "opacity-90" : ""}`}
                       >
-                        <span {...dragProvided.dragHandleProps} className="px-1 text-muted-foreground hover:text-foreground cursor-grab shrink-0">
-                          <GripVertical className="w-3.5 h-3.5" />
-                        </span>
                         <NavLink
                           to={item.to}
                           end={item.end}
+                          title={item.label}
                           className={({ isActive }) =>
-                            `flex-1 flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-sm font-body transition-colors ${
+                            `flex items-center justify-center w-11 h-11 rounded-xl transition-all ${
                               isActive
-                                ? "bg-primary text-primary-foreground shadow-sm"
-                                : "text-foreground/70 hover:bg-muted hover:text-foreground"
+                                ? "bg-landing-gold text-white shadow-lg shadow-black/20"
+                                : "text-white/45 hover:bg-white/10 hover:text-white"
                             }`
                           }
                         >
-                          <item.icon className="w-4 h-4" strokeWidth={1.75} />
-                          {item.label}
+                          <item.icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
                         </NavLink>
+                        {/* Hover label */}
+                        <span className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${dir === "rtl" ? "right-full mr-2" : "left-full ml-2"} whitespace-nowrap rounded-md bg-landing-olive text-white text-xs font-body px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-50`}>
+                          {item.label}
+                        </span>
                       </div>
                     )}
                   </Draggable>
@@ -219,6 +219,17 @@ export default function Layout({ children }) {
             )}
           </Droppable>
         </DragDropContext>
+        <button
+          onClick={() => navigate(`/app/employees/${currentUser.id}`)}
+          title={t("viewProfile")}
+          className="mb-5 mt-2 w-10 h-10 rounded-full ring-2 ring-white/20 hover:ring-landing-gold transition overflow-hidden bg-landing-gold text-white flex items-center justify-center text-sm font-medium shrink-0"
+        >
+          {currentUser.profile?.avatarUrl ? (
+            <img src={currentUser.profile.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+          ) : (
+            currentUser.name.charAt(0)
+          )}
+        </button>
       </aside>
 
       {/* Main */}
@@ -232,9 +243,10 @@ export default function Layout({ children }) {
               <Logo size={32} className="shrink-0" />
             </div>
 
-            <div className="hidden md:block">
-              <p className="text-sm text-muted-foreground font-body">
-                {t("welcome")}, <span className="text-foreground font-medium">{currentUser.name}</span>
+            <div className="hidden md:block min-w-0">
+              <p className="font-heading text-lg font-semibold leading-none truncate">{company.name || t("appName")}</p>
+              <p className="text-[11px] text-muted-foreground font-body mt-1 truncate">
+                {t("welcome")}, {currentUser.name}
               </p>
             </div>
 
@@ -278,7 +290,9 @@ export default function Layout({ children }) {
                 >
                   <Bell className="w-5 h-5" strokeWidth={1.75} />
                   {unread > 0 && (
-                    <span className="absolute top-1 end-1 w-2 h-2 rounded-full bg-destructive" />
+                    <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-white text-[9px] font-body flex items-center justify-center">
+                      {unread > 9 ? "9+" : unread}
+                    </span>
                   )}
                 </button>
                 {notifOpen && (
@@ -333,6 +347,7 @@ export default function Layout({ children }) {
                       currentUser.name.charAt(0)
                     )}
                   </div>
+                  <span className="hidden lg:block text-sm font-body font-medium max-w-[120px] truncate">{currentUser.name}</span>
                   <ChevronDown className="w-3 h-3 hidden sm:block" />
                 </button>
                 {userOpen && (
