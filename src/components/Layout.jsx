@@ -23,6 +23,7 @@ import BottomTabBar from "@/components/mobile/BottomTabBar";
 import BackButton from "@/components/mobile/BackButton";
 import ProductFeedbackPrompt from "@/components/ProductFeedbackPrompt";
 import { shouldShowNotification } from "@/lib/notificationFilters";
+import SectionGuide from "@/components/SectionGuide";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -394,6 +395,7 @@ export default function Layout({ children }) {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
             >
+              <SectionGuide lang={lang} t={t} />
               {children}
             </motion.div>
           </AnimatePresence>
