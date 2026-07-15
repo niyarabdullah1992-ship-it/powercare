@@ -218,10 +218,13 @@ Deno.serve(async (req) => {
       const email = String(user?.email || '').trim().toLowerCase();
       if (!email) return Response.json({ error: 'Google authentication required' }, { status: 401 });
       const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email }, '-created_date');
-      // Honor the login tab the user chose (individual vs company) when the email
-      // owns both kinds of accounts.
+      // Honor the login tab the user chose strictly: never fall back to an account
+      // of the other kind — a "Company Login" click must never open an individual
+      // workspace (and vice versa).
       const wantIndividual = body.preferKind === 'individual';
-      const found = accounts.find((a) => (String(a.plan || '').toLowerCase() === 'individual') === wantIndividual) || accounts[0];
+      const found = body.preferKind
+        ? accounts.find((a) => (String(a.plan || '').toLowerCase() === 'individual') === wantIndividual)
+        : accounts[0];
       if (!found) return Response.json({ error: 'No company is linked to this Google account' }, { status: 404 });
       const { ownerPassword: _password, ...safe } = found;
       const token = await makeSession(base44, found.companyId, null, 'owner');

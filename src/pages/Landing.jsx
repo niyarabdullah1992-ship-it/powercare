@@ -62,15 +62,18 @@ export default function Landing() {
     }
   }, [langOpen]);
 
-  // Smart account routing: when one email unlocks several accounts, keep only the
-  // ones matching the chosen tab (individual vs company) so the user goes straight
-  // to the right workspace. Falls back to the full list if nothing matches.
+  // Strict account routing: keep only the accounts matching the chosen tab
+  // (individual vs company). If the email has accounts but none of the chosen
+  // kind, the login is refused with a clear message instead of silently
+  // entering the wrong workspace.
   const routeAccounts = (accounts) => {
-    const list = accounts || [];
-    if (list.length <= 1) return list;
-    const matches = list.filter((a) => (String(a.plan || "").toLowerCase() === "individual") === (loginKind === "individual"));
-    return matches.length ? matches : list;
+    return (accounts || []).filter((a) => (String(a.plan || "").toLowerCase() === "individual") === (loginKind === "individual"));
   };
+
+  const wrongKindError = () =>
+    loginKind === "company"
+      ? (lang === "ar" ? "هذا البريد مسجل كحساب فردي — استخدم تبويب دخول الأفراد" : "This email is registered as an individual account — use the Individual Login tab")
+      : (lang === "ar" ? "هذا البريد مسجل كحساب شركة — استخدم تبويب دخول الشركات" : "This email is registered as a company account — use the Company Login tab");
 
   const handleCompanyLogin = async (e) => {
     e.preventDefault();
@@ -79,7 +82,15 @@ export default function Landing() {
     setSubmitting(true);
     const r = await login(email, password);
     if (!r) setError(t("errBadCredentials"));
-    else if (r.otpRequired) { setOtpPending(r.pendingId); setOtpAccounts(routeAccounts(r.accounts)); }
+    else if (r.otpRequired) {
+      const routed = routeAccounts(r.accounts);
+      if ((r.accounts || []).length > 0 && routed.length === 0) {
+        setError(wrongKindError());
+      } else {
+        setOtpPending(r.pendingId);
+        setOtpAccounts(routed);
+      }
+    }
     setSubmitting(false);
     // r.company → session set, useEffect above redirects to /app
   };
@@ -92,8 +103,9 @@ export default function Landing() {
   const handleResendOtp = async () => {
     const result = await login(email, password);
     if (!result?.otpRequired) return false;
+    const routed = routeAccounts(result.accounts);
     setOtpPending(result.pendingId);
-    setOtpAccounts(routeAccounts(result.accounts));
+    setOtpAccounts(routed);
     return true;
   };
 
