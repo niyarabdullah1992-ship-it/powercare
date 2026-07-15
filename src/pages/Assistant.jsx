@@ -75,6 +75,7 @@ AVAILABLE ACTIONS (include them in "actions" when the user asks you to do someth
 - {"type":"add_planner_item","title":"...","time":"HH:MM","date":"YYYY-MM-DD"} — adds an item to the user's personal Day Planner (available to everyone; date defaults to today).
 - {"type":"sign_report","dataset":"employees"|"tasks"|"targets"|"reports"|"stations"|"safety"|"plans"|"schedules"|"complaints"|"files"|"hr"|"leaves"|"certificates"|"performance"|"attendance","reportTitle":"<title in the user's language>"} — generates the report, stamps the user's SIGNATURE + verified badge (encrypted verification ID + QR code + SHA-256 fingerprint registered in the verification registry) INSIDE the file and downloads the signed PDF automatically.
   CRITICAL: if the user's request contains ANY signing word — sign / توقيع / وقّع / وقع / اعتماد / اعتمد / ختم — you MUST use sign_report (NOT export_data), even though the request also mentions تقرير/PDF. Never combine sign_report with export_data for the same request.
+- {"type":"create_document","docTitle":"<document title>","subtitle":"<optional subtitle>","sections":[{"heading":"...","body":"<full written paragraphs, use \\n between paragraphs>","bullets":["..."]}]} — WRITES A COMPLETE PROFESSIONAL DOCUMENT about ANY idea/topic the user wants (proposal, policy, contract draft, project description, plan, letter, article, official declaration…) and opens it as an elegant print-ready A4 page the user can download as PDF. YOU write the actual full content: rich, well-structured, in the user's language, with as many sections as the topic deserves (usually 4–8), ordered and formatted exactly as the user requests. Use "body" for prose and "bullets" for lists. Use this whenever the user asks you to create/write/prepare a file or document about an idea — it is NOT tied to company datasets.
 - {"type":"open_page","page":"dashboard"|"tasks"|"attendance"|"reports"|"performance"|"employees"|"stations"|"hr"|"complaints"|"chat"|"files"|"daily_report"|"help"|"signing"|"verify"|"planner"|"journal"|"calendar"} — opens a PowerCare section in a NEW TAB. Use this action ONLY for a direct navigation command such as "open", "go to", "افتح", "اذهب" or "انتقل". NEVER use it for a question, explanation, analysis, or merely mentioning a section.
 
 DOCUMENT SIGNING & VERIFICATION (you know this feature well):
@@ -85,7 +86,7 @@ DOCUMENT SIGNING & VERIFICATION (you know this feature well):
 Rules:
 - When the user asks you to DO something covered by an action, include it in "actions" and confirm briefly in "answer". Never say you can't export or execute — you can.
 - If an action request is missing a required detail that cannot be safely inferred (such as which station, employee, task, dataset, or file format), ask exactly one short clarifying question in "answer" and return no actions. Never guess and execute the wrong action.
-- Answer ONLY based on the company data below. If the data doesn't contain the answer, say so briefly.
+- Answer ONLY based on the company data below. If the data doesn't contain the answer, say so briefly. EXCEPTION: create_document is creative writing — write the full document content yourself from the user's idea, it does not need to come from company data.
 - You understand the complete PowerCare site and all permitted sections in COMPANY DATA: stations, employees, tasks, targets, reports, safety, plans, schedules, attendance, performance, complaints, files, HR, leave and certificates.
 - Every analytical/readings section supports exactly two export formats: PDF and Excel. Treat "BDF" as a typo for "PDF". When asked, choose the matching export_data action and dataset.
   If the user requests a blank/empty schedule template (جدول دوام فارغ / نموذج جدول دوام), use export_data with dataset "schedules" and format "pdf" even when there are no schedule records; the app will generate a blank printable template.
@@ -130,6 +131,19 @@ Answer the last user question.`,
                   page: { type: "string" },
                   format: { type: "string" },
                   reportTitle: { type: "string" },
+                  docTitle: { type: "string" },
+                  subtitle: { type: "string" },
+                  sections: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        heading: { type: "string" },
+                        body: { type: "string" },
+                        bullets: { type: "array", items: { type: "string" } },
+                      },
+                    },
+                  },
                 },
               },
             },

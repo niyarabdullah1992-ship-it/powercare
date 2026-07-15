@@ -4,6 +4,7 @@ import { printReport } from "@/lib/printReport";
 import { generateSignedReport } from "@/lib/signedReport";
 import { base44 } from "@/api/base44Client";
 import { exportExcelColored } from "@/lib/exportExcelColored";
+import { printDocument } from "@/lib/printDocument";
 
 // Executes real actions requested by the AI assistant (exports, task creation, status updates).
 // Every write action is permission-gated; exports only include data the user can already see.
@@ -92,6 +93,22 @@ export async function executeAssistantAction(action, { data, company, currentUse
       dir: document.documentElement.dir,
     });
     return { ok: true, message: t("aiExportDone") };
+  }
+
+  if (action.type === "create_document") {
+    const sections = Array.isArray(action.sections) ? action.sections : [];
+    if (!action.docTitle || !sections.length) return { ok: false, message: t("aiActionFailed") };
+    const opened = printDocument({
+      title: action.docTitle,
+      subtitle: action.subtitle || "",
+      sections,
+      dir: document.documentElement.dir,
+      companyName: data.name || "",
+      authorName: currentUser?.name || "",
+      color: data.reportBranding?.color || "#b07d3f",
+      logoUrl: data.reportBranding?.logoUrl || "",
+    });
+    return opened ? { ok: true, message: t("aiPdfDone") } : { ok: false, message: t("aiActionFailed") };
   }
 
   if (action.type === "sign_report") {
