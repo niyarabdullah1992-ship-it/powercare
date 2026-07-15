@@ -11,9 +11,10 @@ import { handlersForLevel, buildEscalationSteps } from "@/lib/escalation";
 import { base44 } from "@/api/base44Client";
 import { getParentPath, withAncestors, NO_SECTION } from "@/lib/taskFolders";
 import { logAudit } from "@/lib/auditLog";
+import { loadSmartDefaults, saveSmartDefaults } from "@/lib/smartDefaults";
 import { getTodayAttendance, isCheckedIn } from "@/lib/attendance";
 import { Link } from "react-router-dom";
-import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, Clock, Search, Pencil, X, ClipboardCheck, Archive } from "lucide-react";
+import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, Clock, Search, Pencil, X, ClipboardCheck, Archive, Sparkles } from "lucide-react";
 import StationCombobox from "@/components/stations/StationCombobox";
 import TaskStats from "@/components/tasks/TaskStats";
 import TaskCard from "@/components/tasks/TaskCard";
@@ -71,6 +72,24 @@ export default function MyTasks() {
   const [sectionValue, setSectionValue] = useState("");
   const [checkedInToday, setCheckedInToday] = useState(true);
   const [showArchive, setShowArchive] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
+
+  // Smart form memory — opening the create form pre-fills the user's usual choices.
+  const openCreateForm = () => {
+    if (!showCreate) {
+      const d = loadSmartDefaults(`task_${currentUser?.id}`);
+      if (d) {
+        if (d.assignType && !isIndividual) setAssignType(d.assignType);
+        if (d.formStation) setFormStation(d.formStation);
+        if (d.priority) setPriority(d.priority);
+        if (d.datePreset && d.datePreset !== "custom") setDatePreset(d.datePreset);
+        setPrefilled(true);
+      } else {
+        setPrefilled(false);
+      }
+    }
+    setShowCreate(!showCreate);
+  };
 
   // Individual (personal) workspaces: no stations, no attendance gate, no escalation.
   const isIndividual = String(data?.plan || company?.plan || "").toLowerCase() === "individual";
@@ -414,6 +433,8 @@ export default function MyTasks() {
       if (created && created.id) {
         setTargets((prev) => [created, ...prev.filter((x) => x.id !== created.id)]);
       }
+      // Remember these choices for the next task (smart pre-fill).
+      saveSmartDefaults(`task_${currentUser.id}`, { assignType: aType, formStation, priority, datePreset });
       if (section) {
         ensureFolder(section, aType === "hq_team" ? "hq" : stationId);
       }
@@ -766,7 +787,7 @@ export default function MyTasks() {
         icon={Target}
         actions={canCreateTasks(currentUser) && (
           <button
-            onClick={() => setShowCreate(!showCreate)}
+            onClick={openCreateForm}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-foreground text-background text-sm font-body hover:bg-accent transition-colors"
           >
             <Plus className="w-4 h-4" /> {t("newTaskTarget")}
@@ -791,6 +812,11 @@ export default function MyTasks() {
       {/* Unified Target form */}
       {showCreate && canCreateTasks(currentUser) && (
         <form onSubmit={createTarget} className="p-5 rounded-xl border border-border bg-card space-y-4">
+          {prefilled && (
+            <p className="text-[11px] font-body text-accent flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" /> {t("smartPrefill")}
+            </p>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input name="title" placeholder={t("taskTitle")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             <input name="description" placeholder={t("taskDescription")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />

@@ -18,9 +18,11 @@ import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { queryClientInstance } from "@/lib/query-client";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
+import SmartDailySummary from "@/components/dashboard/SmartDailySummary";
+import SmartAlertsPanel from "@/components/dashboard/SmartAlertsPanel";
 
 export default function Dashboard() {
-  const { t, lang } = useI18n();
+  const { t, lang, dir } = useI18n();
   const { data, currentUser, company, refresh } = useAuth();
   const [stoppageCount, setStoppageCount] = useState(0);
   const [showBranding, setShowBranding] = useState(false);
@@ -136,6 +138,15 @@ export default function Dashboard() {
   const checkedInCount = attendanceRows.filter((r) => r.check_in_at).length;
   const attendanceRate = teamEmployees.length ? Math.round((checkedInCount / teamEmployees.length) * 100) : 0;
 
+  // Facts fed to the AI daily brief (generated once a day, cached locally).
+  const briefFacts = [
+    `attendance today: ${checkedInCount}/${teamEmployees.length} checked in (${attendanceRate}%)`,
+    `tasks: ${completed}/${tasks.length} completed`,
+    `pending daily reports awaiting review: ${pendingReports}`,
+    `task stoppage issues: ${stoppageCount}`,
+    `open anonymous complaints: ${anonOpenCount}`,
+  ];
+
   const pendingActionItems = [
     { key: "reports", icon: FileText, label: t("pendingReports"), count: pendingReports, to: "/app/daily-report" },
     { key: "stoppage", icon: AlertTriangle, label: t("stoppageIssues"), count: stoppageCount, to: "/app/performance" },
@@ -208,6 +219,19 @@ export default function Dashboard() {
           onClose={() => setShowBranding(false)}
         />
       )}
+
+      {/* AI daily brief + smart suggestions */}
+      <SmartDailySummary companyId={company.id} lang={lang} t={t} facts={briefFacts} />
+      <SmartAlertsPanel
+        teamEmployees={teamEmployees}
+        attendanceRows={attendanceRows}
+        pendingReports={pendingReports}
+        stoppageCount={stoppageCount}
+        anonOpenCount={anonOpenCount}
+        stations={stations}
+        t={t}
+        dir={dir}
+      />
 
       {/* Numbered stat cards (WorkForce style) */}
       <DashboardStatCards
