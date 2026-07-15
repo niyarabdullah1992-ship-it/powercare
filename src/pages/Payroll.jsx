@@ -5,6 +5,7 @@ import { Banknote, Download, Users, CheckCircle2, Wallet } from "lucide-react";
 import { ensurePayrollRun, getRun, monthKey, netOf, updatePayrollItem, setItemPaid } from "@/lib/payroll";
 import { printReport } from "@/lib/printReport";
 import PayrollRow from "@/components/payroll/PayrollRow";
+import SalaryImportCard from "@/components/payroll/SalaryImportCard";
 
 export default function Payroll() {
   const { lang, dir } = useI18n();
@@ -104,6 +105,8 @@ export default function Payroll() {
           </button>
         </div>
       </div>
+
+      <SalaryImportCard company={company} data={data} month={month} ar={ar} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
