@@ -202,11 +202,10 @@ Deno.serve(async (req) => {
       if (!String(found.ownerPassword).startsWith('pbkdf2$')) {
         await base44.asServiceRole.entities.CompanyAccount.update(found.id, { ownerPassword: await pbkdf2Password(password) });
       }
-      // The password has been verified server-side; issue the owner session directly.
-      // Email OTP is not used here because owner addresses are not necessarily Base44 users.
-      const { ownerPassword: _password, ...safe } = found;
-      const token = await makeSession(base44, found.companyId, null, 'owner');
-      return Response.json({ kind: 'owner', company: safe, token });
+      // Password verified — second factor for owners too: email a one-time code
+      // instead of issuing the session directly (OTP is mandatory for everyone).
+      const pendingId = await createLoginOtp(base44, { kind: 'owner', companyId: found.companyId, email: found.ownerEmail });
+      return Response.json({ otpRequired: true, pendingId });
     }
 
     // Per-employee login — each employee signs in with their own email + personal password.
