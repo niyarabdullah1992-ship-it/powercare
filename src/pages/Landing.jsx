@@ -36,7 +36,7 @@ export default function Landing() {
     if (!new URLSearchParams(window.location.search).has("google_login")) return;
     setSubmitting(true);
     loginWithGoogle().then((company) => {
-      if (!company) setError(lang === "ar" ? "لا توجد شركة مرتبطة بحساب Google هذا" : "No company is linked to this Google account");
+      if (!company) setError(t("errNoGoogleCompany"));
     }).finally(() => setSubmitting(false));
   }, []);
 
@@ -63,7 +63,7 @@ export default function Landing() {
     setError("");
     setSubmitting(true);
     const r = await login(email, password);
-    if (!r) setError(lang === "ar" ? "البريد أو كلمة المرور غير صحيحة" : "Incorrect email or password");
+    if (!r) setError(t("errBadCredentials"));
     else if (r.otpRequired) setOtpPending(r.pendingId);
     setSubmitting(false);
     // r.company → session set, useEffect above redirects to /app
@@ -133,9 +133,7 @@ export default function Landing() {
             <h1 className="hero-title break-words text-5xl uppercase text-landing-gold sm:text-6xl md:text-8xl">{t("appName")}</h1>
 
             <p className="mx-auto mt-5 max-w-lg text-base font-body leading-relaxed text-[#3a2f22]/65 lg:mx-0">
-              {lang === "ar"
-                ? "منصة واحدة لإدارة الحضور والمهام والتوقيع الرقمي — بدقة الموقع الجغرافي وذكاء اصطناعي يخطط يومك."
-                : "One platform for attendance, tasks and digital signing — with GPS precision and AI that plans your day."}
+              {t("heroSubtitle")}
             </p>
 
             <div className="mx-auto mt-8 max-w-lg lg:mx-0">
@@ -169,9 +167,9 @@ export default function Landing() {
               ) : (
               <div className="space-y-4">
                 <button type="button" onClick={() => handleSocialLogin("sso")} disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-3 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg disabled:opacity-50">
-                  <GoogleIcon className="h-5 w-5" /> {lang === "ar" ? "الدخول باستخدام Google" : "Continue with Google"}
+                  <GoogleIcon className="h-5 w-5" /> {t("continueWithGoogle")}
                 </button>
-                <div className="flex items-center gap-3 text-xs text-[#3a2f22]/40"><span className="h-px flex-1 bg-landing-gold/20" />{lang === "ar" ? "أو" : "or"}<span className="h-px flex-1 bg-landing-gold/20" /></div>
+                <div className="flex items-center gap-3 text-xs text-[#3a2f22]/40"><span className="h-px flex-1 bg-landing-gold/20" />{t("orDivider")}<span className="h-px flex-1 bg-landing-gold/20" /></div>
               <form onSubmit={handleCompanyLogin} noValidate className="space-y-4">
                 <div>
                   <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("email")}</label>
@@ -202,7 +200,7 @@ export default function Landing() {
                   {submitting ? t("pleaseWaitBtn") : t("login")}
                 </button>
                 <button type="button" onClick={() => { setResetOpen(true); setError(""); }} className="w-full cursor-pointer text-center text-sm font-body font-semibold text-landing-gold underline underline-offset-4 hover:text-landing-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-gold">
-                  {lang === "ar" ? "نسيت كلمة المرور؟" : "Forgot password?"}
+                  {t("forgotPasswordLink")}
                 </button>
               </form>
               </div>
@@ -260,7 +258,7 @@ export default function Landing() {
             </p>
             <Link to="/powercare-presentation" className="mt-4 inline-flex items-center gap-2 rounded-full border border-landing-gold/40 px-4 py-2 text-sm font-body font-semibold text-landing-gold transition-colors hover:bg-landing-gold hover:text-white">
               <Download className="h-3.5 w-3.5" />
-              {lang === "ar" ? "تنزيل ملف عرض PowerCare" : "Download PowerCare presentation"}
+              {t("downloadPresentation")}
             </Link>
             <div className="flex items-center gap-4 mt-5 text-[#3a2f22]/60">
               <Facebook className="w-4 h-4" strokeWidth={1.75} />

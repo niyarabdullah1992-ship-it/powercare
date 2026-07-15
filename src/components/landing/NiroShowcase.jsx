@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { Sparkles, Mic, CheckCircle2 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
-// Animated live demo of Niro, the Arabic AI day planner: a prompt "types
-// itself" and the schedule builds up in front of the visitor — then loops.
-export default function NiroShowcase({ lang }) {
-  const ar = lang === "ar";
-  const prompt = ar
-    ? "نيرو، نظّم يومي غدًا: اجتماع الساعة ٩، غداء مع أحمد، ورياضة العصر"
-    : "Niro, plan my day tomorrow: 9am meeting, lunch with Ahmed, evening workout";
-  const items = ar
-    ? [["09:00", "اجتماع الفريق"], ["13:00", "غداء مع أحمد"], ["17:00", "رياضة"], ["21:00", "مراجعة اليوم وتخطيط الغد"]]
-    : [["09:00", "Team meeting"], ["13:00", "Lunch with Ahmed"], ["17:00", "Workout"], ["21:00", "Review the day & plan tomorrow"]];
+// Animated live demo of Niro, the AI day planner: a prompt "types itself" and
+// the schedule builds up in front of the visitor — then loops. All strings come
+// from the shared i18n dictionary so every language stays fully localized.
+export default function NiroShowcase() {
+  const { t } = useI18n();
+  const prompt = t("niroDemoPrompt");
+  const items = [
+    ["09:00", t("niroItem1")],
+    ["13:00", t("niroItem2")],
+    ["17:00", t("niroItem3")],
+    ["21:00", t("niroItem4")],
+  ];
 
   const [typed, setTyped] = useState(0);
   const [shown, setShown] = useState(0);
@@ -31,15 +34,13 @@ export default function NiroShowcase({ lang }) {
     <div className="px-4 py-14 sm:px-6 md:px-10">
       <div className="max-w-3xl mx-auto text-center mb-8">
         <p className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-landing-gold/10 text-landing-gold text-sm font-body font-semibold mb-4">
-          <Sparkles className="w-4 h-4" strokeWidth={1.75} /> {ar ? "نيرو — مساعدك الذكي بالعربية" : "Niro — your AI assistant in Arabic"}
+          <Sparkles className="w-4 h-4" strokeWidth={1.75} /> {t("niroBadge")}
         </p>
         <h2 className="font-heading text-3xl md:text-4xl font-semibold text-[#3a2f22]">
-          {ar ? "قل له ماذا تريد… وسيرتب يومك" : "Tell it what you need… it plans your day"}
+          {t("niroHeading")}
         </h2>
         <p className="text-sm text-[#3a2f22]/55 font-body mt-3 max-w-xl mx-auto">
-          {ar
-            ? "أملِ يومك بجملة واحدة — نيرو يحوّلها إلى جدول منظم بالساعات، جاهز في مخططك اليومي."
-            : "Describe your day in one sentence — Niro turns it into an organized hour-by-hour schedule in your day planner."}
+          {t("niroSub")}
         </p>
       </div>
 
