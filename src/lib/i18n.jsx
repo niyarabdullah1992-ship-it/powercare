@@ -1547,7 +1547,7 @@ export const LANGUAGES = [
 
 const I18nContext = createContext(null);
 
-const GENERATED_VERSION = "v2";
+const GENERATED_VERSION = "v3";
 const GENERATED_KEY = `powercare_generated_translations_${GENERATED_VERSION}`;
 const PRESERVED_KEYS = new Set(["dir", "appName", "plan_starter", "plan_pro", "plan_ent"]);
 
@@ -1557,9 +1557,16 @@ export function I18nProvider({ children }) {
     try { return JSON.parse(localStorage.getItem(GENERATED_KEY) || "{}"); } catch { return {}; }
   });
   const [isTranslating, setIsTranslating] = useState(false);
-  const t = (key) => lang === "en"
-    ? (dict.en[key] ?? key)
-    : ((dict[lang]?.[key] !== dict.en[key] ? dict[lang]?.[key] : undefined) ?? generated[lang]?.[key] ?? dict[lang]?.[key] ?? "…");
+  const t = (key) => {
+    if (lang === "en") return dict.en[key] ?? key;
+    const staticVal = dict[lang]?.[key];
+    // Static translation that actually differs from English wins
+    if (staticVal !== undefined && staticVal !== dict.en[key]) return staticVal;
+    const gen = generated[lang]?.[key];
+    if (gen) return gen;
+    // Never show "…" — fall back to English until the translation arrives
+    return staticVal ?? dict.en[key] ?? key;
+  };
   const dir = dict[lang]?.dir || "ltr";
 
   useEffect(() => {
@@ -1587,8 +1594,14 @@ export function I18nProvider({ children }) {
           },
         });
         if (!result?.translations || cancelled) continue;
+        // Keep only clean, non-empty string translations
+        const clean = Object.fromEntries(
+          Object.entries(result.translations).filter(
+            ([k, v]) => typeof v === "string" && v.trim() && k in dict.en
+          )
+        );
         setGenerated((current) => {
-          const next = { ...current, [lang]: { ...(current[lang] || {}), ...result.translations } };
+          const next = { ...current, [lang]: { ...(current[lang] || {}), ...clean } };
           localStorage.setItem(GENERATED_KEY, JSON.stringify(next));
           return next;
         });
