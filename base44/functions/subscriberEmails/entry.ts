@@ -20,25 +20,37 @@ Deno.serve(async (req) => {
       });
     };
 
-    if (action === 'welcome') {
-      const { email, companyName } = body;
-      if (!email) return Response.json({ error: 'Missing email' }, { status: 400 });
-      await send(
-        email,
-        `Welcome to PowerCare${companyName ? ` — ${companyName}` : ''}`,
-        `Hello,\n\nYour PowerCare account${companyName ? ` for "${companyName}"` : ''} has been created successfully.\n\nYou can now sign in with this email address, add your stations and team, and start managing your operations from one place.\n\nIf you have any questions, just reply to this email.\n\n— The PowerCare Team`
-      );
-      return Response.json({ ok: true });
-    }
-
-    if (action === 'paymentConfirmed') {
-      const { email, companyName, plan } = body;
-      if (!email) return Response.json({ error: 'Missing email' }, { status: 400 });
-      await send(
-        email,
-        `Your PowerCare ${plan || ''} subscription is confirmed`,
-        `Hello,\n\nThank you for subscribing to PowerCare${plan ? ` (${plan} plan)` : ''}${companyName ? ` for "${companyName}"` : ''}.\n\nYour ${TRIAL_DAYS}-day free trial starts today — you won't be charged until it ends, and you can cancel anytime before then.\n\nEnjoy the platform!\n\n— The PowerCare Team`
-      );
+    if (action === 'welcome' || action === 'paymentConfirmed') {
+      // Not public: requires a valid session for the company, and the recipient +
+      // company name + plan are read from the server-stored account record —
+      // never from the request body (blocks spoofed/phishing content injection).
+      const { companyId, sessionToken } = body;
+      const user = await base44.auth.me().catch(() => null);
+      let authed = !!(user && user.role === 'admin');
+      if (!authed && companyId && sessionToken) {
+        const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: sessionToken, companyId });
+        const s = sessions[0];
+        authed = !!(s && new Date(s.expiresAt).getTime() > Date.now());
+      }
+      if (!authed) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
+      const acc = accounts[0];
+      if (!acc?.ownerEmail) return Response.json({ error: 'Account not found' }, { status: 404 });
+      const companyName = String(acc.name || '').replace(/[\r\n]/g, ' ').slice(0, 120);
+      if (action === 'welcome') {
+        await send(
+          acc.ownerEmail,
+          `Welcome to PowerCare${companyName ? ` — ${companyName}` : ''}`,
+          `Hello,\n\nYour PowerCare account${companyName ? ` for "${companyName}"` : ''} has been created successfully.\n\nYou can now sign in with this email address, add your stations and team, and start managing your operations from one place.\n\nIf you have any questions, just reply to this email.\n\n— The PowerCare Team`
+        );
+      } else {
+        const plan = String(acc.plan || '').replace(/[\r\n]/g, ' ').slice(0, 40);
+        await send(
+          acc.ownerEmail,
+          `Your PowerCare ${plan} subscription is confirmed`,
+          `Hello,\n\nThank you for subscribing to PowerCare${plan ? ` (${plan} plan)` : ''}${companyName ? ` for "${companyName}"` : ''}.\n\nYour ${TRIAL_DAYS}-day free trial starts today — you won't be charged until it ends, and you can cancel anytime before then.\n\nEnjoy the platform!\n\n— The PowerCare Team`
+        );
+      }
       return Response.json({ ok: true });
     }
 

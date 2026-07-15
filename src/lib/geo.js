@@ -9,11 +9,17 @@ const GOOD_ACCURACY_M = 25;
 const COARSE_ACCURACY_M = 300;
 
 import { base44 } from "@/api/base44Client";
+import { getSession, getCompanyToken } from "@/lib/store";
 
 // Paid Google lookup — called only when the free browser fix is missing/coarse.
 async function googleFallback() {
   try {
-    const res = await base44.functions.invoke("googleGeolocate", {});
+    const s = getSession();
+    if (!s?.companyId) return null;
+    const res = await base44.functions.invoke("googleGeolocate", {
+      companyId: s.companyId,
+      sessionToken: getCompanyToken(s.companyId),
+    });
     const d = res?.data;
     if (d?.lat != null && d?.lng != null) return { lat: d.lat, lng: d.lng, accuracy: d.accuracy ?? null };
   } catch {

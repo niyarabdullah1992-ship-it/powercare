@@ -501,8 +501,10 @@ Deno.serve(async (req) => {
     }
 
     if (action === "listNotifications") {
-      // Signed-in employees can only read their own notifications.
+      // Signed-in employees can only read their own notifications; owner sessions
+      // (no userId) may only read notifications of members of their own company.
       const notifUserId = auth?.userId || body.userId;
+      if (!(await canActAs(notifUserId))) return Response.json({ error: "Forbidden" }, { status: 403 });
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/notifications?user_id=eq.${encodeURIComponent(notifUserId)}&order=created_at.desc&limit=20`,
         { headers }

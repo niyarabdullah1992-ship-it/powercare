@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { activateCompanySession, createCompany, syncCompanyAccount } from "@/lib/store";
+import { activateCompanySession, createCompany, syncCompanyAccount, getCompanyToken } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -56,8 +56,8 @@ export default function PricingSuccess() {
     }
     pendingCompanyRef.current = null;
     activateCompanySession(company);
-    base44.functions.invoke("subscriberEmails", { action: "welcome", email: company.ownerEmail, companyName: company.name }).catch(() => {});
-    base44.functions.invoke("subscriberEmails", { action: "paymentConfirmed", email: company.ownerEmail, companyName: company.name, plan: company.plan }).catch(() => {});
+    base44.functions.invoke("subscriberEmails", { action: "welcome", companyId: company.id, sessionToken: getCompanyToken(company.id) }).catch(() => {});
+    base44.functions.invoke("subscriberEmails", { action: "paymentConfirmed", companyId: company.id, sessionToken: getCompanyToken(company.id) }).catch(() => {});
     setStatus("success");
     setSubmitting(false);
     setTimeout(() => navigate("/app"), 1500);
