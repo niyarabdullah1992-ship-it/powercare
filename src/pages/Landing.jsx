@@ -73,7 +73,7 @@ export default function Landing() {
   const wrongKindError = () =>
     loginKind === "company"
       ? (lang === "ar" ? "هذا البريد مسجل كحساب فردي — استخدم تبويب دخول الأفراد" : "This email is registered as an individual account — use the Individual Login tab")
-      : (lang === "ar" ? "هذا البريد مسجل كحساب شركة — استخدم تبويب دخول الشركات" : "This email is registered as a company account — use the Company Login tab");
+      : (lang === "ar" ? "هذا البريد مسجل كحساب شركة فقط. يمكنك إنشاء حساب أفراد مجاني بنفس البريد من زر «تسجيل الأفراد — مجانًا» بالأسفل" : "This email only has a company account. You can create a free individual account with the same email using the “Individual sign-up — Free” button below");
 
   const handleCompanyLogin = async (e) => {
     e.preventDefault();
