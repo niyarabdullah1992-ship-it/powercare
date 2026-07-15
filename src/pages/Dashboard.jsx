@@ -5,8 +5,11 @@ import { visibleStations, canSeeAllStations, visibleEmployees, canApproveReports
 import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
 import WelcomeHero from "@/components/dashboard/WelcomeHero";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
-import { Radio, AlertTriangle, FileText, TrendingUp, Bell, Megaphone, Palette } from "lucide-react";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
+import { AlertTriangle, FileText, Bell, Megaphone, Palette } from "lucide-react";
+import DashboardStatCards from "@/components/dashboard/DashboardStatCards";
+import AttendanceTrendChart from "@/components/dashboard/AttendanceTrendChart";
+import StationsMapCard from "@/components/dashboard/StationsMapCard";
+import PendingActionsPanel from "@/components/dashboard/PendingActionsPanel";
 import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
 import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
@@ -21,6 +24,7 @@ export default function Dashboard() {
   const { data, currentUser, company, refresh } = useAuth();
   const [stoppageCount, setStoppageCount] = useState(0);
   const [showBranding, setShowBranding] = useState(false);
+  const [attendanceRows, setAttendanceRows] = useState([]);
 
   const loadStoppage = async () => {
     if (!currentUser) return;
@@ -48,6 +52,16 @@ export default function Dashboard() {
   useEffect(() => {
     loadStoppage();
   }, [currentUser?.id]);
+
+  // Today's attendance for the visible team — powers the attendance-rate stat card.
+  useEffect(() => {
+    if (!currentUser || !data) return;
+    const ids = visibleEmployees(currentUser, data).map((e) => e.id);
+    if (!ids.length) return;
+    base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: ids })
+      .then((res) => setAttendanceRows(res?.data?.rows || []))
+      .catch(() => setAttendanceRows([]));
+  }, [currentUser?.id, data?.employees?.length]);
 
   // Pull-to-refresh: full state reload — local fetches, tanstack-query caches,
   // and the AuthContext offline/online store sync.
@@ -115,16 +129,17 @@ export default function Dashboard() {
   const tasks = data.tasks.filter((tk) => stationIds.has(tk.stationId));
   const reports = data.reports.filter((r) => stationIds.has(r.stationId));
   const anon = data.anonymousReports;
-  const activeStations = stations.filter((s) => s.status === "active").length;
   const pendingReports = reports.filter((r) => r.status === "pending").length;
   const completed = tasks.filter((tk) => tk.status === "completed").length;
-  const completionRate = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
 
-  const stats = [
-    { icon: Radio, label: t("activeStations"), value: `${activeStations}/${stations.length}`, color: "text-accent" },
-    { icon: TrendingUp, label: t("taskCompletion"), value: `${completionRate}%`, color: "text-foreground" },
-    { icon: AlertTriangle, label: t("stoppageIssues"), value: stoppageCount, color: "text-destructive" },
-    { icon: FileText, label: t("pendingReports"), value: pendingReports, color: "text-foreground" },
+  const teamEmployees = visibleEmployees(currentUser, data);
+  const checkedInCount = attendanceRows.filter((r) => r.check_in_at).length;
+  const attendanceRate = teamEmployees.length ? Math.round((checkedInCount / teamEmployees.length) * 100) : 0;
+
+  const pendingActionItems = [
+    { key: "reports", icon: FileText, label: t("pendingReports"), count: pendingReports, to: "/app/daily-report" },
+    { key: "stoppage", icon: AlertTriangle, label: t("stoppageIssues"), count: stoppageCount, to: "/app/performance" },
+    ...(canReplyAnon(currentUser) ? [{ key: "anon", icon: Megaphone, label: t("anonymous"), count: anonOpenCount, to: "/app/complaints" }] : []),
   ];
 
   // Real six-month task activity — stable across renders and based on company data.
@@ -194,55 +209,28 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-border shadow-sm divide-x divide-y divide-border rtl:divide-x-reverse lg:grid-cols-4">
-        {stats.map((s, i) => (
-          <div key={s.label} className="p-6 bg-card hover:bg-muted/40 transition-colors">
-            <div className="flex items-center justify-between mb-5">
-              <span className={`inline-flex items-center justify-center w-9 h-9 rounded-full bg-accent/10 ${s.color}`}>
-                <s.icon className="w-4 h-4" strokeWidth={1.5} />
-              </span>
-              <span className="hero-title text-base text-muted-foreground/40">{["I", "II", "III", "IV"][i]}</span>
-            </div>
-            <p className="hero-title text-4xl">{s.value}</p>
-            <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mt-2">{s.label}</p>
-          </div>
-        ))}
-      </div>
+      {/* Numbered stat cards (WorkForce style) */}
+      <DashboardStatCards
+        attendanceRate={attendanceRate}
+        completed={completed}
+        total={tasks.length}
+        activeMembers={checkedInCount}
+        totalMembers={teamEmployees.length}
+        t={t}
+      />
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{t("sixMonthsLabel")}</p>
-          <h3 className="hero-title text-2xl mb-5">{t("taskCompletion")}</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-              <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-              <Bar dataKey="completed" name={t("completed")} fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="pending" name={t("pending")} fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+      {/* Main analytics grid: big trend chart + map & pending actions column */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <AttendanceTrendChart data={chartData} t={t} />
         </div>
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{t("taskCompletion")}</p>
-          <h3 className="hero-title text-2xl mb-5">{t("productivityTrend")}</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-              <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-              <Line type="monotone" dataKey="completed" name={t("approved")} stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="pending" name={t("pending")} stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="space-y-4">
+          <StationsMapCard stations={stations} t={t} />
+          <PendingActionsPanel items={pendingActionItems} t={t} />
         </div>
       </div>
 
-      <TeamStatusPanel employees={visibleEmployees(currentUser, data)} t={t} />
+      <TeamStatusPanel employees={teamEmployees} t={t} />
 
       {/* Recent activity */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">

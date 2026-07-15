@@ -448,6 +448,7 @@ const dict = {
     niroSub: "Describe your day in one sentence — Niro turns it into an organized hour-by-hour schedule in your day planner.",
     niroDemoPrompt: "Niro, plan my day tomorrow: 9am meeting, lunch with Ahmed, evening workout",
     niroItem1: "Team meeting", niroItem2: "Lunch with Ahmed", niroItem3: "Workout", niroItem4: "Review the day & plan tomorrow",
+    pendingActions: "Pending Actions",
   },
   ar: {
     dir: "rtl",
@@ -893,6 +894,7 @@ const dict = {
     niroSub: "أملِ يومك بجملة واحدة — نيرو يحوّلها إلى جدول منظم بالساعات، جاهز في مخططك اليومي.",
     niroDemoPrompt: "نيرو، نظّم يومي غدًا: اجتماع الساعة ٩، غداء مع أحمد، ورياضة العصر",
     niroItem1: "اجتماع الفريق", niroItem2: "غداء مع أحمد", niroItem3: "رياضة", niroItem4: "مراجعة اليوم وتخطيط الغد",
+    pendingActions: "الإجراءات المعلقة",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
