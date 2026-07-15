@@ -54,6 +54,21 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
   const [sigSize, setSigSize] = useState(100); // signature size % (50–200)
   const fileRef = useRef(null);
 
+  // Uploads with automatic retries — the storage service occasionally returns
+  // transient "too many simultaneous queries" errors under load.
+  const uploadWithRetry = async (file, attempts = 3) => {
+    let lastErr;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        return await base44.integrations.Core.UploadFile({ file });
+      } catch (err) {
+        lastErr = err;
+        await new Promise((r) => setTimeout(r, 800 * (i + 1)));
+      }
+    }
+    throw lastErr;
+  };
+
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -62,7 +77,7 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
     setManualSpot(null);
     setError("");
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { file_url } = await uploadWithRetry(file);
       // Fresh verification ID per document — never repeats between signings.
       const sigId = generateVerificationId();
       setDoc({
@@ -74,6 +89,9 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
         // Prefetch the QR while the user decides — signing won't wait for it.
         qrPromise: loadBadgeQr(sigId).catch(() => null),
       });
+    } catch (err) {
+      console.error("Upload failed:", err);
+      setError(ar ? "تعذّر رفع الملف بسبب ضغط مؤقت على الخادم — حاول مرة أخرى بعد لحظات." : "Upload failed due to temporary server load — please try again in a moment.");
     } finally {
       setUploading(false);
       e.target.value = "";
