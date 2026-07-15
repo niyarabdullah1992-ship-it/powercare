@@ -3,7 +3,7 @@ import {
   getSession, startLogin, completeLoginOtp, switchUser, clearSession, getCompanyData,
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
   hydrateBlobFromEntity, BLOB_CATEGORIES, getLastLocalWriteAt, fetchCloudVersions, setAuditActor,
-  repairOwnerSession, cacheCloudData, googleCompanyLogin, companyAccountExists,
+  repairOwnerSession, cacheCloudData, googleCompanyLogin, companyAccountExists, ensureLocalCompany,
 } from "./store";
 import { base44 } from "@/api/base44Client";
 
@@ -44,6 +44,9 @@ export function AuthProvider({ children }) {
     const s = getSession();
     setSession(s);
     if (s && s.companyId) {
+      // A saved session with no local workspace (partially cleared storage)
+      // previously rendered a blank app — rebuild it so cloud sync refills it.
+      if (!getCompanyData(s.companyId)) ensureLocalCompany(s.companyId);
       setCompany(getCompanyMeta(s.companyId));
       const localData = getCompanyData(s.companyId);
       setData(localData);
