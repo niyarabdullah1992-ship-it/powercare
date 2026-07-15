@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { updateEmployeeProfile } from "@/lib/store";
-import { Pencil, Check, Briefcase, Building2, CalendarDays, IdCard, MapPin, FileText } from "lucide-react";
+import { Pencil, Check, Briefcase, Building2, CalendarDays, IdCard, MapPin, FileText, Heart, Flag, GraduationCap, PhoneCall, User, Landmark } from "lucide-react";
 
-const GROUPS = [
+// Field groups: label = i18n key for original groups; ar/en = inline labels for
+// the HR data-collection group. This list also powers ProfileCompletionCard.
+export const PROFILE_GROUPS = [
   { label: "employmentInfo", fields: [
     { key: "position", icon: Briefcase },
     { key: "department", icon: Building2 },
@@ -12,18 +14,30 @@ const GROUPS = [
   { label: "personalInfo", fields: [
     { key: "nationalId", icon: IdCard },
     { key: "address", icon: MapPin },
-    { key: "notes", icon: FileText, area: true },
+    { key: "notes", icon: FileText, area: true, optional: true },
+  ] },
+  { ar: "بيانات الموارد البشرية", en: "HR Information", fields: [
+    { key: "birthDate", icon: CalendarDays, type: "date", ar: "تاريخ الميلاد", en: "Birth date" },
+    { key: "nationality", icon: Flag, ar: "الجنسية", en: "Nationality" },
+    { key: "maritalStatus", icon: Heart, ar: "الحالة الاجتماعية", en: "Marital status" },
+    { key: "qualification", icon: GraduationCap, ar: "المؤهل العلمي", en: "Qualification" },
+    { key: "emergencyName", icon: User, ar: "جهة اتصال الطوارئ", en: "Emergency contact" },
+    { key: "emergencyPhone", icon: PhoneCall, ar: "هاتف الطوارئ", en: "Emergency phone", dir: "ltr" },
+    { key: "iban", icon: Landmark, ar: "الحساب البنكي (IBAN)", en: "Bank account (IBAN)", dir: "ltr" },
   ] },
 ];
 
 export default function ProfessionalInfoTab({ employee, companyId, canEdit, fallbackPosition }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const ar = lang === "ar";
   const [editing, setEditing] = useState(false);
   const profile = employee.profile || {};
-  const allFields = GROUPS.flatMap((g) => g.fields.map((f) => f.key));
+  const allFields = PROFILE_GROUPS.flatMap((g) => g.fields.map((f) => f.key));
   const [form, setForm] = useState(() =>
     allFields.reduce((acc, f) => ({ ...acc, [f]: profile[f] || (f === "position" ? fallbackPosition || "" : "") }), {})
   );
+
+  const labelOf = (item) => (item.label ? t(item.label) : ar ? item.ar : item.en);
 
   const save = () => {
     updateEmployeeProfile(companyId, employee.id, form);
@@ -46,26 +60,29 @@ export default function ProfessionalInfoTab({ employee, companyId, canEdit, fall
         </div>
       )}
 
-      {GROUPS.map((group) => (
-        <div key={group.label} className="space-y-4 rounded-xl border border-border bg-card p-5">
-          <h3 className="font-heading font-semibold text-sm text-muted-foreground uppercase tracking-wide">{t(group.label)}</h3>
+      {PROFILE_GROUPS.map((group, gi) => (
+        <div key={gi} className="space-y-4 rounded-xl border border-border bg-card p-5">
+          <h3 className="font-heading font-semibold text-sm text-muted-foreground uppercase tracking-wide">{labelOf(group)}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {group.fields.map(({ key, icon: Icon, type, area }) => (
-              <div key={key} className={area ? "md:col-span-2" : ""}>
-                <label className="flex items-center gap-1.5 text-xs text-muted-foreground font-body mb-1.5">
-                  <Icon className="w-3.5 h-3.5 text-accent" /> {t(key)}
-                </label>
-                {editing ? (
-                  area ? (
-                    <textarea value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} rows={3} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
+            {group.fields.map((field) => {
+              const { key, icon: Icon, type, area } = field;
+              return (
+                <div key={key} className={area ? "md:col-span-2" : ""}>
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground font-body mb-1.5">
+                    <Icon className="w-3.5 h-3.5 text-accent" /> {group.label ? t(key) : labelOf(field)}
+                  </label>
+                  {editing ? (
+                    area ? (
+                      <textarea value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} rows={3} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
+                    ) : (
+                      <input type={type || "text"} dir={field.dir} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+                    )
                   ) : (
-                    <input type={type || "text"} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-                  )
-                ) : (
-                  <p className="min-h-[42px] rounded-lg border border-border bg-background px-3 py-2 text-sm font-body">{profile[key] || (key === "position" ? fallbackPosition : "") || "—"}</p>
-                )}
-              </div>
-            ))}
+                    <p className="min-h-[42px] rounded-lg border border-border bg-background px-3 py-2 text-sm font-body" dir={profile[key] ? field.dir : undefined}>{profile[key] || (key === "position" ? fallbackPosition : "") || "—"}</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       ))}

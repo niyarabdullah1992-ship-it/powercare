@@ -14,6 +14,7 @@ import HRCommunicationsTab from "@/components/employees/HRCommunicationsTab";
 import LoginAccessCard from "@/components/employees/LoginAccessCard";
 import AccountSettingsCard from "@/components/employees/AccountSettingsCard";
 import DeleteEmployeeAccountCard from "@/components/employees/DeleteEmployeeAccountCard";
+import ProfileCompletionCard from "@/components/employees/ProfileCompletionCard";
 
 const TABS = [
   { key: "professionalInfo", icon: Briefcase },
@@ -85,7 +86,7 @@ export default function EmployeeProfile() {
             </div>
 
             <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-              {tab === "professionalInfo" && <ProfessionalInfoTab employee={employee} companyId={company.id} canEdit={canManage} fallbackPosition={fallbackPosition} />}
+              {tab === "professionalInfo" && <ProfessionalInfoTab employee={employee} companyId={company.id} canEdit={canManage || isSelf} fallbackPosition={fallbackPosition} />}
               {tab === "certificates" && <CertificatesTab employee={employee} companyId={company.id} canEdit={isSelf || canManage} canApprove={canApproveCerts} currentUser={currentUser} />}
               {tab === "salary" && <SalaryTab employee={employee} companyId={company.id} canEdit={canEditSalary} />}
               {tab === "leave" && <LeaveTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canApprove={canApproveLeave} />}
@@ -101,6 +102,7 @@ export default function EmployeeProfile() {
               roleLabel={employee.profile?.position || fallbackPosition}
               stationName={stationName}
             />
+            <ProfileCompletionCard employee={employee} isSelf={isSelf} ar={dir === "rtl"} />
             {isSelf && <AccountSettingsCard employee={employee} company={company} />}
             {canManage && !isSelf && <LoginAccessCard employee={employee} companyId={company.id} />}
             {canDeleteAccount && <DeleteEmployeeAccountCard employee={employee} companyId={company.id} />}
