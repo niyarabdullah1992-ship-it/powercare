@@ -1,9 +1,10 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Play, Pause, Volume2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import Logo from "@/components/Logo";
 
 const VIDEO_URL = "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/7b1b2e430_Promo_Video.mp4";
+// Narration in every language the site supports — plays synced over the video.
 const NARRATION_URLS = {
   ar: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/8111ff65d_3e21a84a0_speech.mp3",
   en: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/a71af389e_speech.mp3",
@@ -18,18 +19,43 @@ const NARRATION_URLS = {
 
 export default function VideoIntro() {
   const { t, lang } = useI18n();
+  const videoRef = useRef(null);
   const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const narrationUrl = NARRATION_URLS[lang] || NARRATION_URLS.en;
 
-  const toggleAudio = () => {
-    if (!audioRef.current) return;
-    if (playing) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
+  // Switching language stops playback so the new narration starts cleanly.
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
     }
-    setPlaying(!playing);
+    setPlaying(false);
+  }, [lang]);
+
+  const togglePlay = () => {
+    const video = videoRef.current;
+    const audio = audioRef.current;
+    if (!video || !audio) return;
+    if (playing) {
+      video.pause();
+      audio.pause();
+      setPlaying(false);
+    } else {
+      video.play();
+      audio.play();
+      setPlaying(true);
+    }
+  };
+
+  const handleVideoEnded = () => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+    if (videoRef.current) videoRef.current.currentTime = 0;
+    setPlaying(false);
   };
 
   return (
@@ -56,19 +82,35 @@ export default function VideoIntro() {
           {t("videoText")}
         </p>
 
-        <div className="rounded-2xl overflow-hidden shadow-2xl border border-landing-gold/20 mb-8">
-          <video src={VIDEO_URL} controls className="w-full aspect-video bg-black" />
+        <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-landing-gold/20 mb-8 group">
+          <video
+            ref={videoRef}
+            src={VIDEO_URL}
+            muted
+            playsInline
+            onEnded={handleVideoEnded}
+            onClick={togglePlay}
+            className="w-full aspect-video bg-black cursor-pointer"
+          />
+          {/* Play/pause overlay — narration follows the selected site language */}
+          <button
+            onClick={togglePlay}
+            aria-label={playing ? "Pause" : "Play"}
+            className={`absolute inset-0 flex items-center justify-center transition-opacity ${playing ? "opacity-0 group-hover:opacity-100" : "opacity-100"}`}
+          >
+            <span className="flex items-center justify-center w-20 h-20 rounded-full bg-landing-gold/90 text-white shadow-2xl hover:scale-105 transition-transform">
+              {playing ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ms-1" />}
+            </span>
+          </button>
         </div>
 
-        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} onEnded={() => setPlaying(false)} />
-        <button
-          onClick={toggleAudio}
-          className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-landing-gold/30 hover:bg-white/10 transition-colors text-landing-gold-light font-body text-sm"
-        >
-          {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-          {t("narrationCta")}
+        {/* Narration audio — resets automatically whenever the language changes */}
+        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" />
+
+        <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-landing-gold/30 text-landing-gold-light font-body text-sm">
           <Volume2 className="w-4 h-4 opacity-60" />
-        </button>
+          {t("narrationCta")}
+        </div>
       </div>
     </section>
   );
