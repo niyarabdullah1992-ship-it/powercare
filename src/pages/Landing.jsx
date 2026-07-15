@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { ShieldCheck, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, Download, UserPlus, Building2, User } from "lucide-react";
 import Logo from "@/components/Logo";
 import VideoIntro from "@/components/landing/VideoIntro";
-import NiroShowcase from "@/components/landing/NiroShowcase";
+import SigningShowcase from "@/components/landing/SigningShowcase";
 import StatsBand from "@/components/landing/StatsBand";
 import OtpStep from "@/components/landing/OtpStep";
 import PasswordResetForm from "@/components/landing/PasswordResetForm";
@@ -275,8 +275,8 @@ export default function Landing() {
 
       <GoldDivider />
 
-      {/* Niro live demo — the AI planner sells itself */}
-      <NiroShowcase lang={lang} />
+      {/* Signing live demo — the verified e-signature flow sells itself */}
+      <SigningShowcase />
 
       {/* Gold gradient section: brand mark + benefits + footer */}
       <div className="bg-gradient-to-b from-landing-gold-light via-landing-gold-deep to-landing-bg px-6 md:px-10 pt-16 pb-4">
