@@ -159,6 +159,17 @@ export async function syncCompanyAccount(company) {
   return syncAccountToEntity(company);
 }
 
+// Checks whether this company account still exists on the server. Network
+// failures return true so a connectivity blip never signs the user out.
+export async function companyAccountExists(companyId) {
+  try {
+    const res = await invokeDirectory({ action: "accountExists", companyId });
+    return res?.data?.exists !== false;
+  } catch {
+    return true;
+  }
+}
+
 export function activateCompanySession(company) {
   const userId = ensureOwnerUser(company.id, company);
   if (!userId) return false;

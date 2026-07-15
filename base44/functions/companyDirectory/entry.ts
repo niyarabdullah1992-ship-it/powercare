@@ -295,6 +295,13 @@ Deno.serve(async (req) => {
 
     if (!companyId) return Response.json({ error: 'Missing companyId' }, { status: 400 });
 
+    // Public existence check — lets clients detect a deleted account and sign out
+    // instead of rendering a blank app from a stale session.
+    if (action === 'accountExists') {
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
+      return Response.json({ exists: accounts.length > 0 });
+    }
+
     /* ----- server-side authorization for all company-scoped actions ----- */
     const auth = await getAuth(base44, body);
 

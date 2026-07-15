@@ -3,7 +3,7 @@ import {
   getSession, startLogin, completeLoginOtp, switchUser, clearSession, getCompanyData,
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
   hydrateBlobFromEntity, BLOB_CATEGORIES, getLastLocalWriteAt, fetchCloudVersions, setAuditActor,
-  repairOwnerSession, cacheCloudData, googleCompanyLogin,
+  repairOwnerSession, cacheCloudData, googleCompanyLogin, companyAccountExists,
 } from "./store";
 import { base44 } from "@/api/base44Client";
 
@@ -143,6 +143,19 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     refresh();
   }, [refresh, tick]);
+
+  // If the saved session points at a company account that no longer exists on the
+  // server (e.g. it was deleted), the app would render blank — sign out instead so
+  // the user lands back on the login page.
+  useEffect(() => {
+    if (!session?.companyId) return;
+    companyAccountExists(session.companyId).then((exists) => {
+      if (!exists) {
+        clearSession();
+        refresh();
+      }
+    });
+  }, [session?.companyId, refresh]);
 
   // Live cross-device sync: periodically pull the latest persisted data while the app stays open,
   // so changes made on another device/browser show up here without needing a manual reload.
