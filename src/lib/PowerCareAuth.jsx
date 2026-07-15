@@ -56,6 +56,20 @@ export function AuthProvider({ children }) {
         repairOwnerSession(s.companyId);
         return;
       }
+      // A stale session userId (e.g. saved before the account was restored, or
+      // created locally before cloud data arrived) that no longer matches any
+      // employee rendered a blank app — re-point the session at the company
+      // owner/director from the synced roster.
+      if (s.userId && localData) {
+        const emps = localData.employees || [];
+        if (emps.length > 0 && !emps.some((e) => e.id === s.userId)) {
+          const fallback = emps.find((e) => e.id === localData.ownerId) || emps.find((e) => e.role === "director");
+          if (fallback) {
+            switchUser(fallback.id);
+            return;
+          }
+        }
+      }
       // Keep the audit trail attributed to whoever is actually acting in this session.
       const actorName = s.userId ? localData?.employees?.find((e) => e.id === s.userId)?.name : null;
       setAuditActor(actorName || getCompanyMeta(s.companyId)?.ownerEmail || "owner");

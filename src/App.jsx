@@ -78,8 +78,11 @@ function PageLoader() {
 }
 
 function RequireAuth({ children }) {
-  const { session } = usePowerCareAuth();
+  const { session, data, currentUser } = usePowerCareAuth();
   if (!session) return <Navigate to="/" replace />;
+  // While the workspace is still loading (fresh device / restored account),
+  // show a spinner instead of the blank page that pages render without a user.
+  if (!data || (session.userId && !currentUser)) return <PageLoader />;
   return <Layout>{children}</Layout>;
 }
 
