@@ -64,7 +64,7 @@ export default function LocationSearchBox({ t, onPick }) {
             <button
               key={r.place_id}
               type="button"
-              onClick={() => { onPick([parseFloat(r.lat), parseFloat(r.lon)]); setResults(null); }}
+              onClick={() => { onPick([parseFloat(r.lat), parseFloat(r.lon)], r); setResults(null); }}
               className="w-full flex items-start gap-1.5 px-3 py-2 text-start text-[11px] font-body hover:bg-muted"
               dir="auto"
             >

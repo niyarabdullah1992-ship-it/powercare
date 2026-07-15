@@ -28,6 +28,25 @@ function Recenter({ pos }) {
   return null;
 }
 
+// Flies the map to a searched area (city / district) so the user can then tap
+// the exact spot inside it.
+function FitArea({ area }) {
+  const map = useMap();
+  React.useEffect(() => {
+    if (!area) return;
+    if (area.bounds) map.fitBounds(area.bounds);
+    else map.setView(area.center, 12);
+  }, [area]);
+  return null;
+}
+
+// Broad places (a whole city, town, district...) shouldn't drop the marker at
+// their center — we zoom to them and let the user pick the precise spot.
+const BROAD_TYPES = new Set(["city", "town", "village", "state", "county", "suburb", "neighbourhood", "quarter", "administrative", "region", "municipality"]);
+function isBroadResult(r) {
+  return r && (r.class === "boundary" || BROAD_TYPES.has(r.type));
+}
+
 // Smart map-based picker for a station's GPS location + allowed check-in radius:
 // tap the map to place the marker, or use the device's current location — no
 // manual coordinate typing needed.
@@ -35,6 +54,8 @@ export default function StationLocationEditor({ t, station, onSave, onCancel }) 
   const [pos, setPos] = useState(station.lat != null && station.lng != null ? [station.lat, station.lng] : null);
   const [radius, setRadius] = useState(station.radiusMeters ?? 200);
   const [locating, setLocating] = useState(false);
+  const [area, setArea] = useState(null);
+  const [areaHint, setAreaHint] = useState("");
   const [accuracy, setAccuracy] = useState(null);
   const [error, setError] = useState("");
 
@@ -110,14 +131,34 @@ export default function StationLocationEditor({ t, station, onSave, onCancel }) 
         </div>
 
         <div className="px-4 py-2 border-b border-border">
-          <LocationSearchBox t={t} onPick={(p) => { stopTracking(); setAccuracy(null); setPos(p); }} />
+          <LocationSearchBox
+            t={t}
+            onPick={(p, r) => {
+              stopTracking();
+              setAccuracy(null);
+              if (isBroadResult(r)) {
+                // City / district searched — fly there, let the user tap the exact spot.
+                const bb = r?.boundingbox?.map(Number);
+                setArea({ center: p, bounds: bb?.length === 4 ? [[bb[0], bb[2]], [bb[1], bb[3]]] : null });
+                setAreaHint(r?.display_name?.split(",")[0] || "");
+              } else {
+                setArea(null);
+                setAreaHint("");
+                setPos(p);
+              }
+            }}
+          />
+          {areaHint && !pos && (
+            <p className="mt-1 text-[11px] text-accent font-body" dir="auto">📍 {areaHint} — {t("tapMapToSet")}</p>
+          )}
         </div>
 
         <div className="h-72 relative">
           <MapContainer center={pos || DEFAULT_CENTER} zoom={pos ? 17 : 6} style={{ height: "100%", width: "100%" }}>
             <GoogleTiles />
-            <ClickToPlace onPick={(p) => { stopTracking(); setAccuracy(null); setPos(p); }} />
+            <ClickToPlace onPick={(p) => { stopTracking(); setAccuracy(null); setArea(null); setPos(p); }} />
             <Recenter pos={pos} />
+            <FitArea area={area} />
             {pos && accuracy != null && (
               <Circle center={pos} radius={accuracy} pathOptions={{ color: "#3b82f6", weight: 1, fillOpacity: 0.08 }} />
             )}
