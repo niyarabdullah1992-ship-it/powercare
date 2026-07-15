@@ -4,14 +4,23 @@ import { useI18n } from "@/lib/i18n";
 import Logo from "@/components/Logo";
 
 const VIDEO_URL = "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/7b1b2e430_Promo_Video.mp4";
-const NARRATION_URL_AR = "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/8111ff65d_3e21a84a0_speech.mp3";
-const NARRATION_URL_EN = "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/a71af389e_speech.mp3";
+const NARRATION_URLS = {
+  ar: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/8111ff65d_3e21a84a0_speech.mp3",
+  en: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/a71af389e_speech.mp3",
+  de: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/003d6b25c_speech.mp3",
+  fr: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/7254f6bce_speech.mp3",
+  es: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/6c27674c4_speech.mp3",
+  pt: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/1b27d629f_speech.mp3",
+  ru: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/c816c8103_speech.mp3",
+  ja: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/a01dbb1af_speech.mp3",
+  ko: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/1c1c8c196_speech.mp3",
+};
 
 export default function VideoIntro() {
   const { t, lang } = useI18n();
   const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
-  const narrationUrl = lang === "ar" ? NARRATION_URL_AR : NARRATION_URL_EN;
+  const narrationUrl = NARRATION_URLS[lang] || NARRATION_URLS.en;
 
   const toggleAudio = () => {
     if (!audioRef.current) return;
@@ -51,7 +60,7 @@ export default function VideoIntro() {
           <video src={VIDEO_URL} controls className="w-full aspect-video bg-black" />
         </div>
 
-        <audio ref={audioRef} src={narrationUrl} onEnded={() => setPlaying(false)} />
+        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} onEnded={() => setPlaying(false)} />
         <button
           onClick={toggleAudio}
           className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-landing-gold/30 hover:bg-white/10 transition-colors text-landing-gold-light font-body text-sm"
