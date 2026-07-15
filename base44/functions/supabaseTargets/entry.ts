@@ -130,6 +130,29 @@ Deno.serve(async (req) => {
       const emps = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId: userId });
       return emps.length > 0;
     };
+    // ---- PostgREST injection guard ----
+    // Ids interpolated into logical `or=(...)` query trees must never contain
+    // grouping characters (encodeURIComponent does NOT escape parentheses/commas).
+    // All system ids are [A-Za-z0-9_-], so anything else is stripped.
+    const safeId = (v) => String(v || "").replace(/[^\w-]/g, "");
+    // ---- Cross-tenant room boundary (chat rooms & task folders) ----
+    // Resolves a client-supplied room/station id to a server-validated id scoped
+    // to the caller's company. Shared rooms ("hq"/"all") are namespaced per
+    // company; station ids must exist in the caller's company; group ids must be
+    // one of the caller's own chat groups. Returns null when out of bounds.
+    const resolveRoomId = async (stationId) => {
+      const id = String(stationId || "");
+      if (!id) return null;
+      if (auth?.admin) return id;
+      if (id === "hq" || id === "all") return `${auth.companyId}_${id}`;
+      if (id.startsWith("group_")) {
+        const meta = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: auth.companyId, category: "companyMeta" });
+        const groups = meta[0]?.payload?.[0]?.stationChatGroups || [];
+        return groups.some((g) => `group_${g.id}` === id) ? id : null;
+      }
+      const sts = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId, stationId: id });
+      return sts.length ? id : null;
+    };
 
     if (action === "listTargets") {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?order=created_at.desc`, { headers });
@@ -565,14 +588,23 @@ Deno.serve(async (req) => {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/task_folders?order=sort_order.asc,path.asc`, { headers });
       const rows = await res.json();
       if (!res.ok) return Response.json({ folders: [] });
-      return Response.json({ folders: rows || [] });
+      if (auth?.admin) return Response.json({ folders: rows || [] });
+      // Tenant boundary: only folders belonging to the caller's own stations
+      // (or the company's namespaced HQ room) are ever returned.
+      const sts = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
+      const allowed = new Set(sts.map((s) => s.stationId));
+      allowed.add(`${auth.companyId}_hq`);
+      allowed.add(`${auth.companyId}_all`);
+      return Response.json({ folders: (rows || []).filter((f) => allowed.has(f.station_id)) });
     }
 
     if (action === "createFolder") {
       const { stationId, path, sortOrder } = body;
       if (!stationId || !path) return Response.json({ error: "Missing fields" }, { status: 400 });
+      const roomId = await resolveRoomId(stationId);
+      if (!roomId) return Response.json({ error: "Forbidden" }, { status: 403 });
       const checkRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(stationId)}&path=eq.${encodeURIComponent(path)}`,
+        `${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(roomId)}&path=eq.${encodeURIComponent(path)}`,
         { headers }
       );
       const existing = await checkRes.json();
@@ -582,7 +614,7 @@ Deno.serve(async (req) => {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/task_folders`, {
         method: "POST",
         headers: { ...headers, Prefer: "return=representation" },
-        body: JSON.stringify({ station_id: stationId, path, sort_order: Number(sortOrder) || 0 }),
+        body: JSON.stringify({ station_id: roomId, path, sort_order: Number(sortOrder) || 0 }),
       });
       const created = await res.json();
       if (!res.ok) {
@@ -609,11 +641,15 @@ Deno.serve(async (req) => {
     if (action === "renameFolder") {
       const { stationId, oldPath, newPath } = body;
       if (!stationId || !oldPath || !newPath) return Response.json({ error: "Missing fields" }, { status: 400 });
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(stationId)}&or=(path.eq.${encodeURIComponent(oldPath)},path.like.${encodeURIComponent(oldPath)}/*)`,
-        { headers }
-      );
-      const rows = await res.json();
+      const roomId = await resolveRoomId(stationId);
+      if (!roomId) return Response.json({ error: "Forbidden" }, { status: 403 });
+      // Two plain-filter queries instead of an or=() tree — user-typed folder
+      // paths can contain parentheses/commas that would break the logical tree.
+      const [exactRes, nestedRes] = await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(roomId)}&path=eq.${encodeURIComponent(oldPath)}`, { headers }),
+        fetch(`${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(roomId)}&path=like.${encodeURIComponent(oldPath)}/*`, { headers }),
+      ]);
+      const rows = [...(await exactRes.json() || []), ...(await nestedRes.json() || [])];
       for (const row of rows || []) {
         const updatedPath = row.path === oldPath ? newPath : newPath + row.path.slice(oldPath.length);
         await fetch(`${SUPABASE_URL}/rest/v1/task_folders?id=eq.${encodeURIComponent(row.id)}`, {
@@ -628,18 +664,19 @@ Deno.serve(async (req) => {
     if (action === "deleteFolder") {
       const { stationId, path } = body;
       if (!stationId || !path) return Response.json({ error: "Missing fields" }, { status: 400 });
-      await fetch(
-        `${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(stationId)}&or=(path.eq.${encodeURIComponent(path)},path.like.${encodeURIComponent(path)}/*)`,
-        { method: "DELETE", headers }
-      );
+      const roomId = await resolveRoomId(stationId);
+      if (!roomId) return Response.json({ error: "Forbidden" }, { status: 403 });
+      // Two plain-filter deletes instead of an or=() tree (injection-safe).
+      await fetch(`${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(roomId)}&path=eq.${encodeURIComponent(path)}`, { method: "DELETE", headers });
+      await fetch(`${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(roomId)}&path=like.${encodeURIComponent(path)}/*`, { method: "DELETE", headers });
       return Response.json({ ok: true });
     }
 
     if (action === "listChatMessages") {
-      const { stationId } = body;
-      if (!stationId) return Response.json({ error: "Missing stationId" }, { status: 400 });
+      const roomId = await resolveRoomId(body.stationId);
+      if (!roomId) return Response.json({ error: "Forbidden" }, { status: 403 });
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/station_chat?station_id=eq.${encodeURIComponent(stationId)}&order=created_at.asc&limit=200`,
+        `${SUPABASE_URL}/rest/v1/station_chat?station_id=eq.${encodeURIComponent(roomId)}&order=created_at.asc&limit=200`,
         { headers }
       );
       const rows = await res.json();
@@ -652,6 +689,8 @@ Deno.serve(async (req) => {
       if (!stationId || !userId || (!text && (!files || files.length === 0))) {
         return Response.json({ error: "Missing fields" }, { status: 400 });
       }
+      const roomId = await resolveRoomId(stationId);
+      if (!roomId) return Response.json({ error: "Forbidden" }, { status: 403 });
       const cleanFiles = Array.isArray(files)
         ? files.filter((f) => f && f.url).map((f) => ({ url: f.url, name: f.name || "file", type: f.type || "file" }))
         : [];
@@ -659,7 +698,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { ...headers, Prefer: "return=representation" },
         body: JSON.stringify({
-          station_id: stationId,
+          station_id: roomId,
           user_id: userId,
           user_name: userName || "User",
           text: text || "",
@@ -696,8 +735,11 @@ Deno.serve(async (req) => {
       if (!userId || !otherUserId) return Response.json({ error: "Missing fields" }, { status: 400 });
       // Only a participant may read the conversation — identity comes from the session.
       if (!(await canActAs(userId))) return Response.json({ error: "Forbidden" }, { status: 403 });
+      // safeId strips parentheses/commas so ids can never break out of the or=() tree.
+      const me = safeId(userId);
+      const other = safeId(otherUserId);
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/direct_messages?or=(and(sender_id.eq.${encodeURIComponent(userId)},receiver_id.eq.${encodeURIComponent(otherUserId)}),and(sender_id.eq.${encodeURIComponent(otherUserId)},receiver_id.eq.${encodeURIComponent(userId)}))&order=created_at.asc&limit=200`,
+        `${SUPABASE_URL}/rest/v1/direct_messages?or=(and(sender_id.eq.${me},receiver_id.eq.${other}),and(sender_id.eq.${other},receiver_id.eq.${me}))&order=created_at.asc&limit=200`,
         { headers }
       );
       const rows = await res.json();

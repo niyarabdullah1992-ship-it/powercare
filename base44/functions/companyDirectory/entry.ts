@@ -339,6 +339,20 @@ Deno.serve(async (req) => {
 
     if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // Server-side privilege of the acting user, derived from the server's own
+    // Employee record (never from the request body):
+    // - 'full': owner/admin sessions, managers and HR staff — may modify company data.
+    // - 'self': regular employees — may only edit their own non-privileged fields.
+    // - 'none': session user no longer exists in this company.
+    const getActorPrivilege = async () => {
+      if (auth.admin || auth.role === 'owner') return 'full';
+      const actors = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: auth.userId });
+      const actor = actors[0];
+      if (!actor) return 'none';
+      if (['director', 'ops_manager', 'pgm', 'station_manager'].includes(actor.role) || actor.hrLevelId) return 'full';
+      return 'self';
+    };
+
     if (action === 'revokeSession') {
       const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: body.sessionToken, companyId });
       for (const session of sessions) await base44.asServiceRole.entities.CompanySession.delete(session.id);
@@ -417,6 +431,28 @@ Deno.serve(async (req) => {
       const { employees } = body;
       const incoming = (Array.isArray(employees) ? employees : []).map(({ id, ...rest }) => ({ ...rest, employeeId: id, companyId }));
       const current = await base44.asServiceRole.entities.Employee.filter({ companyId });
+      const privilege = await getActorPrivilege();
+      if (privilege === 'none') return Response.json({ error: 'Forbidden' }, { status: 403 });
+      if (privilege === 'self') {
+        // Anti-privilege-escalation: a regular employee may not add/remove
+        // employees, change anyone's role/permissions/HR position, or touch
+        // another employee's profile (salary etc.). Own record edits are allowed.
+        const PROTECTED = ['role', 'canManageTeam', 'managedStations', 'hrLevelId', 'hrStationId', 'hrClusterId', 'points'];
+        const curByKey = new Map(current.map((r) => [r.employeeId, r]));
+        const same = (rec, cur, k) => JSON.stringify(rec[k] ?? null) === JSON.stringify(cur[k] ?? null);
+        if (incoming.length !== current.length || incoming.some((r) => !curByKey.has(r.employeeId))) {
+          return Response.json({ error: 'Forbidden: roster changes require a manager' }, { status: 403 });
+        }
+        for (const rec of incoming) {
+          const cur = curByKey.get(rec.employeeId);
+          if (PROTECTED.some((k) => !same(rec, cur, k))) {
+            return Response.json({ error: 'Forbidden: privileged fields require a manager' }, { status: 403 });
+          }
+          if (rec.employeeId !== auth.userId && !same(rec, cur, 'profile')) {
+            return Response.json({ error: 'Forbidden: cannot edit another employee\'s profile' }, { status: 403 });
+          }
+        }
+      }
       await diffSync(base44.asServiceRole.entities.Employee, current, incoming, 'employeeId');
       await bumpSignal(base44, companyId);
       return Response.json({ ok: true });
@@ -429,6 +465,12 @@ Deno.serve(async (req) => {
 
     if (action === 'syncStations') {
       const { stations } = body;
+      // Only owners/managers/HR may modify stations. Regular-employee pushes are
+      // acknowledged but ignored (server copy stays authoritative), so the
+      // client's background sync loop never gets stuck retrying.
+      const privilege = await getActorPrivilege();
+      if (privilege === 'none') return Response.json({ error: 'Forbidden' }, { status: 403 });
+      if (privilege === 'self') return Response.json({ ok: true, ignored: true });
       const incoming = (Array.isArray(stations) ? stations : []).map(({ id, ...rest }) => ({ ...rest, stationId: id, companyId }));
       const current = await base44.asServiceRole.entities.Station.filter({ companyId });
       await diffSync(base44.asServiceRole.entities.Station, current, incoming, 'stationId');
@@ -460,6 +502,14 @@ Deno.serve(async (req) => {
     if (action === 'syncBlob') {
       const { category, payload } = body;
       if (!category) return Response.json({ error: 'Missing category' }, { status: 400 });
+      // Privileged categories (HR hierarchy, company ownership/settings) may only
+      // be written by owners/managers/HR — a regular employee's push is
+      // acknowledged but ignored so the retry loop never wedges.
+      if (['hrLevels', 'hrClusters', 'companyMeta'].includes(category)) {
+        const privilege = await getActorPrivilege();
+        if (privilege === 'none') return Response.json({ error: 'Forbidden' }, { status: 403 });
+        if (privilege === 'self') return Response.json({ ok: true, ignored: true });
+      }
       const existing = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
       const data = Array.isArray(payload) ? payload : [];
       if (existing.length) {
