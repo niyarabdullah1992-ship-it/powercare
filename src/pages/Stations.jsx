@@ -17,7 +17,8 @@ export default function Stations() {
   const { t } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: "", location: "", type: "" });
+  const [form, setForm] = useState({ name: "", location: "", type: "", lat: null, lng: null, radiusMeters: null });
+  const [pickingNewLocation, setPickingNewLocation] = useState(false);
   const [renamingId, setRenamingId] = useState(null);
   const [renameVal, setRenameVal] = useState("");
   const [analyticsFor, setAnalyticsFor] = useState(null);
@@ -44,11 +45,15 @@ export default function Stations() {
         type: form.type,
         status: "active",
         managerId: null,
+        lat: form.lat,
+        lng: form.lng,
+        radiusMeters: form.radiusMeters,
         createdAt: new Date().toISOString(),
       });
     });
     setShowAdd(false);
-    setForm({ name: "", location: "", type: "" });
+    setPickingNewLocation(false);
+    setForm({ name: "", location: "", type: "", lat: null, lng: null, radiusMeters: null });
   };
 
   const cycleStatus = (id) => {
@@ -197,6 +202,21 @@ export default function Stations() {
           <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("stationName")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
           <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder={t("location")} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
           <input value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} placeholder={t("stationType")} className="px-3 py-2 rounded-md border border-input text-sm font-body" />
+          <div className="md:col-span-3">
+            {pickingNewLocation ? (
+              <StationLocationEditor
+                t={t}
+                station={{ lat: form.lat, lng: form.lng, radiusMeters: form.radiusMeters }}
+                onSave={(coords) => { setForm({ ...form, lat: coords.lat, lng: coords.lng, radiusMeters: coords.radiusMeters }); setPickingNewLocation(false); }}
+                onCancel={() => setPickingNewLocation(false)}
+              />
+            ) : (
+              <button type="button" onClick={() => setPickingNewLocation(true)} className="flex items-center gap-1.5 text-xs font-body text-accent hover:underline">
+                <MapPin className="w-3.5 h-3.5" />
+                {form.lat != null && form.lng != null ? `${t("locationSet")} ✓ — ${t("editLocation")}` : t("setLocation")}
+              </button>
+            )}
+          </div>
           <div className="md:col-span-3 flex gap-2">
             <button type="submit" className="px-4 py-2 rounded-md bg-foreground text-background text-sm">{t("save")}</button>
             <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-md border border-border text-sm">{t("cancel")}</button>
