@@ -69,11 +69,13 @@ You answer questions from "${currentUser.name}" (role: ${currentUser.role}) abou
 
 AVAILABLE ACTIONS (include them in "actions" when the user asks you to do something):
 - {"type":"export_data","dataset":"employees"|"tasks"|"targets"|"reports"|"stations"|"safety"|"plans"|"schedules"|"complaints"|"files"|"hr"|"leaves"|"certificates"|"performance"|"attendance","format":"excel"|"pdf","reportTitle":"<title in the user's language>"} — exports any permitted site dataset WITHOUT a signature. "excel" downloads an Excel-compatible file; "pdf" opens a brand-styled printable report. Use ONLY when the user does NOT mention signing.
-- {"type":"create_task","title":"...","description":"...","station":"<station name>","assignee":"<employee name>","dailyTarget":1} — creates a new task.
+- {"type":"create_task","title":"...","description":"...","steps":"...","section":"<folder/section name>","station":"<station name>","assignee":"<employee name>","taskTarget":1,"priority":"urgent"|"high"|"medium"|"low","days":30} — creates a REAL task in the company task system (manager roles only). If "assignee" is given the task is assigned to that member; else if "station" is given it goes to that station's team; otherwise to the HQ team. "taskTarget" = how many units to complete; "days" = duration (default 30).
+- {"type":"log_progress","taskTitle":"<existing task title>","amount":1} — logs completed units on one of the user's OWN tasks (any employee can use this on their assigned tasks). Note: reaching 100% requires uploading proof in the Tasks page.
 - {"type":"update_task_status","taskTitle":"<existing task title>","newStatus":"pending"|"in_progress"|"completed"|"stopped"} — changes a task's status.
+- {"type":"add_planner_item","title":"...","time":"HH:MM","date":"YYYY-MM-DD"} — adds an item to the user's personal Day Planner (available to everyone; date defaults to today).
 - {"type":"sign_report","dataset":"employees"|"tasks"|"targets"|"reports"|"stations"|"safety"|"plans"|"schedules"|"complaints"|"files"|"hr"|"leaves"|"certificates"|"performance"|"attendance","reportTitle":"<title in the user's language>"} — generates the report, stamps the user's SIGNATURE + verified badge (encrypted verification ID + QR code + SHA-256 fingerprint registered in the verification registry) INSIDE the file and downloads the signed PDF automatically.
   CRITICAL: if the user's request contains ANY signing word — sign / توقيع / وقّع / وقع / اعتماد / اعتمد / ختم — you MUST use sign_report (NOT export_data), even though the request also mentions تقرير/PDF. Never combine sign_report with export_data for the same request.
-- {"type":"open_page","page":"dashboard"|"tasks"|"attendance"|"reports"|"performance"|"employees"|"stations"|"hr"|"complaints"|"chat"|"files"|"daily_report"|"help"|"signing"|"verify"} — opens a PowerCare section in a NEW TAB. Use this action ONLY for a direct navigation command such as "open", "go to", "افتح", "اذهب" or "انتقل". NEVER use it for a question, explanation, analysis, or merely mentioning a section.
+- {"type":"open_page","page":"dashboard"|"tasks"|"attendance"|"reports"|"performance"|"employees"|"stations"|"hr"|"complaints"|"chat"|"files"|"daily_report"|"help"|"signing"|"verify"|"planner"|"journal"|"calendar"} — opens a PowerCare section in a NEW TAB. Use this action ONLY for a direct navigation command such as "open", "go to", "افتح", "اذهب" or "انتقل". NEVER use it for a question, explanation, analysis, or merely mentioning a section.
 
 DOCUMENT SIGNING & VERIFICATION (you know this feature well):
 - The platform's File Signing section lets every employee save a personal signature, then sign any PDF/image document. Signing stamps a verification badge (encrypted verification ID + QR code) on the document and registers the signed file's SHA-256 fingerprint in a verification registry.
@@ -114,6 +116,14 @@ Answer the last user question.`,
                   description: { type: "string" },
                   station: { type: "string" },
                   assignee: { type: "string" },
+                  steps: { type: "string" },
+                  section: { type: "string" },
+                  taskTarget: { type: "number" },
+                  priority: { type: "string" },
+                  days: { type: "number" },
+                  amount: { type: "number" },
+                  time: { type: "string" },
+                  date: { type: "string" },
                   dailyTarget: { type: "number" },
                   taskTitle: { type: "string" },
                   newStatus: { type: "string" },

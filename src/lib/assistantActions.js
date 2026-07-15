@@ -119,6 +119,7 @@ export async function executeAssistantAction(action, { data, company, currentUse
       stations: "/app/stations", hr: "/app/hr", complaints: "/app/complaints",
       chat: "/app/chat", files: "/app/files", daily_report: "/app/daily-report",
       help: "/app/help", signing: "/app/signing", verify: "/verify",
+      planner: "/app/planner", journal: "/app/journal", calendar: "/app/calendar",
     };
     const path = routes[norm(action.page)];
     if (!path) return { ok: false, message: t("aiActionFailed") };
@@ -130,21 +131,75 @@ export async function executeAssistantAction(action, { data, company, currentUse
     if (!canWrite) return { ok: false, message: t("aiNoPermission") };
     const station = data.stations.find((s) => matches(s.name, action.station || ""));
     const assignee = data.employees.find((e) => matches(e.name, action.assignee || ""));
-    updateCompany(company.id, (d) => {
-      d.tasks.push({
-        id: "task_" + Math.random().toString(36).slice(2, 11),
+    const assignmentType = assignee ? "member" : station ? "station_team" : "hq_team";
+    try {
+      const res = await base44.functions.invoke("supabaseTargets", {
+        action: "createTarget",
+        userRole: currentUser.role,
+        managerId: currentUser.id,
         title: action.title || "Untitled task",
         description: action.description || "",
-        stationId: station?.id || null,
-        assignedTo: assignee?.id || null,
-        status: "pending",
-        dailyTarget: Number(action.dailyTarget) || 1,
-        progress: 0,
-        stops: [],
+        steps: action.steps || "",
+        section: action.section || "",
+        taskTarget: Number(action.taskTarget || action.dailyTarget) || 1,
+        assignmentType,
+        assignmentId: assignee ? assignee.id : station ? station.id : null,
+        employeeId: assignee?.id || null,
+        stationId: assignee ? (assignee.stationId || null) : (station?.id || null),
+        priority: ["urgent", "high", "medium", "low"].includes(action.priority) ? action.priority : "medium",
+        days: Number(action.days) > 0 ? Number(action.days) : 30,
+      });
+      if (res?.data?.target) return { ok: true, message: t("aiTaskCreated") };
+      return { ok: false, message: res?.data?.error || t("aiActionFailed") };
+    } catch (err) {
+      return { ok: false, message: err?.response?.data?.error || t("aiActionFailed") };
+    }
+  }
+
+  if (action.type === "log_progress") {
+    try {
+      const res = await base44.functions.invoke("supabaseTargets", {
+        action: "listTargets",
+        userRole: currentUser.role,
+        userId: currentUser.id,
+        stationId: currentUser.stationId || null,
+        managedStations: currentUser.managedStations || [],
+      });
+      const tg = (res?.data?.targets || []).find((x) => matches(x.title, action.taskTitle || ""));
+      if (!tg) return { ok: false, message: t("aiNoData") };
+      await base44.functions.invoke("supabaseTargets", {
+        action: "updateProgress",
+        targetId: tg.id,
+        amount: Number(action.amount) || 1,
+        userId: currentUser.id,
+        managerId: tg.manager_id,
+        employeeName: currentUser.name,
+        proofFiles: [],
+      });
+      return { ok: true, message: t("aiStatusUpdated") };
+    } catch (err) {
+      const code = err?.response?.data?.error;
+      return { ok: false, message: code === "PROOF_REQUIRED" ? t("proofRequired") : (code || t("aiActionFailed")) };
+    }
+  }
+
+  if (action.type === "add_planner_item") {
+    if (!action.title) return { ok: false, message: t("aiActionFailed") };
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(action.date || "") ? action.date : today;
+    updateCompany(company.id, (d) => {
+      d.plannerItems = d.plannerItems || [];
+      d.plannerItems.push({
+        id: "pln_" + Math.random().toString(36).slice(2, 11),
+        date,
+        time: /^\d{2}:\d{2}$/.test(action.time || "") ? action.time : "",
+        title: action.title,
+        done: false,
         createdAt: new Date().toISOString(),
       });
     });
-    return { ok: true, message: t("aiTaskCreated") };
+    return { ok: true, message: `${t("dayPlanner")}: ${action.title} ✔` };
   }
 
   if (action.type === "update_task_status") {
