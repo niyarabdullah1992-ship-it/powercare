@@ -15,13 +15,11 @@ import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { queryClientInstance } from "@/lib/query-client";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
-import QuickActionsPanel from "@/components/dashboard/QuickActionsPanel";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
   const { data, currentUser, company, refresh } = useAuth();
   const [stoppageCount, setStoppageCount] = useState(0);
-  const [myTargets, setMyTargets] = useState([]);
   const [showBranding, setShowBranding] = useState(false);
 
   const loadStoppage = async () => {
@@ -35,7 +33,6 @@ export default function Dashboard() {
         managedStations: currentUser.managedStations || [],
       });
       const list = res?.data?.targets || [];
-      setMyTargets(list);
       let count = 0;
       for (const tg of list) {
         for (const c of Array.isArray(tg.comments) ? tg.comments : []) {
@@ -78,18 +75,12 @@ export default function Dashboard() {
     <WelcomeHero name={currentUser.name} companyName={data.name} t={t} lang={lang} alerts={welcomeAlerts} employee={currentUser} companyId={company.id} />
   );
 
-  const isIndividualPlan = String(data.plan || company?.plan || "").toLowerCase() === "individual";
-  const quickActions = (
-    <QuickActionsPanel currentUser={currentUser} company={company} data={data} targets={myTargets} t={t} lang={lang} isIndividual={isIndividualPlan} />
-  );
-
   // Individual (personal) workspaces get a focused personal dashboard.
-  if (isIndividualPlan) {
+  if (String(data.plan || company?.plan || "").toLowerCase() === "individual") {
     return (
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="space-y-6">
           {welcomeHero}
-          {quickActions}
           <IndividualDashboard data={data} lang={lang} />
         </div>
       </PullToRefresh>
@@ -103,7 +94,6 @@ export default function Dashboard() {
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="space-y-6">
         {welcomeHero}
-        {quickActions}
         <EmployeeDashboard user={currentUser} company={company} data={data} />
       </div>
     </PullToRefresh>
@@ -115,7 +105,6 @@ export default function Dashboard() {
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="space-y-6">
           {welcomeHero}
-          {quickActions}
           <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
         </div>
       </PullToRefresh>
@@ -173,7 +162,6 @@ export default function Dashboard() {
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-8">
       {welcomeHero}
-      {quickActions}
       <OnboardingChecklist data={data} lang={lang} t={t} />
       <div className="border-b border-border pb-6 flex items-end justify-between flex-wrap gap-3">
         <div>
