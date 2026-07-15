@@ -4,7 +4,6 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { Plug } from "lucide-react";
 import ErpExportCenter from "@/components/erp/ErpExportCenter";
 import ApiWebhooksPanel from "@/components/erp/ApiWebhooksPanel";
-import QuickBooksCard from "@/components/erp/QuickBooksCard";
 
 export default function Integrations() {
   const { lang } = useI18n();
@@ -19,7 +18,6 @@ export default function Integrations() {
   const TABS = [
     { id: "export", label: ar ? "تصدير ERP" : "ERP Export" },
     { id: "api", label: "API & Webhooks" },
-    { id: "quickbooks", label: "QuickBooks" },
   ];
 
   return (
@@ -31,7 +29,7 @@ export default function Integrations() {
         <div>
           <h1 className="font-heading text-2xl font-semibold">{ar ? "تكاملات ERP" : "ERP Integrations"}</h1>
           <p className="text-xs text-muted-foreground font-body">
-            {ar ? "اربط PowerCare بأنظمتك: SAP، Oracle، Odoo، QuickBooks أو أي نظام عبر API" : "Connect PowerCare to your systems: SAP, Oracle, Odoo, QuickBooks or anything via API"}
+            {ar ? "اربط PowerCare بأنظمتك: SAP، Oracle، Odoo أو أي نظام عبر API" : "Connect PowerCare to your systems: SAP, Oracle, Odoo or anything via API"}
           </p>
         </div>
       </div>
@@ -52,7 +50,6 @@ export default function Integrations() {
 
       {tab === "export" && <ErpExportCenter company={company} data={data} ar={ar} />}
       {tab === "api" && <ApiWebhooksPanel company={company} ar={ar} />}
-      {tab === "quickbooks" && <QuickBooksCard ar={ar} />}
     </div>
   );
 }
