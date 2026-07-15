@@ -6,6 +6,7 @@ import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Faceb
 import Logo from "@/components/Logo";
 import VideoIntro from "@/components/landing/VideoIntro";
 import NiroShowcase from "@/components/landing/NiroShowcase";
+import StatsBand from "@/components/landing/StatsBand";
 import OtpStep from "@/components/landing/OtpStep";
 import PasswordResetForm from "@/components/landing/PasswordResetForm";
 import { trackVisit } from "@/lib/trackVisit";
@@ -131,11 +132,17 @@ export default function Landing() {
           <div className="text-center lg:text-start">
             <h1 className="hero-title break-words text-5xl uppercase text-landing-gold sm:text-6xl md:text-8xl">{t("appName")}</h1>
 
-            <div className="mx-auto mt-8 max-w-lg overflow-hidden rounded-2xl border border-landing-gold/15 shadow-lg lg:mx-0">
+            <p className="mx-auto mt-5 max-w-lg text-base font-body leading-relaxed text-[#3a2f22]/65 lg:mx-0">
+              {lang === "ar"
+                ? "منصة واحدة لإدارة الحضور والمهام والتوقيع الرقمي — بدقة الموقع الجغرافي وذكاء اصطناعي يخطط يومك."
+                : "One platform for attendance, tasks and digital signing — with GPS precision and AI that plans your day."}
+            </p>
+
+            <div className="mx-auto mt-8 max-w-lg lg:mx-0">
               <img
-                src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/098e1f42d_generated_image.png"
-                alt={lang === "ar" ? "موظفة سعيدة تعمل على منصة PowerCare" : "Happy employee working with PowerCare"}
-                className="h-56 w-full object-cover sm:h-64"
+                src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/0c8f66d08_generated_image.png"
+                alt={lang === "ar" ? "لوحة تحكم PowerCare" : "PowerCare dashboard"}
+                className="w-full drop-shadow-2xl"
                 loading="lazy"
               />
             </div>
@@ -210,7 +217,12 @@ export default function Landing() {
         </div>
       </div>
 
+      {/* Dark stats band — social proof */}
+      <StatsBand lang={lang} />
+
       <VideoIntro />
+
+      <GoldDivider />
 
       {/* Niro live demo — the AI planner sells itself */}
       <NiroShowcase lang={lang} />
@@ -278,6 +290,16 @@ export default function Landing() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function GoldDivider() {
+  return (
+    <div className="flex items-center justify-center gap-3 bg-landing-bg py-2">
+      <span className="h-px w-24 bg-gradient-to-r from-transparent to-landing-gold/50" />
+      <span className="h-1.5 w-1.5 rotate-45 bg-landing-gold" />
+      <span className="h-px w-24 bg-gradient-to-l from-transparent to-landing-gold/50" />
     </div>
   );
 }
