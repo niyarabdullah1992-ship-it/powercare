@@ -80,15 +80,16 @@ export default function Landing() {
     if (submitting) return;
     setError("");
     setSubmitting(true);
-    const r = await login(email, password);
+    const r = await login(email, password, loginKind);
     if (!r) setError(t("errBadCredentials"));
+    else if (r.wrongKind) setError(wrongKindError());
     else if (r.otpRequired) {
       const routed = routeAccounts(r.accounts);
       if ((r.accounts || []).length > 0 && routed.length === 0) {
         setError(wrongKindError());
       } else {
         setOtpPending(r.pendingId);
-        setOtpAccounts(routed);
+        setOtpAccounts(routed.length ? routed : r.accounts || []);
       }
     }
     setSubmitting(false);
@@ -101,7 +102,7 @@ export default function Landing() {
   };
 
   const handleResendOtp = async () => {
-    const result = await login(email, password);
+    const result = await login(email, password, loginKind);
     if (!result?.otpRequired) return false;
     const routed = routeAccounts(result.accounts);
     setOtpPending(result.pendingId);

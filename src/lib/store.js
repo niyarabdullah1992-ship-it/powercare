@@ -591,19 +591,23 @@ export async function employeeLogin(email, password) {
    and returns a pendingId. Step 2: completeLoginOtp exchanges pendingId + code for the
    real session token. Offline fallback: owner accounts cached on this device log in
    directly (no network = no way to email a code). */
-export async function startLogin(email, password) {
+export async function startLogin(email, password, preferKind) {
   try {
-    const res = await invokeDirectory({ action: "findAccountByEmail", email, password });
+    const res = await invokeDirectory({ action: "findAccountByEmail", email, password, preferKind: preferKind || null });
+    if (res?.data?.wrongKind) return { wrongKind: true };
     if (res?.data?.token && res.data.kind === "owner") return { company: finishOwnerLogin(res.data) };
     if (res?.data?.otpRequired) return { otpRequired: true, pendingId: res.data.pendingId, accounts: res.data.accounts || [] };
   } catch {
     // network/backend issue — try employee login, then the local fallback below
   }
-  try {
-    const res = await invokeDirectory({ action: "employeeLogin", email, password });
-    if (res?.data?.otpRequired) return { otpRequired: true, pendingId: res.data.pendingId };
-  } catch {
-    // ignore — fall through to local fallback
+  // Employee logins are company staff — never applicable on the Individual tab.
+  if (preferKind !== "individual") {
+    try {
+      const res = await invokeDirectory({ action: "employeeLogin", email, password });
+      if (res?.data?.otpRequired) return { otpRequired: true, pendingId: res.data.pendingId };
+    } catch {
+      // ignore — fall through to local fallback
+    }
   }
   // No offline password fallback: OTP completion is mandatory for every account.
   return null;

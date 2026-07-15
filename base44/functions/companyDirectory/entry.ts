@@ -241,10 +241,19 @@ Deno.serve(async (req) => {
       // One email may own several accounts (e.g. a company AND a personal/individual
       // workspace) — collect every account this password unlocks so the client can
       // let the user pick which one to enter after the OTP step.
-      const matches = [];
+      const allMatches = [];
       for (const account of accounts) {
-        if (await verifyPassword(password, account.ownerPassword)) matches.push(account);
+        if (await verifyPassword(password, account.ownerPassword)) allMatches.push(account);
       }
+      // Enforce the chosen login tab server-side: a "Company Login" attempt only ever
+      // considers company accounts (and vice versa). If the password unlocked accounts
+      // but none of the chosen kind, tell the client explicitly instead of routing
+      // the user into the wrong workspace.
+      const wantIndividual = body.preferKind === 'individual';
+      const matches = body.preferKind
+        ? allMatches.filter((a) => (String(a.plan || '').toLowerCase() === 'individual') === wantIndividual)
+        : allMatches;
+      if (allMatches.length && !matches.length) return Response.json({ wrongKind: true });
       const found = matches[0] || null;
       if (!found) return Response.json({ company: null });
       // Upgrade legacy plaintext/SHA-256 records to slow PBKDF2 after a valid login.

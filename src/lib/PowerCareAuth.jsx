@@ -209,8 +209,8 @@ export function AuthProvider({ children }) {
 
   // Step 1: password check — either logs in directly (offline fallback) or returns
   // { otpRequired, pendingId } after the server emails a one-time verification code.
-  const login = async (email, password) => {
-    const r = await startLogin(email, password);
+  const login = async (email, password, preferKind) => {
+    const r = await startLogin(email, password, preferKind);
     if (r?.company) refresh();
     return r;
   };
