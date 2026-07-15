@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { extraTranslations } from "@/lib/i18nExtra";
 
 // Focused UI string set, fully translated for 9 languages.
 const dict = {
@@ -1532,6 +1533,11 @@ const dict = {
     syncPendingTitle: "클라우드 업로드를 기다리는 변경 사항", syncPending: "동기화 대기 중", syncing: "동기화 중...", syncSavedTitle: "모든 데이터가 클라우드에 저장되었습니다", synced: "동기화됨", toggleTheme: "테마 전환",
   },
 };
+
+// Merge supplemental static translations (fills gaps; existing entries win)
+for (const [code, vals] of Object.entries(extraTranslations)) {
+  dict[code] = { ...vals, ...(dict[code] || {}) };
+}
 
 export const LANGUAGES = [
   { code: "en", label: "English", flag: "🇬🇧" },
