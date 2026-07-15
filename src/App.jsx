@@ -48,6 +48,7 @@ const Help = lazy(() => import('./pages/Help'));
 const Verify = lazy(() => import('./pages/Verify'));
 const PublicSign = lazy(() => import('./pages/PublicSign'));
 const Privacy = lazy(() => import('./pages/Privacy'));
+const Security = lazy(() => import('./pages/Security'));
 const Terms = lazy(() => import('./pages/Terms'));
 const PowerCarePresentation = lazy(() => import('./pages/PowerCarePresentation'));
 const AdAudio = lazy(() => import('./pages/AdAudio'));
@@ -103,6 +104,7 @@ function AppRoutes() {
       <Route path="/verify" element={<Verify />} />
       <Route path="/sign" element={<PublicSign />} />
       <Route path="/privacy" element={<Privacy />} />
+      <Route path="/security" element={<Security />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/powercare-presentation" element={<PowerCarePresentation />} />
       <Route path="/ad-audio" element={<AdAudio />} />

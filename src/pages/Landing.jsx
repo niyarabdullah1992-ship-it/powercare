@@ -312,6 +312,7 @@ export default function Landing() {
             <ul className="space-y-2 text-sm font-body text-[#3a2f22]/55">
               <li>{t("footerBlog")}</li>
               <li><a href="/about" className="hover:text-landing-gold transition-colors">{t("footerAbout")}</a></li>
+              <li><Link to="/security" className="hover:text-landing-gold transition-colors">{lang === "ar" ? "الأمان والامتثال" : "Security & Compliance"}</Link></li>
               <li>{t("footerCareers")}</li>
               <li>{t("footerTerms")}</li>
               <li>{t("footerContact")}</li>
