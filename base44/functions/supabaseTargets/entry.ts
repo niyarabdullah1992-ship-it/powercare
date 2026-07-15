@@ -305,6 +305,15 @@ Deno.serve(async (req) => {
       // Fetch current target (company-scoped)
       const tg = await getScopedTarget(targetId);
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
+      // IDOR fix: only the assigned employee (or a manager) may log progress —
+      // guessing a colleague's targetId no longer allows updating their task.
+      if (!isManager) {
+        const isAssignee =
+          tg.assignment_type === "station_team" ? tg.assignment_id === auth?.stationId :
+          tg.assignment_type === "hq_team" ? !auth?.stationId :
+          tg.employee_id === auth?.userId; // "member" and legacy rows
+        if (!isAssignee) return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
       const newCompleted = Math.min(tg.completed_tasks + Number(amount), tg.task_target);
       const reachesTarget = newCompleted >= tg.task_target;
       const cleanProof = Array.isArray(proofFiles)
