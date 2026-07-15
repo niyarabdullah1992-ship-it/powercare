@@ -47,6 +47,21 @@ Deno.serve(async (req) => {
       if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
     const isManager = !!auth?.isManager;
+    // ---- Multi-tenant boundary ----
+    // A requested employeeId must belong to the caller's validated company.
+    const employeeInCompany = async (employeeId) => {
+      if (auth?.admin) return true;
+      if (!auth?.companyId || !employeeId) return false;
+      const emps = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId });
+      return emps.length > 0;
+    };
+    const filterCompanyEmployeeIds = async (ids) => {
+      if (auth?.admin) return ids;
+      if (!auth?.companyId) return [];
+      const emps = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId });
+      const allowed = new Set(emps.map((e) => e.employeeId));
+      return (ids || []).filter((id) => allowed.has(id));
+    };
     const todayStr = () => new Date().toISOString().slice(0, 10);
     const toMinutes = (hhmm) => {
       const parts = (hhmm || "").split(":").map(Number);
@@ -331,6 +346,7 @@ Deno.serve(async (req) => {
     if (action === "getTodayStatus") {
       const { employeeId } = body;
       if (!employeeId) return Response.json({ error: "Missing employeeId" }, { status: 400 });
+      if (!(await employeeInCompany(employeeId))) return Response.json({ error: "Forbidden" }, { status: 403 });
       const date = todayStr();
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const rows = await res.json();
@@ -341,8 +357,10 @@ Deno.serve(async (req) => {
     if (action === "listDaily") {
       const { employeeIds, date } = body;
       if (!Array.isArray(employeeIds) || employeeIds.length === 0) return Response.json({ rows: [] });
+      const scopedIds = await filterCompanyEmployeeIds(employeeIds);
+      if (scopedIds.length === 0) return Response.json({ rows: [] });
       const d = date || todayStr();
-      const idsList = employeeIds.map((id) => `"${id}"`).join(",");
+      const idsList = scopedIds.map((id) => `"${id}"`).join(",");
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=in.(${idsList})&date=eq.${d}`, { headers });
       const rows = await res.json();
       if (!res.ok) return Response.json({ rows: [] });
@@ -352,6 +370,7 @@ Deno.serve(async (req) => {
     if (action === "listMonthly") {
       const { employeeId, month } = body;
       if (!employeeId || !month) return Response.json({ error: "Missing fields" }, { status: 400 });
+      if (!(await employeeInCompany(employeeId))) return Response.json({ error: "Forbidden" }, { status: 403 });
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=gte.${month}-01&date=lte.${month}-31&order=date.asc`, { headers });
       const rows = await res.json();
       if (!res.ok) return Response.json({ rows: [] });
@@ -363,6 +382,7 @@ Deno.serve(async (req) => {
     if (action === "listRange") {
       const { employeeId, startDate, endDate } = body;
       if (!employeeId || !startDate || !endDate) return Response.json({ error: "Missing fields" }, { status: 400 });
+      if (!(await employeeInCompany(employeeId))) return Response.json({ error: "Forbidden" }, { status: 403 });
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=gte.${startDate}&date=lte.${endDate}&order=date.asc`, { headers });
       const rows = await res.json();
       if (!res.ok) return Response.json({ rows: [] });
@@ -373,8 +393,10 @@ Deno.serve(async (req) => {
 
     if (action === "getAnalytics") {
       if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const { employeeIds, month } = body;
-      if (!Array.isArray(employeeIds) || employeeIds.length === 0 || !month) return Response.json({ stats: [] });
+      const { employeeIds: rawIds, month } = body;
+      if (!Array.isArray(rawIds) || rawIds.length === 0 || !month) return Response.json({ stats: [] });
+      const employeeIds = await filterCompanyEmployeeIds(rawIds);
+      if (employeeIds.length === 0) return Response.json({ stats: [] });
       const idsList = employeeIds.map((id) => `"${id}"`).join(",");
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=in.(${idsList})&date=gte.${month}-01&date=lte.${month}-31`, { headers });
       const rows = await res.json();

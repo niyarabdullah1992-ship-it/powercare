@@ -120,6 +120,16 @@ Deno.serve(async (req) => {
       const scope = await getCompanyScope();
       return targetInScope(tg, scope) ? tg : null;
     };
+    // ---- Identity boundary: callers may only act/read as themselves ----
+    // (owner sessions without a userId are verified against the company roster).
+    const canActAs = async (userId) => {
+      if (!userId) return false;
+      if (auth?.admin) return true;
+      if (auth?.userId) return auth.userId === userId;
+      if (!auth?.companyId) return false;
+      const emps = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId: userId });
+      return emps.length > 0;
+    };
 
     if (action === "listTargets") {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?order=created_at.desc`, { headers });
@@ -673,6 +683,8 @@ Deno.serve(async (req) => {
     if (action === "listDirectMessages") {
       const { userId, otherUserId } = body;
       if (!userId || !otherUserId) return Response.json({ error: "Missing fields" }, { status: 400 });
+      // Only a participant may read the conversation — identity comes from the session.
+      if (!(await canActAs(userId))) return Response.json({ error: "Forbidden" }, { status: 403 });
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/direct_messages?or=(and(sender_id.eq.${encodeURIComponent(userId)},receiver_id.eq.${encodeURIComponent(otherUserId)}),and(sender_id.eq.${encodeURIComponent(otherUserId)},receiver_id.eq.${encodeURIComponent(userId)}))&order=created_at.asc&limit=200`,
         { headers }
@@ -688,6 +700,8 @@ Deno.serve(async (req) => {
     if (action === "deleteDirectMessage") {
       const { messageId, userId } = body;
       if (!messageId || !userId) return Response.json({ error: "Missing fields" }, { status: 400 });
+      // The claimed identity must match the authenticated session.
+      if (!(await canActAs(userId))) return Response.json({ error: "Forbidden" }, { status: 403 });
       const getRes = await fetch(`${SUPABASE_URL}/rest/v1/direct_messages?id=eq.${encodeURIComponent(messageId)}`, { headers });
       const rows = await getRes.json();
       const msg = Array.isArray(rows) && rows[0];
@@ -717,6 +731,8 @@ Deno.serve(async (req) => {
       if (!senderId || !receiverId || (!text && (!files || files.length === 0))) {
         return Response.json({ error: "Missing fields" }, { status: 400 });
       }
+      // Messages may only be sent as the authenticated user — no sender spoofing.
+      if (!(await canActAs(senderId))) return Response.json({ error: "Forbidden" }, { status: 403 });
       const cleanFiles = Array.isArray(files)
         ? files.filter((f) => f && f.url).map((f) => ({ url: f.url, name: f.name || "file", type: f.type || "file" }))
         : [];
