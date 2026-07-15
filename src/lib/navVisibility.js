@@ -4,8 +4,8 @@
 const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/signing", "/app/assistant", "/app/complaints", "/app/performance", "/app/help"];
 const MANAGER_EXTRA = ["/app/employees", "/app/stations", "/app/reports", "/app/safety"];
 const EXEC_EXTRA = ["/app/hr", "/app/executive"];
-// Individual (personal) workspaces: only the personal-productivity sections.
-const INDIVIDUAL = ["/app", "/app/tasks", "/app/planner", "/app/calendar", "/app/attendance", "/app/journal", "/app/files", "/app/signing", "/app/assistant", "/app/help"];
+// Individual (personal) workspaces: verified digital signing only.
+const INDIVIDUAL = ["/app/signing", "/app/help"];
 
 export function allowedNavFor(user, plan) {
   if (String(plan || "").toLowerCase() === "individual") return new Set(INDIVIDUAL);

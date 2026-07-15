@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canSeeAllStations, visibleEmployees, canApproveReports, canReplyAnon, isCompanyOwner } from "@/lib/permissions";
@@ -17,7 +18,6 @@ import StationManagerDashboard from "@/components/dashboard/StationManagerDashbo
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { queryClientInstance } from "@/lib/query-client";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
-import IndividualDashboard from "@/components/dashboard/IndividualDashboard";
 import SmartDailySummary from "@/components/dashboard/SmartDailySummary";
 import SmartAlertsPanel from "@/components/dashboard/SmartAlertsPanel";
 
@@ -91,16 +91,9 @@ export default function Dashboard() {
     <WelcomeHero name={currentUser.name} companyName={data.name} t={t} lang={lang} alerts={welcomeAlerts} employee={currentUser} companyId={company.id} />
   );
 
-  // Individual (personal) workspaces get a focused personal dashboard.
+  // Individual (personal) workspaces are signing-only — go straight to the signing section.
   if (String(data.plan || company?.plan || "").toLowerCase() === "individual") {
-    return (
-      <PullToRefresh onRefresh={handleRefresh}>
-        <div className="space-y-6">
-          {welcomeHero}
-          <IndividualDashboard data={data} lang={lang} />
-        </div>
-      </PullToRefresh>
-    );
+    return <Navigate to="/app/signing" replace />;
   }
 
   const isEmployee = currentUser.role === "employee";

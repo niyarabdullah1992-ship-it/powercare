@@ -32,8 +32,8 @@ export default function Pricing() {
       name: lang === "ar" ? "فرد" : "Individual",
       price: 0,
       features: lang === "ar"
-        ? ["مساحة عمل شخصية خاصة بك", "مهام يومية مع مجلدات وتنظيم", "المساعد الذكي Niro", "التوقيع الرقمي بشارة تحقق مشفّرة", "ملفاتك ومستنداتك الخاصة"]
-        : ["Your own personal workspace", "Daily tasks with folders & organization", "Niro AI assistant", "Digital signing with encrypted verification", "Your private files & documents"],
+        ? ["التوقيع الرقمي بشارة تحقق مشفّرة", "إرسال المستندات لعدة موقّعين", "التحقق من صحة أي مستند موقّع", "توقيعك المحفوظ — رسمًا أو بخط أنيق"]
+        : ["Digital signing with encrypted verification", "Send documents to multiple signers", "Verify any signed document's authenticity", "Your saved signature — drawn or styled text"],
     },
   ];
 
