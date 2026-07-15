@@ -23,6 +23,26 @@ async function sendGmail(base44, to, subject, text) {
   if (!res.ok) console.error("Gmail send failed:", await res.text());
 }
 
+// Best-effort Google Calendar deadline event on the connected calendar.
+async function addCalendarDeadline(base44, { title, description, endDate }) {
+  const { accessToken } = await base44.asServiceRole.connectors.getConnection("googlecalendar");
+  const day = new Date(endDate).toISOString().slice(0, 10);
+  const next = new Date(`${day}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  const res = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      summary: `📋 ${title}`,
+      description: description || "",
+      start: { date: day },
+      end: { date: next.toISOString().slice(0, 10) },
+      reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 60 }, { method: "email", minutes: 24 * 60 }] },
+    }),
+  });
+  if (!res.ok) console.error("Calendar event failed:", await res.text());
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -253,6 +273,16 @@ Deno.serve(async (req) => {
         } catch (e) {
           console.error("Gmail alert failed:", e.message);
         }
+      }
+      // Google Calendar: deadline event with alerts (best-effort)
+      try {
+        await addCalendarDeadline(base44, {
+          title: title || `${taskTarget} tasks`,
+          description: `PowerCare task deadline — target: ${taskTarget}.${description ? `\n${description}` : ""}`,
+          endDate,
+        });
+      } catch (e) {
+        console.error("Calendar sync failed:", e.message);
       }
       return Response.json({ target: Array.isArray(created) ? created[0] : created });
     }

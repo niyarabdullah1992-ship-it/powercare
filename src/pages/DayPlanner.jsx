@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany } from "@/lib/store";
+import { base44 } from "@/api/base44Client";
 import { CalendarDays, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import ExportButtons from "@/components/individual/ExportButtons";
@@ -45,6 +46,8 @@ export default function DayPlanner() {
       d.plannerItems = d.plannerItems || [];
       d.plannerItems.push({ id: uid(), date, time, title: trimmed, done: false, createdAt: new Date().toISOString() });
     });
+    // Google Calendar sync (best-effort — silent if not connected)
+    base44.functions.invoke("calendarSync", { title: trimmed, date, time }).catch(() => {});
     setTitle("");
     setTime("");
   };

@@ -199,6 +199,8 @@ export async function executeAssistantAction(action, { data, company, currentUse
         createdAt: new Date().toISOString(),
       });
     });
+    // Google Calendar sync (best-effort)
+    base44.functions.invoke("calendarSync", { title: action.title, date, time: action.time || "" }).catch(() => {});
     return { ok: true, message: `${t("dayPlanner")}: ${action.title} ✔` };
   }
 
