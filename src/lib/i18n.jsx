@@ -1582,41 +1582,36 @@ export function I18nProvider({ children }) {
   }, [lang, dir]);
 
   useEffect(() => {
-    if (lang === "en" || lang === "ar") return;
+    if (lang === "en") return;
+    // Every key still shown in English for this language (no static or generated translation)
     const missing = Object.entries(dict.en).filter(([key, value]) => !PRESERVED_KEYS.has(key) && !generated[lang]?.[key] && (!dict[lang]?.[key] || dict[lang][key] === value));
     if (!missing.length) return;
     let cancelled = false;
     setIsTranslating(true);
 
     (async () => {
-      for (let index = 0; index < missing.length && !cancelled; index += 40) {
-        const batch = Object.fromEntries(missing.slice(index, index + 40));
-        let result = null;
-        try {
-        result = await base44.integrations.Core.InvokeLLM({
-          prompt: `Translate every value in this JSON object into ${LANGUAGES.find((item) => item.code === lang)?.label}. Return every key unchanged. Use natural professional UI language. Keep product names such as PowerCare, Niro, PDF, Excel and GPS unchanged. Do not include any English explanation or markdown. JSON: ${JSON.stringify(batch)}`,
-          response_json_schema: {
-            type: "object",
-            properties: { translations: { type: "object", additionalProperties: { type: "string" } } },
-            required: ["translations"],
-          },
+      try {
+        // Server-side translation: generated once, cached in the cloud for all users
+        const res = await base44.functions.invoke("uiTranslations", {
+          lang,
+          langLabel: LANGUAGES.find((item) => item.code === lang)?.label,
+          keys: Object.fromEntries(missing),
         });
-        } catch {
-          // One failed batch must not kill the remaining batches
-          continue;
+        const translations = res.data?.translations;
+        if (translations && !cancelled) {
+          const clean = Object.fromEntries(
+            Object.entries(translations).filter(
+              ([k, v]) => typeof v === "string" && v.trim() && k in dict.en
+            )
+          );
+          setGenerated((current) => {
+            const next = { ...current, [lang]: { ...(current[lang] || {}), ...clean } };
+            localStorage.setItem(GENERATED_KEY, JSON.stringify(next));
+            return next;
+          });
         }
-        if (!result?.translations || cancelled) continue;
-        // Keep only clean, non-empty string translations
-        const clean = Object.fromEntries(
-          Object.entries(result.translations).filter(
-            ([k, v]) => typeof v === "string" && v.trim() && k in dict.en
-          )
-        );
-        setGenerated((current) => {
-          const next = { ...current, [lang]: { ...(current[lang] || {}), ...clean } };
-          localStorage.setItem(GENERATED_KEY, JSON.stringify(next));
-          return next;
-        });
+      } catch {
+        // Server unavailable — English fallback stays visible
       }
       if (!cancelled) setIsTranslating(false);
     })();
