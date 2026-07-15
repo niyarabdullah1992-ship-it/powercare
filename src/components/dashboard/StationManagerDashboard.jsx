@@ -1,15 +1,21 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
+import { base44 } from "@/api/base44Client";
 import { visibleStations } from "@/lib/permissions";
 import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
-import { Radio, Users, AlertTriangle, FileText, TrendingUp, MapPin, ShieldCheck } from "lucide-react";
+import DashboardStatCards from "@/components/dashboard/DashboardStatCards";
+import AttendanceTrendChart from "@/components/dashboard/AttendanceTrendChart";
+import StationsMapCard from "@/components/dashboard/StationsMapCard";
+import PendingActionsPanel from "@/components/dashboard/PendingActionsPanel";
+import { Radio, AlertTriangle, FileText, MapPin, ShieldCheck } from "lucide-react";
 import { formatDate } from "@/lib/dateFormat";
 
 const SAFETY_COLORS = { green: "bg-emerald-500", amber: "bg-amber-500", red: "bg-destructive" };
 
 export default function StationManagerDashboard({ user, data, stoppageCount = 0 }) {
   const { t, lang } = useI18n();
+  const [attendanceRows, setAttendanceRows] = useState([]);
   const stations = visibleStations(user, data);
   const stationIds = new Set(stations.map((s) => s.id));
 
@@ -19,13 +25,41 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
   const anon = data.anonymousReports.filter((a) => stationIds.has(a.stationId));
   const pendingReports = reports.filter((r) => r.status === "pending");
   const completed = tasks.filter((tk) => tk.status === "completed").length;
-  const completionRate = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
 
-  const stats = [
-    { icon: Users, label: t("team"), value: team.length, color: "text-accent" },
-    { icon: TrendingUp, label: t("taskCompletion"), value: `${completionRate}%`, color: "text-foreground" },
-    { icon: AlertTriangle, label: t("stoppageIssues"), value: stoppageCount, color: "text-destructive" },
-    { icon: FileText, label: t("pendingReports"), value: pendingReports.length, color: "text-foreground" },
+  // Today's attendance for the station team — powers the attendance-rate card.
+  useEffect(() => {
+    if (!team.length) return;
+    base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: team.map((e) => e.id) })
+      .then((res) => setAttendanceRows(res?.data?.rows || []))
+      .catch(() => setAttendanceRows([]));
+  }, [team.map((e) => e.id).join(",")]);
+
+  const checkedInCount = attendanceRows.filter((r) => r.check_in_at).length;
+  const attendanceRate = team.length ? Math.round((checkedInCount / team.length) * 100) : 0;
+
+  // Real six-month task activity for the trend chart.
+  const monthBuckets = [];
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(1);
+    date.setMonth(date.getMonth() - i);
+    monthBuckets.push({ key: `${date.getFullYear()}-${date.getMonth()}`, label: formatDate(date, lang, { month: "short" }) });
+  }
+  const chartData = monthBuckets.map(({ key, label }) => {
+    const monthlyTasks = tasks.filter((task) => {
+      const date = new Date(task.createdAt);
+      return `${date.getFullYear()}-${date.getMonth()}` === key;
+    });
+    return {
+      month: label,
+      completed: monthlyTasks.filter((task) => task.status === "completed").length,
+      pending: monthlyTasks.filter((task) => task.status !== "completed").length,
+    };
+  });
+
+  const pendingActionItems = [
+    { key: "reports", icon: FileText, label: t("pendingReports"), count: pendingReports.length, to: "/app/daily-report" },
+    { key: "stoppage", icon: AlertTriangle, label: t("stoppageIssues"), count: stoppageCount, to: "/app/performance" },
   ];
 
   const recent = [
@@ -74,24 +108,29 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
         })}
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 border border-border divide-x divide-y divide-border rtl:divide-x-reverse">
-        {stats.map((s, i) => (
-          <div key={s.label} className="p-6 bg-card hover:bg-muted/40 transition-colors">
-            <div className="flex items-center justify-between mb-5">
-              <span className={`inline-flex items-center justify-center w-9 h-9 rounded-full bg-accent/10 ${s.color}`}>
-                <s.icon className="w-4 h-4" strokeWidth={1.5} />
-              </span>
-              <span className="hero-title text-base text-muted-foreground/40">{["I", "II", "III", "IV"][i]}</span>
-            </div>
-            <p className="hero-title text-4xl">{s.value}</p>
-            <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mt-2">{s.label}</p>
-          </div>
-        ))}
+      {/* Numbered stat cards (WorkForce style) */}
+      <DashboardStatCards
+        attendanceRate={attendanceRate}
+        completed={completed}
+        total={tasks.length}
+        activeMembers={checkedInCount}
+        totalMembers={team.length}
+        t={t}
+      />
+
+      {/* Main analytics grid: big trend chart + map & pending actions column */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <AttendanceTrendChart data={chartData} t={t} />
+        </div>
+        <div className="space-y-4">
+          <StationsMapCard stations={stations} t={t} />
+          <PendingActionsPanel items={pendingActionItems} t={t} />
+        </div>
       </div>
 
       {/* Pending reports needing review */}
-      <div className="p-6 border border-border bg-card">
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="hero-title text-2xl">{t("pendingReports")}</h3>
           <Link to="/app/daily-report" className="text-xs text-muted-foreground font-body hover:text-foreground underline">
@@ -116,7 +155,7 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
       <TeamStatusPanel employees={team} t={t} />
 
       {/* Recent activity */}
-      <div className="p-6 border border-border bg-card">
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{formatDate(new Date(), lang, { month: "short" })}</p>
         <h3 className="hero-title text-2xl mb-4">{t("recentActivity")}</h3>
         <div className="divide-y divide-border">
