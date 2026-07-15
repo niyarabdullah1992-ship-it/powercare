@@ -13,7 +13,7 @@ import { groupTasksByPeriod, SCOPE_BADGES } from "@/lib/taskTimeScope";
 export default function FolderTree({
   stationId, currentPath, onNavigate, folders, tasksAll, canManage,
   renderTask, filterTasks, onAddFolder, onRenameFolder, onDeleteFolder,
-  t, dir,
+  t, dir, lang,
 }) {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -24,9 +24,8 @@ export default function FolderTree({
     .filter((f) => f.station_id === stationId && getParentPath(f.path) === currentPath)
     .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
   const directTasks = filterTasks(tasksAll.filter((tg) => (tg.section || null) === currentPath));
-  const ar = dir === "rtl";
   // Time-scope archive: annual goals first, then half-year, quarters, then months.
-  const periodGroups = groupTasksByPeriod(directTasks, ar);
+  const periodGroups = groupTasksByPeriod(directTasks, lang, t);
   const isEmpty = children.length === 0 && directTasks.length === 0;
   const key = currentPath || "root";
 
@@ -211,7 +210,7 @@ export default function FolderTree({
                   <React.Fragment key={grp.key}>
                     <div className="flex items-center gap-2 pt-2">
                       <p className={`text-xs font-body font-semibold ${grp.scope.type === "yearly" ? "text-amber-700" : "text-muted-foreground"}`}>{grp.label}</p>
-                      <span className={`px-2 py-0.5 rounded-full border text-[10px] font-body ${badge.cls}`}>{ar ? badge.ar : badge.en}</span>
+                      <span className={`px-2 py-0.5 rounded-full border text-[10px] font-body ${badge.cls}`}>{t(badge.key)}</span>
                       <span className="h-px flex-1 bg-border" />
                       <span className="text-[10px] text-muted-foreground font-body">{grp.tasks.length}</span>
                     </div>

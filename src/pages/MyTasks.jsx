@@ -966,23 +966,19 @@ export default function MyTasks() {
       <div className="p-5 rounded-xl border border-border bg-card space-y-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
-            {showArchive ? <Archive className="w-4 h-4" /> : <Target className="w-4 h-4" />} {showArchive ? (lang === "ar" ? "الأرشيف الذكي" : "Smart Archive") : t("targets")}
+            {showArchive ? <Archive className="w-4 h-4" /> : <Target className="w-4 h-4" />} {showArchive ? t("smartArchive") : t("targets")}
           </h2>
           <button
             type="button"
             onClick={() => setShowArchive(!showArchive)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${showArchive ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
           >
-            <Archive className="w-3.5 h-3.5" /> {lang === "ar" ? "الأرشيف الذكي" : "Smart Archive"}
+            <Archive className="w-3.5 h-3.5" /> {t("smartArchive")}
           </button>
         </div>
 
         {showArchive && (
-          <p className="text-xs text-muted-foreground font-body -mt-2">
-            {lang === "ar"
-              ? "تُصنَّف المهام المنتهية تلقائيًا حسب مدتها: سنوية، نصف سنوية، ربع سنوية وشهرية."
-              : "Finished tasks are classified automatically by their duration: yearly, half-year, quarterly and monthly."}
-          </p>
+          <p className="text-xs text-muted-foreground font-body -mt-2">{t("smartArchiveHint")}</p>
         )}
 
         <AnimatePresence mode="wait">
@@ -994,7 +990,7 @@ export default function MyTasks() {
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
           >
-            <SmartArchive targets={targets} renderTask={renderTask} ar={lang === "ar"} dir={dir} />
+            <SmartArchive targets={targets} renderTask={renderTask} t={t} lang={lang} dir={dir} />
           </motion.div>
         ) : targetsLoading ? (
           <div className="space-y-3 py-2" aria-label={t("loading") || "Loading"}>
@@ -1119,6 +1115,7 @@ export default function MyTasks() {
                   onDeleteFolder={deleteFolder}
                   t={t}
                   dir={dir}
+                  lang={lang}
                 />
               </DragDropContext>
             )}

@@ -23,36 +23,31 @@ export function taskScope(tg) {
   return { type: "monthly", month: m, year: y, sortKey: `${y}-3M${String(m).padStart(2, "0")}` };
 }
 
-export function scopeLabel(scope, ar) {
-  if (scope.type === "yearly") return ar ? `🏆 أهداف سنة ${scope.year}` : `🏆 ${scope.year} Annual Goals`;
-  if (scope.type === "half") {
-    return ar
-      ? `النصف ${scope.half === 1 ? "الأول" : "الثاني"} H${scope.half} · ${scope.year}`
-      : `Half-Year H${scope.half} · ${scope.year}`;
-  }
-  if (scope.type === "quarter") {
-    const arNames = ["الأول", "الثاني", "الثالث", "الرابع"];
-    return ar ? `الربع ${arNames[scope.quarter - 1]} Q${scope.quarter} · ${scope.year}` : `Quarter Q${scope.quarter} · ${scope.year}`;
-  }
-  const monthName = new Date(scope.year, scope.month, 1).toLocaleDateString(ar ? "ar" : "en", { month: "long" });
+// Fully localized period label — month names use the active locale directly,
+// and the fixed words come from the shared i18n dictionary (t).
+export function scopeLabel(scope, lang, t) {
+  if (scope.type === "yearly") return `🏆 ${t("annualGoals")} · ${scope.year}`;
+  if (scope.type === "half") return `${t("halfYearLabel")} H${scope.half} · ${scope.year}`;
+  if (scope.type === "quarter") return `${t("quarterLabel")} Q${scope.quarter} · ${scope.year}`;
+  const monthName = new Date(scope.year, scope.month, 1).toLocaleDateString(lang || "en", { month: "long" });
   return `${monthName} ${scope.year}`;
 }
 
-// Badge chip text + classes per scope type (literal Tailwind classes only).
+// Badge chip per scope type: i18n key + classes (literal Tailwind classes only).
 export const SCOPE_BADGES = {
-  yearly: { ar: "سنوي", en: "Yearly", cls: "bg-amber-100 text-amber-800 border-amber-300" },
-  half: { ar: "6 أشهر", en: "6 months", cls: "bg-purple-100 text-purple-800 border-purple-300" },
-  quarter: { ar: "3 أشهر", en: "3 months", cls: "bg-sky-100 text-sky-800 border-sky-300" },
-  monthly: { ar: "شهري", en: "Monthly", cls: "bg-muted text-muted-foreground border-border" },
+  yearly: { key: "scopeYearly", cls: "bg-amber-100 text-amber-800 border-amber-300" },
+  half: { key: "scopeHalf", cls: "bg-purple-100 text-purple-800 border-purple-300" },
+  quarter: { key: "scopeQuarter", cls: "bg-sky-100 text-sky-800 border-sky-300" },
+  monthly: { key: "scopeMonthly", cls: "bg-muted text-muted-foreground border-border" },
 };
 
 // Groups tasks into ordered period sections: yearly first, then half-year,
 // quarters, then months (newest month first). Newest year first.
-export function groupTasksByPeriod(tasks, ar) {
+export function groupTasksByPeriod(tasks, lang, t) {
   const map = new Map();
   for (const tg of tasks) {
     const scope = taskScope(tg);
-    if (!map.has(scope.sortKey)) map.set(scope.sortKey, { key: scope.sortKey, scope, label: scopeLabel(scope, ar), tasks: [] });
+    if (!map.has(scope.sortKey)) map.set(scope.sortKey, { key: scope.sortKey, scope, label: scopeLabel(scope, lang, t), tasks: [] });
     map.get(scope.sortKey).tasks.push(tg);
   }
   return Array.from(map.values()).sort((a, b) => {

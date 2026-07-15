@@ -434,6 +434,10 @@ const dict = {
     indHowWasDay: "How was your day?", indJournalPlaceholder: "Write your day's report... What did you accomplish? What did you learn? How do you feel?", indSaveReport: "Save today's report", indLifeLog: "Your life log", indNoReports: "No reports yet — write your first daily report above.",
     moodGreat: "Great", moodGood: "Good", moodOk: "Okay", moodTired: "Tired", moodBad: "Bad", moodLabel: "Mood", reportLabel: "Report",
     monthlyCalendar: "Monthly Calendar", monthlyCalendarDesc: "Your plans, journal and visits in one place.", visitsLabel: "Visits", noActivityDay: "No activity on this day.", typeLabel: "Type", detailsLabel: "Details",
+    smartArchive: "Smart Archive", smartArchiveHint: "Finished tasks are classified automatically by their duration: yearly, half-year, quarterly and monthly.",
+    searchArchive: "Search the archive…", noArchivedTasks: "No archived tasks yet — completed and overdue tasks are filed here automatically.",
+    annualGoals: "Annual Goals", halfYearLabel: "Half-Year", quarterLabel: "Quarter",
+    scopeYearly: "Yearly", scopeHalf: "6 months", scopeQuarter: "3 months", scopeMonthly: "Monthly",
   },
   ar: {
     dir: "rtl",
@@ -865,6 +869,10 @@ const dict = {
     indHowWasDay: "كيف كان يومك؟", indJournalPlaceholder: "اكتب تقرير يومك... ماذا أنجزت؟ ماذا تعلمت؟ كيف تشعر؟", indSaveReport: "حفظ تقرير اليوم", indLifeLog: "سجل حياتك", indNoReports: "لا توجد تقارير بعد — اكتب أول تقرير عن يومك أعلاه.",
     moodGreat: "رائع", moodGood: "جيد", moodOk: "عادي", moodTired: "متعب", moodBad: "سيء", moodLabel: "الحالة", reportLabel: "التقرير",
     monthlyCalendar: "التقويم الشهري", monthlyCalendarDesc: "مهامك ويومياتك وزياراتك في مكان واحد.", visitsLabel: "الزيارات", noActivityDay: "لا توجد أنشطة في هذا اليوم.", typeLabel: "النوع", detailsLabel: "التفاصيل",
+    smartArchive: "الأرشيف الذكي", smartArchiveHint: "تُصنَّف المهام المنتهية تلقائيًا حسب مدتها: سنوية، نصف سنوية، ربع سنوية وشهرية.",
+    searchArchive: "ابحث في الأرشيف…", noArchivedTasks: "لا توجد مهام مؤرشفة بعد — تُنقل المهام المكتملة والمتأخرة إلى هنا تلقائيًا.",
+    annualGoals: "أهداف السنة", halfYearLabel: "نصف سنة", quarterLabel: "الربع",
+    scopeYearly: "سنوي", scopeHalf: "6 أشهر", scopeQuarter: "3 أشهر", scopeMonthly: "شهري",
   },
   de: {
     dir: "ltr", appName: "PowerCare", tagline: "Betriebsintelligenz für Teams an mehreren Standorten",
