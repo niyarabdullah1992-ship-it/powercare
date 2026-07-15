@@ -649,9 +649,9 @@ function finishOwnerLogin(result) {
   return company;
 }
 
-export async function googleCompanyLogin() {
+export async function googleCompanyLogin(preferKind) {
   try {
-    const res = await invokeDirectory({ action: "googleOwnerLogin" });
+    const res = await invokeDirectory({ action: "googleOwnerLogin", preferKind: preferKind || null });
     return res?.data?.token ? finishOwnerLogin(res.data) : null;
   } catch {
     return null;

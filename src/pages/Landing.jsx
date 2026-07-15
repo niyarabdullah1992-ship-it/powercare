@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, Download, UserPlus } from "lucide-react";
+import { ShieldCheck, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, Download, UserPlus, Building2, User } from "lucide-react";
 import Logo from "@/components/Logo";
 import VideoIntro from "@/components/landing/VideoIntro";
 import NiroShowcase from "@/components/landing/NiroShowcase";
@@ -25,6 +25,7 @@ export default function Landing() {
   const [submitting, setSubmitting] = useState(false);
   const [otpPending, setOtpPending] = useState(null); // pendingId while awaiting the emailed code
   const [otpAccounts, setOtpAccounts] = useState([]); // all accounts this email+password unlocks
+  const [loginKind, setLoginKind] = useState("company"); // 'company' | 'individual' — smart routing to the right account
   const [resetOpen, setResetOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const currentLang = languages.find((l) => l.code === lang);
@@ -35,13 +36,16 @@ export default function Landing() {
 
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has("google_login")) return;
+    const savedKind = sessionStorage.getItem("powercare_login_kind") || "company";
+    sessionStorage.removeItem("powercare_login_kind");
     setSubmitting(true);
-    loginWithGoogle().then((company) => {
+    loginWithGoogle(savedKind).then((company) => {
       if (!company) setError(t("errNoGoogleCompany"));
     }).finally(() => setSubmitting(false));
   }, []);
 
   const handleSocialLogin = (provider) => {
+    sessionStorage.setItem("powercare_login_kind", loginKind);
     base44.auth.loginWithProvider(provider, "/?google_login=1");
   };
 
@@ -58,6 +62,16 @@ export default function Landing() {
     }
   }, [langOpen]);
 
+  // Smart account routing: when one email unlocks several accounts, keep only the
+  // ones matching the chosen tab (individual vs company) so the user goes straight
+  // to the right workspace. Falls back to the full list if nothing matches.
+  const routeAccounts = (accounts) => {
+    const list = accounts || [];
+    if (list.length <= 1) return list;
+    const matches = list.filter((a) => (String(a.plan || "").toLowerCase() === "individual") === (loginKind === "individual"));
+    return matches.length ? matches : list;
+  };
+
   const handleCompanyLogin = async (e) => {
     e.preventDefault();
     if (submitting) return;
@@ -65,7 +79,7 @@ export default function Landing() {
     setSubmitting(true);
     const r = await login(email, password);
     if (!r) setError(t("errBadCredentials"));
-    else if (r.otpRequired) { setOtpPending(r.pendingId); setOtpAccounts(r.accounts || []); }
+    else if (r.otpRequired) { setOtpPending(r.pendingId); setOtpAccounts(routeAccounts(r.accounts)); }
     setSubmitting(false);
     // r.company → session set, useEffect above redirects to /app
   };
@@ -79,7 +93,7 @@ export default function Landing() {
     const result = await login(email, password);
     if (!result?.otpRequired) return false;
     setOtpPending(result.pendingId);
-    setOtpAccounts(result.accounts || []);
+    setOtpAccounts(routeAccounts(result.accounts));
     return true;
   };
 
@@ -156,14 +170,29 @@ export default function Landing() {
 
           {/* Login card */}
           <div className="rounded-2xl border border-landing-gold/15 bg-white p-5 shadow-xl shadow-[#3a2f22]/10 sm:p-7">
-            <div className="flex items-center gap-2 mb-6">
-              <span className="flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-body bg-landing-bg text-[#3a2f22]">
-                <LogIn className="w-4 h-4" strokeWidth={1.75} /> {t("companyLogin")}
-              </span>
+            <div className="flex items-center gap-1 mb-6 bg-landing-bg rounded-full p-1">
+              {[
+                { key: "company", icon: Building2, ar: "دخول الشركات", en: "Company Login" },
+                { key: "individual", icon: User, ar: "دخول الأفراد", en: "Individual Login" },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => { setLoginKind(tab.key); setError(""); setOtpPending(null); }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-body font-medium transition-colors ${
+                    loginKind === tab.key
+                      ? "bg-gradient-to-b from-landing-gold-light to-landing-gold text-white shadow-sm"
+                      : "text-[#3a2f22]/60 hover:text-[#3a2f22]"
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" strokeWidth={1.75} />
+                  {lang === "ar" ? tab.ar : tab.en}
+                </button>
+              ))}
             </div>
 
               {otpPending ? (
-                <OtpStep email={email} accounts={otpAccounts} onVerify={handleVerifyOtp} onResend={handleResendOtp} onBack={() => setOtpPending(null)} />
+                <OtpStep key={loginKind} email={email} accounts={otpAccounts} onVerify={handleVerifyOtp} onResend={handleResendOtp} onBack={() => setOtpPending(null)} />
               ) : resetOpen ? (
                 <PasswordResetForm initialEmail={email} onDone={(value) => { setEmail(value); setResetOpen(false); setError(""); }} onBack={() => setResetOpen(false)} />
               ) : (
@@ -213,13 +242,15 @@ export default function Landing() {
                   {t("viewPlans")}
                 </Link>
               </p>
-              <Link
-                to="/pricing?signup=individual"
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/30 bg-landing-bg py-2.5 text-sm font-body font-semibold text-[#3a2f22] hover:bg-landing-gold hover:text-white transition-colors"
-              >
-                <UserPlus className="w-4 h-4" strokeWidth={1.75} />
-                {lang === "ar" ? "تسجيل الأفراد — مجانًا" : "Individual sign-up — Free"}
-              </Link>
+              {loginKind === "individual" && (
+                <Link
+                  to="/pricing?signup=individual"
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/30 bg-landing-bg py-2.5 text-sm font-body font-semibold text-[#3a2f22] hover:bg-landing-gold hover:text-white transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" strokeWidth={1.75} />
+                  {lang === "ar" ? "تسجيل الأفراد — مجانًا" : "Individual sign-up — Free"}
+                </Link>
+              )}
           </div>
         </div>
       </div>
