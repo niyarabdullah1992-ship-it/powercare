@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, CalendarDays, HelpCircle, BookOpen, Calendar, Gauge, Banknote, Plug,
+  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, CalendarDays, HelpCircle, BookOpen, Calendar, Gauge, Banknote,
 } from "lucide-react";
 import PlannerReminders from "@/components/individual/PlannerReminders";
 import { toast } from "@/components/ui/use-toast";
@@ -128,7 +128,6 @@ export default function Layout({ children }) {
     { to: "/app/stations", icon: Radio, label: t("stations") },
     { to: "/app/hr", icon: UserCog, label: t("hr") },
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll" },
-    { to: "/app/integrations", icon: Plug, label: lang === "ar" ? "تكاملات ERP" : "ERP Integrations" },
     { to: "/app/performance", icon: Trophy, label: t("performance") },
     { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)" },
     { to: "/app/reports", icon: FileBarChart2, label: lang === "ar" ? "التقارير الشاملة" : "Comprehensive Reports" },

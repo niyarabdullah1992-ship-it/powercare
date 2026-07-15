@@ -3,7 +3,6 @@
 import { MANAGER_PERMISSIONS, ASSISTANT_PERMISSIONS, groupLevelsByOrder, buildHRLevels } from "./hrLevels";
 import { base44 } from "@/api/base44Client";
 import { sendEmailAlert } from "./emailAlerts";
-import { dispatchErpEvent } from "./erpWebhooks";
 
 const REGISTRY_KEY = "powercare_registry";
 const COMPANY_PREFIX = "powercare_company_";
@@ -1018,29 +1017,7 @@ export function updateCompany(companyId, updater) {
   saveCompanyData(companyId, data);
   logCollectionDiffs(companyId, data, before);
   emailNewEvents(companyId, data, before);
-  dispatchErpDiffs(companyId, data, before);
   return data;
-}
-
-// ERP webhooks: pushes key business events to the company's configured external
-// ERP endpoint (see /app/integrations), derived from what changed in this mutation.
-function dispatchErpDiffs(companyId, data, before) {
-  (data.employees || []).forEach((e) => {
-    if (!before.emp.has(e.id)) dispatchErpEvent(companyId, "employee_added", { id: e.id, name: e.name, email: e.email, role: e.role });
-  });
-  (data.tasks || []).forEach((t) => {
-    if (!before.tasks.has(t.id)) dispatchErpEvent(companyId, "task_created", { id: t.id, title: t.title, stationId: t.stationId, assignedTo: t.assignedTo });
-  });
-  (data.reports || []).forEach((r) => {
-    if (!before.reports.has(r.id)) dispatchErpEvent(companyId, "report_created", { id: r.id, title: r.title, stationId: r.stationId });
-  });
-  (data.payrollRuns || []).forEach((run) => {
-    run.items.forEach((i) => {
-      if (i.paid && !before.paidPayroll.has(i.id)) {
-        dispatchErpEvent(companyId, "payroll_item_paid", { month: run.month, employeeId: i.employeeId, net: (Number(i.base) || 0) + (Number(i.allowances) || 0) + (Number(i.bonus) || 0) - (Number(i.deductions) || 0), currency: i.currency });
-      }
-    });
-  });
 }
 
 // Automatic Gmail alerts: emails the assigned employee when a new task is created
