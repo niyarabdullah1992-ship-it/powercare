@@ -1,16 +1,15 @@
-import React, { useState } from "react";
-import { ShieldCheck, ShieldAlert, Timer, Printer, AlertTriangle } from "lucide-react";
+import React from "react";
+import { Link } from "react-router-dom";
+import { ShieldCheck, ShieldAlert, Timer, Printer, BadgeCheck, PenLine } from "lucide-react";
 import { printReport } from "@/lib/printReport";
 import { formatDate, formatDateTime } from "@/lib/dateFormat";
-import { recordSafetyIncident } from "@/lib/store";
 import moment from "moment";
 
-// HSE monthly safety report per station: incidents log, hazards, safety level and a
-// live "hours without incidents" counter — exportable as a branded printable PDF.
-export default function HSESafetyReport({ data, company, stations, canEdit, lang, dir }) {
+// HSE monthly safety report per station — calculated from the approved data entered
+// in the Safety (HSE) section: incidents log, hazards, safety level and a live
+// "hours without incidents" counter, exportable as a branded printable PDF.
+export default function HSESafetyReport({ data, company, stations, lang, dir }) {
   const ar = lang === "ar";
-  const [logFor, setLogFor] = useState(null);
-  const [desc, setDesc] = useState("");
   const now = Date.now();
   const monthStart = moment().startOf("month");
 
@@ -52,6 +51,7 @@ export default function HSESafetyReport({ data, company, stations, canEdit, lang
         { label: ar ? "حوادث هذا الشهر" : "Incidents this month", value: incidentsThisMonth(rec) },
         { label: ar ? "إجمالي الحوادث" : "Total incidents", value: rec?.incidents || 0 },
         { label: ar ? "مستوى السلامة" : "Safety level", value: levelLabel(rec?.level) },
+        { label: ar ? "حالة الاعتماد" : "Approval", value: rec?.approvedBy ? `${ar ? "معتمد —" : "Approved —"} ${rec.approvedBy}` : (ar ? "غير معتمد" : "Not approved") },
       ],
       sections: [
         {
@@ -102,21 +102,20 @@ export default function HSESafetyReport({ data, company, stations, canEdit, lang
     });
   };
 
-  const submitIncident = (stationId) => {
-    recordSafetyIncident(company.id, stationId, desc.trim());
-    setLogFor(null);
-    setDesc("");
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm text-muted-foreground font-body">
-          {ar ? "تقرير شهري للسلامة لكل محطة مع سجل ساعات بدون حوادث." : "Monthly per-station safety report with an hours-without-incidents record."}
+          {ar ? "تُحسب هذه التقارير من البيانات المُدخلة والمعتمدة في قسم السلامة (HSE)." : "These reports are calculated from the data entered and approved in the Safety (HSE) section."}
         </p>
-        <button onClick={printAll} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-          <Printer className="w-3.5 h-3.5" /> {ar ? "PDF لجميع المحطات" : "All stations PDF"}
-        </button>
+        <div className="flex items-center gap-2">
+          <Link to="/app/safety" className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+            <PenLine className="w-3.5 h-3.5" /> {ar ? "قسم السلامة" : "Safety section"}
+          </Link>
+          <button onClick={printAll} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+            <Printer className="w-3.5 h-3.5" /> {ar ? "PDF لجميع المحطات" : "All stations PDF"}
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -147,36 +146,16 @@ export default function HSESafetyReport({ data, company, stations, canEdit, lang
                 <MiniStat label={ar ? "مخاطر مفتوحة" : "Hazards"} value={(rec?.hazards || []).length} />
               </div>
 
-              {logFor === station.id ? (
-                <div className="space-y-2">
-                  <input
-                    value={desc}
-                    onChange={(e) => setDesc(e.target.value)}
-                    placeholder={ar ? "وصف الحادث…" : "Incident description…"}
-                    autoFocus
-                    className="w-full px-3 py-2 rounded-md border border-input bg-background text-xs font-body focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => submitIncident(station.id)} className="flex-1 py-1.5 rounded-md bg-red-600 text-white text-xs font-body font-semibold hover:opacity-90">
-                      {ar ? "تسجيل الحادث" : "Log incident"}
-                    </button>
-                    <button onClick={() => { setLogFor(null); setDesc(""); }} className="px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-                      {ar ? "إلغاء" : "Cancel"}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button onClick={() => printStation(station)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-                    <Printer className="w-3.5 h-3.5" /> {ar ? "تقرير شهري PDF" : "Monthly PDF"}
-                  </button>
-                  {canEdit && (
-                    <button onClick={() => setLogFor(station.id)} className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-red-200 text-red-600 text-xs font-body hover:bg-red-50">
-                      <AlertTriangle className="w-3.5 h-3.5" /> {ar ? "حادث" : "Incident"}
-                    </button>
-                  )}
-                </div>
-              )}
+              <p className="text-[11px] font-body flex items-center gap-1.5">
+                <BadgeCheck className={`w-3.5 h-3.5 ${rec?.approvedBy ? "text-emerald-600" : "text-muted-foreground"}`} />
+                {rec?.approvedBy
+                  ? <span className="text-muted-foreground">{ar ? "اعتمده" : "Approved by"} <span className="font-semibold text-foreground">{rec.approvedBy}</span>{rec.approvedAt ? ` — ${formatDateTime(rec.approvedAt, lang)}` : ""}</span>
+                  : <span className="text-amber-600">{ar ? "البيانات غير معتمدة بعد — اعتمدها من قسم السلامة" : "Data not approved yet — approve it in the Safety section"}</span>}
+              </p>
+
+              <button onClick={() => printStation(station)} className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+                <Printer className="w-3.5 h-3.5" /> {ar ? "تقرير شهري PDF" : "Monthly PDF"}
+              </button>
             </div>
           );
         })}

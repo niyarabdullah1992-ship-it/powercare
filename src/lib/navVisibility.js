@@ -2,7 +2,7 @@
 // used by the sidebar/mobile nav and the dashboards' quick-access shortcuts.
 
 const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/signing", "/app/assistant", "/app/complaints", "/app/performance", "/app/help"];
-const MANAGER_EXTRA = ["/app/employees", "/app/stations", "/app/reports"];
+const MANAGER_EXTRA = ["/app/employees", "/app/stations", "/app/reports", "/app/safety"];
 const EXEC_EXTRA = ["/app/hr", "/app/executive"];
 // Individual (personal) workspaces: only the personal-productivity sections.
 const INDIVIDUAL = ["/app", "/app/tasks", "/app/planner", "/app/calendar", "/app/attendance", "/app/journal", "/app/files", "/app/signing", "/app/assistant", "/app/help"];

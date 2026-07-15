@@ -1267,7 +1267,20 @@ export function setAnonRateLimits(companyId, { daily, weekly, monthly } = {}) {
   });
 }
 
-/* ----------------------------- HSE safety incidents ----------------------------- */
+/* ----------------------------- HSE safety records ----------------------------- */
+// Updates a station's safety record (level, inspection date, hazards, approval).
+export function updateSafetyRecord(companyId, stationId, updates) {
+  updateCompany(companyId, (d) => {
+    d.safety = d.safety || [];
+    let rec = d.safety.find((s) => s.stationId === stationId);
+    if (!rec) {
+      rec = { id: uid("safe"), stationId, incidents: 0, hazards: [], level: "green" };
+      d.safety.push(rec);
+    }
+    Object.assign(rec, updates);
+  });
+}
+
 // Logs a safety incident for a station: increments the counter, stamps lastIncidentAt
 // (which resets the "hours without incidents" record) and keeps a dated incident log.
 export function recordSafetyIncident(companyId, stationId, description) {

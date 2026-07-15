@@ -128,7 +128,8 @@ export default function Layout({ children }) {
     { to: "/app/stations", icon: Radio, label: t("stations") },
     { to: "/app/hr", icon: UserCog, label: t("hr") },
     { to: "/app/performance", icon: Trophy, label: t("performance") },
-    { to: "/app/reports", icon: FileBarChart2, label: t("tasksReport") },
+    { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)" },
+    { to: "/app/reports", icon: FileBarChart2, label: lang === "ar" ? "التقارير الشاملة" : "Comprehensive Reports" },
     { to: "/app/help", icon: HelpCircle, label: t("userGuide") },
   ];
 

@@ -193,7 +193,7 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t("tasksReport")} description={t("tasksReportNote")} icon={FileBarChart2} />
+      <PageHeader title={lang === "ar" ? "التقارير الشاملة" : "Comprehensive Reports"} description={t("tasksReportNote")} icon={FileBarChart2} />
 
       <div className="rounded-xl border border-border bg-card p-4 space-y-4 shadow-sm">
       {/* Section tabs */}
@@ -352,13 +352,12 @@ export default function Reports() {
         </ReportCard>
       )}
 
-      {/* HSE safety tab — monthly PDF per station + hours-without-incidents record */}
+      {/* HSE safety tab — read-only reports calculated from the approved data in the Safety section */}
       {tab === "hse" && (
         <HSESafetyReport
           data={data}
           company={company}
           stations={myStations.filter((s) => selectedStations.includes(s.id))}
-          canEdit={isOwner || ["director", "ops_manager", "pgm", "station_manager"].includes(currentUser.role)}
           lang={lang}
           dir={dir}
         />
