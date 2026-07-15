@@ -1,10 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import GoogleIcon from "@/components/GoogleIcon";
 
 export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, googleEmail, error, onSwitchToIndividual }) {
   const { t, lang } = useI18n();
+  const navigate = useNavigate();
   const [companyName, setCompanyName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState(googleEmail || "");
   const [ownerPassword, setOwnerPassword] = useState("");
@@ -86,6 +88,16 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
             {submitting ? t("pleaseWaitBtn") : isFree ? t("createAccountBtn") : t("continueToPaymentBtn")}
           </button>
         </form>
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="mt-4 w-full text-center text-sm font-body text-[#3a2f22]/60 hover:text-[#3a2f22]"
+        >
+          {lang === "ar" ? "لديك حساب بالفعل؟ " : "Already have an account? "}
+          <span className="font-semibold text-landing-gold underline underline-offset-4">
+            {lang === "ar" ? "تسجيل الدخول" : "Sign in"}
+          </span>
+        </button>
       </div>
     </div>
   );
