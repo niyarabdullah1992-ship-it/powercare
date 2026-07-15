@@ -2,12 +2,17 @@ import React from "react";
 import { Download } from "lucide-react";
 import { AUTHOR, PROGRAM, DESCRIPTION_SECTIONS, CODE_FILES } from "@/lib/copyrightDocContent";
 import Logo from "@/components/Logo";
+import { useAuth } from "@/lib/PowerCareAuth";
 
 // Official copyright-registration document (Saudi Authority for Intellectual
 // Property). Renders as a clean A4-style document; the button opens the
 // browser's print dialog where the user chooses "Save as PDF".
 export default function CopyrightDoc() {
+  const { currentUser } = useAuth();
   const today = new Date().toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" });
+  // The author's real saved signature from the File Signing section.
+  const signatureUrl = currentUser?.profile?.signatureUrl || "";
+  const signatureId = currentUser?.profile?.signatureId || "";
 
   return (
     <div dir="rtl" className="min-h-screen bg-neutral-200 print:bg-white py-8 print:py-0 font-body">
@@ -89,12 +94,18 @@ export default function CopyrightDoc() {
             <div>
               <p className="text-neutral-500 mb-2">الاسم والتوقيع:</p>
               <div className="mb-2">
-                <p className="text-3xl leading-relaxed text-neutral-800" style={{ fontFamily: "'Aref Ruqaa', serif" }}>
-                  {AUTHOR.nameAr}
-                </p>
-                <p className="text-xl text-neutral-700 -mt-1" dir="ltr" style={{ fontFamily: "'Great Vibes', cursive" }}>
-                  Niyar Abdullah Suwailem Alraniawi
-                </p>
+                {signatureUrl ? (
+                  <img src={signatureUrl} alt="التوقيع" className="h-20 object-contain" />
+                ) : (
+                  <p className="text-3xl leading-relaxed text-neutral-800" style={{ fontFamily: "'Aref Ruqaa', serif" }}>
+                    {AUTHOR.nameAr}
+                  </p>
+                )}
+                {signatureId && (
+                  <p className="text-[10px] font-mono text-neutral-500 mt-1 tracking-wider" dir="ltr">
+                    Verification ID: {signatureId}
+                  </p>
+                )}
               </div>
               <p className="border-t border-neutral-400 pt-2 font-bold">{AUTHOR.nameAr}</p>
             </div>
