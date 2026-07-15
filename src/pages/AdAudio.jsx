@@ -1,7 +1,7 @@
 import React from "react";
 import { Download, Volume2 } from "lucide-react";
 
-const AUDIO_URL = "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/294039f99_speech.mp3";
+const AUDIO_URL = "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/e72913a71_speech.mp3";
 
 export default function AdAudio() {
   return (
