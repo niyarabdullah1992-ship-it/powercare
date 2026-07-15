@@ -58,9 +58,12 @@ if (typeof window !== "undefined") {
     if (!localStorage.getItem("powercare_session")) return;
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 5000));
     idle(() => {
+      import('./pages/Dashboard');
       import('./pages/MyTasks');
       import('./pages/Attendance');
       import('./pages/Reports');
+      import('./pages/FileSigning');
+      import('./pages/DayPlanner');
     });
   }, { once: true });
 }

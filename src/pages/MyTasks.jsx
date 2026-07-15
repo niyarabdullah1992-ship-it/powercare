@@ -75,7 +75,14 @@ export default function MyTasks() {
 
   const fetchTargets = async () => {
     if (!currentUser) return;
-    setTargetsLoading(true);
+    // Instant open: render the cached list immediately, refresh in the background.
+    const cacheKey = `pc_targets_${currentUser.id}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try { setTargets(JSON.parse(cached)); } catch { /* ignore bad cache */ }
+    } else {
+      setTargetsLoading(true);
+    }
     try {
       const res = await base44.functions.invoke("supabaseTargets", {
         action: "listTargets",
@@ -84,9 +91,11 @@ export default function MyTasks() {
         stationId: currentUser.stationId || null,
         managedStations: currentUser.managedStations || [],
       });
-      setTargets(res.data.targets || []);
+      const list = res.data.targets || [];
+      setTargets(list);
+      sessionStorage.setItem(cacheKey, JSON.stringify(list));
     } catch {
-      setTargets([]);
+      if (!cached) setTargets([]);
     } finally {
       setTargetsLoading(false);
     }
@@ -109,11 +118,17 @@ export default function MyTasks() {
   }, [isIndividual]);
 
   const fetchFolders = async () => {
+    const cached = sessionStorage.getItem("pc_folders");
+    if (cached) {
+      try { setFolders(JSON.parse(cached)); } catch { /* ignore bad cache */ }
+    }
     try {
       const res = await base44.functions.invoke("supabaseTargets", { action: "listFolders" });
-      setFolders(res.data.folders || []);
+      const list = res.data.folders || [];
+      setFolders(list);
+      sessionStorage.setItem("pc_folders", JSON.stringify(list));
     } catch {
-      setFolders([]);
+      if (!cached) setFolders([]);
     }
   };
 
