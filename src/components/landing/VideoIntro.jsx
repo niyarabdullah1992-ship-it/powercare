@@ -107,10 +107,14 @@ export default function VideoIntro() {
         {/* Narration audio — resets automatically whenever the language changes */}
         <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" />
 
-        <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-landing-gold/30 text-landing-gold-light font-body text-sm">
-          <Volume2 className="w-4 h-4 opacity-60" />
+        <button
+          type="button"
+          onClick={togglePlay}
+          className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 border border-landing-gold/30 text-landing-gold-light font-body text-sm hover:bg-landing-gold/20 transition-colors cursor-pointer"
+        >
+          {playing ? <Pause className="w-4 h-4 opacity-60" /> : <Volume2 className="w-4 h-4 opacity-60" />}
           {t("narrationCta")}
-        </div>
+        </button>
       </div>
     </section>
   );
