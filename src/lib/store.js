@@ -159,6 +159,20 @@ export async function syncCompanyAccount(company) {
   return syncAccountToEntity(company);
 }
 
+// Rebuilds a missing local workspace for a saved session (e.g. localStorage was
+// partially cleared) so cloud hydration can repopulate it instead of a blank app.
+export function ensureLocalCompany(companyId) {
+  if (getCompanyData(companyId)) return;
+  const reg = getRegistry();
+  let company = reg.companies.find((c) => c.id === companyId);
+  if (!company) {
+    company = { id: companyId, name: "", ownerEmail: "", plan: "", allowedEmailDomain: "", createdAt: new Date().toISOString() };
+    reg.companies.push(company);
+    saveRegistry(reg);
+  }
+  write(companyKey(companyId), emptyCompanyData(company));
+}
+
 // Checks whether this company account still exists on the server. Network
 // failures return true so a connectivity blip never signs the user out.
 export async function companyAccountExists(companyId) {
