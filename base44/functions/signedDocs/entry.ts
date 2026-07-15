@@ -14,6 +14,25 @@ Deno.serve(async (req) => {
     const Docs = base44.asServiceRole.entities.SignedDocument;
 
     if (action === 'register') {
+      // Registration is NOT public: only a logged-in user (owner/employee session
+      // issued after email-verified login, or the platform builder) may register
+      // a signature — and employees may only register as themselves.
+      const platformUser = await base44.auth.me().catch(() => null);
+      if (!platformUser || platformUser.role !== 'admin') {
+        const sessionToken = String(body.sessionToken || '');
+        const companyId = String(body.companyId || '');
+        let session = null;
+        if (sessionToken && companyId) {
+          const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: sessionToken, companyId });
+          const s = sessions[0];
+          if (s && new Date(s.expiresAt).getTime() > Date.now()) session = s;
+        }
+        if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+        // Identity boundary: an employee session can only register its own signature.
+        if (session.userId && String(body.signerId || '') !== session.userId) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 });
+        }
+      }
       const verificationId = String(body.verificationId || '').slice(0, 40);
       const fileHash = String(body.fileHash || '').toLowerCase().slice(0, 64);
       if (!verificationId || !/^[0-9a-f]{64}$/.test(fileHash)) {

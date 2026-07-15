@@ -1,4 +1,5 @@
 import { base44 } from "@/api/base44Client";
+import { getCompanyToken } from "@/lib/store";
 import { makeVerificationBadgeCanvas, generateVerificationId, loadBadgeQr } from "@/lib/verificationBadge";
 import { imageBlobToPdf } from "@/lib/signPdf";
 import { sha256HexOfBuffer } from "@/lib/fileHash";
@@ -150,6 +151,7 @@ export async function generateSignedReport({ title, companyName, dir, headers, r
     signerName,
     signerId,
     companyId,
+    sessionToken: getCompanyToken(companyId),
     fileName: `${title}.pdf`,
   });
 

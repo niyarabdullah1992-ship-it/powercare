@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { PenLine, Upload, Loader2, FileText, MousePointerClick, ShieldCheck } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { getCompanyToken } from "@/lib/store";
 import { signPdfFile, imageBlobToPdf } from "@/lib/signPdf";
 import SignaturePlacementModal from "@/components/files/SignaturePlacementModal";
 import { makeVerificationBadgeCanvas, generateVerificationId, loadBadgeQr } from "@/lib/verificationBadge";
@@ -125,6 +126,7 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
         signerName,
         signerId: currentUser.id,
         companyId,
+        sessionToken: getCompanyToken(companyId),
         fileName: doc.name,
       });
       setSigned({ url: signedUrl, hash: fileHash, verificationId: doc.sigId, name: doc.name });
