@@ -23,6 +23,7 @@ import BottomTabBar from "@/components/mobile/BottomTabBar";
 import BackButton from "@/components/mobile/BackButton";
 import ProductFeedbackPrompt from "@/components/ProductFeedbackPrompt";
 import { shouldShowNotification } from "@/lib/notificationFilters";
+import { routeForNotification } from "@/lib/notificationRoute";
 import SectionGuide from "@/components/SectionGuide";
 
 export default function Layout({ children }) {
@@ -169,6 +170,16 @@ export default function Layout({ children }) {
     });
   };
 
+  // Clicking a notification marks it read and jumps to the page it refers to.
+  const openNotification = (n) => {
+    updateCompany(company.id, (d) => {
+      const target = d.notifications.find((x) => x.id === n.id);
+      if (target) target.read = true;
+    });
+    setNotifOpen(false);
+    navigate(routeForNotification(n.text));
+  };
+
   const sidebarSide = dir === "rtl" ? "right-0" : "left-0";
 
   return (
@@ -313,12 +324,15 @@ export default function Layout({ children }) {
                         myNotifs.slice(0, 12).map((n) => (
                           <SwipeToDeleteItem key={n.id} onDelete={() => dismissNotification(n.id)}>
                             <div className={`flex items-start gap-2 px-4 py-3 border-b border-border/60 ${n.read ? "opacity-60" : ""}`}>
-                              <div className="flex-1 min-w-0">
+                              <button
+                                onClick={() => openNotification(n)}
+                                className="flex-1 min-w-0 text-start hover:opacity-80 transition-opacity"
+                              >
                                 <p className="text-sm font-body">{n.text}</p>
                                 <p className="text-[10px] text-muted-foreground mt-1">
                                   {new Date(n.createdAt).toLocaleString(lang)}
                                 </p>
-                              </div>
+                              </button>
                               <button
                                 onClick={() => dismissNotification(n.id)}
                                 className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
