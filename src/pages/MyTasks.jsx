@@ -13,11 +13,12 @@ import { getParentPath, withAncestors, NO_SECTION } from "@/lib/taskFolders";
 import { logAudit } from "@/lib/auditLog";
 import { getTodayAttendance, isCheckedIn } from "@/lib/attendance";
 import { Link } from "react-router-dom";
-import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, Clock, Search, Pencil, X, ClipboardCheck } from "lucide-react";
+import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, Clock, Search, Pencil, X, ClipboardCheck, Archive } from "lucide-react";
 import StationCombobox from "@/components/stations/StationCombobox";
 import TaskStats from "@/components/tasks/TaskStats";
 import TaskCard from "@/components/tasks/TaskCard";
 import FolderTree from "@/components/tasks/FolderTree";
+import SmartArchive from "@/components/tasks/SmartArchive";
 import SectionPicker from "@/components/tasks/SectionPicker";
 import CommentFiles from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
@@ -69,6 +70,7 @@ export default function MyTasks() {
   const [folders, setFolders] = useState([]);
   const [sectionValue, setSectionValue] = useState("");
   const [checkedInToday, setCheckedInToday] = useState(true);
+  const [showArchive, setShowArchive] = useState(false);
 
   // Individual (personal) workspaces: no stations, no attendance gate, no escalation.
   const isIndividual = String(data?.plan || company?.plan || "").toLowerCase() === "individual";
@@ -962,12 +964,39 @@ export default function MyTasks() {
 
       {/* Task Targets — organized by station as a hierarchical folder tree */}
       <div className="p-5 rounded-xl border border-border bg-card space-y-4">
-        <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
-          <Target className="w-4 h-4" /> {t("targets")}
-        </h2>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
+            {showArchive ? <Archive className="w-4 h-4" /> : <Target className="w-4 h-4" />} {showArchive ? (lang === "ar" ? "الأرشيف الذكي" : "Smart Archive") : t("targets")}
+          </h2>
+          <button
+            type="button"
+            onClick={() => setShowArchive(!showArchive)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${showArchive ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            <Archive className="w-3.5 h-3.5" /> {lang === "ar" ? "الأرشيف الذكي" : "Smart Archive"}
+          </button>
+        </div>
+
+        {showArchive && (
+          <p className="text-xs text-muted-foreground font-body -mt-2">
+            {lang === "ar"
+              ? "تُصنَّف المهام المنتهية تلقائيًا حسب مدتها: سنوية، نصف سنوية، ربع سنوية وشهرية."
+              : "Finished tasks are classified automatically by their duration: yearly, half-year, quarterly and monthly."}
+          </p>
+        )}
 
         <AnimatePresence mode="wait">
-        {targetsLoading ? (
+        {showArchive ? (
+          <motion.div
+            key="archive"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+          >
+            <SmartArchive targets={targets} renderTask={renderTask} ar={lang === "ar"} dir={dir} />
+          </motion.div>
+        ) : targetsLoading ? (
           <div className="space-y-3 py-2" aria-label={t("loading") || "Loading"}>
             {[1, 2, 3].map((item) => <div key={item} className="h-20 rounded-lg bg-muted animate-pulse" />)}
           </div>
