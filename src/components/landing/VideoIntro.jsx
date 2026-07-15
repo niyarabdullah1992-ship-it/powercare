@@ -48,13 +48,30 @@ export default function VideoIntro() {
     }
   };
 
+  // The video may be shorter than the narration — when it ends, loop it
+  // silently so the voice-over always plays to the very end.
   const handleVideoEnded = () => {
     const audio = audioRef.current;
-    if (audio) {
-      audio.pause();
-      audio.currentTime = 0;
+    const video = videoRef.current;
+    if (audio && !audio.paused && !audio.ended) {
+      if (video) {
+        video.currentTime = 0;
+        video.play();
+      }
+      return;
     }
-    if (videoRef.current) videoRef.current.currentTime = 0;
+    if (video) video.currentTime = 0;
+    setPlaying(false);
+  };
+
+  // Narration finished — stop the video and reset everything.
+  const handleAudioEnded = () => {
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.currentTime = 0;
+    }
+    if (audioRef.current) audioRef.current.currentTime = 0;
     setPlaying(false);
   };
 
@@ -105,7 +122,7 @@ export default function VideoIntro() {
         </div>
 
         {/* Narration audio — resets automatically whenever the language changes */}
-        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" />
+        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" onEnded={handleAudioEnded} />
 
         <button
           type="button"
