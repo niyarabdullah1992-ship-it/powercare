@@ -113,8 +113,8 @@ export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100
           <button onClick={onClose} className="p-1 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
         </div>
 
-        <div className="flex-1 overflow-auto bg-muted/50 p-4">
-          <div ref={wrapRef} onClick={handleClick} className="relative mx-auto max-w-full cursor-crosshair bg-white shadow-md">
+        <div className="flex-1 min-h-0 overflow-auto overscroll-contain bg-muted/50 p-4" style={{ WebkitOverflowScrolling: "touch" }}>
+          <div ref={wrapRef} onClick={handleClick} className="relative mx-auto max-w-full cursor-crosshair bg-white shadow-md" style={{ touchAction: "pan-y" }}>
             <canvas ref={canvasRef} className="block w-full" />
             {loading && !loadError && (
               <div className="absolute inset-0 flex items-center justify-center bg-white/70">

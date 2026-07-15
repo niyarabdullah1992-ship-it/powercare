@@ -101,7 +101,7 @@ export default function MultiSignPlacementModal({ docUrl, signers, initialSpots,
           ))}
         </div>
 
-        <div className="flex-1 overflow-auto bg-muted/50 p-4">
+        <div className="flex-1 min-h-0 overflow-auto overscroll-contain bg-muted/50 p-4" style={{ WebkitOverflowScrolling: "touch" }}>
           <div ref={wrapRef} onClick={handleClick} className="relative mx-auto max-w-full cursor-crosshair bg-white shadow-md">
             <canvas ref={canvasRef} className="block w-full" />
             {loading && !loadError && (
