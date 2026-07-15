@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, CalendarDays, HelpCircle, BookOpen, Calendar,
+  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileBarChart2, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, CalendarDays, HelpCircle, BookOpen, Calendar, Gauge,
 } from "lucide-react";
 import PlannerReminders from "@/components/individual/PlannerReminders";
 import { toast } from "@/components/ui/use-toast";
@@ -112,6 +112,7 @@ export default function Layout({ children }) {
 
   const navItems = [
     { to: "/app", icon: LayoutDashboard, label: t("dashboard"), end: true },
+    { to: "/app/executive", icon: Gauge, label: lang === "ar" ? "اللوحة التنفيذية" : "Executive" },
     { to: "/app/daily-report", icon: FileText, label: t("reports") },
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks") },
     { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling") },
