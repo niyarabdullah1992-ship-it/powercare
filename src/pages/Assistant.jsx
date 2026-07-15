@@ -158,6 +158,7 @@ Answer the last user question.`,
       // model alone to pick the right action.
       const wantsSign = /توقيع|توقيعي|وق[ّ]?ع|اعتماد|اعتمد|ختم|sign/i.test(q);
       const wantsNavigation = /افتح|اذهب|انتقل|ودني|خذني|روح|open|go to|navigate|take me|öffne|gehe|ouvre|aller à|abre|ve a|abrir|ir para|открой|перейди|開いて|移動して|열어|이동해/i.test(q);
+      const docs = [];
       for (const rawAction of res?.actions || []) {
         if (rawAction.type === "open_page" && !wantsNavigation) continue;
         const action = wantsSign && rawAction.type === "export_data"
@@ -171,8 +172,9 @@ Answer the last user question.`,
           result = { ok: false, message: t("aiActionFailed") };
         }
         text += `\n\n${result.ok ? "✅" : "⚠️"} ${result.message}`;
+        if (result.doc) docs.push(result.doc);
       }
-      setMessages((prev) => [...prev, { role: "assistant", text }]);
+      setMessages((prev) => [...prev, { role: "assistant", text, ...(docs.length ? { docs } : {}) }]);
       if (fromVoice) speak(text, lang);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", text: t("aiError") }]);

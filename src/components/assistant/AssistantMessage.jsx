@@ -1,6 +1,6 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
-import { Sparkles } from "lucide-react";
+import { Sparkles, FileText, ExternalLink } from "lucide-react";
 
 export default function AssistantMessage({ message }) {
   const isUser = message.role === "user";
@@ -19,6 +19,23 @@ export default function AssistantMessage({ message }) {
             <ReactMarkdown>{message.text}</ReactMarkdown>
           </div>
         )}
+        {Array.isArray(message.docs) && message.docs.map((doc, i) => (
+          <a
+            key={i}
+            href={doc.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 flex items-center gap-3 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2.5 hover:bg-accent/10 transition-colors no-underline"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent/15 text-accent">
+              <FileText className="h-[18px] w-[18px]" />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block truncate text-sm font-semibold text-foreground" dir="auto">{doc.title}</span>
+            </span>
+            <ExternalLink className="h-4 w-4 shrink-0 text-accent" />
+          </a>
+        ))}
       </div>
     </div>
   );

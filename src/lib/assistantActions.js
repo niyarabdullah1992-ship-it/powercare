@@ -128,7 +128,7 @@ export async function executeAssistantAction(action, { data, company, currentUse
       logoUrl: data.reportBranding?.logoUrl || "",
     });
     // Save a copy into the Files section so the document is always findable.
-    let saved = false;
+    let savedUrl = null;
     try {
       const file = new File([html], `${title}.html`, { type: "text/html" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
@@ -137,14 +137,14 @@ export async function executeAssistantAction(action, { data, company, currentUse
         size: file.size, mimeType: "text/html",
         uploadedBy: currentUser?.name || "", stationId: null,
       });
-      saved = true;
+      savedUrl = file_url;
     } catch { /* file save is best-effort — the print window still opens */ }
     const opened = openDocumentHtml(html);
-    if (!opened && !saved) return { ok: false, message: t("aiActionFailed") };
+    if (!opened && !savedUrl) return { ok: false, message: t("aiActionFailed") };
     const msg = ar
-      ? `تم إنشاء المستند «${title}»${saved ? " وحفظه في قسم الملفات" : ""}${opened ? "، وفُتح في نافذة جديدة — اضغط «تحميل PDF / طباعة» لتحميله" : ""}.`
-      : `Document "${title}" created${saved ? " and saved to the Files section" : ""}${opened ? ", and opened in a new tab — press \u201CDownload PDF / Print\u201D to save it" : ""}.`;
-    return { ok: true, message: msg };
+      ? `تم إنشاء المستند «${title}»${savedUrl ? " وحفظه في قسم الملفات" : ""} — يمكنك فتحه من البطاقة أدناه وتحميله PDF عبر زر الطباعة.`
+      : `Document "${title}" created${savedUrl ? " and saved to the Files section" : ""} — open it from the card below and download it as PDF via the print button.`;
+    return { ok: true, message: msg, doc: savedUrl ? { title, url: savedUrl } : null };
   }
 
   if (action.type === "sign_report") {
