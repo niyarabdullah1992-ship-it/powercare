@@ -113,8 +113,18 @@ Deno.serve(async (req) => {
         status: 'pending',
         signers,
       });
-      // Email each signer their personal signing link.
-      const appUrl = String(body.appUrl || '').replace(/\/+$/, '').slice(0, 300);
+      // Email each signer their personal signing link. The link host is never
+      // trusted from the client — only known app domains are allowed, otherwise
+      // the canonical published domain is used (prevents phishing-link injection).
+      const resolveAppUrl = (raw) => {
+        try {
+          const u = new URL(String(raw || ''));
+          const allowedHost = /^([a-z0-9-]+\.)*(powercares\.pro|base44\.app)$/i;
+          if (u.protocol === 'https:' && allowedHost.test(u.hostname)) return u.origin;
+        } catch (_e) { /* invalid URL — fall through to canonical domain */ }
+        return 'https://powercares.pro';
+      };
+      const appUrl = resolveAppUrl(body.appUrl);
       const ar = body.lang === 'ar';
       const links = {};
       const emailFailed = [];

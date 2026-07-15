@@ -22,8 +22,11 @@ Deno.serve(async (req) => {
       let city = '';
       try {
         const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim();
-        if (ip) {
-          const geoRes = await fetch(`https://ipwho.is/${ip}`, { signal: AbortSignal.timeout(3000) });
+        // Only a syntactically valid IPv4/IPv6 value is ever placed in the URL —
+        // blocks path traversal / query injection via a spoofed header.
+        const isValidIp = /^(\d{1,3}(\.\d{1,3}){3}|[0-9a-fA-F:]+)$/.test(ip);
+        if (ip && isValidIp) {
+          const geoRes = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}`, { signal: AbortSignal.timeout(3000) });
           const geo = await geoRes.json();
           if (geo && geo.success) {
             country = String(geo.country || '').slice(0, 80);

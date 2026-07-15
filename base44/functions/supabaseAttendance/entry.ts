@@ -63,6 +63,10 @@ Deno.serve(async (req) => {
       return (ids || []).filter((id) => allowed.has(id));
     };
     const todayStr = () => new Date().toISOString().slice(0, 10);
+    // Strict date formats — values are interpolated into PostgREST query strings,
+    // so anything not matching is rejected (blocks query-parameter injection).
+    const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ""));
+    const isMonth = (v) => /^\d{4}-\d{2}$/.test(String(v || ""));
     const toMinutes = (hhmm) => {
       const parts = (hhmm || "").split(":").map(Number);
       return (parts[0] || 0) * 60 + (parts[1] || 0);
@@ -359,6 +363,7 @@ Deno.serve(async (req) => {
       if (!Array.isArray(employeeIds) || employeeIds.length === 0) return Response.json({ rows: [] });
       const scopedIds = await filterCompanyEmployeeIds(employeeIds);
       if (scopedIds.length === 0) return Response.json({ rows: [] });
+      if (date && !isDate(date)) return Response.json({ error: "Invalid date" }, { status: 400 });
       const d = date || todayStr();
       const idsList = scopedIds.map((id) => `"${id}"`).join(",");
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=in.(${idsList})&date=eq.${d}`, { headers });
@@ -370,6 +375,7 @@ Deno.serve(async (req) => {
     if (action === "listMonthly") {
       const { employeeId, month } = body;
       if (!employeeId || !month) return Response.json({ error: "Missing fields" }, { status: 400 });
+      if (!isMonth(month)) return Response.json({ error: "Invalid month" }, { status: 400 });
       if (!(await employeeInCompany(employeeId))) return Response.json({ error: "Forbidden" }, { status: 403 });
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=gte.${month}-01&date=lte.${month}-31&order=date.asc`, { headers });
       const rows = await res.json();
@@ -382,6 +388,7 @@ Deno.serve(async (req) => {
     if (action === "listRange") {
       const { employeeId, startDate, endDate } = body;
       if (!employeeId || !startDate || !endDate) return Response.json({ error: "Missing fields" }, { status: 400 });
+      if (!isDate(startDate) || !isDate(endDate)) return Response.json({ error: "Invalid date range" }, { status: 400 });
       if (!(await employeeInCompany(employeeId))) return Response.json({ error: "Forbidden" }, { status: 403 });
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=gte.${startDate}&date=lte.${endDate}&order=date.asc`, { headers });
       const rows = await res.json();
@@ -395,6 +402,7 @@ Deno.serve(async (req) => {
       if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
       const { employeeIds: rawIds, month } = body;
       if (!Array.isArray(rawIds) || rawIds.length === 0 || !month) return Response.json({ stats: [] });
+      if (!isMonth(month)) return Response.json({ error: "Invalid month" }, { status: 400 });
       const employeeIds = await filterCompanyEmployeeIds(rawIds);
       if (employeeIds.length === 0) return Response.json({ stats: [] });
       const idsList = employeeIds.map((id) => `"${id}"`).join(",");
