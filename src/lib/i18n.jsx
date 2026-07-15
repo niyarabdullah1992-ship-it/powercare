@@ -1591,7 +1591,9 @@ export function I18nProvider({ children }) {
     (async () => {
       for (let index = 0; index < missing.length && !cancelled; index += 40) {
         const batch = Object.fromEntries(missing.slice(index, index + 40));
-        const result = await base44.integrations.Core.InvokeLLM({
+        let result = null;
+        try {
+        result = await base44.integrations.Core.InvokeLLM({
           prompt: `Translate every value in this JSON object into ${LANGUAGES.find((item) => item.code === lang)?.label}. Return every key unchanged. Use natural professional UI language. Keep product names such as PowerCare, Niro, PDF, Excel and GPS unchanged. Do not include any English explanation or markdown. JSON: ${JSON.stringify(batch)}`,
           response_json_schema: {
             type: "object",
@@ -1599,6 +1601,10 @@ export function I18nProvider({ children }) {
             required: ["translations"],
           },
         });
+        } catch {
+          // One failed batch must not kill the remaining batches
+          continue;
+        }
         if (!result?.translations || cancelled) continue;
         // Keep only clean, non-empty string translations
         const clean = Object.fromEntries(
