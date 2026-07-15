@@ -1,4 +1,5 @@
 import Stripe from 'npm:stripe@17.4.0';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 
 const PLAN_PRICES = {
   monthly: {
@@ -25,6 +26,11 @@ Deno.serve(async (req) => {
       const priceId = PLAN_PRICES[interval][plan];
       if (!priceId) return Response.json({ error: 'Invalid plan' }, { status: 400 });
       if (!companyName || !ownerEmail) return Response.json({ error: 'Missing companyName or ownerEmail' }, { status: 400 });
+
+      // Block duplicate signups: this email already owns a company account.
+      const base44 = createClientFromRequest(req);
+      const dupes = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: String(ownerEmail).trim().toLowerCase() });
+      if (dupes.length) return Response.json({ error: 'email_exists' }, { status: 409 });
 
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',

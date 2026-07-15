@@ -312,6 +312,13 @@ Deno.serve(async (req) => {
       } else if (!storedPassword && existing.length) {
         storedPassword = existing[0].ownerPassword;
       }
+      // Block duplicate signups: a brand-new account may not reuse an email that
+      // already owns another company account.
+      if (!existing.length) {
+        const email = String(ownerEmail || '').trim().toLowerCase();
+        const dupes = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email });
+        if (dupes.length) return Response.json({ error: 'email_exists' }, { status: 409 });
+      }
       const fields = { companyId, name, ownerEmail, ownerPassword: storedPassword, plan, allowedEmailDomain: allowedEmailDomain || '' };
       let token = null;
       if (existing.length) {

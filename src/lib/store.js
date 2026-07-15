@@ -147,8 +147,10 @@ async function syncAccountToEntity(company) {
     });
     // Brand-new signups get an owner session token back — keep it for future calls.
     if (res?.data?.token) setCompanyToken(company.id, res.data.token);
+    if (res?.data?.error === 'email_exists') return 'email_exists';
     return !!res?.data?.ok;
-  } catch {
+  } catch (err) {
+    if (err?.response?.data?.error === 'email_exists') return 'email_exists';
     return false;
   }
 }

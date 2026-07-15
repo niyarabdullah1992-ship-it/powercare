@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { activateCompanySession, createCompany, syncCompanyAccount } from "@/lib/store";
+import { activateCompanySession, createCompany, deleteCompany, syncCompanyAccount } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
 import { Check, Loader2, ArrowLeft } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -73,8 +73,12 @@ export default function Pricing() {
     );
     pendingCompanyRef.current = company;
     const saved = await syncCompanyAccount(company);
-    if (!saved) {
-      setError(lang === "ar" ? "تعذر حفظ حساب الشركة. يرجى المحاولة مرة أخرى." : "The company account could not be saved. Please try again.");
+    if (saved !== true) {
+      pendingCompanyRef.current = null;
+      deleteCompany(company.id);
+      setError(saved === "email_exists"
+        ? (lang === "ar" ? "هذا البريد الإلكتروني مسجّل مسبقًا — يرجى تسجيل الدخول بدلًا من إنشاء حساب جديد." : "This email is already registered — please sign in instead of creating a new account.")
+        : (lang === "ar" ? "تعذر حفظ حساب الشركة. يرجى المحاولة مرة أخرى." : "The company account could not be saved. Please try again."));
       return false;
     }
     pendingCompanyRef.current = null;
@@ -107,7 +111,9 @@ export default function Pricing() {
         setError(res.data?.error || t("checkoutGenericError"));
       }
     } catch (e) {
-      setError(t("checkoutGenericError"));
+      setError(e?.response?.data?.error === "email_exists"
+        ? (lang === "ar" ? "هذا البريد الإلكتروني مسجّل مسبقًا — يرجى تسجيل الدخول بدلًا من إنشاء حساب جديد." : "This email is already registered — please sign in instead of creating a new account.")
+        : t("checkoutGenericError"));
     } finally {
       setLoading(false);
     }
