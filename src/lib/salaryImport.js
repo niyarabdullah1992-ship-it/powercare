@@ -16,6 +16,7 @@ const ROW_SCHEMA = {
           email: { type: "string", description: "Employee email if present, else empty" },
           base_salary: { type: "number", description: "Base/basic monthly salary amount" },
           allowances: { type: "number", description: "Total allowances amount (0 if none)" },
+          bonus: { type: "number", description: "Bonus amount (0 if none)" },
           deductions: { type: "number", description: "Total deductions amount (0 if none)" },
           currency: { type: "string", description: "Currency code like SAR, USD (empty if not stated)" },
         },
@@ -32,7 +33,7 @@ export async function extractSalaryRows(file) {
   let rows = extracted?.status === "success" ? extracted.output?.rows || extracted.output || [] : null;
   if (!rows || rows.length === 0) {
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: "This file is a company salary sheet. Extract every employee salary row exactly as written: full name, email (if any), base/basic salary, total allowances, total deductions, and currency code. Amounts are numbers only (no separators).",
+      prompt: "This file is a company salary sheet. Extract every employee salary row exactly as written: full name, email (if any), base/basic salary, total allowances, bonus, total deductions, and currency code. Amounts are numbers only (no separators).",
       file_urls: [file_url],
       response_json_schema: ROW_SCHEMA,
     });
@@ -76,6 +77,7 @@ export function applySalaryImport(companyId, month, matches) {
       if (item && !item.paid) {
         item.base = Number(row.base_salary) || 0;
         item.allowances = Number(row.allowances) || 0;
+        item.bonus = Number(row.bonus) || 0;
         item.deductions = Number(row.deductions) || 0;
         if (row.currency) item.currency = String(row.currency).toUpperCase();
       }

@@ -6,6 +6,7 @@ import { ensurePayrollRun, getRun, monthKey, netOf, updatePayrollItem, setItemPa
 import { printReport } from "@/lib/printReport";
 import PayrollRow from "@/components/payroll/PayrollRow";
 import SalaryImportCard from "@/components/payroll/SalaryImportCard";
+import PayrollTemplateCard from "@/components/payroll/PayrollTemplateCard";
 
 export default function Payroll() {
   const { lang, dir } = useI18n();
@@ -106,7 +107,10 @@ export default function Payroll() {
         </div>
       </div>
 
-      <SalaryImportCard company={company} data={data} month={month} ar={ar} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+        <PayrollTemplateCard data={data} month={month} ar={ar} />
+        <SalaryImportCard company={company} data={data} month={month} ar={ar} />
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
