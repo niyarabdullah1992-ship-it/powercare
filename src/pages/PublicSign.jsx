@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { PenLine, Loader2, FileText, ShieldCheck, Download, ExternalLink, CheckCircle2, Keyboard } from "lucide-react";
+import { PenLine, Loader2, FileText, ShieldCheck, Download, ExternalLink, CheckCircle2, Keyboard, MousePointerClick } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import SignaturePad from "@/components/files/SignaturePad";
+import SignSpotPicker from "@/components/files/SignSpotPicker";
 import TypedSignature from "@/components/files/TypedSignature";
 import Logo from "@/components/Logo";
 import { makeSignatureStamp, stampOnPdf } from "@/lib/multiSignStamp";
@@ -21,6 +22,8 @@ export default function PublicSign() {
   const [error, setError] = useState("");
   const [mode, setMode] = useState("type"); // "type" | "draw"
   const [sigSize, setSigSize] = useState(100); // signature size, % (50–200)
+  const [chosenSpot, setChosenSpot] = useState(null); // signer-chosen placement {page,x,y}
+  const [showSpotPicker, setShowSpotPicker] = useState(false);
 
   const [loadError, setLoadError] = useState("");
 
@@ -56,7 +59,7 @@ export default function PublicSign() {
         const qr = await loadBadgeQr(fresh.verificationId).catch(() => null);
         badge = { sigId: fresh.verificationId, name: fresh.signerNames.slice(0, 60), qr };
       }
-      const { url, bytes } = await stampOnPdf(fresh.docUrl, stamp, fresh.signedCount, badge, fresh.signer.spot, sigSize / 100);
+      const { url, bytes } = await stampOnPdf(fresh.docUrl, stamp, fresh.signedCount, badge, chosenSpot || fresh.signer.spot, sigSize / 100);
 
       setStage(ar ? "جارٍ حفظ التوقيع…" : "Saving your signature…");
       const fileHash = fresh.isLast ? await sha256HexOfBuffer(bytes) : "";
@@ -181,13 +184,22 @@ export default function PublicSign() {
         <p className="text-xs font-medium font-body">
           {ar ? `${info.signer.name} — أضف توقيعك هنا:` : `${info.signer.name} — add your signature here:`}
         </p>
-        {info.signer.spot && (
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <p className="text-[11px] text-muted-foreground font-body">
-            {ar
-              ? `سيُوضع توقيعك تلقائيًا في المكان المخصّص لك (صفحة ${info.signer.spot.page}) — لا يمكن التوقيع في مكان آخر.`
-              : `Your signature will be placed automatically at your assigned spot (page ${info.signer.spot.page}) — signing elsewhere isn't possible.`}
+            {chosenSpot
+              ? (ar ? `سيُوضع توقيعك في المكان الذي اخترته (صفحة ${chosenSpot.page}).` : `Your signature will be placed where you chose (page ${chosenSpot.page}).`)
+              : info.signer.spot
+                ? (ar ? `سيُوضع توقيعك في المكان المقترح (صفحة ${info.signer.spot.page}) — ويمكنك تغييره.` : `Your signature will be placed at the suggested spot (page ${info.signer.spot.page}) — you can change it.`)
+                : (ar ? "يمكنك اختيار مكان توقيعك على المستند بنفسك." : "You can choose where your signature goes on the document.")}
           </p>
-        )}
+          <button
+            onClick={() => setShowSpotPicker(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border border-border hover:bg-muted transition"
+          >
+            <MousePointerClick className="w-3.5 h-3.5 text-accent" />
+            {chosenSpot ? (ar ? "تغيير مكان التوقيع" : "Change spot") : (ar ? "اختر مكان التوقيع" : "Pick signature spot")}
+          </button>
+        </div>
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setMode("type")}
@@ -230,6 +242,17 @@ export default function PublicSign() {
         </p>
       )}
       {error && <p className="text-xs text-destructive font-body">{error}</p>}
+
+      {showSpotPicker && (
+        <SignSpotPicker
+          docUrl={info.docUrl}
+          initialSpot={chosenSpot || info.signer.spot || null}
+          signerName={info.signer.name}
+          ar={ar}
+          onConfirm={(spot) => { setChosenSpot(spot); setShowSpotPicker(false); }}
+          onClose={() => setShowSpotPicker(false)}
+        />
+      )}
     </Shell>
   );
 }
