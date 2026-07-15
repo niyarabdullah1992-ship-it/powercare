@@ -39,6 +39,14 @@ export default function Pricing() {
 
   const shownPlans = audience === "individual" ? INDIVIDUAL_PLANS : PLANS;
 
+  // Direct individual sign-up link from the login screen: open the individual
+  // plan's signup dialog immediately.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("signup") !== "individual") return;
+    setAudience("individual");
+    setActivePlan(INDIVIDUAL_PLANS[0]);
+  }, []);
+
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has("google_signup")) return;
     const saved = JSON.parse(sessionStorage.getItem("powercare_google_signup") || "null");

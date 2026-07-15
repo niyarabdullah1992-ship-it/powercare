@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, Download } from "lucide-react";
+import { ShieldCheck, LogIn, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, Download, UserPlus } from "lucide-react";
 import Logo from "@/components/Logo";
 import VideoIntro from "@/components/landing/VideoIntro";
 import NiroShowcase from "@/components/landing/NiroShowcase";
@@ -211,6 +211,13 @@ export default function Landing() {
                   {t("viewPlans")}
                 </Link>
               </p>
+              <Link
+                to="/pricing?signup=individual"
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/30 bg-landing-bg py-2.5 text-sm font-body font-semibold text-[#3a2f22] hover:bg-landing-gold hover:text-white transition-colors"
+              >
+                <UserPlus className="w-4 h-4" strokeWidth={1.75} />
+                {lang === "ar" ? "تسجيل الأفراد — مجانًا" : "Individual sign-up — Free"}
+              </Link>
           </div>
         </div>
       </div>
