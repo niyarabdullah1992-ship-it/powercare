@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { addFileFolder, addCompanyFile, deleteFileNode } from "@/lib/store";
+import { addFileFolder, addCompanyFile, deleteFileNode, renameFileNode } from "@/lib/store";
 import { visibleStations } from "@/lib/permissions";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -142,6 +142,7 @@ export default function Files() {
                 count={childrenOf(folder.id).length}
                 onOpen={() => setPath([...path, folder])}
                 onDelete={() => deleteFileNode(company.id, folder.id)}
+                onRename={(name) => renameFileNode(company.id, folder.id, name)}
               />
             ))}
           </div>
@@ -154,7 +155,7 @@ export default function Files() {
           <p className="text-xs uppercase tracking-wider text-muted-foreground font-body mb-2">{t("attachments")}</p>
           <div className="space-y-2">
             {files.map((file) => (
-              <FileRow key={file.id} file={file} stationName={isIndividual ? null : stationName(file.stationId)} onDelete={() => deleteFileNode(company.id, file.id)} />
+              <FileRow key={file.id} file={file} stationName={isIndividual ? null : stationName(file.stationId)} onDelete={() => deleteFileNode(company.id, file.id)} onRename={(name) => renameFileNode(company.id, file.id, name)} />
             ))}
           </div>
         </div>

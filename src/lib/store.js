@@ -1346,6 +1346,15 @@ export function addCompanyFile(companyId, { name, parentId, url, size, mimeType,
   });
 }
 
+// Renames a file or folder node.
+export function renameFileNode(companyId, nodeId, name) {
+  updateCompany(companyId, (d) => {
+    d.files = d.files || [];
+    const node = d.files.find((f) => f.id === nodeId);
+    if (node && name && name.trim()) node.name = name.trim();
+  });
+}
+
 // Deletes a node and (for folders) everything nested inside it, at any depth.
 export function deleteFileNode(companyId, nodeId) {
   updateCompany(companyId, (d) => {
