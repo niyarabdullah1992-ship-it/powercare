@@ -1,7 +1,7 @@
-// Opens an elegant, print-ready (A4) document window from AI-generated content.
+// Builds an elegant, print-ready (A4) HTML document from AI-generated content.
 // Used by Niro's "create_document" action — supports headings, paragraphs,
-// bullet lists and numbered lists, in Arabic (RTL) or English (LTR).
-export function printDocument({ title, subtitle, sections = [], dir = "ltr", companyName = "", authorName = "", color = "#b07d3f", logoUrl = "" }) {
+// bullet lists, in Arabic (RTL) or English (LTR).
+export function buildDocumentHtml({ title, subtitle, sections = [], dir = "ltr", companyName = "", authorName = "", color = "#b07d3f", logoUrl = "" }) {
   const ar = dir === "rtl";
   const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -65,9 +65,18 @@ export function printDocument({ title, subtitle, sections = [], dir = "ltr", com
 </body>
 </html>`;
 
+  return html;
+}
+
+// Opens the built HTML in a new tab (falls back gracefully if popups are blocked).
+export function openDocumentHtml(html) {
   const win = window.open("", "_blank");
   if (!win) return false;
   win.document.write(html);
   win.document.close();
   return true;
+}
+
+export function printDocument(opts) {
+  return openDocumentHtml(buildDocumentHtml(opts));
 }

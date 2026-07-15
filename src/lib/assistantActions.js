@@ -1,10 +1,26 @@
-import { updateCompany } from "@/lib/store";
+import { updateCompany, addCompanyFile } from "@/lib/store";
 import { buildAssistantContext } from "./assistantContext";
 import { printReport } from "@/lib/printReport";
 import { generateSignedReport } from "@/lib/signedReport";
 import { base44 } from "@/api/base44Client";
 import { exportExcelColored } from "@/lib/exportExcelColored";
-import { printDocument } from "@/lib/printDocument";
+import { buildDocumentHtml, openDocumentHtml } from "@/lib/printDocument";
+
+// Turns markdown-ish document text ("## heading", "- bullet", paragraphs) into sections.
+function parseDocContent(md) {
+  const sections = [];
+  let cur = null;
+  for (const line of String(md || "").split("\n")) {
+    const l = line.trim();
+    if (!l) continue;
+    const h = l.match(/^#{1,4}\s*(.+)/);
+    if (h) { cur = { heading: h[1], body: "", bullets: [] }; sections.push(cur); continue; }
+    if (!cur) { cur = { heading: "", body: "", bullets: [] }; sections.push(cur); }
+    if (/^[-*•]\s+/.test(l)) cur.bullets.push(l.replace(/^[-*•]\s+/, ""));
+    else cur.body += (cur.body ? "\n" : "") + l;
+  }
+  return sections.filter((s) => s.heading || s.body || s.bullets.length);
+}
 
 // Executes real actions requested by the AI assistant (exports, task creation, status updates).
 // Every write action is permission-gated; exports only include data the user can already see.
@@ -96,10 +112,13 @@ export async function executeAssistantAction(action, { data, company, currentUse
   }
 
   if (action.type === "create_document") {
-    const sections = Array.isArray(action.sections) ? action.sections : [];
-    if (!action.docTitle || !sections.length) return { ok: false, message: t("aiActionFailed") };
-    const opened = printDocument({
-      title: action.docTitle,
+    const ar = document.documentElement.dir === "rtl";
+    const title = action.docTitle || action.reportTitle || action.title || (ar ? "مستند" : "Document");
+    let sections = Array.isArray(action.sections) && action.sections.length ? action.sections : parseDocContent(action.docContent);
+    if (!sections.length && action.description) sections = [{ heading: "", body: action.description, bullets: [] }];
+    if (!sections.length) return { ok: false, message: t("aiActionFailed") };
+    const html = buildDocumentHtml({
+      title,
       subtitle: action.subtitle || "",
       sections,
       dir: document.documentElement.dir,
@@ -108,7 +127,24 @@ export async function executeAssistantAction(action, { data, company, currentUse
       color: data.reportBranding?.color || "#b07d3f",
       logoUrl: data.reportBranding?.logoUrl || "",
     });
-    return opened ? { ok: true, message: t("aiPdfDone") } : { ok: false, message: t("aiActionFailed") };
+    // Save a copy into the Files section so the document is always findable.
+    let saved = false;
+    try {
+      const file = new File([html], `${title}.html`, { type: "text/html" });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      addCompanyFile(company.id, {
+        name: file.name, parentId: null, url: file_url,
+        size: file.size, mimeType: "text/html",
+        uploadedBy: currentUser?.name || "", stationId: null,
+      });
+      saved = true;
+    } catch { /* file save is best-effort — the print window still opens */ }
+    const opened = openDocumentHtml(html);
+    if (!opened && !saved) return { ok: false, message: t("aiActionFailed") };
+    const msg = ar
+      ? `تم إنشاء المستند «${title}»${saved ? " وحفظه في قسم الملفات" : ""}${opened ? "، وفُتح في نافذة جديدة — اضغط «تحميل PDF / طباعة» لتحميله" : ""}.`
+      : `Document "${title}" created${saved ? " and saved to the Files section" : ""}${opened ? ", and opened in a new tab — press \u201CDownload PDF / Print\u201D to save it" : ""}.`;
+    return { ok: true, message: msg };
   }
 
   if (action.type === "sign_report") {
