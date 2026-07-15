@@ -15,9 +15,49 @@ export default function MultiSignPlacementModal({ docUrl, signers, initialSpots,
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [active, setActive] = useState(0);
-  const [spots, setSpots] = useState(initialSpots || {}); // { [signerIndex]: {page,x,y} }
+  const [spots, setSpots] = useState(initialSpots || {}); // { [signerIndex]: {page,x,y,scale} }
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
+  const stateRef = useRef({ active: 0, spots: initialSpots || {} });
+  stateRef.current = { active, spots };
+
+  // Pinch-to-resize: two fingers on the preview resize the ACTIVE signer's
+  // signature spot. Attached natively with { passive: false } so preventDefault
+  // blocks the browser's page-zoom only during a two-finger pinch.
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    let startDist = 0;
+    let startScale = 100;
+    const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const onTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        startDist = dist(e.touches);
+        const { active: a, spots: s } = stateRef.current;
+        startScale = s[a]?.scale || 100;
+      }
+    };
+    const onTouchMove = (e) => {
+      if (e.touches.length === 2 && startDist > 0) {
+        if (e.cancelable) e.preventDefault();
+        const next = Math.min(200, Math.max(50, Math.round(startScale * (dist(e.touches) / startDist))));
+        const { active: a, spots: s } = stateRef.current;
+        if (!s[a]) return;
+        setSpots({ ...s, [a]: { ...s[a], scale: next } });
+      }
+    };
+    const onTouchEnd = () => { startDist = 0; };
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    el.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,7 +103,7 @@ export default function MultiSignPlacementModal({ docUrl, signers, initialSpots,
     const rect = wrapRef.current.getBoundingClientRect();
     const x = Math.min(Math.max(((e.clientX - rect.left) / rect.width) * 100, 2), 98);
     const y = Math.min(Math.max(((e.clientY - rect.top) / rect.height) * 100, 2), 98);
-    const next = { ...spots, [active]: { page, x, y } };
+    const next = { ...spots, [active]: { page, x, y, scale: spots[active]?.scale || 100 } };
     setSpots(next);
     // Auto-advance to the next signer without a spot yet.
     const unplaced = signers.findIndex((_, i) => i !== active && !next[i]);
@@ -78,7 +118,7 @@ export default function MultiSignPlacementModal({ docUrl, signers, initialSpots,
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <p className="text-sm font-body font-medium flex items-center gap-1.5">
             <MousePointerClick className="w-4 h-4 text-accent" />
-            {ar ? "اختر موقّعًا ثم انقر على مكان توقيعه" : "Pick a signer, then click where they must sign"}
+            {ar ? "اختر موقّعًا وانقر على مكان توقيعه — واقرص بإصبعين للتكبير/التصغير" : "Pick a signer, tap where they must sign — pinch to resize"}
           </p>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
         </div>
@@ -102,7 +142,7 @@ export default function MultiSignPlacementModal({ docUrl, signers, initialSpots,
         </div>
 
         <div className="flex-1 min-h-0 overflow-auto overscroll-contain bg-muted/50 p-4" style={{ WebkitOverflowScrolling: "touch" }}>
-          <div ref={wrapRef} onClick={handleClick} className="relative mx-auto max-w-full cursor-crosshair bg-white shadow-md">
+          <div ref={wrapRef} onClick={handleClick} className="relative mx-auto max-w-full cursor-crosshair bg-white shadow-md" style={{ touchAction: "pan-y" }}>
             <canvas ref={canvasRef} className="block w-full" />
             {loading && !loadError && (
               <div className="absolute inset-0 flex items-center justify-center bg-white/70">
@@ -123,7 +163,7 @@ export default function MultiSignPlacementModal({ docUrl, signers, initialSpots,
                   style={{
                     left: `${spots[i].x}%`,
                     top: `${spots[i].y}%`,
-                    width: "22%",
+                    width: `${22 * ((spots[i].scale || 100) / 100)}%`,
                     transform: "translate(-50%, -50%)",
                     border: `2px solid ${COLORS[i % COLORS.length]}`,
                     backgroundColor: `${COLORS[i % COLORS.length]}1a`,
@@ -136,6 +176,25 @@ export default function MultiSignPlacementModal({ docUrl, signers, initialSpots,
             )}
           </div>
         </div>
+
+        {/* Size control — mirrors the pinch gesture for non-touch devices */}
+        {spots[active] && (
+          <div className="px-4 py-2.5 border-t border-border space-y-1">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground font-body">
+              <span>{ar ? `حجم توقيع ${signers[active]?.name || ""}` : `${signers[active]?.name || ""} signature size`}</span>
+              <span dir="ltr">{spots[active].scale || 100}%</span>
+            </div>
+            <input
+              type="range"
+              min={50}
+              max={200}
+              step={5}
+              value={spots[active].scale || 100}
+              onChange={(e) => setSpots({ ...spots, [active]: { ...spots[active], scale: Number(e.target.value) } })}
+              className="w-full accent-current"
+            />
+          </div>
+        )}
 
         <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-border">
           {numPages > 1 ? (

@@ -30,7 +30,11 @@ export default function PublicSign() {
   useEffect(() => {
     if (!token) { setNotFound(true); return; }
     base44.functions.invoke("multiSign", { action: "getByToken", token })
-      .then((res) => setInfo(res.data))
+      .then((res) => {
+        setInfo(res.data);
+        // Honor the size the creator picked for this signer's spot (pinch/slider).
+        if (res.data?.signer?.spot?.scale) setSigSize(res.data.signer.spot.scale);
+      })
       .catch((err) => {
         const status = err?.response?.status;
         if (status !== 404) {
