@@ -1267,6 +1267,26 @@ export function setAnonRateLimits(companyId, { daily, weekly, monthly } = {}) {
   });
 }
 
+/* ----------------------------- HSE safety incidents ----------------------------- */
+// Logs a safety incident for a station: increments the counter, stamps lastIncidentAt
+// (which resets the "hours without incidents" record) and keeps a dated incident log.
+export function recordSafetyIncident(companyId, stationId, description) {
+  const stName = getCompanyData(companyId)?.stations.find((s) => s.id === stationId)?.name || stationId;
+  audit(companyId, "safety_incident_logged", `Safety incident logged at station "${stName}"${description ? ` — ${description}` : ""}.`);
+  updateCompany(companyId, (d) => {
+    d.safety = d.safety || [];
+    let rec = d.safety.find((s) => s.stationId === stationId);
+    if (!rec) {
+      rec = { id: uid("safe"), stationId, incidents: 0, hazards: [], level: "green" };
+      d.safety.push(rec);
+    }
+    rec.incidents = (rec.incidents || 0) + 1;
+    rec.lastIncidentAt = new Date().toISOString();
+    rec.incidentLog = rec.incidentLog || [];
+    rec.incidentLog.unshift({ id: uid("inc"), description: description || "", at: rec.lastIncidentAt });
+  });
+}
+
 /* ----------------------------- station work schedules (shift-type grid) -----------------------------
    Each station has a fixed set of shift types (e.g. Morning/Evening/Night) with editable
    names & time ranges, shared across every day of the week. `assignments[weekday][shiftTypeId]`

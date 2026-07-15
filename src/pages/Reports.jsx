@@ -17,7 +17,8 @@ import ReportTableHead from "@/components/reports/ReportTableHead";
 import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import ExportCenter from "@/components/reports/ExportCenter";
-import { Palette, Download } from "lucide-react";
+import HSESafetyReport from "@/components/reports/HSESafetyReport";
+import { Palette, Download, ShieldCheck } from "lucide-react";
 
 const RANGES = [
   { val: "daily", amount: 1, unit: "days" },
@@ -185,6 +186,7 @@ export default function Reports() {
   const TABS = [
     { key: "tasks", label: t("tasksReport"), icon: ListTodo },
     { key: "leaves", label: t("leaveRequests"), icon: CalendarDays },
+    { key: "hse", label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)", icon: ShieldCheck },
     ...(isOwner ? [{ key: "employeeReport", label: t("employeeReport"), icon: UserSquare2 }] : []),
     ...(isOwner || currentUser.role === "director" ? [{ key: "exportCenter", label: lang === "ar" ? "مركز التنزيل" : "Download Center", icon: Download }] : []),
   ];
@@ -348,6 +350,18 @@ export default function Reports() {
             </div>
           )}
         </ReportCard>
+      )}
+
+      {/* HSE safety tab — monthly PDF per station + hours-without-incidents record */}
+      {tab === "hse" && (
+        <HSESafetyReport
+          data={data}
+          company={company}
+          stations={myStations.filter((s) => selectedStations.includes(s.id))}
+          canEdit={isOwner || ["director", "ops_manager", "pgm", "station_manager"].includes(currentUser.role)}
+          lang={lang}
+          dir={dir}
+        />
       )}
 
       {/* Employee report tab — owner-only, free comparison across every employee aspect */}

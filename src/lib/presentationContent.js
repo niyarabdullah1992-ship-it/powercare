@@ -14,7 +14,7 @@ export const presentationSlides = [
     summaryAr: "تربط PowerCare الإدارة والموظفين والمحطات في منظومة واحدة تبدأ من الحضور والمهام، وتمتد إلى الموارد البشرية والتقارير والتواصل والتوقيع الإلكتروني.",
     summaryEn: "PowerCare connects management, employees, and workstations in one system spanning attendance, tasks, HR, reporting, communication, and e-signatures.",
     points: [
-      ["إدارة متعددة الشركات مع عزل بيانات كل منشأة", "Multi-company management with strict tenant isolation"],
+      ["بنية متعددة المستأجرين بعزل تام — تدعم مئات المحطات وآلاف الموظفين", "Multi-tenant architecture with strict isolation — scales to hundreds of stations and thousands of employees"],
       ["تجربة متجاوبة للويب والجوال مع دعم العربية والاتجاه من اليمين", "Responsive web and mobile experience with Arabic RTL support"],
       ["قرارات أسرع بفضل مؤشرات الأداء والتقارير المركزية", "Faster decisions through centralized KPIs and reports"],
     ],
