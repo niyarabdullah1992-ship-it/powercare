@@ -2,7 +2,7 @@
 // used by the sidebar/mobile nav and the dashboards' quick-access shortcuts.
 
 const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/signing", "/app/assistant", "/app/complaints", "/app/performance", "/app/help"];
-const MANAGER_EXTRA = ["/app/employees", "/app/stations", "/app/reports", "/app/safety"];
+const MANAGER_EXTRA = ["/app/employees", "/app/stations", "/app/safety"];
 const EXEC_EXTRA = ["/app/hr", "/app/executive", "/app/payroll"];
 
 export function allowedNavFor(user, data) {
@@ -21,7 +21,6 @@ export function allowedNavFor(user, data) {
   if (user.hrLevelId) {
     allowed.add("/app/hr");
     if (hrPermissions.has("view_employees") || hrPermissions.has("manage_employees")) allowed.add("/app/employees");
-    if (hrPermissions.has("view_reports")) allowed.add("/app/reports");
     if (hrPermissions.has("view_safety")) allowed.add("/app/safety");
     if (hrPermissions.has("manage_payroll")) allowed.add("/app/payroll");
   }

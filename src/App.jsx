@@ -35,7 +35,6 @@ const EmployeeProfile = lazy(() => import('./pages/EmployeeProfile'));
 const HR = lazy(() => import('./pages/HR'));
 const Payroll = lazy(() => import('./pages/Payroll'));
 const Performance = lazy(() => import('./pages/Performance'));
-const Reports = lazy(() => import('./pages/Reports'));
 const Safety = lazy(() => import('./pages/Safety'));
 const DailyReport = lazy(() => import('./pages/DailyReport'));
 const Attendance = lazy(() => import('./pages/Attendance'));
@@ -64,7 +63,6 @@ if (typeof window !== "undefined") {
       import('./pages/Dashboard');
       import('./pages/MyTasks');
       import('./pages/Attendance');
-      import('./pages/Reports');
       import('./pages/FileSigning');
     });
   }, { once: true });
@@ -124,7 +122,7 @@ function AppRoutes() {
       <Route path="/app/hr" element={<RequireAuth><HR /></RequireAuth>} />
       <Route path="/app/payroll" element={<RequireAuth><Payroll /></RequireAuth>} />
       <Route path="/app/performance" element={<RequireAuth><Performance /></RequireAuth>} />
-      <Route path="/app/reports" element={<RequireAuth><Reports /></RequireAuth>} />
+      <Route path="/app/reports" element={<Navigate to="/app/attendance" replace />} />
       <Route path="/app/safety" element={<RequireAuth><Safety /></RequireAuth>} />
       <Route path="/app/daily-report" element={<RequireAuth><DailyReport /></RequireAuth>} />
       <Route path="/app/attendance" element={<RequireAuth><Attendance /></RequireAuth>} />

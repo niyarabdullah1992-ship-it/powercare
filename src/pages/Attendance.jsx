@@ -2,7 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
-import { canCreateTasks, isCompanyOwner, visibleEmployees } from "@/lib/permissions";
+import { canCreateTasks, isCompanyOwner, visibleEmployees, hasHRPermission, hrScopeStations } from "@/lib/permissions";
 import { ClipboardCheck, Loader2 } from "lucide-react";
 import CheckInOutCard from "@/components/attendance/CheckInOutCard";
 import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDashboard";
@@ -20,6 +20,7 @@ const AttendanceLocationsPanel = lazy(() => import("@/components/attendance/Atte
 const AttendanceAnalytics = lazy(() => import("@/components/attendance/AttendanceAnalytics"));
 const AttendanceMapDashboard = lazy(() => import("@/components/attendance/AttendanceMapDashboard"));
 const ScheduleTab = lazy(() => import("@/components/attendance/ScheduleTab"));
+const AttendanceLeaveRequests = lazy(() => import("@/components/attendance/AttendanceLeaveRequests"));
 
 function TabLoader() {
   return <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>;
@@ -31,9 +32,14 @@ export default function Attendance() {
   const [tab, setTab] = useState("team");
 
   const isManager = data && currentUser && canCreateTasks(currentUser);
+  const canManageLeave = data && currentUser && (isManager || hasHRPermission(currentUser, data, "manage_leave"));
   // Settings visible to any manager (station manager and above) or the company owner.
   const canEditSettings = data && currentUser && (canCreateTasks(currentUser) || isCompanyOwner(currentUser, data));
-  const employees = data && currentUser ? visibleEmployees(currentUser, data) : [];
+  const defaultEmployees = data && currentUser ? visibleEmployees(currentUser, data) : [];
+  const leaveScope = data && currentUser?.hrLevelId ? hrScopeStations(currentUser, data) : null;
+  const employees = canManageLeave && currentUser?.hrLevelId
+    ? (data.employees || []).filter((employee) => leaveScope === null || (employee.stationId && leaveScope.includes(employee.stationId)))
+    : defaultEmployees;
 
   const syncRoster = () => {
     if (!isManager || !company || employees.length === 0) return Promise.resolve();
@@ -64,13 +70,17 @@ export default function Attendance() {
   if (!data || !currentUser) return null;
 
   const tabs = [
-    { key: "team", label: t("teamTab") },
-    { key: "map", label: t("mapTab") },
-    { key: "schedule", label: t("scheduleTab") },
-    { key: "report", label: t("reportTab") },
-    { key: "analytics", label: t("analyticsTab") },
+    ...(isManager ? [
+      { key: "team", label: t("teamTab") },
+      { key: "map", label: t("mapTab") },
+      { key: "schedule", label: t("scheduleTab") },
+      { key: "report", label: t("reportTab") },
+      { key: "analytics", label: t("analyticsTab") },
+    ] : []),
+    ...(canManageLeave ? [{ key: "leaves", label: t("leaveRequests") }] : []),
     ...(canEditSettings ? [{ key: "settings", label: t("settingsTab") }] : []),
   ];
+  const activeTab = tabs.some((item) => item.key === tab) ? tab : tabs[0]?.key;
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
@@ -81,33 +91,34 @@ export default function Attendance() {
 
       <CalendarExportCard data={data} user={currentUser} />
 
-      {!isManager && (
+      {!isManager && !canManageLeave && (
         <Suspense fallback={<TabLoader />}>
           <AttendanceMonthlyReport employees={[currentUser]} defaultEmployeeId={currentUser.id} t={t} />
         </Suspense>
       )}
 
-      {isManager && (
+      {(isManager || canManageLeave) && (
         <div className="space-y-4">
           <div className="flex gap-2 border-b border-border overflow-x-auto no-scrollbar">
             {tabs.map((tb) => (
               <button
                 key={tb.key}
                 onClick={() => setTab(tb.key)}
-                className={`px-3 py-2 text-sm font-body border-b-2 -mb-px transition whitespace-nowrap shrink-0 ${tab === tb.key ? "border-foreground text-foreground font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                className={`px-3 py-2 text-sm font-body border-b-2 -mb-px transition whitespace-nowrap shrink-0 ${activeTab === tb.key ? "border-foreground text-foreground font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
               >
                 {tb.label}
               </button>
             ))}
           </div>
 
-          {tab === "team" && <AttendanceDailyDashboard employees={employees} currentUser={currentUser} t={t} />}
+          {activeTab === "team" && <AttendanceDailyDashboard employees={employees} currentUser={currentUser} t={t} />}
           <Suspense fallback={<TabLoader />}>
-            {tab === "map" && <AttendanceMapDashboard employees={employees} t={t} />}
-            {tab === "schedule" && <ScheduleTab />}
-            {tab === "report" && <AttendanceMonthlyReport employees={employees} defaultEmployeeId={currentUser.id} t={t} />}
-            {tab === "analytics" && <AttendanceAnalytics employees={employees} t={t} />}
-            {tab === "settings" && canEditSettings && (
+            {activeTab === "map" && <AttendanceMapDashboard employees={employees} t={t} />}
+            {activeTab === "schedule" && <ScheduleTab />}
+            {activeTab === "report" && <AttendanceMonthlyReport employees={employees} defaultEmployeeId={currentUser.id} t={t} />}
+            {activeTab === "analytics" && <AttendanceAnalytics employees={employees} t={t} />}
+            {activeTab === "leaves" && <AttendanceLeaveRequests employees={employees} stations={data.stations || []} t={t} lang={lang} />}
+            {activeTab === "settings" && canEditSettings && (
               <div className="space-y-4">
                 <AttendanceLocationsPanel company={company} currentUser={currentUser} t={t} />
                 <AttendanceSettingsPanel company={company} currentUser={currentUser} t={t} />
