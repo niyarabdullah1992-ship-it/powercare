@@ -11,6 +11,7 @@ import PasswordResetForm from "@/components/landing/PasswordResetForm";
 import { trackVisit } from "@/lib/trackVisit";
 import { base44 } from "@/api/base44Client";
 import GoogleIcon from "@/components/GoogleIcon";
+import WhyPowerCare from "@/components/landing/WhyPowerCare";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
 
@@ -131,7 +132,7 @@ export default function Landing() {
 
       {/* Hero */}
       <div className="relative overflow-hidden">
-        <img src={PATTERN_IMG} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40" />
+        <img src={PATTERN_IMG} alt="" width="1536" height="1024" loading="lazy" className="absolute inset-0 w-full h-full object-cover opacity-40" />
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 md:px-10 md:py-24 lg:grid-cols-[1.15fr,0.85fr] lg:gap-16">
           <div className="text-center lg:text-start">
             <h1 className="hero-title break-words text-5xl uppercase text-landing-gold sm:text-6xl md:text-8xl">{t("appName")}</h1>
@@ -144,8 +145,10 @@ export default function Landing() {
               <img
                 src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/0c8f66d08_generated_image.png"
                 alt={lang === "ar" ? "لوحة تحكم PowerCare" : "PowerCare dashboard"}
-                className="w-full drop-shadow-2xl"
-                loading="lazy"
+                width="1024"
+                height="640"
+                fetchpriority="high"
+                className="w-full h-auto drop-shadow-2xl"
               />
             </div>
 
@@ -157,7 +160,7 @@ export default function Landing() {
           </div>
 
           {/* Login card */}
-          <div className="rounded-2xl border border-landing-gold/15 bg-white p-5 shadow-xl shadow-[#3a2f22]/10 sm:p-7">
+          <div className="mx-1 rounded-2xl border border-landing-gold/15 bg-white p-5 pb-7 shadow-xl shadow-[#3a2f22]/10 sm:mx-0 sm:p-7">
               {otpPending ? (
                 <OtpStep email={email} accounts={otpAccounts} onVerify={handleVerifyOtp} onResend={handleResendOtp} onBack={() => setOtpPending(null)} />
               ) : resetOpen ? (
@@ -176,7 +179,7 @@ export default function Landing() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full px-3 py-2.5 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] font-body text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
+                    className="w-full px-3.5 py-3.5 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] font-body text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
                   />
                 </div>
                 <div>
@@ -186,7 +189,7 @@ export default function Landing() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full px-3 py-2.5 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] font-body text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
+                    className="w-full px-3.5 py-3.5 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] font-body text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
                   />
                 </div>
                 {error && <p className="text-sm text-red-500 font-body">{error}</p>}
@@ -213,6 +216,22 @@ export default function Landing() {
         </div>
       </div>
 
+      {/* CTA band — start free now */}
+      <div className="bg-landing-bg px-4 py-6 sm:px-6">
+        <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 rounded-2xl border border-landing-gold/25 bg-white px-6 py-6 text-center shadow-sm sm:flex-row sm:justify-between sm:text-start">
+          <div>
+            <p className="font-heading text-xl text-[#3a2f22]">{lang === "ar" ? "جرّب PowerCare لشركتك اليوم" : "Try PowerCare for your company today"}</p>
+            <p className="mt-1 text-sm font-body text-[#3a2f22]/60">{lang === "ar" ? "إعداد سريع، بدون بطاقة ائتمان" : "Quick setup, no credit card required"}</p>
+          </div>
+          <Link
+            to="/pricing"
+            className="shrink-0 rounded-full bg-gradient-to-b from-landing-gold-light to-landing-gold px-7 py-3 text-sm font-body font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            {lang === "ar" ? "ابدأ الآن مجاناً" : "Start free now"}
+          </Link>
+        </div>
+      </div>
+
       {/* Dark stats band — social proof */}
       <StatsBand lang={lang} />
 
@@ -236,6 +255,9 @@ export default function Landing() {
           </p>
           <Sparkles className="w-4 h-4 text-white/70 shrink-0" strokeWidth={1.75} />
         </div>
+
+        {/* Why PowerCare — achievement numbers */}
+        <WhyPowerCare lang={lang} />
 
         {/* Benefits section */}
         <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -264,13 +286,12 @@ export default function Landing() {
           </div>
           <div>
             <h4 className="font-heading text-lg text-[#3a2f22] mb-3">{t("footerBenefitsHeading")}</h4>
-            <ul className="space-y-2 text-sm font-body text-[#3a2f22]/55">
-              <li>{t("footerBlog")}</li>
+            <ul className="space-y-2 text-sm font-body text-[#3a2f22]/70">
               <li><a href="/about" className="hover:text-landing-gold transition-colors">{t("footerAbout")}</a></li>
               <li><Link to="/security" className="hover:text-landing-gold transition-colors">{lang === "ar" ? "الأمان والامتثال" : "Security & Compliance"}</Link></li>
-              <li>{t("footerCareers")}</li>
-              <li>{t("footerTerms")}</li>
-              <li>{t("footerContact")}</li>
+              <li><Link to="/terms" className="hover:text-landing-gold transition-colors">{t("footerTerms")}</Link></li>
+              <li><Link to="/privacy" className="hover:text-landing-gold transition-colors">{lang === "ar" ? "الخصوصية" : "Privacy"}</Link></li>
+              <li><a href="mailto:niyar@powercares.pro" className="hover:text-landing-gold transition-colors">{t("footerContact")}</a></li>
             </ul>
           </div>
           <div>

@@ -2,7 +2,8 @@ import React from "react";
 import { TrendingUp, Users } from "lucide-react";
 
 // WorkForce-style numbered stat cards: attendance rate, tasks completed, team members.
-export default function DashboardStatCards({ attendanceRate, completed, total, activeMembers, totalMembers, t }) {
+// Memoized — props are primitives, so unrelated dashboard re-renders skip this tree.
+function DashboardStatCards({ attendanceRate, completed, total, activeMembers, totalMembers, t }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -33,3 +34,5 @@ export default function DashboardStatCards({ attendanceRate, completed, total, a
     </div>
   );
 }
+
+export default React.memo(DashboardStatCards);

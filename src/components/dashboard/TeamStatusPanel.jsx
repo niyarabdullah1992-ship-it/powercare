@@ -6,7 +6,8 @@ import { Users } from "lucide-react";
 
 // Manager-facing snapshot of every visible employee's current status: on leave,
 // checked out, live presence (online/away/busy/in a call), or not checked in yet.
-export default function TeamStatusPanel({ employees, t }) {
+// Memoized — re-renders only when the employee list or translations change.
+function TeamStatusPanel({ employees, t }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,12 +31,22 @@ export default function TeamStatusPanel({ employees, t }) {
   };
 
   return (
-    <div className="p-6 border border-border bg-card">
+    <div className="p-6 rounded-2xl border border-border bg-card">
       <h3 className="hero-title text-2xl mb-4 flex items-center gap-2">
         <Users className="w-4 h-4" strokeWidth={1.5} /> {t("teamStatus")}
       </h3>
       {loading ? (
-        <p className="text-sm text-muted-foreground font-body">…</p>
+        <div className="space-y-3 animate-pulse">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-muted shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3 w-1/3 rounded bg-muted" />
+                <div className="h-2.5 w-1/2 rounded bg-muted" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : employees.length === 0 ? (
         <p className="text-sm text-muted-foreground font-body">{t("noAttendanceRecords")}</p>
       ) : (
@@ -67,3 +78,5 @@ export default function TeamStatusPanel({ employees, t }) {
     </div>
   );
 }
+
+export default React.memo(TeamStatusPanel);

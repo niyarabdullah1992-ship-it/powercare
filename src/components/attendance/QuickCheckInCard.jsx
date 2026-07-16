@@ -130,6 +130,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
       }
       const res = await base44.functions.invoke("supabaseAttendance", {
         action: "checkOut",
+        companyId: company.id,
         employeeId: currentUser.id,
         shiftEnd: shift?.end,
         lat: c.lat, lng: c.lng,

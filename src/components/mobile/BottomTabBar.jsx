@@ -65,8 +65,8 @@ export default function BottomTabBar() {
                 active ? "bg-accent/10 text-accent" : "text-muted-foreground hover:bg-muted"
               }`}
             >
-              <tab.icon className="w-5 h-5" strokeWidth={1.75} />
-              <span className="truncate max-w-[72px]">{t(tab.key) || tab.key}</span>
+              <tab.icon className="w-5 h-5" strokeWidth={active ? 2.25 : 1.75} />
+              <span className={`truncate max-w-[72px] ${active ? "font-semibold" : ""}`}>{t(tab.key) || tab.key}</span>
             </button>
           );
         })}

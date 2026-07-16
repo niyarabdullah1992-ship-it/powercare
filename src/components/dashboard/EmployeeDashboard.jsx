@@ -42,6 +42,9 @@ export default function EmployeeDashboard({ user, company, data }) {
 
   return (
     <div className="space-y-8">
+      {/* One-tap GPS check-in — the very first thing on app open */}
+      <QuickCheckInCard currentUser={user} company={company} />
+
       <div className="border-b border-border pb-6 flex items-center justify-between flex-wrap gap-4">
         <div>
           <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{user.name}</p>
@@ -53,9 +56,7 @@ export default function EmployeeDashboard({ user, company, data }) {
         </div>
       </div>
 
-      <QuickCheckInCard currentUser={user} company={company} />
-
-      <div className="p-4 rounded-xl border border-border bg-card flex flex-wrap items-center gap-x-8 gap-y-2">
+      <div className="p-4 rounded-2xl border border-border bg-card flex flex-wrap items-center gap-x-8 gap-y-2">
         <div className="flex items-center gap-2">
           <Radio className="w-4 h-4 text-accent" strokeWidth={1.5} />
           <span className="text-xs text-muted-foreground font-body">{t("station")}:</span>
@@ -68,7 +69,7 @@ export default function EmployeeDashboard({ user, company, data }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 border border-border divide-x divide-y sm:divide-y-0 divide-border rtl:divide-x-reverse">
+      <div className="grid grid-cols-1 sm:grid-cols-3 rounded-2xl overflow-hidden border border-border divide-x divide-y sm:divide-y-0 divide-border rtl:divide-x-reverse">
         <div className="p-6 bg-card">
           <ListTodo className="w-4 h-4 mb-5 text-accent" strokeWidth={1.5} />
           <p className="hero-title text-4xl">{open.length}</p>
@@ -86,7 +87,7 @@ export default function EmployeeDashboard({ user, company, data }) {
         </div>
       </div>
 
-      <div className="p-6 border border-border bg-card">
+      <div className="p-6 rounded-2xl border border-border bg-card">
         <div className="flex items-center justify-between mb-4">
           <h3 className="hero-title text-2xl">{t("openTasks")}</h3>
           <Link to="/app/tasks" className="text-xs text-muted-foreground font-body hover:text-foreground underline">
@@ -94,7 +95,11 @@ export default function EmployeeDashboard({ user, company, data }) {
           </Link>
         </div>
         {loading ? (
-          <p className="text-sm text-muted-foreground font-body">…</p>
+          <div className="space-y-3 animate-pulse">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-10 rounded-lg bg-muted" />
+            ))}
+          </div>
         ) : open.length === 0 ? (
           <p className="text-sm text-muted-foreground font-body">{t("noTasks")}</p>
         ) : (
