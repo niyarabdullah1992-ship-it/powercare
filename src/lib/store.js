@@ -714,6 +714,15 @@ export async function changeOwnerPassword(companyId, newPassword) {
 export async function setEmployeePassword(companyId, employeeId, email, password) {
   try {
     const res = await invokeDirectory({ action: "setEmployeePassword", companyId, employeeId, email, password });
+    if (res?.data?.ok) {
+      // Automatically email the employee their login credentials.
+      const emp = getCompanyData(companyId)?.employees.find((e) => e.id === employeeId);
+      sendEmailAlert(
+        companyId, email,
+        "PowerCare — بيانات دخولك | Your login details",
+        `مرحبًا ${emp?.name || ""}،\n\nتم تفعيل حسابك في منصة PowerCare. بيانات دخولك:\n\nالبريد الإلكتروني: ${email}\nكلمة المرور: ${password}\n\nادخل من الرابط التالي، وسيصلك رمز تحقق على بريدك عند تسجيل الدخول:\nhttps://powercares.pro\n\nYour PowerCare account is active. Email: ${email} — Password: ${password}\nSign in at https://powercares.pro (a verification code will be emailed to you at login).`
+      );
+    }
     return !!res?.data?.ok;
   } catch {
     return false;
