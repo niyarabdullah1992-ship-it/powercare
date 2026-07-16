@@ -62,6 +62,31 @@ export default function Assistant() {
       } catch {
         context.attendanceToday = [];
       }
+      // Targets/tasks live in the cloud (supabaseTargets) — merge them so Niro sees them.
+      try {
+        const targetsRes = await base44.functions.invoke("supabaseTargets", {
+          action: "listTargets",
+          userRole: currentUser.role,
+          userId: currentUser.id,
+          stationId: currentUser.stationId || null,
+          managedStations: currentUser.managedStations || [],
+        });
+        const cloudTargets = (targetsRes?.data?.targets || []).map((x) => ({
+          title: x.title,
+          description: x.description || undefined,
+          assignee: data.employees.find((e) => e.id === (x.assignment_id || x.employee_id))?.name || "—",
+          station: data.stations.find((s) => s.id === x.station_id)?.name || undefined,
+          target: x.task_target,
+          completed: x.completed_tasks || 0,
+          priority: x.priority,
+          deadline: x.end_date,
+          status: x.status,
+          issues: (Array.isArray(x.comments) ? x.comments : []).filter((c) => c.is_issue).length,
+        }));
+        context.targets = [...(context.targets || []), ...cloudTargets];
+      } catch {
+        // keep local targets only
+      }
       const history = nextMessages.slice(-8).map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`).join("\n");
       const res = await base44.integrations.Core.InvokeLLM({
         prompt: `You are "Niro" (Arabic: نيرو) — PowerCare's smart operations assistant for power/water station management. When asked about your name or identity, you are Niro (نيرو).
