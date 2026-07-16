@@ -143,10 +143,11 @@ export default function StationChat() {
   };
 
   const shareCallRecording = async (blob) => {
-    const name = `call-${new Date().toISOString().replace(/[:.]/g, "-")}.webm`;
-    const file = new File([blob], name, { type: "video/webm" });
+    const extension = blob.type?.includes("mp4") ? "mp4" : "webm";
+    const name = `call-${new Date().toISOString().replace(/[:.]/g, "-")}.${extension}`;
+    const file = new File([blob], name, { type: blob.type || "video/webm" });
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const recording = [{ url: file_url, name, type: "video/webm" }];
+    const recording = [{ url: file_url, name, type: file.type }];
     if (activeChat.type === "general") {
       await base44.functions.invoke("supabaseTargets", { action: "sendChatMessage", stationId: selectedStation, userId: currentUser.id, userName: currentUser.name, text: lang === "ar" ? "تسجيل مكالمة" : "Call recording", files: recording });
     } else {
