@@ -228,12 +228,12 @@ export default function StationChat() {
               <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground font-body">{t("noMessages")}</div>
             ) : (
               <>
-                <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-3 px-5 py-4 border-b border-border lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex min-w-0 items-center gap-3">
                     <MessageSquare className="w-4 h-4 text-accent" />
-                    <h3 className="hero-title text-xl">{chatTitle}</h3>
+                    <h3 className="hero-title truncate text-xl">{chatTitle}</h3>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex w-full flex-wrap items-center gap-1 lg:w-auto lg:justify-end">
                     <CallButtons onStart={callControls.start} disabled={!!callControls.call} ar={lang === "ar"} />
                     <button onClick={() => setActiveTab("chat")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "chat" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("chat")}</button>
                     <button onClick={() => setActiveTab("media")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "media" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("filesAndMedia")}</button>
