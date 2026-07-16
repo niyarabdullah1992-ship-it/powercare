@@ -154,14 +154,6 @@ Deno.serve(async (req) => {
       const sts = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId, stationId: id });
       return sts.length ? id : null;
     };
-    const resolveCallRoom = async (chatType, roomId, otherUserId) => {
-      if (chatType === "general") return await resolveRoomId(roomId);
-      if (chatType !== "dm" || !otherUserId || !auth?.userId) return null;
-      const scope = await getCompanyScope();
-      if (!scope.employeeIds.has(otherUserId)) return null;
-      return `${auth.companyId}_dm_${[auth.userId, otherUserId].sort().join("_")}`;
-    };
-
     if (action === "listTargets") {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?order=created_at.desc`, { headers });
       let rows = await res.json();
@@ -834,46 +826,6 @@ Deno.serve(async (req) => {
         return Response.json({ error: created?.message || "Failed to send message — run: CREATE TABLE IF NOT EXISTS direct_messages (id uuid primary key default gen_random_uuid(), sender_id text, sender_name text, receiver_id text, text text, files jsonb DEFAULT '[]'::jsonb, created_at timestamptz default now());" }, { status: 400 });
       }
       return Response.json({ message: Array.isArray(created) ? created[0] : created });
-    }
-
-    if (action === "createCallSession") {
-      const { chatType, roomId, otherUserId, mode, participantIds, initiatorName } = body;
-      if (!auth?.userId || !["audio", "video"].includes(mode)) return Response.json({ error: "Invalid call" }, { status: 400 });
-      const resolved = await resolveCallRoom(chatType, roomId, otherUserId);
-      if (!resolved) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const scope = await getCompanyScope();
-      const participants = [...new Set((participantIds || []).filter((id) => scope.employeeIds.has(id)))];
-      if (!participants.includes(auth.userId)) participants.push(auth.userId);
-      const activeCalls = await base44.asServiceRole.entities.CallSession.filter({ companyId: auth.companyId, roomId: resolved, status: "active" });
-      if (activeCalls.length) return Response.json({ call: activeCalls[0] });
-      const call = await base44.asServiceRole.entities.CallSession.create({ companyId: auth.companyId, roomId: resolved, chatType, mode, initiatorId: auth.userId, initiatorName: initiatorName || auth.name, participantIds: participants, status: "active", signals: [], startedAt: new Date().toISOString(), endedAt: null });
-      return Response.json({ call });
-    }
-
-    if (action === "listCallSessions") {
-      if (!auth?.userId) return Response.json({ calls: [] });
-      const resolved = await resolveCallRoom(body.chatType, body.roomId, body.otherUserId);
-      if (!resolved) return Response.json({ calls: [] });
-      const calls = await base44.asServiceRole.entities.CallSession.filter({ companyId: auth.companyId, roomId: resolved, status: "active" });
-      return Response.json({ calls: calls.filter((call) => (call.participantIds || []).includes(auth.userId)).slice(0, 1) });
-    }
-
-    if (action === "sendCallSignal") {
-      const calls = await base44.asServiceRole.entities.CallSession.filter({ id: body.callId, companyId: auth.companyId, status: "active" });
-      const call = calls[0];
-      if (!call || !(call.participantIds || []).includes(auth.userId)) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const signals = Array.isArray(call.signals) ? call.signals.slice(-299) : [];
-      signals.push({ id: crypto.randomUUID(), from: auth.userId, to: body.to || null, type: body.type, data: body.data || null, createdAt: new Date().toISOString() });
-      await base44.asServiceRole.entities.CallSession.update(call.id, { signals });
-      return Response.json({ ok: true });
-    }
-
-    if (action === "endCallSession") {
-      const calls = await base44.asServiceRole.entities.CallSession.filter({ id: body.callId, companyId: auth.companyId });
-      const call = calls[0];
-      if (!call || !(call.participantIds || []).includes(auth.userId)) return Response.json({ error: "Forbidden" }, { status: 403 });
-      if (call.status === "active") await base44.asServiceRole.entities.CallSession.update(call.id, { status: "ended", endedAt: new Date().toISOString() });
-      return Response.json({ ok: true });
     }
 
     if (action === "runEscalationSweep") {

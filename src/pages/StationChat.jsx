@@ -13,10 +13,6 @@ import ChatSearchPanel from "@/components/chat/ChatSearchPanel";
 import CompanyEmailComposer from "@/components/chat/CompanyEmailComposer";
 import CommentFiles from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
-import CallButtons from "@/components/chat/CallButtons";
-import IncomingCallBanner from "@/components/chat/IncomingCallBanner";
-import ChatCallPanel from "@/components/chat/ChatCallPanel";
-import useChatCall from "@/hooks/useChatCall";
 
 export default function StationChat() {
   const { t, dir, lang } = useI18n();
@@ -74,7 +70,6 @@ export default function StationChat() {
     }
     return selectedStation === "hq" ? !e.stationId : e.stationId === selectedStation;
   });
-  const callControls = useChatCall({ activeChat, selectedStation, contacts, currentUser, company });
 
   const fetchMessages = async () => {
     if (!activeChat) return;
@@ -140,20 +135,6 @@ export default function StationChat() {
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to delete message");
     }
-  };
-
-  const shareCallRecording = async (blob) => {
-    const extension = blob.type?.includes("mp4") ? "mp4" : "webm";
-    const name = `call-${new Date().toISOString().replace(/[:.]/g, "-")}.${extension}`;
-    const file = new File([blob], name, { type: blob.type || "video/webm" });
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const recording = [{ url: file_url, name, type: file.type }];
-    if (activeChat.type === "general") {
-      await base44.functions.invoke("supabaseTargets", { action: "sendChatMessage", stationId: selectedStation, userId: currentUser.id, userName: currentUser.name, text: lang === "ar" ? "تسجيل مكالمة" : "Call recording", files: recording });
-    } else {
-      await base44.functions.invoke("supabaseTargets", { action: "sendDirectMessage", senderId: currentUser.id, senderName: currentUser.name, receiverId: activeChat.userId, text: lang === "ar" ? "تسجيل مكالمة" : "Call recording", files: recording });
-    }
-    fetchMessages();
   };
 
   if (!data || !currentUser) return null;
@@ -222,7 +203,7 @@ export default function StationChat() {
             />
           </div>
 
-          <div className="relative flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col">
             {!activeChat ? (
               <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground font-body">{t("noMessages")}</div>
             ) : (
@@ -233,21 +214,12 @@ export default function StationChat() {
                     <h3 className="hero-title text-xl">{chatTitle}</h3>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <CallButtons onStart={callControls.start} disabled={!!callControls.call} ar={lang === "ar"} />
                     <button onClick={() => setActiveTab("chat")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "chat" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("chat")}</button>
                     <button onClick={() => setActiveTab("media")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "media" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("filesAndMedia")}</button>
                     <button onClick={() => setActiveTab("search")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "search" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("search")}</button>
                     <button onClick={() => setActiveTab("email")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "email" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("email")}</button>
                   </div>
                 </div>
-                <IncomingCallBanner call={callControls.incoming} onAccept={callControls.accept} onDecline={callControls.dismiss} ar={lang === "ar"} />
-                {callControls.mediaError && (
-                  <div className="border-b border-destructive/20 bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
-                    {lang === "ar"
-                      ? callControls.mediaError === "permission" ? "يجب السماح للمتصفح باستخدام الكاميرا والميكروفون من إعدادات الموقع." : callControls.mediaError === "device" ? "لم يتم العثور على كاميرا أو ميكروفون متاح." : callControls.mediaError === "connection" ? "تعذر إنشاء المكالمة. تحقق من الاتصال ثم حاول مجددًا." : "المكالمات غير متاحة داخل هذه النافذة؛ افتح التطبيق في نافذة مستقلة."
-                      : "Camera or microphone access failed. Open the app in a standalone tab and allow site permissions."}
-                  </div>
-                )}
                 {activeTab === "email" ? (
                   <div className="flex-1 overflow-y-auto p-5">
                     <CompanyEmailComposer employees={data.employees} currentUser={currentUser} companyId={company.id} />
@@ -303,7 +275,6 @@ export default function StationChat() {
                 )}
               </>
             )}
-            <ChatCallPanel call={callControls.call} localStream={callControls.localStream} remoteStreams={callControls.remoteStreams} onEnd={callControls.end} onRecording={shareCallRecording} ar={lang === "ar"} />
           </div>
         </div>
       )}
