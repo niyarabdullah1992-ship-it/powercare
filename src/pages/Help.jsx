@@ -1,20 +1,11 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n";
-import { useAuth } from "@/lib/PowerCareAuth";
 import { HelpCircle, LayoutDashboard, ListTodo, FileText, ClipboardCheck, MessageSquare, AlertTriangle } from "lucide-react";
 import HelpSection from "@/components/help/HelpSection";
-import IndividualHelp from "@/components/individual/IndividualHelp";
 
 export default function Help() {
   const { lang } = useI18n();
-  const { data, company } = useAuth();
   const ar = lang === "ar";
-
-  // Individuals get their own guide — the company guide talks about stations,
-  // managers and escalation, which don't exist in a personal workspace.
-  if (String(data?.plan || company?.plan || "").toLowerCase() === "individual") {
-    return <IndividualHelp />;
-  }
 
   const sections = [
     {

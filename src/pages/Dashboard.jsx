@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canSeeAllStations, visibleEmployees, canApproveReports, canReplyAnon, isCompanyOwner } from "@/lib/permissions";
@@ -90,11 +89,6 @@ export default function Dashboard() {
   const welcomeHero = (
     <WelcomeHero name={currentUser.name} companyName={data.name} t={t} lang={lang} alerts={welcomeAlerts} employee={currentUser} companyId={company.id} />
   );
-
-  // Individual (personal) workspaces are signing-only — go straight to the signing section.
-  if (String(data.plan || company?.plan || "").toLowerCase() === "individual") {
-    return <Navigate to="/app/signing" replace />;
-  }
 
   const isEmployee = currentUser.role === "employee";
   const canEditBranding = isCompanyOwner(currentUser, data) || currentUser.role === "director";

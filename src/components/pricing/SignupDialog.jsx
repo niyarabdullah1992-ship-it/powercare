@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import GoogleIcon from "@/components/GoogleIcon";
 
-export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, googleEmail, error, onSwitchToIndividual }) {
+export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, googleEmail, error }) {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
   const [companyName, setCompanyName] = useState("");
@@ -13,7 +13,6 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
   const [submitting, setSubmitting] = useState(false);
 
   const isFree = plan.price === 0;
-  const isIndividual = !!plan.individual;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,17 +31,6 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
         <p className="text-sm text-[#3a2f22]/55 font-body mb-5">
           {isFree ? t("signupFreeDesc") : t("signupPaidDesc")}
         </p>
-        {!isIndividual && onSwitchToIndividual && (
-          <button
-            type="button"
-            onClick={onSwitchToIndividual}
-            className="mb-4 w-full rounded-lg bg-landing-bg px-3 py-2 text-xs font-body text-[#3a2f22]/70 hover:text-[#3a2f22] text-start"
-          >
-            {lang === "ar"
-              ? "👤 هل أنت فرد وليس شركة؟ اضغط هنا للتسجيل بباقة الأفراد المجانية"
-              : "👤 Signing up as an individual, not a company? Click here for the free Individual plan"}
-          </button>
-        )}
         {!googleEmail && (
           <>
             <button type="button" onClick={onGoogle} className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-2.5 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg">
@@ -55,7 +43,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
           <input
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
-            placeholder={isIndividual ? (lang === "ar" ? "اسمك الكامل" : "Your full name") : t("companyNamePlaceholder")}
+            placeholder={t("companyNamePlaceholder")}
             required
             className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
           />
