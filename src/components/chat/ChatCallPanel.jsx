@@ -3,7 +3,7 @@ import { Download, Mic, PhoneOff, Square } from "lucide-react";
 import useCallRecorder from "@/hooks/useCallRecorder";
 
 function StreamVideo({ stream, muted }) { const ref = useRef(null); useEffect(() => { if (ref.current) { ref.current.srcObject = stream; ref.current.play().catch(() => {}); } }, [stream]); return <video ref={ref} autoPlay playsInline muted={muted} className="h-full w-full rounded-xl bg-black object-cover" />; }
-function AudioTile({ stream, muted }) { const ref = useRef(null); useEffect(() => { if (ref.current) ref.current.srcObject = stream; }, [stream]); return <div className="flex items-center justify-center rounded-xl bg-muted"><audio ref={ref} autoPlay muted={muted} /><Mic className="h-12 w-12 text-accent" /></div>; }
+function AudioTile({ stream, muted }) { const ref = useRef(null); useEffect(() => { if (ref.current) { ref.current.srcObject = stream; ref.current.play().catch(() => {}); } }, [stream]); return <div className="flex items-center justify-center rounded-xl bg-muted"><audio ref={ref} autoPlay muted={muted} /><Mic className="h-12 w-12 text-accent" /></div>; }
 
 export default function ChatCallPanel({ call, localStream, remoteStreams, onEnd, onRecording, ar }) {
   const allStreams = [localStream, ...remoteStreams].filter(Boolean);

@@ -8,6 +8,7 @@ export default function useChatCall({ activeChat, selectedStation, contacts, cur
   const [incoming, setIncoming] = useState(null);
   const [localStream, setLocalStream] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState([]);
+  const [mediaError, setMediaError] = useState("");
   const peersRef = useRef(new Map());
   const seenRef = useRef(new Set());
   const joinedAtRef = useRef(0);
@@ -39,18 +40,40 @@ export default function useChatCall({ activeChat, selectedStation, contacts, cur
     }
   }, [createPeer, currentUser?.id, signal]);
 
-  const join = useCallback(async (session) => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: session.mode === "video" });
+  const requestStream = useCallback(async (mode) => {
+    setMediaError("");
+    if (!navigator.mediaDevices?.getUserMedia) { setMediaError("unsupported"); return null; }
+    try {
+      return await navigator.mediaDevices.getUserMedia({ audio: true, video: mode === "video" });
+    } catch (error) {
+      setMediaError(error?.name === "NotAllowedError" ? "permission" : error?.name === "NotFoundError" ? "device" : "failed");
+      return null;
+    }
+  }, []);
+
+  const activate = useCallback(async (session, stream) => {
     joinedAtRef.current = Date.now(); seenRef.current.clear(); setLocalStream(stream); setCall(session); setIncoming(null);
     await signal(session.id, null, "join");
   }, [signal]);
 
+  const join = useCallback(async (session) => {
+    const stream = await requestStream(session.mode);
+    if (stream) await activate(session, stream);
+  }, [activate, requestStream]);
+
   const start = useCallback(async (mode) => {
     if (!activeChat) return;
-    const participantIds = activeChat.type === "dm" ? [currentUser.id, activeChat.userId] : [currentUser.id, ...contacts.map((contact) => contact.id)];
-    const response = await base44.functions.invoke("supabaseTargets", { action: "createCallSession", ...payload(), mode, participantIds, initiatorName: currentUser.name });
-    await join(response.data.call);
-  }, [activeChat, contacts, currentUser, join, payload]);
+    const stream = await requestStream(mode);
+    if (!stream) return;
+    try {
+      const participantIds = activeChat.type === "dm" ? [currentUser.id, activeChat.userId] : [currentUser.id, ...contacts.map((contact) => contact.id)];
+      const response = await base44.functions.invoke("supabaseTargets", { action: "createCallSession", ...payload(), mode, participantIds, initiatorName: currentUser.name });
+      await activate(response.data.call, stream);
+    } catch {
+      stream.getTracks().forEach((track) => track.stop());
+      setMediaError("connection");
+    }
+  }, [activeChat, contacts, currentUser, activate, payload, requestStream]);
 
   const end = useCallback(async () => {
     const active = callRef.current;
@@ -73,5 +96,5 @@ export default function useChatCall({ activeChat, selectedStation, contacts, cur
   }, [activeChat, payload, processSignals, currentUser?.id]);
 
   useEffect(() => () => { localStream?.getTracks().forEach((track) => track.stop()); peersRef.current.forEach((pc) => pc.close()); }, [localStream]);
-  return { call, incoming, localStream, remoteStreams, start, accept: join, dismiss: () => setIncoming(null), end };
+  return { call, incoming, localStream, remoteStreams, mediaError, start, accept: join, dismiss: () => setIncoming(null), end };
 }

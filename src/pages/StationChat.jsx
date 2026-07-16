@@ -241,6 +241,13 @@ export default function StationChat() {
                   </div>
                 </div>
                 <IncomingCallBanner call={callControls.incoming} onAccept={callControls.accept} onDecline={callControls.dismiss} ar={lang === "ar"} />
+                {callControls.mediaError && (
+                  <div className="border-b border-destructive/20 bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
+                    {lang === "ar"
+                      ? callControls.mediaError === "permission" ? "يجب السماح للمتصفح باستخدام الكاميرا والميكروفون من إعدادات الموقع." : callControls.mediaError === "device" ? "لم يتم العثور على كاميرا أو ميكروفون متاح." : callControls.mediaError === "connection" ? "تعذر إنشاء المكالمة. تحقق من الاتصال ثم حاول مجددًا." : "المكالمات غير متاحة داخل هذه النافذة؛ افتح التطبيق في نافذة مستقلة."
+                      : "Camera or microphone access failed. Open the app in a standalone tab and allow site permissions."}
+                  </div>
+                )}
                 {activeTab === "email" ? (
                   <div className="flex-1 overflow-y-auto p-5">
                     <CompanyEmailComposer employees={data.employees} currentUser={currentUser} companyId={company.id} />
