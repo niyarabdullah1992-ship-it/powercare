@@ -82,16 +82,13 @@ export default function Assistant() {
           status: x.status,
           issues: (Array.isArray(x.comments) ? x.comments : []).filter((c) => c.is_issue).length,
         }));
-        context.targets = [...(context.targets || []), ...cloudTargets];
-        // These ARE the real tasks shown in the Tasks section — merge them so
-        // questions about "مهام/tasks" are answered from them too.
-        context.tasks = [
-          ...(context.tasks || []),
-          ...cloudTargets.map((x) => ({
-            title: x.title, status: x.status, progress: x.completed, target: x.target,
-            station: x.station, assignee: x.assignee, deadline: x.deadline, priority: x.priority,
-          })),
-        ];
+        // The cloud task system is the ONLY source of truth — old local/demo
+        // tasks and targets are discarded so Niro never reports fake tasks.
+        context.targets = cloudTargets;
+        context.tasks = cloudTargets.map((x) => ({
+          title: x.title, status: x.status, progress: x.completed, target: x.target,
+          station: x.station, assignee: x.assignee, deadline: x.deadline, priority: x.priority,
+        }));
       } catch {
         // keep local targets only
       }
