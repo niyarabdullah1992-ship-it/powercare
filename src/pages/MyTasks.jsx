@@ -20,6 +20,7 @@ import TaskStats from "@/components/tasks/TaskStats";
 import TaskCard from "@/components/tasks/TaskCard";
 import FolderTree from "@/components/tasks/FolderTree";
 import SmartArchive from "@/components/tasks/SmartArchive";
+import TaskReportExport from "@/components/tasks/TaskReportExport";
 import SectionPicker from "@/components/tasks/SectionPicker";
 import CommentFiles from "@/components/tasks/CommentFiles";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
@@ -71,6 +72,7 @@ export default function MyTasks() {
   const [sectionValue, setSectionValue] = useState("");
   const [checkedInToday, setCheckedInToday] = useState(true);
   const [showArchive, setShowArchive] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
 
   // Smart form memory — opening the create form pre-fills the user's usual choices.
@@ -803,6 +805,20 @@ export default function MyTasks() {
 
       {/* Statistics overview */}
       {!targetsLoading && targets.length > 0 && <TaskStats targets={targets} t={t} />}
+
+      {/* Period report (PDF / Excel) */}
+      {targets.length > 0 && (
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={() => setShowReport(!showReport)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${showReport ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            <FileText className="w-3.5 h-3.5" /> {lang === "ar" ? "تقرير المهام (PDF / Excel)" : "Tasks report (PDF / Excel)"}
+          </button>
+          {showReport && <TaskReportExport targets={targets} t={t} lang={lang} dir={dir} />}
+        </div>
+      )}
 
       {!isIndividual && targets.some((tg) => tg.status === "active" && Array.isArray(tg.comments) && tg.comments.some((c) => c.is_rejection || c.is_dispute)) && (
         <EscalationInfoBox t={t} />
