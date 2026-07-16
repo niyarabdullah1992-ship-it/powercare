@@ -27,6 +27,68 @@ const IMG = {
   employees: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/c346590d6_generated_image.png",
 };
 
+// ————— فلسفة المشروع — تُعرض بعد الغلاف مباشرة —————
+export const GUIDE_PHILOSOPHY = {
+  titleAr: "فلسفة المشروع — لماذا وُلد باور كير؟",
+  titleEn: "The Philosophy — Why PowerCare Was Born",
+  bodyAr: [
+    "كل شركة ميدانية تعيش المعضلة نفسها: الإدارة في مكان، والعمل الحقيقي في مكان آخر. المدير يقرأ تقارير عمّا «قيل إنه حدث»، لا عمّا حدث فعلًا. من هذه الفجوة وُلد باور كير — من قناعة أن الثقة لا تُبنى بالأقوال بل بالإثبات: إثبات المكان، وإثبات الإنجاز، وإثبات التوقيع.",
+    "الفلسفة الأولى: «حقيقة المكان». الحضور ليس توقيعًا على ورقة بل وجودًا فعليًا في الموقع — لذلك جعلنا الموقع الجغرافي شرطًا لا يُقبل الحضور بدونه، ويُتحقق منه في الخادم حصرًا بحيث يستحيل التلاعب. حين يصبح المكان حقيقة موثقة، تصبح كل الأرقام المبنية عليه — الرواتب، والتقييم، والتقارير — حقيقة أيضًا.",
+    "الفلسفة الثانية: «العدالة المؤسسية». الموظف الذي يملك قناة تصعيد واضحة لا يحتاج للواسطة، والذي يستطيع رفع شكوى مجهولة الهوية محمية بتشفير لا يُعكس لا يخاف قول الحقيقة. لذلك بُني الهيكل الإداري في باور كير كسلّم تصعيد حي: كل شكوى واعتراض ومهمة حرجة تصعد درجة درجة تلقائيًا حتى تجد من يحسمها.",
+    "الفلسفة الثالثة: «من البيانات إلى القرار». البيانات وحدها ضجيج؛ القيمة في تحويلها إلى قرار. لذلك يتوّج المنصة مركزُ قيادة ذكي يضغط مئات الإشارات اليومية — غياب، تأخير، توقفات، حوادث سلامة — في درجة استقرار واحدة موزونة على منهجية ISO 45001، ومساعد ذكاء اصطناعي يجيب ويُنفّذ. المدير لا يغرق في الجداول؛ يرى الخلاصة ويقرر.",
+  ],
+  bodyEn: [
+    "Every field company lives the same dilemma: management sits in one place while the real work happens in another. Managers read reports about what was said to have happened — not what actually happened. PowerCare was born from this gap, and from one conviction: trust is not built on words but on proof — proof of place, proof of completion, proof of signature.",
+    "First philosophy: the truth of place. Attendance is not a signature on paper but physical presence on site — so GPS location is a mandatory condition, verified exclusively on the server where it cannot be spoofed. Once place becomes documented truth, everything built on it — payroll, evaluation, reporting — becomes truth as well.",
+    "Second philosophy: institutional justice. An employee with a clear escalation path needs no favoritism, and one who can file an anonymous, irreversibly-encrypted report is never afraid to speak the truth. PowerCare's org structure is a living escalation ladder: every complaint, dispute and critical task rises tier by tier until someone resolves it.",
+    "Third philosophy: from data to decision. Data alone is noise; the value is turning it into decisions. The platform is crowned by an intelligent Command Center that compresses hundreds of daily signals — absences, delays, stoppages, safety incidents — into a single weighted stability score inspired by ISO 45001, and an AI assistant that answers and acts. Managers don't drown in tables; they see the essence and decide.",
+  ],
+};
+
+// ————— الترابط بين الأقسام — يُعرض بعد شرح الأقسام —————
+export const GUIDE_INTERCONNECTION = {
+  titleAr: "الترابط: كيف تعمل الأقسام كجسد واحد",
+  titleEn: "The Interconnection: How Everything Works as One Body",
+  bodyAr: [
+    "باور كير ليس مجموعة أدوات متجاورة، بل منظومة واحدة تبدأ من ذرّة أساسية هي «المحطة». المحطة تحمل الموقع الجغرافي ونطاق المسافة، ويرتبط بها الموظفون والورديات — فيتولد منها الحضور الموثق. الحضور يغذي التقارير الشهرية ولوحة حالة الفريق ونسبة الحضور في لوحة التحكم.",
+    "المهام تنظَّم داخل المحطات نفسها في مجلدات وأقسام، وتأخّرها أو توقفها لا يبقى حبيس القسم: يتصاعد تلقائيًا عبر الهيكل الإداري، ويرفع درجة المخاطر في مركز القيادة. والهيكل الإداري ذاته هو الذي يوجّه الشكاوى والبلاغات المجهولة والاعتراضات — سلّم واحد يخدم كل أنواع التصعيد.",
+    "السلامة المهنية ترصد الحوادث والمخاطر لكل محطة، فتغذي درجة الاستقرار ولوحة الرادار التنبؤي. والتقارير اليومية المعتمدة، والأداء، والنقاط التحفيزية — كلها تصب في قسم التحليلات والمقارنات، وتخرج من مركز التصدير بهوية الشركة البصرية، وتُختم عند الحاجة بتوقيع رقمي برقم تحقق مشفر يضمن عدم التلاعب.",
+    "وفوق هذا كله يجلس «نيرو»: يقرأ بيانات كل الأقسام في لحظته، فيجيب ويولّد الملخص اليومي والتنبيهات الاستباقية وينشئ المستندات. النتيجة: معلومة تدخل من أي قسم تنعكس في كل الأقسام — جسد واحد بعصب واحد.",
+  ],
+  bodyEn: [
+    "PowerCare is not a set of adjacent tools but one organism built around a fundamental atom: the Station. The station carries the GPS location and allowed radius; employees and shifts attach to it — producing verified attendance. Attendance feeds the monthly reports, the team status panel and the dashboard attendance rate.",
+    "Tasks are organized inside those same stations in folders and sections, and their delays or stoppages never stay contained: they escalate automatically through the org hierarchy and raise the risk score in the Command Center. That same hierarchy routes complaints, anonymous reports and disputes — one ladder serving every kind of escalation.",
+    "HSE safety tracks incidents and hazards per station, feeding the stability score and the predictive risk radar. Approved daily reports, performance and reward points all flow into analytics and comparisons, exit through the Export Center under the company's own branding, and can be sealed with a digital signature carrying an encrypted verification ID that guarantees integrity.",
+    "Above it all sits Niro: reading every section's live data to answer questions, generate the daily brief and proactive alerts, and create documents on demand. The result: information entering any section is reflected across all of them — one body, one nervous system.",
+  ],
+};
+
+// ————— خاتمة تقديمية للشركات —————
+export const GUIDE_PITCH = {
+  titleAr: "لماذا تعتمد شركتكم باور كير؟",
+  titleEn: "Why Your Company Should Adopt PowerCare",
+  pointsAr: [
+    "إحلال منصة واحدة محل خمسة أنظمة متفرقة: حضور، ومهام، وموارد بشرية، وتواصل داخلي، وتوقيع إلكتروني — بتكلفة اشتراك واحدة وبيانات مترابطة.",
+    "قطع الطريق على التحايل في الحضور نهائيًا بالتحقق الجغرافي من جهة الخادم — عائد مباشر على دقة الرواتب والانضباط.",
+    "رؤية تنفيذية لحظية: درجة استقرار واحدة تختصر حال الشركة كلها، بأوزان مخاطر تُعايرها الشركة حسب طبيعة نشاطها.",
+    "جاهزية فورية للسوق السعودي والخليجي: عربية كاملة باتجاه كتابة صحيح، و9 لغات، وتشغيل من المتصفح والجوال دون تركيب.",
+    "أمان مؤسسي: عزل تام لبيانات كل شركة، وتحقق ثنائي إلزامي، وتشفير كلمات المرور، وسجل تدقيق كامل.",
+    "خطط اشتراك متدرجة (Starter / Professional / Enterprise) بفوترة شهرية أو سنوية وفترة تجريبية — تبدأ صغيرًا وتتوسع بلا حدود.",
+  ],
+  pointsEn: [
+    "Replace five separate systems — attendance, tasks, HR, internal communication and e-signing — with one platform, one subscription and fully connected data.",
+    "Eliminate attendance fraud permanently with server-side GPS verification — a direct return on payroll accuracy and discipline.",
+    "Real-time executive visibility: one stability score summarizing the whole company, with risk weights calibrated to your operation.",
+    "Ready for the Saudi and Gulf market: full Arabic with correct RTL, 9 languages, running from browser and mobile with no installation.",
+    "Enterprise-grade security: complete per-company data isolation, mandatory two-factor OTP, hashed passwords and a full audit log.",
+    "Tiered plans (Starter / Professional / Enterprise) with monthly or yearly billing and a trial period — start small, scale without limits.",
+  ],
+  contactAr: "للتواصل وطلب عرض توضيحي",
+  contactEn: "Contact & Request a Demo",
+  phone: "0595414472",
+  emails: ["niyar@powercares.pro", "turkialmutarir@gmail.com"],
+};
+
 export const GUIDE_SECTIONS = [
   {
     image: IMG.dashboard,

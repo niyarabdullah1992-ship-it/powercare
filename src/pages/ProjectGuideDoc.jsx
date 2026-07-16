@@ -1,6 +1,6 @@
 import React from "react";
 import { Download } from "lucide-react";
-import { GUIDE_AUTHOR, GUIDE_PROGRAM, GUIDE_SECTIONS } from "@/lib/projectGuideContent";
+import { GUIDE_AUTHOR, GUIDE_PROGRAM, GUIDE_SECTIONS, GUIDE_PHILOSOPHY, GUIDE_INTERCONNECTION, GUIDE_PITCH } from "@/lib/projectGuideContent";
 import Logo from "@/components/Logo";
 
 // Bilingual (Arabic + English) illustrated guide covering every section of the
@@ -50,6 +50,22 @@ export default function ProjectGuideDoc() {
           </p>
         </div>
 
+        {/* Philosophy — why the project was born */}
+        <section className="guide-section space-y-4">
+          <h2 className="text-xl font-bold font-heading border-r-4 border-landing-gold pr-3">{GUIDE_PHILOSOPHY.titleAr}</h2>
+          <p className="text-sm font-semibold text-neutral-500" dir="ltr">{GUIDE_PHILOSOPHY.titleEn}</p>
+          <div className="space-y-2.5">
+            {GUIDE_PHILOSOPHY.bodyAr.map((p, j) => (
+              <p key={j} className="text-[14.5px] leading-8 text-justify">{p}</p>
+            ))}
+          </div>
+          <div className="space-y-2.5 border-t border-dashed border-neutral-300 pt-4" dir="ltr">
+            {GUIDE_PHILOSOPHY.bodyEn.map((p, j) => (
+              <p key={j} className="text-[13.5px] leading-7 text-justify text-neutral-700">{p}</p>
+            ))}
+          </div>
+        </section>
+
         {/* Table of contents */}
         <section className="guide-section space-y-3">
           <h2 className="text-xl font-bold font-heading border-r-4 border-landing-gold pr-3">
@@ -90,6 +106,50 @@ export default function ProjectGuideDoc() {
             </div>
           </section>
         ))}
+
+        {/* Interconnection — how everything works as one body */}
+        <section className="guide-section space-y-4 border-t border-neutral-200 pt-8">
+          <h2 className="text-xl font-bold font-heading border-r-4 border-landing-gold pr-3">{GUIDE_INTERCONNECTION.titleAr}</h2>
+          <p className="text-sm font-semibold text-neutral-500" dir="ltr">{GUIDE_INTERCONNECTION.titleEn}</p>
+          <div className="space-y-2.5">
+            {GUIDE_INTERCONNECTION.bodyAr.map((p, j) => (
+              <p key={j} className="text-[14.5px] leading-8 text-justify">{p}</p>
+            ))}
+          </div>
+          <div className="space-y-2.5 border-t border-dashed border-neutral-300 pt-4" dir="ltr">
+            {GUIDE_INTERCONNECTION.bodyEn.map((p, j) => (
+              <p key={j} className="text-[13.5px] leading-7 text-justify text-neutral-700">{p}</p>
+            ))}
+          </div>
+        </section>
+
+        {/* Business pitch — why companies should adopt PowerCare */}
+        <section className="guide-section space-y-4 border-t border-neutral-200 pt-8">
+          <h2 className="text-xl font-bold font-heading border-r-4 border-landing-gold pr-3">{GUIDE_PITCH.titleAr}</h2>
+          <p className="text-sm font-semibold text-neutral-500" dir="ltr">{GUIDE_PITCH.titleEn}</p>
+          <ul className="space-y-2">
+            {GUIDE_PITCH.pointsAr.map((p, j) => (
+              <li key={j} className="flex items-start gap-2 text-[14.5px] leading-8">
+                <span className="font-bold text-landing-gold-deep shrink-0">✦</span>
+                <span className="text-justify">{p}</span>
+              </li>
+            ))}
+          </ul>
+          <ul className="space-y-2 border-t border-dashed border-neutral-300 pt-4" dir="ltr">
+            {GUIDE_PITCH.pointsEn.map((p, j) => (
+              <li key={j} className="flex items-start gap-2 text-[13.5px] leading-7 text-neutral-700">
+                <span className="font-bold text-landing-gold-deep shrink-0">✦</span>
+                <span className="text-justify">{p}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="rounded-lg border border-neutral-300 bg-[#f7f1e6] p-5 text-center space-y-1.5">
+            <p className="font-bold text-[15px]">{GUIDE_PITCH.contactAr} — <span dir="ltr">{GUIDE_PITCH.contactEn}</span></p>
+            <p className="text-sm font-semibold">{GUIDE_AUTHOR.nameAr}</p>
+            <p className="text-sm tracking-wide" dir="ltr">{GUIDE_AUTHOR.nameEn}</p>
+            <p className="text-sm" dir="ltr">{GUIDE_PITCH.phone} · {GUIDE_PITCH.emails.join(" · ")}</p>
+          </div>
+        </section>
 
         {/* Footer */}
         <p className="text-center text-[11px] text-neutral-400 border-t-2 border-neutral-800 pt-6">
