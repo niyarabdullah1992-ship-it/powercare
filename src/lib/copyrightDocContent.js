@@ -1,9 +1,9 @@
 // Content of the official copyright registration document (SAIP) —
-// program description + representative source-code excerpts.
+// program description + full source inventory + representative code excerpts.
 
 export const AUTHOR = {
   nameAr: "نيار عبدالله سويلم الرنياوي",
-  nameEn: "NIYAR ABDULLAH SUWAILEM ALRANIAWI",
+  nameEn: "Niyar Abdullah Sweilem Al-Raniawi",
 };
 
 export const PROGRAM = {
@@ -14,19 +14,91 @@ export const PROGRAM = {
 export const DESCRIPTION_SECTIONS = [
   {
     title: "فكرة البرنامج",
-    body: "«باور كير» (PowerCare) منصة رقمية سحابية متكاملة لإدارة الشركات والموارد البشرية، صُممت لتمكين المؤسسات من إدارة موظفيها ومحطات عملها ومهامها اليومية من مكان واحد. يقوم البرنامج على فكرة ربط الحضور الوظيفي بالموقع الجغرافي الفعلي للموظف: فلا يُقبل تسجيل الحضور إلا إذا كان الموظف داخل النطاق الجغرافي المحدد لمقر عمله، مع تحديد نطاق المسافة المسموح لكل محطة عمل على الخريطة. كما تدعم المنصة نمط «المساحة الشخصية» للأفراد، بأدوات إنتاجية شخصية تشمل مخطط اليوم، ويوميات الحياة، والتقويم الشهري.",
+    body: "«باور كير» (PowerCare) منصة رقمية سحابية متكاملة لإدارة الشركات والموارد البشرية، صُممت لتمكين المؤسسات من إدارة موظفيها ومحطات عملها ومهامها اليومية من مكان واحد. يقوم البرنامج على فكرة ربط الحضور الوظيفي بالموقع الجغرافي الفعلي للموظف: فلا يُقبل تسجيل الحضور إلا إذا كان الموظف داخل النطاق الجغرافي المحدد لمقر عمله، مع تحديد نطاق المسافة المسموح لكل محطة عمل على الخريطة. كما تدعم المنصة نمط «المساحة الشخصية» للأفراد، بأدوات إنتاجية شخصية وتجربة توقيع رقمي مستقلة.",
   },
   {
-    title: "المكونات الرئيسية",
-    body: "1) نظام حضور وانصراف مرتبط بالموقع الجغرافي (GPS) مع خرائط تفاعلية وتقارير شهرية.\n2) نظام مهام هرمي بمجلدات قابلة للتخصيص لكل محطة، مع تصعيد تلقائي للمهام الحرجة، وأرشيف ذكي يصنف المهام حسب مدتها (سنوية/نصفية/ربعية/شهرية).\n3) هيكل موارد بشرية مرن بدرجات وصلاحيات قابلة للتخصيص، يشكل سلسلة تصعيد للشكاوى والاعتراضات، مع نظام بلاغات مجهولة الهوية محمية بتشفير أحادي الاتجاه.\n4) نظام توقيع إلكتروني للمستندات: توقيع شخصي (كتابةً أو رسمًا) برقم تحقق مشفّر فريد (SHA-256)، وتوقيع متعدد الأطراف عبر روابط خاصة، والتحقق من صحة المستندات الموقعة.\n5) مساعد ذكاء اصطناعي «نيرو» يجيب عن أسئلة الإدارة، ويولّد ملخصات يومية ذكية، واقتراحات تنبيهية تلقائية.\n6) دعم 9 لغات مع اتجاه كتابة تلقائي (RTL) للعربية، وتقارير قابلة للتصدير PDF/Excel بهوية الشركة البصرية.\n7) نظام اشتراكات وخطط أسعار مع بوابة دفع إلكترونية (Stripe).",
+    title: "أولاً: نظام الحضور والانصراف الجغرافي",
+    body: "حضور وانصراف مرتبط بالموقع الجغرافي (GPS) مع تحقق إلزامي من الموقع قبل القبول، وقياس المسافة عن مقر العمل بدقة الأمتار، وقبول الحضور في أي محطة مصرح بها للموظف (الأقرب أولاً). يشمل النظام: تسجيل حضور سريع بلمسة واحدة مع تهيئة مسبقة للـGPS عند فتح التطبيق، واحتساب التأخير بالدقائق مقارنة بجدول الوردية، وانصراف مبكر موثق، وأعذار معتمدة، وخرائط تفاعلية لمواقع المحطات، وتقارير شهرية وتحليلات، ومسح تلقائي يومي (Workflows) لرصد الغياب والتأخير وإرسال التنبيهات.",
   },
   {
-    title: "البنية التقنية",
-    body: "بُني البرنامج بتقنية React مع Vite للواجهة الأمامية، وTailwind CSS لنظام التصميم، وقاعدة بيانات سحابية (Supabase وBase44) للتخزين والمزامنة اللحظية، ووظائف خلفية (Backend Functions) بتقنية Deno للتكاملات الخارجية: البريد الإلكتروني عبر Gmail، وتقويم Google، وخدمات الموقع الجغرافي، وبوابة الدفع Stripe. يعتمد النظام عزلًا كاملًا لبيانات كل شركة (Multi-Tenancy) وجلسات دخول مشفّرة مع تحقق ثنائي عبر رمز OTP بالبريد الإلكتروني.",
+    title: "ثانياً: نظام المهام والأهداف",
+    body: "نظام مهام هرمي بمجلدات وأقسام قابلة للتخصيص لكل محطة، يدعم إسناد المهام لموظف أو لفريق محطة أو لفريق المقر الرئيسي، مع أولويات (عادي/عاجل)، وأهداف عددية بنسبة إنجاز محسوبة، وتصعيد تلقائي للمهام الحرجة عبر سلسلة الصلاحيات، وبلاغات توقف العمل، وأرشيف ذكي يصنف المهام المكتملة حسب مدتها (سنوية/نصفية/ربعية/شهرية)، وتعليقات بمرفقات ملفات وتسجيلات صوتية.",
+  },
+  {
+    title: "ثالثاً: الموارد البشرية والرواتب",
+    body: "هيكل موارد بشرية مرن بدرجات وظيفية ومستويات قابلة للتخصيص بالكامل (عدد الدرجات، المسميات، النطاقات)، يشكل سلسلة تصعيد رسمية للشكاوى والاعتراضات، مع نظام بلاغات مجهولة الهوية محمية بتشفير أحادي الاتجاه لا يمكن عكسه. وتشمل وحدة الرواتب: استيراد مسيرات الرواتب من ملفات CSV/Excel بمطابقة تلقائية عبر البريد الإلكتروني، وقوالب رواتب، وإدارة الإجازات بأنواعها وأرصدتها وطلباتها واعتمادها، وملفات موظفين شاملة (شهادات، معلومات مهنية، رسائل HR).",
+  },
+  {
+    title: "رابعاً: السلامة المهنية (HSE) ومركز القيادة الذكي",
+    body: "وحدة سلامة مهنية ترصد الحوادث والمخاطر المفتوحة وتصنف المحطات الحرجة، وتغذي «مركز القيادة الذكي» في لوحة التحكم: درجة مخاطر مُوزّنة (Weighted Risk Scoring) مستوحاة من مصفوفات المخاطر وفق ISO 45001، تجمع الغياب والتأخير وتوقف العمل والتقارير المعلقة وحوادث السلامة في نسبة استقرار واحدة، مع شفافية كاملة في طريقة الحساب وأوزان قابلة للمعايرة من مالك الشركة حسب طبيعة نشاطها، وتنبؤات مخاطر استباقية وملخصات يومية ذكية.",
+  },
+  {
+    title: "خامساً: التوقيع الإلكتروني الموثق",
+    body: "نظام توقيع إلكتروني للمستندات على مستوى احترافي: توقيع شخصي (كتابةً بخطوط فنية أو رسمًا باللمس) برقم تحقق مشفّر فريد بصيغة PWC-XXXX-XXXX-XXXX مشتق من بصمة SHA-256، وتوقيع متعدد الأطراف عبر روابط خاصة لكل موقّع دون حاجة لحساب، وتحديد موضع التوقيع بحرية على أي صفحة مع تكبير وتصغير باللمس، وختم شارة تحقق نهائية على المستند بعد اكتمال جميع التواقيع، وبصمة ملف نهائية (File Hash) تربط رقم التحقق بالملف الموقع حصراً، وصفحة تحقق عامة من صحة أي مستند.",
+  },
+  {
+    title: "سادساً: المساعد الذكي «نيرو» والتواصل الداخلي",
+    body: "مساعد ذكاء اصطناعي «نيرو» يجيب عن أسئلة الإدارة من بيانات الشركة الفعلية، ويولّد ملخصات يومية ذكية وتنبيهات استباقية واقتراحات قرارات، وينشئ ملفات ومستندات حسب الطلب. إضافة إلى نظام دردشة داخلي لكل محطة مع رسائل خاصة ومجموعات مخصصة ومرفقات ومعرض وسائط وبحث، وإشعارات بريدية عبر تكامل Gmail، ومزامنة مواعيد مع تقويم Google.",
+  },
+  {
+    title: "سابعاً: التقارير والتعددية اللغوية والاشتراكات",
+    body: "تقارير أداء ومقارنات بين الموظفين والمحطات والمجموعات قابلة للتصدير PDF/Excel بهوية الشركة البصرية (شعار ولون مخصص)، ودعم 9 لغات مع اتجاه كتابة تلقائي (RTL) للعربية، ونظام اشتراكات بخطط أسعار (Starter/Professional/Enterprise) مع بوابة دفع إلكترونية Stripe وفترة تجريبية وتذكيرات تلقائية، ولوحة مالك للمنصة لإدارة المشتركين وإحصاءات الزوار.",
+  },
+  {
+    title: "البنية التقنية والأمان",
+    body: "بُني البرنامج بتقنية React مع Vite للواجهة الأمامية، وTailwind CSS لنظام التصميم، وقواعد بيانات سحابية (Supabase وBase44) للتخزين والمزامنة اللحظية، ووظائف خلفية (Backend Functions) بتقنية Deno للتكاملات الخارجية: البريد الإلكتروني عبر Gmail، وتقويم Google، وخدمات الموقع الجغرافي، وبوابة الدفع Stripe. يعتمد النظام عزلًا كاملًا لبيانات كل شركة (Multi-Tenancy)، وجلسات دخول مشفّرة برموز عشوائية منتهية الصلاحية، وتحققًا ثنائيًا إلزاميًا عبر رمز OTP بالبريد الإلكتروني لجميع الحسابات، وتخزين كلمات المرور بتجزئة PBKDF2 دون أي تخزين للنص الصريح، وسجل تدقيق (Audit Log) للعمليات الحساسة.",
   },
 ];
 
-// Representative source-code excerpts (the full source exceeds 200 files).
+// Full source-code inventory — every file in the program (grouped).
+export const FILE_TREE = [
+  {
+    group: "نواة التطبيق والإعدادات",
+    files: ["src/App.jsx", "src/main.jsx", "src/index.css", "index.html", "tailwind.config.js", "vite.config.js", "package.json", "src/lib/query-client.js", "src/lib/utils.js", "src/lib/app-params.js", "src/lib/PageNotFound.jsx", "src/api/base44Client.js"],
+  },
+  {
+    group: "الصفحات الرئيسية (Pages)",
+    files: ["src/pages/Landing.jsx", "src/pages/Login.jsx", "src/pages/Register.jsx", "src/pages/ForgotPassword.jsx", "src/pages/ResetPassword.jsx", "src/pages/Dashboard.jsx", "src/pages/ExecutiveDashboard.jsx", "src/pages/MyTasks.jsx", "src/pages/StationChat.jsx", "src/pages/Complaints.jsx", "src/pages/Stations.jsx", "src/pages/Employees.jsx", "src/pages/EmployeeProfile.jsx", "src/pages/HR.jsx", "src/pages/Payroll.jsx", "src/pages/Performance.jsx", "src/pages/Safety.jsx", "src/pages/DailyReport.jsx", "src/pages/Attendance.jsx", "src/pages/Files.jsx", "src/pages/FileSigning.jsx", "src/pages/Assistant.jsx", "src/pages/OwnerPanel.jsx", "src/pages/Pricing.jsx", "src/pages/PricingSuccess.jsx", "src/pages/Verify.jsx", "src/pages/PublicSign.jsx", "src/pages/About.jsx", "src/pages/Help.jsx", "src/pages/Privacy.jsx", "src/pages/Security.jsx", "src/pages/Terms.jsx", "src/pages/PowerCarePresentation.jsx", "src/pages/CopyrightDoc.jsx", "src/pages/ProjectGuideDoc.jsx"],
+  },
+  {
+    group: "المنطق والمكتبات (Libraries)",
+    files: ["src/lib/PowerCareAuth.jsx", "src/lib/store.js", "src/lib/i18n.jsx", "src/lib/i18nExtra.js", "src/lib/permissions.js", "src/lib/hrPermissions.js", "src/lib/hrLevels.js", "src/lib/roles.js", "src/lib/escalation.js", "src/lib/attendance.js", "src/lib/geo.js", "src/lib/geocodeStations.js", "src/lib/leaveTypes.js", "src/lib/payroll.js", "src/lib/payrollTemplate.js", "src/lib/salaryImport.js", "src/lib/riskWeights.js", "src/lib/rewards.js", "src/lib/signPdf.js", "src/lib/multiSignStamp.js", "src/lib/verificationBadge.js", "src/lib/fileHash.js", "src/lib/detectSignatureSpot.js", "src/lib/signedReport.js", "src/lib/exportReport.js", "src/lib/exportExcelColored.js", "src/lib/printReport.js", "src/lib/printDocument.js", "src/lib/pdfTheme.js", "src/lib/icsExport.js", "src/lib/taskFolders.js", "src/lib/taskTimeScope.js", "src/lib/smartDefaults.js", "src/lib/assistantActions.js", "src/lib/assistantContext.js", "src/lib/auditLog.js", "src/lib/emailAlerts.js", "src/lib/notificationRoute.js", "src/lib/notificationFilters.js", "src/lib/planLimits.js", "src/lib/sectionGuides.js", "src/lib/trackVisit.js", "src/lib/dateFormat.js", "src/lib/mediaAccess.js", "src/lib/navVisibility.js"],
+  },
+  {
+    group: "مكونات لوحة التحكم ومركز القيادة",
+    files: ["src/components/dashboard/CommandCenterHero.jsx", "src/components/dashboard/StabilityInfoPopover.jsx", "src/components/dashboard/RiskWeightsEditor.jsx", "src/components/dashboard/RiskForecastPanel.jsx", "src/components/dashboard/SmartDailySummary.jsx", "src/components/dashboard/SmartAlertsPanel.jsx", "src/components/dashboard/DecisionQueue.jsx", "src/components/dashboard/DashboardStatCards.jsx", "src/components/dashboard/TeamStatusPanel.jsx", "src/components/dashboard/EmployeeDashboard.jsx", "src/components/dashboard/StationManagerDashboard.jsx", "src/components/dashboard/StationsMapCard.jsx", "src/components/dashboard/AttendanceTrendChart.jsx", "src/components/dashboard/PendingActionsPanel.jsx", "src/components/dashboard/OnboardingChecklist.jsx", "src/components/dashboard/WelcomeHero.jsx"],
+  },
+  {
+    group: "مكونات الحضور والجدولة",
+    files: ["src/components/attendance/QuickCheckInCard.jsx", "src/components/attendance/CheckInOutCard.jsx", "src/components/attendance/AttendanceDailyDashboard.jsx", "src/components/attendance/AttendanceMonthlyReport.jsx", "src/components/attendance/AttendanceAnalytics.jsx", "src/components/attendance/AttendanceMapDashboard.jsx", "src/components/attendance/AttendanceLocationsPanel.jsx", "src/components/attendance/AttendanceSettingsPanel.jsx", "src/components/attendance/AttendanceLeaveRequests.jsx", "src/components/attendance/LocationMapModal.jsx", "src/components/attendance/ScheduleTab.jsx", "src/components/attendance/TimeFormatToggle.jsx", "src/components/schedules/StationScheduleEditor.jsx", "src/components/schedules/ShiftTypeEditor.jsx", "src/components/schedules/ScheduleCell.jsx", "src/components/schedules/ScheduleStatsBar.jsx", "src/components/schedules/EmployeeAvatar.jsx"],
+  },
+  {
+    group: "مكونات المهام والتقارير والأداء",
+    files: ["src/components/tasks/TaskCard.jsx", "src/components/tasks/TaskStats.jsx", "src/components/tasks/FolderTree.jsx", "src/components/tasks/SectionPicker.jsx", "src/components/tasks/SmartArchive.jsx", "src/components/tasks/ArchivePeriodGroup.jsx", "src/components/tasks/CommentFiles.jsx", "src/components/tasks/VoiceRecorder.jsx", "src/components/reports/ReportCard.jsx", "src/components/reports/ExportCenter.jsx", "src/components/reports/EmployeeReportTable.jsx", "src/components/reports/GroupVsGroupComparison.jsx", "src/components/reports/HSESafetyReport.jsx", "src/components/reports/BrandingSettingsCard.jsx", "src/components/performance/PerformanceAnalytics.jsx", "src/components/performance/EmployeeComparisonView.jsx", "src/components/performance/StationComparison.jsx", "src/components/performance/PointsManager.jsx", "src/components/safety/StationSafetyCard.jsx"],
+  },
+  {
+    group: "مكونات الموارد البشرية والموظفين",
+    files: ["src/components/hr/HROrgChart.jsx", "src/components/hr/HRTiersEditor.jsx", "src/components/hr/HRTierCard.jsx", "src/components/hr/HRAssignModal.jsx", "src/components/hr/HRSlotRow.jsx", "src/components/hr/HRPermissionsChecklist.jsx", "src/components/hr/ClusterEditor.jsx", "src/components/employees/ProfileHero.jsx", "src/components/employees/ProfessionalInfoTab.jsx", "src/components/employees/CertificatesTab.jsx", "src/components/employees/SalaryTab.jsx", "src/components/employees/LeaveTab.jsx", "src/components/employees/LeaveBalanceCard.jsx", "src/components/employees/LeaveTotalsEditor.jsx", "src/components/employees/HRCommunicationsTab.jsx", "src/components/employees/PresenceStatusPicker.jsx", "src/components/employees/EmployeePoints.jsx", "src/components/employees/RoleLabelsEditor.jsx", "src/components/payroll/PayrollRow.jsx", "src/components/payroll/PayrollTemplateCard.jsx"],
+  },
+  {
+    group: "مكونات التوقيع الإلكتروني والملفات",
+    files: ["src/components/files/MySignatureCard.jsx", "src/components/files/SignaturePad.jsx", "src/components/files/TypedSignature.jsx", "src/components/files/SignaturePlacementModal.jsx", "src/components/files/MultiSignPlacementModal.jsx", "src/components/files/MultiSignCard.jsx", "src/components/files/MultiSignInbox.jsx", "src/components/files/SignAndSendCard.jsx", "src/components/files/SignSpotPicker.jsx", "src/components/files/SignedDocActions.jsx", "src/components/files/VerifyDocumentCard.jsx", "src/components/files/SigningSteps.jsx", "src/components/files/FolderCard.jsx", "src/components/files/FileRow.jsx"],
+  },
+  {
+    group: "مكونات الدردشة والمساعد الذكي والجوال",
+    files: ["src/components/chat/ChatBubble.jsx", "src/components/chat/ChatContactList.jsx", "src/components/chat/ChatGroupManager.jsx", "src/components/chat/ChatMediaGallery.jsx", "src/components/chat/ChatSearchPanel.jsx", "src/components/chat/CompanyEmailComposer.jsx", "src/components/assistant/AssistantMessage.jsx", "src/components/assistant/VoiceControl.jsx", "src/components/assistant/SuggestedQuestions.jsx", "src/components/mobile/BottomTabBar.jsx", "src/components/mobile/PullToRefresh.jsx", "src/components/mobile/MobileSelect.jsx", "src/components/mobile/BackButton.jsx", "src/components/Layout.jsx", "src/components/Navbar.jsx", "src/components/Logo.jsx"],
+  },
+  {
+    group: "الوظائف الخلفية والأتمتة (Backend & Workflows)",
+    files: ["base44/functions/supabaseAttendance/entry.ts", "base44/functions/supabaseTargets/entry.ts", "base44/functions/companyDirectory/entry.ts", "base44/functions/signedDocs/entry.ts", "base44/functions/multiSign/entry.ts", "base44/functions/gmailNotify/entry.ts", "base44/functions/calendarSync/entry.ts", "base44/functions/googleGeolocate/entry.ts", "base44/functions/stripeCheckout/entry.ts", "base44/functions/subscriberEmails/entry.ts", "base44/functions/subscriptionOverview/entry.ts", "base44/functions/pageVisits/entry.ts", "base44/functions/uiTranslations/entry.ts", "base44/functions/weeklySummary/entry.ts", "base44/functions/seedDemoCompany/entry.ts", "base44/workflows/AttendanceAbsentSweep.jsonc", "base44/workflows/AttendanceLateAlertSweep.jsonc", "base44/workflows/TaskEscalationSweep.jsonc", "base44/workflows/TrialReminderSweep.jsonc", "base44/workflows/WeeklyOwnerSummary.jsonc"],
+  },
+  {
+    group: "نماذج قاعدة البيانات (Entities)",
+    files: ["CompanyAccount", "CompanySession", "Employee", "EmployeeCredential", "LoginOtp", "Station", "CompanyDataBlob", "SignedDocument", "SignatureRequest", "AuditLog", "SyncSignal", "PageVisit", "ProductFeedback", "UiTranslation"],
+  },
+];
+
+// Representative source-code excerpts (the full source exceeds 250 files).
 export const CODE_FILES = [
   {
     name: "src/App.jsx — موجّه التطبيق الرئيسي (Application Router)",
@@ -70,6 +142,71 @@ function AppRoutes() {
 }`,
   },
   {
+    name: "src/lib/riskWeights.js — أوزان المخاطر القابلة للمعايرة (مركز القيادة الذكي)",
+    code: `// Configurable risk weights for the Command Center stability score.
+// Owners can override these per-company (stored in data.settings.riskWeights).
+export const DEFAULT_RISK_WEIGHTS = {
+  absent: 8,        // absent employee today
+  delayed: 12,      // delayed / due-soon task
+  stoppage: 18,     // task stoppage issue
+  reports: 4,       // pending daily report
+  critical: 20,     // critical (red) safety station
+  incidents: 15,    // safety incident in last 30 days
+  hazards: 6,       // open safety hazard
+};
+
+export function getRiskWeights(data) {
+  return { ...DEFAULT_RISK_WEIGHTS, ...(data?.settings?.riskWeights || {}) };
+}
+
+// Dashboard usage — weighted risk scoring (ISO 45001-style risk matrix):
+const riskScore = Math.min(100, Math.round(
+  (absentCount * w.absent) + (delayedTasks * w.delayed) +
+  (stoppageCount * w.stoppage) + (pendingReports * w.reports) +
+  (criticalStations * w.critical) + (recentIncidents * w.incidents) +
+  (openHazards * w.hazards)
+));
+const stabilityScore = 100 - riskScore;`,
+  },
+  {
+    name: "src/components/attendance/CheckInOutCard.jsx — الحضور المرتبط بالموقع الجغرافي",
+    code: `const handleCheckIn = async () => {
+  setError("");
+  setLoading(true);
+  try {
+    // Location is MANDATORY before check-in — no location, no check-in.
+    const coords = await getAccuratePosition();
+    if (!coords) {
+      setError(t("locationDenied"));
+      setLoading(false);
+      return;
+    }
+    const res = await base44.functions.invoke("supabaseAttendance", {
+      action: "checkIn",
+      companyId: company.id,
+      employeeId: currentUser.id,
+      employeeName: currentUser.name,
+      stationId: currentUser.stationId || null,
+      lat: coords?.lat, lng: coords?.lng,
+      accuracy: coords?.accuracy ?? null,
+      shiftStart: shift?.start,
+      stationLat: station?.lat ?? null,
+      stationLng: station?.lng ?? null,
+      radiusMeters: station?.radiusMeters ?? null,
+    });
+    const att = res?.data?.attendance;
+    if (att) { setAttendance(att); onStatusChange?.(att); }
+  } catch (err) {
+    const code = err?.response?.data?.error;
+    setError(code === "GPS_REQUIRED" ? t("locationDenied")
+      : code === "OUTSIDE_STATION" ? t("outsideLocation")
+      : (code || "Failed to check in"));
+  } finally {
+    setLoading(false);
+  }
+};`,
+  },
+  {
     name: "src/components/files/MySignatureCard.jsx — التوقيع الإلكتروني برقم تحقق مشفّر",
     code: `// DocuSign-style unique signature ID: a non-reversible SHA-256 hash of the
 // signer + timestamp, formatted as PWC-XXXX-XXXX-XXXX for verification.
@@ -101,6 +238,37 @@ const saveSignature = async (dataUrl, typedName) => {
     setSaving(false);
   }
 };`,
+  },
+  {
+    name: "src/components/dashboard/TeamStatusPanel.jsx — لوحة حالة الفريق اللحظية",
+    code: `// Manager-facing snapshot of every visible employee's current status: on leave,
+// checked out, live presence (online/away/busy), or not checked in yet.
+function TeamStatusPanel({ employees, t }) {
+  const [rows, setRows] = useState([]);
+
+  useEffect(() => {
+    if (!employees.length) { setRows([]); return; }
+    base44.functions.invoke("supabaseAttendance", {
+      action: "listDaily",
+      employeeIds: employees.map((e) => e.id),
+    })
+      .then((res) => setRows(res?.data?.rows || []))
+      .catch(() => setRows([]));
+  }, [employees.map((e) => e.id).join(",")]);
+
+  const byEmployee = Object.fromEntries(rows.map((r) => [r.employee_id, r]));
+
+  const statusFor = (emp, att) => {
+    if (isOnLeaveToday(emp)) return { labelKey: "onLeaveStatus", dot: "bg-sky-500" };
+    if (!att?.check_in_at) return { labelKey: "attendanceStatusNotYet", dot: "bg-muted-foreground" };
+    if (att.check_out_at) return { labelKey: "checkedOutStatus", dot: "bg-slate-400" };
+    const presence = PRESENCE_OPTIONS.find((o) => o.key === emp.presenceStatus) || PRESENCE_OPTIONS[0];
+    return { labelKey: presence.labelKey, dot: presence.dot };
+  };
+  // ... renders one live status row per employee
+}
+
+export default React.memo(TeamStatusPanel);`,
   },
   {
     name: "src/components/dashboard/StationsMapCard.jsx — خريطة مقرات العمل التلقائية",

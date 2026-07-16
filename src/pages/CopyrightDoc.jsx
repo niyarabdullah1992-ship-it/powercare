@@ -1,6 +1,6 @@
 import React from "react";
 import { Download } from "lucide-react";
-import { AUTHOR, PROGRAM, DESCRIPTION_SECTIONS, CODE_FILES } from "@/lib/copyrightDocContent";
+import { AUTHOR, PROGRAM, DESCRIPTION_SECTIONS, CODE_FILES, FILE_TREE } from "@/lib/copyrightDocContent";
 import Logo from "@/components/Logo";
 
 // Official copyright-registration document (Saudi Authority for Intellectual
@@ -56,12 +56,29 @@ export default function CopyrightDoc() {
           </section>
         ))}
 
+        {/* Full source inventory */}
+        <section className="space-y-3">
+          <h2 className="text-xl font-bold font-heading border-r-4 border-neutral-800 pr-3">جرد الكود المصدري الكامل</h2>
+          <p className="text-[15px] leading-8 text-justify">
+            يتكون الكود المصدري الكامل للبرنامج من أكثر من مئتين وخمسين ملفاً برمجياً، جميعها من تأليف صاحب هذه
+            الوثيقة. فيما يلي الجرد الكامل لملفات البرنامج مصنفة حسب وحداتها:
+          </p>
+          {FILE_TREE.map((g, i) => (
+            <div key={i} className="border border-neutral-300 rounded overflow-hidden">
+              <p className="text-sm font-bold bg-neutral-100 px-3 py-2 border-b border-neutral-300">{g.group}</p>
+              <p dir="ltr" className="text-[10.5px] leading-relaxed font-mono px-3 py-2 text-neutral-700">
+                {g.files.join("  ·  ")}
+              </p>
+            </div>
+          ))}
+        </section>
+
         {/* Source code */}
         <section className="space-y-3">
-          <h2 className="text-xl font-bold font-heading border-r-4 border-neutral-800 pr-3">الكود المصدري للبرنامج</h2>
+          <h2 className="text-xl font-bold font-heading border-r-4 border-neutral-800 pr-3">الكود المصدري للبرنامج — مقتطفات جوهرية</h2>
           <p className="text-[15px] leading-8 text-justify">
-            يتكون الكود المصدري الكامل للبرنامج من أكثر من مئتي ملف برمجي. فيما يلي مقتطفات تمثيلية من
-            الملفات الجوهرية توضح بنية البرنامج ومنطقه البرمجي الأصيل، وجميعها من تأليف صاحب هذه الوثيقة:
+            فيما يلي مقتطفات تمثيلية من الملفات الجوهرية توضح بنية البرنامج ومنطقه البرمجي الأصيل،
+            وجميعها من تأليف صاحب هذه الوثيقة:
           </p>
         </section>
 
