@@ -82,10 +82,13 @@ export default function StationChat() {
     try {
       if (activeChat.type === "general") {
         const res = await base44.functions.invoke("supabaseTargets", { action: "listChatMessages", stationId: selectedStation });
-        setMessages(res?.data?.messages || []);
+        const rows = [...(res?.data?.messages || [])].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        setMessages(rows);
       } else {
         const res = await base44.functions.invoke("supabaseTargets", { action: "listDirectMessages", userId: currentUser.id, otherUserId: activeChat.userId });
-        const rows = (res?.data?.messages || []).map((m) => ({ ...m, user_id: m.sender_id, user_name: m.sender_name }));
+        const rows = (res?.data?.messages || [])
+          .map((m) => ({ ...m, user_id: m.sender_id, user_name: m.sender_name }))
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         setMessages(rows);
       }
     } catch {
