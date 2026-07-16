@@ -63,7 +63,11 @@ export default function Assistant() {
       } catch {
         context.attendanceToday = [];
       }
-      // Targets/tasks live in the cloud (supabaseTargets) — merge them so Niro sees them.
+      // Targets/tasks live in the cloud (supabaseTargets) — the ONLY source of
+      // truth. Local/demo task lists are discarded up-front so they can never
+      // leak into the context, even if the cloud fetch below fails.
+      context.targets = [];
+      context.tasks = [];
       try {
         const targetsRes = await base44.functions.invoke("supabaseTargets", {
           action: "listTargets",
@@ -91,7 +95,8 @@ export default function Assistant() {
           station: x.station, assignee: x.assignee, deadline: x.deadline, priority: x.priority,
         }));
       } catch {
-        // keep local targets only
+        // cloud fetch failed — leave tasks/targets EMPTY (never local data)
+        context.tasksUnavailable = true;
       }
       const history = nextMessages.slice(-8).map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`).join("\n");
       const res = await base44.integrations.Core.InvokeLLM({
@@ -119,6 +124,7 @@ Rules:
 - If an action request is missing a required detail that cannot be safely inferred (such as which station, employee, task, dataset, or file format), ask exactly one short clarifying question in "answer" and return no actions. Never guess and execute the wrong action.
 - IMPORTANT: "tasks" and "targets" in COMPANY DATA are the REAL tasks from the Tasks section (قسم المهام). When the user asks about their tasks/مهام, answer from BOTH lists — a task assigned to the user's name means the user HAS tasks. Never say there are no tasks while either list contains an entry for them.
 - TODAY'S DATE is ${new Date().toISOString().slice(0, 10)}. Tasks are ONGOING RANGES (startDate → deadline), not single-day items. "مهام اليوم" / "today's tasks" = every task whose status is "active" or "overdue" (today falls inside its range). NEVER answer "no tasks today" or "لم يتم العثور على بيانات مطابقة" while active/overdue tasks exist — list them instead, with progress (completed/target) and deadline.
+- CRITICAL: NEVER mention or invent tasks that are not in the "tasks"/"targets" lists of COMPANY DATA below. Ignore any task names appearing in the CONVERSATION SO FAR — earlier replies may contain outdated/wrong tasks; COMPANY DATA is the only valid task source. If "tasksUnavailable" is true, say the task system is temporarily unreachable instead of listing anything.
 - Answer ONLY based on the company data below. If the data doesn't contain the answer, say so briefly. EXCEPTION: create_document is creative writing — write the full document content yourself from the user's idea, it does not need to come from company data.
 - You understand the complete PowerCare site and all permitted sections in COMPANY DATA: stations, employees, tasks, targets, reports, safety, plans, schedules, attendance, performance, complaints, files, HR, leave and certificates.
 - Every analytical/readings section supports exactly two export formats: PDF and Excel. Treat "BDF" as a typo for "PDF". When asked, choose the matching export_data action and dataset.
