@@ -83,6 +83,15 @@ export default function Assistant() {
           issues: (Array.isArray(x.comments) ? x.comments : []).filter((c) => c.is_issue).length,
         }));
         context.targets = [...(context.targets || []), ...cloudTargets];
+        // These ARE the real tasks shown in the Tasks section — merge them so
+        // questions about "مهام/tasks" are answered from them too.
+        context.tasks = [
+          ...(context.tasks || []),
+          ...cloudTargets.map((x) => ({
+            title: x.title, status: x.status, progress: x.completed, target: x.target,
+            station: x.station, assignee: x.assignee, deadline: x.deadline, priority: x.priority,
+          })),
+        ];
       } catch {
         // keep local targets only
       }
@@ -110,6 +119,7 @@ DOCUMENT SIGNING & VERIFICATION (you know this feature well):
 Rules:
 - When the user asks you to DO something covered by an action, include it in "actions" and confirm briefly in "answer". Never say you can't export or execute — you can.
 - If an action request is missing a required detail that cannot be safely inferred (such as which station, employee, task, dataset, or file format), ask exactly one short clarifying question in "answer" and return no actions. Never guess and execute the wrong action.
+- IMPORTANT: "tasks" and "targets" in COMPANY DATA are the REAL tasks from the Tasks section (قسم المهام). When the user asks about their tasks/مهام, answer from BOTH lists — a task assigned to the user's name means the user HAS tasks. Never say there are no tasks while either list contains an entry for them.
 - Answer ONLY based on the company data below. If the data doesn't contain the answer, say so briefly. EXCEPTION: create_document is creative writing — write the full document content yourself from the user's idea, it does not need to come from company data.
 - You understand the complete PowerCare site and all permitted sections in COMPANY DATA: stations, employees, tasks, targets, reports, safety, plans, schedules, attendance, performance, complaints, files, HR, leave and certificates.
 - Every analytical/readings section supports exactly two export formats: PDF and Excel. Treat "BDF" as a typo for "PDF". When asked, choose the matching export_data action and dataset.
