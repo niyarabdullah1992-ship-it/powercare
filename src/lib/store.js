@@ -1023,6 +1023,20 @@ export function updateCompany(companyId, updater) {
 // Automatic Gmail alerts: emails the assigned employee when a new task is created
 // for them, and emails the responsible manager when a new complaint/report is filed.
 function emailNewEvents(companyId, data, before) {
+  // Welcome email for newly-added employees. Delayed a few seconds so the cloud
+  // employee-directory sync completes first (the mail server only sends to
+  // registered company employees).
+  (data.employees || []).forEach((e) => {
+    if (before.emp.has(e.id) || !e.email) return;
+    const companyName = data.name || "";
+    setTimeout(() => {
+      sendEmailAlert(
+        companyId, e.email,
+        `PowerCare — تم إنشاء حسابك | Your account is ready`,
+        `مرحبًا ${e.name}،\n\nتم إنشاء حسابك في منصة PowerCare${companyName ? ` ضمن شركة "${companyName}"` : ""}.\nسيزودك مديرك بكلمة المرور الخاصة بك، وبعدها يمكنك تسجيل الدخول بهذا البريد من الرابط:\nhttps://powercares.pro\n\nWelcome ${e.name}, your PowerCare account${companyName ? ` at "${companyName}"` : ""} has been created. Your manager will provide your password — then sign in with this email at https://powercares.pro`
+      );
+    }, 6000);
+  });
   (data.tasks || []).forEach((t) => {
     if (before.tasks.has(t.id) || !t.assignedTo) return;
     const emp = (data.employees || []).find((e) => e.id === t.assignedTo);
