@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Camera, Circle, Loader2, RefreshCw, Square, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { getMediaStream, mediaErrorText } from "@/lib/mediaAccess";
+import { getMediaStream, isEmbedded, mediaErrorText, openStandalone } from "@/lib/mediaAccess";
 
 // Live in-app camera: real preview + photo capture + video recording.
 export default function CameraCaptureModal({ onCaptured, onClose, ar }) {
@@ -10,6 +10,7 @@ export default function CameraCaptureModal({ onCaptured, onClose, ar }) {
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const [error, setError] = useState("");
+  const [embedded, setEmbedded] = useState(false);
   const [facing, setFacing] = useState("environment");
   const [recording, setRecording] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -19,6 +20,7 @@ export default function CameraCaptureModal({ onCaptured, onClose, ar }) {
     (async () => {
       setError("");
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      if (isEmbedded()) { setEmbedded(true); setError(mediaErrorText("embedded", ar)); return; }
       try {
         const stream = await getMediaStream({ video: { facingMode: facing }, audio: true });
         if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
@@ -92,7 +94,14 @@ export default function CameraCaptureModal({ onCaptured, onClose, ar }) {
           <button onClick={onClose} className="rounded-md p-1 hover:bg-muted"><X className="h-4 w-4" /></button>
         </div>
         {error ? (
-          <div className="p-6 text-center text-sm text-destructive font-body">{error}</div>
+          <div className="space-y-3 p-6 text-center text-sm text-destructive font-body">
+            <p>{error}</p>
+            {embedded && (
+              <button type="button" onClick={openStandalone} className="rounded-md border border-destructive/40 px-3 py-1.5 text-xs font-medium hover:bg-destructive/10">
+                {ar ? "فتح التطبيق في نافذة مستقلة" : "Open the app in a standalone tab"}
+              </button>
+            )}
+          </div>
         ) : (
           <video ref={videoRef} autoPlay playsInline muted className="aspect-video w-full bg-black object-cover" />
         )}

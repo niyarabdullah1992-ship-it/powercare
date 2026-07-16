@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { getMediaStream } from "@/lib/mediaAccess";
+import { getMediaStream, isEmbedded } from "@/lib/mediaAccess";
 
 const ICE = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }] };
 
@@ -23,7 +23,18 @@ export default function useChatCall({ activeChat, selectedStation, contacts, cur
   }, [signal]);
   const requestStream = useCallback(async (mode) => {
     setMediaError("");
-    try { return await getMediaStream({ audio: true, video: mode === "video" }); }
+    // The editor preview iframe blocks camera/mic entirely — don't even try;
+    // guide the user to a standalone tab instead of showing a blocked screen.
+    if (isEmbedded()) { setMediaError("embedded"); return null; }
+    try {
+      const stream = await getMediaStream({ audio: true, video: mode === "video" });
+      if (mode === "video" && !stream.getVideoTracks().some((t) => t.readyState === "live")) {
+        stream.getTracks().forEach((t) => t.stop());
+        setMediaError("device");
+        return null;
+      }
+      return stream;
+    }
     catch (error) { setMediaError(error.code || "failed"); return null; }
   }, []);
   const activate = useCallback(async (session, stream) => { seen.current.clear(); setLocalStream(stream); setCall(session); setIncoming(null); await signal(session.id, null, "join"); }, [signal]);
