@@ -14,9 +14,10 @@ const PRESETS = [
   { val: "range", months: 0 },
 ];
 
-export default function TaskReportExport({ targets, t, lang, dir }) {
+export default function TaskReportExport({ targets, t, lang, dir, stationKeyOf, defaultStation }) {
   const { data } = useAuth();
   const [preset, setPreset] = useState("month");
+  const [stationFilter, setStationFilter] = useState(defaultStation || "all");
   const [days, setDays] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -81,12 +82,16 @@ export default function TaskReportExport({ targets, t, lang, dir }) {
       alert(preset === "range" ? L("اختر التاريخين أولًا", "Pick both dates first") : L("أدخل عدد الأيام", "Enter the number of days"));
       return null;
     }
-    const rows = targets.filter((tg) => {
+    const scoped = stationFilter === "all"
+      ? targets
+      : targets.filter((tg) => (stationKeyOf ? stationKeyOf(tg) : tg.station_id) === stationFilter);
+    const rows = scoped.filter((tg) => {
       const s = new Date(tg.start_date || tg.created_at);
       const e = new Date(tg.end_date || tg.start_date || tg.created_at);
       return s <= win.end && e >= win.start;
     });
-    const periodLabel = `${fmt(win.start)} → ${fmt(win.end)}`;
+    const stationLabel = stationFilter === "all" ? L("كل المحطات", "All stations") : stationName(stationFilter);
+    const periodLabel = `${stationLabel} • ${fmt(win.start)} → ${fmt(win.end)}`;
     return { rows, periodLabel };
   };
 
@@ -147,6 +152,24 @@ export default function TaskReportExport({ targets, t, lang, dir }) {
       <p className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
         <CalendarRange className="w-3.5 h-3.5" /> {L("تقرير المهام حسب الفترة", "Tasks report by period")}
       </p>
+      {/* اختيار المحطة — تقرير مستقل لكل محطة أو تقرير شامل */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          { key: "all", name: L("كل المحطات", "All stations") },
+          { key: "hq", name: t("hq") },
+          ...(data?.stations || []).map((s) => ({ key: s.id, name: s.name })),
+        ].map((s) => (
+          <button
+            key={s.key}
+            type="button"
+            onClick={() => setStationFilter(s.key)}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${stationFilter === s.key ? "bg-accent text-accent-foreground border-accent" : "border-border hover:bg-muted"}`}
+          >
+            {s.name}
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-wrap gap-2">
         {PRESETS.map(({ val }) => (
           <button

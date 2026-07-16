@@ -816,7 +816,7 @@ export default function MyTasks() {
           >
             <FileText className="w-3.5 h-3.5" /> {lang === "ar" ? "تقرير المهام (PDF / Excel)" : "Tasks report (PDF / Excel)"}
           </button>
-          {showReport && <TaskReportExport targets={targets} t={t} lang={lang} dir={dir} />}
+          {showReport && <TaskReportExport targets={targets} t={t} lang={lang} dir={dir} stationKeyOf={targetStationKey} defaultStation={selectedStation || "all"} />}
         </div>
       )}
 
