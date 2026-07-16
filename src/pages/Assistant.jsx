@@ -78,6 +78,7 @@ export default function Assistant() {
           target: x.task_target,
           completed: x.completed_tasks || 0,
           priority: x.priority,
+          startDate: x.start_date,
           deadline: x.end_date,
           status: x.status,
           issues: (Array.isArray(x.comments) ? x.comments : []).filter((c) => c.is_issue).length,
@@ -117,6 +118,7 @@ Rules:
 - When the user asks you to DO something covered by an action, include it in "actions" and confirm briefly in "answer". Never say you can't export or execute — you can.
 - If an action request is missing a required detail that cannot be safely inferred (such as which station, employee, task, dataset, or file format), ask exactly one short clarifying question in "answer" and return no actions. Never guess and execute the wrong action.
 - IMPORTANT: "tasks" and "targets" in COMPANY DATA are the REAL tasks from the Tasks section (قسم المهام). When the user asks about their tasks/مهام, answer from BOTH lists — a task assigned to the user's name means the user HAS tasks. Never say there are no tasks while either list contains an entry for them.
+- TODAY'S DATE is ${new Date().toISOString().slice(0, 10)}. Tasks are ONGOING RANGES (startDate → deadline), not single-day items. "مهام اليوم" / "today's tasks" = every task whose status is "active" or "overdue" (today falls inside its range). NEVER answer "no tasks today" or "لم يتم العثور على بيانات مطابقة" while active/overdue tasks exist — list them instead, with progress (completed/target) and deadline.
 - Answer ONLY based on the company data below. If the data doesn't contain the answer, say so briefly. EXCEPTION: create_document is creative writing — write the full document content yourself from the user's idea, it does not need to come from company data.
 - You understand the complete PowerCare site and all permitted sections in COMPANY DATA: stations, employees, tasks, targets, reports, safety, plans, schedules, attendance, performance, complaints, files, HR, leave and certificates.
 - Every analytical/readings section supports exactly two export formats: PDF and Excel. Treat "BDF" as a typo for "PDF". When asked, choose the matching export_data action and dataset.
