@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
-import { listCompanies, createCompany, createDemoCompany, deleteCompany, getCompanyData, setSession, seedHRDemoHierarchy } from "@/lib/store";
+import { listCompanies, createCompany, deleteCompany, getCompanyData, setSession } from "@/lib/store";
 import { logAudit, fetchAllAuditLog } from "@/lib/auditLog";
 import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn, Sparkles, GitBranch } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -71,19 +71,6 @@ export default function OwnerPanel() {
     fetchAllAuditLog().then(setAuditLogs);
   };
 
-  const handleCreateDemo = () => {
-    const company = createDemoCompany();
-    logAudit(company.id, "company_created", user.email, `${user.email} created demo company "${company.name}" (${company.plan}).`);
-    refresh();
-    fetchAllAuditLog().then(setAuditLogs);
-  };
-
-  const handleSeedHR = (id) => {
-    seedHRDemoHierarchy(id);
-    logAudit(id, "hr_demo_seeded", user.email, `${user.email} seeded a demo HR hierarchy with sample escalated complaints.`);
-    fetchAllAuditLog().then(setAuditLogs);
-  };
-
   const handleEnter = (id) => {
     const data = getCompanyData(id);
     if (!data) return;
@@ -136,12 +123,6 @@ export default function OwnerPanel() {
               <h3 className="font-heading text-lg font-semibold flex items-center gap-2 text-[#3a2f22]">
                 <Building2 className="w-4 h-4" /> {t("companies")} ({companies.length})
               </h3>
-              <button
-                onClick={handleCreateDemo}
-                className="flex items-center gap-1.5 text-xs font-body text-landing-gold hover:text-landing-gold-deep"
-              >
-                <Sparkles className="w-3.5 h-3.5" /> {lang === "ar" ? "إنشاء شركة معاينة" : "Create Preview Company"}
-              </button>
             </div>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {companies.length === 0 && <p className="text-sm text-[#3a2f22]/40 font-body">No companies yet.</p>}
@@ -152,9 +133,6 @@ export default function OwnerPanel() {
                     <p className="text-xs text-[#3a2f22]/40 truncate">{c.ownerEmail} · {c.plan}</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => handleSeedHR(c.id)} title={lang === "ar" ? "بناء هرم موارد بشرية وهمي مع شكاوى" : "Seed HR hierarchy + complaints demo"} className="p-2 text-emerald-600 hover:bg-white rounded-md">
-                      <GitBranch className="w-4 h-4" strokeWidth={1.75} />
-                    </button>
                     <button onClick={() => handleEnter(c.id)} title={lang === "ar" ? "دخول" : "Enter"} className="p-2 text-landing-gold hover:bg-white rounded-md">
                       <LogIn className="w-4 h-4" strokeWidth={1.75} />
                     </button>
