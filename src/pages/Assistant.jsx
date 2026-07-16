@@ -14,7 +14,7 @@ export default function Assistant() {
   const { t, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() => new URLSearchParams(window.location.search).get("prompt") || "");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
   const loadedConversationRef = useRef("");

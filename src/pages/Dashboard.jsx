@@ -18,10 +18,12 @@ import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { queryClientInstance } from "@/lib/query-client";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import SmartDailySummary from "@/components/dashboard/SmartDailySummary";
-import SmartAlertsPanel from "@/components/dashboard/SmartAlertsPanel";
+import CommandCenterHero from "@/components/dashboard/CommandCenterHero";
+import RiskForecastPanel from "@/components/dashboard/RiskForecastPanel";
+import DecisionQueue from "@/components/dashboard/DecisionQueue";
 
 export default function Dashboard() {
-  const { t, lang, dir } = useI18n();
+  const { t, lang } = useI18n();
   const { data, currentUser, company, refresh } = useAuth();
   const [stoppageCount, setStoppageCount] = useState(0);
   const [showBranding, setShowBranding] = useState(false);
@@ -124,6 +126,13 @@ export default function Dashboard() {
   const teamEmployees = visibleEmployees(currentUser, data);
   const checkedInCount = attendanceRows.filter((r) => r.check_in_at).length;
   const attendanceRate = teamEmployees.length ? Math.round((checkedInCount / teamEmployees.length) * 100) : 0;
+  const absentCount = Math.max(0, teamEmployees.length - checkedInCount);
+  const now = Date.now();
+  const delayedTasks = tasks.filter((task) => {
+    const deadline = task.dueDate || task.endDate;
+    return task.status !== "completed" && deadline && new Date(deadline).getTime() <= now + 3 * 86400000;
+  }).length;
+  const riskScore = Math.min(100, Math.round((absentCount * 8) + (delayedTasks * 12) + (stoppageCount * 18) + (pendingReports * 4)));
 
   // Facts fed to the AI daily brief (generated once a day, cached locally).
   const briefFacts = [
@@ -174,28 +183,15 @@ export default function Dashboard() {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-8">
-      {welcomeHero}
+      <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} lang={lang} />
       <OnboardingChecklist data={data} lang={lang} t={t} />
-      <div className="border-b border-border pb-6 flex items-end justify-between flex-wrap gap-3">
-        <div>
-          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{data.name}</p>
-          <h1 className="hero-title text-4xl md:text-5xl">{t("overview")}</h1>
+      {canEditBranding && (
+        <div className="flex justify-end">
+          <button onClick={() => setShowBranding((value) => !value)} className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-body hover:bg-muted">
+            <Palette className="h-3.5 w-3.5 text-accent" />{t("logoSettings")}
+          </button>
         </div>
-        <div className="flex items-center gap-3">
-          {canEditBranding && (
-            <button
-              onClick={() => setShowBranding((value) => !value)}
-              className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-body hover:bg-muted"
-            >
-              <Palette className="h-3.5 w-3.5 text-accent" />
-              {t("logoSettings")}
-            </button>
-          )}
-          <span className="px-3 py-1.5 rounded-full border border-accent/30 bg-accent/10 text-accent text-xs font-body tracking-wide">
-            {t(currentUser.role)}
-          </span>
-        </div>
-      </div>
+      )}
 
       {showBranding && canEditBranding && (
         <BrandingSettingsCard
@@ -207,18 +203,12 @@ export default function Dashboard() {
         />
       )}
 
-      {/* AI daily brief + smart suggestions */}
+      {/* AI command layer: daily intelligence, predictive risk and executable decisions */}
       <SmartDailySummary companyId={company.id} lang={lang} t={t} facts={briefFacts} />
-      <SmartAlertsPanel
-        teamEmployees={teamEmployees}
-        attendanceRows={attendanceRows}
-        pendingReports={pendingReports}
-        stoppageCount={stoppageCount}
-        anonOpenCount={anonOpenCount}
-        stations={stations}
-        t={t}
-        dir={dir}
-      />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <RiskForecastPanel absentCount={absentCount} delayedTasks={delayedTasks} stoppageCount={stoppageCount} lang={lang} />
+        <DecisionQueue pendingReports={pendingReports} delayedTasks={delayedTasks} lang={lang} />
+      </div>
 
       {/* Numbered stat cards (WorkForce style) */}
       <DashboardStatCards
