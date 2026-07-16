@@ -2,7 +2,7 @@
 // Notifications only carry a text message (from Supabase or local events),
 // so we match keywords in both English and Arabic.
 const RULES = [
-  { route: "/app/signing", keywords: ["sign", "signature", "توقيع", "وقّع", "وقع المستند"] },
+  { route: "/app/signing", keywords: ["signature", "signing", "signed", "sign the", "توقيع", "وقّع", "وقع المستند"] },
   { route: "/app/complaints", keywords: ["complaint", "شكوى", "شكاوى", "بلاغ"] },
   { route: "/app/chat", keywords: ["message", "chat", "رسالة", "محادثة", "دردشة"] },
   { route: "/app/attendance", keywords: ["attendance", "check-in", "check in", "checked in", "late", "absent", "shift", "schedule", "حضور", "انصراف", "تأخير", "غياب", "غائب", "وردية", "جدول"] },
