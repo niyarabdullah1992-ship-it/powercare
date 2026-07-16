@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2, HelpCircle } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
-import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import { formatDateTime } from "@/lib/dateFormat";
 import { NO_SECTION } from "@/lib/taskFolders";
@@ -255,7 +254,6 @@ export default function TaskCard({
             <div className="space-y-2">
               <div className="flex flex-wrap items-end gap-2">
                 <CommentFiles files={commentFiles} setFiles={setCommentFiles} />
-                <VoiceRecorder files={commentFiles} setFiles={setCommentFiles} />
                 {!done && (
                   <button
                     type="button"
