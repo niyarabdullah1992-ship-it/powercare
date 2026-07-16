@@ -166,7 +166,9 @@ Deno.serve(async (req) => {
       let rows = await res.json();
       if (!Array.isArray(rows)) rows = [];
       // Strict tenant boundary: only this company's targets are ever processed or returned.
-      if (!auth.admin) {
+      // Platform admins are ALSO scoped when acting inside a specific company —
+      // otherwise Niro/task lists would show every tenant's (and demo) targets.
+      if (!auth.admin || auth.companyId) {
         const scope = await getCompanyScope();
         rows = rows.filter((tg) => targetInScope(tg, scope));
       }
