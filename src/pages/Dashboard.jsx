@@ -21,6 +21,7 @@ import SmartDailySummary from "@/components/dashboard/SmartDailySummary";
 import CommandCenterHero from "@/components/dashboard/CommandCenterHero";
 import RiskForecastPanel from "@/components/dashboard/RiskForecastPanel";
 import DecisionQueue from "@/components/dashboard/DecisionQueue";
+import { getRiskWeights } from "@/lib/riskWeights";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -137,7 +138,12 @@ export default function Dashboard() {
   const criticalStations = safetyRecs.filter((s) => s.level === "red").length;
   const openHazards = safetyRecs.reduce((sum, s) => sum + (s.hazards?.length || 0), 0);
   const recentIncidents = safetyRecs.reduce((sum, s) => sum + (s.incidentLog || []).filter((i) => i.at && now - new Date(i.at).getTime() <= 30 * 86400000).length, 0);
-  const riskScore = Math.min(100, Math.round((absentCount * 8) + (delayedTasks * 12) + (stoppageCount * 18) + (pendingReports * 4) + (criticalStations * 20) + (recentIncidents * 15) + (openHazards * 6)));
+  const riskWeights = getRiskWeights(data);
+  const riskScore = Math.min(100, Math.round(
+    (absentCount * riskWeights.absent) + (delayedTasks * riskWeights.delayed) + (stoppageCount * riskWeights.stoppage) +
+    (pendingReports * riskWeights.reports) + (criticalStations * riskWeights.critical) +
+    (recentIncidents * riskWeights.incidents) + (openHazards * riskWeights.hazards)
+  ));
 
   // Facts fed to the AI daily brief (generated once a day, cached locally).
   const briefFacts = [
@@ -189,7 +195,7 @@ export default function Dashboard() {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-8">
-      <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents }} safety={{ criticalStations, openHazards, recentIncidents }} lang={lang} />
+      <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
       <OnboardingChecklist data={data} lang={lang} t={t} />
       {canEditBranding && (
         <div className="flex justify-end">

@@ -4,7 +4,7 @@ import { Activity, ArrowUpRight, BrainCircuit, Radio, ShieldAlert, ShieldCheck }
 import { Link as RouterLink } from "react-router-dom";
 import StabilityInfoPopover from "@/components/dashboard/StabilityInfoPopover";
 
-export default function CommandCenterHero({ companyName, riskScore, activeStations, breakdown, safety, lang }) {
+export default function CommandCenterHero({ companyName, riskScore, activeStations, breakdown, safety, lang, companyId, canEditWeights }) {
   const ar = lang === "ar";
   const state = riskScore >= 70 ? (ar ? "يحتاج تدخلاً" : "Intervention needed") : riskScore >= 40 ? (ar ? "تحت المراقبة" : "Under observation") : (ar ? "مستقر" : "Stable");
   return (
@@ -19,7 +19,7 @@ export default function CommandCenterHero({ companyName, riskScore, activeStatio
         </div>
         <div className="flex flex-wrap gap-3">
           <div className="relative min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4">
-            {breakdown && <StabilityInfoPopover breakdown={breakdown} riskScore={riskScore} ar={ar} />}
+            {breakdown && <StabilityInfoPopover breakdown={breakdown} riskScore={riskScore} ar={ar} companyId={companyId} canEditWeights={canEditWeights} />}
             <Activity className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{100 - riskScore}%</p><p className="text-xs text-white/50">{state}</p>
           </div>
           <div className="min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4"><BrainCircuit className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{activeStations}</p><p className="text-xs text-white/50">{ar ? "محطات مراقبة" : "Stations monitored"}</p></div>

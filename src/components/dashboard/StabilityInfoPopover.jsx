@@ -1,17 +1,21 @@
 import React, { useState } from "react";
-import { Info, X } from "lucide-react";
+import { Info, X, SlidersHorizontal } from "lucide-react";
+import RiskWeightsEditor from "@/components/dashboard/RiskWeightsEditor";
+import { DEFAULT_RISK_WEIGHTS } from "@/lib/riskWeights";
 
-export default function StabilityInfoPopover({ breakdown, riskScore, ar }) {
+export default function StabilityInfoPopover({ breakdown, riskScore, ar, companyId, canEditWeights }) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const w = { ...DEFAULT_RISK_WEIGHTS, ...(breakdown.weights || {}) };
   const rows = [
-    { label: ar ? "غياب اليوم" : "Absent today", count: breakdown.absentCount, weight: 8 },
-    { label: ar ? "مهام متأخرة / موعدها قريب" : "Delayed / due-soon tasks", count: breakdown.delayedTasks, weight: 12 },
-    { label: ar ? "بلاغات توقف على المهام" : "Task stoppage issues", count: breakdown.stoppageCount, weight: 18 },
-    { label: ar ? "تقارير يومية معلقة" : "Pending daily reports", count: breakdown.pendingReports, weight: 4 },
+    { label: ar ? "غياب اليوم" : "Absent today", count: breakdown.absentCount, weight: w.absent },
+    { label: ar ? "مهام متأخرة / موعدها قريب" : "Delayed / due-soon tasks", count: breakdown.delayedTasks, weight: w.delayed },
+    { label: ar ? "بلاغات توقف على المهام" : "Task stoppage issues", count: breakdown.stoppageCount, weight: w.stoppage },
+    { label: ar ? "تقارير يومية معلقة" : "Pending daily reports", count: breakdown.pendingReports, weight: w.reports },
     ...(breakdown.criticalStations !== undefined ? [
-      { label: ar ? "محطات سلامة حرجة" : "Critical safety stations", count: breakdown.criticalStations, weight: 20 },
-      { label: ar ? "حوادث سلامة (30 يوماً)" : "Safety incidents (30 days)", count: breakdown.recentIncidents, weight: 15 },
-      { label: ar ? "مخاطر سلامة مفتوحة" : "Open safety hazards", count: breakdown.openHazards, weight: 6 },
+      { label: ar ? "محطات سلامة حرجة" : "Critical safety stations", count: breakdown.criticalStations, weight: w.critical },
+      { label: ar ? "حوادث سلامة (30 يوماً)" : "Safety incidents (30 days)", count: breakdown.recentIncidents, weight: w.incidents },
+      { label: ar ? "مخاطر سلامة مفتوحة" : "Open safety hazards", count: breakdown.openHazards, weight: w.hazards },
     ] : []),
   ];
   return (
@@ -43,8 +47,16 @@ export default function StabilityInfoPopover({ breakdown, riskScore, ar }) {
             <span className="text-white/60">{ar ? "نسبة الاستقرار" : "Stability score"}</span>
             <span className="font-semibold text-landing-gold-light">{100 - riskScore}%</span>
           </div>
+          {canEditWeights && companyId && (
+            <button type="button" onClick={() => setEditing(true)} className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-white/20 px-3 py-1.5 text-[11px] font-body text-white/80 hover:bg-white/10">
+              <SlidersHorizontal className="h-3 w-3" /> {ar ? "تعديل الأوزان" : "Edit weights"}
+            </button>
+          )}
         </div>
         </div>
+      )}
+      {editing && (
+        <RiskWeightsEditor companyId={companyId} weights={w} ar={ar} onClose={() => setEditing(false)} />
       )}
     </>
   );
