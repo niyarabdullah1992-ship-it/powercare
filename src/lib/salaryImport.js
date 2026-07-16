@@ -25,9 +25,32 @@ const ROW_SCHEMA = {
   },
 };
 
-// Uploads the file and extracts salary rows. Tries the structured extractor
-// first; PDFs that fail there fall back to the vision LLM.
+const parseCsvLine = (line) => {
+  const cells = [];
+  let value = "";
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"' && quoted && line[i + 1] === '"') { value += '"'; i++; }
+    else if (char === '"') quoted = !quoted;
+    else if (char === "," && !quoted) { cells.push(value.trim()); value = ""; }
+    else value += char;
+  }
+  cells.push(value.trim());
+  return cells;
+};
+
+const parseTemplateCsv = async (file) => {
+  const lines = (await file.text()).replace(/^\uFEFF/, "").split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase());
+  return lines.slice(1).map((line) => Object.fromEntries(headers.map((h, i) => [h, parseCsvLine(line)[i] || ""])));
+};
+
+// CSV templates are parsed locally for reliable, instant imports. Native Excel
+// files use the structured file extractor, with the vision model as fallback.
 export async function extractSalaryRows(file) {
+  if (/\.csv$/i.test(file.name)) return (await parseTemplateCsv(file)).filter((r) => r.name || r.email);
   const { file_url } = await base44.integrations.Core.UploadFile({ file });
   const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({ file_url, json_schema: ROW_SCHEMA });
   let rows = extracted?.status === "success" ? extracted.output?.rows || extracted.output || [] : null;
@@ -39,10 +62,11 @@ export async function extractSalaryRows(file) {
     });
     rows = res?.rows || [];
   }
-  return (Array.isArray(rows) ? rows : []).filter((r) => r && r.name);
+  return (Array.isArray(rows) ? rows : []).filter((r) => r && (r.name || r.email));
 }
 
 const norm = (s) => String(s || "").toLowerCase().replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/\s+/g, " ").trim();
+const amount = (value) => Number(String(value ?? "0").replace(/[٬,\s]/g, "")) || 0;
 
 // Matches extracted rows to employees: email first, then exact normalized name,
 // then partial name containment. Returns [{ row, employee|null }].
@@ -68,17 +92,17 @@ export function applySalaryImport(companyId, month, matches) {
       const emp = d.employees.find((e) => e.id === employee.id);
       if (!emp) return;
       emp.profile = emp.profile || {};
-      emp.profile.baseSalary = Number(row.base_salary) || 0;
-      emp.profile.allowances = Number(row.allowances) || 0;
+      emp.profile.baseSalary = amount(row.base_salary);
+      emp.profile.allowances = amount(row.allowances);
       if (row.currency) emp.profile.currency = String(row.currency).toUpperCase();
 
       const run = (d.payrollRuns || []).find((r) => r.month === month);
       const item = run?.items.find((i) => i.employeeId === emp.id);
       if (item && !item.paid) {
-        item.base = Number(row.base_salary) || 0;
-        item.allowances = Number(row.allowances) || 0;
-        item.bonus = Number(row.bonus) || 0;
-        item.deductions = Number(row.deductions) || 0;
+        item.base = amount(row.base_salary);
+        item.allowances = amount(row.allowances);
+        item.bonus = amount(row.bonus);
+        item.deductions = amount(row.deductions);
         if (row.currency) item.currency = String(row.currency).toUpperCase();
       }
     });

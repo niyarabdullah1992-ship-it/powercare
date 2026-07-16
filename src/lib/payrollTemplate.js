@@ -5,12 +5,12 @@ import { getRun } from "@/lib/payroll";
 
 const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
 
-export function downloadPayrollTemplate(data, month, ar) {
+export function downloadPayrollTemplate(data, month, ar, employees = data.employees || []) {
   const run = getRun(data, month);
   const itemOf = (id) => (run?.items || []).find((i) => i.employeeId === id);
 
   const headers = ["email", "name", "base_salary", "allowances", "bonus", "deductions", "currency"];
-  const rows = (data.employees || []).map((e) => {
+  const rows = employees.map((e) => {
     const p = e.profile || {};
     const i = itemOf(e.id) || {};
     return [

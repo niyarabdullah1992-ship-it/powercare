@@ -5,10 +5,12 @@ const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/ap
 const MANAGER_EXTRA = ["/app/employees", "/app/stations", "/app/reports", "/app/safety"];
 const EXEC_EXTRA = ["/app/hr", "/app/executive", "/app/payroll"];
 
-export function allowedNavFor(user, plan) {
+export function allowedNavFor(user, data) {
   if (!user) return new Set(BASE);
   const allowed = new Set(BASE);
   const role = user.role;
+  const hrLevel = user.hrLevelId && Array.isArray(data?.hrLevels) ? data.hrLevels.find((level) => level.id === user.hrLevelId) : null;
+  const hrPermissions = new Set(hrLevel?.permissions || []);
   if (["station_manager", "pgm", "ops_manager", "director"].includes(role)) {
     MANAGER_EXTRA.forEach((p) => allowed.add(p));
   }
@@ -18,7 +20,10 @@ export function allowedNavFor(user, plan) {
   // Employees holding an HR position need the HR section and the employee directory.
   if (user.hrLevelId) {
     allowed.add("/app/hr");
-    allowed.add("/app/employees");
+    if (hrPermissions.has("view_employees") || hrPermissions.has("manage_employees")) allowed.add("/app/employees");
+    if (hrPermissions.has("view_reports")) allowed.add("/app/reports");
+    if (hrPermissions.has("view_safety")) allowed.add("/app/safety");
+    if (hrPermissions.has("manage_payroll")) allowed.add("/app/payroll");
   }
   return allowed;
 }

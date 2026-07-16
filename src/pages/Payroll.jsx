@@ -6,6 +6,7 @@ import { ensurePayrollRun, getRun, monthKey, netOf, updatePayrollItem, setItemPa
 import { printReport } from "@/lib/printReport";
 import PayrollRow from "@/components/payroll/PayrollRow";
 import PayrollTemplateCard from "@/components/payroll/PayrollTemplateCard";
+import { hasHRPermission, hrScopeStations } from "@/lib/permissions";
 
 export default function Payroll() {
   const { lang, dir } = useI18n();
@@ -13,7 +14,7 @@ export default function Payroll() {
   const { company, data, currentUser } = useAuth();
   const [month, setMonth] = useState(monthKey());
 
-  const canView = ["director", "ops_manager"].includes(currentUser?.role);
+  const canView = ["director", "ops_manager"].includes(currentUser?.role) || hasHRPermission(currentUser, data, "manage_payroll");
 
   useEffect(() => {
     if (canView && company) ensurePayrollRun(company.id, month);
@@ -25,7 +26,9 @@ export default function Payroll() {
 
   const run = getRun(data, month);
   const items = run?.items || [];
-  const empOf = (id) => (data.employees || []).find((e) => e.id === id);
+  const hrScope = currentUser?.hrLevelId ? hrScopeStations(currentUser, data) : null;
+  const payrollEmployees = (data.employees || []).filter((employee) => hrScope === null || (employee.stationId && hrScope.includes(employee.stationId)));
+  const empOf = (id) => payrollEmployees.find((e) => e.id === id);
   const visible = items.filter((i) => empOf(i.employeeId));
   const currency = visible[0]?.currency || "SAR";
   const totalNet = visible.reduce((s, i) => s + netOf(i), 0);
@@ -106,7 +109,7 @@ export default function Payroll() {
         </div>
       </div>
 
-      <PayrollTemplateCard company={company} data={data} month={month} ar={ar} />
+      <PayrollTemplateCard company={company} data={data} employees={payrollEmployees} month={month} ar={ar} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[

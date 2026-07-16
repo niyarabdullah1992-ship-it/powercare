@@ -22,7 +22,7 @@ const matchesTab = (tab, pathname) =>
 // Re-tapping the already-active tab pops the stack back to the module root.
 export default function BottomTabBar() {
   const { t } = useI18n();
-  const { currentUser, company, data } = useAuth();
+  const { currentUser, data } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -35,7 +35,7 @@ export default function BottomTabBar() {
   }, [location.pathname]);
 
   if (!currentUser) return null;
-  const allowed = allowedNavFor(currentUser, data?.plan || company?.plan);
+  const allowed = allowedNavFor(currentUser, data);
   const tabs = TABS.filter((tab) => allowed.has(tab.to));
   if (tabs.length === 0) return null;
 

@@ -5,7 +5,7 @@ import { extractSalaryRows, matchRowsToEmployees, applySalaryImport } from "@/li
 
 // Excel-does-everything flow: download a template pre-filled with all employees,
 // edit amounts in Excel, upload it back here — matched rows apply automatically.
-export default function PayrollTemplateCard({ company, data, month, ar }) {
+export default function PayrollTemplateCard({ company, data, employees, month, ar }) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [matches, setMatches] = useState(null);
@@ -27,7 +27,7 @@ export default function PayrollTemplateCard({ company, data, month, ar }) {
       if (!rows.length) {
         setError(ar ? "لم يتم العثور على صفوف رواتب في الملف — تأكد من استخدام القالب." : "No salary rows found in the file — make sure you used the template.");
       } else {
-        setMatches(matchRowsToEmployees(rows, data.employees || []));
+        setMatches(matchRowsToEmployees(rows, employees || []));
       }
     } catch {
       setError(ar ? "تعذّرت قراءة الملف، حاول مجددًا." : "Couldn't read the file, please try again.");
@@ -59,12 +59,12 @@ export default function PayrollTemplateCard({ company, data, month, ar }) {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => downloadPayrollTemplate(data, month, ar)}
+            onClick={() => downloadPayrollTemplate(data, month, ar, employees)}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-emerald-600 text-white text-sm font-body font-medium hover:opacity-90"
           >
             <Download className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تنزيل القالب" : "Download template"}
           </button>
-          <input ref={inputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={(e) => { handleFile(e.target.files?.[0]); e.target.value = ""; }} />
+          <input ref={inputRef} type="file" accept=".xlsx,.csv" className="hidden" onChange={(e) => { handleFile(e.target.files?.[0]); e.target.value = ""; }} />
           <button
             onClick={() => inputRef.current?.click()}
             disabled={busy}
@@ -93,7 +93,7 @@ export default function PayrollTemplateCard({ company, data, month, ar }) {
             {matches.map(({ row, employee }, idx) => (
               <div key={idx} className="flex items-center justify-between gap-3 px-3.5 py-2.5 text-sm font-body">
                 <div className="min-w-0">
-                  <p className="font-medium truncate">{row.name}</p>
+                  <p className="font-medium truncate">{row.name || row.email}</p>
                   <p className="text-[11px] text-muted-foreground truncate">
                     {employee
                       ? (ar ? `سيُطبَّق على: ${employee.name}` : `Will apply to: ${employee.name}`)
