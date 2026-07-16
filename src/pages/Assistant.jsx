@@ -3,6 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { buildAssistantContext } from "@/lib/assistantContext";
+import { getCompanyToken } from "@/lib/store";
 import { executeAssistantAction } from "@/lib/assistantActions";
 import AssistantMessage from "@/components/assistant/AssistantMessage";
 import SuggestedQuestions from "@/components/assistant/SuggestedQuestions";
@@ -66,10 +67,8 @@ export default function Assistant() {
       try {
         const targetsRes = await base44.functions.invoke("supabaseTargets", {
           action: "listTargets",
-          userRole: currentUser.role,
-          userId: currentUser.id,
-          stationId: currentUser.stationId || null,
-          managedStations: currentUser.managedStations || [],
+          companyId: company.id,
+          sessionToken: getCompanyToken(company.id),
         });
         const cloudTargets = (targetsRes?.data?.targets || []).map((x) => ({
           title: x.title,
