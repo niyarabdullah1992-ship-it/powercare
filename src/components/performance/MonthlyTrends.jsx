@@ -24,10 +24,11 @@ export default function MonthlyTrends() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const employeeIds = (data?.employees || []).map((e) => e.id);
+
   useEffect(() => {
     let active = true;
     const months = lastMonths(6);
-    const employeeIds = (data?.employees || []).map((e) => e.id);
     const auth = { companyId: company.id, sessionToken: getCompanyToken(company.id) };
 
     (async () => {
@@ -64,7 +65,9 @@ export default function MonthlyTrends() {
       setLoading(false);
     })();
     return () => { active = false; };
-  }, [company.id]);
+    // Re-run once the employee roster finishes hydrating from the cloud —
+    // otherwise a fast first render would lock the charts to empty data.
+  }, [company.id, employeeIds.join(",")]);
 
   const L = (ar, en) => (isAr ? ar : en);
 
