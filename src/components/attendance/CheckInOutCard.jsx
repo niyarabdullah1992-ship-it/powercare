@@ -96,6 +96,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
       }
       const res = await base44.functions.invoke("supabaseAttendance", {
         action: "checkOut",
+        companyId: company.id,
         employeeId: currentUser.id,
         shiftEnd: shift?.end,
         lat: coords.lat, lng: coords.lng,
@@ -130,6 +131,13 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
       {attendance?.check_in_at && (
         <p className="text-xs text-muted-foreground font-body">
           {t("checkedInAt")} {formatTime(attendance.check_in_at, format, lang)}
+        </p>
+      )}
+      {attendance?.station_id && attendance.station_id !== currentUser.stationId && (
+        <p className="text-xs text-accent font-body flex items-center gap-1">
+          <MapPin className="w-3 h-3" />
+          {lang === "ar" ? "تم توثيق الحضور في:" : "Attendance recorded at:"}{" "}
+          {data?.stations?.find((s) => s.id === attendance.station_id)?.name || (lang === "ar" ? "موقع آخر" : "another location")}
         </p>
       )}
       {attendance?.status === "late" && Number(attendance.late_minutes) > 0 && (

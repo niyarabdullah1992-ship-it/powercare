@@ -81,23 +81,38 @@ Deno.serve(async (req) => {
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     };
     // Server-side workplace coordinates — station GPS/radius is NEVER trusted from
-    // the client. It is loaded from the company's own Station record (or a saved
-    // personal place) using the stationId, so an employee cannot submit their home
-    // coordinates as the "station" to fake being inside the check-in radius.
-    const resolveWorkplace = async (stationId) => {
+    // the client. ALL of the company's stations (plus saved personal places) are
+    // loaded from the server's own records, so an employee working across multiple
+    // stations can check in at any of them — the record documents which one.
+    const listWorkplaces = async () => {
       const companyId = auth?.companyId || body.companyId;
-      if (!companyId || !stationId) return null;
-      const stations = await base44.asServiceRole.entities.Station.filter({ companyId, stationId });
-      const st = stations[0];
-      if (st && st.lat != null && st.lng != null) {
-        return { lat: Number(st.lat), lng: Number(st.lng), radiusMeters: Number(st.radiusMeters) || 200 };
+      if (!companyId) return [];
+      const out = [];
+      const stations = await base44.asServiceRole.entities.Station.filter({ companyId });
+      for (const st of stations) {
+        if (st.lat != null && st.lng != null) {
+          out.push({ stationId: st.stationId, lat: Number(st.lat), lng: Number(st.lng), radiusMeters: Number(st.radiusMeters) || 200 });
+        }
       }
       const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "personalPlaces" });
-      const place = (blobs[0]?.payload || []).find((p) => p.id === stationId);
-      if (place && place.lat != null && place.lng != null) {
-        return { lat: Number(place.lat), lng: Number(place.lng), radiusMeters: Number(place.radiusMeters) || 200 };
+      for (const p of (blobs[0]?.payload || [])) {
+        if (p.lat != null && p.lng != null) {
+          out.push({ stationId: p.id, lat: Number(p.lat), lng: Number(p.lng), radiusMeters: Number(p.radiusMeters) || 200 });
+        }
       }
-      return null;
+      return out;
+    };
+    // Nearest workplace the employee is INSIDE of (with GPS-accuracy margin), or
+    // null plus the distance to the closest workplace when they're outside all.
+    const matchWorkplace = (workplaces, lat, lng, accuracyMargin) => {
+      let best = null;
+      let nearestDist = null;
+      for (const w of workplaces) {
+        const d = Math.round(distanceMeters(lat, lng, w.lat, w.lng));
+        if (nearestDist == null || d < nearestDist) nearestDist = d;
+        if (d - accuracyMargin <= w.radiusMeters && (!best || d < best.dist)) best = { ...w, dist: d };
+      }
+      return { best, nearestDist };
     };
 
     if (action === "getSettings") {
@@ -251,28 +266,31 @@ Deno.serve(async (req) => {
       if (lat == null || lng == null) {
         return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       }
-      const workplace = await resolveWorkplace(stationId);
-      if (!workplace) {
+      // Multi-station support: verify against EVERY company workplace and document
+      // the actual station the employee checked in at (nearest one they're inside).
+      const workplaces = await listWorkplaces();
+      if (workplaces.length === 0) {
         return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
+      }
+      // GPS readings carry an accuracy radius — give the employee the benefit of
+      // that margin (capped at 100m) so an imprecise fix isn't wrongly "outside".
+      const accuracyMargin = Math.min(Number(accuracy) || 0, 100);
+      const { best: workplace, nearestDist } = matchWorkplace(workplaces, lat, lng, accuracyMargin);
+      if (!workplace) {
+        return Response.json({ error: "OUTSIDE_STATION", distanceMeters: nearestDist }, { status: 400 });
       }
       const now = new Date();
       const startMinutes = toMinutes(shiftStart || settings.work_start_time || "08:00");
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
       const lateMinutes = Math.max(0, nowMinutes - startMinutes);
       const status = lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present";
-      const distMeters = Math.round(distanceMeters(lat, lng, workplace.lat, workplace.lng));
-      // GPS readings carry an accuracy radius — give the employee the benefit of
-      // that margin (capped at 100m) so an imprecise fix isn't wrongly "outside".
-      const accuracyMargin = Math.min(Number(accuracy) || 0, 100);
-      const locationStatus = distMeters - accuracyMargin <= workplace.radiusMeters ? "inside" : "outside";
-      if (locationStatus !== "inside") {
-        return Response.json({ error: "OUTSIDE_STATION", distanceMeters: distMeters }, { status: 400 });
-      }
+      const distMeters = workplace.dist;
+      const locationStatus = "inside";
       const payload = {
         company_id: companyId,
         employee_id: employeeId,
         employee_name: employeeName || "",
-        station_id: stationId || null,
+        station_id: workplace.stationId || stationId || null,
         date,
         check_in_at: now.toISOString(),
         status,
@@ -325,15 +343,16 @@ Deno.serve(async (req) => {
       const rows = await res.json();
       const row = Array.isArray(rows) && rows[0];
       if (!row || !row.check_in_at) return Response.json({ error: "NOT_CHECKED_IN" }, { status: 400 });
-      // Verify the checkout location against the server-stored station coordinates
-      // from this morning's check-in record — never client-supplied coordinates.
-      const workplace = await resolveWorkplace(row.station_id || body.stationId);
-      if (!workplace) return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
-      const checkoutDistance = Math.round(distanceMeters(lat, lng, workplace.lat, workplace.lng));
+      // Verify the checkout location against the server-stored workplaces — the
+      // employee may check out from any company station (e.g. moved stations mid-day).
+      const workplaces = await listWorkplaces();
+      if (workplaces.length === 0) return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
       const accuracyMargin = Math.min(Number(accuracy) || 0, 100);
-      if (checkoutDistance - accuracyMargin > workplace.radiusMeters) {
-        return Response.json({ error: "OUTSIDE_STATION", distanceMeters: checkoutDistance }, { status: 400 });
+      const { best: outWorkplace, nearestDist } = matchWorkplace(workplaces, lat, lng, accuracyMargin);
+      if (!outWorkplace) {
+        return Response.json({ error: "OUTSIDE_STATION", distanceMeters: nearestDist }, { status: 400 });
       }
+      const checkoutDistance = outWorkplace.dist;
       const now = new Date();
       const workHours = Math.round(((now.getTime() - new Date(row.check_in_at).getTime()) / 3600000) * 100) / 100;
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
