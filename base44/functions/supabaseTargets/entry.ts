@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     if (action !== "runEscalationSweep") {
       const platformUser = await base44.auth.me().catch(() => null);
       if (platformUser && platformUser.role === "admin") {
-        auth = { admin: true, isManager: true, role: "owner", companyId: body.companyId || null, userId: body.userId || null };
+        auth = { admin: true, isManager: true, role: "owner", companyId: body.companyId || null, userId: body.userId || null, name: platformUser.full_name || "Admin" };
       } else {
         const { sessionToken, companyId } = body;
         if (sessionToken && companyId) {
@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
           const s = sessions[0];
           if (s && new Date(s.expiresAt).getTime() > Date.now()) {
             if (s.role === "owner") {
-              auth = { isManager: true, role: "owner", companyId, userId: s.userId || null };
+              auth = { isManager: true, role: "owner", companyId, userId: s.userId || null, name: "Owner" };
             } else {
               const emps = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: s.userId });
               const emp = emps[0] || null;
@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
                 isManager: MANAGER_ROLES.includes(emp?.role), role: emp?.role || "employee",
                 companyId, userId: s.userId, stationId: emp?.stationId || null,
                 managedStations: Array.isArray(emp?.managedStations) ? emp.managedStations : [],
+                name: emp?.name || "Employee",
               };
             }
           }
@@ -437,15 +438,25 @@ Deno.serve(async (req) => {
     }
 
     if (action === "disputeRejection") {
-      const { targetId, employeeId, employeeName, message, escalationLevel, notifyUserIds } = body;
+      const { targetId, message, escalationLevel, notifyUserIds } = body;
       if (!targetId || !(message || "").trim()) return Response.json({ error: "Missing fields" }, { status: 400 });
       const tg = await getScopedTarget(targetId);
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
+      // IDOR fix: only the assigned employee (or a manager) may dispute a rejection —
+      // same check as updateProgress. Identity comes from the session, not the body.
+      if (!isManager) {
+        const isAssignee =
+          tg.assignment_type === "station_team" ? tg.assignment_id === auth?.stationId :
+          tg.assignment_type === "hq_team" ? !auth?.stationId :
+          tg.employee_id === auth?.userId; // "member" and legacy rows
+        if (!isAssignee) return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const employeeName = auth?.name || "Employee";
       const comments = Array.isArray(tg.comments) ? tg.comments : [];
       comments.push({
         id: crypto.randomUUID(),
-        user_id: auth?.userId || employeeId,
-        user_name: employeeName || "Employee",
+        user_id: auth?.userId || null,
+        user_name: employeeName,
         content: `🚩 ${message.trim()}`,
         files: [],
         is_issue: false,
@@ -537,12 +548,23 @@ Deno.serve(async (req) => {
     }
 
     if (action === "addComment") {
-      const { targetId, userId, userName, content, files, isIssue } = body;
+      const { targetId, content, files, isIssue } = body;
       if (!targetId || (!content && (!files || files.length === 0))) {
         return Response.json({ error: "Missing fields" }, { status: 400 });
       }
       const tg = await getScopedTarget(targetId);
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
+      // IDOR + spoofing fix: only a manager or the assignee may comment, and the
+      // comment identity comes from the authenticated session, never the request body.
+      if (!isManager) {
+        const isAssignee =
+          tg.assignment_type === "station_team" ? tg.assignment_id === auth?.stationId :
+          tg.assignment_type === "hq_team" ? !auth?.stationId :
+          tg.employee_id === auth?.userId; // "member" and legacy rows
+        if (!isAssignee) return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const userId = auth?.userId || null;
+      const userName = auth?.name || "User";
       const comments = Array.isArray(tg.comments) ? tg.comments : [];
       const cleanFiles = Array.isArray(files)
         ? files
@@ -552,7 +574,7 @@ Deno.serve(async (req) => {
       const newComment = {
         id: crypto.randomUUID(),
         user_id: userId,
-        user_name: userName || "User",
+        user_name: userName,
         content: content || "",
         files: cleanFiles,
         is_issue: !!isIssue,
