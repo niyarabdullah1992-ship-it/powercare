@@ -18,9 +18,10 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
 
   const hazards = rec?.hazards || [];
   const approved = !!rec?.approvedBy;
-  // A station can't be marked "Safe" while hazards are still open or an incident
-  // was logged in the last 30 days — the hazards must be cleared first.
-  const recentIncident = rec?.lastIncidentAt && (Date.now() - new Date(rec.lastIncidentAt).getTime()) < 30 * 86400000;
+  // Flexible rule: "Safe" can't be picked immediately after adding hazards or
+  // logging an incident. Open hazards block it until they're cleared; a logged
+  // incident blocks it for 24 hours only — afterwards it's the manager's call.
+  const recentIncident = rec?.lastIncidentAt && (Date.now() - new Date(rec.lastIncidentAt).getTime()) < 86400000;
   const safeBlocked = hazards.length > 0 || !!recentIncident;
 
   const addHazard = () => {
@@ -74,8 +75,12 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
         {safeBlocked && (
           <p className="text-[10px] text-amber-700 font-body mt-1.5">
             {ar
-              ? "لا يمكن تصنيف المحطة «آمنة» — توجد مخاطر مفتوحة أو حادثة خلال آخر ٣٠ يومًا."
-              : "Station can't be marked Safe — open hazards or an incident within the last 30 days."}
+              ? hazards.length > 0
+                ? "لا يمكن تصنيف المحطة «آمنة» مع وجود مخاطر مفتوحة — أغلق المخاطر أولًا."
+                : "سُجّلت حادثة حديثًا — يمكن إعادة التصنيف إلى «آمنة» بعد ٢٤ ساعة."
+              : hazards.length > 0
+                ? "Can't mark Safe while hazards are open — clear them first."
+                : "An incident was just logged — Safe can be re-selected after 24 hours."}
           </p>
         )}
       </div>
