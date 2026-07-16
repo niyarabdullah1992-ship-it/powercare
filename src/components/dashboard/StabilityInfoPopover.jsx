@@ -20,7 +20,8 @@ export default function StabilityInfoPopover({ breakdown, riskScore, ar }) {
         <Info className="h-3.5 w-3.5" />
       </button>
       {open && (
-        <div className="absolute end-0 top-9 z-30 w-72 rounded-xl border border-white/15 bg-landing-olive p-4 text-start shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setOpen(false)}>
+        <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm max-h-[80vh] overflow-y-auto rounded-xl border border-white/15 bg-landing-olive p-4 text-start shadow-2xl">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-xs font-semibold text-landing-gold-light">{ar ? "كيف تُحسب نسبة الاستقرار؟" : "How stability is calculated"}</p>
             <button type="button" onClick={() => setOpen(false)} className="rounded p-0.5 text-white/50 hover:text-white"><X className="h-3.5 w-3.5" /></button>
@@ -28,8 +29,8 @@ export default function StabilityInfoPopover({ breakdown, riskScore, ar }) {
           <p className="mb-2 text-[11px] leading-5 text-white/60">{ar ? "الاستقرار = 100 − نقاط المخاطر. النقاط تُحسب من بياناتك الحقيقية اليوم:" : "Stability = 100 − risk points, computed from your real data today:"}</p>
           <div className="space-y-1">
             {rows.map((r) => (
-              <div key={r.label} className="flex items-center justify-between text-[11px] text-white/75">
-                <span>{r.label} ({r.count} × {r.weight})</span>
+              <div key={r.label} className="flex items-center justify-between gap-3 text-[11px] text-white/75">
+                <span className="min-w-0">{r.label} (<span dir="ltr">{r.count} × {r.weight}</span>)</span>
                 <span className="font-semibold text-white">{r.count * r.weight}</span>
               </div>
             ))}
@@ -42,6 +43,7 @@ export default function StabilityInfoPopover({ breakdown, riskScore, ar }) {
             <span className="text-white/60">{ar ? "نسبة الاستقرار" : "Stability score"}</span>
             <span className="font-semibold text-landing-gold-light">{100 - riskScore}%</span>
           </div>
+        </div>
         </div>
       )}
     </>
