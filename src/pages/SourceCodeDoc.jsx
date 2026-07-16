@@ -24,16 +24,17 @@ export default function SourceCodeDoc() {
     document.title = "PowerCare — Source Code / الكود المصدري الكامل";
     (async () => {
       const paths = Object.keys(FILE_MODULES).sort();
-      const loaded = [];
-      for (const p of paths) {
-        try {
-          const content = await FILE_MODULES[p]();
-          loaded.push({ path: p.replace(/^\//, ""), content: String(content) });
-        } catch {
-          // skip unreadable file
-        }
-      }
-      setFiles(loaded);
+      const loaded = await Promise.all(
+        paths.map(async (p) => {
+          try {
+            const content = await FILE_MODULES[p]();
+            return { path: p.replace(/^\//, ""), content: String(content) };
+          } catch {
+            return null;
+          }
+        })
+      );
+      setFiles(loaded.filter(Boolean));
     })();
   }, []);
 
