@@ -22,7 +22,6 @@ import FolderTree from "@/components/tasks/FolderTree";
 import SmartArchive from "@/components/tasks/SmartArchive";
 import SectionPicker from "@/components/tasks/SectionPicker";
 import CommentFiles from "@/components/tasks/CommentFiles";
-import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import MobileSelect from "@/components/mobile/MobileSelect";
@@ -833,7 +832,6 @@ export default function MyTasks() {
             <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><Paperclip className="w-3.5 h-3.5" /> {t("attachFile")}</p>
             <div className="flex flex-wrap items-end gap-2">
               <CommentFiles files={taskFiles} setFiles={setTaskFiles} />
-              <VoiceRecorder files={taskFiles} setFiles={setTaskFiles} />
             </div>
           </div>
 
