@@ -10,11 +10,14 @@ import StationsMapCard from "@/components/dashboard/StationsMapCard";
 import PendingActionsPanel from "@/components/dashboard/PendingActionsPanel";
 import { Radio, AlertTriangle, FileText, MapPin, ShieldCheck } from "lucide-react";
 import { formatDate } from "@/lib/dateFormat";
+import QuickCheckInCard from "@/components/attendance/QuickCheckInCard";
+import { useAuth } from "@/lib/PowerCareAuth";
 
 const SAFETY_COLORS = { green: "bg-emerald-500", amber: "bg-amber-500", red: "bg-destructive" };
 
 export default function StationManagerDashboard({ user, data, stoppageCount = 0 }) {
   const { t, lang } = useI18n();
+  const { company } = useAuth();
   const [attendanceRows, setAttendanceRows] = useState([]);
   const stations = visibleStations(user, data);
   const stationIds = new Set(stations.map((s) => s.id));
@@ -81,6 +84,9 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
           {t(user.role)}
         </span>
       </div>
+
+      {/* One-tap GPS check-in — front and center on mobile */}
+      <QuickCheckInCard currentUser={user} company={company} />
 
       {/* Station cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

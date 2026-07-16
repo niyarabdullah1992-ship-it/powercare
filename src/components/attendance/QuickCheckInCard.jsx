@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { getTodaysShift } from "@/lib/attendance";
-import { getAccuratePosition } from "@/lib/geo";
+import { getAccuratePosition, startGeoWarmup } from "@/lib/geo";
 import { LogIn, LogOut, MapPin, Loader2, CheckCircle2, Navigation } from "lucide-react";
 
 function distanceMeters(a, b) {
@@ -31,6 +31,9 @@ export default function QuickCheckInCard({ currentUser, company }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Warm up GPS immediately on app open — by the time the user taps
+    // check-in, the location fix is usually already cached (instant).
+    startGeoWarmup();
     (async () => {
       try {
         const [setRes, attRes] = await Promise.all([
@@ -55,12 +58,21 @@ export default function QuickCheckInCard({ currentUser, company }) {
     if (fix) { setCoords(fix); setLocState("ready"); } else setLocState("denied");
   };
 
-  const stationCoords = station?.lat != null && station?.lng != null ? { lat: station.lat, lng: station.lng } : null;
-  const dist = coords && stationCoords ? distanceMeters(coords, stationCoords) : null;
+  // Multi-station: measure against ALL company stations with coordinates and use
+  // the nearest one — the employee can check in at any authorized workplace.
+  const geoStations = (data?.stations || []).filter((s) => s.lat != null && s.lng != null);
+  let nearest = null;
+  if (coords) {
+    for (const s of geoStations) {
+      const d = distanceMeters(coords, { lat: s.lat, lng: s.lng });
+      if (!nearest || d < nearest.d) nearest = { station: s, d };
+    }
+  }
+  const dist = nearest?.d ?? null;
   // Give the GPS reading the benefit of its own accuracy margin (capped at 100m),
   // so a slightly imprecise fix doesn't wrongly flag someone standing at the station.
   const accuracyMargin = Math.min(Number(coords?.accuracy) || 0, 100);
-  const inRange = dist != null && station?.radiusMeters != null ? dist - accuracyMargin <= station.radiusMeters : null;
+  const inRange = nearest ? nearest.d - accuracyMargin <= (Number(nearest.station.radiusMeters) || 200) : null;
 
   const handleCheckIn = async () => {
     setError("");
@@ -179,6 +191,9 @@ export default function QuickCheckInCard({ currentUser, company }) {
               {attendance.status === "late" && Number(attendance.late_minutes) > 0 && (
                 <span className="text-amber-700"> · {t("lateBy")} {attendance.late_minutes} {t("minutesUnit")}</span>
               )}
+              {attendance.station_id && (
+                <span dir="auto"> · <MapPin className="w-3 h-3 inline" /> {data?.stations?.find((s) => s.id === attendance.station_id)?.name || ""}</span>
+              )}
             </p>
           )}
           {checkedOut && (
@@ -216,8 +231,8 @@ export default function QuickCheckInCard({ currentUser, company }) {
                   <Navigation className="w-3.5 h-3.5" /> {t("enableLocation")}
                 </button>
               )}
-              {station?.name && (
-                <span className="text-[11px] text-muted-foreground font-body">{station.name}</span>
+              {(nearest?.station?.name || station?.name) && (
+                <span className="text-[11px] text-muted-foreground font-body" dir="auto">{nearest?.station?.name || station?.name}</span>
               )}
             </div>
           )}
