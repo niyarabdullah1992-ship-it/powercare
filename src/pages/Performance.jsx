@@ -5,6 +5,7 @@ import { badgeFor, nextBadge, getBadges } from "@/lib/rewards";
 import { getRoleLabel } from "@/lib/roles";
 import { Trophy, Medal, Crown, Users, Building2, Award } from "lucide-react";
 import PerformanceAnalytics from "@/components/performance/PerformanceAnalytics";
+import MonthlyTrends from "@/components/performance/MonthlyTrends";
 import BadgeLegend from "@/components/performance/BadgeLegend";
 import StationComparison from "@/components/performance/StationComparison";
 import EmployeeComparisonView from "@/components/performance/EmployeeComparisonView";
@@ -108,14 +109,20 @@ export default function Performance() {
           >
             {t("achievementsBoard")}
           </button>
-          {isManager && (
+          {isManager && (<>
           <button
             onClick={() => setView("analytics")}
             className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "analytics" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
           >
             {t("analytics")}
           </button>
-          )}
+          <button
+            onClick={() => setView("trends")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "trends" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {lang === "ar" ? "الاتجاهات الشهرية" : "Monthly trends"}
+          </button>
+          </>)}
           {canBrand && (
             <button
               onClick={() => setShowBranding((v) => !v)}
@@ -162,7 +169,7 @@ export default function Performance() {
       {view === "individualReport" && <EmployeeSingleReport t={t} />}
 
       {/* Badge tiers legend */}
-      {view !== "comparison" && view !== "employeeComparison" && view !== "individualReport" && <BadgeLegend />}
+      {view !== "comparison" && view !== "employeeComparison" && view !== "individualReport" && view !== "trends" && <BadgeLegend />}
 
       {view === "individual" && (
         <div className="space-y-2">
@@ -296,6 +303,8 @@ export default function Performance() {
       )}
 
       {view === "analytics" && <PerformanceAnalytics />}
+
+      {view === "trends" && isManager && <MonthlyTrends />}
 
 
 

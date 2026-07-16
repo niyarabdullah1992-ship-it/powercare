@@ -6,6 +6,7 @@ import { ListTodo, CheckCircle2, AlertTriangle, Radio, UserCircle } from "lucide
 import EmployeePoints from "@/components/employees/EmployeePoints";
 import PresenceStatusPicker from "@/components/employees/PresenceStatusPicker";
 import QuickCheckInCard from "@/components/attendance/QuickCheckInCard";
+import EmployeeTour from "@/components/onboarding/EmployeeTour";
 
 export default function EmployeeDashboard({ user, company, data }) {
   const { t } = useI18n();
@@ -42,6 +43,8 @@ export default function EmployeeDashboard({ user, company, data }) {
 
   return (
     <div className="space-y-8">
+      {/* First-login onboarding tour (shows once per employee) */}
+      <EmployeeTour user={user} company={company} />
       {/* One-tap GPS check-in — the very first thing on app open */}
       <QuickCheckInCard currentUser={user} company={company} />
 
