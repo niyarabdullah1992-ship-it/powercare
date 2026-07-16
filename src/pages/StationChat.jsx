@@ -146,6 +146,12 @@ export default function StationChat() {
     }
   };
 
+  const sendVoiceRecording = async (voice) => {
+    if (activeChat.type === "general") await base44.functions.invoke("supabaseTargets", { action: "sendChatMessage", stationId: selectedStation, userId: currentUser.id, userName: currentUser.name, text: "", files: [voice] });
+    else await base44.functions.invoke("supabaseTargets", { action: "sendDirectMessage", senderId: currentUser.id, senderName: currentUser.name, receiverId: activeChat.userId, text: "", files: [voice] });
+    await fetchMessages();
+  };
+
   const shareCallRecording = async (blob) => {
     const extension = blob.type?.includes("mp4") ? "mp4" : "webm";
     const name = `call-${new Date().toISOString().replace(/[:.]/g, "-")}.${extension}`;
@@ -291,7 +297,7 @@ export default function StationChat() {
                       </div>
                       <div className="flex flex-wrap items-end gap-2">
                         <CommentFiles files={files} setFiles={setFiles} disabled={sending} />
-                        <VoiceRecorder files={files} setFiles={setFiles} disabled={sending} />
+                        <VoiceRecorder files={files} setFiles={setFiles} disabled={sending} onRecorded={sendVoiceRecording} />
                         <CameraCaptureButton files={files} setFiles={setFiles} disabled={sending} ar={lang === "ar"} />
                       </div>
                     </form>
