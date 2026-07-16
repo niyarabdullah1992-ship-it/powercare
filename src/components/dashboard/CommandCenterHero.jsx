@@ -1,8 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Activity, ArrowUpRight, BrainCircuit, Radio } from "lucide-react";
+import StabilityInfoPopover from "@/components/dashboard/StabilityInfoPopover";
 
-export default function CommandCenterHero({ companyName, riskScore, activeStations, lang }) {
+export default function CommandCenterHero({ companyName, riskScore, activeStations, breakdown, lang }) {
   const ar = lang === "ar";
   const state = riskScore >= 70 ? (ar ? "يحتاج تدخلاً" : "Intervention needed") : riskScore >= 40 ? (ar ? "تحت المراقبة" : "Under observation") : (ar ? "مستقر" : "Stable");
   return (
@@ -16,7 +17,10 @@ export default function CommandCenterHero({ companyName, riskScore, activeStatio
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65">{ar ? "صورة تشغيلية موحدة تتوقع المخاطر، ترتب الأولويات، وتحول البيانات إلى قرارات قابلة للتنفيذ." : "One operational picture that predicts risk, prioritizes attention, and turns data into executable decisions."}</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <div className="min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4"><Activity className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{100 - riskScore}%</p><p className="text-xs text-white/50">{state}</p></div>
+          <div className="relative min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4">
+            {breakdown && <StabilityInfoPopover breakdown={breakdown} riskScore={riskScore} ar={ar} />}
+            <Activity className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{100 - riskScore}%</p><p className="text-xs text-white/50">{state}</p>
+          </div>
           <div className="min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4"><BrainCircuit className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{activeStations}</p><p className="text-xs text-white/50">{ar ? "محطات مراقبة" : "Stations monitored"}</p></div>
         </div>
       </div>

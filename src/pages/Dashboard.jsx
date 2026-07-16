@@ -183,7 +183,7 @@ export default function Dashboard() {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-8">
-      <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} lang={lang} />
+      <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports }} lang={lang} />
       <OnboardingChecklist data={data} lang={lang} t={t} />
       {canEditBranding && (
         <div className="flex justify-end">
