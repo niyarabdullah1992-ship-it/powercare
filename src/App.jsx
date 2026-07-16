@@ -52,7 +52,6 @@ const PowerCarePresentation = lazy(() => import('./pages/PowerCarePresentation')
 const AdAudio = lazy(() => import('./pages/AdAudio'));
 const CopyrightDoc = lazy(() => import('./pages/CopyrightDoc'));
 const ProjectGuideDoc = lazy(() => import('./pages/ProjectGuideDoc'));
-const TechJourneyDoc = lazy(() => import('./pages/TechJourneyDoc'));
 
 // After the first page is interactive, quietly download the most-used pages in
 // the background so navigating to them later is instant.
@@ -107,7 +106,6 @@ function AppRoutes() {
       <Route path="/ad-audio" element={<AdAudio />} />
       <Route path="/copyright-doc" element={<CopyrightDoc />} />
       <Route path="/project-guide" element={<ProjectGuideDoc />} />
-      <Route path="/tech-doc" element={<TechJourneyDoc />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/owner-panel" element={<OwnerPanel />} />
         <Route path="/owner-subscribers" element={<Navigate to="/owner-panel" replace />} />
