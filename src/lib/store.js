@@ -719,8 +719,13 @@ export async function setEmployeePassword(companyId, employeeId, email, password
       const emp = getCompanyData(companyId)?.employees.find((e) => e.id === employeeId);
       sendEmailAlert(
         companyId, email,
-        "PowerCare — بيانات دخولك | Your login details",
-        `مرحبًا ${emp?.name || ""}،\n\nتم تفعيل حسابك في منصة PowerCare. بيانات دخولك:\n\nالبريد الإلكتروني: ${email}\nكلمة المرور: ${password}\n\nادخل من الرابط التالي، وسيصلك رمز تحقق على بريدك عند تسجيل الدخول:\nhttps://powercares.pro\n\nYour PowerCare account is active. Email: ${email} — Password: ${password}\nSign in at https://powercares.pro (a verification code will be emailed to you at login).`
+        "بيانات دخولك إلى PowerCare — Your login details",
+        `مرحبًا ${emp?.name || ""}،\n\nتم تفعيل حسابك في منصة PowerCare. بيانات دخولك أدناه، وعند تسجيل الدخول سيصلك رمز تحقق على بريدك:\n\nHello ${emp?.name || ""}, your PowerCare account is now active. Your login details are below — a verification code will be emailed to you at sign-in:`,
+        [
+          { label: "البريد الإلكتروني · Email", value: email },
+          { label: "كلمة المرور · Password", value: password },
+        ],
+        { label: "تسجيل الدخول · Sign in", url: "https://powercares.pro" }
       );
     }
     return !!res?.data?.ok;
@@ -1041,8 +1046,13 @@ function emailNewEvents(companyId, data, before) {
     setTimeout(() => {
       sendEmailAlert(
         companyId, e.email,
-        `PowerCare — تم إنشاء حسابك | Your account is ready`,
-        `مرحبًا ${e.name}،\n\nتم إنشاء حسابك في منصة PowerCare${companyName ? ` ضمن شركة "${companyName}"` : ""}.\nسيزودك مديرك بكلمة المرور الخاصة بك، وبعدها يمكنك تسجيل الدخول بهذا البريد من الرابط:\nhttps://powercares.pro\n\nWelcome ${e.name}, your PowerCare account${companyName ? ` at "${companyName}"` : ""} has been created. Your manager will provide your password — then sign in with this email at https://powercares.pro`
+        `تم إنشاء حسابك في PowerCare — Your account is ready`,
+        `مرحبًا ${e.name}،\n\nيسعدنا انضمامك! تم إنشاء حسابك في منصة PowerCare${companyName ? ` ضمن شركة "${companyName}"` : ""}. سيزودك مديرك بكلمة المرور، وبعدها يمكنك تسجيل الدخول بهذا البريد.\n\nWelcome ${e.name}! Your PowerCare account${companyName ? ` at "${companyName}"` : ""} has been created. Your manager will provide your password — then sign in with this email.`,
+        [
+          { label: "البريد الإلكتروني · Email", value: e.email },
+          ...(companyName ? [{ label: "الشركة · Company", value: companyName }] : []),
+        ],
+        { label: "تسجيل الدخول · Sign in", url: "https://powercares.pro" }
       );
     }, 6000);
   });
@@ -1050,10 +1060,21 @@ function emailNewEvents(companyId, data, before) {
     if (before.tasks.has(t.id) || !t.assignedTo) return;
     const emp = (data.employees || []).find((e) => e.id === t.assignedTo);
     if (emp?.email) {
+      const station = (data.stations || []).find((s) => s.id === t.stationId);
+      const priorityLabels = { high: "عالية · High", medium: "متوسطة · Medium", low: "منخفضة · Low" };
+      const deadline = t.dueDate || t.endDate;
+      const details = [
+        { label: "المهمة · Task", value: t.title },
+        ...(station ? [{ label: "المحطة · Station", value: station.name }] : []),
+        ...(t.priority ? [{ label: "الأولوية · Priority", value: priorityLabels[t.priority] || t.priority }] : []),
+        ...(deadline ? [{ label: "الموعد النهائي · Due date", value: new Date(deadline).toLocaleDateString("en-GB") }] : []),
+      ];
       sendEmailAlert(
         companyId, emp.email,
-        `PowerCare — مهمة جديدة: ${t.title}`,
-        `مرحبًا ${emp.name}،\n\nتم إسناد مهمة جديدة إليك: "${t.title}".\nيرجى الدخول إلى منصة PowerCare لمراجعة التفاصيل.\n\nA new task "${t.title}" has been assigned to you on PowerCare.`
+        `مهمة جديدة مسندة إليك — ${t.title}`,
+        `مرحبًا ${emp.name}،\n\nتم إسناد مهمة جديدة إليك في منصة PowerCare. تفاصيل المهمة أدناه:\n\nHello ${emp.name}, a new task has been assigned to you on PowerCare. Details below:`,
+        details,
+        { label: "عرض المهمة · View task", url: "https://powercares.pro" }
       );
     }
   });

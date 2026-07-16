@@ -15,10 +15,25 @@ const EMAIL_LOGO = 'https://media.base44.com/images/public/6a4f617bd7360a0ae9581
 function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
-function emailHtml(title, text) {
+function emailHtml(title, text, details, cta) {
   const paragraphs = escapeHtml(text).split(/\n{2,}/)
     .map((p) => `<p style="margin:0 0 12px;font-size:14px;line-height:1.8;color:#4a3d2c;" dir="auto">${p.replace(/\n/g, '<br/>')}</p>`)
     .join('');
+  // Optional structured details table — [{label, value}]
+  const detailsRows = Array.isArray(details) && details.length
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 16px;border:1px solid #eadfc9;border-radius:10px;background:#faf6ee;">
+        ${details.map((d, i) => `<tr>
+          <td dir="auto" style="padding:10px 14px;font-size:12px;color:#a08c6a;white-space:nowrap;${i ? 'border-top:1px solid #f0e8d8;' : ''}">${escapeHtml(d.label)}</td>
+          <td dir="auto" style="padding:10px 14px;font-size:13px;font-weight:700;color:#3a2f22;text-align:end;${i ? 'border-top:1px solid #f0e8d8;' : ''}">${escapeHtml(d.value)}</td>
+        </tr>`).join('')}
+      </table>`
+    : '';
+  // Optional call-to-action button — {label, url}
+  const ctaBtn = cta?.url
+    ? `<div style="text-align:center;margin:8px 0 18px;">
+        <a href="${escapeHtml(cta.url)}" style="display:inline-block;background:linear-gradient(180deg,#d8b578,#b8863e);color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:12px 34px;border-radius:999px;">${escapeHtml(cta.label || 'PowerCare')}</a>
+      </div>`
+    : '';
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5efe4;font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5efe4;padding:32px 12px;"><tr><td align="center">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #eadfc9;">
@@ -29,6 +44,8 @@ function emailHtml(title, text) {
       <tr><td style="padding:30px 30px 10px;">
         <h1 style="margin:0 0 16px;font-size:18px;color:#3a2f22;font-family:Georgia,serif;" dir="auto">${escapeHtml(title)}</h1>
         ${paragraphs}
+        ${detailsRows}
+        ${ctaBtn}
       </td></tr>
       <tr><td style="padding:18px 30px 26px;border-top:1px solid #f0e8d8;">
         <p style="margin:0;font-size:12px;color:#a08c6a;text-align:center;" dir="auto">PowerCare — إدارة ذكية لفريقك ومهامك · Smart workforce management</p>
@@ -41,7 +58,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { companyId, sessionToken, to, subject, text } = body;
+    const { companyId, sessionToken, to, subject, text, details, cta } = body;
     if (!companyId || !to || !subject || !text) {
       return Response.json({ error: 'Missing fields' }, { status: 400 });
     }
@@ -68,7 +85,7 @@ Deno.serve(async (req) => {
     msg.setSender({ name: 'PowerCare', addr: 'no-reply@powercare.app' });
     msg.setRecipient(to);
     msg.setSubject(subject);
-    msg.addMessage({ contentType: 'text/html', data: emailHtml(subject, text) });
+    msg.addMessage({ contentType: 'text/html', data: emailHtml(subject, text, details, cta) });
 
     const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
       method: 'POST',

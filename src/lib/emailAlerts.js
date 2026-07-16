@@ -10,9 +10,9 @@ function getToken(companyId) {
   }
 }
 
-export function sendEmailAlert(companyId, to, subject, text) {
+export function sendEmailAlert(companyId, to, subject, text, details, cta) {
   if (!to) return;
   base44.functions
-    .invoke("gmailNotify", { companyId, sessionToken: getToken(companyId), to, subject, text })
+    .invoke("gmailNotify", { companyId, sessionToken: getToken(companyId), to, subject, text, details, cta })
     .catch(() => {});
 }
