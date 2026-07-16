@@ -1,13 +1,16 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { AlertTriangle, Clock3, ShieldAlert, UserRoundX } from "lucide-react";
+import { AlertTriangle, Clock3, Flame, HardHat, ShieldAlert, UserRoundX } from "lucide-react";
 
-export default function RiskForecastPanel({ absentCount, delayedTasks, stoppageCount, lang }) {
+export default function RiskForecastPanel({ absentCount, delayedTasks, stoppageCount, criticalStations = 0, openHazards = 0, recentIncidents = 0, lang }) {
   const ar = lang === "ar";
   const risks = [
     { icon: UserRoundX, count: absentCount, label: ar ? "احتمال ضغط تشغيلي بسبب الغياب" : "Staffing pressure from absences", to: "/app/attendance", level: absentCount > 2 ? "high" : "medium" },
     { icon: Clock3, count: delayedTasks, label: ar ? "مهام معرضة لتجاوز الموعد" : "Tasks at risk of delay", to: "/app/tasks", level: delayedTasks > 2 ? "high" : "medium" },
     { icon: ShieldAlert, count: stoppageCount, label: ar ? "بلاغات توقف تتطلب الاحتواء" : "Stoppages requiring containment", to: "/app/performance", level: stoppageCount ? "high" : "low" },
+    { icon: Flame, count: criticalStations, label: ar ? "محطات بحالة سلامة حرجة" : "Stations in critical safety state", to: "/app/safety", level: "high" },
+    { icon: AlertTriangle, count: recentIncidents, label: ar ? "حوادث سلامة خلال 30 يوماً" : "Safety incidents in the last 30 days", to: "/app/safety", level: "high" },
+    { icon: HardHat, count: openHazards, label: ar ? "مخاطر سلامة مفتوحة تحتاج معالجة" : "Open safety hazards to resolve", to: "/app/safety", level: "medium" },
   ].filter((item) => item.count > 0);
   return (
     <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">

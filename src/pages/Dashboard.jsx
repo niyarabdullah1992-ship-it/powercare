@@ -132,7 +132,12 @@ export default function Dashboard() {
     const deadline = task.dueDate || task.endDate;
     return task.status !== "completed" && deadline && new Date(deadline).getTime() <= now + 3 * 86400000;
   }).length;
-  const riskScore = Math.min(100, Math.round((absentCount * 8) + (delayedTasks * 12) + (stoppageCount * 18) + (pendingReports * 4)));
+  // Safety (HSE) risk — critical stations, open hazards and incidents in the last 30 days.
+  const safetyRecs = (data.safety || []).filter((s) => stationIds.has(s.stationId));
+  const criticalStations = safetyRecs.filter((s) => s.level === "red").length;
+  const openHazards = safetyRecs.reduce((sum, s) => sum + (s.hazards?.length || 0), 0);
+  const recentIncidents = safetyRecs.reduce((sum, s) => sum + (s.incidentLog || []).filter((i) => i.at && now - new Date(i.at).getTime() <= 30 * 86400000).length, 0);
+  const riskScore = Math.min(100, Math.round((absentCount * 8) + (delayedTasks * 12) + (stoppageCount * 18) + (pendingReports * 4) + (criticalStations * 20) + (recentIncidents * 15) + (openHazards * 6)));
 
   // Facts fed to the AI daily brief (generated once a day, cached locally).
   const briefFacts = [
@@ -141,6 +146,7 @@ export default function Dashboard() {
     `pending daily reports awaiting review: ${pendingReports}`,
     `task stoppage issues: ${stoppageCount}`,
     `open anonymous complaints: ${anonOpenCount}`,
+    `safety (HSE): ${criticalStations} critical stations, ${openHazards} open hazards, ${recentIncidents} incidents in last 30 days`,
   ];
 
   const pendingActionItems = [
@@ -183,7 +189,7 @@ export default function Dashboard() {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-8">
-      <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports }} lang={lang} />
+      <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents }} safety={{ criticalStations, openHazards, recentIncidents }} lang={lang} />
       <OnboardingChecklist data={data} lang={lang} t={t} />
       {canEditBranding && (
         <div className="flex justify-end">
@@ -206,8 +212,8 @@ export default function Dashboard() {
       {/* AI command layer: daily intelligence, predictive risk and executable decisions */}
       <SmartDailySummary companyId={company.id} lang={lang} t={t} facts={briefFacts} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <RiskForecastPanel absentCount={absentCount} delayedTasks={delayedTasks} stoppageCount={stoppageCount} lang={lang} />
-        <DecisionQueue pendingReports={pendingReports} delayedTasks={delayedTasks} lang={lang} />
+        <RiskForecastPanel absentCount={absentCount} delayedTasks={delayedTasks} stoppageCount={stoppageCount} criticalStations={criticalStations} openHazards={openHazards} recentIncidents={recentIncidents} lang={lang} />
+        <DecisionQueue pendingReports={pendingReports} delayedTasks={delayedTasks} safetySignals={criticalStations + recentIncidents} lang={lang} />
       </div>
 
       {/* Numbered stat cards (WorkForce style) */}

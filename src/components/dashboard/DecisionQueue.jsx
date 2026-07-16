@@ -1,10 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Bot, FileBarChart, ListChecks, Sparkles } from "lucide-react";
+import { Bot, FileBarChart, ListChecks, ShieldAlert, Sparkles } from "lucide-react";
 
-export default function DecisionQueue({ pendingReports, delayedTasks, lang }) {
+export default function DecisionQueue({ pendingReports, delayedTasks, safetySignals = 0, lang }) {
   const ar = lang === "ar";
   const commands = [
+    ...(safetySignals > 0 ? [{ icon: ShieldAlert, title: ar ? "عالج وضع السلامة العاجل" : "Address urgent safety status", note: ar ? `${safetySignals} إشارة سلامة تتطلب تدخلاً` : `${safetySignals} safety signals need intervention`, prompt: ar ? "حلل وضع السلامة الحالي: المحطات الحرجة والحوادث الأخيرة والمخاطر المفتوحة، واقترح خطة معالجة عاجلة" : "Analyze the current safety status: critical stations, recent incidents and open hazards, and propose an urgent remediation plan" }] : []),
     { icon: FileBarChart, title: ar ? "أنشئ تقريراً تنفيذياً شاملاً PDF" : "Create an executive PDF report", note: ar ? `${pendingReports} تقارير تنتظر المراجعة` : `${pendingReports} reports await review`, prompt: ar ? "أنشئ مستنداً تنفيذياً شاملاً يلخص المهام والحضور والسلامة مع أهم المخاطر والقرارات المقترحة" : "Create a comprehensive executive document summarizing tasks, attendance, safety, key risks and recommended decisions" },
     { icon: ListChecks, title: ar ? "حلّل المهام المعرضة للتأخير" : "Analyze delay-prone tasks", note: ar ? `${delayedTasks} مهام تحتاج قراراً` : `${delayedTasks} tasks need a decision`, prompt: ar ? "حلل المهام الحالية وحدد المعرض منها للتأخير مع توصيات عملية" : "Analyze current tasks at risk of delay and recommend actions" },
   ];

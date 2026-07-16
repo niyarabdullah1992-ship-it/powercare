@@ -8,6 +8,11 @@ export default function StabilityInfoPopover({ breakdown, riskScore, ar }) {
     { label: ar ? "مهام متأخرة / موعدها قريب" : "Delayed / due-soon tasks", count: breakdown.delayedTasks, weight: 12 },
     { label: ar ? "بلاغات توقف على المهام" : "Task stoppage issues", count: breakdown.stoppageCount, weight: 18 },
     { label: ar ? "تقارير يومية معلقة" : "Pending daily reports", count: breakdown.pendingReports, weight: 4 },
+    ...(breakdown.criticalStations !== undefined ? [
+      { label: ar ? "محطات سلامة حرجة" : "Critical safety stations", count: breakdown.criticalStations, weight: 20 },
+      { label: ar ? "حوادث سلامة (30 يوماً)" : "Safety incidents (30 days)", count: breakdown.recentIncidents, weight: 15 },
+      { label: ar ? "مخاطر سلامة مفتوحة" : "Open safety hazards", count: breakdown.openHazards, weight: 6 },
+    ] : []),
   ];
   return (
     <>

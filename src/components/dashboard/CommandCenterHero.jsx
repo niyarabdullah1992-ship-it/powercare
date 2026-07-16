@@ -1,9 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Activity, ArrowUpRight, BrainCircuit, Radio } from "lucide-react";
+import { Activity, ArrowUpRight, BrainCircuit, Radio, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Link as RouterLink } from "react-router-dom";
 import StabilityInfoPopover from "@/components/dashboard/StabilityInfoPopover";
 
-export default function CommandCenterHero({ companyName, riskScore, activeStations, breakdown, lang }) {
+export default function CommandCenterHero({ companyName, riskScore, activeStations, breakdown, safety, lang }) {
   const ar = lang === "ar";
   const state = riskScore >= 70 ? (ar ? "يحتاج تدخلاً" : "Intervention needed") : riskScore >= 40 ? (ar ? "تحت المراقبة" : "Under observation") : (ar ? "مستقر" : "Stable");
   return (
@@ -22,6 +23,20 @@ export default function CommandCenterHero({ companyName, riskScore, activeStatio
             <Activity className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{100 - riskScore}%</p><p className="text-xs text-white/50">{state}</p>
           </div>
           <div className="min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4"><BrainCircuit className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{activeStations}</p><p className="text-xs text-white/50">{ar ? "محطات مراقبة" : "Stations monitored"}</p></div>
+          {safety && (
+            <RouterLink to="/app/safety" className="min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:bg-white/10">
+              {safety.criticalStations > 0 || safety.recentIncidents > 0
+                ? <ShieldAlert className="mb-3 h-4 w-4 text-red-400" />
+                : <ShieldCheck className="mb-3 h-4 w-4 text-landing-gold" />}
+              {safety.criticalStations > 0 ? (
+                <><p className="text-3xl font-heading text-red-300">{safety.criticalStations}</p><p className="text-xs text-white/50">{ar ? "محطات سلامة حرجة" : "Critical safety stations"}</p></>
+              ) : safety.openHazards > 0 ? (
+                <><p className="text-3xl font-heading">{safety.openHazards}</p><p className="text-xs text-white/50">{ar ? "مخاطر سلامة مفتوحة" : "Open safety hazards"}</p></>
+              ) : (
+                <><p className="text-3xl font-heading">{ar ? "آمن" : "Safe"}</p><p className="text-xs text-white/50">{ar ? "السلامة (HSE)" : "Safety (HSE)"}</p></>
+              )}
+            </RouterLink>
+          )}
         </div>
       </div>
       <Link to="/app/assistant" className="relative mt-6 inline-flex items-center gap-2 rounded-full bg-landing-gold px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90">{ar ? "أصدر أمراً إلى نيرو" : "Command Niro"}<ArrowUpRight className="h-4 w-4" /></Link>
