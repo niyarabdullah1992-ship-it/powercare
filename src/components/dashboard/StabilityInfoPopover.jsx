@@ -47,6 +47,14 @@ export default function StabilityInfoPopover({ breakdown, riskScore, ar, company
             <span className="text-white/60">{ar ? "نسبة الاستقرار" : "Stability score"}</span>
             <span className="font-semibold text-landing-gold-light">{100 - riskScore}%</span>
           </div>
+          <div className="mt-3 rounded-lg border border-white/10 bg-white/5 p-2.5">
+            <p className="text-[11px] font-semibold text-landing-gold-light mb-1">{ar ? "لماذا هذه الأوزان؟" : "Why these weights?"}</p>
+            <p className="text-[10.5px] leading-4.5 text-white/60">
+              {ar
+                ? "تعتمد المنهجية على التقييم الموزون للمخاطر (Weighted Risk Scoring) المستخدم في أنظمة السلامة المهنية ومصفوفات المخاطر وفق ISO 45001: كل عامل يأخذ وزناً يعكس تأثيره التشغيلي — السلامة الحرجة (خطر على الأرواح) وتوقف العمل (خسارة إنتاج مباشرة) تأخذ الأوزان الأعلى، بينما التقارير المعلقة (تأخير إداري) الأدنى. الأوزان قابلة للمعايرة حسب طبيعة عمل شركتك."
+                : "Based on Weighted Risk Scoring — the methodology behind ISO 45001 risk matrices in occupational safety: each factor is weighted by its operational impact. Critical safety (risk to life) and work stoppage (direct production loss) carry the highest weights, while pending reports (administrative delay) the lowest. Weights are calibratable to your operation."}
+            </p>
+          </div>
           {canEditWeights && companyId && (
             <button type="button" onClick={() => setEditing(true)} className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-white/20 px-3 py-1.5 text-[11px] font-body text-white/80 hover:bg-white/10">
               <SlidersHorizontal className="h-3 w-3" /> {ar ? "تعديل الأوزان" : "Edit weights"}
