@@ -277,6 +277,10 @@ export default function Landing() {
               <Download className="h-3.5 w-3.5" />
               {t("downloadPresentation")}
             </Link>
+            <Link to="/project-guide" className="mt-2 ms-2 inline-flex items-center gap-2 rounded-full border border-landing-gold/40 px-4 py-2 text-sm font-body font-semibold text-landing-gold transition-colors hover:bg-landing-gold hover:text-white">
+              <Download className="h-3.5 w-3.5" />
+              {lang === "ar" ? "الدليل التقديمي الشامل" : "Complete Project Guide"}
+            </Link>
             <div className="flex items-center gap-4 mt-5 text-[#3a2f22]/60">
               <Facebook className="w-4 h-4" strokeWidth={1.75} />
               <Twitter className="w-4 h-4" strokeWidth={1.75} />
