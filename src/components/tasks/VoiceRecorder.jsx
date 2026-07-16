@@ -13,24 +13,36 @@ export default function VoiceRecorder({ files, setFiles, disabled }) {
   const start = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const supportedTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
+      const mimeType = supportedTypes.find((type) => MediaRecorder.isTypeSupported(type));
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       chunksRef.current = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.onerror = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        setRecording(false);
+        setUploading(false);
+        alert(t("attachmentFailed"));
+      };
       recorder.onstop = async () => {
-        stream.getTracks().forEach((tr) => tr.stop());
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        setUploading(true);
+        stream.getTracks().forEach((track) => track.stop());
+        const type = recorder.mimeType || chunksRef.current[0]?.type || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type });
         try {
-          const file = new File([blob], `voice-${Date.now()}.webm`, { type: "audio/webm" });
+          if (!blob.size) throw new Error("Empty recording");
+          const extension = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
+          const file = new File([blob], `voice-${Date.now()}.${extension}`, { type });
           const up = await base44.integrations.Core.UploadFile({ file });
-          setFiles([...(files || []), { url: up.file_url, name: file.name, type: "audio/webm" }]);
+          setFiles((current) => [...(current || []), { url: up.file_url, name: file.name, type }]);
         } catch {
           alert(t("attachmentFailed"));
         } finally {
+          chunksRef.current = [];
+          recorderRef.current = null;
           setUploading(false);
         }
       };
-      recorder.start();
+      recorder.start(1000);
       recorderRef.current = recorder;
       setRecording(true);
     } catch {
@@ -39,8 +51,11 @@ export default function VoiceRecorder({ files, setFiles, disabled }) {
   };
 
   const stop = () => {
-    recorderRef.current?.stop();
+    const recorder = recorderRef.current;
+    if (!recorder || recorder.state !== "recording") return;
     setRecording(false);
+    setUploading(true);
+    recorder.stop();
   };
 
   return (
