@@ -16,9 +16,65 @@ const FILE_MODULES = import.meta.glob(
   { query: "?raw", import: "default" }
 );
 
+const TEXTS = {
+  ar: {
+    bar: "مستند الكود المصدري الكامل — للتسجيل في حقوق الملكية الفكرية",
+    authorPh: "اسم المؤلف / المبرمج (كما في الطلب)",
+    print: "طباعة / حفظ PDF",
+    collecting: "جاري تجميع كل ملفات الكود…",
+    deposit: "SOURCE CODE DEPOSIT — نسخة إيداع الكود المصدري",
+    title: "منصة PowerCare",
+    subtitle: "نظام سحابي متكامل لإدارة المحطات، الموارد البشرية، الحضور بالموقع الجغرافي، المهام، السلامة، والتوقيع الرقمي للمستندات.",
+    rows: {
+      workName: ["اسم المصنف", "PowerCare — منصة إدارة المحطات والقوى العاملة"],
+      author: "اسم المؤلف / المبرمج",
+      langs: ["لغة/لغات البرمجة المستخدمة", "JavaScript (React JSX)، TypeScript، HTML، CSS (Tailwind)، JSON"],
+      os: ["نظام التشغيل", "مستقل عن نظام التشغيل — يعمل عبر المتصفح على Windows، macOS، Linux، Android، iOS"],
+      env: ["بيئة التشغيل", "ويب / سحابي (SaaS) — واجهة React + خدمات خلفية سحابية (Deno / قاعدة بيانات سحابية)"],
+      fileCount: "عدد الملفات المصدرية",
+      lineCount: "إجمالي أسطر الكود",
+      date: "تاريخ إصدار هذه النسخة",
+      filesUnit: "ملفًا",
+      linesUnit: "سطرًا",
+    },
+    note: "يحتوي هذا المستند على النسخة الكاملة وغير المنقوصة من الأكواد المصدرية للبرنامج، مرتبة حسب مسار كل ملف داخل المشروع، من أول ملف حتى آخر ملف — لأغراض إيداع وتسجيل حقوق الملكية الفكرية.",
+    index: "فهرس الملفات",
+    loading: "جاري تحميل الكود المصدري الكامل…",
+    end: "نهاية الكود المصدري",
+  },
+  en: {
+    bar: "Complete Source Code Document — Intellectual Property Registration",
+    authorPh: "Author / Programmer name (as in the application)",
+    print: "Print / Save PDF",
+    collecting: "Collecting all source files…",
+    deposit: "SOURCE CODE DEPOSIT",
+    title: "PowerCare Platform",
+    subtitle: "An integrated cloud system for station management, HR, GPS-based attendance, tasks, safety (HSE), and digital document signing.",
+    rows: {
+      workName: ["Work title", "PowerCare — Station & Workforce Management Platform"],
+      author: "Author / Programmer",
+      langs: ["Programming language(s)", "JavaScript (React JSX), TypeScript, HTML, CSS (Tailwind), JSON"],
+      os: ["Operating system", "OS-independent — runs in the browser on Windows, macOS, Linux, Android, iOS"],
+      env: ["Runtime environment", "Web / Cloud (SaaS) — React frontend + cloud backend services (Deno / cloud database)"],
+      fileCount: "Number of source files",
+      lineCount: "Total lines of code",
+      date: "Version date",
+      filesUnit: "files",
+      linesUnit: "lines",
+    },
+    note: "This document contains the complete, unabridged source code of the software, ordered by each file's path within the project, from the first file to the last — for the purpose of intellectual property deposit and registration.",
+    index: "File Index",
+    loading: "Loading the complete source code…",
+    end: "End of source code",
+  },
+};
+
 export default function SourceCodeDoc() {
   const [files, setFiles] = useState(null);
   const [author, setAuthor] = useState("");
+  const [docLang, setDocLang] = useState("ar");
+  const T = TEXTS[docLang];
+  const isAr = docLang === "ar";
 
   useEffect(() => {
     document.title = "PowerCare — Source Code / الكود المصدري الكامل";
@@ -41,7 +97,7 @@ export default function SourceCodeDoc() {
   const totalLines = (files || []).reduce((sum, f) => sum + f.content.split("\n").length, 0);
 
   return (
-    <div dir="rtl" className="min-h-screen bg-white text-black">
+    <div dir={isAr ? "rtl" : "ltr"} className="min-h-screen bg-white text-black">
       <style>{`
         @page { size: A4 portrait; margin: 12mm; }
         @media print { .no-print { display: none !important; } }
@@ -52,11 +108,17 @@ export default function SourceCodeDoc() {
       {/* شريط التحكم — لا يظهر في الطباعة */}
       <div className="no-print sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex flex-wrap items-center gap-3">
         <FileCode2 className="w-5 h-5 text-amber-700" />
-        <p className="text-sm font-semibold">مستند الكود المصدري الكامل — للتسجيل في حقوق الملكية الفكرية</p>
+        <p className="text-sm font-semibold">{T.bar}</p>
+        <button
+          onClick={() => setDocLang(isAr ? "en" : "ar")}
+          className="px-3 py-1.5 rounded-md border border-gray-300 text-sm font-semibold hover:bg-gray-50"
+        >
+          {isAr ? "English" : "عربي"}
+        </button>
         <input
           value={author}
           onChange={(e) => setAuthor(e.target.value)}
-          placeholder="اسم المؤلف / المبرمج (كما في الطلب)"
+          placeholder={T.authorPh}
           className="px-3 py-1.5 rounded-md border border-gray-300 text-sm w-72"
         />
         <button
@@ -64,11 +126,11 @@ export default function SourceCodeDoc() {
           disabled={!files}
           className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-black text-white text-sm disabled:opacity-50"
         >
-          <Printer className="w-4 h-4" /> طباعة / حفظ PDF
+          <Printer className="w-4 h-4" /> {T.print}
         </button>
         {!files && (
           <span className="flex items-center gap-1.5 text-xs text-gray-500">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" /> جاري تجميع كل ملفات الكود…
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> {T.collecting}
           </span>
         )}
       </div>
@@ -76,21 +138,21 @@ export default function SourceCodeDoc() {
       <div className="max-w-[190mm] mx-auto px-6 py-10">
         {/* صفحة الغلاف — بيانات المصنف */}
         <div className="border-2 border-black p-10 mb-10" style={{ breakAfter: "page" }}>
-          <p className="text-xs tracking-widest text-amber-800 font-bold mb-4">SOURCE CODE DEPOSIT — نسخة إيداع الكود المصدري</p>
-          <h1 className="text-3xl font-bold mb-2">منصة PowerCare</h1>
-          <p className="text-sm text-gray-700 mb-8">نظام سحابي متكامل لإدارة المحطات، الموارد البشرية، الحضور بالموقع الجغرافي، المهام، السلامة، والتوقيع الرقمي للمستندات.</p>
+          <p className="text-xs tracking-widest text-amber-800 font-bold mb-4">{T.deposit}</p>
+          <h1 className="text-3xl font-bold mb-2">{T.title}</h1>
+          <p className="text-sm text-gray-700 mb-8">{T.subtitle}</p>
 
           <table className="w-full text-sm border-collapse">
             <tbody>
               {[
-                ["اسم المصنف", "PowerCare — منصة إدارة المحطات والقوى العاملة"],
-                ["اسم المؤلف / المبرمج", author || "……………………………………"],
-                ["لغة/لغات البرمجة المستخدمة", "JavaScript (React JSX)، TypeScript، HTML، CSS (Tailwind)، JSON"],
-                ["نظام التشغيل", "مستقل عن نظام التشغيل — يعمل عبر المتصفح على Windows، macOS، Linux، Android، iOS"],
-                ["بيئة التشغيل", "ويب / سحابي (SaaS) — واجهة React + خدمات خلفية سحابية (Deno / قاعدة بيانات سحابية)"],
-                ["عدد الملفات المصدرية", files ? `${files.length} ملفًا` : "…"],
-                ["إجمالي أسطر الكود", files ? `${totalLines.toLocaleString("en-US")} سطرًا` : "…"],
-                ["تاريخ إصدار هذه النسخة", new Date().toLocaleDateString("ar-SA")],
+                T.rows.workName,
+                [T.rows.author, author || "……………………………………"],
+                T.rows.langs,
+                T.rows.os,
+                T.rows.env,
+                [T.rows.fileCount, files ? `${files.length} ${T.rows.filesUnit}` : "…"],
+                [T.rows.lineCount, files ? `${totalLines.toLocaleString("en-US")} ${T.rows.linesUnit}` : "…"],
+                [T.rows.date, new Date().toLocaleDateString(isAr ? "ar-SA" : "en-GB")],
               ].map(([k, v]) => (
                 <tr key={k}>
                   <td className="border border-gray-400 bg-gray-50 font-semibold p-2.5 w-56">{k}</td>
@@ -100,16 +162,13 @@ export default function SourceCodeDoc() {
             </tbody>
           </table>
 
-          <p className="text-xs text-gray-600 mt-8 leading-relaxed">
-            يحتوي هذا المستند على النسخة الكاملة وغير المنقوصة من الأكواد المصدرية للبرنامج، مرتبة حسب مسار كل ملف داخل المشروع،
-            من أول ملف حتى آخر ملف — لأغراض إيداع وتسجيل حقوق الملكية الفكرية.
-          </p>
+          <p className="text-xs text-gray-600 mt-8 leading-relaxed">{T.note}</p>
         </div>
 
         {/* فهرس الملفات */}
         {files && (
           <div className="mb-10" style={{ breakAfter: "page" }}>
-            <h2 className="text-xl font-bold border-b-2 border-black pb-2 mb-4">فهرس الملفات ({files.length})</h2>
+            <h2 className="text-xl font-bold border-b-2 border-black pb-2 mb-4">{T.index} ({files.length})</h2>
             <ol dir="ltr" className="text-[10px] font-mono leading-5 list-decimal list-inside columns-2">
               {files.map((f) => (
                 <li key={f.path}>{f.path}</li>
@@ -131,14 +190,14 @@ export default function SourceCodeDoc() {
           ))
         ) : (
           <div className="flex items-center justify-center gap-2 py-20 text-gray-500">
-            <Loader2 className="w-5 h-5 animate-spin" /> جاري تحميل الكود المصدري الكامل…
+            <Loader2 className="w-5 h-5 animate-spin" /> {T.loading}
           </div>
         )}
 
         {files && (
           <div className="border-t-2 border-black pt-4 mt-10 text-xs text-gray-600 flex justify-between">
-            <span>PowerCare — نهاية الكود المصدري ({files.length} ملفًا • {totalLines.toLocaleString("en-US")} سطرًا)</span>
-            <span>{new Date().toLocaleDateString("ar-SA")}</span>
+            <span>PowerCare — {T.end} ({files.length} {T.rows.filesUnit} • {totalLines.toLocaleString("en-US")} {T.rows.linesUnit})</span>
+            <span>{new Date().toLocaleDateString(isAr ? "ar-SA" : "en-GB")}</span>
           </div>
         )}
       </div>
