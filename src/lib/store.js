@@ -1108,6 +1108,11 @@ export function recordSafetyIncident(companyId, stationId, description) {
     rec.lastIncidentAt = new Date().toISOString();
     rec.incidentLog = rec.incidentLog || [];
     rec.incidentLog.unshift({ id: uid("inc"), description: description || "", at: rec.lastIncidentAt });
+    // A station with a fresh incident can't stay "safe": auto-downgrade the level
+    // to at least "watch" and void the previous approval so management re-reviews.
+    if (rec.level !== "red") rec.level = "amber";
+    rec.approvedBy = null;
+    rec.approvedAt = null;
   });
 }
 
