@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { base44 } from "@/api/base44Client";
+import { getMediaStream, mediaErrorText, openStandalone } from "@/lib/mediaAccess";
 import { Mic, Square, Loader2 } from "lucide-react";
 
 export default function VoiceRecorder({ files, setFiles, disabled, onRecorded }) {
@@ -13,8 +14,16 @@ export default function VoiceRecorder({ files, setFiles, disabled, onRecorded })
   const timerRef = useRef(null);
 
   const start = async () => {
+    let stream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await getMediaStream({ audio: true });
+    } catch (err) {
+      const ar = document.documentElement.dir === "rtl";
+      alert(mediaErrorText(err.code, ar));
+      if (err.code === "embedded") openStandalone();
+      return;
+    }
+    try {
       const supportedTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
       const mimeType = supportedTypes.find((type) => MediaRecorder.isTypeSupported(type));
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);

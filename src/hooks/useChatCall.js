@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { getMediaStream } from "@/lib/mediaAccess";
 
 const ICE = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }] };
 
@@ -22,9 +23,8 @@ export default function useChatCall({ activeChat, selectedStation, contacts, cur
   }, [signal]);
   const requestStream = useCallback(async (mode) => {
     setMediaError("");
-    if (!navigator.mediaDevices?.getUserMedia) { setMediaError("unsupported"); return null; }
-    try { return await navigator.mediaDevices.getUserMedia({ audio: true, video: mode === "video" }); }
-    catch (error) { setMediaError(error?.name === "NotAllowedError" ? "permission" : error?.name === "NotFoundError" ? "device" : "failed"); return null; }
+    try { return await getMediaStream({ audio: true, video: mode === "video" }); }
+    catch (error) { setMediaError(error.code || "failed"); return null; }
   }, []);
   const activate = useCallback(async (session, stream) => { seen.current.clear(); setLocalStream(stream); setCall(session); setIncoming(null); await signal(session.id, null, "join"); }, [signal]);
   const join = useCallback(async (session) => { const stream = await requestStream(session.mode); if (stream) await activate(session, stream); }, [activate, requestStream]);

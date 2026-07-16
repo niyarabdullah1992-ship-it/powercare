@@ -18,6 +18,7 @@ import IncomingCallBanner from "@/components/chat/IncomingCallBanner";
 import ChatCallPanel from "@/components/chat/ChatCallPanel";
 import CameraCaptureButton from "@/components/chat/CameraCaptureButton";
 import useChatCall from "@/hooks/useChatCall";
+import { mediaErrorText, openStandalone } from "@/lib/mediaAccess";
 
 export default function StationChat() {
   const { t, dir, lang } = useI18n();
@@ -248,7 +249,16 @@ export default function StationChat() {
                   </div>
                 </div>
                 <IncomingCallBanner call={callControls.incoming} onAccept={callControls.accept} onDecline={callControls.dismiss} ar={lang === "ar"} />
-                {callControls.mediaError && <div className="border-b border-destructive/20 bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">{lang === "ar" ? "تعذر الوصول للكاميرا أو الميكروفون. افتح التطبيق في نافذة مستقلة واسمح بالأذونات." : "Camera or microphone access failed. Open the app in a standalone tab and allow permissions."}</div>}
+                {callControls.mediaError && (
+                  <div className="flex flex-wrap items-center justify-center gap-2 border-b border-destructive/20 bg-destructive/10 px-4 py-2 text-center text-xs text-destructive">
+                    <span>{mediaErrorText(callControls.mediaError, lang === "ar")}</span>
+                    {callControls.mediaError === "embedded" && (
+                      <button type="button" onClick={openStandalone} className="rounded-md border border-destructive/40 px-2 py-0.5 font-medium hover:bg-destructive/20">
+                        {lang === "ar" ? "فتح في نافذة مستقلة" : "Open in standalone tab"}
+                      </button>
+                    )}
+                  </div>
+                )}
                 {activeTab === "email" ? (
                   <div className="flex-1 overflow-y-auto p-5">
                     <CompanyEmailComposer employees={data.employees} currentUser={currentUser} companyId={company.id} />
