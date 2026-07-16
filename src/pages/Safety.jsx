@@ -24,8 +24,14 @@ export default function Safety() {
   const recFor = (sid) => (data.safety || []).find((s) => s.stationId === sid) || null;
 
   // Any data edit invalidates the previous approval — the report must reflect approved data only.
-  const handleUpdate = (stationId, updates) =>
-    updateSafetyRecord(company.id, stationId, { ...updates, approvedBy: null, approvedAt: null });
+  const handleUpdate = (stationId, updates) => {
+    // Adding a hazard while the station is "Safe" auto-downgrades it to "Watch".
+    const rec = recFor(stationId);
+    const extra = updates.hazards && updates.hazards.length > (rec?.hazards?.length || 0) && (updates.level || rec?.level || "green") === "green"
+      ? { level: "amber" }
+      : {};
+    updateSafetyRecord(company.id, stationId, { ...updates, ...extra, approvedBy: null, approvedAt: null });
+  };
 
   const handleApprove = (stationId) =>
     updateSafetyRecord(company.id, stationId, { approvedBy: currentUser.name, approvedAt: new Date().toISOString() });

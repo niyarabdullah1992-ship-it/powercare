@@ -18,6 +18,10 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
 
   const hazards = rec?.hazards || [];
   const approved = !!rec?.approvedBy;
+  // A station can't be marked "Safe" while hazards are still open or an incident
+  // was logged in the last 30 days — the hazards must be cleared first.
+  const recentIncident = rec?.lastIncidentAt && (Date.now() - new Date(rec.lastIncidentAt).getTime()) < 30 * 86400000;
+  const safeBlocked = hazards.length > 0 || !!recentIncident;
 
   const addHazard = () => {
     if (!hazard.trim()) return;
@@ -50,19 +54,30 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
       <div>
         <p className="text-[11px] text-muted-foreground font-body mb-1.5">{ar ? "مستوى السلامة" : "Safety level"}</p>
         <div className="flex items-center gap-1.5">
-          {LEVELS.map((l) => (
-            <button
-              key={l.val}
-              disabled={!canEdit}
-              onClick={() => onUpdate({ level: l.val })}
-              className={`px-3 py-1 rounded-full text-[11px] font-body border transition ${
-                rec?.level === l.val ? l.cls : "border-border text-muted-foreground hover:bg-muted"
-              } disabled:cursor-default`}
-            >
-              {ar ? l.ar : l.en}
-            </button>
-          ))}
+          {LEVELS.map((l) => {
+            const blocked = l.val === "green" && safeBlocked;
+            return (
+              <button
+                key={l.val}
+                disabled={!canEdit || blocked}
+                title={blocked ? (ar ? "لا يمكن اختيار «آمنة» مع وجود مخاطر مفتوحة أو حادثة حديثة" : "Can't set Safe while there are open hazards or a recent incident") : undefined}
+                onClick={() => onUpdate({ level: l.val })}
+                className={`px-3 py-1 rounded-full text-[11px] font-body border transition ${
+                  rec?.level === l.val ? l.cls : "border-border text-muted-foreground hover:bg-muted"
+                } disabled:cursor-default ${blocked ? "opacity-40 line-through" : ""}`}
+              >
+                {ar ? l.ar : l.en}
+              </button>
+            );
+          })}
         </div>
+        {safeBlocked && (
+          <p className="text-[10px] text-amber-700 font-body mt-1.5">
+            {ar
+              ? "لا يمكن تصنيف المحطة «آمنة» — توجد مخاطر مفتوحة أو حادثة خلال آخر ٣٠ يومًا."
+              : "Station can't be marked Safe — open hazards or an incident within the last 30 days."}
+          </p>
+        )}
       </div>
 
       {/* Last inspection */}
