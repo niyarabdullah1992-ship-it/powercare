@@ -18,43 +18,27 @@ const VIDEO_URLS = [
 ];
 
 const NARRATION_URLS = {
-  ar: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/8111ff65d_3e21a84a0_speech.mp3",
-  en: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/a71af389e_speech.mp3",
-  de: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/003d6b25c_speech.mp3",
-  fr: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/7254f6bce_speech.mp3",
-  es: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/6c27674c4_speech.mp3",
-  pt: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/1b27d629f_speech.mp3",
-  ru: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/c816c8103_speech.mp3",
-  ja: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/a01dbb1af_speech.mp3",
-  ko: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/1c1c8c196_speech.mp3",
-};
-
-const EXTRA_NARRATION_URLS = {
-  ar: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/3a068406e_speech.mp3",
-  en: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/607303003_speech.mp3",
-  de: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/d6aafa510_speech.mp3",
-  fr: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/0e42a9a95_speech.mp3",
-  es: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/629d315df_speech.mp3",
-  pt: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/3a175d124_speech.mp3",
-  ru: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/bf12733a2_speech.mp3",
-  ja: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/3f5f293da_speech.mp3",
-  ko: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/212975137_speech.mp3",
+  ar: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/25184e35b_speech.mp3",
+  en: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/920c25d04_speech.mp3",
+  de: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/005f98fda_speech.mp3",
+  fr: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/5f99e3b7c_speech.mp3",
+  es: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/8672163a3_speech.mp3",
+  pt: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/3996acb98_speech.mp3",
+  ru: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/aca7f7ba1_speech.mp3",
+  ja: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/ea5949f84_speech.mp3",
+  ko: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/9bfe3af77_speech.mp3",
 };
 
 export default function VideoIntro() {
   const { t, lang } = useI18n();
   const playerRef = useRef(null);
   const audioRef = useRef(null);
-  const extraAudioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
-  const [audioPhase, setAudioPhase] = useState("main");
   const narrationUrl = NARRATION_URLS[lang] || NARRATION_URLS.en;
-  const extraNarrationUrl = EXTRA_NARRATION_URLS[lang] || EXTRA_NARRATION_URLS.en;
 
   const resetPlayback = () => {
     playerRef.current?.reset();
-    [audioRef.current, extraAudioRef.current].forEach((audio) => { if (audio) { audio.pause(); audio.currentTime = 0; audio.playbackRate = 1; } });
-    setAudioPhase("main");
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.currentTime = 0; }
     setPlaying(false);
   };
 
@@ -64,31 +48,16 @@ export default function VideoIntro() {
     if (playing) {
       playerRef.current?.pause();
       audioRef.current?.pause();
-      extraAudioRef.current?.pause();
     } else {
       playerRef.current?.play();
-      if (audioPhase === "main") audioRef.current?.play();
-      if (audioPhase === "extra") extraAudioRef.current?.play();
+      audioRef.current?.play();
     }
     setPlaying((current) => !current);
   };
 
-  const handlePrimaryAudioEnded = () => {
-    const extra = extraAudioRef.current;
-    const remaining = playerRef.current?.remaining() || 0;
-    if (extra?.duration && remaining) extra.playbackRate = Math.min(1.2, Math.max(.8, extra.duration / remaining));
-    setAudioPhase("extra");
-    if (playing) extra?.play();
-  };
-
   const handlePlaylistEnd = () => {
-    if (audioPhase === "done") resetPlayback();
+    if (audioRef.current?.ended) resetPlayback();
     else playerRef.current?.replayLast();
-  };
-
-  const handleExtraAudioEnded = () => {
-    setAudioPhase("done");
-    resetPlayback();
   };
 
   return (
@@ -118,8 +87,7 @@ export default function VideoIntro() {
           </button>
         </div>
 
-        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" onEnded={handlePrimaryAudioEnded} />
-        <audio key={extraNarrationUrl} ref={extraAudioRef} src={extraNarrationUrl} preload="auto" onEnded={handleExtraAudioEnded} />
+        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" onEnded={resetPlayback} />
 
         <button type="button" onClick={togglePlay} className="inline-flex cursor-pointer items-center gap-3 rounded-full border border-landing-gold/30 bg-card/5 px-6 py-3 font-body text-sm text-landing-gold-light transition-colors hover:bg-landing-gold/20">
           {playing ? <Pause className="h-4 w-4 opacity-60" /> : <Volume2 className="h-4 w-4 opacity-60" />}
