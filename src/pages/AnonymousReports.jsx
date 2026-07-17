@@ -98,8 +98,13 @@ export default function AnonymousReports() {
   const submit = (e) => {
     e.preventDefault();
     if (!message.trim()) return;
+    const assignedStation = data.stations.find((station) => station.id === currentUser.stationId);
+    if (!assignedStation) {
+      alert(lang === "ar" ? "يجب تعيين محطة للموظف قبل إرسال شكوى سرية." : "The employee must have an assigned station before filing an anonymous complaint.");
+      return;
+    }
     if (usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit) return;
-    const draft = { stationId: currentUser.stationId || null };
+    const draft = { stationId: assignedStation.id };
     const initialLevel = Array.from({ length: STAGE_COUNT }).findIndex((_, level) => handlersForLevel(level, draft, data).length > 0);
     if (initialLevel < 0) {
       alert(t("noHandlerAssigned"));
@@ -111,7 +116,7 @@ export default function AnonymousReports() {
       d.anonymousReports.unshift({
         id: reportId,
         anonymousId,
-        stationId: currentUser.stationId || null,
+        stationId: assignedStation.id,
         type, priority, message,
         files,
         status: "open",
@@ -127,7 +132,7 @@ export default function AnonymousReports() {
       reportId,
       sessionToken: getCompanyToken(company.id),
     });
-    const station = data.stations.find((s) => s.id === currentUser.stationId);
+    const station = assignedStation;
     const initialHandlers = handlersForLevel(initialLevel, draft, data);
     for (const handler of initialHandlers) addNotification(company.id, handler.id, `New ${t(type)} report at ${station?.name || ""} (${t(priority)}).`);
     setMessage("");
@@ -257,11 +262,10 @@ export default function AnonymousReports() {
                 </select>
               </div>
             </div>
-            {currentUser.stationId && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-body">
-                <Building2 className="w-3.5 h-3.5" /> {t("station")}: {stationName(currentUser.stationId)}
-              </div>
-            )}
+            <div className={`flex items-center gap-1.5 text-xs font-body ${currentUser.stationId ? "text-muted-foreground" : "text-destructive"}`}>
+              <Building2 className="w-3.5 h-3.5" />
+              {t("station")}: {currentUser.stationId ? stationName(currentUser.stationId) : (lang === "ar" ? "لا توجد محطة معيّنة" : "No assigned station")}
+            </div>
             <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder={t("fileReport")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
             <div className="flex flex-wrap items-end gap-2">
               <CommentFiles files={files} setFiles={setFiles} />
@@ -271,7 +275,7 @@ export default function AnonymousReports() {
               <p className="text-xs text-muted-foreground font-body">
                 {usage.dayLimit - usage.day} {t("remaining")} · {usage.weekLimit - usage.week} {t("weekRemaining")} · {usage.monthLimit - usage.month} {t("monthRemaining")}
               </p>
-              <button type="submit" disabled={usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-40">
+              <button type="submit" disabled={!currentUser.stationId || usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-40">
                 <Send className="w-4 h-4" /> {t("fileReport")}
               </button>
             </div>
