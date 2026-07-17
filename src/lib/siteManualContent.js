@@ -1,5 +1,3 @@
-import { MANUAL_EXAMPLES, MANUAL_ROLE_TABLES } from "@/lib/siteManualEnhancements";
-
 export const MANUAL_META = {
   title: "الدليل التشغيلي الشامل لمنصة PowerCare",
   subtitle: "مرجع تفصيلي للملاك والمديرين والموظفين — الإصدار التشغيلي 2026",
@@ -8,8 +6,6 @@ export const MANUAL_META = {
 
 const chapter = (id, title, purpose, roles, steps, rules, tips = []) => ({
   id, title, purpose, roles, steps, rules, tips,
-  examples: MANUAL_EXAMPLES[id] || [],
-  roleTable: MANUAL_ROLE_TABLES[id] || [],
 });
 
 export const MANUAL_CHAPTERS = [
