@@ -71,23 +71,11 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
             );
           })}
         </div>
-        {safeBlocked ? (
-          <p className="text-[10px] text-red-600 font-semibold font-body mt-1.5">
-            {ar
-              ? hazards.length > 0
-                ? "لا يمكن تصنيف المحطة «آمنة» مع وجود مخاطر مفتوحة — أغلق المخاطر أولًا."
-                : "سُجّلت حادثة — يُفتح خيار «آمنة» بعد مراجعة الإدارة واعتماد بيانات السلامة."
-              : hazards.length > 0
-                ? "Can't mark Safe while hazards are open — clear them first."
-                : "An incident was logged — Safe unlocks after management reviews and approves the safety data."}
-          </p>
-        ) : (
-          <p className="text-[10px] text-red-600 font-semibold font-body mt-1.5">
-            {ar
-              ? "عند تسجيل حادثة أو وجود مخاطر مفتوحة يُقفل خيار «آمنة» حتى مراجعة الإدارة والاعتماد."
-              : "Logging an incident or having open hazards locks the Safe option until management reviews and approves."}
-          </p>
-        )}
+        <p className="text-[10px] text-red-600 font-semibold font-body mt-1.5">
+          {ar
+            ? "عند تسجيل حادثة أو وجود مخاطر مفتوحة يُقفل خيار «آمنة» حتى مراجعة الإدارة والاعتماد."
+            : "Logging an incident or having open hazards locks the Safe option until management reviews and approves."}
+        </p>
       </div>
 
       {/* Last inspection */}
