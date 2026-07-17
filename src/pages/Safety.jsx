@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { ShieldCheck, FileText, ClipboardCheck, Archive } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { visibleStations } from "@/lib/permissions";
+import { visibleStations, canSeeAllStations } from "@/lib/permissions";
 import { updateSafetyRecord, recordSafetyIncident } from "@/lib/store";
 import PageHeader from "@/components/PageHeader";
 import StationSafetyCard from "@/components/safety/StationSafetyCard";
@@ -20,7 +20,13 @@ export default function Safety() {
 
   if (!data || !currentUser) return null;
 
-  const stations = visibleStations(currentUser, data);
+  // HQ (المقر الرئيسي) gets its own safety card alongside the stations.
+  const stations = [
+    ...(canSeeAllStations(currentUser) || !currentUser.stationId
+      ? [{ id: "hq", name: ar ? "المقر الرئيسي" : "Headquarters" }]
+      : []),
+    ...visibleStations(currentUser, data),
+  ];
   const canEdit = ["director", "ops_manager", "pgm", "station_manager"].includes(currentUser.role) || data.ownerId === currentUser.id;
   const recFor = (sid) => (data.safety || []).find((s) => s.stationId === sid) || null;
 

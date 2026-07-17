@@ -64,7 +64,7 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
                 onClick={() => onUpdate({ level: l.val })}
                 className={`px-3 py-1 rounded-full text-[11px] font-body border transition ${
                   rec?.level === l.val ? l.cls : "border-border text-muted-foreground hover:bg-muted"
-                } disabled:cursor-default ${blocked ? "opacity-40 line-through" : ""}`}
+                } disabled:cursor-not-allowed ${blocked ? "opacity-50" : ""}`}
               >
                 {ar ? l.ar : l.en}
               </button>
