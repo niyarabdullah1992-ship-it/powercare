@@ -51,13 +51,10 @@ export default function SignaturePad({ ar, onSave, saving }) {
   };
 
   return (
-    <div className="space-y-3">
-      <p className="flex items-center gap-2 text-xs text-muted-foreground"><PenTool className="h-4 w-4 text-accent" />{ar ? "ارسم توقيعك بإصبعك داخل الإطار" : "Draw your signature with your finger inside the frame"}</p>
-      <canvas ref={canvasRef} width={900} height={260} className="h-44 w-full touch-none cursor-crosshair rounded-xl border-2 border-dashed border-accent/50 bg-background shadow-inner sm:h-52" onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={end} />
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <button type="button" onClick={clear} className="inline-flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm text-foreground hover:bg-secondary"><Eraser className="h-4 w-4" />{ar ? "امسح ثم أعد" : "Clear and redraw"}</button>
-        <button type="button" disabled={!hasInk || saving} onClick={() => onSave(canvasRef.current.toDataURL("image/png"))} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm disabled:opacity-40"><Check className="h-4 w-4" />{saving ? (ar ? "جارٍ الحفظ…" : "Saving…") : ar ? "حفظ وإرسال التوقيع" : "Save and submit signature"}</button>
-      </div>
+    <div className="space-y-4">
+      <p className="flex items-center gap-2 text-xs text-muted-foreground"><PenTool className="h-4 w-4 text-accent" />{ar ? "ارسم توقيعك بإصبعك داخل الإطار" : "Draw your signature inside the frame"}</p>
+      <canvas ref={canvasRef} width={900} height={260} className="h-44 w-full touch-none cursor-crosshair rounded-2xl border-2 border-dashed border-border bg-secondary/40 shadow-inner sm:h-52" onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={end} />
+      <div className="grid gap-2 sm:grid-cols-[auto_1fr]"><button type="button" onClick={clear} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3 text-sm font-medium hover:bg-secondary"><Eraser className="h-4 w-4" />{ar ? "مسح" : "Clear"}</button><button type="button" disabled={!hasInk || saving} onClick={() => onSave(canvasRef.current.toDataURL("image/png"))} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"><Check className="h-4 w-4" />{saving ? (ar ? "جارٍ الحفظ…" : "Saving…") : ar ? "اعتماد وإرسال التوقيع" : "Approve and submit signature"}</button></div>
     </div>
   );
 }

@@ -36,19 +36,12 @@ export default function TypedSignature({ ar, defaultName = "", onSave, saving })
   };
 
   return (
-    <div className="space-y-4">
-      <input value={name} onChange={(event) => setName(event.target.value)} dir="auto" placeholder={ar ? "اكتب اسمك…" : "Type your name…"} className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm font-body focus:outline-none focus:ring-2 focus:ring-ring" />
+    <div className="space-y-5">
+      <div><label className="mb-2 block text-xs font-medium text-muted-foreground">{ar ? "اسم التوقيع" : "Signature name"}</label><input value={name} onChange={(event) => setName(event.target.value)} dir="auto" placeholder={ar ? "اكتب اسمك…" : "Type your name…"} className="w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm font-body outline-none focus:ring-2 focus:ring-ring" /></div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {FONTS.map((font) => (
-          <button key={font.id} type="button" onClick={() => setFontId(font.id)} className={`rounded-xl border bg-card px-3 py-4 text-center text-foreground transition ${fontId === font.id ? "border-accent ring-2 ring-accent/30 shadow-sm" : "border-border hover:border-accent/50"}`}>
-            <span dir="auto" className="block truncate text-2xl leading-tight" style={{ fontFamily: font.css }}>{name.trim() || (ar ? "توقيعك" : "Signature")}</span>
-            <span className="mt-1 block text-[9px] text-muted-foreground">{font.label}</span>
-          </button>
-        ))}
+        {FONTS.map((font) => <button key={font.id} type="button" onClick={() => setFontId(font.id)} className={`rounded-2xl border px-3 py-4 text-center text-foreground transition ${fontId === font.id ? "border-accent bg-secondary ring-2 ring-accent/20" : "border-border bg-card hover:bg-secondary"}`}><span dir="auto" className="block truncate text-2xl leading-tight" style={{ fontFamily: font.css }}>{name.trim() || (ar ? "توقيعك" : "Signature")}</span><span className="mt-2 block text-[9px] text-muted-foreground">{font.label}</span></button>)}
       </div>
-      <div className="flex justify-end">
-        <button type="button" disabled={!name.trim() || saving} onClick={save} className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm disabled:opacity-40"><Check className="h-4 w-4" />{saving ? (ar ? "جارٍ الحفظ…" : "Saving…") : ar ? "حفظ وإرسال التوقيع" : "Save and submit signature"}</button>
-      </div>
+      <button type="button" disabled={!name.trim() || saving} onClick={save} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm disabled:opacity-40"><Check className="h-4 w-4" />{saving ? (ar ? "جارٍ الحفظ…" : "Saving…") : ar ? "اعتماد وإرسال التوقيع" : "Approve and submit signature"}</button>
     </div>
   );
 }

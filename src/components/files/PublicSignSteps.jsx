@@ -3,16 +3,16 @@ import React from "react";
 export default function PublicSignSteps({ ar, current = 2 }) {
   const steps = ar ? ["مراجعة المستند", "إضافة التوقيع", "التحقق والإرسال"] : ["Review document", "Add signature", "Verify & submit"];
   return (
-    <div className="mb-6 rounded-xl border border-border bg-sign-surface px-4 py-4 shadow-sm sm:px-6">
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+    <div className="mb-5 rounded-3xl border border-border bg-card p-4 shadow-elevated sm:p-5">
+      <div className="grid grid-cols-3">
         {steps.map((label, index) => {
           const number = index + 1;
-          const active = number === current;
-          const complete = number < current;
+          const reached = number <= current;
           return (
-            <div key={label} className="min-w-0">
-              <div className={`mb-2 h-1 rounded-full ${active || complete ? "bg-sign-gold" : "bg-muted"}`} />
-              <p className={`truncate text-[10px] sm:text-xs ${active ? "font-semibold text-foreground" : "text-muted-foreground"}`}>{number}. {label}</p>
+            <div key={label} className="relative flex flex-col items-center text-center">
+              {index < 2 && <span className={`absolute top-4 h-px w-[calc(100%-2.5rem)] ${ar ? "right-[calc(50%+1.25rem)]" : "left-[calc(50%+1.25rem)]"} ${number < current ? "bg-accent" : "bg-border"}`} />}
+              <span className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${reached ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>{number}</span>
+              <span className={`mt-2 text-[10px] sm:text-xs ${number === current ? "font-semibold text-foreground" : "text-muted-foreground"}`}>{label}</span>
             </div>
           );
         })}
