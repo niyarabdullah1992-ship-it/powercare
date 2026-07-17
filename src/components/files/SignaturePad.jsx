@@ -7,7 +7,6 @@ export default function SignaturePad({ ar, signerName, verificationId, onPreview
   const drawing = useRef(false);
   const previous = useRef(null);
   const inkRef = useRef(false);
-  const [hasInk, setHasInk] = useState(false);
   const [stamp, setStamp] = useState("");
 
   const point = (event) => {
@@ -44,7 +43,6 @@ export default function SignaturePad({ ar, signerName, verificationId, onPreview
     ctx.stroke();
     previous.current = { ...current, width };
     inkRef.current = true;
-    setHasInk(true);
   };
 
   const end = async () => {
@@ -59,7 +57,6 @@ export default function SignaturePad({ ar, signerName, verificationId, onPreview
     const canvas = canvasRef.current;
     canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
     inkRef.current = false;
-    setHasInk(false);
     setStamp("");
     onPreview("");
   };
