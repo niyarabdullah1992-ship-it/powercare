@@ -9,11 +9,16 @@ const PRESETS = [
   { val: "3months", months: 3 },
   { val: "6months", months: 6 },
   { val: "year", months: 12 },
+  { val: "days", months: 0 },
+  { val: "custom", months: 0 },
 ];
 
 export default function SafetyReportExport({ stations, safety, data, t, lang, dir }) {
   const [preset, setPreset] = useState("month");
   const [stationFilter, setStationFilter] = useState("all");
+  const [customDays, setCustomDays] = useState("");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const ar = lang === "ar";
   const L = (a, e) => (ar ? a : e);
   const branding = data?.reportBranding || {};
@@ -24,6 +29,8 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
     "3months": L("٣ أشهر", "3 Months"),
     "6months": L("٦ أشهر", "6 Months"),
     year: L("سنة", "1 Year"),
+    days: L("أيام محددة", "Specific days"),
+    custom: L("بين تاريخين", "Date range"),
   })[val];
 
   const levelLabel = (lv) => ({
@@ -38,9 +45,17 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
   const scopedStations = stationFilter === "all" ? stations : stations.filter((s) => s.id === stationFilter);
 
   const buildReport = () => {
-    const months = PRESETS.find((p) => p.val === preset)?.months || 1;
-    const start = new Date();
-    start.setMonth(start.getMonth() - months);
+    let start = new Date();
+    let end = new Date();
+    if (preset === "days") {
+      start.setDate(start.getDate() - Number(customDays || 1));
+    } else if (preset === "custom") {
+      if (customStart) start = new Date(customStart);
+      if (customEnd) { end = new Date(customEnd); end.setHours(23, 59, 59, 999); }
+    } else {
+      const months = PRESETS.find((p) => p.val === preset)?.months || 1;
+      start.setMonth(start.getMonth() - months);
+    }
     start.setHours(0, 0, 0, 0);
 
     const statusHeaders = [
@@ -62,12 +77,12 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
     const incidentHeaders = [L("المحطة", "Station"), L("التاريخ", "Date"), L("الوصف", "Description")];
     const incidentRows = scopedStations.flatMap((st) =>
       ((recFor(st.id)?.incidentLog) || [])
-        .filter((i) => i.at && new Date(i.at) >= start)
+        .filter((i) => i.at && new Date(i.at) >= start && new Date(i.at) <= end)
         .map((i) => [st.name, fmt(i.at), i.description || "—"])
     );
 
     const stationLabel = stationFilter === "all" ? L("كل المحطات", "All stations") : scopedStations[0]?.name || "";
-    const periodLabel = `${stationLabel} • ${fmt(start)} → ${fmt(new Date())}`;
+    const periodLabel = `${stationLabel} • ${fmt(start)} → ${fmt(end)}`;
     return { statusHeaders, statusRows, incidentHeaders, incidentRows, periodLabel };
   };
 
@@ -143,6 +158,28 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
           </button>
         ))}
       </div>
+
+      {preset === "days" && (
+        <input
+          type="number" min="1" value={customDays}
+          onChange={(e) => setCustomDays(e.target.value)}
+          placeholder={L("عدد الأيام", "Number of days")}
+          className="w-40 px-3 py-2 rounded-md border border-input text-sm font-body"
+        />
+      )}
+
+      {preset === "custom" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-muted-foreground font-body block mb-1">{L("من تاريخ", "From date")}</label>
+            <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground font-body block mb-1">{L("إلى تاريخ", "To date")}</label>
+            <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2 pt-1">
         <button
