@@ -5,10 +5,11 @@ import { updateCompany, addNotification } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
 import { handlersForLevel, hasHandlerAtLevel, levelLabel, escalationStageCount } from "@/lib/escalation";
 import { formatDateTime } from "@/lib/dateFormat";
-import { Megaphone, Send, Building2, CheckCircle2, ChevronRight, ArrowLeft, Check, X as XIcon, ArrowUpCircle } from "lucide-react";
+import { Megaphone, Send, Building2, CheckCircle2, ChevronRight, ArrowLeft, X as XIcon, ArrowUpCircle } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import MobileSelect from "@/components/mobile/MobileSelect";
+import FlowSwipeAction from "@/components/flow/FlowSwipeAction";
 
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
@@ -107,6 +108,13 @@ export default function PublicComplaints() {
     setReplyFiles({ ...replyFiles, [id]: [] });
   };
 
+  const undoEscalate = (id, previous) => {
+    updateCompany(company.id, (d) => {
+      const r = (d.publicReports || []).find((x) => x.id === id);
+      if (r) { r.escalationLevel = previous.escalationLevel || 0; r.status = previous.status; r.resolution = previous.resolution || null; }
+    });
+  };
+
   const escalate = (id) => {
     const rep = reportsList.find((x) => x.id === id);
     if (!rep) return;
@@ -203,16 +211,18 @@ export default function PublicComplaints() {
           </div>
           <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} className="w-full px-3 py-1.5 rounded-md border border-input text-sm font-body" />
           <div className="flex flex-wrap gap-2">
-            <button disabled={!(replyText[r.id] || "").trim()} onClick={() => decide(r.id, "approved")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-body hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
-              <Check className="w-3.5 h-3.5" /> {t("approveReport")}
-            </button>
+            {(replyText[r.id] || "").trim() && (
+              <div className="w-full">
+                <FlowSwipeAction sensitive label={lang === "ar" ? "اسحب لاعتماد وإغلاق البلاغ" : "Swipe to approve and close"} onAction={() => decide(r.id, "approved")} confirmLabel={t("confirm")} cancelLabel={t("cancel")} />
+              </div>
+            )}
             <button disabled={!(replyText[r.id] || "").trim()} onClick={() => decide(r.id, "rejected")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground text-xs font-body hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
               <XIcon className="w-3.5 h-3.5" /> {t("rejectReport")}
             </button>
             {!isAtTop(r) && (
-              <button onClick={() => escalate(r.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300 text-amber-700 text-xs font-body hover:bg-amber-50">
-                <ArrowUpCircle className="w-3.5 h-3.5" /> {t("escalateNextTier")}
-              </button>
+              <div className="w-full">
+                <FlowSwipeAction label={lang === "ar" ? "اسحب للتصعيد للمستوى التالي" : "Swipe to escalate"} onAction={() => escalate(r.id)} onUndo={() => undoEscalate(r.id, r)} undoLabel={lang === "ar" ? "تراجع عن التصعيد" : "Undo escalation"} />
+              </div>
             )}
           </div>
         </div>

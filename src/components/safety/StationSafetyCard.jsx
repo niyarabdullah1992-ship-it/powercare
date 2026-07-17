@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Plus, X, AlertTriangle, BadgeCheck, History } from "lucide-react";
+import { Plus, AlertTriangle, BadgeCheck, History } from "lucide-react";
 import { formatDateTime } from "@/lib/dateFormat";
+import FlowSwipeAction from "@/components/flow/FlowSwipeAction";
 import ApprovalHistory from "@/components/safety/ApprovalHistory";
 import StationSafetyLog from "@/components/safety/StationSafetyLog";
 import { canSetSafetyLevelSafe } from "@/lib/safetyLogic";
@@ -113,9 +114,9 @@ export default function StationSafetyCard({ station, rec, canEdit, canApprove, a
               <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
               <span className="flex-1 text-xs font-body">{h}</span>
               {canEdit && (
-                <button onClick={() => onCloseHazard(i)} title={ar ? "إغلاق الخطر وحفظه في السجل" : "Close hazard and keep it in the record"} className="text-muted-foreground hover:text-destructive">
-                  <X className="w-3 h-3" />
-                </button>
+                <div className="w-40 shrink-0">
+                  <FlowSwipeAction sensitive label={ar ? "اسحب لإغلاق الخطر" : "Swipe to close hazard"} onAction={() => onCloseHazard(i)} confirmLabel={ar ? "تأكيد الإغلاق" : "Confirm close"} cancelLabel={ar ? "إلغاء" : "Cancel"} />
+                </div>
               )}
             </div>
           ))}
@@ -181,9 +182,9 @@ export default function StationSafetyCard({ station, rec, canEdit, canApprove, a
         ) : canApprove ? (
           <div className="space-y-1.5">
             {approvalIssues.length > 0 && <p className="text-[10px] text-red-600 font-body">{approvalIssues[0]}</p>}
-            <button disabled={approvalIssues.length > 0} onClick={onApprove} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-md bg-foreground text-background text-xs font-body font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
-              <BadgeCheck className="w-3.5 h-3.5" /> {ar ? "اعتماد بيانات السلامة" : "Approve safety data"}
-            </button>
+            {approvalIssues.length === 0 && (
+              <FlowSwipeAction sensitive label={ar ? "اسحب لاعتماد بيانات السلامة" : "Swipe to approve safety data"} onAction={onApprove} confirmLabel={ar ? "تأكيد الاعتماد" : "Confirm approval"} cancelLabel={ar ? "إلغاء" : "Cancel"} />
+            )}
           </div>
         ) : (
           <p className="text-[11px] text-muted-foreground font-body">{ar ? "بانتظار اعتماد الإدارة" : "Awaiting management approval"}</p>

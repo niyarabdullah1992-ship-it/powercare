@@ -6,6 +6,7 @@ import { formatDateTime } from "@/lib/dateFormat";
 import { NO_SECTION } from "@/lib/taskFolders";
 import EscalationSteps from "@/components/escalation/EscalationSteps";
 import MobileSelect from "@/components/mobile/MobileSelect";
+import FlowSwipeAction from "@/components/flow/FlowSwipeAction";
 
 // A single task target card — progress, comments, and management actions.
 export default function TaskCard({
@@ -178,9 +179,9 @@ export default function TaskCard({
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <button onClick={() => reviewTarget(tg, true)} className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-body">{t("approve")}</button>
-                <button onClick={() => setRejecting(true)} className="px-3 py-1.5 rounded-md border border-red-300 text-red-700 text-xs font-body">{t("reject")}</button>
+              <div className="space-y-2">
+                <FlowSwipeAction sensitive label={lang === "ar" ? "اسحب لاعتماد الإنجاز" : "Swipe to approve completion"} onAction={() => reviewTarget(tg, true)} confirmLabel={t("confirm")} cancelLabel={t("cancel")} />
+                <button onClick={() => setRejecting(true)} className="w-full px-3 py-1.5 rounded-md border border-red-300 text-red-700 text-xs font-body">{t("reject")}</button>
               </div>
             )
           ) : (

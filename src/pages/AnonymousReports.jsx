@@ -6,8 +6,9 @@ import { base44 } from "@/api/base44Client";
 import { updateCompany, addNotification, getCompanyToken, setAnonRateLimits } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations, canManageStations } from "@/lib/permissions";
 import { handlersForLevel, hasHandlerAtLevel, levelLabel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
-import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, ChevronRight, ArrowLeft, Check, X as XIcon } from "lucide-react";
+import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, ChevronRight, ArrowLeft, X as XIcon } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
+import FlowSwipeAction from "@/components/flow/FlowSwipeAction";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import EscalationSteps from "@/components/escalation/EscalationSteps";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
@@ -175,6 +176,13 @@ export default function AnonymousReports() {
     });
     setReplyText({ ...replyText, [id]: "" });
     setReplyFiles({ ...replyFiles, [id]: [] });
+  };
+
+  const undoEscalate = (id, previous) => {
+    updateCompany(company.id, (d) => {
+      const r = d.anonymousReports.find((x) => x.id === id);
+      if (r) { r.escalationLevel = previous.escalationLevel || 0; r.status = previous.status; r.resolution = previous.resolution || null; }
+    });
   };
 
   const escalate = (id) => {
@@ -468,16 +476,18 @@ export default function AnonymousReports() {
                     </div>
                     <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} className="w-full px-3 py-1.5 rounded-md border border-input text-sm font-body" />
                     <div className="flex flex-wrap gap-2">
-                      <button disabled={!(replyText[r.id] || "").trim()} onClick={() => decide(r.id, "approved")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-body hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
-                        <Check className="w-3.5 h-3.5" /> {t("approveReport")}
-                      </button>
+                      {(replyText[r.id] || "").trim() && (
+                        <div className="w-full">
+                          <FlowSwipeAction sensitive label={lang === "ar" ? "اسحب لاعتماد وإغلاق البلاغ" : "Swipe to approve and close"} onAction={() => decide(r.id, "approved")} confirmLabel={t("confirm")} cancelLabel={t("cancel")} />
+                        </div>
+                      )}
                       <button disabled={!(replyText[r.id] || "").trim()} onClick={() => decide(r.id, "rejected")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground text-xs font-body hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
                         <XIcon className="w-3.5 h-3.5" /> {t("rejectReport")}
                       </button>
                       {!isAtTop(r) && (
-                        <button onClick={() => escalate(r.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300 text-amber-700 text-xs font-body hover:bg-amber-50">
-                          <ArrowUpCircle className="w-3.5 h-3.5" /> {t("escalateNextTier")}
-                        </button>
+                        <div className="w-full">
+                          <FlowSwipeAction label={lang === "ar" ? "اسحب للتصعيد للمستوى التالي" : "Swipe to escalate"} onAction={() => escalate(r.id)} onUndo={() => undoEscalate(r.id, r)} undoLabel={lang === "ar" ? "تراجع عن التصعيد" : "Undo escalation"} />
+                        </div>
                       )}
                       {(!r.confidential || r.confidentialBy === currentUser.id) && (
                         <button onClick={() => toggleConfidential(r.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
