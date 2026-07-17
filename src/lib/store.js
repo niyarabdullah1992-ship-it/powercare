@@ -54,6 +54,9 @@ function audit(companyId, action, details) {
   const safeDetails = String(details || "").slice(0, 1000);
   invokeDirectory({ action: "logAudit", companyId, auditAction: action, performedBy: auditActor, details: safeDetails }).catch(() => {});
 }
+export function logAudit(companyId, action, details) {
+  audit(companyId, action, details);
+}
 // The lowest-order HR manager assigned to handle this employee's station (falls
 // back up through cluster/company tiers if no station-level manager is assigned).
 function getStationHRManager(data, employeeId) {
@@ -1075,44 +1078,6 @@ export function setAnonRateLimits(companyId, { daily, weekly, monthly } = {}) {
     if (daily != null) d.settings.rateLimitDaily = Number(daily);
     if (weekly != null) d.settings.rateLimitWeekly = Number(weekly);
     if (monthly != null) d.settings.rateLimitMonthly = Number(monthly);
-  });
-}
-
-/* ----------------------------- HSE safety records ----------------------------- */
-// Updates a station's safety record (level, inspection date, hazards, approval).
-export function updateSafetyRecord(companyId, stationId, updates) {
-  updateCompany(companyId, (d) => {
-    d.safety = d.safety || [];
-    let rec = d.safety.find((s) => s.stationId === stationId);
-    if (!rec) {
-      rec = { id: uid("safe"), stationId, incidents: 0, hazards: [], level: "green" };
-      d.safety.push(rec);
-    }
-    Object.assign(rec, updates);
-  });
-}
-
-// Logs a safety incident for a station: increments the counter, stamps lastIncidentAt
-// (which resets the "hours without incidents" record) and keeps a dated incident log.
-export function recordSafetyIncident(companyId, stationId, description) {
-  const stName = getCompanyData(companyId)?.stations.find((s) => s.id === stationId)?.name || stationId;
-  audit(companyId, "safety_incident_logged", `Safety incident logged at station "${stName}"${description ? ` — ${description}` : ""}.`);
-  updateCompany(companyId, (d) => {
-    d.safety = d.safety || [];
-    let rec = d.safety.find((s) => s.stationId === stationId);
-    if (!rec) {
-      rec = { id: uid("safe"), stationId, incidents: 0, hazards: [], level: "green" };
-      d.safety.push(rec);
-    }
-    rec.incidents = (rec.incidents || 0) + 1;
-    rec.lastIncidentAt = new Date().toISOString();
-    rec.incidentLog = rec.incidentLog || [];
-    rec.incidentLog.unshift({ id: uid("inc"), description: description || "", at: rec.lastIncidentAt });
-    // A station with a fresh incident can't stay "safe": auto-downgrade the level
-    // to at least "watch" and void the previous approval so management re-reviews.
-    if (rec.level !== "red") rec.level = "amber";
-    rec.approvedBy = null;
-    rec.approvedAt = null;
   });
 }
 

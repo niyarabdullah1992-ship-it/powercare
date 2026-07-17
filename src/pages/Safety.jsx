@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { ShieldCheck, FileText, ClipboardCheck, Archive } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { visibleStations, canSeeAllStations } from "@/lib/permissions";
-import { updateSafetyRecord, recordSafetyIncident } from "@/lib/store";
+import { visibleStations, canSeeAllStations, canApproveReports } from "@/lib/permissions";
+import { updateSafetyRecord, recordSafetyIncident, closeSafetyHazard, approveSafetyRecord } from "@/lib/safetyStore";
+import { safetyApprovalIssues } from "@/lib/safetyLogic";
 import PageHeader from "@/components/PageHeader";
 import StationSafetyCard from "@/components/safety/StationSafetyCard";
 import SafetyReportExport from "@/components/safety/SafetyReportExport";
@@ -28,6 +29,7 @@ export default function Safety() {
     ...visibleStations(currentUser, data),
   ];
   const canEdit = ["director", "ops_manager", "pgm", "station_manager"].includes(currentUser.role) || data.ownerId === currentUser.id;
+  const canApprove = canApproveReports(currentUser) || data.ownerId === currentUser.id;
   const recFor = (sid) => (data.safety || []).find((s) => s.stationId === sid) || null;
 
   // Any data edit invalidates the previous approval — the report must reflect approved data only.
@@ -40,15 +42,8 @@ export default function Safety() {
     updateSafetyRecord(company.id, stationId, { ...updates, ...extra, approvedBy: null, approvedAt: null });
   };
 
-  // Approval also clears the incident lock: once management reviews and approves
-  // the data after an incident, the "Safe" level becomes selectable again.
-  const handleApprove = (stationId) => {
-    const at = new Date().toISOString();
-    const rec = recFor(stationId);
-    // Every approval is saved permanently in the station's approval log.
-    const approvalLog = [{ by: currentUser.name, at }, ...(rec?.approvalLog || [])];
-    updateSafetyRecord(company.id, stationId, { approvedBy: currentUser.name, approvedAt: at, incidentClearedAt: at, approvalLog });
-  };
+  // Approval is committed only after the store re-validates every dependency.
+  const handleApprove = (stationId) => approveSafetyRecord(company.id, stationId, currentUser.name);
 
   return (
     <div className="space-y-6">
@@ -112,15 +107,18 @@ export default function Safety() {
                 station={station}
                 rec={recFor(station.id)}
                 canEdit={canEdit}
+                canApprove={canApprove}
+                approvalIssues={safetyApprovalIssues(recFor(station.id), ar)}
                 lang={lang}
                 onUpdate={(updates) => handleUpdate(station.id, updates)}
+                onCloseHazard={(index) => closeSafetyHazard(company.id, station.id, index, currentUser.name)}
                 onApprove={() => handleApprove(station.id)}
                 onIncident={(desc) => {
                   // Duplicate guard: the exact same incident can't be logged twice on the same day.
                   const dup = (recFor(station.id)?.incidentLog || []).some(
                     (i) => (i.description || "") === desc && i.at && new Date(i.at).toDateString() === new Date().toDateString()
                   );
-                  if (!dup) recordSafetyIncident(company.id, station.id, desc);
+                  if (!dup) recordSafetyIncident(company.id, station.id, desc, currentUser.name);
                 }}
               />
             ))}

@@ -43,6 +43,13 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
   const recFor = (sid) => (safety || []).find((s) => s.stationId === sid) || null;
 
   const scopedStations = stationFilter === "all" ? stations : stations.filter((s) => s.id === stationFilter);
+  const selectedApproved = scopedStations.length > 0 && scopedStations.every((station) => !!recFor(station.id)?.approvedBy);
+  const periodValid = preset === "days"
+    ? Number(customDays) > 0
+    : preset === "custom"
+      ? !!customStart && !!customEnd && new Date(customStart) <= new Date(customEnd)
+      : true;
+  const canExport = selectedApproved && periodValid;
 
   const buildReport = () => {
     let start = new Date();
@@ -68,7 +75,7 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
         st.name,
         levelLabel(rec?.level),
         (rec?.hazards || []).length,
-        rec?.incidents || (rec?.incidentLog || []).length || 0,
+        (rec?.incidentLog || []).length,
         fmt(rec?.lastInspection),
         rec?.approvedBy ? `${rec.approvedBy} — ${fmt(rec.approvedAt)}` : L("غير معتمد", "Not approved"),
       ];
@@ -181,16 +188,18 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
         </div>
       )}
 
+      {!selectedApproved && <p className="text-[11px] text-red-600 font-body">{L("لا يمكن التصدير: يجب اعتماد بيانات جميع المحطات المحددة أولًا.", "Export unavailable: approve every selected station first.")}</p>}
+      {selectedApproved && !periodValid && <p className="text-[11px] text-red-600 font-body">{L("أدخل فترة زمنية صحيحة.", "Enter a valid date period.")}</p>}
       <div className="flex flex-wrap gap-2 pt-1">
         <button
-          type="button" onClick={exportExcel}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-emerald-300 text-emerald-700 text-xs font-body hover:bg-emerald-50 transition"
+          type="button" disabled={!canExport} onClick={exportExcel}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-emerald-300 text-emerald-700 text-xs font-body hover:bg-emerald-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <FileSpreadsheet className="w-4 h-4" /> Excel
         </button>
         <button
-          type="button" onClick={exportPdf}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-border text-xs font-body hover:bg-muted transition"
+          type="button" disabled={!canExport} onClick={exportPdf}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-border text-xs font-body hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <FileText className="w-4 h-4" /> PDF
         </button>

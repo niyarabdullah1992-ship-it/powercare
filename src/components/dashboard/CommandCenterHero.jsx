@@ -28,7 +28,9 @@ export default function CommandCenterHero({ companyName, riskScore, activeStatio
               {safety.criticalStations > 0 || safety.todayIncidents > 0
                 ? <ShieldAlert className="mb-3 h-4 w-4 text-red-400" />
                 : <ShieldCheck className="mb-3 h-4 w-4 text-emerald-400" />}
-              {safety.criticalStations > 0 ? (
+              {safety.todayIncidents > 0 ? (
+                <><p className="text-3xl font-heading text-red-300">{safety.todayIncidents}</p><p className="text-xs text-white/50">{ar ? "حوادث سلامة اليوم" : "Safety incidents today"}</p></>
+              ) : safety.criticalStations > 0 ? (
                 <><p className="text-3xl font-heading text-red-300">{safety.criticalStations}</p><p className="text-xs text-white/50">{ar ? "محطات سلامة حرجة" : "Critical safety stations"}</p></>
               ) : safety.openHazards > 0 ? (
                 <><p className="text-3xl font-heading">{safety.openHazards}</p><p className="text-xs text-white/50">{ar ? "مخاطر سلامة مفتوحة" : "Open safety hazards"}</p></>

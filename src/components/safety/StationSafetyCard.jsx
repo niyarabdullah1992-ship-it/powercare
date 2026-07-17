@@ -3,6 +3,7 @@ import { Plus, X, AlertTriangle, BadgeCheck, History } from "lucide-react";
 import { formatDateTime } from "@/lib/dateFormat";
 import ApprovalHistory from "@/components/safety/ApprovalHistory";
 import StationSafetyLog from "@/components/safety/StationSafetyLog";
+import { canSetSafetyLevelSafe } from "@/lib/safetyLogic";
 
 const LEVELS = [
   { val: "green", ar: "آمنة", en: "Safe", cls: "bg-emerald-100 text-emerald-700 border-emerald-300" },
@@ -12,7 +13,7 @@ const LEVELS = [
 
 // Data-entry card for one station's safety record: level, inspection date, hazards,
 // incident logging — then management approval, which the HSE reports are built on.
-export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdate, onApprove, onIncident }) {
+export default function StationSafetyCard({ station, rec, canEdit, canApprove, approvalIssues = [], lang, onUpdate, onCloseHazard, onApprove, onIncident }) {
   const ar = lang === "ar";
   const [hazard, setHazard] = useState("");
   const [incidentDesc, setIncidentDesc] = useState("");
@@ -21,10 +22,8 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
 
   const hazards = rec?.hazards || [];
   const approved = !!rec?.approvedBy;
-  // Rule: "Safe" can't be picked while hazards are open, or right after logging an
-  // incident — the lock lifts once management reviews and approves the safety data.
-  const incidentPending = !!rec?.lastIncidentAt && (!rec?.incidentClearedAt || new Date(rec.lastIncidentAt) > new Date(rec.incidentClearedAt));
-  const safeBlocked = hazards.length > 0 || incidentPending;
+  // "Safe" requires all hazards closed and a valid inspection after the latest incident.
+  const safeBlocked = !canSetSafetyLevelSafe(rec);
   const incidentToday = !!rec?.lastIncidentAt && new Date(rec.lastIncidentAt).toDateString() === new Date().toDateString();
 
   const addHazard = () => {
@@ -66,7 +65,7 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
               <button
                 key={l.val}
                 disabled={!canEdit || blocked}
-                title={blocked ? (ar ? "لا يمكن اختيار «آمنة» مع وجود مخاطر مفتوحة أو حادثة حديثة" : "Can't set Safe while there are open hazards or a recent incident") : undefined}
+                title={blocked ? (ar ? "يتطلب اختيار «آمنة» إغلاق المخاطر وإجراء تفتيش صالح بعد آخر حادثة" : "Safe requires closed hazards and a valid inspection after the latest incident") : undefined}
                 onClick={() => onUpdate({ level: l.val })}
                 className={`px-3 py-1 rounded-full text-[11px] font-body border transition ${
                   rec?.level === l.val ? l.cls : "border-border text-muted-foreground hover:bg-muted"
@@ -79,8 +78,8 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
         </div>
         <p className="text-[10px] text-red-600 font-semibold font-body mt-1.5">
           {ar
-            ? "عند تسجيل حادثة أو وجود مخاطر مفتوحة يُقفل خيار «آمنة» حتى مراجعة الإدارة والاعتماد."
-            : "Logging an incident or having open hazards locks the Safe option until management reviews and approves."}
+            ? "يُقفل خيار «آمنة» حتى إغلاق جميع المخاطر وإجراء تفتيش صالح بعد آخر حادثة."
+            : "Safe stays locked until all hazards are closed and a valid inspection follows the latest incident."}
         </p>
         {rec?.lastIncidentAt && (
           <p className={`text-[10px] font-body mt-1 ${incidentToday ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
@@ -99,6 +98,7 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
           type="date"
           disabled={!canEdit}
           value={rec?.lastInspection ? String(rec.lastInspection).slice(0, 10) : ""}
+          max={new Date().toISOString().slice(0, 10)}
           onChange={(e) => onUpdate({ lastInspection: e.target.value ? new Date(e.target.value).toISOString() : null })}
           className="px-2.5 py-1.5 rounded-md border border-input bg-background text-xs font-body"
         />
@@ -113,7 +113,7 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
               <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
               <span className="flex-1 text-xs font-body">{h}</span>
               {canEdit && (
-                <button onClick={() => onUpdate({ hazards: hazards.filter((_, x) => x !== i) })} className="text-muted-foreground hover:text-destructive">
+                <button onClick={() => onCloseHazard(i)} title={ar ? "إغلاق الخطر وحفظه في السجل" : "Close hazard and keep it in the record"} className="text-muted-foreground hover:text-destructive">
                   <X className="w-3 h-3" />
                 </button>
               )}
@@ -178,10 +178,13 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
             {ar ? "اعتمده" : "Approved by"} <span className="font-semibold text-foreground">{rec.approvedBy}</span>
             {rec.approvedAt ? ` — ${formatDateTime(rec.approvedAt, lang)}` : ""}
           </p>
-        ) : canEdit ? (
-          <button onClick={onApprove} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-md bg-foreground text-background text-xs font-body font-semibold hover:opacity-90">
-            <BadgeCheck className="w-3.5 h-3.5" /> {ar ? "اعتماد بيانات السلامة" : "Approve safety data"}
-          </button>
+        ) : canApprove ? (
+          <div className="space-y-1.5">
+            {approvalIssues.length > 0 && <p className="text-[10px] text-red-600 font-body">{approvalIssues[0]}</p>}
+            <button disabled={approvalIssues.length > 0} onClick={onApprove} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-md bg-foreground text-background text-xs font-body font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
+              <BadgeCheck className="w-3.5 h-3.5" /> {ar ? "اعتماد بيانات السلامة" : "Approve safety data"}
+            </button>
+          </div>
         ) : (
           <p className="text-[11px] text-muted-foreground font-body">{ar ? "بانتظار اعتماد الإدارة" : "Awaiting management approval"}</p>
         )}

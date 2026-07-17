@@ -17,6 +17,7 @@ export default function HSESafetyReport({ data, company, stations, lang, dir }) 
   const baselineOf = (station, rec) => rec?.lastIncidentAt || station.createdAt || new Date().toISOString();
   const hoursSafe = (station, rec) => Math.max(0, Math.floor((now - new Date(baselineOf(station, rec)).getTime()) / 3600000));
   const incidentsThisMonth = (rec) => (rec?.incidentLog || []).filter((i) => moment(i.at).isSameOrAfter(monthStart)).length;
+  const allApproved = stations.length > 0 && stations.every((station) => !!recFor(station.id)?.approvedBy);
 
   const levelStyle = (level) => ({
     green: "bg-emerald-100 text-emerald-700 border-emerald-300",
@@ -49,7 +50,7 @@ export default function HSESafetyReport({ data, company, stations, lang, dir }) 
       stats: [
         { label: ar ? "ساعات بدون حوادث" : "Hours without incidents", value: hoursSafe(station, rec).toLocaleString() },
         { label: ar ? "حوادث هذا الشهر" : "Incidents this month", value: incidentsThisMonth(rec) },
-        { label: ar ? "إجمالي الحوادث" : "Total incidents", value: rec?.incidents || 0 },
+        { label: ar ? "إجمالي الحوادث" : "Total incidents", value: (rec?.incidentLog || []).length },
         { label: ar ? "مستوى السلامة" : "Safety level", value: levelLabel(rec?.level) },
         { label: ar ? "حالة الاعتماد" : "Approval", value: rec?.approvedBy ? `${ar ? "معتمد —" : "Approved —"} ${rec.approvedBy}` : (ar ? "غير معتمد" : "Not approved") },
       ],
@@ -94,7 +95,7 @@ export default function HSESafetyReport({ data, company, stations, lang, dir }) 
         headers: [ar ? "المحطة" : "Station", ar ? "ساعات بدون حوادث" : "Hours w/o incidents", ar ? "حوادث الشهر" : "Month incidents", ar ? "إجمالي الحوادث" : "Total", ar ? "المستوى" : "Level"],
         rows: stations.map((s) => {
           const rec = recFor(s.id);
-          return [s.name, hoursSafe(s, rec).toLocaleString(), incidentsThisMonth(rec), rec?.incidents || 0, levelLabel(rec?.level)];
+          return [s.name, hoursSafe(s, rec).toLocaleString(), incidentsThisMonth(rec), (rec?.incidentLog || []).length, levelLabel(rec?.level)];
         }),
       }],
       logoUrl: branding.logoUrl,
@@ -112,7 +113,7 @@ export default function HSESafetyReport({ data, company, stations, lang, dir }) 
           <Link to="/app/safety" className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
             <PenLine className="w-3.5 h-3.5" /> {ar ? "قسم السلامة" : "Safety section"}
           </Link>
-          <button onClick={printAll} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+          <button disabled={!allApproved} onClick={printAll} title={!allApproved ? (ar ? "اعتمد بيانات جميع المحطات أولًا" : "Approve all stations first") : undefined} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed">
             <Printer className="w-3.5 h-3.5" /> {ar ? "PDF لجميع المحطات" : "All stations PDF"}
           </button>
         </div>
@@ -153,7 +154,7 @@ export default function HSESafetyReport({ data, company, stations, lang, dir }) 
                   : <span className="text-amber-600">{ar ? "البيانات غير معتمدة بعد — اعتمدها من قسم السلامة" : "Data not approved yet — approve it in the Safety section"}</span>}
               </p>
 
-              <button onClick={() => printStation(station)} className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
+              <button disabled={!rec?.approvedBy} onClick={() => printStation(station)} className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed">
                 <Printer className="w-3.5 h-3.5" /> {ar ? "تقرير شهري PDF" : "Monthly PDF"}
               </button>
             </div>

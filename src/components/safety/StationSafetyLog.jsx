@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { X, BadgeCheck, AlertTriangle, History } from "lucide-react";
 import { formatDateTime } from "@/lib/dateFormat";
 
-// Full permanent record for one station: every approval and every incident,
+// Full permanent record for one station: every approval, incident and closed hazard,
 // merged chronologically. Data is stored on the station's safety record and
 // synced to the cloud with the rest of the company data.
 export default function StationSafetyLog({ station, rec, lang, onClose }) {
@@ -11,6 +11,7 @@ export default function StationSafetyLog({ station, rec, lang, onClose }) {
   const entries = [
     ...((rec?.approvalLog || []).map((a) => ({ type: "approval", at: a.at, who: a.by, text: ar ? "اعتماد بيانات السلامة" : "Safety data approved" }))),
     ...((rec?.incidentLog || []).map((i) => ({ type: "incident", at: i.at, who: i.by || "", text: i.description || (ar ? "حادثة سلامة" : "Safety incident") }))),
+    ...((rec?.hazardLog || []).map((h) => ({ type: "hazard", at: h.closedAt, who: h.closedBy || "", text: `${ar ? "أُغلق الخطر" : "Hazard closed"}: ${h.description}` }))),
   ].sort((a, b) => new Date(b.at) - new Date(a.at));
 
   // Rendered through a portal onto <body> so no page container (overflow,
@@ -31,7 +32,7 @@ export default function StationSafetyLog({ station, rec, lang, onClose }) {
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {entries.length === 0 && (
             <p className="text-xs text-muted-foreground font-body text-center py-8">
-              {ar ? "لا توجد سجلات بعد — كل اعتماد وكل حادثة تُحفظ هنا تلقائيًا." : "No records yet — every approval and incident is saved here automatically."}
+              {ar ? "لا توجد سجلات بعد — كل اعتماد وحادثة وإغلاق خطر يُحفظ هنا تلقائيًا." : "No records yet — every approval, incident and hazard closure is saved here automatically."}
             </p>
           )}
           {entries.map((e, i) => (
