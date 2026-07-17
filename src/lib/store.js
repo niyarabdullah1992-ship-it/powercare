@@ -161,9 +161,7 @@ async function syncAccountToEntity(company) {
 export async function syncCompanyAccount(company) {
   return syncAccountToEntity(company);
 }
-
-// Rebuilds a missing local workspace for a saved session (e.g. localStorage was
-// partially cleared) so cloud hydration can repopulate it instead of a blank app.
+// Rebuilds a missing local workspace so cloud hydration can repopulate it.
 export function ensureLocalCompany(companyId) {
   if (getCompanyData(companyId)) return;
   const reg = getRegistry();

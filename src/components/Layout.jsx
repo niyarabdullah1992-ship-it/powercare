@@ -24,6 +24,7 @@ import ProductFeedbackPrompt from "@/components/ProductFeedbackPrompt";
 import { shouldShowNotification } from "@/lib/notificationFilters";
 import { routeForNotification } from "@/lib/notificationRoute";
 import SectionGuide from "@/components/SectionGuide";
+import CompanyNameEditor from "@/components/CompanyNameEditor";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -244,16 +245,15 @@ export default function Layout({ children }) {
         <header className="sticky top-0 z-40 border-b border-border/80 bg-card/90 pt-safe shadow-sm backdrop-blur-xl">
           <div className="flex h-16 items-center justify-between px-4 md:h-[68px] md:px-8">
             {/* Mobile nav (scrollable pills) */}
-            <div className="md:hidden flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <div className="md:hidden flex min-w-0 items-center gap-2">
               <BackButton />
               <Logo size={32} className="shrink-0" />
+              <CompanyNameEditor company={company} data={data} currentUser={currentUser} lang={lang} compact />
             </div>
 
-            <div className="hidden md:block min-w-0">
-              <p className="font-heading text-lg font-semibold leading-none truncate">{company.name || t("appName")}</p>
-              <p className="text-[11px] text-muted-foreground font-body mt-1 truncate">
-                {t("welcome")}, {currentUser.name}
-              </p>
+            <div className="hidden min-w-0 md:block">
+              <CompanyNameEditor company={company} data={data} currentUser={currentUser} lang={lang} />
+              <p className="mt-1 truncate text-[11px] text-muted-foreground">{t("welcome")}, {currentUser.name}</p>
             </div>
 
             <div className="flex items-center gap-2 md:gap-3">
