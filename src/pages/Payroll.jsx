@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { Banknote, Download, Users, CheckCircle2, Wallet } from "lucide-react";
-import { ensurePayrollRun, getRun, monthKey, netOf, updatePayrollItem, setItemPaid } from "@/lib/payroll";
+import { ensurePayrollRun, getRun, monthKey, netOf, payrollItemIssues, updatePayrollItem, setItemPaid } from "@/lib/payroll";
 import { printReport } from "@/lib/printReport";
 import PayrollRow from "@/components/payroll/PayrollRow";
 import PayrollTemplateCard from "@/components/payroll/PayrollTemplateCard";
@@ -28,8 +28,13 @@ export default function Payroll() {
   const items = run?.items || [];
   const hrScope = currentUser?.hrLevelId ? hrScopeStations(currentUser, data) : null;
   const payrollEmployees = (data.employees || []).filter((employee) => hrScope === null || (employee.stationId && hrScope.includes(employee.stationId)));
-  const empOf = (id) => payrollEmployees.find((e) => e.id === id);
-  const visible = items.filter((i) => empOf(i.employeeId));
+  const employeeForItem = (item) => payrollEmployees.find((employee) => employee.id === item.employeeId) || {
+    id: item.employeeId,
+    name: item.employeeName || (ar ? "موظف سابق" : "Former employee"),
+    position: item.employeePosition || "",
+    stationId: item.employeeStationId || null,
+  };
+  const visible = items.filter((item) => payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (hrScope === null || (item.employeeStationId && hrScope.includes(item.employeeStationId)))));
   const currency = visible[0]?.currency || "SAR";
   const totalNet = visible.reduce((s, i) => s + netOf(i), 0);
   const paidCount = visible.filter((i) => i.paid).length;
@@ -54,7 +59,7 @@ export default function Payroll() {
         heading: ar ? "تفاصيل الرواتب" : "Salary details",
         headers,
         rows: visible.map((i) => {
-          const e = empOf(i.employeeId);
+          const e = employeeForItem(i);
           return [e?.name || "—", i.base, i.allowances, i.bonus, i.deductions, `${netOf(i).toLocaleString()} ${i.currency}`, i.paid ? (ar ? "مدفوع" : "Paid") : (ar ? "غير مدفوع" : "Unpaid")];
         }),
       }],
@@ -62,7 +67,7 @@ export default function Payroll() {
   };
 
   const exportPayslip = (item) => {
-    const e = empOf(item.employeeId);
+    const e = employeeForItem(item);
     printReport({
       title: ar ? "قسيمة راتب" : "Payslip",
       companyName: company.name, periodLabel: `${e?.name || ""} — ${monthLabel}`, dir,
@@ -148,10 +153,16 @@ export default function Payroll() {
                 <PayrollRow
                   key={item.id}
                   item={item}
-                  employee={empOf(item.employeeId)}
+                  employee={employeeForItem(item)}
                   ar={ar}
                   onChange={(field, value) => updatePayrollItem(company.id, month, item.id, { [field]: value })}
-                  onTogglePaid={(paid) => setItemPaid(company.id, month, item.id, paid)}
+                  onTogglePaid={(paid) => {
+                    if (paid && payrollItemIssues(item).length) {
+                      alert(ar ? "لا يمكن اعتماد الدفع قبل إدخال راتب أساسي ومبالغ صحيحة وصافي موجب وعملة صالحة." : "Payment cannot be approved until base salary, valid amounts, a positive net, and a valid currency are set.");
+                      return;
+                    }
+                    setItemPaid(company.id, month, item.id, paid);
+                  }}
                   onPayslip={() => exportPayslip(item)}
                 />
               ))}

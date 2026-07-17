@@ -128,19 +128,28 @@ Deno.serve(async (req) => {
     const canManageStation = (stationId) => {
       if (auth?.admin || ["owner", "director", "ops_manager"].includes(auth?.role)) return true;
       if (auth?.role === "pgm") return (auth.managedStations || []).includes(stationId);
-      if (auth?.role === "station_manager") return auth.stationId === stationId;
+      if (auth?.role === "station_manager") return auth.stationId === stationId || (auth.managedStations || []).includes(stationId);
       return false;
     };
     const canManageTarget = (tg) => !!tg && canManageStation(targetStationId(tg));
     // ---- Identity boundary: callers may only act/read as themselves ----
-    // (owner sessions without a userId are verified against the company roster).
+    let companyMetaCache;
+    const getCompanyMeta = async () => {
+      if (companyMetaCache !== undefined) return companyMetaCache;
+      const rows = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: auth.companyId, category: "companyMeta" });
+      companyMetaCache = rows[0]?.payload?.[0] || {};
+      return companyMetaCache;
+    };
     const canActAs = async (userId) => {
       if (!userId) return false;
-      if (auth?.admin) return true;
+      if (auth?.admin) return !auth.userId || auth.userId === userId;
       if (auth?.userId) return auth.userId === userId;
-      if (!auth?.companyId) return false;
-      const emps = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId: userId });
-      return emps.length > 0;
+      if (auth?.role !== "owner") return false;
+      return (await getCompanyMeta()).ownerId === userId;
+    };
+    const actorNameFor = async (userId) => {
+      const employees = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId: userId });
+      return employees[0]?.name || auth?.name || "User";
     };
     // ---- PostgREST injection guard ----
     // Ids interpolated into logical `or=(...)` query trees must never contain
@@ -156,14 +165,21 @@ Deno.serve(async (req) => {
       const id = String(stationId || "");
       if (!id) return null;
       if (auth?.admin && !auth.companyId) return id;
-      if (id === "hq" || id === "all") return `${auth.companyId}_${id}`;
+      const senior = auth?.admin || ["owner", "director", "ops_manager"].includes(auth?.role);
+      const meta = await getCompanyMeta();
+      if (id === "hq") return senior || !auth.stationId ? `${auth.companyId}_hq` : null;
+      if (id === "all") return meta.crossStationChatEnabled ? `${auth.companyId}_all` : null;
       if (id.startsWith("group_")) {
-        const meta = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: auth.companyId, category: "companyMeta" });
-        const groups = meta[0]?.payload?.[0]?.stationChatGroups || [];
-        return groups.some((g) => `group_${g.id}` === id) ? id : null;
+        const group = (meta.stationChatGroups || []).find((item) => `group_${item.id}` === id);
+        const memberKey = auth.stationId || "hq";
+        return group && (senior || (group.stationIds || []).includes(memberKey)) ? id : null;
       }
-      const sts = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId, stationId: id });
-      return sts.length ? id : null;
+      const stations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId, stationId: id });
+      if (!stations.length) return null;
+      if (senior) return id;
+      if (auth.role === "pgm") return (auth.managedStations || []).includes(id) ? id : null;
+      if (auth.role === "station_manager") return (auth.stationId === id || (auth.managedStations || []).includes(id)) ? id : null;
+      return auth.stationId === id ? id : null;
     };
     const resolveCallRoom = async (chatType, roomId, otherUserId) => {
       if (chatType === "general") return await resolveRoomId(roomId);
@@ -764,7 +780,8 @@ Deno.serve(async (req) => {
         return Response.json({ error: "Missing fields" }, { status: 400 });
       }
       const roomId = await resolveRoomId(stationId);
-      if (!roomId) return Response.json({ error: "Forbidden" }, { status: 403 });
+      if (!roomId || !(await canActAs(userId))) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const actorName = await actorNameFor(userId);
       const cleanFiles = Array.isArray(files)
         ? files.filter((f) => f && f.url).map((f) => ({ url: f.url, name: f.name || "file", type: f.type || "file" }))
         : [];
@@ -774,7 +791,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           station_id: roomId,
           user_id: userId,
-          user_name: userName || "User",
+          user_name: actorName,
           text: text || "",
           files: cleanFiles,
         }),
@@ -795,7 +812,8 @@ Deno.serve(async (req) => {
       const rows = await getRes.json();
       const msg = Array.isArray(rows) && rows[0];
       if (!msg) return Response.json({ error: "Message not found" }, { status: 404 });
-      if (msg.user_id !== userId) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const rawRoom = msg.station_id === `${auth.companyId}_hq` ? "hq" : msg.station_id === `${auth.companyId}_all` ? "all" : msg.station_id;
+      if (!(await canActAs(userId)) || msg.user_id !== userId || (await resolveRoomId(rawRoom)) !== msg.station_id) return Response.json({ error: "Forbidden" }, { status: 403 });
       const ageMs = Date.now() - new Date(msg.created_at).getTime();
       if (ageMs > 2 * 60 * 1000) {
         return Response.json({ error: "Messages can only be deleted within 2 minutes of sending" }, { status: 403 });
@@ -807,8 +825,9 @@ Deno.serve(async (req) => {
     if (action === "listDirectMessages") {
       const { userId, otherUserId } = body;
       if (!userId || !otherUserId) return Response.json({ error: "Missing fields" }, { status: 400 });
-      // Only a participant may read the conversation — identity comes from the session.
-      if (!(await canActAs(userId))) return Response.json({ error: "Forbidden" }, { status: 403 });
+      // Only two members of the same company may read the conversation.
+      const dmScope = await getCompanyScope();
+      if (!(await canActAs(userId)) || !dmScope.employeeIds.has(otherUserId)) return Response.json({ error: "Forbidden" }, { status: 403 });
       // safeId strips parentheses/commas so ids can never break out of the or=() tree.
       const me = safeId(userId);
       const other = safeId(otherUserId);
@@ -833,7 +852,9 @@ Deno.serve(async (req) => {
       const rows = await getRes.json();
       const msg = Array.isArray(rows) && rows[0];
       if (!msg) return Response.json({ error: "Message not found" }, { status: 404 });
-      if (msg.sender_id !== userId) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const dmScope = await getCompanyScope();
+      const otherParticipant = msg.sender_id === userId ? msg.receiver_id : msg.sender_id;
+      if (msg.sender_id !== userId || !dmScope.employeeIds.has(otherParticipant)) return Response.json({ error: "Forbidden" }, { status: 403 });
       const ageMs = Date.now() - new Date(msg.created_at).getTime();
       if (ageMs <= 2 * 60 * 1000) {
         await fetch(`${SUPABASE_URL}/rest/v1/direct_messages?id=eq.${encodeURIComponent(messageId)}`, { method: "DELETE", headers });
@@ -858,8 +879,10 @@ Deno.serve(async (req) => {
       if (!senderId || !receiverId || (!text && (!files || files.length === 0))) {
         return Response.json({ error: "Missing fields" }, { status: 400 });
       }
-      // Messages may only be sent as the authenticated user — no sender spoofing.
-      if (!(await canActAs(senderId))) return Response.json({ error: "Forbidden" }, { status: 403 });
+      // Messages may only be sent as the authenticated user to a company colleague.
+      const dmScope = await getCompanyScope();
+      if (!(await canActAs(senderId)) || !dmScope.employeeIds.has(receiverId)) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const actorName = await actorNameFor(senderId);
       const cleanFiles = Array.isArray(files)
         ? files.filter((f) => f && f.url).map((f) => ({ url: f.url, name: f.name || "file", type: f.type || "file" }))
         : [];
@@ -868,7 +891,7 @@ Deno.serve(async (req) => {
         headers: { ...headers, Prefer: "return=representation" },
         body: JSON.stringify({
           sender_id: senderId,
-          sender_name: senderName || "User",
+          sender_name: actorName,
           receiver_id: receiverId,
           text: text || "",
           files: cleanFiles,

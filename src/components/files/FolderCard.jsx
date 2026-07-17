@@ -22,7 +22,7 @@ export default function FolderCard({ folder, count, onOpen, onDelete, onRename }
             <Pencil className="w-3.5 h-3.5" />
           </button>
         )}
-        <ConfirmDeleteDialog
+        {onDelete && <ConfirmDeleteDialog
           onConfirm={onDelete}
           trigger={
             <button
@@ -32,7 +32,7 @@ export default function FolderCard({ folder, count, onOpen, onDelete, onRename }
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           }
-        />
+        />}
       </div>
       {onRename && (
         <RenameDialog open={renameOpen} onOpenChange={setRenameOpen} initialName={folder.name} onRename={onRename} />

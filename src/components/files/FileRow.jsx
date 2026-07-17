@@ -56,14 +56,14 @@ export default function FileRow({ file, onDelete, onRename, stationName }) {
       >
         <Download className="w-4 h-4" />
       </a>
-      <ConfirmDeleteDialog
+      {onDelete && <ConfirmDeleteDialog
         onConfirm={onDelete}
         trigger={
           <button className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-muted" aria-label={t("delete")}>
             <Trash2 className="w-4 h-4" />
           </button>
         }
-      />
+      />}
       {onRename && (
         <RenameDialog open={renameOpen} onOpenChange={setRenameOpen} initialName={file.name} onRename={onRename} />
       )}

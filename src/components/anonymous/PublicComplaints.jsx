@@ -3,8 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
-import { groupLevelsByOrder } from "@/lib/hrLevels";
-import { handlersForLevel, levelLabel } from "@/lib/escalation";
+import { handlersForLevel, levelLabel, escalationStageCount } from "@/lib/escalation";
 import { formatDateTime } from "@/lib/dateFormat";
 import { Megaphone, Send, Building2, CheckCircle2, ChevronRight, ArrowLeft, Check, X as XIcon, ArrowUpCircle } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
@@ -30,7 +29,7 @@ export default function PublicComplaints() {
 
   if (!data || !currentUser) return null;
   const reportsList = data.publicReports || [];
-  const STAGE_COUNT = groupLevelsByOrder(data.hrLevels || []).length + 1;
+  const STAGE_COUNT = escalationStageCount(data);
   const canAct = hasHRPermission(currentUser, data, "manage_anonymous_reports");
   const canView = hasHRPermission(currentUser, data, "view_anonymous_reports");
   const isHRStaff = canAct || canView;
@@ -60,6 +59,12 @@ export default function PublicComplaints() {
   const submit = (e) => {
     e.preventDefault();
     if (!message.trim()) return;
+    const draft = { stationId: currentUser.stationId || null };
+    const initialLevel = Array.from({ length: STAGE_COUNT }).findIndex((_, level) => handlersForLevel(level, draft, data).length > 0);
+    if (initialLevel < 0) {
+      alert(t("noHandlerAssigned"));
+      return;
+    }
     updateCompany(company.id, (d) => {
       d.publicReports = d.publicReports || [];
       d.publicReports.unshift({
@@ -68,14 +73,14 @@ export default function PublicComplaints() {
         stationId: currentUser.stationId || null,
         type, priority, message, files,
         status: "open",
-        escalationLevel: 0,
+        escalationLevel: initialLevel,
         replies: [],
         createdAt: new Date().toISOString(),
       });
     });
     const station = data.stations.find((s) => s.id === currentUser.stationId);
-    const stationManagers = data.employees.filter((e) => e.role === "station_manager" && e.stationId === currentUser.stationId);
-    for (const h of stationManagers) addNotification(company.id, h.id, `${currentUser.name} filed a new ${t(type)} at ${station?.name || ""} (${t(priority)}).`);
+    const initialHandlers = handlersForLevel(initialLevel, draft, data);
+    for (const handler of initialHandlers) addNotification(company.id, handler.id, `${currentUser.name} filed a new ${t(type)} at ${station?.name || ""} (${t(priority)}).`);
     setMessage("");
     setFiles([]);
   };
@@ -83,7 +88,7 @@ export default function PublicComplaints() {
   const decide = (id, decision) => {
     const txt = (replyText[id] || "").trim();
     const rep = reportsList.find((x) => x.id === id);
-    if (!rep) return;
+    if (!rep || rep.status !== "open" || !canReplyTo(rep) || !txt) return;
     updateCompany(company.id, (d) => {
       const r = (d.publicReports || []).find((x) => x.id === id);
       if (!r) return;
@@ -91,7 +96,7 @@ export default function PublicComplaints() {
         r.replies = r.replies || [];
         r.replies.push({ level: r.escalationLevel || 0, role: currentUser.role, authorName: currentUser.name, text: txt, files: replyFiles[id] || [], createdAt: new Date().toISOString() });
       }
-      r.status = "closed";
+      r.status = decision === "approved" || isAtTop(rep) ? "closed" : "rejected";
       r.resolution = decision;
     });
     if (rep.authorId) addNotification(company.id, rep.authorId, `Your ${t(rep.type)} was ${t(decision)}.`);
@@ -102,13 +107,20 @@ export default function PublicComplaints() {
   const escalate = (id) => {
     const rep = reportsList.find((x) => x.id === id);
     if (!rep) return;
+    const isAuthorAppeal = rep.authorId === currentUser.id && !isStaff;
+    if (isAuthorAppeal && rep.status !== "rejected") return;
+    if (!isAuthorAppeal && (rep.status !== "open" || !canReplyTo(rep))) return;
     const nextLevel = (rep.escalationLevel || 0) + 1;
     if (nextLevel >= STAGE_COUNT) return;
+    const nextHandlers = handlersForLevel(nextLevel, rep, data);
+    if (nextHandlers.length === 0) {
+      alert(t("noHandlerAssigned"));
+      return;
+    }
     updateCompany(company.id, (d) => {
       const r = (d.publicReports || []).find((x) => x.id === id);
-      if (r) { r.escalationLevel = nextLevel; r.status = "open"; }
+      if (r) { r.escalationLevel = nextLevel; r.status = "open"; r.resolution = null; }
     });
-    const nextHandlers = handlersForLevel(nextLevel, rep, data);
     for (const h of nextHandlers) addNotification(company.id, h.id, `Escalated public complaint at ${stationName(rep.stationId)} — now requires your attention.`);
   };
 
@@ -172,15 +184,15 @@ export default function PublicComplaints() {
       <p className="text-sm font-body">{r.message}</p>
       <CommentAttachments files={r.files} />
       {renderTimeline(r)}
-      {!showAuthor && !isAtTop(r) && r.status !== "closed" && (
+      {!showAuthor && !isAtTop(r) && r.status === "rejected" && (
         <button onClick={() => escalate(r.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300 text-amber-700 text-xs font-body hover:bg-amber-50">
           <ArrowUpCircle className="w-3.5 h-3.5" /> {t("notConvinced")}
         </button>
       )}
-      {!showAuthor && isAtTop(r) && r.status !== "closed" && (
+      {!showAuthor && isAtTop(r) && r.status === "rejected" && (
         <p className="text-xs text-muted-foreground font-body italic">{t("finalLevel")}</p>
       )}
-      {showAuthor && canReplyTo(r) && r.status !== "closed" && (
+      {showAuthor && canReplyTo(r) && r.status === "open" && (
         <div className="space-y-2 pt-1 border-t border-border">
           <div className="flex flex-wrap items-end gap-2">
             <CommentFiles files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
@@ -188,10 +200,10 @@ export default function PublicComplaints() {
           </div>
           <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} className="w-full px-3 py-1.5 rounded-md border border-input text-sm font-body" />
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => decide(r.id, "approved")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-body hover:bg-emerald-700">
+            <button disabled={!(replyText[r.id] || "").trim()} onClick={() => decide(r.id, "approved")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-body hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
               <Check className="w-3.5 h-3.5" /> {t("approveReport")}
             </button>
-            <button onClick={() => decide(r.id, "rejected")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground text-xs font-body hover:opacity-90">
+            <button disabled={!(replyText[r.id] || "").trim()} onClick={() => decide(r.id, "rejected")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground text-xs font-body hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
               <XIcon className="w-3.5 h-3.5" /> {t("rejectReport")}
             </button>
             {!isAtTop(r) && (

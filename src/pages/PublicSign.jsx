@@ -55,6 +55,7 @@ export default function PublicSign() {
       setStage(ar ? "جارٍ تجهيز أحدث نسخة…" : "Fetching the latest version…");
       const fresh = (await base44.functions.invoke("multiSign", { action: "getByToken", token })).data;
       if (fresh.signer.status === "signed") throw new Error(ar ? "وقّعت هذا المستند مسبقًا." : "You already signed this document.");
+      if (!fresh.canSign) throw new Error(ar ? "يجب اكتمال توقيع الطرف السابق أولًا." : "The previous signer must finish first.");
 
       setStage(ar ? "جارٍ ختم توقيعك على المستند…" : "Stamping your signature…");
       const stamp = await makeSignatureStamp(sigDataUrl, fresh.signer.name);
@@ -135,6 +136,15 @@ export default function PublicSign() {
         </p>
       </Shell>
     );
+  }
+
+  if (info.signer.status === "pending" && !info.canSign) {
+   return (
+     <Shell>
+       <p className="text-sm text-muted-foreground font-body">{ar ? "بانتظار توقيع الطرف السابق حسب ترتيب الطلب." : "Waiting for the previous signer in the request order."}</p>
+       <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-md bg-foreground text-background text-xs font-body">{ar ? "تحديث الحالة" : "Refresh status"}</button>
+     </Shell>
+   );
   }
 
   if (done || info.signer.status === "signed") {

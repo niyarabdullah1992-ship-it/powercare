@@ -77,8 +77,10 @@ export function matchRowsToEmployees(rows, employees) {
     let employee =
       (email && employees.find((e) => norm(e.email) === email)) ||
       employees.find((e) => norm(e.name) === name) ||
-      employees.find((e) => name && (norm(e.name).includes(name) || name.includes(norm(e.name)))) ||
-      null;
+      (() => {
+        const partial = employees.filter((e) => name && (norm(e.name).includes(name) || name.includes(norm(e.name))));
+        return partial.length === 1 ? partial[0] : null;
+      })();
     return { row, employee };
   });
 }
@@ -87,8 +89,12 @@ export function matchRowsToEmployees(rows, employees) {
 // profile (source of truth for future months) and the selected month's run.
 export function applySalaryImport(companyId, month, matches) {
   updateCompany(companyId, (d) => {
+    const appliedEmployees = new Set();
     matches.forEach(({ row, employee }) => {
-      if (!employee) return;
+      if (!employee || appliedEmployees.has(employee.id)) return;
+      const amounts = [row.base_salary, row.allowances, row.bonus, row.deductions].map(amount);
+      if (amounts.some((value) => value < 0) || amounts[0] <= 0 || amounts[0] + amounts[1] + amounts[2] - amounts[3] <= 0) return;
+      appliedEmployees.add(employee.id);
       const emp = d.employees.find((e) => e.id === employee.id);
       if (!emp) return;
       emp.profile = emp.profile || {};

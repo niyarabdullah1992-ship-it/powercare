@@ -19,14 +19,37 @@ function toBase64Url(str) {
 //   in the verification registry and the creator is notified.
 
 const rid = () => crypto.randomUUID().replace(/-/g, '');
+const isAllowedDocUrl = (value) => {
+  try {
+    const url = new URL(String(value || ''));
+    return url.protocol === 'https:' && (url.hostname === 'media.base44.com' || url.hostname.endsWith('.base44.app'));
+  } catch {
+    return false;
+  }
+};
 
 async function authSession(base44, companyId, sessionToken) {
   const user = await base44.auth.me().catch(() => null);
-  if (user && user.role === 'admin') return true;
-  if (!companyId || !sessionToken) return false;
+  if (user && user.role === 'admin') return { admin: true, name: user.full_name || 'Admin', email: user.email || '' };
+  if (!companyId || !sessionToken) return null;
   const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: sessionToken, companyId });
-  const s = sessions[0];
-  return !!(s && new Date(s.expiresAt).getTime() > Date.now());
+  const session = sessions[0];
+  if (!session || new Date(session.expiresAt).getTime() <= Date.now()) return null;
+  if (session.userId) {
+    const employees = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: session.userId });
+    const employee = employees[0];
+    return employee ? { userId: employee.employeeId, name: employee.name, email: String(employee.email || '').toLowerCase() } : null;
+  }
+  const [accounts, metaRows] = await Promise.all([
+    base44.asServiceRole.entities.CompanyAccount.filter({ companyId }),
+    base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: 'companyMeta' }),
+  ]);
+  const account = accounts[0];
+  if (!account) return null;
+  const ownerId = metaRows[0]?.payload?.[0]?.ownerId || null;
+  const owners = ownerId ? await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: ownerId }) : [];
+  const owner = owners[0];
+  return { owner: true, userId: ownerId, name: owner?.name || 'Owner', email: String(account.ownerEmail || '').toLowerCase() };
 }
 
 // Send via the connected Gmail account first (works for ANY external address —
@@ -80,9 +103,8 @@ Deno.serve(async (req) => {
 
     if (action === 'create') {
       const { companyId, sessionToken } = body;
-      if (!(await authSession(base44, companyId, sessionToken))) {
-        return Response.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+      const actor = await authSession(base44, companyId, sessionToken);
+      if (!actor) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const signersIn = Array.isArray(body.signers) ? body.signers.slice(0, 100) : [];
       const signers = signersIn
         .map((s) => ({
@@ -94,23 +116,26 @@ Deno.serve(async (req) => {
           // Creator-assigned signing spot: this signer may ONLY sign here.
           spot:
             s.spot && typeof s.spot === 'object'
-              ? { page: Math.max(1, Number(s.spot.page) || 1), x: Number(s.spot.x) || 0, y: Number(s.spot.y) || 0 }
+              ? { page: Math.max(1, Number(s.spot.page) || 1), x: Math.min(100, Math.max(0, Number(s.spot.x) || 0)), y: Math.min(100, Math.max(0, Number(s.spot.y) || 0)), scale: Math.min(200, Math.max(50, Number(s.spot.scale) || 100)) }
               : null,
         }))
-        .filter((s) => s.name && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.email));
-      if (signers.length === 0 || !body.docUrl || !body.fileName) {
-        return Response.json({ error: 'Document and at least one valid signer are required' }, { status: 400 });
+        .filter((s, index, rows) => s.name && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.email) && rows.findIndex((row) => row.email === s.email) === index);
+      if (signers.length === 0 || !isAllowedDocUrl(body.docUrl) || !String(body.fileName || '').toLowerCase().endsWith('.pdf') || !String(body.verificationId || '').trim()) {
+        return Response.json({ error: 'A PDF document and at least one valid signer are required' }, { status: 400 });
       }
+      const duplicateRequests = await Docs.filter({ verificationId: String(body.verificationId).slice(0, 40) });
+      if (duplicateRequests.length) return Response.json({ error: 'SIGNATURE_REUSE' }, { status: 409 });
       const rec = await Docs.create({
         companyId: String(companyId).slice(0, 64),
-        creatorId: String(body.creatorId || '').slice(0, 64),
-        creatorName: String(body.creatorName || '').slice(0, 120),
-        creatorEmail: String(body.creatorEmail || '').toLowerCase().slice(0, 160),
+        creatorId: String(actor.userId || body.creatorId || '').slice(0, 64),
+        creatorName: String(actor.admin ? (body.creatorName || actor.name) : actor.name).slice(0, 120),
+        creatorEmail: String(actor.admin ? (body.creatorEmail || actor.email) : actor.email).toLowerCase().slice(0, 160),
         fileName: String(body.fileName).slice(0, 200),
         docUrl: String(body.docUrl).slice(0, 2000),
         verificationId: String(body.verificationId || '').slice(0, 40),
         finalHash: null,
         status: 'pending',
+        expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
         signers,
       });
       // Email each signer their personal signing link. The link host is never
@@ -148,14 +173,13 @@ Deno.serve(async (req) => {
 
     if (action === 'list') {
       const { companyId, sessionToken } = body;
-      if (!(await authSession(base44, companyId, sessionToken))) {
-        return Response.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-      const userId = String(body.userId || '');
-      const email = String(body.email || '').toLowerCase();
+      const actor = await authSession(base44, companyId, sessionToken);
+      if (!actor) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      const userId = String(actor.userId || (actor.admin ? body.userId : '') || '');
+      const email = String(actor.email || (actor.admin ? body.email : '') || '').toLowerCase();
       const rows = await Docs.filter({ companyId }, '-created_date', 100);
       const mine = rows
-        .filter((r) => r.creatorId === userId || (r.signers || []).some((s) => s.email === email))
+        .filter((r) => r.creatorId === userId || (!!email && r.creatorEmail === email) || (r.signers || []).some((s) => !!email && s.email === email))
         .map((r) => {
           const mySigner = (r.signers || []).find((s) => s.email === email);
           return {
@@ -165,7 +189,7 @@ Deno.serve(async (req) => {
             status: r.status,
             createdAt: r.created_date,
             docUrl: r.docUrl,
-            isCreator: r.creatorId === userId,
+            isCreator: r.creatorId === userId || (!!email && r.creatorEmail === email),
             myStatus: mySigner ? mySigner.status : null,
             myToken: mySigner ? `${r.id}.${mySigner.token}` : null,
             signers: (r.signers || []).map((s) => ({ name: s.name, email: s.email, status: s.status, signedAt: s.signedAt })),
@@ -176,15 +200,15 @@ Deno.serve(async (req) => {
 
     if (action === 'delete') {
       const { companyId, sessionToken } = body;
-      if (!(await authSession(base44, companyId, sessionToken))) {
-        return Response.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+      const actor = await authSession(base44, companyId, sessionToken);
+      if (!actor) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const rec = await Docs.get(String(body.requestId || '')).catch(() => null);
       if (!rec || rec.companyId !== companyId) {
         return Response.json({ error: 'Not found' }, { status: 404 });
       }
-      // Only the creator may delete their own request.
-      if (rec.creatorId !== String(body.userId || '')) {
+      const actorId = String(actor.userId || (actor.admin ? body.userId : '') || '');
+      const actorEmail = String(actor.email || '').toLowerCase();
+      if (rec.creatorId !== actorId && (!actorEmail || rec.creatorEmail !== actorEmail)) {
         return Response.json({ error: 'Only the creator can delete this request' }, { status: 403 });
       }
       await Docs.delete(rec.id);
@@ -196,7 +220,7 @@ Deno.serve(async (req) => {
       const [id, part] = String(token || '').split('.');
       if (!id || !part) return null;
       const rec = await Docs.get(id).catch(() => null);
-      if (!rec) return null;
+      if (!rec || (rec.expiresAt && new Date(rec.expiresAt).getTime() <= Date.now())) return null;
       const signer = (rec.signers || []).find((s) => s.token === part);
       return signer ? { rec, signer } : null;
     };
@@ -215,6 +239,7 @@ Deno.serve(async (req) => {
         signer: { name: signer.name, email: signer.email, status: signer.status, spot: signer.spot || null },
         signedCount: (rec.signers || []).filter((s) => s.status === 'signed').length,
         totalCount: (rec.signers || []).length,
+        canSign: signer.status === 'signed' || pending[0]?.token === signer.token,
         isLast: signer.status === 'pending' && pending.length === 1,
         signerNames: (rec.signers || []).map((s) => s.name).join(', '),
       });
@@ -224,39 +249,47 @@ Deno.serve(async (req) => {
       const found = await resolveToken(body.token);
       if (!found) return Response.json({ error: 'Invalid or expired signing link' }, { status: 404 });
       const { rec, signer } = found;
-      if (signer.status === 'signed') return Response.json({ error: 'ALREADY_SIGNED' }, { status: 409 });
+      if (rec.status !== 'pending' || signer.status === 'signed') return Response.json({ error: 'ALREADY_SIGNED' }, { status: 409 });
+      const pending = (rec.signers || []).filter((item) => item.status === 'pending');
+      if (pending[0]?.token !== signer.token) return Response.json({ error: 'WAIT_FOR_TURN' }, { status: 409 });
+      const completingNow = pending.length === 1;
+      const fileHash = String(body.fileHash || '').toLowerCase().slice(0, 64);
+      if (completingNow && !/^[0-9a-f]{64}$/.test(fileHash)) return Response.json({ error: 'Final file fingerprint is required' }, { status: 400 });
       const newDocUrl = String(body.newDocUrl || '').slice(0, 2000);
-      if (!newDocUrl) return Response.json({ error: 'newDocUrl required' }, { status: 400 });
+      if (!isAllowedDocUrl(newDocUrl)) return Response.json({ error: 'A valid signed document URL is required' }, { status: 400 });
 
       const signers = (rec.signers || []).map((s) =>
         s.token === signer.token ? { ...s, status: 'signed', signedAt: new Date().toISOString() } : s
       );
       const completed = signers.every((s) => s.status === 'signed');
-      const fileHash = String(body.fileHash || '').toLowerCase().slice(0, 64);
-      await Docs.update(rec.id, {
-        signers,
-        docUrl: newDocUrl,
-        status: completed ? 'completed' : 'pending',
-        finalHash: completed && fileHash ? fileHash : rec.finalHash,
-      });
+      let registryRecord = null;
+      if (completed) {
+        const Registry = base44.asServiceRole.entities.SignedDocument;
+        const existing = await Registry.filter({ verificationId: rec.verificationId });
+        if (existing.length) return Response.json({ error: 'SIGNATURE_REUSE' }, { status: 409 });
+        registryRecord = await Registry.create({
+          verificationId: rec.verificationId,
+          fileHash,
+          signerName: signers.map((s) => s.name).join(', ').slice(0, 120),
+          signerId: rec.creatorId,
+          companyId: rec.companyId,
+          fileName: rec.fileName,
+          signedAt: new Date().toISOString(),
+        });
+      }
+      try {
+        await Docs.update(rec.id, {
+          signers,
+          docUrl: newDocUrl,
+          status: completed ? 'completed' : 'pending',
+          finalHash: completed ? fileHash : rec.finalHash,
+        });
+      } catch (error) {
+        if (registryRecord) await base44.asServiceRole.entities.SignedDocument.delete(registryRecord.id).catch(() => {});
+        throw error;
+      }
 
       if (completed) {
-        // Register the final file fingerprint in the verification registry.
-        if (rec.verificationId && /^[0-9a-f]{64}$/.test(fileHash)) {
-          const Registry = base44.asServiceRole.entities.SignedDocument;
-          const existing = await Registry.filter({ verificationId: rec.verificationId });
-          if (existing.length === 0) {
-            await Registry.create({
-              verificationId: rec.verificationId,
-              fileHash,
-              signerName: signers.map((s) => s.name).join(', ').slice(0, 120),
-              signerId: rec.creatorId,
-              companyId: rec.companyId,
-              fileName: rec.fileName,
-              signedAt: new Date().toISOString(),
-            });
-          }
-        }
         if (rec.creatorEmail) {
           const ar = body.lang === 'ar';
           await sendMail(

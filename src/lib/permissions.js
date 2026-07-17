@@ -21,9 +21,11 @@ export function visibleStations(user, data) {
     const managed = user.managedStations || [];
     return data.stations.filter((s) => managed.includes(s.id));
   }
-  if (user.role === "station_manager" || user.role === "employee") {
-    return data.stations.filter((s) => s.id === user.stationId);
+  if (user.role === "station_manager") {
+    const managed = user.managedStations?.length ? user.managedStations : [user.stationId].filter(Boolean);
+    return data.stations.filter((station) => managed.includes(station.id));
   }
+  if (user.role === "employee") return data.stations.filter((station) => station.id === user.stationId);
   return [];
 }
 

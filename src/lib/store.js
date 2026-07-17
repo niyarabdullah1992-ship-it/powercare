@@ -1150,10 +1150,10 @@ export function unassignEmployeeFromShift(companyId, stationId, weekday, shiftTy
 /* ----------------------------- company files (nested folders + documents) -----------------------------
    A flat node list: every node is either a folder or a file, with parentId pointing at the
    containing folder (null = root). Folders can nest inside folders without limit. */
-export function addFileFolder(companyId, { name, parentId }) {
+export function addFileFolder(companyId, { name, parentId, stationId }) {
   updateCompany(companyId, (d) => {
     d.files = d.files || [];
-    d.files.push({ id: uid("fold"), type: "folder", name, parentId: parentId || null, createdAt: new Date().toISOString() });
+    d.files.push({ id: uid("fold"), type: "folder", name, parentId: parentId || null, stationId: stationId || null, createdAt: new Date().toISOString() });
   });
 }
 

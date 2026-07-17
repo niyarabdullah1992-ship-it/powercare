@@ -4,8 +4,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, getAnonUsage, addNotification, getAnonymousCode, setAnonRateLimits } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations, canManageStations } from "@/lib/permissions";
-import { groupLevelsByOrder } from "@/lib/hrLevels";
-import { handlersForLevel, levelLabel, buildEscalationSteps } from "@/lib/escalation";
+import { handlersForLevel, levelLabel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
 import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, ChevronRight, ArrowLeft, Check, X as XIcon } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
@@ -28,7 +27,7 @@ export default function AnonymousReports() {
   const [monthlyLimitInput, setMonthlyLimitInput] = useState("");
 
   if (!data || !currentUser) return null;
-  const STAGE_COUNT = groupLevelsByOrder(data.hrLevels || []).length + 1;
+  const STAGE_COUNT = escalationStageCount(data);
   const canAct = hasHRPermission(currentUser, data, "manage_anonymous_reports");
   const canView = hasHRPermission(currentUser, data, "view_anonymous_reports");
   const isHRAnon = canAct || canView;
@@ -80,7 +79,13 @@ export default function AnonymousReports() {
   const submit = (e) => {
     e.preventDefault();
     if (!message.trim()) return;
-    if (usage.day >= usage.dayLimit || usage.month >= usage.monthLimit) return;
+    if (usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit) return;
+    const draft = { stationId: currentUser.stationId || null };
+    const initialLevel = Array.from({ length: STAGE_COUNT }).findIndex((_, level) => handlersForLevel(level, draft, data).length > 0);
+    if (initialLevel < 0) {
+      alert(t("noHandlerAssigned"));
+      return;
+    }
     updateCompany(company.id, (d) => {
       d.anonymousReports.unshift({
         id: "anr_" + Math.random().toString(36).slice(2, 9),
@@ -89,14 +94,14 @@ export default function AnonymousReports() {
         type, priority, message,
         files,
         status: "open",
-        escalationLevel: 0,
+        escalationLevel: initialLevel,
         replies: [],
         createdAt: new Date().toISOString(),
       });
     });
     const station = data.stations.find((s) => s.id === currentUser.stationId);
-    const stationManagers = data.employees.filter((e) => e.role === "station_manager" && e.stationId === currentUser.stationId);
-    for (const h of stationManagers) addNotification(company.id, h.id, `New ${t(type)} report at ${station?.name || ""} (${t(priority)}).`);
+    const initialHandlers = handlersForLevel(initialLevel, draft, data);
+    for (const handler of initialHandlers) addNotification(company.id, handler.id, `New ${t(type)} report at ${station?.name || ""} (${t(priority)}).`);
     setMessage("");
     setFiles([]);
   };
@@ -104,7 +109,7 @@ export default function AnonymousReports() {
   const decide = (id, decision) => {
     const txt = (replyText[id] || "").trim();
     const rep = data.anonymousReports.find((x) => x.id === id);
-    if (!rep) return;
+    if (!rep || rep.status !== "open" || !canReplyTo(rep) || !txt) return;
     updateCompany(company.id, (d) => {
       const r = d.anonymousReports.find((x) => x.id === id);
       if (!r) return;
@@ -112,7 +117,7 @@ export default function AnonymousReports() {
         r.replies = r.replies || [];
         r.replies.push({ level: r.escalationLevel || 0, role: currentUser.role, authorName: currentUser.name, text: txt, files: replyFiles[id] || [], createdAt: new Date().toISOString() });
       }
-      r.status = "closed";
+      r.status = decision === "approved" || isAtTop(rep) ? "closed" : "rejected";
       r.resolution = decision;
     });
     const author = rep.authorId ? data.employees.find((e) => e.id === rep.authorId) : data.employees.find((e) => e.anonymousId === rep.anonymousId);
@@ -124,13 +129,19 @@ export default function AnonymousReports() {
   const escalate = (id) => {
     const rep = data.anonymousReports.find((x) => x.id === id);
     if (!rep) return;
+    const isAuthorAppeal = rep.authorId === currentUser.id && !isStaff;
+    if (isAuthorAppeal && rep.status !== "rejected") return;
+    if (!isAuthorAppeal && (rep.status !== "open" || !canReplyTo(rep))) return;
     const nextLevel = (rep.escalationLevel || 0) + 1;
     if (nextLevel >= STAGE_COUNT) return;
     const nextHandlers = handlersForLevel(nextLevel, rep, data);
-    if (nextHandlers.length === 0 && !confirm(`${t("noHandlerAssigned")}. ${lang === "ar" ? "المتابعة؟" : "Continue anyway?"}`)) return;
+    if (nextHandlers.length === 0) {
+      alert(t("noHandlerAssigned"));
+      return;
+    }
     updateCompany(company.id, (d) => {
       const r = d.anonymousReports.find((x) => x.id === id);
-      if (r) { r.escalationLevel = nextLevel; r.status = "open"; }
+      if (r) { r.escalationLevel = nextLevel; r.status = "open"; r.resolution = null; }
     });
     for (const h of nextHandlers) addNotification(company.id, h.id, `Escalated anonymous report at ${stationName(rep.stationId)} — now requires your attention.`);
   };
@@ -227,7 +238,7 @@ export default function AnonymousReports() {
               <p className="text-xs text-muted-foreground font-body">
                 {usage.dayLimit - usage.day} {t("remaining")} · {usage.weekLimit - usage.week} {t("weekRemaining")} · {usage.monthLimit - usage.month} {t("monthRemaining")}
               </p>
-              <button type="submit" disabled={usage.day >= usage.dayLimit || usage.month >= usage.monthLimit} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-40">
+              <button type="submit" disabled={usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-40">
                 <Send className="w-4 h-4" /> {t("fileReport")}
               </button>
             </div>
@@ -260,12 +271,12 @@ export default function AnonymousReports() {
                     <p className="text-sm font-body">{r.message}</p>
                     <CommentAttachments files={r.files} />
                     {renderTimeline(r)}
-                    {!isAtTop(r) && r.status !== "closed" && (
+                    {!isAtTop(r) && r.status === "rejected" && (
                       <button onClick={() => escalate(r.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300 text-amber-700 text-xs font-body hover:bg-amber-50">
                         <ArrowUpCircle className="w-3.5 h-3.5" /> {t("notConvinced")}
                       </button>
                     )}
-                    {isAtTop(r) && r.status !== "closed" && (
+                    {isAtTop(r) && r.status === "rejected" && (
                       <p className="text-xs text-muted-foreground font-body italic">{t("finalLevel")}</p>
                     )}
                   </div>
@@ -386,7 +397,7 @@ export default function AnonymousReports() {
                     {renderTimeline(r)}
                   </>
                 )}
-                {canReplyTo(r) && !isConfidentialHidden(r) && r.status !== "closed" && (
+                {canReplyTo(r) && !isConfidentialHidden(r) && r.status === "open" && (
                   <div className="space-y-2 pt-1 border-t border-border">
                     <div className="flex flex-wrap items-end gap-2">
                       <CommentFiles files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
@@ -394,10 +405,10 @@ export default function AnonymousReports() {
                     </div>
                     <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} className="w-full px-3 py-1.5 rounded-md border border-input text-sm font-body" />
                     <div className="flex flex-wrap gap-2">
-                      <button onClick={() => decide(r.id, "approved")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-body hover:bg-emerald-700">
+                      <button disabled={!(replyText[r.id] || "").trim()} onClick={() => decide(r.id, "approved")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-body hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
                         <Check className="w-3.5 h-3.5" /> {t("approveReport")}
                       </button>
-                      <button onClick={() => decide(r.id, "rejected")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground text-xs font-body hover:opacity-90">
+                      <button disabled={!(replyText[r.id] || "").trim()} onClick={() => decide(r.id, "rejected")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground text-xs font-body hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
                         <XIcon className="w-3.5 h-3.5" /> {t("rejectReport")}
                       </button>
                       {!isAtTop(r) && (

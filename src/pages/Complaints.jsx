@@ -5,6 +5,7 @@ import { ShieldQuestion, Megaphone, Archive } from "lucide-react";
 import AnonymousReports from "./AnonymousReports";
 import PublicComplaints from "./PublicComplaints";
 import RecordSmartArchive from "@/components/RecordSmartArchive";
+import { hasHRPermission, hrScopeStations } from "@/lib/permissions";
 
 // Single combined section for both anonymous and identified (public) complaints —
 // plus a smart archive (managers only) filing every complaint by Year → Month.
@@ -14,7 +15,11 @@ export default function Complaints() {
   const [tab, setTab] = useState("anonymous");
   const ar = lang === "ar";
 
-  const isManager = currentUser && (["director", "ops_manager", "pgm", "station_manager"].includes(currentUser.role) || currentUser.hrLevelId || data?.ownerId === currentUser.id);
+  const hasComplaintAccess = currentUser && (hasHRPermission(currentUser, data, "view_anonymous_reports") || hasHRPermission(currentUser, data, "manage_anonymous_reports"));
+  const isManager = currentUser && (["director", "ops_manager", "pgm", "station_manager"].includes(currentUser.role) || hasComplaintAccess || data?.ownerId === currentUser.id);
+  const fullScope = currentUser && (["director", "ops_manager"].includes(currentUser.role) || data?.ownerId === currentUser.id);
+  const scopedStations = hasComplaintAccess ? hrScopeStations(currentUser, data) : currentUser?.role === "pgm" ? (currentUser.managedStations || []) : currentUser?.role === "station_manager" ? (currentUser.managedStations?.length ? currentUser.managedStations : [currentUser.stationId]) : [];
+  const canSeeReport = (report) => fullScope || scopedStations === null || (report.stationId && scopedStations.includes(report.stationId));
 
   const TABS = [
     { key: "anonymous", label: t("anonymous"), icon: ShieldQuestion },
@@ -26,11 +31,11 @@ export default function Complaints() {
 
   const archiveItems = isManager
     ? [
-        ...(data?.anonymousReports || []).map((r) => ({
+        ...(data?.anonymousReports || []).filter(canSeeReport).map((r) => ({
           id: "an_" + r.id, date: r.createdAt, title: stationName(r.stationId),
-          text: r.message, badge: t("anonymous"),
+          text: r.confidential && r.confidentialBy !== currentUser.id ? t("confidentialHidden") : r.message, badge: t("anonymous"),
         })),
-        ...(data?.publicReports || []).map((r) => ({
+        ...(data?.publicReports || []).filter(canSeeReport).map((r) => ({
           id: "pu_" + r.id, date: r.createdAt, title: stationName(r.stationId),
           text: r.message, badge: t("publicComplaints"),
         })),

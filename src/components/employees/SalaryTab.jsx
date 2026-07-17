@@ -5,8 +5,9 @@ import { base44 } from "@/api/base44Client";
 import { Pencil, Check, FileText, Loader2, Upload } from "lucide-react";
 
 export default function SalaryTab({ employee, companyId, canEdit }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [editing, setEditing] = useState(false);
+  const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
   const profile = employee.profile || {};
@@ -17,7 +18,15 @@ export default function SalaryTab({ employee, companyId, canEdit }) {
   });
 
   const save = () => {
-    updateEmployeeProfile(companyId, employee.id, form);
+    const baseSalary = Number(form.baseSalary);
+    const allowances = Number(form.allowances || 0);
+    const currency = String(form.currency || "").trim().toUpperCase();
+    if (!Number.isFinite(baseSalary) || baseSalary <= 0 || !Number.isFinite(allowances) || allowances < 0 || !/^[A-Z]{3}$/.test(currency)) {
+      setError(lang === "ar" ? "أدخل راتبًا أساسيًا موجبًا وبدلات غير سالبة ورمز عملة من 3 أحرف." : "Enter a positive base salary, non-negative allowances, and a 3-letter currency code.");
+      return;
+    }
+    updateEmployeeProfile(companyId, employee.id, { baseSalary, allowances, currency });
+    setError("");
     setEditing(false);
   };
 
@@ -58,7 +67,7 @@ export default function SalaryTab({ employee, companyId, canEdit }) {
               <div key={key}>
                 <label className="block text-xs text-muted-foreground font-body mb-1">{t(label)}</label>
                 {editing ? (
-                  <input value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+                  <input type={key === "currency" ? "text" : "number"} min={key === "baseSalary" ? "0.01" : "0"} value={form[key]} onChange={(e) => { setForm({ ...form, [key]: e.target.value }); setError(""); }} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
                 ) : (
                   <p className="text-sm font-body">{profile[key] || "—"}</p>
                 )}
@@ -66,6 +75,7 @@ export default function SalaryTab({ employee, companyId, canEdit }) {
             ))}
           </div>
         )}
+        {error && <p className="text-xs text-destructive font-body">{error}</p>}
       </div>
 
       <div className="space-y-3 rounded-xl border border-border bg-card p-5">

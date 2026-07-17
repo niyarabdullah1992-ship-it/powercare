@@ -21,11 +21,11 @@
     },
     "docUrl": {
       "type": "string",
-      "description": "URL of the LATEST version of the document (updated after each signature)."
+      "description": "URL of the latest document version."
     },
     "verificationId": {
       "type": "string",
-      "description": "Verification ID stamped as a badge once all parties have signed."
+      "description": "Verification ID stamped after all parties sign."
     },
     "finalHash": {
       "type": [
@@ -36,7 +36,14 @@
     },
     "status": {
       "type": "string",
-      "description": "'pending' or 'completed'."
+      "enum": [
+        "pending",
+        "completed"
+      ]
+    },
+    "expiresAt": {
+      "type": "string",
+      "description": "Signing links expire after this ISO timestamp."
     },
     "signers": {
       "type": "array",
@@ -44,14 +51,16 @@
         "type": "object",
         "additionalProperties": true
       },
-      "description": "[{ token, name, email, status: 'pending'|'signed', signedAt }]"
+      "description": "Ordered signing parties and their statuses."
     }
   },
   "required": [
     "companyId",
     "creatorId",
     "fileName",
-    "docUrl"
+    "docUrl",
+    "status",
+    "signers"
   ],
   "rls": {
     "create": {

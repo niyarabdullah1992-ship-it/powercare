@@ -17,6 +17,7 @@ export default function Files() {
   // Individual (personal) workspaces: no company or station concepts.
   const isIndividual = String(data?.plan || company?.plan || "").toLowerCase() === "individual";
   const pageTitle = isIndividual ? (lang === "ar" ? "ملفاتي" : "My Files") : t("companyFiles");
+  const canManageFiles = isIndividual || data?.ownerId === currentUser?.id || ["director", "ops_manager"].includes(currentUser?.role);
   const [path, setPath] = useState([]); // folder nodes from root down to the open folder
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -24,8 +25,8 @@ export default function Files() {
 
   // Station scoping: managers/employees tied to stations default to their own station's documents.
   const myStations = visibleStations(currentUser, data || { stations: [] });
-  const isStationScoped = currentUser?.role === "station_manager" || currentUser?.role === "pgm" || (currentUser?.role === "employee" && currentUser?.stationId);
-  const defaultStation = isStationScoped ? (currentUser.stationId || myStations[0]?.id || "all") : "all";
+  const isStationScoped = ["station_manager", "pgm", "employee"].includes(currentUser?.role);
+  const defaultStation = isStationScoped ? (currentUser.stationId || myStations[0]?.id || "hq") : "all";
   const [stationFilter, setStationFilter] = useState(defaultStation);
 
   // Re-tapping the Files bottom tab resets the folder navigation to root.
@@ -38,10 +39,10 @@ export default function Files() {
   const nodes = data?.files || [];
   const currentId = path.length ? path[path.length - 1].id : null;
   const childrenOf = (id) => nodes.filter((n) => (n.parentId || null) === id);
-  const folders = childrenOf(currentId).filter((n) => n.type === "folder");
-  const matchesStation = (f) =>
-    stationFilter === "all" || (f.stationId || null) === (stationFilter === "hq" ? null : stationFilter);
-  const files = childrenOf(currentId).filter((n) => n.type === "file" && matchesStation(n));
+  const matchesStation = (node) =>
+    isIndividual || stationFilter === "all" || (node.stationId || null) === (stationFilter === "hq" ? null : stationFilter);
+  const folders = childrenOf(currentId).filter((node) => node.type === "folder" && matchesStation(node));
+  const files = childrenOf(currentId).filter((node) => node.type === "file" && matchesStation(node));
   const stationName = (id) => data?.stations?.find((s) => s.id === id)?.name || null;
   const Chevron = dir === "rtl" ? ChevronLeft : ChevronRight;
 
@@ -103,28 +104,33 @@ export default function Files() {
 
       {/* Toolbar */}
       <div className="flex items-center gap-2">
-        <Button variant="outline" onClick={() => setFolderDialogOpen(true)} className="font-body">
+        {canManageFiles && <Button variant="outline" onClick={() => setFolderDialogOpen(true)} className="font-body">
           <FolderPlus className="w-4 h-4 me-2" />
           {t("newFolder")}
-        </Button>
-        <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="font-body">
+        </Button>}
+        {canManageFiles && <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="font-body">
           {uploading ? <Loader2 className="w-4 h-4 me-2 animate-spin" /> : <Upload className="w-4 h-4 me-2" />}
           {uploading ? t("uploading") : t("uploadFileBtn")}
-        </Button>
-        <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleUpload} />
+        </Button>}
+        {canManageFiles && <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleUpload} />}
         {/* Station filter — hidden for individuals (no station concept) */}
         {!isIndividual && (
         <div className="flex items-center gap-1.5 ms-auto">
           <Radio className="w-4 h-4 text-accent shrink-0" strokeWidth={1.5} />
           <MobileSelect
             value={stationFilter}
-            onChange={setStationFilter}
+            onChange={(value) => { setStationFilter(value); setPath([]); }}
             placeholder={t("filesAllStations")}
-            options={[
-              { value: "all", label: t("filesAllStations") },
-              { value: "hq", label: t("hq") },
-              ...myStations.map((s) => ({ value: s.id, label: s.name })),
-            ]}
+            options={isStationScoped
+              ? [
+                  ...(!currentUser?.stationId && myStations.length === 0 ? [{ value: "hq", label: t("hq") }] : []),
+                  ...myStations.map((station) => ({ value: station.id, label: station.name })),
+                ]
+              : [
+                  { value: "all", label: t("filesAllStations") },
+                  { value: "hq", label: t("hq") },
+                  ...myStations.map((station) => ({ value: station.id, label: station.name })),
+                ]}
           />
         </div>
         )}
@@ -141,8 +147,8 @@ export default function Files() {
                 folder={folder}
                 count={childrenOf(folder.id).length}
                 onOpen={() => setPath([...path, folder])}
-                onDelete={() => deleteFileNode(company.id, folder.id)}
-                onRename={(name) => renameFileNode(company.id, folder.id, name)}
+                onDelete={canManageFiles ? () => deleteFileNode(company.id, folder.id) : undefined}
+                onRename={canManageFiles ? (name) => renameFileNode(company.id, folder.id, name) : undefined}
               />
             ))}
           </div>
@@ -155,7 +161,7 @@ export default function Files() {
           <p className="text-xs uppercase tracking-wider text-muted-foreground font-body mb-2">{t("attachments")}</p>
           <div className="space-y-2">
             {files.map((file) => (
-              <FileRow key={file.id} file={file} stationName={isIndividual ? null : stationName(file.stationId)} onDelete={() => deleteFileNode(company.id, file.id)} onRename={(name) => renameFileNode(company.id, file.id, name)} />
+              <FileRow key={file.id} file={file} stationName={isIndividual ? null : stationName(file.stationId)} onDelete={canManageFiles ? () => deleteFileNode(company.id, file.id) : undefined} onRename={canManageFiles ? (name) => renameFileNode(company.id, file.id, name) : undefined} />
             ))}
           </div>
         </div>
@@ -167,11 +173,15 @@ export default function Files() {
         </div>
       )}
 
-      <NewFolderDialog
+      {canManageFiles && <NewFolderDialog
         open={folderDialogOpen}
         onOpenChange={setFolderDialogOpen}
-        onCreate={(name) => addFileFolder(company.id, { name, parentId: currentId })}
-      />
+        onCreate={(name) => addFileFolder(company.id, {
+          name,
+          parentId: currentId,
+          stationId: stationFilter !== "all" && stationFilter !== "hq" ? stationFilter : currentUser?.stationId || null,
+        })}
+      />}
     </div>
   );
 }

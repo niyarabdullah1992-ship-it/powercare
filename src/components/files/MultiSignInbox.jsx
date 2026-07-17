@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Inbox, Loader2, PenLine, Download, RefreshCw, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
+import { getCompanyToken } from "@/lib/store";
 
 // Lists group-signing requests: documents waiting for MY signature, plus
 // requests I created with each signer's live status.
@@ -15,6 +16,7 @@ export default function MultiSignInbox({ currentUser, companyId, ar, refreshKey 
       const res = await base44.functions.invoke("multiSign", {
         action: "list",
         companyId,
+        sessionToken: getCompanyToken(companyId),
         userId: currentUser.id,
         email: (currentUser.email || "").toLowerCase(),
       });
@@ -35,6 +37,7 @@ export default function MultiSignInbox({ currentUser, companyId, ar, refreshKey 
       await base44.functions.invoke("multiSign", {
         action: "delete",
         companyId,
+        sessionToken: getCompanyToken(companyId),
         userId: currentUser.id,
         requestId: r.id,
       });

@@ -27,7 +27,7 @@ export default function StationChat() {
 
   const baseRooms = !data || !currentUser ? [] : canSeeAllStations(currentUser)
     ? [{ key: "hq", name: t("hq") }, ...data.stations.map((s) => ({ key: s.id, name: s.name }))]
-    : currentUser.role === "pgm"
+    : ["pgm", "station_manager"].includes(currentUser.role)
       ? visibleStations(currentUser, data).map((s) => ({ key: s.id, name: s.name }))
       : [{
           key: currentUser.stationId || "hq",

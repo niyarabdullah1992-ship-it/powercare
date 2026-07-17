@@ -39,8 +39,11 @@ function emailHtml({ title, lines = [], code = null, footerNote = '' }) {
 async function sendSystemEmail(base44, { to, subject, body, html }) {
   try {
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
+    const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${accessToken}` } });
+    const profile = profileRes.ok ? await profileRes.json() : null;
+    if (!profile?.email) throw new Error('Connected Gmail sender identity is unavailable');
     const msg = createMimeMessage();
-    msg.setSender({ name: 'PowerCare', addr: 'no-reply@powercare.app' });
+    msg.setSender({ name: 'PowerCare', addr: profile.email });
     msg.setRecipient(to);
     msg.setSubject(subject);
     if (html) {
@@ -582,13 +585,29 @@ Deno.serve(async (req) => {
     if (action === 'syncBlob') {
       const { category, payload } = body;
       if (!category) return Response.json({ error: 'Missing category' }, { status: 400 });
-      // Privileged categories (HR hierarchy, company ownership/settings) may only
-      // be written by owners/managers/HR — a regular employee's push is
-      // acknowledged but ignored so the retry loop never wedges.
-      if (['hrLevels', 'hrClusters', 'companyMeta'].includes(category)) {
-        const privilege = await getActorPrivilege();
-        if (privilege === 'none') return Response.json({ error: 'Forbidden' }, { status: 403 });
-        if (privilege === 'self') return Response.json({ ok: true, ignored: true });
+      // Sensitive snapshots require the exact administrative dependency, not just a valid login.
+      const ownerOnlyCategories = ['companyMeta', 'files'];
+      const managedCategories = ['hrLevels', 'hrClusters', 'plans', 'schedules', 'safety', 'templates', 'targets'];
+      if (ownerOnlyCategories.includes(category) || managedCategories.includes(category) || category === 'payrollRuns') {
+        if (!auth.admin && auth.role !== 'owner') {
+          const actors = auth.userId ? await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: auth.userId }) : [];
+          const actor = actors[0];
+          if (!actor) return Response.json({ error: 'Forbidden' }, { status: 403 });
+          let allowed = false;
+          if (category === 'payrollRuns') {
+            allowed = ['director', 'ops_manager'].includes(actor.role);
+            if (!allowed && actor.hrLevelId) {
+              const levelsBlob = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: 'hrLevels' });
+              const level = (levelsBlob[0]?.payload || []).find((item) => item.id === actor.hrLevelId && item.active !== false);
+              allowed = !!level?.permissions?.includes('manage_payroll');
+            }
+          } else if (ownerOnlyCategories.includes(category)) {
+            allowed = ['director', 'ops_manager'].includes(actor.role);
+          } else {
+            allowed = ['director', 'ops_manager', 'pgm', 'station_manager'].includes(actor.role) || !!actor.hrLevelId;
+          }
+          if (!allowed) return Response.json({ ok: true, ignored: true });
+        }
       }
       const existing = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
       const data = Array.isArray(payload) ? payload : [];

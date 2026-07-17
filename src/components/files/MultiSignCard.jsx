@@ -4,6 +4,7 @@ import MultiSignPlacementModal from "@/components/files/MultiSignPlacementModal"
 import { base44 } from "@/api/base44Client";
 import { generateVerificationId } from "@/lib/verificationBadge";
 import { appParams } from "@/lib/app-params";
+import { getCompanyToken } from "@/lib/store";
 
 // Emailed signing links must point to the real app domain — inside the editor
 // preview, window.location.origin is the preview frame, not the published app.
@@ -33,6 +34,11 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setError(ar ? "يجب اختيار ملف PDF صالح." : "Please choose a valid PDF file.");
+      e.target.value = "";
+      return;
+    }
     setError("");
     setResult(null);
     setUploading(true);
@@ -54,7 +60,11 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
     if (emp) setSigners((rows) => rows.map((r, idx) => (idx === i ? { name: emp.name, email: emp.email || "" } : r)));
   };
 
-  const validSigners = signers.filter((s) => s.name.trim() && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.email.trim()));
+  const seenEmails = new Set();
+  const validSigners = signers.filter((signer) => {
+    const email = signer.email.trim().toLowerCase();
+    return signer.name.trim() && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && !seenEmails.has(email) && (seenEmails.add(email), true);
+  });
 
   // Bulk add: paste any emails (one per line, or comma/space separated).
   // Optional name before the email: "Ahmed <a@x.com>" or "Ahmed, a@x.com".
@@ -84,6 +94,7 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
       const res = await base44.functions.invoke("multiSign", {
         action: "create",
         companyId,
+        sessionToken: getCompanyToken(companyId),
         creatorId: currentUser.id,
         creatorName: currentUser.name,
         creatorEmail: currentUser.email || "",
@@ -119,8 +130,8 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
       </h3>
       <p className="text-xs text-muted-foreground font-body">
         {ar
-          ? "ارفع ملف PDF وأضف الموقّعين — كلٌّ منهم يستلم رابط توقيع خاصًا به بالبريد، ويمكنهم التوقيع في نفس الوقت من داخل المنصة أو خارجها."
-          : "Upload a PDF and add signers — each receives their own signing link by email and can sign at the same time, inside or outside the platform."}
+          ? "ارفع ملف PDF وأضف الموقّعين — يستلم كل شخص رابطًا خاصًا ويوقّع بالترتيب لضمان عدم تعارض نسخ المستند."
+          : "Upload a PDF and add signers — each receives a private link and signs in order so document versions cannot conflict."}
       </p>
 
       <div className="flex items-center gap-2">

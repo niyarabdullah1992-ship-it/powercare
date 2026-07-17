@@ -80,9 +80,11 @@ Deno.serve(async (req) => {
     if (!recipient) return Response.json({ error: 'Recipient must be a company employee' }, { status: 403 });
 
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
+    const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${accessToken}` } });
+    const profile = profileRes.ok ? await profileRes.json() : null;
+    if (!profile?.email) return Response.json({ error: 'Connected Gmail sender identity is unavailable' }, { status: 502 });
     const msg = createMimeMessage();
-    // Gmail rewrites the From header to the authenticated account automatically.
-    msg.setSender({ name: 'PowerCare', addr: 'no-reply@powercare.app' });
+    msg.setSender({ name: 'PowerCare', addr: profile.email });
     msg.setRecipient(to);
     msg.setSubject(subject);
     msg.addMessage({ contentType: 'text/html', data: emailHtml(subject, text, details, cta) });
