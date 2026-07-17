@@ -34,8 +34,10 @@ export default function Safety() {
     updateSafetyRecord(company.id, stationId, { ...updates, ...extra, approvedBy: null, approvedAt: null });
   };
 
+  // Approval also clears the incident lock: once management reviews and approves
+  // the data after an incident, the "Safe" level becomes selectable again.
   const handleApprove = (stationId) =>
-    updateSafetyRecord(company.id, stationId, { approvedBy: currentUser.name, approvedAt: new Date().toISOString() });
+    updateSafetyRecord(company.id, stationId, { approvedBy: currentUser.name, approvedAt: new Date().toISOString(), incidentClearedAt: new Date().toISOString() });
 
   return (
     <div className="space-y-6">

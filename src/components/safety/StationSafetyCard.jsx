@@ -18,11 +18,10 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
 
   const hazards = rec?.hazards || [];
   const approved = !!rec?.approvedBy;
-  // Flexible rule: "Safe" can't be picked immediately after adding hazards or
-  // logging an incident. Open hazards block it until they're cleared; a logged
-  // incident blocks it for 24 hours only — afterwards it's the manager's call.
-  const recentIncident = rec?.lastIncidentAt && (Date.now() - new Date(rec.lastIncidentAt).getTime()) < 86400000;
-  const safeBlocked = hazards.length > 0 || !!recentIncident;
+  // Rule: "Safe" can't be picked while hazards are open, or right after logging an
+  // incident — the lock lifts once management reviews and approves the safety data.
+  const incidentPending = !!rec?.lastIncidentAt && (!rec?.incidentClearedAt || new Date(rec.lastIncidentAt) > new Date(rec.incidentClearedAt));
+  const safeBlocked = hazards.length > 0 || incidentPending;
 
   const addHazard = () => {
     if (!hazard.trim()) return;
@@ -77,10 +76,10 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
             {ar
               ? hazards.length > 0
                 ? "لا يمكن تصنيف المحطة «آمنة» مع وجود مخاطر مفتوحة — أغلق المخاطر أولًا."
-                : "سُجّلت حادثة حديثًا — يمكن إعادة التصنيف إلى «آمنة» بعد ٢٤ ساعة."
+                : "سُجّلت حادثة — يُفتح خيار «آمنة» بعد مراجعة الإدارة واعتماد بيانات السلامة."
               : hazards.length > 0
                 ? "Can't mark Safe while hazards are open — clear them first."
-                : "An incident was just logged — Safe can be re-selected after 24 hours."}
+                : "An incident was logged — Safe unlocks after management reviews and approves the safety data."}
           </p>
         )}
       </div>
