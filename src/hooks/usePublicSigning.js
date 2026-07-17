@@ -18,6 +18,7 @@ export default function usePublicSigning() {
   const [mode, setMode] = useState("type");
   const [sigSize, setSigSize] = useState(100);
   const [chosenSpot, setChosenSpot] = useState(null);
+  const [stampPreview, setStampPreview] = useState("");
 
   const load = async () => {
     setLoading(true); setFailure(null);
@@ -33,7 +34,7 @@ export default function usePublicSigning() {
 
   useEffect(() => { load(); }, [token]);
 
-  const sign = async (sigDataUrl) => {
+  const sign = async (sigDataUrl, isComposedStamp = false) => {
     setError(""); setSigning(true);
     try {
       setStage(ar ? "جارٍ تجهيز أحدث نسخة…" : "Fetching the latest version…");
@@ -42,7 +43,7 @@ export default function usePublicSigning() {
       if (fresh.signer.status === "signed") throw new Error(ar ? "وقّعت هذا المستند مسبقًا." : "You already signed this document.");
       if (!fresh.canSign) throw new Error(ar ? "يجب اكتمال توقيع الطرف السابق أولًا." : "The previous signer must finish first.");
       setStage(ar ? "جارٍ ختم توقيعك على المستند…" : "Stamping your signature…");
-      const stamp = await makeSignatureStamp(sigDataUrl, fresh.signer.name, fresh.verificationId);
+      const stamp = isComposedStamp ? sigDataUrl : await makeSignatureStamp(sigDataUrl, fresh.signer.name, fresh.verificationId);
       let badge = null;
       if (fresh.isLast && fresh.verificationId) {
         const qr = await loadBadgeQr(fresh.verificationId).catch(() => null);
@@ -58,5 +59,5 @@ export default function usePublicSigning() {
     } finally { setSigning(false); setStage(""); }
   };
 
-  return { ar, info, failure, loading, signing, stage, done, error, mode, setMode, sigSize, setSigSize, chosenSpot, setChosenSpot, sign, reload: load };
+  return { ar, info, failure, loading, signing, stage, done, error, mode, setMode, sigSize, setSigSize, chosenSpot, setChosenSpot, stampPreview, setStampPreview, sign, reload: load };
 }

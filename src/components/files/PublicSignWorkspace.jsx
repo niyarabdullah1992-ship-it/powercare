@@ -6,7 +6,7 @@ import SignSpotPicker from "@/components/files/SignSpotPicker";
 
 export default function PublicSignWorkspace({ signing }) {
   const [showSpotPicker, setShowSpotPicker] = useState(false);
-  const { ar, info, chosenSpot, setChosenSpot, sigSize, setSigSize } = signing;
+  const { ar, info, chosenSpot, setChosenSpot, sigSize, setSigSize, stampPreview } = signing;
   return (
     <section className="space-y-5">
       <header className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-5 shadow-soft sm:flex-row sm:items-center sm:justify-between sm:p-7">
@@ -17,7 +17,7 @@ export default function PublicSignWorkspace({ signing }) {
         <PublicSignDocumentPanel ar={ar} info={info} chosenSpot={chosenSpot} onChooseSpot={() => setShowSpotPicker(true)} />
         <PublicSignSignaturePanel {...signing} />
       </div>
-      {showSpotPicker && <SignSpotPicker docUrl={info.docUrl} initialSpot={chosenSpot || info.signer.spot || null} initialScale={sigSize} signerName={info.signer.name} verificationId={info.verificationId} ar={ar} onConfirm={(spot, scale) => { setChosenSpot(spot); setSigSize(scale); setShowSpotPicker(false); }} onClose={() => setShowSpotPicker(false)} />}
+      {showSpotPicker && <SignSpotPicker docUrl={info.docUrl} stampPreview={stampPreview} initialSpot={chosenSpot || info.signer.spot || null} initialScale={sigSize} signerName={info.signer.name} verificationId={info.verificationId} ar={ar} onConfirm={(spot, scale) => { setChosenSpot(spot); setSigSize(scale); setShowSpotPicker(false); }} onClose={() => setShowSpotPicker(false)} />}
     </section>
   );
 }

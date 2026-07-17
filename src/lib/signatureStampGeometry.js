@@ -1,5 +1,5 @@
-export const STAMP_CANVAS_WIDTH = 560;
-export const STAMP_CANVAS_HEIGHT = 205;
+export const STAMP_CANVAS_WIDTH = 420;
+export const STAMP_CANVAS_HEIGHT = 190;
 export const STAMP_WIDTH_PERCENT = 21;
 export const STAMP_MIN_SCALE = 65;
 export const STAMP_MAX_SCALE = 135;

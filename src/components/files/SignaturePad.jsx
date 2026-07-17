@@ -1,11 +1,14 @@
 import React, { useRef, useState } from "react";
 import { Eraser, Check, PenTool } from "lucide-react";
+import { makeSignatureStamp } from "@/lib/multiSignStamp";
 
-export default function SignaturePad({ ar, onSave, saving }) {
+export default function SignaturePad({ ar, signerName, verificationId, onPreview, onSave, saving }) {
   const canvasRef = useRef(null);
   const drawing = useRef(false);
   const previous = useRef(null);
+  const inkRef = useRef(false);
   const [hasInk, setHasInk] = useState(false);
+  const [stamp, setStamp] = useState("");
 
   const point = (event) => {
     const canvas = canvasRef.current;
@@ -40,21 +43,33 @@ export default function SignaturePad({ ar, onSave, saving }) {
     ctx.strokeStyle = "#1e293b";
     ctx.stroke();
     previous.current = { ...current, width };
+    inkRef.current = true;
     setHasInk(true);
   };
 
-  const end = () => { drawing.current = false; previous.current = null; };
+  const end = async () => {
+    drawing.current = false;
+    previous.current = null;
+    if (!inkRef.current) return;
+    const composed = await makeSignatureStamp(canvasRef.current.toDataURL("image/png"), signerName, verificationId);
+    setStamp(composed);
+    onPreview(composed);
+  };
   const clear = () => {
     const canvas = canvasRef.current;
     canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+    inkRef.current = false;
     setHasInk(false);
+    setStamp("");
+    onPreview("");
   };
 
   return (
     <div className="space-y-4">
       <p className="flex items-center gap-2 text-xs text-muted-foreground"><PenTool className="h-4 w-4 text-accent" />{ar ? "ارسم توقيعك بإصبعك داخل الإطار" : "Draw your signature inside the frame"}</p>
       <canvas ref={canvasRef} width={900} height={260} className="h-44 w-full touch-none cursor-crosshair rounded-2xl border-2 border-dashed border-border bg-secondary/40 shadow-inner sm:h-52" onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={end} />
-      <div className="grid gap-2 sm:grid-cols-[auto_1fr]"><button type="button" onClick={clear} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3 text-sm font-medium hover:bg-secondary"><Eraser className="h-4 w-4" />{ar ? "مسح" : "Clear"}</button><button type="button" disabled={!hasInk || saving} onClick={() => onSave(canvasRef.current.toDataURL("image/png"))} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"><Check className="h-4 w-4" />{saving ? (ar ? "جارٍ الحفظ…" : "Saving…") : ar ? "اعتماد وإرسال التوقيع" : "Approve and submit signature"}</button></div>
+      {stamp && <div><p className="mb-2 text-xs font-medium text-muted-foreground">{ar ? "المعاينة النهائية داخل الملف" : "Final in-document preview"}</p><img src={stamp} alt={ar ? "معاينة الختم" : "Stamp preview"} className="mx-auto w-full max-w-sm" /></div>}
+      <div className="grid gap-2 sm:grid-cols-[auto_1fr]"><button type="button" onClick={clear} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3 text-sm font-medium hover:bg-secondary"><Eraser className="h-4 w-4" />{ar ? "مسح" : "Clear"}</button><button type="button" disabled={!stamp || saving} onClick={() => onSave(stamp, true)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"><Check className="h-4 w-4" />{saving ? (ar ? "جارٍ الحفظ…" : "Saving…") : ar ? "اعتماد وإرسال التوقيع" : "Approve and submit signature"}</button></div>
     </div>
   );
 }
