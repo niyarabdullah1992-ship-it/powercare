@@ -49,6 +49,7 @@
     --landing-gold: 32 48% 52%;
     --landing-gold-light: 35 60% 76%;
     --landing-gold-deep: 28 50% 45%;
+    --landing-cinema: 40 44% 4%;
   }
 
   .dark {
@@ -84,6 +85,7 @@
     --sidebar-accent-foreground: 36 30% 90%;
     --sidebar-border: 30 12% 20%;
     --sidebar-ring: 35 55% 58%;
+    --landing-cinema: 40 44% 4%;
   }
 }
 
@@ -143,6 +145,33 @@
   .image-zoom {
     transition: transform 1.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
+
+  .promo-scene-enter { animation: promo-scene-in .85s ease-out both; }
+  .promo-center, .promo-feature { @apply absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center; }
+  .promo-logo-glow { @apply rounded-full border border-landing-gold/40 bg-card/5 p-5; animation: promo-glow 2.2s ease-in-out infinite; }
+  .promo-kicker { @apply font-body text-xs uppercase tracking-widest text-landing-gold-light md:text-base; }
+  .promo-title-rise { animation: promo-title-in 1s ease-out both; }
+  .promo-location-pulse { @apply absolute h-28 w-28 rounded-full border border-landing-gold/50; animation: promo-pulse 1.5s ease-out infinite; }
+  .promo-checks { @apply mt-2 grid gap-2 text-start font-body text-xs text-landing-bg/35 md:text-sm; }
+  .promo-checks span { @apply flex items-center gap-2 transition-all duration-500; }
+  .promo-checks span.is-filled { @apply translate-x-1 text-landing-gold-light; }
+  .promo-checks svg { @apply h-4 w-4; }
+  .promo-counter { @apply font-heading text-4xl text-landing-gold-light md:text-7xl; }
+  .promo-counter small { @apply font-body text-sm; }
+  .promo-shield-flame { @apply absolute h-32 w-24 rounded-full bg-landing-gold/30 blur-2xl; animation: promo-flame 1s ease-in-out infinite alternate; }
+  .promo-stats { @apply absolute inset-0 grid grid-cols-3 items-center gap-3 px-5; }
+  .promo-stats div { @apply flex flex-col gap-2 rounded-2xl border border-landing-gold/20 bg-card/5 p-4 opacity-0; animation: promo-stat-pop .65s ease-out forwards; }
+  .promo-stats strong { @apply font-heading text-3xl text-landing-gold-light md:text-6xl; }
+  .promo-stats span { @apply font-body text-xs text-landing-bg/60 md:text-base; }
+  .promo-gold-flash { @apply pointer-events-none absolute inset-y-0 -start-1/3 w-1/4 bg-landing-gold-light/40 blur-xl; animation: promo-flash 2.4s ease-in-out infinite; }
+
+  @keyframes promo-scene-in { from { opacity: 0; transform: scale(1.035); } to { opacity: 1; transform: scale(1); } }
+  @keyframes promo-title-in { from { opacity: 0; filter: blur(16px); transform: translateY(40px); } to { opacity: 1; filter: blur(0); transform: translateY(0); } }
+  @keyframes promo-glow { 50% { box-shadow: 0 0 55px hsl(var(--landing-gold) / .55); transform: scale(1.04); } }
+  @keyframes promo-pulse { from { opacity: .9; transform: scale(.45); } to { opacity: 0; transform: scale(1.6); } }
+  @keyframes promo-flame { to { opacity: .55; transform: scale(1.25) translateY(-8px); } }
+  @keyframes promo-stat-pop { from { opacity: 0; transform: translateY(24px) scale(.8); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes promo-flash { 0%, 35% { opacity: 0; transform: translateX(0) skewX(-18deg); } 65% { opacity: 1; } 100% { opacity: 0; transform: translateX(650%) skewX(-18deg); } }
 
   .group:hover .image-zoom {
     transform: scale(1.06);

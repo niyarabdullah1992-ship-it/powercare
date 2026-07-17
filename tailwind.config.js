@@ -65,7 +65,8 @@ module.exports = {
   			'landing-olive-card': 'hsl(var(--landing-olive-card))',
   			'landing-gold': 'hsl(var(--landing-gold))',
   			'landing-gold-light': 'hsl(var(--landing-gold-light))',
-  			'landing-gold-deep': 'hsl(var(--landing-gold-deep))'
+  			'landing-gold-deep': 'hsl(var(--landing-gold-deep))',
+  			'landing-cinema': 'hsl(var(--landing-cinema))'
   		},
   		fontFamily: {
   			heading: ['var(--font-heading)'],
