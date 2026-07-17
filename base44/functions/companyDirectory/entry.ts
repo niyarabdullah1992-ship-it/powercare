@@ -418,12 +418,37 @@ Deno.serve(async (req) => {
     // - 'full': owner/admin sessions, managers and HR staff — may modify company data.
     // - 'self': regular employees — may only edit their own non-privileged fields.
     // - 'none': session user no longer exists in this company.
+    let actorContextPromise = null;
+    const getActorContext = async () => {
+      if (actorContextPromise) return actorContextPromise;
+      actorContextPromise = (async () => {
+        if (auth.admin || auth.role === 'owner') return { actor: null, permissions: new Set(), scope: null, senior: true };
+        const actors = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: auth.userId });
+        const actor = actors[0] || null;
+        if (!actor) return { actor: null, permissions: new Set(), scope: [], senior: false };
+        if (['director', 'ops_manager'].includes(actor.role)) return { actor, permissions: new Set(), scope: null, senior: true };
+        const levelRows = actor.hrLevelId ? await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: 'hrLevels' }) : [];
+        const level = (levelRows[0]?.payload || []).find((item) => item.id === actor.hrLevelId && item.active !== false) || null;
+        const permissions = new Set(level?.permissions || []);
+        let scope = [];
+        if (actor.role === 'pgm') scope = actor.managedStations || [];
+        else if (actor.role === 'station_manager') scope = (actor.managedStations?.length ? actor.managedStations : [actor.stationId]).filter(Boolean);
+        else if (level?.stationIds?.length) scope = level.stationIds;
+        else if (level?.scope === 'station') scope = actor.hrStationId ? [actor.hrStationId] : [];
+        else if (level?.scope === 'cluster') {
+          const clusterRows = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: 'hrClusters' });
+          const cluster = (clusterRows[0]?.payload || []).find((item) => item.id === actor.hrClusterId);
+          scope = cluster?.stationIds || [];
+        } else if (level) scope = null;
+        return { actor, permissions, scope, senior: false };
+      })();
+      return actorContextPromise;
+    };
     const getActorPrivilege = async () => {
-      if (auth.admin || auth.role === 'owner') return 'full';
-      const actors = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: auth.userId });
-      const actor = actors[0];
-      if (!actor) return 'none';
-      if (['director', 'ops_manager', 'pgm', 'station_manager'].includes(actor.role) || actor.hrLevelId) return 'full';
+      const context = await getActorContext();
+      if (context.senior) return 'full';
+      if (!context.actor) return 'none';
+      if (['pgm', 'station_manager'].includes(context.actor.role) || context.actor.hrLevelId) return 'full';
       return 'self';
     };
 
@@ -468,13 +493,18 @@ Deno.serve(async (req) => {
       const { employeeId } = body;
       if (!employeeId || (auth.userId && auth.userId === employeeId)) return Response.json({ error: 'Forbidden' }, { status: 403 });
       let performedBy = 'Company owner';
-      if (auth.role !== 'owner') {
-        if (!auth.userId) return Response.json({ error: 'Forbidden' }, { status: 403 });
-        const actors = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: auth.userId });
-        if (!actors[0]?.hrLevelId) return Response.json({ error: 'HR access required' }, { status: 403 });
-        performedBy = actors[0].name || 'HR';
+      if (auth.role !== 'owner' && !auth.admin) {
+        const context = await getActorContext();
+        if (!context.actor || (!['director', 'ops_manager'].includes(context.actor.role) && !context.permissions.has('manage_employees'))) {
+          return Response.json({ error: 'HR employee-management access required' }, { status: 403 });
+        }
+        performedBy = context.actor.name || 'HR';
       }
       const targets = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId });
+      const actorContext = await getActorContext();
+      if (!actorContext.senior && actorContext.scope !== null && !actorContext.scope.includes(targets[0]?.stationId)) {
+        return Response.json({ error: 'Employee is outside your station scope' }, { status: 403 });
+      }
       if (!targets.length) return Response.json({ error: 'Employee not found' }, { status: 404 });
       const meta = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: 'companyMeta' });
       if (meta[0]?.payload?.[0]?.ownerId === employeeId) return Response.json({ error: 'Company owner cannot be deleted' }, { status: 403 });
@@ -577,12 +607,9 @@ Deno.serve(async (req) => {
 
     if (action === 'syncStations') {
       const { stations } = body;
-      // Only owners/managers/HR may modify stations. Regular-employee pushes are
-      // acknowledged but ignored (server copy stays authoritative), so the
-      // client's background sync loop never gets stuck retrying.
-      const privilege = await getActorPrivilege();
-      if (privilege === 'none') return Response.json({ error: 'Forbidden' }, { status: 403 });
-      if (privilege === 'self') return Response.json({ ok: true, ignored: true });
+      // Station definitions and GPS boundaries are company-level configuration.
+      const context = await getActorContext();
+      if (!context.senior) return Response.json({ ok: true, ignored: true });
       const incoming = (Array.isArray(stations) ? stations : []).map(({ id, ...rest }) => ({ ...rest, stationId: id, companyId }));
       const current = await base44.asServiceRole.entities.Station.filter({ companyId });
       await diffSync(base44.asServiceRole.entities.Station, current, incoming, 'stationId');
@@ -614,30 +641,17 @@ Deno.serve(async (req) => {
     if (action === 'syncBlob') {
       const { category, payload } = body;
       if (!category) return Response.json({ error: 'Missing category' }, { status: 400 });
-      // Sensitive snapshots require the exact administrative dependency, not just a valid login.
-      const ownerOnlyCategories = ['companyMeta', 'files'];
-      const managedCategories = ['hrLevels', 'hrClusters', 'plans', 'schedules', 'safety', 'templates', 'targets'];
-      if (ownerOnlyCategories.includes(category) || managedCategories.includes(category) || category === 'payrollRuns') {
-        if (!auth.admin && auth.role !== 'owner') {
-          const actors = auth.userId ? await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: auth.userId }) : [];
-          const actor = actors[0];
-          if (!actor) return Response.json({ error: 'Forbidden' }, { status: 403 });
-          let allowed = false;
-          if (category === 'payrollRuns') {
-            allowed = ['director', 'ops_manager'].includes(actor.role);
-            if (!allowed && actor.hrLevelId) {
-              const levelsBlob = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: 'hrLevels' });
-              const level = (levelsBlob[0]?.payload || []).find((item) => item.id === actor.hrLevelId && item.active !== false);
-              allowed = !!level?.permissions?.includes('manage_payroll');
-            }
-          } else if (ownerOnlyCategories.includes(category)) {
-            allowed = ['director', 'ops_manager'].includes(actor.role);
-          } else {
-            allowed = ['director', 'ops_manager', 'pgm', 'station_manager'].includes(actor.role) || !!actor.hrLevelId;
-          }
-          if (!allowed) return Response.json({ ok: true, ignored: true });
-        }
-      }
+      // Sensitive snapshots require their exact role/permission dependency.
+      const context = await getActorContext();
+      const actorRole = context.actor?.role;
+      let allowed = true;
+      if (['companyMeta', 'files'].includes(category)) allowed = context.senior;
+      else if (['hrLevels', 'hrClusters'].includes(category)) allowed = context.senior && (!context.actor || context.actor.role === 'director');
+      else if (category === 'payrollRuns') allowed = context.senior || context.permissions.has('manage_payroll');
+      else if (category === 'schedules') allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole) || context.permissions.has('manage_schedules');
+      else if (category === 'safety') allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole);
+      else if (['plans', 'templates', 'targets'].includes(category)) allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole);
+      if (!allowed) return Response.json({ ok: true, ignored: true });
       const existing = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
       const data = Array.isArray(payload) ? payload : [];
       if (existing.length) {
@@ -655,6 +669,15 @@ Deno.serve(async (req) => {
     if (action === 'getBlob') {
       const { category } = body;
       if (!category) return Response.json({ error: 'Missing category' }, { status: 400 });
+      const context = await getActorContext();
+      if (category === 'payrollRuns' && !context.senior && !context.permissions.has('manage_payroll')) {
+        return Response.json({ payload: [] });
+      }
+      if (category === 'files' && !context.senior) {
+        const existing = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
+        const allowed = new Set(context.scope || []);
+        return Response.json({ payload: (existing[0]?.payload || []).filter((node) => node.stationId && allowed.has(node.stationId)) });
+      }
       const existing = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
       return Response.json({ payload: existing[0]?.payload || [] });
     }
@@ -690,14 +713,18 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'logAudit') {
-      const { auditAction, performedBy, details } = body;
+      const { auditAction, details } = body;
+      const context = await getActorContext();
+      const performedBy = context.actor?.name || (auth.role === 'owner' || auth.admin ? 'Company owner' : 'User');
       await base44.asServiceRole.entities.AuditLog.create({
-        companyId, action: auditAction || 'unknown', performedBy: performedBy || 'unknown', details: details || '',
+        companyId, action: String(auditAction || 'unknown').slice(0, 100), performedBy, details: String(details || '').slice(0, 2000),
       });
       return Response.json({ ok: true });
     }
 
     if (action === 'getAuditLog') {
+      const context = await getActorContext();
+      if (!context.senior) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const records = await base44.asServiceRole.entities.AuditLog.filter({ companyId }, '-created_date', 100);
       return Response.json({ logs: records });
     }

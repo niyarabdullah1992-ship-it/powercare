@@ -78,7 +78,10 @@ export default function AnonymousReports() {
   // Reports visible to a staff member based on HR scope (or full oversight for director/owner/ops manager)
   const visibleReports = data.anonymousReports.filter((r) => {
     if (currentUser.role === "director" || currentUser.role === "ops_manager" || isOwner) return true;
-    if (currentUser.role === "station_manager") return r.stationId === currentUser.stationId;
+    if (currentUser.role === "station_manager") {
+      const managed = currentUser.managedStations?.length ? currentUser.managedStations : [currentUser.stationId];
+      return managed.includes(r.stationId);
+    }
     if (isHRAnon) return hrStations === null || hrStations.includes(r.stationId);
     return false;
   });
@@ -350,7 +353,7 @@ export default function AnonymousReports() {
       {/* Staff: manage reports */}
       {isStaff && (
         <>
-          {currentUser.role === "director" && (
+          {(currentUser.role === "director" || isOwner) && (
             <div className="p-4 rounded-xl border border-border bg-card flex flex-wrap items-center gap-3">
               <label className="text-xs text-muted-foreground font-body">{t("monthlyLimit")}</label>
               <input

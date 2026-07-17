@@ -100,7 +100,7 @@ export function applySalaryImport(companyId, month, matches) {
       emp.profile = emp.profile || {};
       emp.profile.baseSalary = amount(row.base_salary);
       emp.profile.allowances = amount(row.allowances);
-      if (row.currency) emp.profile.currency = String(row.currency).toUpperCase();
+      if (row.currency && /^[A-Z]{3}$/.test(String(row.currency).toUpperCase())) emp.profile.currency = String(row.currency).toUpperCase();
 
       const run = (d.payrollRuns || []).find((r) => r.month === month);
       const item = run?.items.find((i) => i.employeeId === emp.id);
@@ -109,7 +109,7 @@ export function applySalaryImport(companyId, month, matches) {
         item.allowances = amount(row.allowances);
         item.bonus = amount(row.bonus);
         item.deductions = amount(row.deductions);
-        if (row.currency) item.currency = String(row.currency).toUpperCase();
+        if (row.currency && /^[A-Z]{3}$/.test(String(row.currency).toUpperCase())) item.currency = String(row.currency).toUpperCase();
       }
     });
   });

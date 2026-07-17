@@ -43,7 +43,10 @@ export default function PublicComplaints() {
 
   const visibleReports = reportsList.filter((r) => {
     if (currentUser.role === "director" || currentUser.role === "ops_manager" || isOwner) return true;
-    if (currentUser.role === "station_manager") return r.stationId === currentUser.stationId;
+    if (currentUser.role === "station_manager") {
+      const managed = currentUser.managedStations?.length ? currentUser.managedStations : [currentUser.stationId];
+      return managed.includes(r.stationId);
+    }
     if (isHRStaff) return hrStations === null || hrStations.includes(r.stationId);
     return false;
   });

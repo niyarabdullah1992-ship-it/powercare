@@ -14,7 +14,7 @@ export default function Payroll() {
   const { company, data, currentUser } = useAuth();
   const [month, setMonth] = useState(monthKey());
 
-  const canView = ["director", "ops_manager"].includes(currentUser?.role) || hasHRPermission(currentUser, data, "manage_payroll");
+  const canView = data?.ownerId === currentUser?.id || ["director", "ops_manager"].includes(currentUser?.role) || hasHRPermission(currentUser, data, "manage_payroll");
 
   useEffect(() => {
     if (canView && company) ensurePayrollRun(company.id, month);
