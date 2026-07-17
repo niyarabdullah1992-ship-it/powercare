@@ -72,7 +72,7 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
           })}
         </div>
         {safeBlocked ? (
-          <p className="text-[10px] text-amber-700 font-body mt-1.5">
+          <p className="text-[10px] text-red-600 font-semibold font-body mt-1.5">
             {ar
               ? hazards.length > 0
                 ? "لا يمكن تصنيف المحطة «آمنة» مع وجود مخاطر مفتوحة — أغلق المخاطر أولًا."
