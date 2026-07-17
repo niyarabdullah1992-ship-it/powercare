@@ -1,281 +1,85 @@
-import React, { useState, useRef } from "react";
-import { Users, Upload, Loader2, FileText, Plus, X, Send, Copy, Check, MousePointerClick, CheckCircle2 } from "lucide-react";
+import React, { useMemo, useRef, useState } from "react";
+import { Upload, Loader2, FileText, Plus, X, Send, Copy, Check, MousePointerClick, Users, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
 import MultiSignPlacementModal from "@/components/files/MultiSignPlacementModal";
 import { base44 } from "@/api/base44Client";
 import { generateVerificationId } from "@/lib/verificationBadge";
 import { appParams } from "@/lib/app-params";
 import { getCompanyToken } from "@/lib/store";
 
-// Emailed signing links must point to the real app domain — inside the editor
-// preview, window.location.origin is the preview frame, not the published app.
 const signingBaseUrl = () => {
-  try {
-    if (appParams.appBaseUrl) return String(appParams.appBaseUrl).replace(/\/+$/, "");
-  } catch { /* fall through */ }
+  try { if (appParams.appBaseUrl) return String(appParams.appBaseUrl).replace(/\/+$/, ""); } catch { /* use current origin */ }
   return window.location.origin;
 };
 
-// Create a multi-party signature request: upload a PDF, add signers
-// (company members or any external email) — each gets a personal signing link.
 export default function MultiSignCard({ currentUser, companyId, employees, ar, onCreated }) {
+  const [step, setStep] = useState(1);
   const [doc, setDoc] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [signers, setSigners] = useState([{ name: "", email: "" }]);
-  const [sending, setSending] = useState(false);
-  const [result, setResult] = useState(null); // { links }
-  const [error, setError] = useState("");
-  const [copied, setCopied] = useState("");
+  const [spots, setSpots] = useState({});
   const [placing, setPlacing] = useState(false);
-  const [bulkOpen, setBulkOpen] = useState(false);
-  const [bulkText, setBulkText] = useState("");
-  const [spots, setSpots] = useState({}); // { [validSignerIndex]: {page,x,y} }
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+  const [copied, setCopied] = useState("");
+  const [error, setError] = useState("");
   const fileRef = useRef(null);
+  const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  const validSigners = useMemo(() => signers.filter((signer) => signer.name.trim() && emailPattern.test(signer.email.trim())), [signers]);
+  const uniqueSigners = validSigners.length === signers.length && new Set(signers.map((signer) => signer.email.trim().toLowerCase())).size === signers.length;
+  const allPlaced = validSigners.length > 0 && validSigners.every((_, index) => spots[index]);
+  const labels = ar ? ["المستند", "الموقّعون", "أماكن التوقيع", "المراجعة والإرسال"] : ["Document", "Signers", "Signing spots", "Review & send"];
 
-  const handleUpload = async (e) => {
-    const file = e.target.files?.[0];
+  const upload = async (event) => {
+    const file = event.target.files?.[0];
     if (!file) return;
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      setError(ar ? "يجب اختيار ملف PDF صالح." : "Please choose a valid PDF file.");
-      e.target.value = "";
-      return;
-    }
-    setError("");
-    setResult(null);
-    setUploading(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setDoc({ name: file.name, url: file_url });
-      setSpots({});
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) { setError(ar ? "اختر ملف PDF صالحًا." : "Choose a valid PDF file."); return; }
+    setUploading(true); setError(""); setResult(null);
+    try { const { file_url } = await base44.integrations.Core.UploadFile({ file }); setDoc({ name: file.name, url: file_url }); setSpots({}); }
+    finally { setUploading(false); event.target.value = ""; }
   };
 
-  const setSigner = (i, field, value) => {
-    setSigners((rows) => rows.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+  const updateSigner = (index, field, value) => setSigners((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row));
+  const chooseTeamMember = (index, value) => {
+    const employee = employees.find((item) => item.email === value || item.name === value);
+    if (employee) setSigners((rows) => rows.map((row, rowIndex) => rowIndex === index ? { name: employee.name, email: employee.email || "" } : row));
+    else updateSigner(index, "name", value);
   };
-  const addFromEmployee = (i, empId) => {
-    const emp = employees.find((e) => e.id === empId);
-    if (emp) setSigners((rows) => rows.map((r, idx) => (idx === i ? { name: emp.name, email: emp.email || "" } : r)));
-  };
-
-  const seenEmails = new Set();
-  const validSigners = signers.filter((signer) => {
-    const email = signer.email.trim().toLowerCase();
-    return signer.name.trim() && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && !seenEmails.has(email) && (seenEmails.add(email), true);
-  });
-
-  // Bulk add: paste any emails (one per line, or comma/space separated).
-  // Optional name before the email: "Ahmed <a@x.com>" or "Ahmed, a@x.com".
-  const addBulk = () => {
-    const found = [];
-    for (const line of bulkText.split(/\n/)) {
-      const emails = line.match(/[^@\s,;<>"]+@[^@\s,;<>"]+\.[^@\s,;<>"]+/g) || [];
-      for (const email of emails) {
-        const name = line.replace(email, "").replace(/[<>,;"]/g, "").trim() || email.split("@")[0];
-        found.push({ name, email: email.toLowerCase() });
-      }
-    }
-    if (found.length === 0) return;
-    setSigners((rows) => {
-      const existing = new Set(rows.map((r) => r.email.toLowerCase().trim()).filter(Boolean));
-      const fresh = found.filter((f) => !existing.has(f.email) && (existing.add(f.email), true));
-      return [...rows.filter((r) => r.name.trim() || r.email.trim()), ...fresh].slice(0, 100);
-    });
-    setBulkText("");
-    setBulkOpen(false);
+  const next = () => {
+    if (step === 1 && !doc) return setError(ar ? "ارفع المستند أولًا." : "Upload the document first.");
+    if (step === 2 && !uniqueSigners) return setError(ar ? "أدخل اسمًا وبريدًا صالحًا وفريدًا لكل موقّع." : "Enter a valid, unique name and email for every signer.");
+    if (step === 3 && !allPlaced) return setError(ar ? "حدّد مكان توقيع لكل شخص." : "Assign a signing spot to every signer.");
+    setError(""); setStep((value) => Math.min(4, value + 1));
   };
 
   const send = async () => {
-    setError("");
-    const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-    const normalizedEmails = signers.map((signer) => signer.email.trim().toLowerCase());
-    const hasInvalidSigner = signers.some((signer) => !signer.name.trim() || !emailPattern.test(signer.email.trim()));
-    const hasDuplicateEmail = new Set(normalizedEmails).size !== normalizedEmails.length;
-    if (!doc || hasInvalidSigner || hasDuplicateEmail) {
-      setError(ar ? "يجب إدخال اسم وبريد إلكتروني صالح وفريد لكل موقّع قبل الإرسال." : "Enter a valid name and unique email address for every signer before sending.");
-      return;
-    }
-    setSending(true);
+    setSending(true); setError("");
     try {
-      const res = await base44.functions.invoke("multiSign", {
-        action: "create",
-        companyId,
-        sessionToken: getCompanyToken(companyId),
-        creatorId: currentUser.id,
-        creatorName: currentUser.name,
-        creatorEmail: currentUser.email || "",
-        fileName: doc.name,
-        docUrl: doc.url,
-        verificationId: generateVerificationId(),
-        signers: validSigners.map((s, i) => ({ ...s, spot: spots[i] || null })),
-        appUrl: signingBaseUrl(),
-        lang: ar ? "ar" : "en",
-      });
-      setResult(res.data);
-      setDoc(null);
-      setSigners([{ name: "", email: "" }]);
-      setSpots({});
-      onCreated?.();
-    } catch (err) {
-      setError((ar ? "تعذّر إنشاء الطلب — " : "Couldn't create the request — ") + (err?.response?.data?.error || err.message));
-    } finally {
-      setSending(false);
-    }
+      const response = await base44.functions.invoke("multiSign", { action: "create", companyId, sessionToken: getCompanyToken(companyId), creatorId: currentUser.id, creatorName: currentUser.name, creatorEmail: currentUser.email || "", fileName: doc.name, docUrl: doc.url, verificationId: generateVerificationId(), signers: validSigners.map((signer, index) => ({ ...signer, spot: spots[index] })), appUrl: signingBaseUrl(), lang: ar ? "ar" : "en" });
+      setResult(response.data); onCreated?.();
+    } catch (err) { setError((ar ? "تعذّر إنشاء الطلب — " : "Couldn't create the request — ") + (err?.response?.data?.error || err.message)); }
+    finally { setSending(false); }
   };
+  const reset = () => { setStep(1); setDoc(null); setSigners([{ name: "", email: "" }]); setSpots({}); setResult(null); };
+  const copyLink = (email, link) => { navigator.clipboard.writeText(link).catch(() => {}); setCopied(email); setTimeout(() => setCopied(""), 1500); };
 
-  const copyLink = (email, link) => {
-    navigator.clipboard.writeText(link).catch(() => {});
-    setCopied(email);
-    setTimeout(() => setCopied(""), 1500);
-  };
+  if (result) return <div className="rounded-2xl border border-emerald-200 bg-card p-6 shadow-sm"><div className="mb-4 flex items-center gap-3 text-emerald-700"><CheckCircle2 className="h-6 w-6" /><h2 className="font-heading text-xl font-semibold">{ar ? "أُرسل طلب التوقيع" : "Signature request sent"}</h2></div><p className="mb-4 text-sm text-muted-foreground">{ar ? "تم إرسال الروابط، ويمكنك نسخها للمشاركة المباشرة." : "Links were sent, and you can copy them for direct sharing."}</p><div className="space-y-2">{Object.entries(result.links || {}).map(([email, link]) => <div key={email} className="flex items-center gap-2 rounded-lg bg-muted p-2"><span dir="ltr" className="min-w-0 flex-1 truncate text-xs">{email}</span><button onClick={() => copyLink(email, link)} className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-xs">{copied === email ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}{ar ? "نسخ" : "Copy"}</button></div>)}</div><button onClick={reset} className="mt-5 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground">{ar ? "طلب جديد" : "New request"}</button></div>;
 
   return (
-    <div className="p-5 rounded-xl border border-border bg-card space-y-3">
-      <h3 className="font-heading text-base font-semibold flex items-center gap-2">
-        <Users className="w-4 h-4 text-accent" /> {ar ? "توقيع جماعي على مستند" : "Group signing"}
-      </h3>
-      <p className="text-xs text-muted-foreground font-body">
-        {ar
-          ? "ارفع ملف PDF وأضف الموقّعين — يستلم كل شخص رابطًا خاصًا ويوقّع بالترتيب لضمان عدم تعارض نسخ المستند."
-          : "Upload a PDF and add signers — each receives a private link and signs in order so document versions cannot conflict."}
-      </p>
+    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-7">
+      <div className="mb-6"><h2 className="flex items-center gap-2 font-heading text-xl font-semibold"><Users className="h-5 w-5 text-accent" />{ar ? "إرسال مستند للتوقيع" : "Send a document for signing"}</h2><p className="mt-1 text-xs text-muted-foreground">{ar ? "أكمل المراحل الأربع لإرسال طلب موثّق." : "Complete four guided steps to send a verified request."}</p></div>
+      <div className="mb-8 grid grid-cols-4 gap-2">{labels.map((label, index) => { const number = index + 1; return <div key={label} className="min-w-0"><div className={`mb-2 h-1.5 rounded-full ${number <= step ? "bg-accent" : "bg-muted"}`} /><p className={`truncate text-[10px] sm:text-xs ${number === step ? "font-semibold text-foreground" : "text-muted-foreground"}`}>{number}. {label}</p></div>; })}</div>
 
-      <div className="flex items-center gap-2">
-        <button onClick={() => fileRef.current?.click()} disabled={uploading} className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-border text-xs font-body hover:bg-muted">
-          {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-          {ar ? "اختيار ملف PDF" : "Choose PDF file"}
-        </button>
-        <input ref={fileRef} type="file" accept="application/pdf" className="hidden" onChange={handleUpload} />
-        {doc && (
-          <span className="flex items-center gap-1.5 text-xs font-body text-muted-foreground truncate">
-            <FileText className="w-3.5 h-3.5 shrink-0" /> {doc.name}
-          </span>
-        )}
-      </div>
+      {step === 1 && <div className="rounded-xl border-2 border-dashed border-border bg-muted/30 p-8 text-center"><Upload className="mx-auto mb-3 h-8 w-8 text-accent" /><p className="mb-4 text-sm text-muted-foreground">{doc ? doc.name : ar ? "ارفع مستند PDF المراد توقيعه" : "Upload the PDF document to sign"}</p><button onClick={() => fileRef.current?.click()} disabled={uploading} className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-accent-foreground">{uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}{ar ? "اختيار المستند" : "Choose document"}</button><input ref={fileRef} type="file" accept="application/pdf" className="hidden" onChange={upload} /></div>}
 
-      {/* Signers */}
-      <div className="space-y-2">
-        {signers.map((s, i) => (
-          <div key={i} className="flex items-center gap-2 flex-wrap">
-            <input
-              value={s.name}
-              onChange={(e) => setSigner(i, "name", e.target.value)}
-              placeholder={ar ? "اسم الموقّع" : "Signer name"}
-              className="flex-1 min-w-[120px] px-3 py-2 rounded-md border border-border bg-background text-xs font-body"
-            />
-            <input
-              value={s.email}
-              onChange={(e) => setSigner(i, "email", e.target.value)}
-              placeholder={ar ? "البريد الإلكتروني" : "Email"}
-              dir="ltr"
-              className="flex-1 min-w-[150px] px-3 py-2 rounded-md border border-border bg-background text-xs font-body"
-            />
-            {employees.length > 0 && (
-              <select
-                value=""
-                onChange={(e) => addFromEmployee(i, e.target.value)}
-                className="px-2 py-2 rounded-md border border-border bg-background text-xs font-body max-w-[130px]"
-              >
-                <option value="">{ar ? "من الفريق…" : "From team…"}</option>
-                {employees.filter((e) => e.email).map((e) => (
-                  <option key={e.id} value={e.id}>{e.name}</option>
-                ))}
-              </select>
-            )}
-            {signers.length > 1 && (
-              <button onClick={() => setSigners((rows) => rows.filter((_, idx) => idx !== i))} className="p-1.5 rounded hover:bg-muted text-muted-foreground">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        ))}
-        {signers.length < 100 && (
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSigners((rows) => [...rows, { name: "", email: "" }])} className="flex items-center gap-1 text-xs text-accent font-body hover:underline">
-              <Plus className="w-3.5 h-3.5" /> {ar ? "إضافة موقّع" : "Add signer"}
-            </button>
-            <button onClick={() => setBulkOpen((o) => !o)} className="flex items-center gap-1 text-xs text-accent font-body hover:underline">
-              <Users className="w-3.5 h-3.5" /> {ar ? "لصق عدة إيميلات" : "Paste multiple emails"}
-            </button>
-            <span className="text-[10px] text-muted-foreground font-body">{signers.length}/100</span>
-          </div>
-        )}
-        {bulkOpen && (
-          <div className="space-y-2">
-            <textarea
-              value={bulkText}
-              onChange={(e) => setBulkText(e.target.value)}
-              rows={4}
-              dir="ltr"
-              placeholder={ar ? "إيميل في كل سطر — ويمكنك كتابة الاسم قبله، مثال:\nAhmed <ahmed@gmail.com>\nsara@example.com" : "One email per line — optionally with a name, e.g.:\nAhmed <ahmed@gmail.com>\nsara@example.com"}
-              className="w-full px-3 py-2 rounded-md border border-border bg-background text-xs font-body font-mono"
-            />
-            <button onClick={addBulk} disabled={!bulkText.trim()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted disabled:opacity-40">
-              <Plus className="w-3.5 h-3.5" /> {ar ? "إضافة الكل" : "Add all"}
-            </button>
-          </div>
-        )}
-      </div>
+      {step === 2 && <div className="space-y-3"><datalist id="team-signers">{employees.filter((employee) => employee.email).map((employee) => <option key={employee.id || employee.employeeId} value={employee.name}>{employee.email}</option>)}</datalist>{signers.map((signer, index) => <div key={index} className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-[1fr_1fr_auto]"><input list="team-signers" value={signer.name} onChange={(event) => chooseTeamMember(index, event.target.value)} placeholder={ar ? "ابحث في الفريق أو أدخل الاسم" : "Search team or enter name"} className="rounded-lg border border-input bg-background px-3 py-2 text-sm" /><input value={signer.email} onChange={(event) => updateSigner(index, "email", event.target.value)} placeholder={ar ? "البريد الإلكتروني" : "Email address"} dir="ltr" className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />{signers.length > 1 && <button onClick={() => setSigners((rows) => rows.filter((_, rowIndex) => rowIndex !== index))} className="rounded-lg p-2 text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>}</div>)}<button onClick={() => setSigners((rows) => [...rows, { name: "", email: "" }])} className="inline-flex items-center gap-2 text-sm font-medium text-accent"><Plus className="h-4 w-4" />{ar ? "إضافة موقّع" : "Add signer"}</button></div>}
 
-      {/* Optional: assign each signer a fixed spot on the document */}
-      {doc && validSigners.length > 0 && (
-        <button onClick={() => setPlacing(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-border text-xs font-body hover:bg-muted">
-          {Object.keys(spots).length >= validSigners.length && validSigners.length > 0 ? (
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-          ) : (
-            <MousePointerClick className="w-3.5 h-3.5 text-accent" />
-          )}
-          {Object.keys(spots).length >= validSigners.length
-            ? ar ? "أماكن التواقيع محدّدة — تعديل" : "Signing spots set — edit"
-            : ar ? "تحديد مكان توقيع كل شخص (اختياري)" : "Assign each signer's spot (optional)"}
-        </button>
-      )}
-      {placing && doc && (
-        <MultiSignPlacementModal
-          docUrl={doc.url}
-          signers={validSigners}
-          initialSpots={spots}
-          ar={ar}
-          onConfirm={(s) => { setSpots(s); setPlacing(false); }}
-          onClose={() => setPlacing(false)}
-        />
-      )}
+      {step === 3 && <div className="rounded-xl border border-border bg-muted/30 p-6 text-center"><MousePointerClick className="mx-auto mb-3 h-9 w-9 text-accent" /><h3 className="font-medium">{ar ? "حدّد مكان توقيع كل شخص" : "Place every signer's field"}</h3><p className="mx-auto mt-2 max-w-md text-xs leading-5 text-muted-foreground">{ar ? "انقر على المستند لتثبيت مكان كل توقيع. يمكنك تغيير الحجم بالسحب أو بإصبعين." : "Tap the document to place every signature. Resize with the control or a two-finger pinch."}</p><button onClick={() => setPlacing(true)} className="mt-5 inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-accent-foreground"><MousePointerClick className="h-4 w-4" />{allPlaced ? (ar ? "تعديل الأماكن" : "Edit placements") : (ar ? "فتح المستند وتحديد الأماكن" : "Open document and place fields")}</button>{allPlaced && <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-emerald-700"><CheckCircle2 className="h-4 w-4" />{ar ? "تم تحديد جميع أماكن التوقيع" : "All signing spots are set"}</p>}</div>}
 
-      <button
-        onClick={send}
-        disabled={!doc || validSigners.length === 0 || sending}
-        className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-foreground text-background text-xs font-body disabled:opacity-40"
-      >
-        {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-        {sending ? (ar ? "جارٍ الإرسال…" : "Sending…") : ar ? "إرسال طلبات التوقيع" : "Send signature requests"}
-      </button>
+      {step === 4 && <div className="space-y-4"><div className="rounded-xl border border-border p-4"><p className="mb-1 text-xs text-muted-foreground">{ar ? "المستند" : "Document"}</p><p className="flex items-center gap-2 text-sm font-medium"><FileText className="h-4 w-4 text-accent" />{doc.name}</p></div><div className="rounded-xl border border-border p-4"><p className="mb-3 text-xs text-muted-foreground">{ar ? "الموقّعون بالترتيب" : "Signers in order"}</p><div className="space-y-2">{validSigners.map((signer, index) => <div key={signer.email} className="flex items-center gap-3 text-sm"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/15 text-xs font-semibold text-accent">{index + 1}</span><span className="font-medium">{signer.name}</span><span dir="ltr" className="ms-auto text-xs text-muted-foreground">{signer.email}</span></div>)}</div></div><button onClick={send} disabled={sending} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-accent-foreground shadow-lg disabled:opacity-50">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}{sending ? (ar ? "جارٍ الإرسال…" : "Sending…") : (ar ? "تأكيد وإرسال طلب التوقيع" : "Confirm and send request")}</button></div>}
 
-      {result && (
-        <div className="text-xs font-body bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2 space-y-1.5">
-          <p className="text-emerald-700 font-medium">
-            {ar ? "أُرسلت روابط التوقيع بالبريد — ويمكنك نسخها ومشاركتها مباشرة:" : "Signing links emailed — you can also copy and share them directly:"}
-          </p>
-          {(result.emailFailed || []).length > 0 && (
-            <p className="text-amber-700">
-              {ar
-                ? `تعذّر إرسال البريد إلى: ${result.emailFailed.join("، ")} — انسخ الرابط وأرسله لهم يدويًا.`
-                : `Email couldn't be delivered to: ${result.emailFailed.join(", ")} — copy the link and share it with them manually.`}
-            </p>
-          )}
-          {Object.entries(result.links || {}).map(([email, link]) => (
-            <div key={email} className="flex items-center gap-2">
-              <span className="truncate text-muted-foreground" dir="ltr">{email}</span>
-              <button onClick={() => copyLink(email, link)} className="flex items-center gap-1 px-2 py-1 rounded border border-border hover:bg-muted shrink-0">
-                {copied === email ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                {ar ? "نسخ الرابط" : "Copy link"}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      {error && <p className="text-xs text-destructive font-body">{error}</p>}
-    </div>
+      {error && <p className="mt-4 text-xs text-destructive">{error}</p>}
+      <div className="mt-7 flex items-center justify-between border-t border-border pt-4"><button onClick={() => { setError(""); setStep((value) => Math.max(1, value - 1)); }} disabled={step === 1} className="inline-flex items-center gap-1 rounded-lg border border-border px-4 py-2 text-sm disabled:opacity-30">{ar ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}{ar ? "السابق" : "Back"}</button>{step < 4 && <button onClick={next} className="inline-flex items-center gap-1 rounded-lg bg-primary px-5 py-2 text-sm text-primary-foreground">{ar ? "التالي" : "Continue"}{ar ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</button>}</div>
+      {placing && doc && <MultiSignPlacementModal docUrl={doc.url} signers={validSigners} initialSpots={spots} ar={ar} onConfirm={(value) => { setSpots(value); setPlacing(false); }} onClose={() => setPlacing(false)} />}
+    </section>
   );
 }

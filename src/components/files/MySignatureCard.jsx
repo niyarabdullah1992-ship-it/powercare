@@ -30,7 +30,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   const signatureUrl = localSignature?.signatureUrl ?? currentUser?.profile?.signatureUrl ?? "";
   const signatureId = localSignature?.signatureId ?? currentUser?.profile?.signatureId ?? "";
   const [editing, setEditing] = useState(!signatureUrl);
-  const [mode, setMode] = useState("type"); // "type" | "draw"
+  const [mode, setMode] = useState("draw"); // "type" | "draw"
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
@@ -67,11 +67,11 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   };
 
   return (
-    <div className="p-5 rounded-xl border border-border bg-card space-y-3">
-      <h3 className="font-heading text-base font-semibold flex items-center gap-2">
-        <PenLine className="w-4 h-4 text-accent" /> {ar ? "توقيعي" : "My signature"}
+    <div className="space-y-5 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary to-primary/80 p-5 text-primary-foreground shadow-xl md:p-7">
+      <h3 className="flex items-center gap-2 font-heading text-xl font-semibold">
+        <PenLine className="h-5 w-5 text-accent" /> {ar ? "توقيعي الشخصي" : "My personal signature"}
       </h3>
-      <p className="text-xs text-muted-foreground font-body">
+      <p className="max-w-2xl text-sm text-primary-foreground/70 font-body">
         {ar
           ? "اكتب اسمك بالخط الذي يعجبك أو ارسم توقيعك — ويحصل توقيعك على رقم تحقق مشفّر فريد."
           : "Type your name in any script or draw your signature — it gets a unique encrypted verification ID."}
@@ -116,13 +116,13 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setMode("type")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "type" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "type" ? "bg-accent text-accent-foreground border-accent" : "border-primary-foreground/20 hover:bg-primary-foreground/10"}`}
             >
               <Keyboard className="w-3.5 h-3.5" /> {ar ? "كتابة الاسم" : "Type name"}
             </button>
             <button
               onClick={() => setMode("draw")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "draw" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "draw" ? "bg-accent text-accent-foreground border-accent" : "border-primary-foreground/20 hover:bg-primary-foreground/10"}`}
             >
               <PenLine className="w-3.5 h-3.5" /> {ar ? "رسم التوقيع" : "Draw"}
             </button>

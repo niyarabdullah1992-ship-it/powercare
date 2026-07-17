@@ -1,139 +1,48 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Inbox, Loader2, PenLine, Download, RefreshCw, CheckCircle2, Clock, Trash2 } from "lucide-react";
+import { Inbox, Loader2, PenLine, Download, RefreshCw, Trash2, ShieldCheck, CalendarClock } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
+import SignersProgress from "@/components/files/SignersProgress";
 import { getCompanyToken } from "@/lib/store";
 
-// Lists group-signing requests: documents waiting for MY signature, plus
-// requests I created with each signer's live status.
-export default function MultiSignInbox({ currentUser, companyId, ar, refreshKey }) {
+export default function MultiSignInbox({ currentUser, companyId, ar, refreshKey, onPendingChange }) {
   const [requests, setRequests] = useState(null);
   const [loading, setLoading] = useState(false);
-
+  const [deletingId, setDeletingId] = useState(null);
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await base44.functions.invoke("multiSign", {
-        action: "list",
-        companyId,
-        sessionToken: getCompanyToken(companyId),
-        userId: currentUser.id,
-        email: (currentUser.email || "").toLowerCase(),
-      });
-      setRequests(res.data?.requests || []);
-    } catch {
-      setRequests([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [companyId, currentUser.id, currentUser.email]);
-
+      const res = await base44.functions.invoke("multiSign", { action: "list", companyId, sessionToken: getCompanyToken(companyId), userId: currentUser.id, email: (currentUser.email || "").toLowerCase() });
+      const rows = res.data?.requests || [];
+      setRequests(rows);
+      onPendingChange?.(rows.filter((row) => row.myStatus === "pending").length);
+    } catch { setRequests([]); onPendingChange?.(0); } finally { setLoading(false); }
+  }, [companyId, currentUser.id, currentUser.email, onPendingChange]);
   useEffect(() => { load(); }, [load, refreshKey]);
 
-  const [deletingId, setDeletingId] = useState(null);
-  const remove = async (r) => {
-    setDeletingId(r.id);
+  const remove = async (request) => {
+    setDeletingId(request.id);
     try {
-      await base44.functions.invoke("multiSign", {
-        action: "delete",
-        companyId,
-        sessionToken: getCompanyToken(companyId),
-        userId: currentUser.id,
-        requestId: r.id,
-      });
-      setRequests((rows) => rows.filter((x) => x.id !== r.id));
-    } finally {
-      setDeletingId(null);
-    }
+      await base44.functions.invoke("multiSign", { action: "delete", companyId, sessionToken: getCompanyToken(companyId), userId: currentUser.id, requestId: request.id });
+      setRequests((rows) => rows.filter((row) => row.id !== request.id));
+    } finally { setDeletingId(null); }
   };
+  const stamp = (value) => value ? new Date(value).toLocaleString(ar ? "ar-SA" : "en-GB") : "—";
 
-  if (requests === null) {
-    return (
-      <div className="p-5 rounded-xl border border-border bg-card flex items-center gap-2 text-xs text-muted-foreground font-body">
-        <Loader2 className="w-4 h-4 animate-spin" /> {ar ? "جارٍ تحميل طلبات التوقيع…" : "Loading signature requests…"}
-      </div>
-    );
-  }
-  if (requests.length === 0) return null;
-
-  const toSign = requests.filter((r) => r.myStatus === "pending");
-  const others = requests.filter((r) => r.myStatus !== "pending");
-
-  const StatusChip = ({ s }) => (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-body border ${
-      s.status === "signed" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"
-    }`}>
-      {s.status === "signed" ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-      {s.name}
-    </span>
-  );
-
-  const Row = ({ r }) => (
-    <div className="border border-border rounded-lg px-3 py-2.5 space-y-1.5">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <p className="text-xs font-medium font-body truncate">{r.fileName}</p>
-        <div className="flex items-center gap-2 shrink-0">
-          {r.myStatus === "pending" && r.myToken && (
-            <a href={`/sign?token=${r.myToken}`} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-foreground text-background text-[11px] font-body">
-              <PenLine className="w-3 h-3" /> {ar ? "وقّع الآن" : "Sign now"}
-            </a>
-          )}
-          {r.status === "completed" && (
-            <a href={r.docUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border text-[11px] font-body hover:bg-muted">
-              <Download className="w-3 h-3" /> {ar ? "النسخة النهائية" : "Final copy"}
-            </a>
-          )}
-          {r.isCreator && (
-            <ConfirmDeleteDialog
-              title={ar ? "حذف طلب التوقيع؟" : "Delete signature request?"}
-              description={ar
-                ? `سيُحذف طلب التوقيع "${r.fileName}" نهائيًا وتتوقف روابط التوقيع المرسلة عن العمل.`
-                : `The signature request "${r.fileName}" will be permanently deleted and its signing links will stop working.`}
-              onConfirm={() => remove(r)}
-              trigger={
-                <button
-                  disabled={deletingId === r.id}
-                  className="p-1.5 rounded-md border border-border text-destructive hover:bg-destructive/10 disabled:opacity-40"
-                  aria-label={ar ? "حذف الطلب" : "Delete request"}
-                >
-                  {deletingId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                </button>
-              }
-            />
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {r.signers.map((s, i) => <StatusChip key={i} s={s} />)}
-      </div>
-      <p className="text-[10px] text-muted-foreground font-body">
-        {ar ? `أنشأه ${r.creatorName}` : `Created by ${r.creatorName}`} · {new Date(r.createdAt).toLocaleDateString(ar ? "ar" : "en-GB")}
-      </p>
-    </div>
-  );
+  if (requests === null) return <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{ar ? "جارٍ تحميل طلبات التوقيع…" : "Loading signature requests…"}</div>;
 
   return (
-    <div className="p-5 rounded-xl border border-border bg-card space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="font-heading text-base font-semibold flex items-center gap-2">
-          <Inbox className="w-4 h-4 text-accent" /> {ar ? "طلبات التوقيع الجماعي" : "Group signature requests"}
-        </h3>
-        <button onClick={load} disabled={loading} className="p-1.5 rounded hover:bg-muted text-muted-foreground" aria-label="refresh">
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-        </button>
-      </div>
-      {toSign.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-[11px] font-medium text-amber-700 font-body">{ar ? "بانتظار توقيعك" : "Awaiting your signature"}</p>
-          {toSign.map((r) => <Row key={r.id} r={r} />)}
-        </div>
-      )}
-      {others.length > 0 && (
-        <div className="space-y-2">
-          {toSign.length > 0 && <p className="text-[11px] font-medium text-muted-foreground font-body">{ar ? "طلبات أخرى" : "Other requests"}</p>}
-          {others.map((r) => <Row key={r.id} r={r} />)}
-        </div>
-      )}
-    </div>
+    <section className="space-y-4">
+      <div className="flex items-center justify-between"><div><h2 className="flex items-center gap-2 font-heading text-xl font-semibold"><Inbox className="h-5 w-5 text-accent" />{ar ? "صندوق التوقيع" : "Signing inbox"}</h2><p className="mt-1 text-xs text-muted-foreground">{ar ? "تابع حالة كل طرف والنسخة النهائية من مكان واحد." : "Track every party and final copy in one place."}</p></div><button onClick={load} disabled={loading} className="rounded-lg border border-border p-2 text-muted-foreground hover:bg-muted"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /></button></div>
+      {requests.length === 0 ? <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">{ar ? "لا توجد طلبات توقيع حتى الآن." : "No signature requests yet."}</div> : <div className="grid gap-4 md:grid-cols-2">{requests.map((request) => {
+        const signedTimes = request.signers.map((signer) => signer.signedAt).filter(Boolean).sort();
+        return <article key={request.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+          <div className="mb-4 flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-medium">{request.fileName}</p><p className="mt-1 text-xs text-muted-foreground">{ar ? `أنشأه ${request.creatorName}` : `Created by ${request.creatorName}`}</p></div>{request.status === "completed" && <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-600" />}</div>
+          <SignersProgress signers={request.signers} ar={ar} />
+          <div className="my-4 space-y-1.5 rounded-xl bg-muted/60 p-3 font-mono text-[10px] text-muted-foreground"><p className="flex items-center gap-2"><CalendarClock className="h-3.5 w-3.5" />{ar ? "أُنشئ:" : "Created:"} {stamp(request.createdAt)}</p>{request.signers.map((signer) => <p key={signer.email} className="flex items-center justify-between gap-2"><span className="truncate">{signer.name}</span><span dir="ltr" className={signer.signedAt ? "text-emerald-700" : ""}>{signer.signedAt ? stamp(signer.signedAt) : (ar ? "بانتظار التوقيع" : "Awaiting signature")}</span></p>)}<p className="flex items-center gap-2 border-t border-border pt-1.5"><ShieldCheck className="h-3.5 w-3.5" />{ar ? "آخر توقيع:" : "Last signature:"} {stamp(signedTimes.at(-1))}</p></div>
+          <div className="flex items-center gap-2">{request.myStatus === "pending" && request.myToken && <a href={`/sign?token=${request.myToken}`} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-sm"><PenLine className="h-4 w-4" />{ar ? "وقّع الآن" : "Sign now"}</a>}{request.status === "completed" && <a href={request.docUrl} target="_blank" rel="noreferrer" className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm text-primary-foreground"><Download className="h-4 w-4" />{ar ? "النسخة النهائية" : "Final copy"}</a>}{request.isCreator && <ConfirmDeleteDialog title={ar ? "حذف طلب التوقيع؟" : "Delete signature request?"} description={ar ? `سيُحذف طلب "${request.fileName}" نهائيًا.` : `The request “${request.fileName}” will be permanently deleted.`} onConfirm={() => remove(request)} trigger={<button disabled={deletingId === request.id} className="rounded-lg border border-border p-2.5 text-destructive hover:bg-destructive/10">{deletingId === request.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}</button>} />}</div>
+        </article>;
+      })}</div>}
+    </section>
   );
 }

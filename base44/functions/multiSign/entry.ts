@@ -295,18 +295,28 @@ Deno.serve(async (req) => {
         throw error;
       }
 
-      if (completed) {
-        if (rec.creatorEmail) {
-          const ar = body.lang === 'ar';
-          await sendMail(
-            base44,
-            rec.creatorEmail,
-            ar ? `اكتمل التوقيع: ${rec.fileName}` : `All signatures collected: ${rec.fileName}`,
-            ar
-              ? `اكتمل توقيع جميع الأطراف على المستند "${rec.fileName}".\n\nرابط النسخة النهائية الموقّعة:\n${newDocUrl}\n\n— PowerCare`
-              : `All parties have signed "${rec.fileName}".\n\nFinal signed copy:\n${newDocUrl}\n\n— PowerCare`
-          );
+      if (completed && rec.creatorEmail) {
+        const ar = body.lang === 'ar';
+        const subject = ar ? `اكتمل التوقيع: ${rec.fileName}` : `All signatures collected: ${rec.fileName}`;
+        const timeline = signers.map((item) => `${item.name}: ${new Date(item.signedAt).toISOString()}`).join('\n');
+        const text = ar
+          ? `اكتمل توقيع جميع الأطراف على المستند "${rec.fileName}".\n\nسجل الختم الزمني الموثّق:\n${timeline}`
+          : `All parties have signed "${rec.fileName}".\n\nVerified signing timeline:\n${timeline}`;
+        let notified = false;
+        try {
+          const notice = await base44.asServiceRole.functions.invoke('gmailNotify', {
+            companyId: rec.companyId,
+            to: rec.creatorEmail,
+            subject,
+            text,
+            details: signers.map((item) => ({ label: item.name, value: new Date(item.signedAt).toISOString() })),
+            cta: { label: ar ? 'فتح النسخة النهائية' : 'Open final copy', url: newDocUrl },
+          });
+          notified = notice?.data?.ok === true;
+        } catch (error) {
+          console.error('multiSign gmailNotify failed:', error.message);
         }
+        if (!notified) await sendMail(base44, rec.creatorEmail, subject, `${text}\n\n${newDocUrl}\n\n— PowerCare`);
       }
       return Response.json({ ok: true, completed, docUrl: newDocUrl });
     }
