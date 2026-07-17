@@ -36,7 +36,7 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm space-y-4">
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm h-full flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-body font-semibold text-sm truncate">{station.name}</h3>
         {approved ? (
@@ -154,8 +154,8 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
         )
       )}
 
-      {/* Approval */}
-      <div className="pt-3 border-t border-border/60">
+      {/* Approval — pinned to the card bottom so all cards align */}
+      <div className="pt-3 border-t border-border/60 mt-auto">
         {approved ? (
           <p className="text-[11px] text-muted-foreground font-body">
             {ar ? "اعتمده" : "Approved by"} <span className="font-semibold text-foreground">{rec.approvedBy}</span>
