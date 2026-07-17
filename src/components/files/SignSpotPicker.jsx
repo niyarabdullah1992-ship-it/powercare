@@ -7,14 +7,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLi
 // Signer-side spot picker: the signer clicks anywhere on the document to
 // choose where their own signature will be stamped. Pinch with two fingers
 // (or use the slider) to resize the signature.
-export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100, signerName, ar, onConfirm, onClose }) {
+export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100, signerName, verificationId, ar, onConfirm, onClose }) {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [page, setPage] = useState(initialSpot?.page || 1);
   const [numPages, setNumPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [spot, setSpot] = useState(initialSpot || null); // {page,x,y}
-  const [scale, setScale] = useState(initialScale); // signature size % (50–200)
+  const [scale, setScale] = useState(Math.min(135, Math.max(65, initialScale))); // safe signature size %
   const scaleRef = useRef(initialScale);
   scaleRef.current = scale;
   const canvasRef = useRef(null);
@@ -39,7 +39,7 @@ export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100
       if (e.touches.length === 2 && startDist > 0) {
         if (e.cancelable) e.preventDefault();
         const next = Math.round(startScale * (dist(e.touches) / startDist));
-        setScale(Math.min(200, Math.max(50, next)));
+        setScale(Math.min(135, Math.max(65, next)));
       }
     };
     const onTouchEnd = () => { startDist = 0; };
@@ -97,8 +97,10 @@ export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100
 
   const handleClick = (e) => {
     const rect = wrapRef.current.getBoundingClientRect();
-    const x = Math.min(Math.max(((e.clientX - rect.left) / rect.width) * 100, 2), 98);
-    const y = Math.min(Math.max(((e.clientY - rect.top) / rect.height) * 100, 2), 98);
+    const halfWidth = 10.5 * (scale / 100);
+    const halfHeight = ((rect.width * 0.21 * (scale / 100) * (190 / 420)) / 2 / rect.height) * 100;
+    const x = Math.min(Math.max(((e.clientX - rect.left) / rect.width) * 100, halfWidth), 100 - halfWidth);
+    const y = Math.min(Math.max(((e.clientY - rect.top) / rect.height) * 100, halfHeight), 100 - halfHeight);
     setSpot({ page, x, y });
   };
 
@@ -127,19 +129,8 @@ export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100
               </div>
             )}
             {spot && spot.page === page && (
-              <div
-                className="absolute pointer-events-none rounded-md px-1.5 py-1 text-center"
-                style={{
-                  left: `${spot.x}%`,
-                  top: `${spot.y}%`,
-                  width: `${22 * (scale / 100)}%`,
-                  transform: "translate(-50%, -50%)",
-                  border: "2px solid #b45309",
-                  backgroundColor: "#b453091a",
-                }}
-              >
-                <p className="text-[10px] font-body font-medium truncate" style={{ color: "#b45309" }}>{signerName}</p>
-                <div className="h-6" />
+              <div className="pointer-events-none absolute overflow-hidden rounded-lg border border-accent/70 bg-card text-center shadow-md" style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${21 * (scale / 100)}%`, aspectRatio: "420 / 190", transform: "translate(-50%, -50%)" }}>
+                <div className="flex h-full flex-col justify-end px-1 py-0.5"><p className="truncate font-heading text-[8px] font-semibold leading-none text-foreground">{signerName}</p><p className="mt-0.5 truncate font-mono text-[4px] leading-none text-accent">VERIFIED • {verificationId || "PWC-••••"}</p></div>
               </div>
             )}
           </div>
@@ -153,8 +144,8 @@ export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100
           </div>
           <input
             type="range"
-            min={50}
-            max={200}
+            min={65}
+            max={135}
             step={5}
             value={scale}
             onChange={(e) => setScale(Number(e.target.value))}

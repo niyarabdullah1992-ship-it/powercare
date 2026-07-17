@@ -17,7 +17,7 @@ export default function PublicSignWorkspace({ signing }) {
         <PublicSignDocumentPanel ar={ar} info={info} chosenSpot={chosenSpot} onChooseSpot={() => setShowSpotPicker(true)} />
         <PublicSignSignaturePanel {...signing} />
       </div>
-      {showSpotPicker && <SignSpotPicker docUrl={info.docUrl} initialSpot={chosenSpot || info.signer.spot || null} initialScale={sigSize} signerName={info.signer.name} ar={ar} onConfirm={(spot, scale) => { setChosenSpot(spot); setSigSize(scale); setShowSpotPicker(false); }} onClose={() => setShowSpotPicker(false)} />}
+      {showSpotPicker && <SignSpotPicker docUrl={info.docUrl} initialSpot={chosenSpot || info.signer.spot || null} initialScale={sigSize} signerName={info.signer.name} verificationId={info.verificationId} ar={ar} onConfirm={(spot, scale) => { setChosenSpot(spot); setSigSize(scale); setShowSpotPicker(false); }} onClose={() => setShowSpotPicker(false)} />}
     </section>
   );
 }

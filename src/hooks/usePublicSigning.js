@@ -24,7 +24,7 @@ export default function usePublicSigning() {
     try {
       const response = await base44.functions.invoke("multiSign", { action: "getByToken", token });
       setInfo(response.data);
-      if (response.data?.signer?.spot?.scale) setSigSize(response.data.signer.spot.scale);
+      if (response.data?.signer?.spot?.scale) setSigSize(Math.min(135, Math.max(65, response.data.signer.spot.scale)));
     } catch (err) {
       setFailure({ type: err?.response?.status === 404 ? "invalid" : "error", message: err?.response?.data?.error || err.message });
     } finally { setLoading(false); }
@@ -40,6 +40,7 @@ export default function usePublicSigning() {
       if (fresh.expiresAt && new Date(fresh.expiresAt).getTime() <= Date.now()) throw new Error(ar ? "انتهت صلاحية طلب التوقيع." : "This signature request has expired.");
       if (fresh.signer.status === "signed") throw new Error(ar ? "وقّعت هذا المستند مسبقًا." : "You already signed this document.");
       if (!fresh.canSign) throw new Error(ar ? "يجب اكتمال توقيع الطرف السابق أولًا." : "The previous signer must finish first.");
+      if (!chosenSpot && !fresh.signer.spot) throw new Error(ar ? "اختر موضع التوقيع داخل المستند أولًا." : "Choose the signature placement in the document first.");
       setStage(ar ? "جارٍ ختم توقيعك على المستند…" : "Stamping your signature…");
       const stamp = await makeSignatureStamp(sigDataUrl, fresh.signer.name, fresh.verificationId);
       let badge = null;
