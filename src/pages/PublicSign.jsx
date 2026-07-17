@@ -4,7 +4,8 @@ import { base44 } from "@/api/base44Client";
 import SignaturePad from "@/components/files/SignaturePad";
 import SignSpotPicker from "@/components/files/SignSpotPicker";
 import TypedSignature from "@/components/files/TypedSignature";
-import Logo from "@/components/Logo";
+import PublicSignShell from "@/components/files/PublicSignShell";
+import PublicSignSteps from "@/components/files/PublicSignSteps";
 import { makeSignatureStamp, stampOnPdf } from "@/lib/multiSignStamp";
 import { loadBadgeQr } from "@/lib/verificationBadge";
 import { sha256HexOfBuffer } from "@/lib/fileHash";
@@ -85,26 +86,7 @@ export default function PublicSign() {
     }
   };
 
-  const Shell = ({ children }) => (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4" dir={ar ? "rtl" : "ltr"}>
-      <div className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-sm p-6 space-y-4">
-        <div className="flex items-center gap-2">
-          <Logo size={34} />
-          <p className="font-heading font-semibold">PowerCare</p>
-        </div>
-        {children}
-        {/* Conversion CTA — every external signer is a potential customer */}
-        <div className="pt-4 border-t border-border text-center space-y-1.5">
-          <p className="text-[11px] text-muted-foreground font-body">
-            {ar ? "أعجبتك التجربة؟ وقّع مستنداتك أنت أيضًا مع أي شخص — بالعربية وبشهادة تحقق مشفّرة." : "Like this? Sign your own documents with anyone — with an encrypted verification badge."}
-          </p>
-          <a href="/pricing" className="inline-block text-xs font-body font-semibold text-accent hover:underline">
-            {ar ? "ابدأ مجانًا مع PowerCare ←" : "Start free with PowerCare →"}
-          </a>
-        </div>
-      </div>
-    </div>
-  );
+  const Shell = ({ children }) => <PublicSignShell ar={ar}>{children}</PublicSignShell>;
 
   if (notFound) {
     return (
@@ -188,97 +170,60 @@ export default function PublicSign() {
 
   return (
     <Shell>
-      <div>
-        <h1 className="font-heading text-xl font-semibold flex items-center gap-2">
-          <PenLine className="w-5 h-5 text-accent" /> {ar ? "طلب توقيع" : "Signature request"}
-        </h1>
-        <p className="text-xs text-muted-foreground font-body mt-1">
-          {ar
-            ? `${info.creatorName} يطلب توقيعك على المستند التالي (${info.signedCount}/${info.totalCount} وقّعوا):`
-            : `${info.creatorName} asked you to sign the following document (${info.signedCount}/${info.totalCount} signed):`}
-        </p>
-      </div>
-
-      <a href={info.docUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border hover:bg-muted text-xs font-body">
-        <FileText className="w-4 h-4 text-accent shrink-0" />
-        <span className="truncate flex-1">{info.fileName}</span>
-        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-      </a>
-
-      <div className="space-y-3">
-        <p className="text-xs font-medium font-body">
-          {ar ? `${info.signer.name} — أضف توقيعك هنا:` : `${info.signer.name} — add your signature here:`}
-        </p>
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-[11px] text-muted-foreground font-body">
-            {chosenSpot
-              ? (ar ? `سيُوضع توقيعك في المكان الذي اخترته (صفحة ${chosenSpot.page}).` : `Your signature will be placed where you chose (page ${chosenSpot.page}).`)
-              : info.signer.spot
-                ? (ar ? `سيُوضع توقيعك في المكان المقترح (صفحة ${info.signer.spot.page}) — ويمكنك تغييره.` : `Your signature will be placed at the suggested spot (page ${info.signer.spot.page}) — you can change it.`)
-                : (ar ? "يمكنك اختيار مكان توقيعك على المستند بنفسك." : "You can choose where your signature goes on the document.")}
-          </p>
-          <button
-            onClick={() => setShowSpotPicker(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border border-border hover:bg-muted transition"
-          >
-            <MousePointerClick className="w-3.5 h-3.5 text-accent" />
-            {chosenSpot ? (ar ? "تغيير مكان التوقيع" : "Change spot") : (ar ? "اختر مكان التوقيع" : "Pick signature spot")}
-          </button>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => setMode("type")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "type" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-          >
-            <Keyboard className="w-3.5 h-3.5" /> {ar ? "كتابة الاسم" : "Type name"}
-          </button>
-          <button
-            onClick={() => setMode("draw")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "draw" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-          >
-            <PenLine className="w-3.5 h-3.5" /> {ar ? "رسم التوقيع" : "Draw"}
-          </button>
-        </div>
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-body">
-            <span>{ar ? "حجم التوقيع على المستند" : "Signature size on the document"}</span>
-            <span dir="ltr">{sigSize}%</span>
+      <PublicSignSteps ar={ar} current={2} />
+      <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <header className="flex flex-col gap-3 border-b border-border px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+          <div>
+            <h2 className="flex items-center gap-2 font-heading text-2xl font-semibold"><PenLine className="h-5 w-5 text-accent" />{ar ? "توقيع المستند" : "Sign the document"}</h2>
+            <p className="mt-1 text-xs text-muted-foreground">{ar ? `${info.creatorName} أرسل إليك هذا المستند للتوقيع.` : `${info.creatorName} sent you this document to sign.`}</p>
           </div>
-          <input
-            type="range"
-            min={50}
-            max={200}
-            step={10}
-            value={sigSize}
-            onChange={(e) => setSigSize(Number(e.target.value))}
-            className="w-full accent-current"
-          />
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent"><ShieldCheck className="h-3.5 w-3.5" />{info.signedCount}/{info.totalCount} {ar ? "توقيعات مكتملة" : "signatures complete"}</span>
+        </header>
+
+        <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[0.85fr_1.4fr]">
+          <aside className="space-y-4">
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">{ar ? "المستند المطلوب" : "Requested document"}</p>
+              <a href={info.docUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-xl border border-border bg-background p-4 transition hover:border-accent/50">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-secondary"><FileText className="h-5 w-5 text-accent" /></span>
+                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{info.fileName}</span><span className="mt-1 block text-[10px] text-muted-foreground">PDF · {ar ? "فتح ومعاينة" : "Open and preview"}</span></span>
+                <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </a>
+            </div>
+
+            <div className="rounded-xl border border-border bg-secondary/35 p-4">
+              <p className="text-xs font-semibold">{ar ? "مكان التوقيع" : "Signature placement"}</p>
+              <p className="mt-1.5 text-[11px] leading-5 text-muted-foreground">
+                {chosenSpot
+                  ? (ar ? `المكان المختار في الصفحة ${chosenSpot.page}.` : `Selected placement on page ${chosenSpot.page}.`)
+                  : info.signer.spot
+                    ? (ar ? `المكان المقترح في الصفحة ${info.signer.spot.page}.` : `Suggested placement on page ${info.signer.spot.page}.`)
+                    : (ar ? "اختر موضع توقيعك داخل المستند." : "Choose where your signature appears in the document.")}
+              </p>
+              <button onClick={() => setShowSpotPicker(true)} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-accent/35 bg-card px-3 py-2 text-xs font-medium text-accent hover:bg-accent/5"><MousePointerClick className="h-4 w-4" />{chosenSpot ? (ar ? "تعديل المكان" : "Edit placement") : (ar ? "تحديد مكان التوقيع" : "Choose placement")}</button>
+            </div>
+
+            {info.verificationId && <div className="rounded-xl border border-accent/25 bg-accent/5 p-4"><p className="flex items-center gap-2 text-xs font-semibold"><ShieldCheck className="h-4 w-4 text-accent" />{ar ? "رقم التحقق المشفّر" : "Encrypted verification ID"}</p><p dir="ltr" className="mt-2 break-all font-mono text-[11px] text-muted-foreground">{info.verificationId}</p></div>}
+          </aside>
+
+          <div className="rounded-xl border border-border p-4 sm:p-5">
+            <div className="mb-5"><p className="text-xs text-muted-foreground">{ar ? "الموقّع" : "Signer"}</p><h3 className="mt-1 font-heading text-xl font-semibold">{info.signer.name}</h3></div>
+            <div className="mb-5 inline-flex rounded-xl border border-border bg-secondary/50 p-1">
+              <button onClick={() => setMode("type")} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-medium transition ${mode === "type" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"}`}><Keyboard className="h-4 w-4" />{ar ? "كتابة الاسم" : "Type name"}</button>
+              <button onClick={() => setMode("draw")} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-medium transition ${mode === "draw" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"}`}><PenLine className="h-4 w-4" />{ar ? "رسم التوقيع" : "Draw"}</button>
+            </div>
+            <div className="mb-5 space-y-2">
+              <div className="flex items-center justify-between text-xs text-muted-foreground"><span>{ar ? "حجم التوقيع على المستند" : "Signature size on document"}</span><span dir="ltr">{sigSize}%</span></div>
+              <input type="range" min={50} max={200} step={10} value={sigSize} onChange={(event) => setSigSize(Number(event.target.value))} className="w-full accent-current" />
+            </div>
+            {mode === "type" ? <TypedSignature ar={ar} defaultName={info.signer.name || ""} onSave={sign} saving={signing} /> : <SignaturePad ar={ar} onSave={sign} saving={signing} />}
+            {signing && <p className="mt-4 flex items-center gap-2 rounded-lg bg-secondary/50 px-3 py-2 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin text-accent" />{stage}</p>}
+            {error && <p className="mt-4 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
+          </div>
         </div>
-        {mode === "type" ? (
-          <TypedSignature ar={ar} defaultName={info.signer.name || ""} onSave={sign} saving={signing} />
-        ) : (
-          <SignaturePad ar={ar} onSave={sign} saving={signing} />
-        )}
-      </div>
+      </section>
 
-      {signing && (
-        <p className="flex items-center gap-2 text-xs text-muted-foreground font-body">
-          <Loader2 className="w-3.5 h-3.5 animate-spin" /> {stage}
-        </p>
-      )}
-      {error && <p className="text-xs text-destructive font-body">{error}</p>}
-
-      {showSpotPicker && (
-        <SignSpotPicker
-          docUrl={info.docUrl}
-          initialSpot={chosenSpot || info.signer.spot || null}
-          initialScale={sigSize}
-          signerName={info.signer.name}
-          ar={ar}
-          onConfirm={(spot, scale) => { setChosenSpot(spot); setSigSize(scale); setShowSpotPicker(false); }}
-          onClose={() => setShowSpotPicker(false)}
-        />
-      )}
+      {showSpotPicker && <SignSpotPicker docUrl={info.docUrl} initialSpot={chosenSpot || info.signer.spot || null} initialScale={sigSize} signerName={info.signer.name} ar={ar} onConfirm={(spot, scale) => { setChosenSpot(spot); setSigSize(scale); setShowSpotPicker(false); }} onClose={() => setShowSpotPicker(false)} />}
     </Shell>
   );
 }
