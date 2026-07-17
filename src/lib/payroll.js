@@ -17,9 +17,9 @@ export const netOf = (i) =>
   (Number(i.base) || 0) + (Number(i.allowances) || 0) + (Number(i.bonus) || 0) - (Number(i.deductions) || 0);
 
 export function payrollItemIssues(item) {
-  const fields = ["base", "allowances", "bonus", "deductions"];
+  if (!Number.isFinite(Number(item?.base)) || Number(item.base) <= 0) return ["BASE_REQUIRED"];
+  const fields = ["allowances", "bonus", "deductions"];
   if (fields.some((field) => !Number.isFinite(Number(item?.[field])) || Number(item[field]) < 0)) return ["INVALID_AMOUNTS"];
-  if (Number(item?.base) <= 0) return ["BASE_REQUIRED"];
   if (netOf(item) <= 0) return ["NET_REQUIRED"];
   if (!/^[A-Z]{3}$/.test(String(item?.currency || ""))) return ["CURRENCY_REQUIRED"];
   return [];
@@ -58,6 +58,11 @@ export function ensurePayrollRun(companyId, month) {
 }
 
 export function updatePayrollItem(companyId, month, itemId, updates) {
+  if (Object.prototype.hasOwnProperty.call(updates || {}, "currency")) {
+    const currency = String(updates.currency || "").toUpperCase();
+    if (!/^[A-Z]{3}$/.test(currency)) return false;
+    updates = { ...updates, currency };
+  }
   updateCompany(companyId, (d) => {
     const run = (d.payrollRuns || []).find((r) => r.month === month);
     const item = run?.items.find((i) => i.id === itemId);
@@ -65,7 +70,7 @@ export function updatePayrollItem(companyId, month, itemId, updates) {
     const allowed = ["base", "allowances", "bonus", "deductions", "currency"];
     for (const [field, value] of Object.entries(updates || {})) {
       if (!allowed.includes(field)) continue;
-      if (field === "currency") item.currency = String(value || "").toUpperCase().slice(0, 3);
+      if (field === "currency") item.currency = value;
       else if (Number.isFinite(Number(value)) && Number(value) >= 0) item[field] = Number(value);
     }
   });

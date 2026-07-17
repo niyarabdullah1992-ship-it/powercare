@@ -89,6 +89,14 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
 
   const send = async () => {
     setError("");
+    const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    const normalizedEmails = signers.map((signer) => signer.email.trim().toLowerCase());
+    const hasInvalidSigner = signers.some((signer) => !signer.name.trim() || !emailPattern.test(signer.email.trim()));
+    const hasDuplicateEmail = new Set(normalizedEmails).size !== normalizedEmails.length;
+    if (!doc || hasInvalidSigner || hasDuplicateEmail) {
+      setError(ar ? "يجب إدخال اسم وبريد إلكتروني صالح وفريد لكل موقّع قبل الإرسال." : "Enter a valid name and unique email address for every signer before sending.");
+      return;
+    }
     setSending(true);
     try {
       const res = await base44.functions.invoke("multiSign", {

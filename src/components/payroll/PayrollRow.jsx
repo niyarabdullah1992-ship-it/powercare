@@ -21,7 +21,10 @@ export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid,
         <p className="text-sm font-body font-medium">{employee?.name || "—"}</p>
         <p className="text-[11px] text-muted-foreground font-body">{employee?.position || employee?.role || ""}</p>
       </td>
-      <td data-label={ar ? "الأساسي" : "Base"}>{cell("base")}</td>
+      <td data-label={ar ? "الأساسي" : "Base"}>
+        {cell("base")}
+        {num(item.base) <= 0 && <p className="mt-1 text-[10px] text-destructive font-body">{ar ? "الراتب لم يُحدَّد بعد" : "Salary has not been set yet"}</p>}
+      </td>
       <td data-label={ar ? "البدلات" : "Allowances"}>{cell("allowances")}</td>
       <td data-label={ar ? "مكافآت" : "Bonus"}>{cell("bonus")}</td>
       <td data-label={ar ? "خصومات" : "Deductions"}>{cell("deductions")}</td>
@@ -33,7 +36,9 @@ export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid,
       <td data-label={ar ? "الحالة" : "Status"}>
         <button
           onClick={() => onTogglePaid(!item.paid)}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-body font-medium border transition-colors ${
+          disabled={!item.paid && num(item.base) <= 0}
+          title={!item.paid && num(item.base) <= 0 ? (ar ? "حدّد الراتب الأساسي أولاً" : "Set the base salary first") : undefined}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-body font-medium border transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
             item.paid
               ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800"
               : "bg-muted text-muted-foreground border-border hover:bg-secondary"

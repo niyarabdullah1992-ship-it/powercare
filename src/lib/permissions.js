@@ -77,7 +77,8 @@ export function canManageHRLevels(user, data) {
 // Is this user holding the topmost active HR tier (the highest-ranking HR position)?
 export function isTopHRHolder(user, data) {
   const levels = (data?.hrLevels || []).filter((l) => l.active !== false);
-  if (!levels.length || !user?.hrLevelId) return false;
+  if (levels.length === 0) return false;
+  if (!user?.hrLevelId) return false;
   const topOrder = Math.max(...levels.map((l) => l.order || 0));
   return levels.some((l) => l.order === topOrder && l.id === user.hrLevelId);
 }
@@ -166,6 +167,10 @@ export function canViewEmployeeProfile(viewer, employee, data) {
 // Employees visible to a user (for management views)
 export function visibleEmployees(user, data) {
   if (canSeeAllStations(user) || user?.id === data?.ownerId) return data.employees;
+  if (user?.role === "station_manager") {
+    const stationIds = new Set([user.stationId, ...(user.managedStations || [])].filter(Boolean));
+    return data.employees.filter((employee) => employee.stationId && stationIds.has(employee.stationId));
+  }
   if (hasHRPermission(user, data, "view_employees") || hasHRPermission(user, data, "manage_employees")) {
     const scope = hrScopeStations(user, data);
     return scope === null ? data.employees : data.employees.filter((employee) => employee.stationId && scope.includes(employee.stationId));

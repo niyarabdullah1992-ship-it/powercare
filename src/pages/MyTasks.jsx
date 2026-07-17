@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { addNotification, addPoints } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { PRIORITY_POINTS } from "@/lib/rewards";
-import { handlersForLevel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
+import { handlersForLevel, hasHandlerAtLevel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
 import { base44 } from "@/api/base44Client";
 import { getParentPath, withAncestors, NO_SECTION } from "@/lib/taskFolders";
 import { logAudit } from "@/lib/auditLog";
@@ -69,7 +69,7 @@ export default function MyTasks() {
   const [editTarget, setEditTarget] = useState(null);
   const [folders, setFolders] = useState([]);
   const [sectionValue, setSectionValue] = useState("");
-  const [checkedInToday, setCheckedInToday] = useState(true);
+  const [checkedInToday, setCheckedInToday] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
@@ -459,8 +459,12 @@ export default function MyTasks() {
 
   const logCompleted = async (targetId) => {
     if (!isIndividual && !checkedInToday) {
-      toast({ description: t("mustCheckInFirst"), variant: "destructive" });
-      return;
+      const attendance = await getTodayAttendance(currentUser.id);
+      if (!isCheckedIn(attendance)) {
+        toast({ description: t("mustCheckInFirst"), variant: "destructive" });
+        return;
+      }
+      setCheckedInToday(true);
     }
     const amt = Number(logAmount) || 0;
     if (amt <= 0) return;
@@ -605,11 +609,12 @@ export default function MyTasks() {
       return;
     }
     const nextLevel = (tg.escalation_level || 0) + 1;
-    const handlers = handlersForLevel(nextLevel, { stationId: targetStationKey(tg) }, data);
-    if (handlers.length === 0) {
+    const targetScope = { stationId: targetStationKey(tg) };
+    if (!hasHandlerAtLevel(nextLevel, targetScope, data)) {
       alert(t("noHandlerAssigned"));
       return;
     }
+    const handlers = handlersForLevel(nextLevel, targetScope, data);
     const notifyUserIds = handlers.map((handler) => handler.id);
     try {
       const res = await base44.functions.invoke("supabaseTargets", {

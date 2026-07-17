@@ -3,7 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
-import { handlersForLevel, levelLabel, escalationStageCount } from "@/lib/escalation";
+import { handlersForLevel, hasHandlerAtLevel, levelLabel, escalationStageCount } from "@/lib/escalation";
 import { formatDateTime } from "@/lib/dateFormat";
 import { Megaphone, Send, Building2, CheckCircle2, ChevronRight, ArrowLeft, Check, X as XIcon, ArrowUpCircle } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
@@ -115,11 +115,11 @@ export default function PublicComplaints() {
     if (!isAuthorAppeal && (rep.status !== "open" || !canReplyTo(rep))) return;
     const nextLevel = (rep.escalationLevel || 0) + 1;
     if (nextLevel >= STAGE_COUNT) return;
-    const nextHandlers = handlersForLevel(nextLevel, rep, data);
-    if (nextHandlers.length === 0) {
+    if (!hasHandlerAtLevel(nextLevel, rep, data)) {
       alert(t("noHandlerAssigned"));
       return;
     }
+    const nextHandlers = handlersForLevel(nextLevel, rep, data);
     updateCompany(company.id, (d) => {
       const r = (d.publicReports || []).find((x) => x.id === id);
       if (r) { r.escalationLevel = nextLevel; r.status = "open"; r.resolution = null; }

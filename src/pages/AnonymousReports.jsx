@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { updateCompany, addNotification, getCompanyToken, setAnonRateLimits } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations, canManageStations } from "@/lib/permissions";
-import { handlersForLevel, levelLabel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
+import { handlersForLevel, hasHandlerAtLevel, levelLabel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
 import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, ChevronRight, ArrowLeft, Check, X as XIcon } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
@@ -185,11 +185,11 @@ export default function AnonymousReports() {
     if (!isAuthorAppeal && (rep.status !== "open" || !canReplyTo(rep))) return;
     const nextLevel = (rep.escalationLevel || 0) + 1;
     if (nextLevel >= STAGE_COUNT) return;
-    const nextHandlers = handlersForLevel(nextLevel, rep, data);
-    if (nextHandlers.length === 0) {
+    if (!hasHandlerAtLevel(nextLevel, rep, data)) {
       alert(t("noHandlerAssigned"));
       return;
     }
+    const nextHandlers = handlersForLevel(nextLevel, rep, data);
     updateCompany(company.id, (d) => {
       const r = d.anonymousReports.find((x) => x.id === id);
       if (r) { r.escalationLevel = nextLevel; r.status = "open"; r.resolution = null; }

@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
       const signers = signersIn
         .map((s) => ({
           token: rid(),
-          name: String(s.name || '').slice(0, 120),
+          name: String(s.name || '').trim().slice(0, 120),
           email: String(s.email || '').toLowerCase().trim().slice(0, 160),
           status: 'pending',
           signedAt: null,
@@ -120,8 +120,8 @@ Deno.serve(async (req) => {
               : null,
         }))
         .filter((s, index, rows) => s.name && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.email) && rows.findIndex((row) => row.email === s.email) === index);
-      if (signers.length === 0 || !isAllowedDocUrl(body.docUrl) || !String(body.fileName || '').toLowerCase().endsWith('.pdf') || !String(body.verificationId || '').trim()) {
-        return Response.json({ error: 'A PDF document and at least one valid signer are required' }, { status: 400 });
+      if (signers.length === 0 || signers.length !== signersIn.length || !isAllowedDocUrl(body.docUrl) || !String(body.fileName || '').toLowerCase().endsWith('.pdf') || !String(body.verificationId || '').trim()) {
+        return Response.json({ error: 'A PDF document and a valid, unique email for every signer are required' }, { status: 400 });
       }
       const duplicateRequests = await Docs.filter({ verificationId: String(body.verificationId).slice(0, 40) });
       if (duplicateRequests.length) return Response.json({ error: 'SIGNATURE_REUSE' }, { status: 409 });
@@ -220,21 +220,26 @@ Deno.serve(async (req) => {
       const [id, part] = String(token || '').split('.');
       if (!id || !part) return null;
       const rec = await Docs.get(id).catch(() => null);
-      if (!rec || (rec.expiresAt && new Date(rec.expiresAt).getTime() <= Date.now())) return null;
+      if (!rec) return null;
       const signer = (rec.signers || []).find((s) => s.token === part);
-      return signer ? { rec, signer } : null;
+      const expired = !!rec.expiresAt && new Date(rec.expiresAt).getTime() <= Date.now();
+      return signer ? { rec, signer, expired } : null;
     };
 
     if (action === 'getByToken') {
       const found = await resolveToken(body.token);
       if (!found) return Response.json({ error: 'Invalid or expired signing link' }, { status: 404 });
-      const { rec, signer } = found;
+      const { rec, signer, expired } = found;
+      if (expired) {
+        return Response.json({ expiresAt: rec.expiresAt, signer: { name: signer.name, status: signer.status } });
+      }
       const pending = (rec.signers || []).filter((s) => s.status === 'pending');
       return Response.json({
         fileName: rec.fileName,
         creatorName: rec.creatorName,
         docUrl: rec.docUrl,
         status: rec.status,
+        expiresAt: rec.expiresAt,
         verificationId: rec.verificationId,
         signer: { name: signer.name, email: signer.email, status: signer.status, spot: signer.spot || null },
         signedCount: (rec.signers || []).filter((s) => s.status === 'signed').length,
@@ -248,7 +253,8 @@ Deno.serve(async (req) => {
     if (action === 'submitSignature') {
       const found = await resolveToken(body.token);
       if (!found) return Response.json({ error: 'Invalid or expired signing link' }, { status: 404 });
-      const { rec, signer } = found;
+      const { rec, signer, expired } = found;
+      if (expired) return Response.json({ error: 'Invalid or expired signing link' }, { status: 404 });
       if (rec.status !== 'pending' || signer.status === 'signed') return Response.json({ error: 'ALREADY_SIGNED' }, { status: 409 });
       const pending = (rec.signers || []).filter((item) => item.status === 'pending');
       if (pending[0]?.token !== signer.token) return Response.json({ error: 'WAIT_FOR_TURN' }, { status: 409 });

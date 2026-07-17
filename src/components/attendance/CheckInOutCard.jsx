@@ -20,7 +20,9 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
   const { lang } = useI18n();
   const { format } = useTimeFormat();
   const shift = getTodaysShift(data, currentUser);
-  const station = data?.stations?.find((s) => s.id === currentUser.stationId);
+  const assignedStationIds = [currentUser?.stationId, ...(currentUser?.managedStations || [])].filter(Boolean);
+  const hasAssignedStation = assignedStationIds.length > 0;
+  const station = data?.stations?.find((s) => s.id === (shift?.stationId || currentUser.stationId || assignedStationIds[0]));
   const [settings, setSettings] = useState(null);
   const [attendance, setAttendance] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -43,14 +45,17 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
 
   useEffect(() => {
     load();
-    // Warm up GPS in the background and cache the best fix — by the time the
-    // user taps check-in, the location is usually already in hand (instant).
-    startGeoWarmup();
+    // Never request GPS until the employee has at least one assigned workplace.
+    if (hasAssignedStation) startGeoWarmup();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id, company?.id]);
 
   const handleCheckIn = async () => {
     setError("");
+    if (!hasAssignedStation) {
+      setError(lang === "ar" ? "لا يمكنك تسجيل الحضور قبل تعيين محطة عمل لك. تواصل مع إدارة الشركة." : "You cannot check in until a workplace is assigned to you. Contact company management.");
+      return;
+    }
     setLoading(true);
     try {
       // Location is MANDATORY before check-in — no location, no check-in.
@@ -158,6 +163,11 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         <p className={`text-xs font-body ${attendance.location_status === "inside" ? "text-emerald-700" : "text-red-700"}`}>
           {attendance.location_status === "inside" ? t("insideLocation") : t("outsideLocation")}
           {attendance.distance_meters != null && ` (${attendance.distance_meters}m)`}
+        </p>
+      )}
+      {!hasAssignedStation && (
+        <p className="text-xs text-amber-700 font-body">
+          {lang === "ar" ? "لم تُعيَّن لك محطة عمل بعد؛ تسجيل الحضور غير متاح." : "No workplace is assigned yet; check-in is unavailable."}
         </p>
       )}
       {error && <p className="text-xs text-destructive font-body whitespace-pre-wrap break-words">{error}</p>}

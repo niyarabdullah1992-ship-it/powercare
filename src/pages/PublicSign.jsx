@@ -54,6 +54,7 @@ export default function PublicSign() {
       // have signed in the meantime (parallel signing).
       setStage(ar ? "جارٍ تجهيز أحدث نسخة…" : "Fetching the latest version…");
       const fresh = (await base44.functions.invoke("multiSign", { action: "getByToken", token })).data;
+      if (fresh.expiresAt && new Date(fresh.expiresAt).getTime() <= Date.now()) throw new Error(ar ? "انتهت صلاحية طلب التوقيع." : "This signature request has expired.");
       if (fresh.signer.status === "signed") throw new Error(ar ? "وقّعت هذا المستند مسبقًا." : "You already signed this document.");
       if (!fresh.canSign) throw new Error(ar ? "يجب اكتمال توقيع الطرف السابق أولًا." : "The previous signer must finish first.");
 
@@ -133,6 +134,16 @@ export default function PublicSign() {
       <Shell>
         <p className="flex items-center gap-2 text-sm text-muted-foreground font-body">
           <Loader2 className="w-4 h-4 animate-spin" /> {ar ? "جارٍ تحميل المستند…" : "Loading the document…"}
+        </p>
+      </Shell>
+    );
+  }
+
+  if (info.expiresAt && new Date(info.expiresAt).getTime() <= Date.now()) {
+    return (
+      <Shell>
+        <p className="text-sm text-destructive font-body">
+          {ar ? "انتهت صلاحية طلب التوقيع. اطلب من المرسل إنشاء طلب جديد." : "This signature request has expired. Ask the sender to create a new request."}
         </p>
       </Shell>
     );
