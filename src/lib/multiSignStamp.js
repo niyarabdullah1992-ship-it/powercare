@@ -2,6 +2,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { base44 } from "@/api/base44Client";
 import { makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
 import { STAMP_CANVAS_HEIGHT, STAMP_CANVAS_WIDTH, STAMP_FALLBACK_SPOT, STAMP_WIDTH_PERCENT, clampStampScale, stampAspectRatio } from "@/lib/signatureStampGeometry";
+import { getVisibleImageBounds } from "@/lib/signatureImageBounds";
 
 const loadImage = (src) =>
   new Promise((resolve, reject) => {
@@ -26,10 +27,11 @@ export async function makeSignatureStamp(sigDataUrl, name, verificationId = "") 
   ctx.roundRect(2, 2, 416, 186, 18);
   ctx.fill();
   ctx.stroke();
-  const scale = Math.min(360 / img.width, 88 / img.height);
-  const w = img.width * scale;
-  const h = img.height * scale;
-  ctx.drawImage(img, (STAMP_CANVAS_WIDTH - w) / 2, 12 + (88 - h) / 2, w, h);
+  const ink = getVisibleImageBounds(img);
+  const scale = Math.min(360 / ink.width, 88 / ink.height);
+  const w = ink.width * scale;
+  const h = ink.height * scale;
+  ctx.drawImage(img, ink.x, ink.y, ink.width, ink.height, (STAMP_CANVAS_WIDTH - w) / 2, 12 + (88 - h) / 2, w, h);
   ctx.strokeStyle = "#e7dfd3";
   ctx.lineWidth = 1;
   ctx.beginPath();
