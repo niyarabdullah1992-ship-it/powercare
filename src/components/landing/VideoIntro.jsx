@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { Play, Pause, Volume2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import Logo from "@/components/Logo";
+import HsePromoScene from "@/components/landing/HsePromoScene";
 
 const VIDEO_URLS = [
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/7b1b2e430_Promo_Video.mp4",
@@ -30,6 +31,9 @@ export default function VideoIntro() {
   const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [videoIndex, setVideoIndex] = useState(0);
+  const [mode, setMode] = useState("video");
+  const [cssScene, setCssScene] = useState(0);
+  const [cssElapsed, setCssElapsed] = useState(0);
   const narrationUrl = NARRATION_URLS[lang] || NARRATION_URLS.en;
 
   const resetPlayback = () => {
@@ -38,31 +42,51 @@ export default function VideoIntro() {
     audioRef.current?.pause();
     if (audioRef.current) audioRef.current.currentTime = 0;
     setVideoIndex(0);
+    setMode("video");
+    setCssScene(0);
+    setCssElapsed(0);
     setPlaying(false);
   };
 
   useEffect(() => { resetPlayback(); }, [lang]);
   useEffect(() => {
-    if (playing) videoRef.current?.play();
-  }, [videoIndex]);
+    if (playing && mode === "video") videoRef.current?.play();
+  }, [videoIndex, mode]);
+
+  useEffect(() => {
+    if (!playing || mode !== "css") return undefined;
+    const startedAt = Date.now() - cssElapsed;
+    const timer = window.setInterval(() => {
+      const next = Date.now() - startedAt;
+      if (next < 4200) return setCssElapsed(next);
+      setCssElapsed(0);
+      if (cssScene < 3) setCssScene((current) => current + 1);
+      else { setMode("video"); setVideoIndex(2); }
+    }, 80);
+    return () => window.clearInterval(timer);
+  }, [playing, mode, cssScene]);
 
   const togglePlay = () => {
     const video = videoRef.current;
     const audio = audioRef.current;
-    if (!video || !audio) return;
+    if (!audio) return;
     if (playing) {
-      video.pause();
+      video?.pause();
       audio.pause();
       setPlaying(false);
     } else {
-      if (!video.ended) video.play();
+      if (mode === "video" && video && !video.ended) video.play();
       if (!audio.ended) audio.play();
       setPlaying(true);
     }
   };
 
   const handleVideoEnded = () => {
-    if (videoIndex < VIDEO_URLS.length - 1) {
+    if (videoIndex === 1) {
+      setCssScene(0);
+      setCssElapsed(0);
+      setMode("css");
+    } else if (videoIndex < VIDEO_URLS.length - 1) {
       setVideoIndex((index) => index + 1);
     } else if (audioRef.current?.ended) {
       resetPlayback();
@@ -72,7 +96,9 @@ export default function VideoIntro() {
     }
   };
 
-  const handleAudioEnded = () => resetPlayback();
+  const handleAudioEnded = () => {
+    if (mode === "video" && videoIndex === VIDEO_URLS.length - 1 && videoRef.current?.ended) resetPlayback();
+  };
 
   return (
     <section className="relative overflow-hidden bg-landing-cinema px-6 py-20 md:px-10">
@@ -93,17 +119,21 @@ export default function VideoIntro() {
         <p className="mx-auto mb-12 max-w-2xl font-body leading-relaxed text-landing-bg/50">{t("videoText")}</p>
 
         <div className="group relative mb-8 overflow-hidden rounded-2xl border border-landing-gold/20 shadow-2xl">
-          <video
-            key={VIDEO_URLS[videoIndex]}
-            ref={videoRef}
-            src={VIDEO_URLS[videoIndex]}
-            muted
-            playsInline
-            preload="auto"
-            onEnded={handleVideoEnded}
-            onClick={togglePlay}
-            className="aspect-video w-full cursor-pointer bg-landing-cinema object-cover"
-          />
+          {mode === "video" ? (
+            <video
+              key={VIDEO_URLS[videoIndex]}
+              ref={videoRef}
+              src={VIDEO_URLS[videoIndex]}
+              muted
+              playsInline
+              preload="auto"
+              onEnded={handleVideoEnded}
+              onClick={togglePlay}
+              className="aspect-video w-full cursor-pointer bg-landing-cinema object-cover"
+            />
+          ) : (
+            <div onClick={togglePlay} className="aspect-video w-full cursor-pointer bg-landing-cinema"><HsePromoScene key={cssScene} scene={cssScene} /></div>
+          )}
           <button onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} className={`absolute inset-0 flex items-center justify-center transition-opacity ${playing ? "opacity-0 group-hover:opacity-100" : "opacity-100"}`}>
             <span className="flex h-20 w-20 items-center justify-center rounded-full bg-landing-gold/90 text-landing-bg shadow-2xl transition-transform hover:scale-105">
               {playing ? <Pause className="h-8 w-8" /> : <Play className="ms-1 h-8 w-8" />}
