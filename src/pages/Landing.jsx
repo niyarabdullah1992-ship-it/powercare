@@ -273,9 +273,9 @@ export default function Landing() {
             <p className="text-sm text-[#3a2f22]/55 font-body leading-relaxed">
               {t("footerDescription")}
             </p>
-            <Link to="/project-guide" className="mt-4 inline-flex items-center gap-2 rounded-full border border-landing-gold/40 px-4 py-2 text-sm font-body font-semibold text-landing-gold transition-colors hover:bg-landing-gold hover:text-white">
+            <Link to="/manual" className="mt-4 inline-flex items-center gap-2 rounded-full border border-landing-gold/40 px-4 py-2 text-sm font-body font-semibold text-landing-gold transition-colors hover:bg-landing-gold hover:text-white">
               <Download className="h-3.5 w-3.5" />
-              {lang === "ar" ? "الدليل التقديمي الشامل" : "Complete Project Guide"}
+              {lang === "ar" ? "الدليل التشغيلي الشامل" : "Complete Operations Manual"}
             </Link>
             <div className="flex items-center gap-4 mt-5 text-[#3a2f22]/60">
               <Facebook className="w-4 h-4" strokeWidth={1.75} />
@@ -297,10 +297,10 @@ export default function Landing() {
           <div>
             <h4 className="font-heading text-lg text-[#3a2f22] mb-3">{t("footerContactHeading")}</h4>
             <ul className="space-y-2.5 text-sm font-body text-[#3a2f22]/55">
-              <li className="flex items-center gap-2"><ShieldCheck className="w-3.5 h-3.5 text-landing-gold" /> {t("appName")}</li>
-              <li className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-landing-gold" /> <span dir="ltr">0595414472</span></li>
-              <li className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-landing-gold" /> niyar@powercares.pro</li>
-              <li className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-landing-gold" /> turkialmutarir@gmail.com</li>
+              <li className="flex items-center gap-2"><ShieldCheck className="w-3.5 h-3.5 text-landing-gold" /> {lang === "ar" ? "نيار عبدالله سويلم الرنياوي" : "Niyar Abdullah Sweilem Al-Raniawi"}</li>
+              <li className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-landing-gold" /> <a href="tel:+966595414472" dir="ltr" className="hover:text-landing-gold">0595414472</a></li>
+              <li className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-landing-gold" /> <a href="mailto:niyar@powercares.pro" className="hover:text-landing-gold">niyar@powercares.pro</a></li>
+              <li className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-landing-gold" /> <a href="mailto:turkialmutarir@gmail.com" className="hover:text-landing-gold">turkialmutarir@gmail.com</a></li>
             </ul>
           </div>
         </div>
