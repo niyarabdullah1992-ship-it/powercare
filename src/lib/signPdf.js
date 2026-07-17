@@ -13,7 +13,7 @@ async function badgePngBytes(sigId, signerName, qrImg) {
 // Stamps the verification badge onto the PDF, uploads the signed copy and
 // returns { url, bytes } — bytes are used to hash the file locally without
 // re-downloading it.
-export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot, qrImg, sizeScale = 1) {
+export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot, qrImg, sizeScale = 1, uploadResult = true) {
   const sc = Math.min(Math.max(Number(sizeScale) || 1, 0.5), 2);
   const pdfBytes = await fetch(docUrl).then((r) => r.arrayBuffer());
   const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
@@ -35,6 +35,7 @@ export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot, qrImg
   }
   page.drawImage(badgeImg, { x: bx, y: by, width: bw, height: bh });
   const out = await pdf.save();
+  if (!uploadResult) return { url: null, bytes: out };
   const file = new File([out], "signed-document.pdf", { type: "application/pdf" });
   const { file_url } = await base44.integrations.Core.UploadFile({ file });
   return { url: file_url, bytes: out };

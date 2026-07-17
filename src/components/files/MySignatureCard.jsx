@@ -138,7 +138,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
         </div>
       )}
     </div>
-    {signatureUrl && !editing && <SelfSignDocumentCard signatureUrl={signatureUrl} ar={ar} />}
+    {signatureUrl && !editing && <SelfSignDocumentCard signatureUrl={signatureUrl} currentUser={currentUser} companyId={companyId} ar={ar} />}
     </div>
   );
 }
