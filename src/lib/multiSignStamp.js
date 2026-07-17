@@ -11,31 +11,43 @@ const loadImage = (src) =>
     img.src = src;
   });
 
-// Composes the drawn signature + signer name + date into one PNG (canvas text
-// is Unicode-safe, so Arabic names render correctly inside the PDF).
-export async function makeSignatureStamp(sigDataUrl, name) {
+// Composes the signature, signer identity, date, and the document's encrypted
+// verification ID into one Unicode-safe PNG embedded directly in the PDF.
+export async function makeSignatureStamp(sigDataUrl, name, verificationId = "") {
   const img = await loadImage(sigDataUrl);
   const canvas = document.createElement("canvas");
   canvas.width = 360;
-  canvas.height = 195;
+  canvas.height = 230;
   const ctx = canvas.getContext("2d");
-  const scale = Math.min(340 / img.width, 125 / img.height);
+  const scale = Math.min(340 / img.width, 112 / img.height);
   const w = img.width * scale;
   const h = img.height * scale;
-  ctx.drawImage(img, (360 - w) / 2, (130 - h) / 2, w, h);
+  ctx.drawImage(img, (360 - w) / 2, (118 - h) / 2, w, h);
   ctx.strokeStyle = "#94a3b8";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(14, 140);
-  ctx.lineTo(346, 140);
+  ctx.moveTo(14, 128);
+  ctx.lineTo(346, 128);
   ctx.stroke();
   ctx.textAlign = "center";
   ctx.fillStyle = "#1e293b";
   ctx.font = "600 20px sans-serif";
-  ctx.fillText(String(name || "").slice(0, 40), 180, 163);
+  ctx.fillText(String(name || "").slice(0, 40), 180, 153);
   ctx.fillStyle = "#64748b";
   ctx.font = "13px sans-serif";
-  ctx.fillText(new Date().toLocaleDateString(), 180, 184);
+  ctx.fillText(new Date().toLocaleDateString(), 180, 174);
+  if (verificationId) {
+    ctx.fillStyle = "#f6f1e8";
+    ctx.strokeStyle = "#bd8d4f";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(40, 187, 280, 29, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#8a642f";
+    ctx.font = "600 13px monospace";
+    ctx.fillText(`VERIFIED • ${String(verificationId).slice(0, 40)}`, 180, 206);
+  }
   return canvas.toDataURL("image/png");
 }
 
@@ -60,7 +72,7 @@ export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot, s
     const page = pages[Math.min(Math.max(Math.round(spot.page), 1), pages.length) - 1];
     const { width, height } = page.getSize();
     const sw = Math.min(130, width * 0.24) * scale;
-    const sh = sw * (195 / 360);
+    const sh = sw * (230 / 360);
     const cx = (Number(spot.x) / 100) * width;
     const cy = height - (Number(spot.y) / 100) * height;
     const x = Math.min(Math.max(cx - sw / 2, 4), width - sw - 4);
@@ -70,7 +82,7 @@ export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot, s
     // Fallback: signatures line up in rows along the bottom of the last page.
     const { width } = lastPage.getSize();
     const sw = Math.min(130, width * 0.28) * scale;
-    const sh = sw * (195 / 360);
+    const sh = sw * (230 / 360);
     const perRow = Math.max(1, Math.floor((width - 32) / (sw + 12)));
     const col = slotIndex % perRow;
     const row = Math.floor(slotIndex / perRow);

@@ -59,7 +59,7 @@ export default function PublicSign() {
       if (!fresh.canSign) throw new Error(ar ? "يجب اكتمال توقيع الطرف السابق أولًا." : "The previous signer must finish first.");
 
       setStage(ar ? "جارٍ ختم توقيعك على المستند…" : "Stamping your signature…");
-      const stamp = await makeSignatureStamp(sigDataUrl, fresh.signer.name);
+      const stamp = await makeSignatureStamp(sigDataUrl, fresh.signer.name, fresh.verificationId);
       let badge = null;
       if (fresh.isLast && fresh.verificationId) {
         const qr = await loadBadgeQr(fresh.verificationId).catch(() => null);
