@@ -50,6 +50,10 @@
     --landing-gold-light: 35 60% 76%;
     --landing-gold-deep: 28 50% 45%;
     --landing-cinema: 40 44% 4%;
+    --sign-bg: 39 44% 94%;
+    --sign-surface: 0 0% 100%;
+    --sign-ink: 30 25% 15%;
+    --sign-gold: 33 46% 53%;
   }
 
   .dark {
@@ -86,6 +90,10 @@
     --sidebar-border: 30 12% 20%;
     --sidebar-ring: 35 55% 58%;
     --landing-cinema: 40 44% 4%;
+    --sign-bg: 39 44% 94%;
+    --sign-surface: 0 0% 100%;
+    --sign-ink: 30 25% 15%;
+    --sign-gold: 33 46% 53%;
   }
 }
 

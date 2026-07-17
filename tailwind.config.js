@@ -66,7 +66,11 @@ module.exports = {
   			'landing-gold': 'hsl(var(--landing-gold))',
   			'landing-gold-light': 'hsl(var(--landing-gold-light))',
   			'landing-gold-deep': 'hsl(var(--landing-gold-deep))',
-  			'landing-cinema': 'hsl(var(--landing-cinema))'
+  			'landing-cinema': 'hsl(var(--landing-cinema))',
+  			'sign-bg': 'hsl(var(--sign-bg))',
+  			'sign-surface': 'hsl(var(--sign-surface))',
+  			'sign-ink': 'hsl(var(--sign-ink))',
+  			'sign-gold': 'hsl(var(--sign-gold))'
   		},
   		fontFamily: {
   			heading: ['var(--font-heading)'],

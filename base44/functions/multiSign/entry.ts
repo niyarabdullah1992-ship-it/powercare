@@ -322,6 +322,7 @@ Deno.serve(async (req) => {
         status: rec.status,
         expiresAt: rec.expiresAt,
         verificationId: rec.verificationId,
+        finalHash: rec.finalHash || null,
         signer: { name: signer.name, email: signer.email, status: signer.status, spot: signer.spot || null },
         signedCount: (rec.signers || []).filter((s) => s.status === 'signed').length,
         totalCount: (rec.signers || []).length,
@@ -399,7 +400,7 @@ Deno.serve(async (req) => {
         }
         if (!notified) await sendMail(base44, rec.creatorEmail, subject, `${text}\n\n${newDocUrl}\n\n— PowerCare`);
       }
-      return Response.json({ ok: true, completed, docUrl: newDocUrl });
+      return Response.json({ ok: true, completed, docUrl: newDocUrl, finalHash: completed ? fileHash : null });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
