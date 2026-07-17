@@ -427,6 +427,35 @@ Deno.serve(async (req) => {
       return 'self';
     };
 
+    if (action === 'registerAnonymousReceipt') {
+      if (auth.role !== 'employee' || !auth.userId || !body.reportId) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const reportId = String(body.reportId).slice(0, 100);
+      const existing = await base44.asServiceRole.entities.AnonymousReportReceipt.filter({ companyId, reportId });
+      if (existing.length && existing[0].employeeId !== auth.userId) return Response.json({ error: 'Receipt already registered' }, { status: 409 });
+      if (!existing.length) await base44.asServiceRole.entities.AnonymousReportReceipt.create({ companyId, reportId, employeeId: auth.userId });
+      return Response.json({ ok: true });
+    }
+
+    if (action === 'getMyAnonymousReportIds') {
+      if (auth.role !== 'employee' || !auth.userId) return Response.json({ reportIds: [] });
+      const receipts = await base44.asServiceRole.entities.AnonymousReportReceipt.filter({ companyId, employeeId: auth.userId });
+      return Response.json({ reportIds: receipts.map((receipt) => receipt.reportId) });
+    }
+
+    if (action === 'notifyAnonymousAuthor') {
+      const privilege = await getActorPrivilege();
+      if (privilege !== 'full' || !body.reportId || !String(body.text || '').trim()) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const receipts = await base44.asServiceRole.entities.AnonymousReportReceipt.filter({ companyId, reportId: String(body.reportId) });
+      if (!receipts[0]) return Response.json({ ok: true });
+      const notificationBlobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: 'notifications' });
+      const notifications = Array.isArray(notificationBlobs[0]?.payload) ? [...notificationBlobs[0].payload] : [];
+      notifications.unshift({ id: `ntf_${crypto.randomUUID()}`, userId: receipts[0].employeeId, text: String(body.text).slice(0, 500), read: false, createdAt: new Date().toISOString() });
+      if (notificationBlobs[0]) await base44.asServiceRole.entities.CompanyDataBlob.update(notificationBlobs[0].id, { payload: notifications });
+      else await base44.asServiceRole.entities.CompanyDataBlob.create({ companyId, category: 'notifications', payload: notifications });
+      await bumpSignal(base44, companyId);
+      return Response.json({ ok: true });
+    }
+
     if (action === 'revokeSession') {
       const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: body.sessionToken, companyId });
       for (const session of sessions) await base44.asServiceRole.entities.CompanySession.delete(session.id);
@@ -646,6 +675,7 @@ Deno.serve(async (req) => {
         await wipe(svc.EmployeeCredential);
         await wipe(svc.CompanySession);
         await wipe(svc.SyncSignal);
+        await wipe(svc.AnonymousReportReceipt);
         await wipe(svc.CompanyAccount);
         await svc.AuditLog.create({
           companyId, action: 'company_deleted',

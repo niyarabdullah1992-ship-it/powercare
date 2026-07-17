@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { updateCompany, getAnonUsage, addNotification, getAnonymousCode, setAnonRateLimits } from "@/lib/store";
+import { base44 } from "@/api/base44Client";
+import { updateCompany, addNotification, getCompanyToken, setAnonRateLimits } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations, canManageStations } from "@/lib/permissions";
 import { handlersForLevel, levelLabel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
 import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, ChevronRight, ArrowLeft, Check, X as XIcon } from "lucide-react";
@@ -25,6 +26,16 @@ export default function AnonymousReports() {
   const [replyFiles, setReplyFiles] = useState({});
   const [selectedStation, setSelectedStation] = useState(null);
   const [monthlyLimitInput, setMonthlyLimitInput] = useState("");
+  const [ownReportIds, setOwnReportIds] = useState([]);
+
+  useEffect(() => {
+    if (!company?.id || !currentUser?.id) return;
+    base44.functions.invoke("companyDirectory", {
+      action: "getMyAnonymousReportIds",
+      companyId: company.id,
+      sessionToken: getCompanyToken(company.id),
+    }).then((res) => setOwnReportIds(res?.data?.reportIds || []));
+  }, [company?.id, currentUser?.id]);
 
   if (!data || !currentUser) return null;
   const STAGE_COUNT = escalationStageCount(data);
@@ -34,11 +45,19 @@ export default function AnonymousReports() {
   const hrStations = isHRAnon ? hrScopeStations(currentUser, data) : [];
   const isOwner = currentUser.id === data.ownerId;
   const isStaff = isHRAnon || currentUser.role === "director" || currentUser.role === "ops_manager" || currentUser.role === "station_manager" || isOwner;
-  const myAnon = data.anonymousReports.filter((a) => (a.authorId ? a.authorId === currentUser.id : a.anonymousId === currentUser.anonymousId));
-  const usage = getAnonUsage(company.id, currentUser.id, currentUser.anonymousId);
+  const myAnon = data.anonymousReports.filter((report) => ownReportIds.includes(report.id));
+  const now = Date.now();
+  const usage = {
+    day: myAnon.filter((r) => now - new Date(r.createdAt).getTime() < 86400000).length,
+    week: myAnon.filter((r) => now - new Date(r.createdAt).getTime() < 86400000 * 7).length,
+    month: myAnon.filter((r) => now - new Date(r.createdAt).getTime() < 86400000 * 30).length,
+    dayLimit: data.settings?.rateLimitDaily ?? 3,
+    weekLimit: data.settings?.rateLimitWeekly ?? 10,
+    monthLimit: data.settings?.rateLimitMonthly ?? 30,
+  };
 
   const stationName = (id) => data.stations.find((s) => s.id === id)?.name || "—";
-  const displayCode = (r) => (r.authorId ? getAnonymousCode(r.authorId, new Date(r.createdAt)) : r.anonymousId);
+  const displayCode = (r) => r.anonymousId || `ANON-${String(r.id).slice(-8).toUpperCase()}`;
   const saveMonthlyLimit = () => {
     const val = Number(monthlyLimitInput);
     if (!val || val < 1) return;
@@ -86,10 +105,12 @@ export default function AnonymousReports() {
       alert(t("noHandlerAssigned"));
       return;
     }
+    const reportId = "anr_" + Math.random().toString(36).slice(2, 9);
+    const anonymousId = "ANON-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase();
     updateCompany(company.id, (d) => {
       d.anonymousReports.unshift({
-        id: "anr_" + Math.random().toString(36).slice(2, 9),
-        authorId: currentUser.id,
+        id: reportId,
+        anonymousId,
         stationId: currentUser.stationId || null,
         type, priority, message,
         files,
@@ -98,6 +119,13 @@ export default function AnonymousReports() {
         replies: [],
         createdAt: new Date().toISOString(),
       });
+    });
+    setOwnReportIds((ids) => [reportId, ...ids]);
+    base44.functions.invoke("companyDirectory", {
+      action: "registerAnonymousReceipt",
+      companyId: company.id,
+      reportId,
+      sessionToken: getCompanyToken(company.id),
     });
     const station = data.stations.find((s) => s.id === currentUser.stationId);
     const initialHandlers = handlersForLevel(initialLevel, draft, data);
@@ -120,8 +148,13 @@ export default function AnonymousReports() {
       r.status = decision === "approved" || isAtTop(rep) ? "closed" : "rejected";
       r.resolution = decision;
     });
-    const author = rep.authorId ? data.employees.find((e) => e.id === rep.authorId) : data.employees.find((e) => e.anonymousId === rep.anonymousId);
-    if (author) addNotification(company.id, author.id, `Your anonymous ${t(rep.type)} was ${t(decision)}.`);
+    base44.functions.invoke("companyDirectory", {
+      action: "notifyAnonymousAuthor",
+      companyId: company.id,
+      reportId: rep.id,
+      text: `Your anonymous ${t(rep.type)} was ${t(decision)}.`,
+      sessionToken: getCompanyToken(company.id),
+    });
     setReplyText({ ...replyText, [id]: "" });
     setReplyFiles({ ...replyFiles, [id]: [] });
   };
@@ -129,7 +162,7 @@ export default function AnonymousReports() {
   const escalate = (id) => {
     const rep = data.anonymousReports.find((x) => x.id === id);
     if (!rep) return;
-    const isAuthorAppeal = rep.authorId === currentUser.id && !isStaff;
+    const isAuthorAppeal = ownReportIds.includes(rep.id) && !isStaff;
     if (isAuthorAppeal && rep.status !== "rejected") return;
     if (!isAuthorAppeal && (rep.status !== "open" || !canReplyTo(rep))) return;
     const nextLevel = (rep.escalationLevel || 0) + 1;
