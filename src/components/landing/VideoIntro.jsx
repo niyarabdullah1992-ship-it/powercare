@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { Play, Pause, Volume2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import Logo from "@/components/Logo";
+import SeamlessVideoPlaylist from "@/components/landing/SeamlessVideoPlaylist";
 
 const VIDEO_URLS = [
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/7b1b2e430_Promo_Video.mp4",
@@ -28,56 +29,66 @@ const NARRATION_URLS = {
   ko: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/1c1c8c196_speech.mp3",
 };
 
+const EXTRA_NARRATION_URLS = {
+  ar: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/3a068406e_speech.mp3",
+  en: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/607303003_speech.mp3",
+  de: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/d6aafa510_speech.mp3",
+  fr: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/0e42a9a95_speech.mp3",
+  es: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/629d315df_speech.mp3",
+  pt: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/3a175d124_speech.mp3",
+  ru: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/bf12733a2_speech.mp3",
+  ja: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/3f5f293da_speech.mp3",
+  ko: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/212975137_speech.mp3",
+};
+
 export default function VideoIntro() {
   const { t, lang } = useI18n();
-  const videoRef = useRef(null);
+  const playerRef = useRef(null);
   const audioRef = useRef(null);
+  const extraAudioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
-  const [videoIndex, setVideoIndex] = useState(0);
+  const [audioPhase, setAudioPhase] = useState("main");
   const narrationUrl = NARRATION_URLS[lang] || NARRATION_URLS.en;
+  const extraNarrationUrl = EXTRA_NARRATION_URLS[lang] || EXTRA_NARRATION_URLS.en;
 
   const resetPlayback = () => {
-    videoRef.current?.pause();
-    if (videoRef.current) videoRef.current.currentTime = 0;
-    audioRef.current?.pause();
-    if (audioRef.current) audioRef.current.currentTime = 0;
-    setVideoIndex(0);
+    playerRef.current?.reset();
+    [audioRef.current, extraAudioRef.current].forEach((audio) => { if (audio) { audio.pause(); audio.currentTime = 0; audio.playbackRate = 1; } });
+    setAudioPhase("main");
     setPlaying(false);
   };
 
   useEffect(() => { resetPlayback(); }, [lang]);
-  useEffect(() => {
-    if (playing) videoRef.current?.play();
-  }, [videoIndex]);
 
   const togglePlay = () => {
-    const video = videoRef.current;
-    const audio = audioRef.current;
-    if (!audio) return;
     if (playing) {
-      video?.pause();
-      audio.pause();
-      setPlaying(false);
+      playerRef.current?.pause();
+      audioRef.current?.pause();
+      extraAudioRef.current?.pause();
     } else {
-      if (video && !video.ended) video.play();
-      if (!audio.ended) audio.play();
-      setPlaying(true);
+      playerRef.current?.play();
+      if (audioPhase === "main") audioRef.current?.play();
+      if (audioPhase === "extra") extraAudioRef.current?.play();
     }
+    setPlaying((current) => !current);
   };
 
-  const handleVideoEnded = () => {
-    if (videoIndex < VIDEO_URLS.length - 1) {
-      setVideoIndex((index) => index + 1);
-    } else if (audioRef.current?.ended) {
-      resetPlayback();
-    } else if (videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play();
-    }
+  const handlePrimaryAudioEnded = () => {
+    const extra = extraAudioRef.current;
+    const remaining = playerRef.current?.remaining() || 0;
+    if (extra?.duration && remaining) extra.playbackRate = Math.min(1.2, Math.max(.8, extra.duration / remaining));
+    setAudioPhase("extra");
+    if (playing) extra?.play();
   };
 
-  const handleAudioEnded = () => {
-    if (videoIndex === VIDEO_URLS.length - 1 && videoRef.current?.ended) resetPlayback();
+  const handlePlaylistEnd = () => {
+    if (audioPhase === "done") resetPlayback();
+    else playerRef.current?.replayLast();
+  };
+
+  const handleExtraAudioEnded = () => {
+    setAudioPhase("done");
+    resetPlayback();
   };
 
   return (
@@ -99,17 +110,7 @@ export default function VideoIntro() {
         <p className="mx-auto mb-12 max-w-2xl font-body leading-relaxed text-landing-bg/50">{t("videoText")}</p>
 
         <div className="group relative mb-8 overflow-hidden rounded-2xl border border-landing-gold/20 shadow-2xl">
-          <video
-            key={VIDEO_URLS[videoIndex]}
-            ref={videoRef}
-            src={VIDEO_URLS[videoIndex]}
-            muted
-            playsInline
-            preload="auto"
-            onEnded={handleVideoEnded}
-            onClick={togglePlay}
-            className="aspect-video w-full cursor-pointer bg-landing-cinema object-cover"
-          />
+          <SeamlessVideoPlaylist ref={playerRef} urls={VIDEO_URLS} playing={playing} onClick={togglePlay} onPlaylistEnd={handlePlaylistEnd} />
           <button onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} className={`absolute inset-0 flex items-center justify-center transition-opacity ${playing ? "opacity-0 group-hover:opacity-100" : "opacity-100"}`}>
             <span className="flex h-20 w-20 items-center justify-center rounded-full bg-landing-gold/90 text-landing-bg shadow-2xl transition-transform hover:scale-105">
               {playing ? <Pause className="h-8 w-8" /> : <Play className="ms-1 h-8 w-8" />}
@@ -117,8 +118,8 @@ export default function VideoIntro() {
           </button>
         </div>
 
-        {VIDEO_URLS.slice(1).map((url) => <video key={url} src={url} preload="auto" muted playsInline className="hidden" aria-hidden="true" />)}
-        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" onEnded={handleAudioEnded} />
+        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" onEnded={handlePrimaryAudioEnded} />
+        <audio key={extraNarrationUrl} ref={extraAudioRef} src={extraNarrationUrl} preload="auto" onEnded={handleExtraAudioEnded} />
 
         <button type="button" onClick={togglePlay} className="inline-flex cursor-pointer items-center gap-3 rounded-full border border-landing-gold/30 bg-card/5 px-6 py-3 font-body text-sm text-landing-gold-light transition-colors hover:bg-landing-gold/20">
           {playing ? <Pause className="h-4 w-4 opacity-60" /> : <Volume2 className="h-4 w-4 opacity-60" />}
