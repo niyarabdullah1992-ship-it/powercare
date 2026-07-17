@@ -117,10 +117,21 @@ Deno.serve(async (req) => {
       const rows = await getRes.json();
       const tg = Array.isArray(rows) && rows[0];
       if (!tg) return null;
-      if (auth?.admin || !auth?.companyId) return tg;
+      if (auth?.admin && !auth?.companyId) return tg;
+      if (!auth?.companyId) return null;
       const scope = await getCompanyScope();
       return targetInScope(tg, scope) ? tg : null;
     };
+    const targetStationId = (tg) => tg.assignment_type === "station_team"
+      ? (tg.assignment_id || tg.station_id)
+      : tg.assignment_type === "hq_team" ? "hq" : tg.station_id;
+    const canManageStation = (stationId) => {
+      if (auth?.admin || ["owner", "director", "ops_manager"].includes(auth?.role)) return true;
+      if (auth?.role === "pgm") return (auth.managedStations || []).includes(stationId);
+      if (auth?.role === "station_manager") return auth.stationId === stationId;
+      return false;
+    };
+    const canManageTarget = (tg) => !!tg && canManageStation(targetStationId(tg));
     // ---- Identity boundary: callers may only act/read as themselves ----
     // (owner sessions without a userId are verified against the company roster).
     const canActAs = async (userId) => {
@@ -144,7 +155,7 @@ Deno.serve(async (req) => {
     const resolveRoomId = async (stationId) => {
       const id = String(stationId || "");
       if (!id) return null;
-      if (auth?.admin) return id;
+      if (auth?.admin && !auth.companyId) return id;
       if (id === "hq" || id === "all") return `${auth.companyId}_${id}`;
       if (id.startsWith("group_")) {
         const meta = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: auth.companyId, category: "companyMeta" });
@@ -245,8 +256,9 @@ Deno.serve(async (req) => {
         return Response.json({ error: "Forbidden: only managers can create targets" }, { status: 403 });
       }
       const { managerId, taskTarget, days, title, description, steps, fileUrl, fileUrls, assignmentType, assignmentId, employeeId, stationId, priority, startDate: customStart, endDate: customEnd, section, taskType } = body;
-      if (!taskTarget) {
-        return Response.json({ error: "Missing task target" }, { status: 400 });
+      const targetAmount = Number(taskTarget);
+      if (!(title || "").trim() || !Number.isFinite(targetAmount) || targetAmount <= 0) {
+        return Response.json({ error: "A title and positive task target are required" }, { status: 400 });
       }
       const hasCustomRange = customStart && customEnd;
       const hasDays = Number(days) > 0;
@@ -254,32 +266,41 @@ Deno.serve(async (req) => {
         return Response.json({ error: "Missing duration or date range" }, { status: 400 });
       }
       const aType = assignmentType || "member";
-      if (aType === "member" && !employeeId) {
-        return Response.json({ error: "Select an employee for member assignment" }, { status: 400 });
-      }
-      if (aType === "station_team" && !assignmentId) {
-        return Response.json({ error: "Select a station for team assignment" }, { status: 400 });
-      }
+      if (!["member", "station_team", "hq_team"].includes(aType)) return Response.json({ error: "Invalid assignment type" }, { status: 400 });
+      const companyScope = await getCompanyScope();
+      if (aType === "member" && (!employeeId || !companyScope.employeeIds.has(employeeId))) return Response.json({ error: "Select an employee in your company" }, { status: 400 });
+      if (aType === "station_team" && (!assignmentId || !companyScope.stationIds.has(assignmentId))) return Response.json({ error: "Select a station in your company" }, { status: 400 });
+      let resolvedStationId = stationId || null;
+      if (aType === "member") {
+        const assigned = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId });
+        resolvedStationId = assigned[0]?.stationId || null;
+      } else if (aType === "station_team") resolvedStationId = assignmentId;
+      else resolvedStationId = "hq";
+      if (!canManageStation(resolvedStationId)) return Response.json({ error: "Assignment is outside your management scope" }, { status: 403 });
       const startDate = customStart || new Date().toISOString();
       const endDate = customEnd || new Date(Date.now() + Number(days) * 86400000).toISOString();
+      if (!Number.isFinite(new Date(startDate).getTime()) || !Number.isFinite(new Date(endDate).getTime()) || new Date(endDate) <= new Date(startDate)) return Response.json({ error: "End date must be after start date" }, { status: 400 });
+      const effectiveManagerId = auth?.userId || managerId;
+      if (!effectiveManagerId) return Response.json({ error: "Manager identity is required" }, { status: 400 });
+      const durationDays = Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000));
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets`, {
         method: "POST",
         headers: { ...headers, Prefer: "return=representation" },
         body: JSON.stringify({
-          title: title || null,
+          title: title.trim(),
           description: description || null,
           steps: steps || null,
           file_url: (Array.isArray(fileUrls) && fileUrls[0]?.url) ? fileUrls[0].url : (fileUrl || null),
           file_urls: Array.isArray(fileUrls) && fileUrls.length ? fileUrls : null,
-          employee_id: aType === "member" ? employeeId : (assignmentId || managerId),
+          employee_id: aType === "member" ? employeeId : (assignmentId || effectiveManagerId),
           assignment_type: aType,
           assignment_id: assignmentId || null,
-          station_id: stationId || null,
+          station_id: resolvedStationId === "hq" ? null : resolvedStationId,
           section: section || null,
           task_type: taskType || null,
-          manager_id: managerId,
-          task_target: Number(taskTarget),
-          days: Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000),
+          manager_id: effectiveManagerId,
+          task_target: targetAmount,
+          days: durationDays,
           completed_tasks: 0,
           start_date: startDate,
           end_date: endDate,
@@ -298,7 +319,7 @@ Deno.serve(async (req) => {
           headers,
           body: JSON.stringify({
             user_id: employeeId,
-            message: `New target assigned: ${title || taskTarget + " tasks"} — ${taskTarget} tasks in ${days} days.`,
+            message: `New target assigned: ${title.trim()} — ${targetAmount} tasks in ${durationDays} days.`,
           }),
         });
         // Gmail email alert to the assigned employee (best-effort)
@@ -331,22 +352,29 @@ Deno.serve(async (req) => {
 
     if (action === "updateProgress") {
       const { targetId, amount, managerId, employeeName, proofFiles } = body;
-      if (!targetId || !amount) {
-        return Response.json({ error: "Missing fields" }, { status: 400 });
+      const progressAmount = Number(amount);
+      if (!targetId || !Number.isFinite(progressAmount) || progressAmount <= 0) {
+        return Response.json({ error: "Progress must be a positive number" }, { status: 400 });
       }
       // Fetch current target (company-scoped)
       const tg = await getScopedTarget(targetId);
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
-      // IDOR fix: only the assigned employee (or a manager) may log progress —
-      // guessing a colleague's targetId no longer allows updating their task.
-      if (!isManager) {
-        const isAssignee =
-          tg.assignment_type === "station_team" ? tg.assignment_id === auth?.stationId :
-          tg.assignment_type === "hq_team" ? !auth?.stationId :
-          tg.employee_id === auth?.userId; // "member" and legacy rows
-        if (!isAssignee) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const isAssignee = tg.assignment_type === "station_team" ? tg.assignment_id === auth?.stationId :
+        tg.assignment_type === "hq_team" ? !auth?.stationId : tg.employee_id === auth?.userId;
+      if (!auth?.admin && !isAssignee) return Response.json({ error: "Forbidden" }, { status: 403 });
+      if (tg.status !== "active" || new Date(tg.end_date).getTime() < Date.now()) return Response.json({ error: "TASK_NOT_ACTIVE" }, { status: 400 });
+      if (!auth?.admin && auth?.userId) {
+        const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: auth.companyId });
+        const isIndividual = String(accounts[0]?.plan || "").toLowerCase() === "individual";
+        if (!isIndividual) {
+          const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+          const attendanceRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(auth.userId)}&date=eq.${today}`, { headers });
+          const attendanceRows = await attendanceRes.json();
+          const attendance = Array.isArray(attendanceRows) && attendanceRows[0];
+          if (!attendance?.check_in_at || attendance.status === "absent") return Response.json({ error: "CHECK_IN_REQUIRED" }, { status: 403 });
+        }
       }
-      const newCompleted = Math.min(tg.completed_tasks + Number(amount), tg.task_target);
+      const newCompleted = Math.min((Number(tg.completed_tasks) || 0) + progressAmount, Number(tg.task_target));
       const reachesTarget = newCompleted >= tg.task_target;
       const cleanProof = Array.isArray(proofFiles)
         ? proofFiles.filter((f) => f && f.url).map((f) => ({ url: f.url, name: f.name || "file", type: f.type || "file" }))
@@ -404,6 +432,8 @@ Deno.serve(async (req) => {
       }
       const tg = await getScopedTarget(targetId);
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
+      if (!canManageTarget(tg)) return Response.json({ error: "Forbidden" }, { status: 403 });
+      if (tg.status !== "pending_review" || !Array.isArray(tg.completion_proof) || tg.completion_proof.length === 0) return Response.json({ error: "Task is not ready for review" }, { status: 400 });
       const patch: Record<string, unknown> = approve
         ? { status: "completed" }
         : { status: "active", completion_proof: null, completed_tasks: tg.pre_review_completed ?? 0 };
@@ -450,15 +480,15 @@ Deno.serve(async (req) => {
       if (!targetId || !(message || "").trim()) return Response.json({ error: "Missing fields" }, { status: 400 });
       const tg = await getScopedTarget(targetId);
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
-      // IDOR fix: only the assigned employee (or a manager) may dispute a rejection —
-      // same check as updateProgress. Identity comes from the session, not the body.
-      if (!isManager) {
-        const isAssignee =
-          tg.assignment_type === "station_team" ? tg.assignment_id === auth?.stationId :
-          tg.assignment_type === "hq_team" ? !auth?.stationId :
-          tg.employee_id === auth?.userId; // "member" and legacy rows
-        if (!isAssignee) return Response.json({ error: "Forbidden" }, { status: 403 });
-      }
+      const isAssignee = tg.assignment_type === "station_team" ? tg.assignment_id === auth?.stationId :
+        tg.assignment_type === "hq_team" ? !auth?.stationId : tg.employee_id === auth?.userId;
+      if (!auth?.admin && !isAssignee) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const requestedLevel = Number(escalationLevel);
+      const currentLevel = Number(tg.escalation_level || 0);
+      if (!Number.isInteger(requestedLevel) || requestedLevel !== currentLevel + 1) return Response.json({ error: "Invalid escalation sequence" }, { status: 400 });
+      const scope = await getCompanyScope();
+      const recipients = [...new Set((Array.isArray(notifyUserIds) ? notifyUserIds : []).filter((id) => scope.employeeIds.has(id)))];
+      if (recipients.length === 0) return Response.json({ error: "No valid escalation handler" }, { status: 400 });
       const employeeName = auth?.name || "Employee";
       const comments = Array.isArray(tg.comments) ? tg.comments : [];
       comments.push({
@@ -471,8 +501,7 @@ Deno.serve(async (req) => {
         is_dispute: true,
         created_at: new Date().toISOString(),
       });
-      const patch: Record<string, unknown> = { comments };
-      if (escalationLevel !== undefined) patch.escalation_level = escalationLevel;
+      const patch: Record<string, unknown> = { comments, escalation_level: requestedLevel };
       const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
@@ -482,9 +511,7 @@ Deno.serve(async (req) => {
       if (!patchRes.ok) {
         return Response.json({ error: updated?.message || "Failed to submit objection — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS escalation_level integer DEFAULT 0;" }, { status: 400 });
       }
-      // Escalation notifies the next handler up the HR chain instead of always the
-      // same manager who rejected — falls back to the manager if no chain handler is found.
-      const recipients = Array.isArray(notifyUserIds) && notifyUserIds.length ? notifyUserIds : [tg.manager_id];
+      // Notify only validated handlers from the same company after the escalation is saved.
       for (const uid of recipients) {
         await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
           method: "POST",
@@ -506,6 +533,7 @@ Deno.serve(async (req) => {
       if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
       const tg = await getScopedTarget(targetId);
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
+      if (!canManageTarget(tg)) return Response.json({ error: "Forbidden" }, { status: 403 });
       await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
         method: "DELETE",
         headers,
@@ -521,13 +549,27 @@ Deno.serve(async (req) => {
       if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
       const existingTg = await getScopedTarget(targetId);
       if (!existingTg) return Response.json({ error: "Target not found" }, { status: 404 });
+      if (!canManageTarget(existingTg)) return Response.json({ error: "Forbidden" }, { status: 403 });
       const patch: Record<string, unknown> = {};
-      if (title !== undefined) patch.title = title;
+      if (title !== undefined) {
+        if (!String(title).trim()) return Response.json({ error: "Title is required" }, { status: 400 });
+        patch.title = String(title).trim();
+      }
       if (description !== undefined) patch.description = description;
       if (steps !== undefined) patch.steps = steps;
-      if (priority !== undefined) patch.priority = priority;
-      if (endDate !== undefined) patch.end_date = endDate;
-      if (taskTarget !== undefined) patch.task_target = Number(taskTarget);
+      if (priority !== undefined) {
+        if (!["urgent", "high", "medium", "low"].includes(priority)) return Response.json({ error: "Invalid priority" }, { status: 400 });
+        patch.priority = priority;
+      }
+      if (endDate !== undefined) {
+        if (!Number.isFinite(new Date(endDate).getTime()) || new Date(endDate) <= new Date(existingTg.start_date)) return Response.json({ error: "Invalid end date" }, { status: 400 });
+        patch.end_date = endDate;
+      }
+      if (taskTarget !== undefined) {
+        const nextTarget = Number(taskTarget);
+        if (!Number.isFinite(nextTarget) || nextTarget <= 0 || nextTarget < Number(existingTg.completed_tasks || 0)) return Response.json({ error: "Target cannot be below completed progress" }, { status: 400 });
+        patch.task_target = nextTarget;
+      }
       if (section !== undefined) patch.section = section;
       if (taskType !== undefined) patch.task_type = taskType;
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
@@ -562,15 +604,10 @@ Deno.serve(async (req) => {
       }
       const tg = await getScopedTarget(targetId);
       if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
-      // IDOR + spoofing fix: only a manager or the assignee may comment, and the
-      // comment identity comes from the authenticated session, never the request body.
-      if (!isManager) {
-        const isAssignee =
-          tg.assignment_type === "station_team" ? tg.assignment_id === auth?.stationId :
-          tg.assignment_type === "hq_team" ? !auth?.stationId :
-          tg.employee_id === auth?.userId; // "member" and legacy rows
-        if (!isAssignee) return Response.json({ error: "Forbidden" }, { status: 403 });
-      }
+      // Comments are limited to the assignee and managers responsible for this target's scope.
+      const isAssignee = tg.assignment_type === "station_team" ? tg.assignment_id === auth?.stationId :
+        tg.assignment_type === "hq_team" ? !auth?.stationId : tg.employee_id === auth?.userId;
+      if (!auth?.admin && !isAssignee && !canManageTarget(tg)) return Response.json({ error: "Forbidden" }, { status: 403 });
       const userId = auth?.userId || null;
       const userName = auth?.name || "User";
       const comments = Array.isArray(tg.comments) ? tg.comments : [];
@@ -618,21 +655,22 @@ Deno.serve(async (req) => {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/task_folders?order=sort_order.asc,path.asc`, { headers });
       const rows = await res.json();
       if (!res.ok) return Response.json({ folders: [] });
-      if (auth?.admin) return Response.json({ folders: rows || [] });
-      // Tenant boundary: only folders belonging to the caller's own stations
-      // (or the company's namespaced HQ room) are ever returned.
+      if (auth?.admin && !auth.companyId) return Response.json({ folders: rows || [] });
       const sts = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
-      const allowed = new Set(sts.map((s) => s.stationId));
-      allowed.add(`${auth.companyId}_hq`);
-      allowed.add(`${auth.companyId}_all`);
-      return Response.json({ folders: (rows || []).filter((f) => allowed.has(f.station_id)) });
+      let stationIds = sts.map((station) => station.stationId);
+      if (auth.role === "pgm") stationIds = stationIds.filter((id) => (auth.managedStations || []).includes(id));
+      if (["station_manager", "employee"].includes(auth.role)) stationIds = stationIds.filter((id) => id === auth.stationId);
+      const allowed = new Set(stationIds);
+      if (["owner", "director", "ops_manager"].includes(auth.role) || !auth.stationId) allowed.add(`${auth.companyId}_hq`);
+      return Response.json({ folders: (rows || []).filter((folder) => allowed.has(folder.station_id)) });
     }
 
     if (action === "createFolder") {
+      if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
       const { stationId, path, sortOrder } = body;
       if (!stationId || !path) return Response.json({ error: "Missing fields" }, { status: 400 });
       const roomId = await resolveRoomId(stationId);
-      if (!roomId) return Response.json({ error: "Forbidden" }, { status: 403 });
+      if (!roomId || !canManageStation(stationId)) return Response.json({ error: "Forbidden" }, { status: 403 });
       const checkRes = await fetch(
         `${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(roomId)}&path=eq.${encodeURIComponent(path)}`,
         { headers }
@@ -654,25 +692,30 @@ Deno.serve(async (req) => {
     }
 
     if (action === "reorderFolders") {
+      if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
       const { items } = body;
       if (!Array.isArray(items) || items.length === 0) return Response.json({ error: "Missing items" }, { status: 400 });
-      await Promise.all(
-        items.filter((it) => it && it.id).map((it) =>
-          fetch(`${SUPABASE_URL}/rest/v1/task_folders?id=eq.${encodeURIComponent(it.id)}`, {
-            method: "PATCH",
-            headers,
-            body: JSON.stringify({ sort_order: Number(it.sortOrder) || 0 }),
-          })
-        )
-      );
+      const validated = [];
+      for (const item of items.filter((entry) => entry && entry.id)) {
+        const folderRes = await fetch(`${SUPABASE_URL}/rest/v1/task_folders?id=eq.${encodeURIComponent(item.id)}`, { headers });
+        const folderRows = await folderRes.json();
+        const folder = Array.isArray(folderRows) && folderRows[0];
+        const stationId = folder?.station_id === `${auth.companyId}_hq` ? "hq" : folder?.station_id;
+        if (!folder || !canManageStation(stationId)) return Response.json({ error: "Forbidden" }, { status: 403 });
+        validated.push(item);
+      }
+      await Promise.all(validated.map((item) => fetch(`${SUPABASE_URL}/rest/v1/task_folders?id=eq.${encodeURIComponent(item.id)}`, {
+        method: "PATCH", headers, body: JSON.stringify({ sort_order: Number(item.sortOrder) || 0 }),
+      })));
       return Response.json({ ok: true });
     }
 
     if (action === "renameFolder") {
+      if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
       const { stationId, oldPath, newPath } = body;
       if (!stationId || !oldPath || !newPath) return Response.json({ error: "Missing fields" }, { status: 400 });
       const roomId = await resolveRoomId(stationId);
-      if (!roomId) return Response.json({ error: "Forbidden" }, { status: 403 });
+      if (!roomId || !canManageStation(stationId)) return Response.json({ error: "Forbidden" }, { status: 403 });
       // Two plain-filter queries instead of an or=() tree — user-typed folder
       // paths can contain parentheses/commas that would break the logical tree.
       const [exactRes, nestedRes] = await Promise.all([
@@ -692,10 +735,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === "deleteFolder") {
+      if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
       const { stationId, path } = body;
       if (!stationId || !path) return Response.json({ error: "Missing fields" }, { status: 400 });
       const roomId = await resolveRoomId(stationId);
-      if (!roomId) return Response.json({ error: "Forbidden" }, { status: 403 });
+      if (!roomId || !canManageStation(stationId)) return Response.json({ error: "Forbidden" }, { status: 403 });
       // Two plain-filter deletes instead of an or=() tree (injection-safe).
       await fetch(`${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(roomId)}&path=eq.${encodeURIComponent(path)}`, { method: "DELETE", headers });
       await fetch(`${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(roomId)}&path=like.${encodeURIComponent(path)}/*`, { method: "DELETE", headers });

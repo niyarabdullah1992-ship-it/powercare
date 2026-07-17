@@ -53,7 +53,7 @@ export default function HRAssignModal({ title, defaultPosition, eligibleEmployee
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground font-body mb-1">{t("email")}</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body bg-card" />
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body bg-card" />
               </div>
             </>
           )}

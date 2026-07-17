@@ -21,7 +21,8 @@ export function getTodaysShift(data, employee) {
   if (!employee?.stationId) return null;
   const schedule = (data?.schedules || []).find((s) => s.stationId === employee.stationId);
   if (!schedule) return null;
-  const dayIndex = new Date().getDay();
+  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Riyadh", weekday: "short" }).format(new Date());
+  const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
   for (const st of schedule.shiftTypes || []) {
     const ids = schedule.assignments?.[dayIndex]?.[st.id] || [];
     if (ids.includes(employee.id)) return { start: st.start, end: st.end, label: st.label };

@@ -47,22 +47,39 @@ Deno.serve(async (req) => {
       if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
     const isManager = !!auth?.isManager;
+    if (auth && !auth.admin && body.companyId && body.companyId !== auth.companyId) return Response.json({ error: "Forbidden" }, { status: 403 });
     // ---- Multi-tenant boundary ----
     // A requested employeeId must belong to the caller's validated company.
+    const canAccessEmployee = (employee) => {
+      if (!employee) return false;
+      if (auth?.admin || ["owner", "director", "ops_manager"].includes(auth?.role)) return true;
+      if (employee.employeeId === auth?.userId) return true;
+      if (auth?.role === "pgm") return (auth.managedStations || []).includes(employee.stationId);
+      if (auth?.role === "station_manager") return employee.stationId === auth.stationId;
+      return false;
+    };
     const employeeInCompany = async (employeeId) => {
-      if (auth?.admin) return true;
       if (!auth?.companyId || !employeeId) return false;
       const emps = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId });
-      return emps.length > 0;
+      return canAccessEmployee(emps[0]);
     };
     const filterCompanyEmployeeIds = async (ids) => {
-      if (auth?.admin) return ids;
       if (!auth?.companyId) return [];
       const emps = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId });
-      const allowed = new Set(emps.map((e) => e.employeeId));
+      const allowed = new Set(emps.filter(canAccessEmployee).map((employee) => employee.employeeId));
       return (ids || []).filter((id) => allowed.has(id));
     };
-    const todayStr = () => new Date().toISOString().slice(0, 10);
+    const riyadhParts = (date = new Date()) => Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    }).formatToParts(date).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+    const todayStr = () => {
+      const part = riyadhParts();
+      return `${part.year}-${part.month}-${part.day}`;
+    };
+    const riyadhMinutes = () => {
+      const part = riyadhParts();
+      return Number(part.hour) * 60 + Number(part.minute);
+    };
     // Strict date formats — values are interpolated into PostgREST query strings,
     // so anything not matching is rejected (blocks query-parameter injection).
     const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ""));
@@ -125,13 +142,13 @@ Deno.serve(async (req) => {
     }
 
     if (action === "updateSettings") {
-      if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
+      if (!auth?.admin && !["owner", "director", "ops_manager"].includes(auth?.role)) return Response.json({ error: "Forbidden" }, { status: 403 });
       const { companyId, workStartTime, lateThresholdMinutes, gpsEnabled, gpsRequired } = body;
       if (!companyId) return Response.json({ error: "Missing companyId" }, { status: 400 });
       const patch = {
         company_id: companyId,
         work_start_time: workStartTime || "08:00",
-        late_threshold_minutes: Number(lateThresholdMinutes) || 15,
+        late_threshold_minutes: Math.max(0, Math.min(240, Number(lateThresholdMinutes) || 0)),
         gps_enabled: !!gpsEnabled,
         gps_required: !!gpsRequired,
       };
@@ -250,8 +267,8 @@ Deno.serve(async (req) => {
     if (action === "checkIn") {
       const { companyId, employeeId, employeeName, stationId, lat, lng, accuracy, shiftStart } = body;
       if (!companyId || !employeeId) return Response.json({ error: "Missing fields" }, { status: 400 });
-      // Employees may only check in as themselves — identity comes from the session.
-      if (!isManager && auth?.userId && employeeId !== auth.userId) {
+      // Check-in is always personal; management privileges never permit impersonation.
+      if (!auth?.admin && auth?.userId && employeeId !== auth.userId) {
         return Response.json({ error: "Forbidden" }, { status: 403 });
       }
       const date = todayStr();
@@ -281,7 +298,7 @@ Deno.serve(async (req) => {
       }
       const now = new Date();
       const startMinutes = toMinutes(shiftStart || settings.work_start_time || "08:00");
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const nowMinutes = riyadhMinutes();
       const lateMinutes = Math.max(0, nowMinutes - startMinutes);
       const status = lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present";
       const distMeters = workplace.dist;
@@ -333,8 +350,8 @@ Deno.serve(async (req) => {
     if (action === "checkOut") {
       const { employeeId, shiftEnd, lat, lng, accuracy } = body;
       if (!employeeId) return Response.json({ error: "Missing employeeId" }, { status: 400 });
-      // Employees may only check out as themselves — identity comes from the session.
-      if (!isManager && auth?.userId && employeeId !== auth.userId) {
+      // Check-out is always personal; management privileges never permit impersonation.
+      if (!auth?.admin && auth?.userId && employeeId !== auth.userId) {
         return Response.json({ error: "Forbidden" }, { status: 403 });
       }
       if (lat == null || lng == null) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
@@ -343,6 +360,7 @@ Deno.serve(async (req) => {
       const rows = await res.json();
       const row = Array.isArray(rows) && rows[0];
       if (!row || !row.check_in_at) return Response.json({ error: "NOT_CHECKED_IN" }, { status: 400 });
+      if (row.check_out_at) return Response.json({ error: "ALREADY_CHECKED_OUT", attendance: row }, { status: 400 });
       // Verify the checkout location against the server-stored workplaces — the
       // employee may check out from any company station (e.g. moved stations mid-day).
       const workplaces = await listWorkplaces();
@@ -355,7 +373,7 @@ Deno.serve(async (req) => {
       const checkoutDistance = outWorkplace.dist;
       const now = new Date();
       const workHours = Math.round(((now.getTime() - new Date(row.check_in_at).getTime()) / 3600000) * 100) / 100;
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const nowMinutes = riyadhMinutes();
       const earlyCheckout = !!shiftEnd && nowMinutes < toMinutes(shiftEnd);
       const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(row.id)}`, {
         method: "PATCH",
@@ -376,6 +394,10 @@ Deno.serve(async (req) => {
       if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
       const { attendanceId, managerId, managerName, excused, note } = body;
       if (!attendanceId) return Response.json({ error: "Missing attendanceId" }, { status: 400 });
+      const currentRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(attendanceId)}`, { headers });
+      const currentRows = await currentRes.json();
+      const current = Array.isArray(currentRows) && currentRows[0];
+      if (!current || !(await employeeInCompany(current.employee_id))) return Response.json({ error: "Forbidden" }, { status: 403 });
       const patch = excused
         ? { excused: true, excused_by: managerId || null, excused_by_name: managerName || "", excused_note: note || "", excused_at: new Date().toISOString() }
         : { excused: false, excused_by: null, excused_by_name: "", excused_note: "", excused_at: null };
@@ -488,7 +510,21 @@ Deno.serve(async (req) => {
       const attRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?date=eq.${date}&select=employee_id`, { headers });
       const attRows = await attRes.json();
       const already = new Set((Array.isArray(attRows) ? attRows : []).map((r) => r.employee_id));
-      const missing = directory.filter((e) => !already.has(e.employee_id));
+      const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Riyadh", weekday: "short" }).format(new Date());
+      const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
+      const schedulesByCompany = {};
+      const scheduled = [];
+      for (const employee of directory) {
+        if (already.has(employee.employee_id) || !employee.station_id) continue;
+        if (!schedulesByCompany[employee.company_id]) {
+          const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: employee.company_id, category: "schedules" });
+          schedulesByCompany[employee.company_id] = blobs[0]?.payload || [];
+        }
+        const stationSchedule = schedulesByCompany[employee.company_id].find((item) => item.stationId === employee.station_id);
+        const hasShift = (stationSchedule?.shiftTypes || []).some((shift) => (stationSchedule.assignments?.[dayIndex]?.[shift.id] || []).includes(employee.employee_id));
+        if (hasShift) scheduled.push(employee);
+      }
+      const missing = scheduled;
       if (missing.length === 0) return Response.json({ ok: true, marked: 0 });
       const inserts = missing.map((e) => ({
         company_id: e.company_id,

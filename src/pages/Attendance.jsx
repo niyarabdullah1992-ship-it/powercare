@@ -33,8 +33,8 @@ export default function Attendance() {
 
   const isManager = data && currentUser && canCreateTasks(currentUser);
   const canManageLeave = data && currentUser && (isManager || hasHRPermission(currentUser, data, "manage_leave"));
-  // Settings visible to any manager (station manager and above) or the company owner.
-  const canEditSettings = data && currentUser && (canCreateTasks(currentUser) || isCompanyOwner(currentUser, data));
+  // Company-wide attendance policy is restricted to the owner and senior operations roles.
+  const canEditSettings = data && currentUser && (isCompanyOwner(currentUser, data) || ["director", "ops_manager"].includes(currentUser.role));
   const defaultEmployees = data && currentUser ? visibleEmployees(currentUser, data) : [];
   const leaveScope = data && currentUser?.hrLevelId ? hrScopeStations(currentUser, data) : null;
   const employees = canManageLeave && currentUser?.hrLevelId

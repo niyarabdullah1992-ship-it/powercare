@@ -16,7 +16,7 @@ export function canSeeAllStations(user) {
 
 // Stations visible to a user given the company data
 export function visibleStations(user, data) {
-  if (canSeeAllStations(user)) return data.stations;
+  if (canSeeAllStations(user) || user?.id === data?.ownerId) return data.stations;
   if (user.role === "pgm") {
     const managed = user.managedStations || [];
     return data.stations.filter((s) => managed.includes(s.id));
@@ -94,7 +94,7 @@ export function isHR(employee) {
 // Does this employee's HR level grant a specific permission?
 export function hasHRPermission(user, data, permKey) {
   if (!user?.hrLevelId) return false;
-  const level = (data?.hrLevels || []).find((l) => l.id === user.hrLevelId);
+  const level = (data?.hrLevels || []).find((l) => l.id === user.hrLevelId && l.active !== false);
   return !!level?.permissions?.includes(permKey);
 }
 
@@ -115,7 +115,7 @@ export function hrScopeStations(user, data) {
 // The HR level object (tier/role/scope/permissions) assigned to this user, if any.
 export function getHRLevel(user, data) {
   if (!user?.hrLevelId) return null;
-  return (data?.hrLevels || []).find((l) => l.id === user.hrLevelId) || null;
+  return (data?.hrLevels || []).find((l) => l.id === user.hrLevelId && l.active !== false) || null;
 }
 
 export function isHRManager(user, data) {
@@ -163,8 +163,11 @@ export function canViewEmployeeProfile(viewer, employee, data) {
 
 // Employees visible to a user (for management views)
 export function visibleEmployees(user, data) {
-  const stations = visibleStations(user, data);
-  const stationIds = new Set(stations.map((s) => s.id));
-  if (canSeeAllStations(user)) return data.employees;
-  return data.employees.filter((e) => !e.stationId || stationIds.has(e.stationId));
+  if (canSeeAllStations(user) || user?.id === data?.ownerId) return data.employees;
+  if (hasHRPermission(user, data, "view_employees") || hasHRPermission(user, data, "manage_employees")) {
+    const scope = hrScopeStations(user, data);
+    return scope === null ? data.employees : data.employees.filter((employee) => employee.stationId && scope.includes(employee.stationId));
+  }
+  const stationIds = new Set(visibleStations(user, data).map((station) => station.id));
+  return data.employees.filter((employee) => employee.stationId && stationIds.has(employee.stationId));
 }

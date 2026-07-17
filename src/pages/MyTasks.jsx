@@ -6,8 +6,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { addNotification, addPoints } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { PRIORITY_POINTS } from "@/lib/rewards";
-import { groupLevelsByOrder } from "@/lib/hrLevels";
-import { handlersForLevel, buildEscalationSteps } from "@/lib/escalation";
+import { handlersForLevel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
 import { base44 } from "@/api/base44Client";
 import { getParentPath, withAncestors, NO_SECTION } from "@/lib/taskFolders";
 import { logAudit } from "@/lib/auditLog";
@@ -503,7 +502,7 @@ export default function MyTasks() {
       setLogAmount(amt);
       setLogProofFiles(proofFiles);
       const code = err?.response?.data?.error;
-      alert(code === "PROOF_REQUIRED" ? t("proofRequired") : (code || "Failed to update progress"));
+      alert(code === "PROOF_REQUIRED" ? t("proofRequired") : code === "CHECK_IN_REQUIRED" ? t("mustCheckInFirst") : (code || "Failed to update progress"));
     }
   };
 
@@ -594,17 +593,24 @@ export default function MyTasks() {
 
   // Escalation chain: level 0 = station manager, then up the company's HR tiers —
   // same chain already used for anonymous/public complaints (see src/lib/escalation.js).
-  const STAGE_COUNT = groupLevelsByOrder(data.hrLevels || []).length + 1;
+  const STAGE_COUNT = escalationStageCount(data);
   const escalationLevelOf = (tg) => Math.min(tg.escalation_level || 0, STAGE_COUNT - 1);
   const escalationStepsFor = (tg) => buildEscalationSteps(escalationLevelOf(tg), { stationId: targetStationKey(tg) }, data, t, lang, STAGE_COUNT);
 
   // Employee's manual objection when they disagree with a rejection — escalates to the
   // next handler up the HR chain instead of always notifying the same manager again.
   const disputeRejection = async (tg, message) => {
-    const nextLevel = Math.min((tg.escalation_level || 0) + 1, STAGE_COUNT - 1);
+    if ((tg.escalation_level || 0) >= STAGE_COUNT - 1) {
+      alert(t("noHandlerAssigned"));
+      return;
+    }
+    const nextLevel = (tg.escalation_level || 0) + 1;
     const handlers = handlersForLevel(nextLevel, { stationId: targetStationKey(tg) }, data);
-    if (handlers.length === 0 && !confirm(`${t("noHandlerAssigned")}. ${lang === "ar" ? "المتابعة؟" : "Continue anyway?"}`)) return;
-    const notifyUserIds = handlers.length ? handlers.map((h) => h.id) : [tg.manager_id];
+    if (handlers.length === 0) {
+      alert(t("noHandlerAssigned"));
+      return;
+    }
+    const notifyUserIds = handlers.map((handler) => handler.id);
     try {
       const res = await base44.functions.invoke("supabaseTargets", {
         action: "disputeRejection",

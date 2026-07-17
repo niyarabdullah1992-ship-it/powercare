@@ -3,15 +3,19 @@
 // customizable HR tiers (see the HR page), lowest to highest authority.
 import { groupLevelsByOrder, levelName } from "./hrLevels";
 
+const escalationGroups = (data) => groupLevelsByOrder(data?.hrLevels || []).filter((group) => group.manager?.active !== false);
+export const escalationStageCount = (data) => escalationGroups(data).length + 1;
+
 export function handlersForLevel(levelIdx, r, data) {
   if (levelIdx === 0) {
     return data.employees.filter((e) => e.role === "station_manager" && (e.stationId === r.stationId || (e.managedStations || []).includes(r.stationId)));
   }
-  const groups = groupLevelsByOrder(data.hrLevels || []);
+  const groups = escalationGroups(data);
   const group = groups[levelIdx - 1];
   if (!group || !group.manager) return [];
   return data.employees.filter((e) => {
     if (e.hrLevelId !== group.manager.id) return false;
+    if (group.manager.stationIds?.length && !group.manager.stationIds.includes(r.stationId)) return false;
     if (group.scope === "station") return e.hrStationId === r.stationId;
     if (group.scope === "cluster") {
       const cluster = (data.hrClusters || []).find((c) => (c.stationIds || []).includes(r.stationId));
@@ -23,7 +27,7 @@ export function handlersForLevel(levelIdx, r, data) {
 
 export function levelLabel(levelIdx, data, t, lang) {
   if (levelIdx === 0) return t("stationManager");
-  const groups = groupLevelsByOrder(data.hrLevels || []);
+  const groups = escalationGroups(data);
   const group = groups[levelIdx - 1];
   if (!group) return "";
   return levelName(group.manager || group.assistant, lang);
