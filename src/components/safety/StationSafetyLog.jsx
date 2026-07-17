@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { X, BadgeCheck, AlertTriangle, History } from "lucide-react";
 import { formatDateTime } from "@/lib/dateFormat";
 
@@ -12,8 +13,10 @@ export default function StationSafetyLog({ station, rec, lang, onClose }) {
     ...((rec?.incidentLog || []).map((i) => ({ type: "incident", at: i.at, who: i.by || "", text: i.description || (ar ? "حادثة سلامة" : "Safety incident") }))),
   ].sort((a, b) => new Date(b.at) - new Date(a.at));
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+  // Rendered through a portal onto <body> so no page container (overflow,
+  // transform, RTL wrappers) can hide or clip the dialog.
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" dir={ar ? "rtl" : "ltr"} onClick={onClose}>
       <div className="w-full max-w-md max-h-[80vh] overflow-hidden rounded-2xl bg-card border border-border shadow-xl flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
@@ -47,6 +50,7 @@ export default function StationSafetyLog({ station, rec, lang, onClose }) {
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
