@@ -45,7 +45,7 @@ export async function makeSignatureStamp(sigDataUrl, name) {
 // slot rows along the bottom of the last page. When `badge` is provided (last
 // signer), the verification badge is stamped at the top-right of the last
 // page too. Uploads and returns { url, bytes }.
-export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot, sizeScale = 1) {
+export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot, sizeScale = 1, uploadResult = true) {
   const scale = Math.min(Math.max(Number(sizeScale) || 1, 0.5), 2);
   const pdfBytes = await fetch(docUrl).then((r) => r.arrayBuffer());
   const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
@@ -88,6 +88,7 @@ export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot, s
   }
 
   const out = await pdf.save();
+  if (!uploadResult) return { url: null, bytes: out };
   const file = new File([out], "signed-document.pdf", { type: "application/pdf" });
   const { file_url } = await base44.integrations.Core.UploadFile({ file });
   return { url: file_url, bytes: out };

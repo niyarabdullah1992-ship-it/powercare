@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { updateEmployeeProfile } from "@/lib/store";
 import SignaturePad from "./SignaturePad";
 import TypedSignature from "./TypedSignature";
+import SelfSignDocumentCard from "./SelfSignDocumentCard";
 
 // DocuSign-style unique signature ID: a non-reversible SHA-256 hash of the
 // signer + timestamp, formatted as PWC-XXXX-XXXX-XXXX for verification.
@@ -67,6 +68,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   };
 
   return (
+    <div className="space-y-5">
     <div className="space-y-5 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary to-primary/80 p-5 text-primary-foreground shadow-xl md:p-7">
       <h3 className="flex items-center gap-2 font-heading text-xl font-semibold">
         <PenLine className="h-5 w-5 text-accent" /> {ar ? "توقيعي الشخصي" : "My personal signature"}
@@ -135,6 +137,8 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
           {error && <p className="text-xs text-destructive font-body">{error}</p>}
         </div>
       )}
+    </div>
+    {signatureUrl && !editing && <SelfSignDocumentCard signatureUrl={signatureUrl} ar={ar} />}
     </div>
   );
 }
