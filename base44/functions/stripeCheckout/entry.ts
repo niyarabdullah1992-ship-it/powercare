@@ -22,6 +22,15 @@ Deno.serve(async (req) => {
 
     if (action === 'createSession') {
       const { plan, companyName, ownerEmail, returnUrl, billing, authMethod } = body;
+      let appOrigin;
+      try {
+        const candidate = new URL(String(returnUrl || ''));
+        const allowedHost = /^([a-z0-9-]+\.)*(powercares\.pro|base44\.app)$/i;
+        if (candidate.protocol !== 'https:' || !allowedHost.test(candidate.hostname)) throw new Error('Invalid return URL');
+        appOrigin = candidate.origin;
+      } catch {
+        return Response.json({ error: 'Invalid return URL' }, { status: 400 });
+      }
       const interval = billing === 'yearly' ? 'yearly' : 'monthly';
       const priceId = PLAN_PRICES[interval][plan];
       if (!priceId) return Response.json({ error: 'Invalid plan' }, { status: 400 });
@@ -41,8 +50,8 @@ Deno.serve(async (req) => {
         subscription_data: {
           trial_period_days: 120,
         },
-        success_url: `${returnUrl}/pricing-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${returnUrl}/pricing`,
+        success_url: `${appOrigin}/pricing-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${appOrigin}/pricing`,
         metadata: {
           base44_app_id: Deno.env.get('BASE44_APP_ID'),
           plan,
@@ -59,8 +68,9 @@ Deno.serve(async (req) => {
       const { sessionId } = body;
       if (!sessionId) return Response.json({ error: 'Missing sessionId' }, { status: 400 });
       const session = await stripe.checkout.sessions.retrieve(sessionId);
+      const belongsToApp = session.metadata?.base44_app_id === Deno.env.get('BASE44_APP_ID');
       return Response.json({
-        paid: session.status === 'complete',
+        paid: belongsToApp && session.status === 'complete' && session.mode === 'subscription',
         plan: session.metadata?.plan,
         companyName: session.metadata?.companyName,
         ownerEmail: session.metadata?.ownerEmail,

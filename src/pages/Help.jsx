@@ -1,6 +1,7 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n";
-import { HelpCircle, LayoutDashboard, ListTodo, FileText, ClipboardCheck, MessageSquare, AlertTriangle } from "lucide-react";
+import { HelpCircle, LayoutDashboard, ListTodo, FileText, ClipboardCheck, MessageSquare, AlertTriangle, BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
 import HelpSection from "@/components/help/HelpSection";
 
 export default function Help() {
@@ -112,6 +113,10 @@ export default function Help() {
             : "A quick guide for new employees: how to use the system and handle tasks and daily reports."}
         </p>
       </div>
+
+      <Link to="/manual" className="flex items-center justify-between rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm font-semibold text-accent hover:bg-accent/10">
+        <span className="flex items-center gap-2"><BookOpen className="h-4 w-4" />{ar ? "فتح الدليل التشغيلي الشامل وتنزيل PDF" : "Open the complete operations manual and PDF"}</span>
+      </Link>
 
       <div className="space-y-4">
         {sections.map((s) => (

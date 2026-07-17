@@ -54,6 +54,10 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const { action } = body;
+    if (action === "runEscalationSweep") {
+      const workflowUser = await base44.auth.me().catch(() => null);
+      if (!workflowUser || workflowUser.role !== "admin") return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const headers = {
       apikey: SERVICE_KEY,

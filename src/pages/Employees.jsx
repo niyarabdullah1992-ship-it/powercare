@@ -455,7 +455,7 @@ export default function Employees() {
               <Link to={`/app/employees/${e.id}`} className="flex items-center gap-1.5 text-xs text-accent font-body hover:underline">
                 <UserCircle className="w-3.5 h-3.5" /> {t("viewProfile")}
               </Link>
-              {e.id !== currentUser.id && (
+              {canTransfer && e.id !== currentUser.id && (
                 <button onClick={() => switchUser(e.id)} className="text-xs text-accent font-body hover:underline">{t("switchUser")}</button>
               )}
               {canDeleteAccounts && e.id !== currentUser.id && e.id !== data.ownerId && (

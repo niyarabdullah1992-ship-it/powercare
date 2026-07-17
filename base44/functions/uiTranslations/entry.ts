@@ -7,8 +7,10 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const { lang, langLabel, keys } = await req.json();
-    if (!lang || typeof lang !== "string" || !/^[a-z]{2}$/.test(lang) || !keys || typeof keys !== "object") {
-      return Response.json({ error: "lang and keys are required" }, { status: 400 });
+    const allowedLanguages = new Set(["ar", "de", "fr", "es", "pt", "ru", "ja", "ko"]);
+    const keyEntries = keys && typeof keys === "object" ? Object.entries(keys) : [];
+    if (!allowedLanguages.has(lang) || keyEntries.length === 0 || keyEntries.length > 600 || keyEntries.some(([key, value]) => key.length > 100 || typeof value !== "string" || value.length > 500)) {
+      return Response.json({ error: "Invalid translation request" }, { status: 400 });
     }
 
     const rows = await base44.asServiceRole.entities.UiTranslation.filter({ lang });

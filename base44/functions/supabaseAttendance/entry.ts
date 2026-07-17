@@ -24,8 +24,11 @@ Deno.serve(async (req) => {
     // Employee record. Scheduled-workflow sweeps run without a user session.
     const SWEEP_ACTIONS = ["checkLateAlerts", "markAbsentees"];
     let auth = null;
-    if (!SWEEP_ACTIONS.includes(action)) {
-      const platformUser = await base44.auth.me().catch(() => null);
+    const platformUser = await base44.auth.me().catch(() => null);
+    if (SWEEP_ACTIONS.includes(action)) {
+      if (!platformUser || platformUser.role !== "admin") return Response.json({ error: "Forbidden" }, { status: 403 });
+      auth = { admin: true, isManager: true, role: "owner", companyId: body.companyId || null, userId: null };
+    } else {
       if (platformUser && platformUser.role === "admin") {
         auth = { admin: true, isManager: true, role: "owner", companyId: body.companyId || null, userId: body.userId || null };
       } else {
@@ -60,7 +63,7 @@ Deno.serve(async (req) => {
       if (auth?.admin || ["owner", "director", "ops_manager"].includes(auth?.role)) return true;
       if (employee.employeeId === auth?.userId) return true;
       if (auth?.role === "pgm") return (auth.managedStations || []).includes(employee.stationId);
-      if (auth?.role === "station_manager") return employee.stationId === auth.stationId;
+      if (auth?.role === "station_manager") return employee.stationId === auth.stationId || (auth.managedStations || []).includes(employee.stationId);
       return false;
     };
     const employeeInCompany = async (employeeId) => {
@@ -304,7 +307,7 @@ Deno.serve(async (req) => {
         return Response.json({ error: "Forbidden" }, { status: 403 });
       }
       const date = todayStr();
-      const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
+      const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const existing = await existingRes.json();
       if (Array.isArray(existing) && existing.length > 0 && existing[0].check_in_at) {
         return Response.json({ error: "ALREADY_CHECKED_IN", attendance: existing[0] }, { status: 400 });
@@ -388,7 +391,7 @@ Deno.serve(async (req) => {
       }
       if (lat == null || lng == null) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       const date = todayStr();
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const rows = await res.json();
       const row = Array.isArray(rows) && rows[0];
       if (!row || !row.check_in_at) return Response.json({ error: "NOT_CHECKED_IN" }, { status: 400 });
@@ -449,7 +452,7 @@ Deno.serve(async (req) => {
       if (!employeeId) return Response.json({ error: "Missing employeeId" }, { status: 400 });
       if (!(await employeeInCompany(employeeId))) return Response.json({ error: "Forbidden" }, { status: 403 });
       const date = todayStr();
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const rows = await res.json();
       if (!res.ok) return Response.json({ attendance: null });
       return Response.json({ attendance: (Array.isArray(rows) && rows[0]) || null });
@@ -463,7 +466,7 @@ Deno.serve(async (req) => {
       if (date && !isDate(date)) return Response.json({ error: "Invalid date" }, { status: 400 });
       const d = date || todayStr();
       const idsList = scopedIds.map((id) => `"${id}"`).join(",");
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=in.(${idsList})&date=eq.${d}`, { headers });
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=in.(${idsList})&date=eq.${d}`, { headers });
       const rows = await res.json();
       if (!res.ok) return Response.json({ rows: [] });
       return Response.json({ rows: rows || [] });
@@ -474,7 +477,7 @@ Deno.serve(async (req) => {
       if (!employeeId || !month) return Response.json({ error: "Missing fields" }, { status: 400 });
       if (!isMonth(month)) return Response.json({ error: "Invalid month" }, { status: 400 });
       if (!(await employeeInCompany(employeeId))) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=gte.${month}-01&date=lte.${month}-31&order=date.asc`, { headers });
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=gte.${month}-01&date=lte.${month}-31&order=date.asc`, { headers });
       const rows = await res.json();
       if (!res.ok) return Response.json({ rows: [] });
       return Response.json({ rows: rows || [] });
@@ -487,7 +490,7 @@ Deno.serve(async (req) => {
       if (!employeeId || !startDate || !endDate) return Response.json({ error: "Missing fields" }, { status: 400 });
       if (!isDate(startDate) || !isDate(endDate) || startDate > endDate) return Response.json({ error: "Invalid date range" }, { status: 400 });
       if (!(await employeeInCompany(employeeId))) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=gte.${startDate}&date=lte.${endDate}&order=date.asc`, { headers });
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=gte.${startDate}&date=lte.${endDate}&order=date.asc`, { headers });
       const rows = await res.json();
       if (!res.ok) return Response.json({ rows: [] });
       return Response.json({ rows: rows || [] });
@@ -503,7 +506,7 @@ Deno.serve(async (req) => {
       const employeeIds = await filterCompanyEmployeeIds(rawIds);
       if (employeeIds.length === 0) return Response.json({ stats: [] });
       const idsList = employeeIds.map((id) => `"${id}"`).join(",");
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=in.(${idsList})&date=gte.${month}-01&date=lte.${month}-31`, { headers });
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=in.(${idsList})&date=gte.${month}-01&date=lte.${month}-31`, { headers });
       const rows = await res.json();
       if (!res.ok || !Array.isArray(rows)) return Response.json({ stats: [] });
       const byEmployee = {};
