@@ -42,8 +42,13 @@ export default function Safety() {
 
   // Approval also clears the incident lock: once management reviews and approves
   // the data after an incident, the "Safe" level becomes selectable again.
-  const handleApprove = (stationId) =>
-    updateSafetyRecord(company.id, stationId, { approvedBy: currentUser.name, approvedAt: new Date().toISOString(), incidentClearedAt: new Date().toISOString() });
+  const handleApprove = (stationId) => {
+    const at = new Date().toISOString();
+    const rec = recFor(stationId);
+    // Every approval is saved permanently in the station's approval log.
+    const approvalLog = [{ by: currentUser.name, at }, ...(rec?.approvalLog || [])];
+    updateSafetyRecord(company.id, stationId, { approvedBy: currentUser.name, approvedAt: at, incidentClearedAt: at, approvalLog });
+  };
 
   return (
     <div className="space-y-6">

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Plus, X, AlertTriangle, BadgeCheck } from "lucide-react";
 import { formatDateTime } from "@/lib/dateFormat";
+import ApprovalHistory from "@/components/safety/ApprovalHistory";
 
 const LEVELS = [
   { val: "green", ar: "آمنة", en: "Safe", cls: "bg-emerald-100 text-emerald-700 border-emerald-300" },
@@ -22,6 +23,7 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
   // incident — the lock lifts once management reviews and approves the safety data.
   const incidentPending = !!rec?.lastIncidentAt && (!rec?.incidentClearedAt || new Date(rec.lastIncidentAt) > new Date(rec.incidentClearedAt));
   const safeBlocked = hazards.length > 0 || incidentPending;
+  const incidentToday = !!rec?.lastIncidentAt && new Date(rec.lastIncidentAt).toDateString() === new Date().toDateString();
 
   const addHazard = () => {
     if (!hazard.trim()) return;
@@ -76,6 +78,14 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
             ? "عند تسجيل حادثة أو وجود مخاطر مفتوحة يُقفل خيار «آمنة» حتى مراجعة الإدارة والاعتماد."
             : "Logging an incident or having open hazards locks the Safe option until management reviews and approves."}
         </p>
+        {rec?.lastIncidentAt && (
+          <p className={`text-[10px] font-body mt-1 ${incidentToday ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
+            {incidentToday
+              ? (ar ? "⚠ سُجّلت حادثة اليوم في هذه المحطة — " : "⚠ An incident was logged today at this station — ")
+              : (ar ? "آخر حادثة: " : "Last incident: ")}
+            {formatDateTime(rec.lastIncidentAt, lang)}
+          </p>
+        )}
       </div>
 
       {/* Last inspection */}
@@ -149,7 +159,8 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
       )}
 
       {/* Approval — pinned to the card bottom so all cards align */}
-      <div className="pt-3 border-t border-border/60 mt-auto">
+      <div className="pt-3 border-t border-border/60 mt-auto space-y-2">
+        <ApprovalHistory log={rec?.approvalLog} lang={lang} />
         {approved ? (
           <p className="text-[11px] text-muted-foreground font-body">
             {ar ? "اعتمده" : "Approved by"} <span className="font-semibold text-foreground">{rec.approvedBy}</span>
