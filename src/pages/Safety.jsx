@@ -115,7 +115,13 @@ export default function Safety() {
                 lang={lang}
                 onUpdate={(updates) => handleUpdate(station.id, updates)}
                 onApprove={() => handleApprove(station.id)}
-                onIncident={(desc) => recordSafetyIncident(company.id, station.id, desc)}
+                onIncident={(desc) => {
+                  // Duplicate guard: the exact same incident can't be logged twice on the same day.
+                  const dup = (recFor(station.id)?.incidentLog || []).some(
+                    (i) => (i.description || "") === desc && i.at && new Date(i.at).toDateString() === new Date().toDateString()
+                  );
+                  if (!dup) recordSafetyIncident(company.id, station.id, desc);
+                }}
               />
             ))}
           </div>

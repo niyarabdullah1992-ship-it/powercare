@@ -34,7 +34,9 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
   };
 
   const submitIncident = () => {
-    onIncident(incidentDesc.trim());
+    const desc = incidentDesc.trim();
+    if (!desc) return; // a description is required — prevents empty duplicate entries
+    onIncident(desc);
     setIncidentDesc("");
     setShowIncident(false);
   };
@@ -145,7 +147,7 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
               className="w-full px-3 py-2 rounded-md border border-input bg-background text-xs font-body focus:outline-none focus:ring-2 focus:ring-ring"
             />
             <div className="flex items-center gap-2">
-              <button onClick={submitIncident} className="flex-1 py-1.5 rounded-md bg-red-600 text-white text-xs font-body font-semibold hover:opacity-90">
+              <button onClick={submitIncident} disabled={!incidentDesc.trim()} className="flex-1 py-1.5 rounded-md bg-red-600 text-white text-xs font-body font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
                 {ar ? "تسجيل الحادث" : "Log incident"}
               </button>
               <button onClick={() => setShowIncident(false)} className="px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
