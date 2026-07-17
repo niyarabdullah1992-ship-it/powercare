@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { ShieldCheck, FileBarChart2, ClipboardCheck, Archive } from "lucide-react";
+import { ShieldCheck, FileText, ClipboardCheck, Archive } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations } from "@/lib/permissions";
 import { updateSafetyRecord, recordSafetyIncident } from "@/lib/store";
 import PageHeader from "@/components/PageHeader";
 import StationSafetyCard from "@/components/safety/StationSafetyCard";
+import SafetyReportExport from "@/components/safety/SafetyReportExport";
 import RecordSmartArchive from "@/components/RecordSmartArchive";
 
 // HSE management section: safety data is entered and approved per station here,
@@ -16,6 +16,7 @@ export default function Safety() {
   const { data, currentUser, company } = useAuth();
   const ar = lang === "ar";
   const [tab, setTab] = useState("manage");
+  const [showReport, setShowReport] = useState(false);
 
   if (!data || !currentUser) return null;
 
@@ -59,11 +60,19 @@ export default function Safety() {
             </button>
           ))}
         </div>
-        <Link to="/app/reports" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-          <FileBarChart2 className="w-3.5 h-3.5" />
-          {ar ? "عرض تقارير السلامة ضمن التقارير الشاملة" : "View HSE reports in Comprehensive Reports"}
-        </Link>
+        <button
+          type="button"
+          onClick={() => setShowReport(!showReport)}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${showReport ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          {ar ? "تقرير السلامة (PDF / Excel)" : "Safety report (PDF / Excel)"}
+        </button>
       </div>
+
+      {showReport && (
+        <SafetyReportExport stations={stations} safety={data.safety || []} data={data} t={(k) => k} lang={lang} dir={dir} />
+      )}
 
       {tab === "archive" ? (
         // Smart archive — every logged safety incident, filed under Year → Month folders.
