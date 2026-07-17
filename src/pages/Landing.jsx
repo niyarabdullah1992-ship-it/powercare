@@ -89,7 +89,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-landing-bg font-body text-primary">
       {/* Top bar */}
-      <div className="sticky top-0 z-50 flex items-center justify-between border-b border-landing-gold/15 bg-landing-bg/90 px-4 py-3 backdrop-blur-xl sm:px-6 md:px-10 md:py-4">
+      <div className="sticky top-0 z-50 flex items-center justify-between border-b border-landing-gold/15 bg-landing-bg/90 px-4 py-3 shadow-sm backdrop-blur-xl sm:px-6 md:px-10 md:py-4">
         <div className="flex items-center gap-2">
           <Logo size={30} />
           <span className="font-heading font-semibold text-lg text-primary">{t("appName")}</span>
@@ -97,14 +97,14 @@ export default function Landing() {
         <div className="flex items-center gap-2">
         <Link
           to="/pricing"
-          className="px-4 py-1.5 rounded-full bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-body font-semibold hover:opacity-90 transition-opacity"
+          className="rounded-xl bg-gradient-to-b from-landing-gold-light to-landing-gold px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
         >
           {t("viewPlans")}
         </Link>
         <div className="relative">
           <button
             onClick={(e) => { e.stopPropagation(); setLangOpen((v) => !v); }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-landing-gold/25 bg-white text-sm font-body text-[#3a2f22]/90 hover:bg-white/70 transition-colors"
+            className="flex items-center gap-2 rounded-xl border border-landing-gold/25 bg-card px-3 py-2 text-sm text-primary shadow-sm hover:bg-secondary"
           >
             <Globe className="w-4 h-4" strokeWidth={1.75} />
             <span>{currentLang?.flag} {currentLang?.label}</span>
@@ -160,7 +160,7 @@ export default function Landing() {
           </div>
 
           {/* Login card */}
-          <div className="mx-1 rounded-2xl border border-landing-gold/15 bg-white p-5 pb-7 shadow-xl shadow-[#3a2f22]/10 sm:mx-0 sm:p-7">
+          <div className="mx-1 rounded-3xl border border-landing-gold/20 bg-card p-5 pb-7 shadow-elevated sm:mx-0 sm:p-7">
               {otpPending ? (
                 <OtpStep email={email} accounts={otpAccounts} onVerify={handleVerifyOtp} onResend={handleResendOtp} onBack={() => setOtpPending(null)} />
               ) : resetOpen ? (

@@ -9,6 +9,10 @@ module.exports = {
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
+  		boxShadow: {
+  			soft: '0 10px 35px hsl(var(--foreground) / 0.07)',
+  			elevated: '0 18px 55px hsl(var(--foreground) / 0.11)'
+  		},
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

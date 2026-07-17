@@ -182,17 +182,16 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-background flex" dir={dir}>
-      {/* Sidebar — slim dark icon rail (WorkForce-style) */}
-      <aside className={`hidden md:flex flex-col items-center w-[76px] ${sidebarSide} top-0 h-screen sticky bg-landing-olive pt-safe z-40`}>
-        <div className="py-5 flex items-center justify-center">
-          <span className="w-11 h-11 rounded-2xl bg-white/10 flex items-center justify-center">
-            <Logo size={30} />
-          </span>
+      {/* Desktop navigation */}
+      <aside className={`hidden md:flex flex-col w-[248px] ${sidebarSide} top-0 h-screen sticky bg-primary pt-safe z-40 shadow-elevated`}>
+        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-sm"><Logo size={30} /></span>
+          <div className="min-w-0"><p className="truncate font-heading text-lg font-semibold text-white">{company.name || t("appName")}</p><p className="truncate text-[10px] uppercase tracking-widest text-white/45">PowerCare</p></div>
         </div>
         <DragDropContext onDragEnd={onNavDragEnd}>
           <Droppable droppableId="sidebar-nav">
             {(provided) => (
-              <nav ref={provided.innerRef} {...provided.droppableProps} className="flex-1 w-full px-3 py-2 flex flex-col items-center gap-1.5 overflow-y-auto no-scrollbar no-select">
+              <nav ref={provided.innerRef} {...provided.droppableProps} className="flex-1 w-full px-3 py-4 flex flex-col gap-1.5 overflow-y-auto no-scrollbar no-select">
                 {orderedNavItems.map((item, index) => (
                   <Draggable key={item.to} draggableId={item.to} index={index}>
                     {(dragProvided, dragSnapshot) => (
@@ -200,26 +199,23 @@ export default function Layout({ children }) {
                         ref={dragProvided.innerRef}
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
-                        className={`group relative ${dragSnapshot.isDragging ? "opacity-90" : ""}`}
+                        className={`group relative w-full ${dragSnapshot.isDragging ? "opacity-90" : ""}`}
                       >
                         <NavLink
                           to={item.to}
                           end={item.end}
                           title={item.label}
                           className={({ isActive }) =>
-                            `flex items-center justify-center w-11 h-11 rounded-xl transition-all ${
+                            `flex h-11 w-full items-center gap-3 rounded-xl px-3 transition-all ${
                               isActive
                                 ? "bg-landing-gold text-white shadow-lg shadow-black/20"
-                                : "text-white/45 hover:bg-white/10 hover:text-white"
+                                : "text-white/55 hover:bg-white/10 hover:text-white"
                             }`
                           }
                         >
-                          <item.icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                          <item.icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
+                          <span className="truncate text-sm font-medium">{item.label}</span>
                         </NavLink>
-                        {/* Hover label */}
-                        <span className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${dir === "rtl" ? "right-full mr-2" : "left-full ml-2"} whitespace-nowrap rounded-md bg-landing-olive text-white text-xs font-body px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-50`}>
-                          {item.label}
-                        </span>
                       </div>
                     )}
                   </Draggable>
@@ -232,7 +228,7 @@ export default function Layout({ children }) {
         <button
           onClick={() => navigate(`/app/employees/${currentUser.id}`)}
           title={t("viewProfile")}
-          className="mb-5 mt-2 w-10 h-10 rounded-full ring-2 ring-white/20 hover:ring-landing-gold transition overflow-hidden bg-landing-gold text-white flex items-center justify-center text-sm font-medium shrink-0"
+          className="mx-auto mb-5 mt-2 flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-landing-gold text-sm font-medium text-white ring-2 ring-white/20 transition hover:ring-landing-gold-light"
         >
           {currentUser.profile?.avatarUrl ? (
             <img src={currentUser.profile.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
@@ -245,7 +241,7 @@ export default function Layout({ children }) {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="sticky top-0 z-40 bg-background/90 backdrop-blur border-b border-border pt-safe">
+        <header className="sticky top-0 z-40 border-b border-border/80 bg-card/90 pt-safe shadow-sm backdrop-blur-xl">
           <div className="flex h-16 items-center justify-between px-4 md:h-[68px] md:px-8">
             {/* Mobile nav (scrollable pills) */}
             <div className="md:hidden flex items-center gap-2 overflow-x-auto no-scrollbar">
@@ -396,7 +392,7 @@ export default function Layout({ children }) {
 
         </header>
 
-        <main className="flex-1 p-4 pb-28 md:p-8">
+        <main className="flex-1 p-4 pb-28 md:p-8 lg:p-10">
           {/* Native-style page transition between routes */}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
