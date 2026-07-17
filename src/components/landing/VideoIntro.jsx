@@ -6,6 +6,10 @@ import Logo from "@/components/Logo";
 const VIDEO_URLS = [
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/7b1b2e430_Promo_Video.mp4",
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/7c69959d3__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/b53cc5f7a__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/434efbe0a__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/b130d3504__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/34405c732__.mp4",
 ];
 
 const NARRATION_URLS = {
@@ -58,8 +62,14 @@ export default function VideoIntro() {
   };
 
   const handleVideoEnded = () => {
-    if (videoIndex < VIDEO_URLS.length - 1) setVideoIndex((index) => index + 1);
-    else if (audioRef.current?.ended) resetPlayback();
+    if (videoIndex < VIDEO_URLS.length - 1) {
+      setVideoIndex((index) => index + 1);
+    } else if (audioRef.current?.ended) {
+      resetPlayback();
+    } else if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play();
+    }
   };
 
   const handleAudioEnded = () => resetPlayback();
@@ -101,7 +111,7 @@ export default function VideoIntro() {
           </button>
         </div>
 
-        <video src={VIDEO_URLS[1]} preload="auto" muted playsInline className="hidden" aria-hidden="true" />
+        {VIDEO_URLS.slice(1).map((url) => <video key={url} src={url} preload="auto" muted playsInline className="hidden" aria-hidden="true" />)}
         <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" onEnded={handleAudioEnded} />
 
         <button type="button" onClick={togglePlay} className="inline-flex cursor-pointer items-center gap-3 rounded-full border border-landing-gold/30 bg-card/5 px-6 py-3 font-body text-sm text-landing-gold-light transition-colors hover:bg-landing-gold/20">
