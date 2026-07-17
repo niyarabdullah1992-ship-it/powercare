@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Plus, X, AlertTriangle, BadgeCheck } from "lucide-react";
+import { Plus, X, AlertTriangle, BadgeCheck, History } from "lucide-react";
 import { formatDateTime } from "@/lib/dateFormat";
 import ApprovalHistory from "@/components/safety/ApprovalHistory";
+import StationSafetyLog from "@/components/safety/StationSafetyLog";
 
 const LEVELS = [
   { val: "green", ar: "آمنة", en: "Safe", cls: "bg-emerald-100 text-emerald-700 border-emerald-300" },
@@ -16,6 +17,7 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
   const [hazard, setHazard] = useState("");
   const [incidentDesc, setIncidentDesc] = useState("");
   const [showIncident, setShowIncident] = useState(false);
+  const [showLog, setShowLog] = useState(false);
 
   const hazards = rec?.hazards || [];
   const approved = !!rec?.approvedBy;
@@ -160,6 +162,14 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
 
       {/* Approval — pinned to the card bottom so all cards align */}
       <div className="pt-3 border-t border-border/60 mt-auto space-y-2">
+        <button
+          type="button"
+          onClick={() => setShowLog(true)}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md border border-border text-xs font-body text-muted-foreground hover:bg-muted hover:text-foreground transition"
+        >
+          <History className="w-3.5 h-3.5" />
+          {ar ? `سجل المحطة (${(rec?.approvalLog?.length || 0) + (rec?.incidentLog?.length || 0)})` : `Station record (${(rec?.approvalLog?.length || 0) + (rec?.incidentLog?.length || 0)})`}
+        </button>
         <ApprovalHistory log={rec?.approvalLog} lang={lang} />
         {approved ? (
           <p className="text-[11px] text-muted-foreground font-body">
@@ -174,6 +184,8 @@ export default function StationSafetyCard({ station, rec, canEdit, lang, onUpdat
           <p className="text-[11px] text-muted-foreground font-body">{ar ? "بانتظار اعتماد الإدارة" : "Awaiting management approval"}</p>
         )}
       </div>
+
+      {showLog && <StationSafetyLog station={station} rec={rec} lang={lang} onClose={() => setShowLog(false)} />}
     </div>
   );
 }
