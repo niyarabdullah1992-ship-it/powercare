@@ -52,9 +52,21 @@ async function authSession(base44, companyId, sessionToken) {
   return { owner: true, userId: ownerId, name: owner?.name || 'Owner', email: String(account.ownerEmail || '').toLowerCase() };
 }
 
+const escapeHtml = (value) => String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+
+function signatureRequestEmail({ ar, signerName, creatorName, fileName, link }) {
+  const direction = ar ? 'rtl' : 'ltr';
+  const title = ar ? 'طلب توقيع مستند' : 'Document signature request';
+  const greeting = ar ? `مرحبًا ${signerName}` : `Hello ${signerName}`;
+  const message = ar ? `طلب منك ${creatorName} مراجعة المستند التالي وتوقيعه إلكترونيًا.` : `${creatorName} asked you to review and electronically sign the following document.`;
+  const button = ar ? 'مراجعة المستند والتوقيع' : 'Review and sign document';
+  const note = ar ? 'هذا الرابط مخصص لك، فلا تشاركه مع أي شخص آخر.' : 'This link is unique to you. Please do not share it.';
+  return `<!doctype html><html dir="${direction}"><body style="margin:0;background:#f6f1e8;font-family:Arial,sans-serif;color:#30271d"><table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tr><td align="center" style="padding:32px 16px"><table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background:#ffffff;border:1px solid #e7ddce;border-radius:16px;overflow:hidden"><tr><td style="padding:24px 28px;background:#30271d;color:#ffffff"><div style="font-size:12px;letter-spacing:2px;color:#d8b879">POWERCARE</div><h1 style="margin:8px 0 0;font-size:24px">${title}</h1></td></tr><tr><td style="padding:28px"><h2 style="margin:0 0 12px;font-size:20px">${escapeHtml(greeting)}</h2><p style="margin:0 0 22px;line-height:1.8;color:#6d6255">${escapeHtml(message)}</p><div style="padding:16px;border:1px solid #e7ddce;border-radius:10px;background:#faf7f2"><div style="font-size:12px;color:#8b7d6c;margin-bottom:6px">${ar ? 'المستند' : 'Document'}</div><strong style="font-size:15px">${escapeHtml(fileName)}</strong></div><div style="text-align:center;margin:26px 0"><a href="${escapeHtml(link)}" style="display:inline-block;background:#bd8d4f;color:#ffffff;text-decoration:none;padding:14px 24px;border-radius:9px;font-weight:bold">${button}</a></div><p style="margin:0;font-size:12px;line-height:1.7;color:#938778">${note}</p></td></tr><tr><td style="padding:16px 28px;border-top:1px solid #eee5d8;font-size:11px;color:#9b9082">PowerCare · ${ar ? 'توقيع إلكتروني موثّق' : 'Verified electronic signing'}</td></tr></table></td></tr></table></body></html>`;
+}
+
 // Send via the connected Gmail account first (works for ANY external address —
 // gmail, outlook, corporate…); fall back to the platform mailer if Gmail fails.
-async function sendMail(base44, to, subject, bodyText) {
+async function sendMail(base44, to, subject, bodyText, bodyHtml = '') {
   try {
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
     // Microsoft (Outlook/Hotmail) rejects mail whose From address doesn't match
@@ -70,6 +82,7 @@ async function sendMail(base44, to, subject, bodyText) {
     msg.setRecipient(to);
     msg.setSubject(subject);
     msg.addMessage({ contentType: 'text/plain', data: bodyText });
+    if (bodyHtml) msg.addMessage({ contentType: 'text/html', data: bodyHtml });
     const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -85,7 +98,7 @@ async function sendMail(base44, to, subject, bodyText) {
       from_name: 'PowerCare',
       to,
       subject,
-      body: bodyText,
+      body: bodyHtml || bodyText,
     });
     return true;
   } catch (e) {
@@ -163,7 +176,8 @@ Deno.serve(async (req) => {
             ar ? `طلب توقيع: ${rec.fileName}` : `Signature request: ${rec.fileName}`,
             ar
               ? `مرحبًا ${s.name}،\n\nطلب منك ${rec.creatorName} التوقيع على المستند "${rec.fileName}".\n\nللتوقيع افتح الرابط التالي:\n${link}\n\n— PowerCare`
-              : `Hello ${s.name},\n\n${rec.creatorName} asked you to sign the document "${rec.fileName}".\n\nOpen this link to sign:\n${link}\n\n— PowerCare`
+              : `Hello ${s.name},\n\n${rec.creatorName} asked you to sign the document "${rec.fileName}".\n\nOpen this link to sign:\n${link}\n\n— PowerCare`,
+            signatureRequestEmail({ ar, signerName: s.name, creatorName: rec.creatorName, fileName: rec.fileName, link })
           );
           if (!ok) emailFailed.push(s.email);
         }
