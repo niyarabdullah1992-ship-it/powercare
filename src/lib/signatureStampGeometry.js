@@ -1,6 +1,6 @@
-export const STAMP_CANVAS_WIDTH = 420;
-export const STAMP_CANVAS_HEIGHT = 190;
-export const STAMP_WIDTH_PERCENT = 21;
+export const STAMP_CANVAS_WIDTH = 560;
+export const STAMP_CANVAS_HEIGHT = 128;
+export const STAMP_WIDTH_PERCENT = 32;
 export const STAMP_MIN_SCALE = 65;
 export const STAMP_MAX_SCALE = 135;
 export const STAMP_FALLBACK_SPOT = Object.freeze({ page: -1, x: 70, y: 85 });

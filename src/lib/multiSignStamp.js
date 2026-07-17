@@ -1,63 +1,12 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { base44 } from "@/api/base44Client";
-import { makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
-import { STAMP_CANVAS_HEIGHT, STAMP_CANVAS_WIDTH, STAMP_FALLBACK_SPOT, STAMP_WIDTH_PERCENT, clampStampScale, stampAspectRatio } from "@/lib/signatureStampGeometry";
-import { getVisibleImageBounds } from "@/lib/signatureImageBounds";
-
-const loadImage = (src) =>
-  new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
+import { loadBadgeQr, makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
+import { STAMP_FALLBACK_SPOT, STAMP_WIDTH_PERCENT, clampStampScale } from "@/lib/signatureStampGeometry";
 
 // Builds the one canonical stamp image used by the web preview and the PDF.
-export async function makeSignatureStamp(sigDataUrl, name, verificationId = "") {
-  const img = await loadImage(sigDataUrl);
-  const canvas = document.createElement("canvas");
-  canvas.width = STAMP_CANVAS_WIDTH;
-  canvas.height = STAMP_CANVAS_HEIGHT;
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "rgba(255,255,255,0.95)";
-  ctx.strokeStyle = "#d9c8ae";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.roundRect(2, 2, 416, 186, 18);
-  ctx.fill();
-  ctx.stroke();
-  const ink = getVisibleImageBounds(img);
-  const scale = Math.min(360 / ink.width, 88 / ink.height);
-  const w = ink.width * scale;
-  const h = ink.height * scale;
-  ctx.drawImage(img, ink.x, ink.y, ink.width, ink.height, (STAMP_CANVAS_WIDTH - w) / 2, 12 + (88 - h) / 2, w, h);
-  ctx.strokeStyle = "#e7dfd3";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(28, 106);
-  ctx.lineTo(392, 106);
-  ctx.stroke();
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#30271d";
-  ctx.font = "600 17px sans-serif";
-  ctx.fillText(String(name || "").slice(0, 40), 210, 130);
-  ctx.fillStyle = "#7c7063";
-  ctx.font = "12px sans-serif";
-  ctx.fillText(new Date().toLocaleDateString("en-GB"), 210, 149);
-  if (verificationId) {
-    ctx.fillStyle = "#f8f1e7";
-    ctx.strokeStyle = "#bd8d4f";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(70, 157, 280, 24, 7);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#8a642f";
-    ctx.font = "600 10px monospace";
-    ctx.fillText(`VERIFIED • ${String(verificationId).slice(0, 40)}`, 210, 173);
-  }
-  return canvas.toDataURL("image/png");
+export async function makeSignatureStamp(_sigDataUrl, name, verificationId = "") {
+  const qr = verificationId ? await loadBadgeQr(verificationId) : null;
+  return makeVerificationBadgeCanvas(verificationId, name, qr).toDataURL("image/png");
 }
 
 // Stamps one signer's composed stamp onto the PDF. When `spot` is provided
@@ -80,7 +29,7 @@ export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot, s
   const page = pages[Math.min(Math.max(Math.round(selectedSpot.page), 1), pages.length) - 1];
   const { width, height } = page.getSize();
   const sw = width * (STAMP_WIDTH_PERCENT / 100) * scale;
-  const sh = sw * stampAspectRatio;
+  const sh = sw * (stampImg.height / stampImg.width);
   const cx = (Number(selectedSpot.x) / 100) * width;
   const cy = height - (Number(selectedSpot.y) / 100) * height;
   page.drawImage(stampImg, { x: cx - sw / 2, y: cy - sh / 2, width: sw, height: sh });
