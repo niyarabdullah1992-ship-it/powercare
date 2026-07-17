@@ -24,6 +24,7 @@ export default function AnonymousReports() {
   const [replyText, setReplyText] = useState({});
   const [files, setFiles] = useState([]);
   const [replyFiles, setReplyFiles] = useState({});
+  const [reportStationId, setReportStationId] = useState("");
   const [selectedStation, setSelectedStation] = useState(null);
   const [monthlyLimitInput, setMonthlyLimitInput] = useState("");
   const [ownReportIds, setOwnReportIds] = useState([]);
@@ -57,6 +58,15 @@ export default function AnonymousReports() {
   };
 
   const stationName = (id) => data.stations.find((s) => s.id === id)?.name || "—";
+  const assignedStationIds = [...new Set([
+    currentUser.stationId,
+    ...(currentUser.stationIds || []),
+    ...(currentUser.managedStations || []),
+  ].filter(Boolean))];
+  const assignedStations = data.stations.filter((station) => assignedStationIds.includes(station.id));
+  const effectiveReportStationId = assignedStations.some((station) => station.id === reportStationId)
+    ? reportStationId
+    : assignedStations[0]?.id || "";
   const displayCode = (r) => r.anonymousId || `ANON-${String(r.id).slice(-8).toUpperCase()}`;
   const saveMonthlyLimit = () => {
     const val = Number(monthlyLimitInput);
@@ -98,7 +108,7 @@ export default function AnonymousReports() {
   const submit = (e) => {
     e.preventDefault();
     if (!message.trim()) return;
-    const assignedStation = data.stations.find((station) => station.id === currentUser.stationId);
+    const assignedStation = assignedStations.find((station) => station.id === effectiveReportStationId);
     if (!assignedStation) {
       alert(lang === "ar" ? "يجب تعيين محطة للموظف قبل إرسال شكوى سرية." : "The employee must have an assigned station before filing an anonymous complaint.");
       return;
@@ -262,10 +272,23 @@ export default function AnonymousReports() {
                 </select>
               </div>
             </div>
-            <div className={`flex items-center gap-1.5 text-xs font-body ${currentUser.stationId ? "text-muted-foreground" : "text-destructive"}`}>
-              <Building2 className="w-3.5 h-3.5" />
-              {t("station")}: {currentUser.stationId ? stationName(currentUser.stationId) : (lang === "ar" ? "لا توجد محطة معيّنة" : "No assigned station")}
-            </div>
+            {assignedStations.length > 1 ? (
+              <div>
+                <label className="block text-xs text-muted-foreground font-body mb-1">{t("station")}</label>
+                <select
+                  value={effectiveReportStationId}
+                  onChange={(e) => setReportStationId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border border-input text-sm font-body"
+                >
+                  {assignedStations.map((station) => <option key={station.id} value={station.id}>{station.name}</option>)}
+                </select>
+              </div>
+            ) : (
+              <div className={`flex items-center gap-1.5 text-xs font-body ${effectiveReportStationId ? "text-muted-foreground" : "text-destructive"}`}>
+                <Building2 className="w-3.5 h-3.5" />
+                {t("station")}: {effectiveReportStationId ? stationName(effectiveReportStationId) : (lang === "ar" ? "لا توجد محطة معيّنة" : "No assigned station")}
+              </div>
+            )}
             <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder={t("fileReport")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
             <div className="flex flex-wrap items-end gap-2">
               <CommentFiles files={files} setFiles={setFiles} />
@@ -275,7 +298,7 @@ export default function AnonymousReports() {
               <p className="text-xs text-muted-foreground font-body">
                 {usage.dayLimit - usage.day} {t("remaining")} · {usage.weekLimit - usage.week} {t("weekRemaining")} · {usage.monthLimit - usage.month} {t("monthRemaining")}
               </p>
-              <button type="submit" disabled={!currentUser.stationId || usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-40">
+              <button type="submit" disabled={!effectiveReportStationId || usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-40">
                 <Send className="w-4 h-4" /> {t("fileReport")}
               </button>
             </div>
