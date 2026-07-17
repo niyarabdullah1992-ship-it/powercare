@@ -12,49 +12,30 @@ const loadImage = (src) =>
     img.src = src;
   });
 
-// Composes the signature, signer identity, date, and the document's encrypted
-// verification ID into one Unicode-safe PNG embedded directly in the PDF.
-export async function makeSignatureStamp(sigDataUrl, name, verificationId = "") {
+// Preserves the exact drawn/typed signature image and adds only a compact
+// encrypted verification marker beneath it before embedding it in the PDF.
+export async function makeSignatureStamp(sigDataUrl, _name, verificationId = "") {
   const img = await loadImage(sigDataUrl);
   const canvas = document.createElement("canvas");
   canvas.width = STAMP_CANVAS_WIDTH;
   canvas.height = STAMP_CANVAS_HEIGHT;
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "rgba(255,255,255,0.95)";
-  ctx.strokeStyle = "#d9c8ae";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.roundRect(2, 2, 416, 186, 18);
-  ctx.fill();
-  ctx.stroke();
-  const scale = Math.min(360 / img.width, 88 / img.height);
+  const scale = Math.min(540 / img.width, 160 / img.height);
   const w = img.width * scale;
   const h = img.height * scale;
-  ctx.drawImage(img, (STAMP_CANVAS_WIDTH - w) / 2, 14 + (88 - h) / 2, w, h);
-  ctx.strokeStyle = "#e7dfd3";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(28, 108);
-  ctx.lineTo(392, 108);
-  ctx.stroke();
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#30271d";
-  ctx.font = "600 17px sans-serif";
-  ctx.fillText(String(name || "").slice(0, 40), 210, 132);
-  ctx.fillStyle = "#7c7063";
-  ctx.font = "12px sans-serif";
-  ctx.fillText(new Date().toLocaleDateString("en-GB"), 210, 150);
+  ctx.drawImage(img, (STAMP_CANVAS_WIDTH - w) / 2, (160 - h) / 2, w, h);
   if (verificationId) {
-    ctx.fillStyle = "#f8f1e7";
+    ctx.fillStyle = "rgba(248,241,231,0.92)";
     ctx.strokeStyle = "#bd8d4f";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(70, 157, 280, 24, 7);
+    ctx.roundRect(130, 170, 300, 25, 8);
     ctx.fill();
     ctx.stroke();
+    ctx.textAlign = "center";
     ctx.fillStyle = "#8a642f";
     ctx.font = "600 10px monospace";
-    ctx.fillText(`VERIFIED • ${String(verificationId).slice(0, 40)}`, 210, 173);
+    ctx.fillText(`VERIFIED • ${String(verificationId).slice(0, 40)}`, 280, 186);
   }
   return canvas.toDataURL("image/png");
 }

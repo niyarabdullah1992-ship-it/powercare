@@ -130,8 +130,8 @@ export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100
               </div>
             )}
             {spot && spot.page === page && (
-              <div className="pointer-events-none absolute overflow-hidden rounded-lg border border-accent/70 bg-card/95 text-center shadow-md" style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${STAMP_WIDTH_PERCENT * (scale / 100)}%`, aspectRatio: `${STAMP_CANVAS_WIDTH} / ${STAMP_CANVAS_HEIGHT}`, transform: "translate(-50%, -50%)" }}>
-                <div className="flex h-full flex-col px-1 py-0.5"><div className="flex flex-1 items-center justify-center border-b border-border/70 font-heading text-[8px] font-semibold italic text-foreground">{signerName}</div><p className="mt-0.5 truncate text-[5px] font-semibold leading-none text-foreground">{signerName}</p><p className="text-[4px] leading-none text-muted-foreground">{new Date().toLocaleDateString("en-GB")}</p><p className="mt-0.5 truncate rounded-sm border border-accent/70 bg-secondary font-mono text-[4px] leading-none text-accent">VERIFIED • {verificationId || "PWC-••••"}</p></div>
+              <div className="pointer-events-none absolute text-center" style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${STAMP_WIDTH_PERCENT * (scale / 100)}%`, aspectRatio: `${STAMP_CANVAS_WIDTH} / ${STAMP_CANVAS_HEIGHT}`, transform: "translate(-50%, -50%)" }}>
+                <div className="flex h-full flex-col"><div className="flex flex-1 items-center justify-center font-heading text-[10px] font-semibold italic text-foreground">{signerName}</div><p className="truncate rounded-sm border border-accent/70 bg-secondary/90 px-0.5 font-mono text-[4px] leading-tight text-accent">VERIFIED • {verificationId || "PWC-••••"}</p></div>
               </div>
             )}
           </div>
