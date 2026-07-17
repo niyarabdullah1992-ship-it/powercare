@@ -138,6 +138,9 @@ export default function Dashboard() {
   const criticalStations = safetyRecs.filter((s) => s.level === "red").length;
   const openHazards = safetyRecs.reduce((sum, s) => sum + (s.hazards?.length || 0), 0);
   const recentIncidents = safetyRecs.reduce((sum, s) => sum + (s.incidentLog || []).filter((i) => i.at && now - new Date(i.at).getTime() <= 30 * 86400000).length, 0);
+  // Incidents logged today only — drives the shield color on the hero card.
+  const todayStr = new Date().toDateString();
+  const todayIncidents = safetyRecs.reduce((sum, s) => sum + (s.incidentLog || []).filter((i) => i.at && new Date(i.at).toDateString() === todayStr).length, 0);
   const riskWeights = getRiskWeights(data);
   const riskScore = Math.min(100, Math.round(
     (absentCount * riskWeights.absent) + (delayedTasks * riskWeights.delayed) + (stoppageCount * riskWeights.stoppage) +
@@ -195,7 +198,7 @@ export default function Dashboard() {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-8">
-      <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
+      <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
       <OnboardingChecklist data={data} lang={lang} t={t} />
       {canEditBranding && (
         <div className="flex justify-end">

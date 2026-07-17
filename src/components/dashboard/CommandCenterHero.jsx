@@ -25,9 +25,9 @@ export default function CommandCenterHero({ companyName, riskScore, activeStatio
           <div className="min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4"><BrainCircuit className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{activeStations}</p><p className="text-xs text-white/50">{ar ? "محطات مراقبة" : "Stations monitored"}</p></div>
           {safety && (
             <RouterLink to="/app/safety" className="min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:bg-white/10">
-              {safety.criticalStations > 0 || safety.recentIncidents > 0
+              {safety.criticalStations > 0 || safety.todayIncidents > 0
                 ? <ShieldAlert className="mb-3 h-4 w-4 text-red-400" />
-                : <ShieldCheck className="mb-3 h-4 w-4 text-landing-gold" />}
+                : <ShieldCheck className="mb-3 h-4 w-4 text-emerald-400" />}
               {safety.criticalStations > 0 ? (
                 <><p className="text-3xl font-heading text-red-300">{safety.criticalStations}</p><p className="text-xs text-white/50">{ar ? "محطات سلامة حرجة" : "Critical safety stations"}</p></>
               ) : safety.openHazards > 0 ? (
