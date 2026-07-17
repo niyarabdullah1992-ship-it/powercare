@@ -50,7 +50,10 @@ export default function VideoIntro() {
       audioRef.current?.pause();
     } else {
       playerRef.current?.play();
-      audioRef.current?.play();
+      if (audioRef.current) {
+        audioRef.current.playbackRate = 1.2;
+        audioRef.current.play();
+      }
     }
     setPlaying((current) => !current);
   };
