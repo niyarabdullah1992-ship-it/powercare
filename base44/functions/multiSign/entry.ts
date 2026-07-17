@@ -22,7 +22,7 @@ const rid = () => crypto.randomUUID().replace(/-/g, '');
 const isAllowedDocUrl = (value) => {
   try {
     const url = new URL(String(value || ''));
-    return url.protocol === 'https:' && (url.hostname === 'media.base44.com' || url.hostname.endsWith('.base44.app'));
+    return url.protocol === 'https:' && Boolean(url.hostname) && url.username === '' && url.password === '';
   } catch {
     return false;
   }
