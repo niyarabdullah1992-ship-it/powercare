@@ -39,7 +39,12 @@ Deno.serve(async (req) => {
             } else {
               const emps = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: s.userId });
               const emp = emps[0] || null;
-              auth = { isManager: MANAGER_ROLES.includes(emp?.role), role: emp?.role || "employee", companyId, userId: s.userId };
+              auth = {
+                isManager: MANAGER_ROLES.includes(emp?.role), role: emp?.role || "employee",
+                companyId, userId: s.userId, stationId: emp?.stationId || null,
+                stationIds: Array.isArray(emp?.stationIds) ? emp.stationIds : [],
+                managedStations: Array.isArray(emp?.managedStations) ? emp.managedStations : [],
+              };
             }
           }
         }
@@ -82,11 +87,18 @@ Deno.serve(async (req) => {
     };
     // Strict date formats — values are interpolated into PostgREST query strings,
     // so anything not matching is rejected (blocks query-parameter injection).
-    const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ""));
-    const isMonth = (v) => /^\d{4}-\d{2}$/.test(String(v || ""));
+    const isDate = (v) => {
+      const value = String(v || "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+      const parsed = new Date(`${value}T00:00:00Z`);
+      return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+    };
+    const isMonth = (v) => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(v || ""));
+    const isTime = (v) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v || ""));
     const toMinutes = (hhmm) => {
-      const parts = (hhmm || "").split(":").map(Number);
-      return (parts[0] || 0) * 60 + (parts[1] || 0);
+      if (!isTime(hhmm)) return null;
+      const parts = hhmm.split(":").map(Number);
+      return parts[0] * 60 + parts[1];
     };
     // Haversine distance in meters between two GPS points — used for check-in location verification.
     const distanceMeters = (lat1, lng1, lat2, lng2) => {
@@ -105,8 +117,11 @@ Deno.serve(async (req) => {
       const companyId = auth?.companyId || body.companyId;
       if (!companyId) return [];
       const out = [];
+      const unrestricted = auth?.admin || ["owner", "director", "ops_manager"].includes(auth?.role);
+      const allowedStationIds = new Set([auth?.stationId, ...(auth?.stationIds || []), ...(auth?.managedStations || [])].filter(Boolean));
       const stations = await base44.asServiceRole.entities.Station.filter({ companyId });
       for (const st of stations) {
+        if (!unrestricted && !allowedStationIds.has(st.stationId)) continue;
         if (st.lat != null && st.lng != null) {
           out.push({ stationId: st.stationId, lat: Number(st.lat), lng: Number(st.lng), radiusMeters: Number(st.radiusMeters) || 200 });
         }
@@ -145,12 +160,15 @@ Deno.serve(async (req) => {
       if (!auth?.admin && !["owner", "director", "ops_manager"].includes(auth?.role)) return Response.json({ error: "Forbidden" }, { status: 403 });
       const { companyId, workStartTime, lateThresholdMinutes, gpsEnabled, gpsRequired } = body;
       if (!companyId) return Response.json({ error: "Missing companyId" }, { status: 400 });
+      if (!isTime(workStartTime)) return Response.json({ error: "Invalid work start time" }, { status: 400 });
+      const threshold = Number(lateThresholdMinutes);
+      if (!Number.isFinite(threshold) || threshold < 0 || threshold > 240) return Response.json({ error: "Invalid late threshold" }, { status: 400 });
       const patch = {
         company_id: companyId,
-        work_start_time: workStartTime || "08:00",
-        late_threshold_minutes: Math.max(0, Math.min(240, Number(lateThresholdMinutes) || 0)),
+        work_start_time: workStartTime,
+        late_threshold_minutes: threshold,
         gps_enabled: !!gpsEnabled,
-        gps_required: !!gpsRequired,
+        gps_required: !!gpsEnabled && !!gpsRequired,
       };
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings`, {
         method: "POST",
@@ -166,7 +184,7 @@ Deno.serve(async (req) => {
 
     // One-shot maintenance: turns GPS on for every company that already has a settings row.
     if (action === "enableGpsEverywhere") {
-      if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
+      if (!auth?.admin) return Response.json({ error: "Forbidden" }, { status: 403 });
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?or=(gps_enabled.eq.false,gps_required.eq.false)`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
@@ -178,9 +196,23 @@ Deno.serve(async (req) => {
     }
 
     if (action === "syncRoster") {
+      if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
       const { companyId, employees } = body;
       if (!companyId || !Array.isArray(employees)) return Response.json({ error: "Missing fields" }, { status: 400 });
-      const rows = employees.map((e) => ({ employee_id: e.id, company_id: companyId, name: e.name, station_id: e.stationId || null, manager_id: e.managerId || null }));
+      const requestedIds = new Set(employees.map((employee) => employee.id).filter(Boolean));
+      const companyEmployees = await base44.asServiceRole.entities.Employee.filter({ companyId });
+      const validManagerIds = new Set(companyEmployees.map((employee) => employee.employeeId));
+      const requestedById = new Map(employees.map((employee) => [employee.id, employee]));
+      const rows = companyEmployees
+        .filter((employee) => requestedIds.has(employee.employeeId) && canAccessEmployee(employee))
+        .map((employee) => {
+          const requested = requestedById.get(employee.employeeId);
+          return {
+            employee_id: employee.employeeId, company_id: companyId, name: employee.name,
+            station_id: employee.stationId || null,
+            manager_id: validManagerIds.has(requested?.managerId) ? requested.managerId : null,
+          };
+        });
       if (rows.length === 0) return Response.json({ ok: true });
       const res = await fetch(`${SUPABASE_URL}/rest/v1/employees_directory`, {
         method: "POST",
@@ -268,7 +300,7 @@ Deno.serve(async (req) => {
       const { companyId, employeeId, employeeName, stationId, lat, lng, accuracy, shiftStart } = body;
       if (!companyId || !employeeId) return Response.json({ error: "Missing fields" }, { status: 400 });
       // Check-in is always personal; management privileges never permit impersonation.
-      if (!auth?.admin && auth?.userId && employeeId !== auth.userId) {
+      if (!auth?.admin && employeeId !== auth?.userId) {
         return Response.json({ error: "Forbidden" }, { status: 403 });
       }
       const date = todayStr();
@@ -297,7 +329,7 @@ Deno.serve(async (req) => {
         return Response.json({ error: "OUTSIDE_STATION", distanceMeters: nearestDist }, { status: 400 });
       }
       const now = new Date();
-      const startMinutes = toMinutes(shiftStart || settings.work_start_time || "08:00");
+      const startMinutes = toMinutes(shiftStart) ?? toMinutes(settings.work_start_time) ?? 480;
       const nowMinutes = riyadhMinutes();
       const lateMinutes = Math.max(0, nowMinutes - startMinutes);
       const status = lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present";
@@ -351,7 +383,7 @@ Deno.serve(async (req) => {
       const { employeeId, shiftEnd, lat, lng, accuracy } = body;
       if (!employeeId) return Response.json({ error: "Missing employeeId" }, { status: 400 });
       // Check-out is always personal; management privileges never permit impersonation.
-      if (!auth?.admin && auth?.userId && employeeId !== auth.userId) {
+      if (!auth?.admin && employeeId !== auth?.userId) {
         return Response.json({ error: "Forbidden" }, { status: 403 });
       }
       if (lat == null || lng == null) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
@@ -374,7 +406,8 @@ Deno.serve(async (req) => {
       const now = new Date();
       const workHours = Math.round(((now.getTime() - new Date(row.check_in_at).getTime()) / 3600000) * 100) / 100;
       const nowMinutes = riyadhMinutes();
-      const earlyCheckout = !!shiftEnd && nowMinutes < toMinutes(shiftEnd);
+      const shiftEndMinutes = toMinutes(shiftEnd);
+      const earlyCheckout = shiftEndMinutes != null && nowMinutes < shiftEndMinutes;
       const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(row.id)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
@@ -452,7 +485,7 @@ Deno.serve(async (req) => {
     if (action === "listRange") {
       const { employeeId, startDate, endDate } = body;
       if (!employeeId || !startDate || !endDate) return Response.json({ error: "Missing fields" }, { status: 400 });
-      if (!isDate(startDate) || !isDate(endDate)) return Response.json({ error: "Invalid date range" }, { status: 400 });
+      if (!isDate(startDate) || !isDate(endDate) || startDate > endDate) return Response.json({ error: "Invalid date range" }, { status: 400 });
       if (!(await employeeInCompany(employeeId))) return Response.json({ error: "Forbidden" }, { status: 403 });
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(employeeId)}&date=gte.${startDate}&date=lte.${endDate}&order=date.asc`, { headers });
       const rows = await res.json();

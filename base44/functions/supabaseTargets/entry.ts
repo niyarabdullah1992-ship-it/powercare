@@ -1,4 +1,4 @@
-import { createClientFromRequest } from "npm:@base44/sdk@0.8.31";
+import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
 
 const MANAGER_ROLES = ["director", "ops_manager", "pgm", "station_manager"];
 
@@ -245,10 +245,10 @@ Deno.serve(async (req) => {
           return Response.json({ targets: filtered });
         }
         if (auth.role === "station_manager") {
-          const myStation = auth.stationId;
+          const managed = new Set([auth.stationId, ...(auth.managedStations || [])].filter(Boolean));
           const filtered = rows.filter((tg) => {
-            if (tg.assignment_type === "station_team") return tg.assignment_id === myStation;
-            if (tg.assignment_type === "member") return tg.station_id === myStation;
+            if (tg.assignment_type === "station_team") return managed.has(tg.assignment_id);
+            if (tg.assignment_type === "member") return managed.has(tg.station_id);
             return false;
           });
           return Response.json({ targets: filtered });
@@ -283,6 +283,7 @@ Deno.serve(async (req) => {
       }
       const aType = assignmentType || "member";
       if (!["member", "station_team", "hq_team"].includes(aType)) return Response.json({ error: "Invalid assignment type" }, { status: 400 });
+      if (!["urgent", "high", "medium", "low"].includes(priority || "medium")) return Response.json({ error: "Invalid priority" }, { status: 400 });
       const companyScope = await getCompanyScope();
       if (aType === "member" && (!employeeId || !companyScope.employeeIds.has(employeeId))) return Response.json({ error: "Select an employee in your company" }, { status: 400 });
       if (aType === "station_team" && (!assignmentId || !companyScope.stationIds.has(assignmentId))) return Response.json({ error: "Select a station in your company" }, { status: 400 });
@@ -296,7 +297,7 @@ Deno.serve(async (req) => {
       const startDate = customStart || new Date().toISOString();
       const endDate = customEnd || new Date(Date.now() + Number(days) * 86400000).toISOString();
       if (!Number.isFinite(new Date(startDate).getTime()) || !Number.isFinite(new Date(endDate).getTime()) || new Date(endDate) <= new Date(startDate)) return Response.json({ error: "End date must be after start date" }, { status: 400 });
-      const effectiveManagerId = auth?.userId || managerId;
+      const effectiveManagerId = auth?.userId || (auth?.role === "owner" ? (await getCompanyMeta()).ownerId : null);
       if (!effectiveManagerId) return Response.json({ error: "Manager identity is required" }, { status: 400 });
       const durationDays = Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000));
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets`, {
@@ -384,7 +385,7 @@ Deno.serve(async (req) => {
         const isIndividual = String(accounts[0]?.plan || "").toLowerCase() === "individual";
         if (!isIndividual) {
           const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-          const attendanceRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_id=eq.${encodeURIComponent(auth.userId)}&date=eq.${today}`, { headers });
+          const attendanceRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(auth.userId)}&date=eq.${today}`, { headers });
           const attendanceRows = await attendanceRes.json();
           const attendance = Array.isArray(attendanceRows) && attendanceRows[0];
           if (!attendance?.check_in_at || attendance.status === "absent") return Response.json({ error: "CHECK_IN_REQUIRED" }, { status: 403 });
@@ -422,15 +423,15 @@ Deno.serve(async (req) => {
       if (!patchRes.ok) {
         return Response.json({ error: updated?.message || "Failed to update progress — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS completion_proof jsonb; ALTER TABLE targets ADD COLUMN IF NOT EXISTS pre_review_completed integer;" }, { status: 400 });
       }
-      // Notify the manager
+      // Notify the recorded manager using the authenticated actor identity.
       await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
         method: "POST",
         headers,
         body: JSON.stringify({
-          user_id: managerId || tg.manager_id,
+          user_id: tg.manager_id,
           message: reachesTarget
-            ? `${employeeName || "Employee"} submitted "${tg.title || "Untitled"}" for review (${newCompleted}/${tg.task_target}).`
-            : `${employeeName || "Employee"} completed ${amount} tasks (${newCompleted}/${tg.task_target}).`,
+            ? `${auth?.name || "Employee"} submitted "${tg.title || "Untitled"}" for review (${newCompleted}/${tg.task_target}).`
+            : `${auth?.name || "Employee"} completed ${progressAmount} tasks (${newCompleted}/${tg.task_target}).`,
         }),
       });
       return Response.json({ target: updated[0] });
@@ -457,8 +458,8 @@ Deno.serve(async (req) => {
         const comments = Array.isArray(tg.comments) ? tg.comments : [];
         comments.push({
           id: crypto.randomUUID(),
-          user_id: reviewerId || tg.manager_id,
-          user_name: reviewerName || "Manager",
+          user_id: auth?.userId || tg.manager_id,
+          user_name: auth?.name || "Manager",
           content: `❌ ${reason.trim()}`,
           files: [],
           is_issue: false,
