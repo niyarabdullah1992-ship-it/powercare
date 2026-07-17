@@ -22,7 +22,7 @@ export default function Safety() {
 
   // HQ (المقر الرئيسي) gets its own safety card alongside the stations.
   const stations = [
-    ...(canSeeAllStations(currentUser) || !currentUser.stationId
+    ...(canSeeAllStations(currentUser) || !currentUser.stationId || data.ownerId === currentUser.id
       ? [{ id: "hq", name: ar ? "المقر الرئيسي" : "Headquarters" }]
       : []),
     ...visibleStations(currentUser, data),
