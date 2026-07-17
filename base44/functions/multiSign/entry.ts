@@ -56,12 +56,79 @@ const escapeHtml = (value) => String(value || '').replace(/[&<>"']/g, (char) => 
 
 function signatureRequestEmail({ ar, signerName, creatorName, fileName, link }) {
   const direction = ar ? 'rtl' : 'ltr';
+  const align = ar ? 'right' : 'left';
   const title = ar ? 'طلب توقيع مستند' : 'Document signature request';
   const greeting = ar ? `مرحبًا ${signerName}` : `Hello ${signerName}`;
-  const message = ar ? `طلب منك ${creatorName} مراجعة المستند التالي وتوقيعه إلكترونيًا.` : `${creatorName} asked you to review and electronically sign the following document.`;
+  const intro = ar ? 'لديك مستند جديد بانتظار مراجعتك وتوقيعك الإلكتروني.' : 'A new document is waiting for your review and electronic signature.';
+  const senderLabel = ar ? 'مرسل الطلب' : 'Requested by';
+  const documentLabel = ar ? 'المستند المطلوب توقيعه' : 'Document to sign';
   const button = ar ? 'مراجعة المستند والتوقيع' : 'Review and sign document';
-  const note = ar ? 'هذا الرابط مخصص لك، فلا تشاركه مع أي شخص آخر.' : 'This link is unique to you. Please do not share it.';
-  return `<!doctype html><html dir="${direction}"><body style="margin:0;background:#f6f1e8;font-family:Arial,sans-serif;color:#30271d"><table width="100%" cellpadding="0" cellspacing="0" role="presentation"><tr><td align="center" style="padding:32px 16px"><table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background:#ffffff;border:1px solid #e7ddce;border-radius:16px;overflow:hidden"><tr><td style="padding:24px 28px;background:#30271d;color:#ffffff"><div style="font-size:12px;letter-spacing:2px;color:#d8b879">POWERCARE</div><h1 style="margin:8px 0 0;font-size:24px">${title}</h1></td></tr><tr><td style="padding:28px"><h2 style="margin:0 0 12px;font-size:20px">${escapeHtml(greeting)}</h2><p style="margin:0 0 22px;line-height:1.8;color:#6d6255">${escapeHtml(message)}</p><div style="padding:16px;border:1px solid #e7ddce;border-radius:10px;background:#faf7f2"><div style="font-size:12px;color:#8b7d6c;margin-bottom:6px">${ar ? 'المستند' : 'Document'}</div><strong style="font-size:15px">${escapeHtml(fileName)}</strong></div><div style="text-align:center;margin:26px 0"><a href="${escapeHtml(link)}" style="display:inline-block;background:#bd8d4f;color:#ffffff;text-decoration:none;padding:14px 24px;border-radius:9px;font-weight:bold">${button}</a></div><p style="margin:0;font-size:12px;line-height:1.7;color:#938778">${note}</p></td></tr><tr><td style="padding:16px 28px;border-top:1px solid #eee5d8;font-size:11px;color:#9b9082">PowerCare · ${ar ? 'توقيع إلكتروني موثّق' : 'Verified electronic signing'}</td></tr></table></td></tr></table></body></html>`;
+  const note = ar ? 'هذا الرابط آمن ومخصص لك فقط. يرجى عدم مشاركته مع أي شخص آخر.' : 'This secure link is unique to you. Please do not share it with anyone else.';
+  const footer = ar ? 'توقيع إلكتروني موثّق وآمن' : 'Secure, verified electronic signing';
+
+  return `<!doctype html>
+<html lang="${ar ? 'ar' : 'en'}" dir="${direction}">
+  <body style="margin:0;padding:0;background:#f6f1e8;color:#30271d;font-family:Arial,'Helvetica Neue',sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f6f1e8;">
+      <tr>
+        <td align="center" style="padding:36px 16px;">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background:#ffffff;border:1px solid #e7ddce;border-radius:16px;overflow:hidden;box-shadow:0 8px 28px rgba(48,39,29,0.08);">
+            <tr>
+              <td style="padding:28px 32px;background:#30271d;text-align:${align};">
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                  <tr>
+                    <td style="vertical-align:middle;text-align:${align};">
+                      <div style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;border:1px solid #bd8d4f;border-radius:50%;color:#bd8d4f;font-size:18px;font-weight:bold;vertical-align:middle;">P</div>
+                      <span style="margin-${ar ? 'right' : 'left'}:10px;color:#f6f1e8;font-size:15px;font-weight:bold;letter-spacing:2px;vertical-align:middle;">POWERCARE</span>
+                    </td>
+                  </tr>
+                </table>
+                <h1 style="margin:22px 0 0;color:#f6f1e8;font-size:26px;line-height:1.35;font-weight:700;">${title}</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px;text-align:${align};">
+                <h2 style="margin:0 0 10px;color:#30271d;font-size:21px;line-height:1.5;font-weight:700;">${escapeHtml(greeting)}</h2>
+                <p style="margin:0 0 26px;color:#6d6255;font-size:15px;line-height:1.8;">${intro}</p>
+
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:14px;background:#faf7f2;border:1px solid #e7ddce;border-radius:12px;">
+                  <tr>
+                    <td style="padding:16px 18px;text-align:${align};">
+                      <div style="margin-bottom:6px;color:#8b7d6c;font-size:11px;font-weight:bold;letter-spacing:0.5px;">${senderLabel}</div>
+                      <div style="color:#30271d;font-size:16px;font-weight:700;">${escapeHtml(creatorName)}</div>
+                    </td>
+                  </tr>
+                </table>
+
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;border:1px solid #e7ddce;border-radius:12px;">
+                  <tr>
+                    <td width="62" style="padding:18px 0 18px 18px;text-align:center;vertical-align:middle;">
+                      <div style="display:inline-block;width:42px;height:42px;line-height:42px;background:#f6f1e8;border:1px solid #e7ddce;border-radius:10px;color:#bd8d4f;font-size:11px;font-weight:bold;text-align:center;">PDF</div>
+                    </td>
+                    <td style="padding:18px;text-align:${align};vertical-align:middle;">
+                      <div style="margin-bottom:6px;color:#8b7d6c;font-size:11px;font-weight:bold;letter-spacing:0.5px;">${documentLabel}</div>
+                      <div style="color:#30271d;font-size:15px;font-weight:700;line-height:1.5;word-break:break-word;">${escapeHtml(fileName)}</div>
+                    </td>
+                  </tr>
+                </table>
+
+                <div style="padding:30px 0 24px;text-align:center;">
+                  <a href="${escapeHtml(link)}" style="display:inline-block;background:#bd8d4f;color:#ffffff;text-decoration:none;padding:15px 28px;border-radius:10px;font-size:15px;font-weight:bold;line-height:1.2;box-shadow:0 5px 14px rgba(189,141,79,0.28);">${button}</a>
+                </div>
+                <p style="margin:0;padding-top:18px;border-top:1px solid #eee5d8;color:#938778;font-size:12px;line-height:1.8;text-align:center;">${note}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 28px;background:#faf7f2;border-top:1px solid #e7ddce;color:#9b9082;font-size:11px;line-height:1.6;text-align:center;">
+                <strong style="color:#6d6255;">PowerCare</strong> · ${footer}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
 }
 
 // Send via the connected Gmail account first (works for ANY external address —
