@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { base44 } from "@/api/base44Client";
 import { makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
+import { STAMP_CANVAS_HEIGHT, STAMP_CANVAS_WIDTH, STAMP_FALLBACK_SPOT, STAMP_WIDTH_PERCENT, clampStampScale, stampAspectRatio } from "@/lib/signatureStampGeometry";
 
 const loadImage = (src) =>
   new Promise((resolve, reject) => {
@@ -16,10 +17,10 @@ const loadImage = (src) =>
 export async function makeSignatureStamp(sigDataUrl, name, verificationId = "") {
   const img = await loadImage(sigDataUrl);
   const canvas = document.createElement("canvas");
-  canvas.width = 420;
-  canvas.height = 190;
+  canvas.width = STAMP_CANVAS_WIDTH;
+  canvas.height = STAMP_CANVAS_HEIGHT;
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
   ctx.strokeStyle = "#d9c8ae";
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -29,7 +30,7 @@ export async function makeSignatureStamp(sigDataUrl, name, verificationId = "") 
   const scale = Math.min(360 / img.width, 88 / img.height);
   const w = img.width * scale;
   const h = img.height * scale;
-  ctx.drawImage(img, (420 - w) / 2, 14 + (88 - h) / 2, w, h);
+  ctx.drawImage(img, (STAMP_CANVAS_WIDTH - w) / 2, 14 + (88 - h) / 2, w, h);
   ctx.strokeStyle = "#e7dfd3";
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -39,14 +40,21 @@ export async function makeSignatureStamp(sigDataUrl, name, verificationId = "") 
   ctx.textAlign = "center";
   ctx.fillStyle = "#30271d";
   ctx.font = "600 17px sans-serif";
-  ctx.fillText(String(name || "").slice(0, 40), 210, 133);
+  ctx.fillText(String(name || "").slice(0, 40), 210, 132);
   ctx.fillStyle = "#7c7063";
   ctx.font = "12px sans-serif";
-  ctx.fillText(new Date().toLocaleDateString("en-GB"), 210, 151);
+  ctx.fillText(new Date().toLocaleDateString("en-GB"), 210, 150);
   if (verificationId) {
-    ctx.fillStyle = "#9a6c32";
+    ctx.fillStyle = "#f8f1e7";
+    ctx.strokeStyle = "#bd8d4f";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(70, 157, 280, 24, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#8a642f";
     ctx.font = "600 10px monospace";
-    ctx.fillText(`VERIFIED • ${String(verificationId).slice(0, 40)}`, 210, 172);
+    ctx.fillText(`VERIFIED • ${String(verificationId).slice(0, 40)}`, 210, 173);
   }
   return canvas.toDataURL("image/png");
 }
@@ -58,7 +66,7 @@ export async function makeSignatureStamp(sigDataUrl, name, verificationId = "") 
 // signer), the verification badge is stamped at the top-right of the last
 // page too. Uploads and returns { url, bytes }.
 export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot, sizeScale = 1, uploadResult = true) {
-  const scale = Math.min(Math.max(Number(sizeScale) || 1, 0.65), 1.35);
+  const scale = clampStampScale((Number(sizeScale) || 1) * 100) / 100;
   const pdfBytes = await fetch(docUrl).then((r) => r.arrayBuffer());
   const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   const pages = pdf.getPages();
@@ -67,27 +75,14 @@ export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot, s
   const stampBytes = await fetch(stampDataUrl).then((r) => r.arrayBuffer());
   const stampImg = await pdf.embedPng(stampBytes);
 
-  if (spot && spot.page >= 1) {
-    // Assigned spot: stamp centered on the exact point the creator chose.
-    const page = pages[Math.min(Math.max(Math.round(spot.page), 1), pages.length) - 1];
-    const { width, height } = page.getSize();
-    const sw = Math.min(120, width * 0.21) * scale;
-    const sh = sw * (190 / 420);
-    const cx = (Number(spot.x) / 100) * width;
-    const cy = height - (Number(spot.y) / 100) * height;
-    const x = Math.min(Math.max(cx - sw / 2, 4), width - sw - 4);
-    const y = Math.min(Math.max(cy - sh / 2, 4), height - sh - 4);
-    page.drawImage(stampImg, { x, y, width: sw, height: sh });
-  } else {
-    // Fallback: signatures line up in rows along the bottom of the last page.
-    const { width } = lastPage.getSize();
-    const sw = Math.min(120, width * 0.21) * scale;
-    const sh = sw * (190 / 420);
-    const perRow = Math.max(1, Math.floor((width - 32) / (sw + 12)));
-    const col = slotIndex % perRow;
-    const row = Math.floor(slotIndex / perRow);
-    lastPage.drawImage(stampImg, { x: 16 + col * (sw + 12), y: Math.max(16, 28 + row * (sh + 12)), width: sw, height: sh });
-  }
+  const selectedSpot = spot?.page >= 1 ? spot : { ...STAMP_FALLBACK_SPOT, page: pages.length };
+  const page = pages[Math.min(Math.max(Math.round(selectedSpot.page), 1), pages.length) - 1];
+  const { width, height } = page.getSize();
+  const sw = width * (STAMP_WIDTH_PERCENT / 100) * scale;
+  const sh = sw * stampAspectRatio;
+  const cx = (Number(selectedSpot.x) / 100) * width;
+  const cy = height - (Number(selectedSpot.y) / 100) * height;
+  page.drawImage(stampImg, { x: cx - sw / 2, y: cy - sh / 2, width: sw, height: sh });
 
   if (badge) {
     const { width, height } = lastPage.getSize();

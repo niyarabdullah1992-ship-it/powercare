@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Loader2, ChevronLeft, ChevronRight, CheckCircle2, X, MousePointerClick } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
+import { STAMP_CANVAS_HEIGHT, STAMP_CANVAS_WIDTH, STAMP_MAX_SCALE, STAMP_MIN_SCALE, STAMP_WIDTH_PERCENT, clampStampScale } from "@/lib/signatureStampGeometry";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
@@ -14,7 +15,7 @@ export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [spot, setSpot] = useState(initialSpot || null); // {page,x,y}
-  const [scale, setScale] = useState(Math.min(135, Math.max(65, initialScale))); // safe signature size %
+  const [scale, setScale] = useState(clampStampScale(initialScale));
   const scaleRef = useRef(initialScale);
   scaleRef.current = scale;
   const canvasRef = useRef(null);
@@ -39,7 +40,7 @@ export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100
       if (e.touches.length === 2 && startDist > 0) {
         if (e.cancelable) e.preventDefault();
         const next = Math.round(startScale * (dist(e.touches) / startDist));
-        setScale(Math.min(135, Math.max(65, next)));
+        setScale(clampStampScale(next));
       }
     };
     const onTouchEnd = () => { startDist = 0; };
@@ -97,8 +98,8 @@ export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100
 
   const handleClick = (e) => {
     const rect = wrapRef.current.getBoundingClientRect();
-    const halfWidth = 10.5 * (scale / 100);
-    const halfHeight = ((rect.width * 0.21 * (scale / 100) * (190 / 420)) / 2 / rect.height) * 100;
+    const halfWidth = (STAMP_WIDTH_PERCENT / 2) * (scale / 100);
+    const halfHeight = ((rect.width * (STAMP_WIDTH_PERCENT / 100) * (scale / 100) * (STAMP_CANVAS_HEIGHT / STAMP_CANVAS_WIDTH)) / 2 / rect.height) * 100;
     const x = Math.min(Math.max(((e.clientX - rect.left) / rect.width) * 100, halfWidth), 100 - halfWidth);
     const y = Math.min(Math.max(((e.clientY - rect.top) / rect.height) * 100, halfHeight), 100 - halfHeight);
     setSpot({ page, x, y });
@@ -129,8 +130,8 @@ export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100
               </div>
             )}
             {spot && spot.page === page && (
-              <div className="pointer-events-none absolute overflow-hidden rounded-lg border border-accent/70 bg-card text-center shadow-md" style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${21 * (scale / 100)}%`, aspectRatio: "420 / 190", transform: "translate(-50%, -50%)" }}>
-                <div className="flex h-full flex-col justify-end px-1 py-0.5"><p className="truncate font-heading text-[8px] font-semibold leading-none text-foreground">{signerName}</p><p className="mt-0.5 truncate font-mono text-[4px] leading-none text-accent">VERIFIED • {verificationId || "PWC-••••"}</p></div>
+              <div className="pointer-events-none absolute overflow-hidden rounded-lg border border-accent/70 bg-card/95 text-center shadow-md" style={{ left: `${spot.x}%`, top: `${spot.y}%`, width: `${STAMP_WIDTH_PERCENT * (scale / 100)}%`, aspectRatio: `${STAMP_CANVAS_WIDTH} / ${STAMP_CANVAS_HEIGHT}`, transform: "translate(-50%, -50%)" }}>
+                <div className="flex h-full flex-col px-1 py-0.5"><div className="flex flex-1 items-center justify-center border-b border-border/70 font-heading text-[8px] font-semibold italic text-foreground">{signerName}</div><p className="mt-0.5 truncate text-[5px] font-semibold leading-none text-foreground">{signerName}</p><p className="text-[4px] leading-none text-muted-foreground">{new Date().toLocaleDateString("en-GB")}</p><p className="mt-0.5 truncate rounded-sm border border-accent/70 bg-secondary font-mono text-[4px] leading-none text-accent">VERIFIED • {verificationId || "PWC-••••"}</p></div>
               </div>
             )}
           </div>
@@ -144,8 +145,8 @@ export default function SignSpotPicker({ docUrl, initialSpot, initialScale = 100
           </div>
           <input
             type="range"
-            min={65}
-            max={135}
+            min={STAMP_MIN_SCALE}
+            max={STAMP_MAX_SCALE}
             step={5}
             value={scale}
             onChange={(e) => setScale(Number(e.target.value))}
