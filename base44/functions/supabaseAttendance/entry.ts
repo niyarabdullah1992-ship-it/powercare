@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
       const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "schedules" });
       for (const schedule of (blobs[0]?.payload || [])) {
         for (const shift of (schedule.shiftTypes || [])) {
-          if ((schedule.assignments?.[dayIndex]?.[shift.id] || []).includes(employeeId)) return shift;
+          if ((schedule.assignments?.[dayIndex]?.[shift.id] || []).includes(employeeId)) return { ...shift, stationId: schedule.stationId };
         }
       }
       return null;
@@ -158,15 +158,15 @@ Deno.serve(async (req) => {
       }
       return out;
     };
-    // Nearest workplace the employee is INSIDE of (with GPS-accuracy margin), or
-    // null plus the distance to the closest workplace when they're outside all.
-    const matchWorkplace = (workplaces, lat, lng, accuracyMargin) => {
+    // Match only when the measured distance itself is inside the saved radius.
+    // GPS accuracy must never expand a station's permitted attendance zone.
+    const matchWorkplace = (workplaces, lat, lng) => {
       let best = null;
       let nearest = null;
       for (const w of workplaces) {
         const d = Math.round(distanceMeters(lat, lng, w.lat, w.lng));
         if (!nearest || d < nearest.dist) nearest = { ...w, dist: d };
-        if (d - accuracyMargin <= w.radiusMeters && (!best || d < best.dist)) best = { ...w, dist: d };
+        if (d <= w.radiusMeters && (!best || d < best.dist)) best = { ...w, dist: d };
       }
       return { best, nearest, nearestDist: nearest?.dist ?? null };
     };
@@ -347,16 +347,14 @@ Deno.serve(async (req) => {
       if (lat == null || lng == null) {
         return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       }
-      // Multi-station support: verify against EVERY company workplace and document
-      // the actual station the employee checked in at (nearest one they're inside).
-      const workplaces = await listWorkplaces();
+      // Verify only against the station assigned by today's schedule. Being at a
+      // different company location must not be reported as inside this workplace.
+      const scheduledStationId = scheduledShift.stationId || auth?.stationId || stationId;
+      const workplaces = (await listWorkplaces()).filter((workplace) => workplace.stationId === scheduledStationId);
       if (workplaces.length === 0) {
         return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
       }
-      // GPS readings carry an accuracy radius — give the employee the benefit of
-      // that margin (capped at 100m) so an imprecise fix isn't wrongly "outside".
-      const accuracyMargin = Math.min(Number(accuracy) || 0, 100);
-      const { best: workplace, nearest, nearestDist } = matchWorkplace(workplaces, lat, lng, accuracyMargin);
+      const { best: workplace, nearest, nearestDist } = matchWorkplace(workplaces, lat, lng);
       const inZone = !!workplace;
       const recordedWorkplace = workplace || nearest;
       const now = new Date();
@@ -443,8 +441,7 @@ Deno.serve(async (req) => {
       // employee may check out from any company station (e.g. moved stations mid-day).
       const workplaces = await listWorkplaces();
       if (workplaces.length === 0) return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
-      const accuracyMargin = Math.min(Number(accuracy) || 0, 100);
-      const { best: outWorkplace, nearestDist } = matchWorkplace(workplaces, lat, lng, accuracyMargin);
+      const { best: outWorkplace, nearestDist } = matchWorkplace(workplaces, lat, lng);
       if (!outWorkplace) {
         return Response.json({ error: "OUTSIDE_STATION", distanceMeters: nearestDist }, { status: 400 });
       }

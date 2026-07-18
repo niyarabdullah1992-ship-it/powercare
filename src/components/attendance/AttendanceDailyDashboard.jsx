@@ -132,7 +132,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                 <th className="py-2 pe-3 text-start">{t("checkOut")}</th>
                 <th className="py-2 pe-3 text-start">{t("workHoursLabel")}</th>
                 <th className="py-2 pe-3 text-start">{t("locationStatus")}</th>
-                <th className="py-2 pe-3 text-start"></th>
+                <th className="py-2 pe-3 text-start">{lang === "ar" ? "الإجراء" : "Action"}</th>
               </tr>
             </thead>
             <tbody>
@@ -151,7 +151,6 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                           <span className="text-[11px] text-amber-700">{t("lateBy")} {r.late_minutes} {t("minutesUnit")}</span>
                         )}
                         {r?.excused && <span className="text-[11px] text-emerald-700">{t("excused")}</span>}
-                        {(r?.manual_override || r?.location_status === "manual") && <span className="inline-flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-1.5 py-0.5 text-[10px] text-violet-700"><PenLine className="h-3 w-3" />{lang === "ar" ? "يدوي" : "Manual"} · {r.override_by || r.excused_by_name || "—"}</span>}
                         {isPastCheckoutMissing(r) && (
                           <span className="px-1.5 py-0.5 rounded-full text-[10px] border border-red-300 bg-red-50 text-red-700">{t("missingCheckoutLabel")}</span>
                         )}
@@ -164,27 +163,33 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                     <td className="py-2 pe-3 text-muted-foreground">{r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—"}</td>
                     <td className="py-2 pe-3 text-muted-foreground">{r?.work_hours ?? "—"}</td>
                     <td className="py-2 pe-3">
-                      {r?.location_status ? (
+                      {r?.location_status === "manual" ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3" />{lang === "ar" ? "الموقع غير متحقق" : "Location not verified"}
+                        </span>
+                      ) : r?.location_status ? (
                         <button
                           onClick={() => setMapRow(r)}
-                          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border hover:opacity-80 ${r.location_status === "inside" ? "bg-emerald-100 text-emerald-700 border-emerald-300" : r.location_status === "manual" ? "bg-violet-50 text-violet-700 border-violet-300" : "bg-red-100 text-red-700 border-red-300"}`}
-                          title={r.location_status === "manual" ? (lang === "ar" ? "تحضير يدوي" : "Manual attendance") : t("viewOnMap")}
+                          className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs hover:opacity-80 ${r.location_status === "inside" ? "border-emerald-300 bg-emerald-100 text-emerald-700" : "border-red-300 bg-red-100 text-red-700"}`}
+                          title={t("viewOnMap")}
                         >
-                          {r.location_status === "manual" ? <PenLine className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
-                          {r.location_status === "inside" ? t("insideLocation") : r.location_status === "manual" ? (lang === "ar" ? "تحضير يدوي" : "Manual") : t("outsideLocation")}
-                          {r.location_status !== "manual" && r.distance_meters != null && ` · ${r.distance_meters}m`}
+                          <MapPin className="h-3 w-3" />
+                          {r.location_status === "inside" ? t("insideLocation") : t("outsideLocation")}
+                          {r.distance_meters != null && ` · ${r.distance_meters}m`}
                         </button>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      ) : <span className="text-muted-foreground">—</span>}
                     </td>
-                    <td className="py-2 pe-3">
+                    <td className="min-w-40 py-2 pe-3">
                       <div className="flex flex-wrap items-center gap-1.5">
-                      {canManual && (
+                      {(r?.manual_override || r?.location_status === "manual") ? (
+                        <span className="inline-flex items-center gap-1 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-xs text-violet-700">
+                          <PenLine className="h-3.5 w-3.5" />{lang === "ar" ? "حضور يدوي بواسطة" : "Manual by"} {r.override_by || r.excused_by_name || "—"}
+                        </span>
+                      ) : canManual && !r?.check_in_at ? (
                         <button onClick={() => manualCheckIn(e)} disabled={manualLoadingId === e.id} className="inline-flex items-center gap-1 rounded-md border border-violet-300 px-2 py-1 text-xs text-violet-700 hover:bg-violet-50 disabled:opacity-50">
                           {manualLoadingId === e.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PenLine className="h-3.5 w-3.5" />}{lang === "ar" ? "تحضير يدوي" : "Manual check-in"}
                         </button>
-                      )}
+                      ) : null}
                       {(status === "late" || status === "absent") && r?.id && (
                         <button
                           onClick={() => toggleExcuse(r)}

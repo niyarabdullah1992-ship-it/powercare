@@ -55,7 +55,7 @@ export function startGeoWarmup(durationMs = 30000) {
 
 export async function getAccuratePosition({ timeoutMs = 10000 } = {}) {
   // Fresh, accurate warm fix already in hand → instant check-in.
-  if (warmFix && warmFix.accuracy != null && warmFix.accuracy <= GOOD_ACCURACY_M && Date.now() - warmAt < 60000) {
+  if (warmFix && warmFix.accuracy != null && warmFix.accuracy <= GOOD_ACCURACY_M && Date.now() - warmAt < 10000) {
     return warmFix;
   }
   const browserFix = await getBrowserPosition({ timeoutMs });

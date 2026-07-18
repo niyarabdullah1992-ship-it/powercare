@@ -59,9 +59,10 @@ export default function QuickCheckInCard({ currentUser, company }) {
     if (fix) { setCoords(fix); setLocState("ready"); } else setLocState("denied");
   };
 
-  // Multi-station: measure against ALL company stations with coordinates and use
-  // the nearest one — the employee can check in at any authorized workplace.
-  const geoStations = (data?.stations || []).filter((s) => s.lat != null && s.lng != null);
+  // Compare only with the station assigned by today's shift. Another company
+  // location must still appear outside for this employee's scheduled workplace.
+  const scheduledStationId = shift?.stationId || currentUser.stationId || HQ_STATION_ID;
+  const geoStations = (data?.stations || []).filter((s) => s.id === scheduledStationId && s.lat != null && s.lng != null);
   let nearest = null;
   if (coords) {
     for (const s of geoStations) {
@@ -70,10 +71,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
     }
   }
   const dist = nearest?.d ?? null;
-  // Give the GPS reading the benefit of its own accuracy margin (capped at 100m),
-  // so a slightly imprecise fix doesn't wrongly flag someone standing at the station.
-  const accuracyMargin = Math.min(Number(coords?.accuracy) || 0, 100);
-  const inRange = nearest ? nearest.d - accuracyMargin <= (Number(nearest.station.radiusMeters) || 200) : null;
+  const inRange = nearest ? nearest.d <= (Number(nearest.station.radiusMeters) || 200) : null;
 
   const handleCheckIn = async () => {
     setError("");
