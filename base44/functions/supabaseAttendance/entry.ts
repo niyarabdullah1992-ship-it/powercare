@@ -41,7 +41,14 @@ Deno.serve(async (req) => {
           if (s && new Date(s.expiresAt).getTime() > Date.now()) {
             if (s.role === "owner") {
               const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
-              auth = { isManager: true, role: "owner", name: accounts[0]?.name || accounts[0]?.ownerEmail || "Owner", companyId, userId: s.userId || null };
+              const account = accounts[0] || null;
+              let ownerEmployeeId = s.userId || null;
+              if (!ownerEmployeeId && account?.ownerEmail) {
+                const employees = await base44.asServiceRole.entities.Employee.filter({ companyId });
+                const ownerEmail = account.ownerEmail.trim().toLowerCase();
+                ownerEmployeeId = employees.find((employee) => employee.email?.trim().toLowerCase() === ownerEmail)?.employeeId || null;
+              }
+              auth = { isManager: true, role: "owner", name: account?.name || account?.ownerEmail || "Owner", companyId, userId: ownerEmployeeId };
             } else {
               const emps = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: s.userId });
               const emp = emps[0] || null;
