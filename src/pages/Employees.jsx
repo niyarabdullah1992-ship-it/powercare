@@ -23,7 +23,7 @@ import PageHeader from "@/components/PageHeader";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
-const ROLES = ["employee", "inventory_keeper", "station_manager", "pgm", "ops_manager", "director"];
+const ROLES = ["employee", "inventory_keeper", "financial_officer", "station_manager", "pgm", "ops_manager", "director"];
 
 const TASK_STATUS_STYLES = {
   overdue: "border-red-300 bg-red-50 text-red-700",

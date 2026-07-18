@@ -1,0 +1,115 @@
+{
+  "name": "ExpenseClaim",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "requesterId": {
+      "type": "string"
+    },
+    "requesterName": {
+      "type": "string"
+    },
+    "stationId": {
+      "type": "string"
+    },
+    "expenseType": {
+      "type": "string",
+      "enum": [
+        "travel",
+        "accommodation",
+        "fuel",
+        "overtime_meals",
+        "tools_equipment",
+        "training"
+      ]
+    },
+    "amount": {
+      "type": "number",
+      "minimum": 0.01
+    },
+    "currency": {
+      "type": "string",
+      "default": "SAR"
+    },
+    "expenseDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "description": {
+      "type": "string"
+    },
+    "receiptUrl": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "submitted",
+        "manager_approved",
+        "manager_rejected",
+        "finance_approved",
+        "finance_rejected"
+      ]
+    },
+    "managerReviewedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "managerReviewedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "financeReviewedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "financeReviewedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "companyId",
+    "requesterId",
+    "requesterName",
+    "stationId",
+    "expenseType",
+    "amount",
+    "currency",
+    "expenseDate",
+    "receiptUrl",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

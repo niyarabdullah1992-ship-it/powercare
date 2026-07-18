@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ListTodo, MessageSquare, ClipboardCheck, FolderOpen, Warehouse } from "lucide-react";
+import { LayoutDashboard, ListTodo, MessageSquare, ClipboardCheck, FolderOpen, Warehouse, ReceiptText } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { allowedNavFor } from "@/lib/navVisibility";
@@ -12,6 +12,7 @@ const TABS = [
   { to: "/app/attendance", icon: ClipboardCheck, key: "attendanceScheduling" },
   { to: "/app/files", icon: FolderOpen, key: "files" },
   { to: "/app/inventory", icon: Warehouse, key: "inventory" },
+  { to: "/app/expenses", icon: ReceiptText, key: "expenses" },
 ];
 
 const memKey = (to) => `powercare_tab_last_${to}`;
