@@ -8,6 +8,7 @@ import StationFilterDropdown from "@/components/reports/StationFilterDropdown";
 import ReportCard from "@/components/reports/ReportCard";
 import ReportTableHead from "@/components/reports/ReportTableHead";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
+import { HQ_STATION_ID } from "@/lib/store";
 
 const COLOR_COMPLETED = "#10b981"; // emerald-500
 const COLOR_ONTRACK = "#3b82f6"; // blue-500
@@ -61,11 +62,12 @@ export default function StationComparison() {
 
   if (!data) return null;
 
-  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || null;
+  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || HQ_STATION_ID;
   const targetStationKey = (tg) => {
     if (tg.assignment_type === "station_team") return tg.assignment_id || tg.station_id || null;
-    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || null;
-    return tg.station_id || null;
+    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || HQ_STATION_ID;
+    if (tg.assignment_type === "hq_team") return HQ_STATION_ID;
+    return tg.station_id || HQ_STATION_ID;
   };
 
   const toggle = (id) => {
@@ -73,7 +75,7 @@ export default function StationComparison() {
   };
 
   const metricsFor = (station) => {
-    const members = data.employees.filter((e) => e.stationId === station.id);
+    const members = data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === station.id);
     const stationTargets = targets.filter((tg) => targetStationKey(tg) === station.id);
     const completed = stationTargets.filter((tg) => tg.status === "completed").length;
     const overdue = stationTargets.filter((tg) => tg.status === "overdue").length;
@@ -116,7 +118,7 @@ export default function StationComparison() {
           />
           <StationFilterDropdown
             t={t}
-            options={data.stations.map((s) => ({ key: s.id, label: s.name }))}
+            options={[...data.stations].sort((a, b) => Number(b.id === HQ_STATION_ID) - Number(a.id === HQ_STATION_ID)).map((s) => ({ key: s.id, label: s.id === HQ_STATION_ID ? `${s.name} · HQ` : s.name }))}
             selected={selected}
             onToggle={toggle}
             onSelectAll={() => setSelected(data.stations.map((s) => s.id))}

@@ -7,6 +7,7 @@ import L from "leaflet";
 import { Loader2, MapPin } from "lucide-react";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import "leaflet/dist/leaflet.css";
+import { HQ_STATION_ID } from "@/lib/store";
 
 const stationIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -45,7 +46,7 @@ export default function AttendanceMapDashboard({ employees, t }) {
   }, [date, employees.length]);
 
   const located = rows.filter((r) => r.check_in_lat != null && r.check_in_lng != null)
-    .filter((r) => stationFilter === "all" || r.station_id === stationFilter);
+    .filter((r) => stationFilter === "all" || (r.station_id || HQ_STATION_ID) === stationFilter);
   const stations = (data?.stations || []).filter((s) => s.lat != null && s.lng != null)
     .filter((s) => stationFilter === "all" || s.id === stationFilter);
 
@@ -71,8 +72,8 @@ export default function AttendanceMapDashboard({ employees, t }) {
           className="px-3 py-2 rounded-md border border-input text-sm font-body bg-card"
         >
           <option value="all">{t("all")}</option>
-          {(data?.stations || []).map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+          {[...(data?.stations || [])].sort((a, b) => Number(b.id === HQ_STATION_ID) - Number(a.id === HQ_STATION_ID)).map((s) => (
+            <option key={s.id} value={s.id}>{s.id === HQ_STATION_ID ? `${s.name} · HQ` : s.name}</option>
           ))}
         </select>
         {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}

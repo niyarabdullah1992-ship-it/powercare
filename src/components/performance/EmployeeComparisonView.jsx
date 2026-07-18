@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import GroupVsGroupComparison from "@/components/reports/GroupVsGroupComparison";
+import { HQ_STATION_ID } from "@/lib/store";
 
 // Employee-level group-vs-group comparison, available to everyone who can see
 // this page (unlike the owner-only full Employee Report table).
@@ -32,7 +33,7 @@ export default function EmployeeComparisonView({ t }) {
   const scopedEmployees = useMemo(() => {
     if (!data || !currentUser) return [];
     if (currentUser.role !== "employee") return data.employees;
-    return data.employees.filter((e) => (e.stationId || null) === (currentUser.stationId || null));
+    return data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === (currentUser.stationId || HQ_STATION_ID));
   }, [data, currentUser]);
 
   const rows = useMemo(() => {

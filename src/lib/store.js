@@ -7,6 +7,21 @@ import { sendEmailAlert } from "./emailAlerts";
 const REGISTRY_KEY = "powercare_registry";
 const COMPANY_PREFIX = "powercare_company_";
 const SESSION_KEY = "powercare_session";
+export const HQ_STATION_ID = "hq";
+
+const createHQStation = () => ({
+  id: HQ_STATION_ID,
+  name: "HQ",
+  isHQ: true,
+  location: "",
+  type: "Headquarters",
+  status: "active",
+  managerId: null,
+  lat: null,
+  lng: null,
+  radiusMeters: null,
+  createdAt: new Date().toISOString(),
+});
 
 /* ----------------------------- helpers ----------------------------- */
 function read(key, fallback) {
@@ -62,14 +77,15 @@ export function logAudit(companyId, action, details) {
 function getStationHRManager(data, employeeId) {
   const emp = data.employees.find((e) => e.id === employeeId);
   if (!emp) return null;
+  const employeeStationId = emp.stationId || HQ_STATION_ID;
   const groups = groupLevelsByOrder(data.hrLevels || []);
   for (const group of groups) {
     if (!group.manager) continue;
     const candidate = data.employees.find((e) => {
       if (e.hrLevelId !== group.manager.id) return false;
-      if (group.scope === "station") return e.hrStationId === emp.stationId;
+      if (group.scope === "station") return e.hrStationId === employeeStationId;
       if (group.scope === "cluster") {
-        const cluster = (data.hrClusters || []).find((c) => (c.stationIds || []).includes(emp.stationId));
+        const cluster = (data.hrClusters || []).find((c) => (c.stationIds || []).includes(employeeStationId));
         return cluster ? e.hrClusterId === cluster.id : false;
       }
       return true;
@@ -236,7 +252,7 @@ function emptyCompanyData(meta) {
     plan: meta.plan,
     directorId: null,   // user id of Operations Director
     ownerId: null,     // user id owning the company account
-    stations: [],
+    stations: [createHQStation()],
     employees: [],
     tasks: [],
     reports: [],
@@ -266,6 +282,21 @@ export function getCompanyData(id) {
   return read(companyKey(id), null);
 }
 
+export function ensureHQStation(companyId) {
+  const data = getCompanyData(companyId);
+  if (!data) return null;
+  const existing = (data.stations || []).find((station) => station.id === HQ_STATION_ID || String(station.name || "").trim().toUpperCase() === "HQ");
+  if (existing?.isHQ && data.stations[0]?.id === existing.id) return existing;
+  updateCompany(companyId, (draft) => {
+    draft.stations = draft.stations || [];
+    const hq = draft.stations.find((station) => station.id === HQ_STATION_ID || String(station.name || "").trim().toUpperCase() === "HQ");
+    if (hq) hq.isHQ = true;
+    else draft.stations.unshift(createHQStation());
+    draft.stations.sort((a, b) => Number(b.id === HQ_STATION_ID || b.isHQ) - Number(a.id === HQ_STATION_ID || a.isHQ));
+  });
+  return getCompanyData(companyId)?.stations?.[0] || null;
+}
+
 // Persists authoritative cloud reads into the local cache without re-uploading
 // them or emitting a write event, preventing stale local data from resurfacing.
 export function cacheCloudData(companyId, updates) {
@@ -293,6 +324,14 @@ function scheduleCompanyPush(id, data) {
 
 function saveCompanyData(id, data) {
   data.employees = dedupeEmployees(data.employees);
+  data.stations = data.stations || [];
+  let hq = data.stations.find((station) => station.id === HQ_STATION_ID || String(station.name || "").trim().toUpperCase() === "HQ");
+  if (!hq) {
+    hq = createHQStation();
+    data.stations.unshift(hq);
+  }
+  hq.isHQ = true;
+  data.stations.sort((a, b) => Number(b.id === HQ_STATION_ID || b.isHQ) - Number(a.id === HQ_STATION_ID || a.isHQ));
   lastLocalWriteAt[id] = Date.now();
   write(companyKey(id), data);
   scheduleCompanyPush(id, data);
@@ -470,6 +509,7 @@ export async function hydrateStationsFromEntity(companyId) {
       lat: r.lat,
       lng: r.lng,
       radiusMeters: r.radiusMeters,
+      isHQ: r.stationId === HQ_STATION_ID,
       createdAt: r.created_date,
     }));
   } catch {
@@ -826,7 +866,7 @@ function emailNewEvents(companyId, data, before) {
     if (before.tasks.has(t.id) || !t.assignedTo) return;
     const emp = (data.employees || []).find((e) => e.id === t.assignedTo);
     if (emp?.email) {
-      const station = (data.stations || []).find((s) => s.id === t.stationId);
+      const station = (data.stations || []).find((s) => s.id === (t.stationId || HQ_STATION_ID));
       const priorityLabels = { high: "عالية · High", medium: "متوسطة · Medium", low: "منخفضة · Low" };
       const deadline = t.dueDate || t.endDate;
       const details = [
@@ -849,7 +889,7 @@ function emailNewEvents(companyId, data, before) {
     ...(data.publicReports || []).filter((r) => !before.pubIds.has(r.id)),
   ];
   newReports.forEach((r) => {
-    const station = (data.stations || []).find((s) => s.id === r.stationId);
+    const station = (data.stations || []).find((s) => s.id === (r.stationId || HQ_STATION_ID));
     const manager = (data.employees || []).find((e) => e.id === station?.managerId);
     const toEmail = manager?.email || getCompanyMeta(companyId)?.ownerEmail;
     if (toEmail) {

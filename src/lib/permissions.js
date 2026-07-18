@@ -1,5 +1,9 @@
 // Role-based permission helpers for PowerCare.
 // Roles: director | ops_manager | pgm | station_manager | employee
+import { HQ_STATION_ID } from "@/lib/store";
+
+const employeeStationId = (employee) => employee?.stationId || HQ_STATION_ID;
+const hqFirst = (stations) => [...(stations || [])].sort((a, b) => Number(b.id === HQ_STATION_ID || b.isHQ) - Number(a.id === HQ_STATION_ID || a.isHQ));
 
 export const ROLE_RANK = {
   director: 5,
@@ -16,16 +20,17 @@ export function canSeeAllStations(user) {
 
 // Stations visible to a user given the company data
 export function visibleStations(user, data) {
-  if (canSeeAllStations(user) || user?.id === data?.ownerId) return data.stations;
+  const stations = hqFirst(data.stations);
+  if (canSeeAllStations(user) || user?.id === data?.ownerId) return stations;
   if (user.role === "pgm") {
     const managed = user.managedStations || [];
-    return data.stations.filter((s) => managed.includes(s.id));
+    return stations.filter((s) => managed.includes(s.id));
   }
   if (user.role === "station_manager") {
-    const managed = user.managedStations?.length ? user.managedStations : [user.stationId].filter(Boolean);
-    return data.stations.filter((station) => managed.includes(station.id));
+    const managed = user.managedStations?.length ? user.managedStations : [employeeStationId(user)];
+    return stations.filter((station) => managed.includes(station.id));
   }
-  if (user.role === "employee") return data.stations.filter((station) => station.id === user.stationId);
+  if (user.role === "employee") return stations.filter((station) => station.id === employeeStationId(user));
   return [];
 }
 
@@ -134,7 +139,7 @@ export function isHRAssistant(user, data) {
 // "manage_schedules" permission and to be in scope for that station.
 export function canManageSchedule(user, data, stationId) {
   if (user.role === "director") return true;
-  if (user.role === "station_manager" && user.stationId === stationId) return true;
+  if (user.role === "station_manager" && employeeStationId(user) === stationId) return true;
   if (hasHRPermission(user, data, "manage_schedules")) {
     const scope = hrScopeStations(user, data);
     return scope === null || scope.includes(stationId);
@@ -151,15 +156,15 @@ export function canViewEmployeeProfile(viewer, employee, data) {
   if (viewer.id === employee.id) return true;
   if (["director", "ops_manager"].includes(viewer.role) || viewer.id === data?.ownerId) return true;
   if (viewer.role === "pgm") {
-    return !employee.stationId || (viewer.managedStations || []).includes(employee.stationId);
+    return (viewer.managedStations || []).includes(employeeStationId(employee));
   }
   if (viewer.role === "station_manager") {
-    const managed = viewer.managedStations?.length ? viewer.managedStations : [viewer.stationId];
-    return managed.includes(employee.stationId);
+    const managed = viewer.managedStations?.length ? viewer.managedStations : [employeeStationId(viewer)];
+    return managed.includes(employeeStationId(employee));
   }
   if (viewer.hrLevelId) {
     const scope = hrScopeStations(viewer, data);
-    return scope === null || (employee.stationId && scope.includes(employee.stationId));
+    return scope === null || scope.includes(employeeStationId(employee));
   }
   return false;
 }
@@ -168,13 +173,13 @@ export function canViewEmployeeProfile(viewer, employee, data) {
 export function visibleEmployees(user, data) {
   if (canSeeAllStations(user) || user?.id === data?.ownerId) return data.employees;
   if (user?.role === "station_manager") {
-    const stationIds = new Set([user.stationId, ...(user.managedStations || [])].filter(Boolean));
-    return data.employees.filter((employee) => employee.stationId && stationIds.has(employee.stationId));
+    const stationIds = new Set([employeeStationId(user), ...(user.managedStations || [])]);
+    return data.employees.filter((employee) => stationIds.has(employeeStationId(employee)));
   }
   if (hasHRPermission(user, data, "view_employees") || hasHRPermission(user, data, "manage_employees")) {
     const scope = hrScopeStations(user, data);
-    return scope === null ? data.employees : data.employees.filter((employee) => employee.stationId && scope.includes(employee.stationId));
+    return scope === null ? data.employees : data.employees.filter((employee) => scope.includes(employeeStationId(employee)));
   }
   const stationIds = new Set(visibleStations(user, data).map((station) => station.id));
-  return data.employees.filter((employee) => employee.stationId && stationIds.has(employee.stationId));
+  return data.employees.filter((employee) => stationIds.has(employeeStationId(employee)));
 }

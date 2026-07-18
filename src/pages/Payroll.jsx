@@ -9,6 +9,7 @@ import PayrollTemplateCard from "@/components/payroll/PayrollTemplateCard";
 import StationMultiSelect from "@/components/payroll/StationMultiSelect";
 import { hasHRPermission, hrScopeStations } from "@/lib/permissions";
 import { toast } from "@/components/ui/use-toast";
+import { HQ_STATION_ID } from "@/lib/store";
 
 export default function Payroll() {
   const { lang, dir } = useI18n();
@@ -30,18 +31,21 @@ export default function Payroll() {
   const run = getRun(data, month);
   const items = run?.items || [];
   const hrScope = currentUser?.hrLevelId ? hrScopeStations(currentUser, data) : null;
-  const payrollEmployees = (data.employees || []).filter((employee) => hrScope === null || (employee.stationId && hrScope.includes(employee.stationId)));
+  const stationIdOf = (stationId) => stationId || HQ_STATION_ID;
+  const payrollEmployees = (data.employees || []).filter((employee) => hrScope === null || hrScope.includes(stationIdOf(employee.stationId)));
   const employeeForItem = (item) => payrollEmployees.find((employee) => employee.id === item.employeeId) || {
     id: item.employeeId,
     name: item.employeeName || (ar ? "موظف سابق" : "Former employee"),
     position: item.employeePosition || "",
-    stationId: item.employeeStationId || null,
+    stationId: stationIdOf(item.employeeStationId),
   };
-  const allowedStations = (data.stations || []).filter((station) => hrScope === null || hrScope.includes(station.id));
+  const allowedStations = [...(data.stations || [])]
+    .filter((station) => hrScope === null || hrScope.includes(station.id))
+    .sort((a, b) => Number(b.id === HQ_STATION_ID) - Number(a.id === HQ_STATION_ID));
   const allowedStationIds = new Set(allowedStations.map((station) => station.id));
   const selectedStationIds = stationFilter.filter((id) => allowedStationIds.has(id));
-  const scopedItems = items.filter((item) => payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (hrScope === null || (item.employeeStationId && hrScope.includes(item.employeeStationId)))));
-  const visible = selectedStationIds.length === 0 ? scopedItems : scopedItems.filter((item) => selectedStationIds.includes(item.employeeStationId));
+  const scopedItems = items.filter((item) => payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (hrScope === null || hrScope.includes(stationIdOf(item.employeeStationId)))));
+  const visible = selectedStationIds.length === 0 ? scopedItems : scopedItems.filter((item) => selectedStationIds.includes(stationIdOf(item.employeeStationId)));
   const selectedStationNames = allowedStations.filter((station) => selectedStationIds.includes(station.id)).map((station) => station.name);
   const stationLabel = selectedStationNames.length ? selectedStationNames.join(", ") : (ar ? "جميع المحطات" : "All stations");
   const currency = visible[0]?.currency || "SAR";

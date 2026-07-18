@@ -11,6 +11,7 @@ import PullToRefresh from "@/components/mobile/PullToRefresh";
 import TimeFormatToggle from "@/components/attendance/TimeFormatToggle";
 import { queryClientInstance } from "@/lib/query-client";
 import PageHeader from "@/components/PageHeader";
+import { HQ_STATION_ID } from "@/lib/store";
 
 // Heavy tabs (maps/charts) load only when their tab is actually opened —
 // the page itself now appears instantly with the check-in card + team list.
@@ -38,20 +39,20 @@ export default function Attendance() {
   const defaultEmployees = data && currentUser ? visibleEmployees(currentUser, data) : [];
   const leaveScope = data && currentUser?.hrLevelId ? hrScopeStations(currentUser, data) : null;
   const employees = canManageLeave && currentUser?.hrLevelId
-    ? (data.employees || []).filter((employee) => leaveScope === null || (employee.stationId && leaveScope.includes(employee.stationId)))
+    ? (data.employees || []).filter((employee) => leaveScope === null || leaveScope.includes(employee.stationId || HQ_STATION_ID))
     : defaultEmployees;
 
   const syncRoster = () => {
     if (!isManager || !company || employees.length === 0) return Promise.resolve();
     const director = data.employees.find((e) => e.role === "director")?.id || null;
     const managerFor = (e) => {
-      const station = data.stations.find((s) => s.id === e.stationId);
+      const station = data.stations.find((s) => s.id === (e.stationId || HQ_STATION_ID));
       return station?.managerId || director;
     };
     return base44.functions.invoke("supabaseAttendance", {
       action: "syncRoster",
       companyId: company.id,
-      employees: employees.map((e) => ({ id: e.id, name: e.name, stationId: e.stationId, managerId: managerFor(e) })),
+      employees: employees.map((e) => ({ id: e.id, name: e.name, stationId: e.stationId || HQ_STATION_ID, managerId: managerFor(e) })),
     }).catch(() => {});
   };
 

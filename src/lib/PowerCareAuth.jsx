@@ -3,7 +3,7 @@ import {
   getSession, startLogin, completeLoginOtp, switchUser, clearSession, getCompanyData,
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
   hydrateBlobFromEntity, BLOB_CATEGORIES, getLastLocalWriteAt, fetchCloudVersions, setAuditActor,
-  repairOwnerSession, cacheCloudData, googleCompanyLogin, companyAccountExists, ensureLocalCompany,
+  repairOwnerSession, cacheCloudData, googleCompanyLogin, companyAccountExists, ensureLocalCompany, ensureHQStation,
 } from "./store";
 import { base44 } from "@/api/base44Client";
 
@@ -47,6 +47,7 @@ export function AuthProvider({ children }) {
       // A saved session with no local workspace (partially cleared storage)
       // previously rendered a blank app — rebuild it so cloud sync refills it.
       if (!getCompanyData(s.companyId)) ensureLocalCompany(s.companyId);
+      ensureHQStation(s.companyId);
       setCompany(getCompanyMeta(s.companyId));
       const localData = getCompanyData(s.companyId);
       setData(localData);
@@ -103,9 +104,11 @@ export function AuthProvider({ children }) {
             hydrateStationsFromEntity(s.companyId).then((stations) => {
               if (!stations) return;
               cacheCloudData(s.companyId, { stations });
+              ensureHQStation(s.companyId);
+              const stationsWithHQ = getCompanyData(s.companyId)?.stations || stations;
               setData((prevData) => {
                 if (!prevData) return prevData;
-                return { ...prevData, stations };
+                return { ...prevData, stations: stationsWithHQ };
               });
             })
           );

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { addNotification, addPoints } from "@/lib/store";
+import { addNotification, addPoints, HQ_STATION_ID } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { PRIORITY_POINTS } from "@/lib/rewards";
 import { handlersForLevel, hasHandlerAtLevel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
@@ -351,13 +351,13 @@ export default function MyTasks() {
 
   if (!data || !currentUser) return null;
 
-  const stationName = (id) => data.stations.find((s) => s.id === id)?.name || "—";
+  const stationName = (id) => data.stations.find((s) => s.id === (id || HQ_STATION_ID))?.name || "—";
   const employeeName = (id) => data.employees.find((e) => e.id === id)?.name || "—";
 
-  const memberCandidates = formStation === "hq"
-    ? data.employees.filter((e) => !e.stationId)
+  const memberCandidates = formStation === HQ_STATION_ID
+    ? data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === HQ_STATION_ID)
     : formStation
-      ? data.employees.filter((e) => e.stationId === formStation)
+      ? data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === formStation)
       : data.employees;
 
   const computeDates = () => {
@@ -397,7 +397,7 @@ export default function MyTasks() {
       employeeId = fd.get("assignedTo");
       if (!employeeId) { alert(t("selectEmployee")); return; }
       const emp = data.employees.find((x) => x.id === employeeId);
-      stationId = emp?.stationId || null;
+      stationId = emp?.stationId || HQ_STATION_ID;
       assignmentId = employeeId;
     } else if (aType === "station_team") {
       stationId = fd.get("stationId");
@@ -539,7 +539,7 @@ export default function MyTasks() {
         if (tg.assignment_type === "member" && tg.employee_id) {
           recipients = [tg.employee_id];
         } else if (tg.assignment_type === "station_team") {
-          recipients = data.employees.filter((e) => e.stationId === tg.assignment_id).map((e) => e.id);
+          recipients = data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === tg.assignment_id).map((e) => e.id);
         } else if (tg.assignment_type === "hq_team") {
           recipients = data.employees.filter((e) => !e.stationId).map((e) => e.id);
         }
@@ -679,7 +679,7 @@ export default function MyTasks() {
     canCreateTasks(currentUser) &&
     (tg.manager_id === currentUser.id ||
       canSeeAllStations(currentUser) ||
-      (currentUser.role === "station_manager" && targetStationKey(tg) === currentUser.stationId) ||
+      (currentUser.role === "station_manager" && targetStationKey(tg) === (currentUser.stationId || HQ_STATION_ID)) ||
       // Escalated dispute: the next-level HR handler also gains review rights on this task.
       ((tg.escalation_level || 0) > 0 && handlersForLevel(Math.min(tg.escalation_level, STAGE_COUNT - 1), { stationId: targetStationKey(tg) }, data).some((h) => h.id === currentUser.id)));
 
@@ -692,8 +692,8 @@ export default function MyTasks() {
 
   const canLog = (tg) => {
     if (tg.assignment_type === "member") return tg.employee_id === currentUser.id;
-    if (tg.assignment_type === "station_team") return tg.assignment_id === currentUser.stationId;
-    if (tg.assignment_type === "hq_team") return !currentUser.stationId;
+    if (tg.assignment_type === "station_team") return tg.assignment_id === (currentUser.stationId || HQ_STATION_ID);
+    if (tg.assignment_type === "hq_team") return (currentUser.stationId || HQ_STATION_ID) === HQ_STATION_ID;
     return tg.employee_id === currentUser.id;
   };
 
@@ -707,12 +707,12 @@ export default function MyTasks() {
   })[val] || val;
 
   // Group targets by station
-  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || null;
+  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || HQ_STATION_ID;
   const targetStationKey = (tg) => {
-    if (tg.assignment_type === "station_team") return tg.assignment_id || tg.station_id || "unassigned";
-    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || "unassigned";
-    if (tg.assignment_type === "hq_team") return "hq";
-    return tg.station_id || "unassigned";
+    if (tg.assignment_type === "station_team") return tg.assignment_id || tg.station_id || HQ_STATION_ID;
+    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || HQ_STATION_ID;
+    if (tg.assignment_type === "hq_team") return HQ_STATION_ID;
+    return tg.station_id || HQ_STATION_ID;
   };
   const groupMap = {};
   for (const tg of targets) {
@@ -720,13 +720,8 @@ export default function MyTasks() {
     if (!groupMap[key]) groupMap[key] = { key, count: 0 };
     groupMap[key].count++;
   }
-  const seesAll = canSeeAllStations(currentUser);
   const visible = visibleStations(currentUser, data);
-  const showHq = seesAll;
-  const stationGroups = [
-    ...(showHq ? [{ key: "hq", name: t("hq"), count: groupMap["hq"]?.count || 0 }] : []),
-    ...visible.map((s) => ({ key: s.id, name: s.name, count: groupMap[s.id]?.count || 0 })),
-  ];
+  const stationGroups = visible.map((s) => ({ key: s.id, name: s.name, count: groupMap[s.id]?.count || 0, isHQ: s.id === HQ_STATION_ID }));
   const stationTargetsAll = selectedStation ? targets.filter((tg) => targetStationKey(tg) === selectedStation) : [];
   const allStationFolders = withAncestors([
     ...folders.filter((f) => f.station_id === selectedStation).map((f) => f.path),
@@ -745,7 +740,7 @@ export default function MyTasks() {
     { key: NO_SECTION, name: t("noSection") },
     ...allStationFolders.map((p) => ({ key: p, name: p })),
   ];
-  const selectedStationName = selectedStation === "hq" ? t("hq") : stationName(selectedStation);
+  const selectedStationName = selectedStation === HQ_STATION_ID ? t("hq") : stationName(selectedStation);
   const hasAnyContent = folders.filter((f) => f.station_id === selectedStation).length > 0 || stationTargetsAll.length > 0;
 
   const isDueToday = (tg) => {
@@ -896,8 +891,7 @@ export default function MyTasks() {
                 placeholder={t("all")}
                 options={[
                   { value: "", label: t("all") },
-                  { value: "hq", label: t("hq") },
-                  ...data.stations.map((s) => ({ value: s.id, label: s.name })),
+                  ...data.stations.map((s) => ({ value: s.id, label: s.id === HQ_STATION_ID ? `${s.name} · ${t("hq")}` : s.name })),
                 ]}
               />
               <MobileSelect
@@ -1067,7 +1061,7 @@ export default function MyTasks() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                      {g.key === "hq" ? <Building2 className="w-4 h-4" /> : <Radio className="w-4 h-4" />}
+                      {g.isHQ ? <Building2 className="w-4 h-4 text-accent" /> : <Radio className="w-4 h-4" />}
                     </div>
                     <div>
                       <p className="text-sm font-medium font-body">{g.name}</p>

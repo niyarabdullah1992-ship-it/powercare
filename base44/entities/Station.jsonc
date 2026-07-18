@@ -13,6 +13,11 @@
     "name": {
       "type": "string"
     },
+    "isHQ": {
+      "type": "boolean",
+      "default": false,
+      "description": "True only for the company's permanent headquarters station."
+    },
     "location": {
       "type": "string"
     },

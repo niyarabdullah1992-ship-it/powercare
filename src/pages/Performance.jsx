@@ -14,6 +14,7 @@ import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { isCompanyOwner } from "@/lib/permissions";
 import { Palette } from "lucide-react";
+import { HQ_STATION_ID } from "@/lib/store";
 
 export default function Performance() {
   const { t, dir, lang } = useI18n();
@@ -26,7 +27,7 @@ export default function Performance() {
   const canBrand = isCompanyOwner(currentUser, data) || currentUser.role === "director";
 
   const badges = getBadges(company);
-  const stationName = (id) => data.stations.find((s) => s.id === id)?.name || t("hq");
+  const stationName = (id) => data.stations.find((s) => s.id === (id || HQ_STATION_ID))?.name || t("hq");
   const roleLabel = (e) => e.customTitle || getRoleLabel(company, e.role, t);
 
   // Regular employees see only their own station's team — so every member can
@@ -34,21 +35,22 @@ export default function Performance() {
   const isManager = currentUser.role !== "employee";
   const scopedEmployees = isManager
     ? data.employees
-    : data.employees.filter((e) => (e.stationId || null) === (currentUser.stationId || null));
+    : data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === (currentUser.stationId || HQ_STATION_ID));
 
   const ranked = [...scopedEmployees]
     .map((e) => ({ ...e, points: e.points || 0 }))
     .sort((a, b) => b.points - a.points);
 
   const stationTotals = data.stations
+    .filter((station) => station.id !== HQ_STATION_ID)
     .map((s) => {
-      const members = data.employees.filter((e) => e.stationId === s.id);
+      const members = data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === s.id);
       const total = members.reduce((sum, e) => sum + (e.points || 0), 0);
       return { ...s, points: total, memberCount: members.length };
     })
     .sort((a, b) => b.points - a.points);
 
-  const hqMembers = data.employees.filter((e) => !e.stationId);
+  const hqMembers = data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === HQ_STATION_ID);
   const hqTotal = hqMembers.reduce((sum, e) => sum + (e.points || 0), 0);
 
   const rankIcon = (i) =>
@@ -66,7 +68,7 @@ export default function Performance() {
           </h1>
           {!isManager && (
             <p className="text-sm text-muted-foreground font-body mt-1">
-              {t("myStation")}: {currentUser.stationId ? stationName(currentUser.stationId) : t("hq")}
+              {t("myStation")}: {stationName(currentUser.stationId || HQ_STATION_ID)}
             </p>
           )}
         </div>
@@ -150,7 +152,7 @@ export default function Performance() {
           <ComparisonExportButtons
             title={view === "achievements" ? t("achievementsBoard") : t("individualRanking")}
             headers={["#", t("employeeName"), t("station"), t("points")]}
-            rows={ranked.map((e, i) => [i + 1, e.name, e.stationId ? stationName(e.stationId) : t("hq"), e.points])}
+            rows={ranked.map((e, i) => [i + 1, e.name, stationName(e.stationId || HQ_STATION_ID), e.points])}
           />
         </div>
       )}
@@ -195,7 +197,7 @@ export default function Performance() {
                       <span className="text-[10px] text-muted-foreground">{roleLabel(e)}</span>
                     </div>
                     <p className="text-xs text-muted-foreground font-body">
-                      {e.stationId ? stationName(e.stationId) : t("hq")}
+                      {stationName(e.stationId || HQ_STATION_ID)}
                     </p>
                     {next && (
                       <div className="mt-1.5">
@@ -338,7 +340,7 @@ export default function Performance() {
                           <p className="text-sm font-medium font-body truncate">{e.name}</p>
                         </div>
                         <p className="text-xs text-muted-foreground font-body truncate">
-                          {roleLabel(e)} · {e.stationId ? stationName(e.stationId) : t("hq")}
+                          {roleLabel(e)} · {stationName(e.stationId || HQ_STATION_ID)}
                         </p>
                       </div>
                       <div className="ms-auto text-end shrink-0">

@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { updateCompany, addNotification } from "@/lib/store";
-import { canManageStations, canSeeAllStations, visibleStations } from "@/lib/permissions";
+import { updateCompany, HQ_STATION_ID } from "@/lib/store";
+import { canManageStations, visibleStations } from "@/lib/permissions";
 import { canAddStation } from "@/lib/planLimits";
 import { Link } from "react-router-dom";
 import { Plus, Radio, Building2, Users, Trash2, Pencil, Check, X, BarChart3, GripVertical, MapPin } from "lucide-react";
@@ -28,9 +28,6 @@ export default function Stations() {
   if (!data || !currentUser) return null;
   const stations = visibleStations(currentUser, data);
   const canManage = canManageStations(currentUser);
-  const showHq = canSeeAllStations(currentUser) && !company?.hqHidden;
-  const hqTeam = data.employees.filter((e) => !e.stationId);
-  const hqLabel = company?.hqLabel || t("hq");
 
   const stationLimitReached = !canAddStation(company, data);
 
@@ -66,16 +63,9 @@ export default function Stations() {
   };
 
   const removeStation = (id) => {
-    if (!canManage) return;
+    if (!canManage || id === HQ_STATION_ID) return;
     updateCompany(company.id, (d) => {
       d.stations = d.stations.filter((x) => x.id !== id);
-    });
-  };
-
-  const removeHq = () => {
-    if (!canManage) return;
-    updateCompany(company.id, (d) => {
-      d.hqHidden = true;
     });
   };
 
@@ -136,9 +126,7 @@ export default function Stations() {
   const submitRename = () => {
     const name = renameVal.trim();
     if (!name) { setRenamingId(null); return; }
-    if (renamingId === "hq") {
-      updateCompany(company.id, (d) => { d.hqLabel = name; });
-    } else {
+    if (renamingId !== HQ_STATION_ID) {
       updateCompany(company.id, (d) => {
         const s = d.stations.find((x) => x.id === renamingId);
         if (s) s.name = name;
@@ -169,7 +157,7 @@ export default function Stations() {
     ) : (
       <div className="flex items-center gap-1.5 group">
         <h3 className="font-heading font-semibold">{name}</h3>
-        {canManage && (
+        {canManage && id !== HQ_STATION_ID && (
           <button onClick={() => startRename(id, name)} className="p-0.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground">
             <Pencil className="w-3 h-3" />
           </button>
@@ -224,37 +212,6 @@ export default function Stations() {
         </form>
       )}
 
-      {showHq && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="p-5 rounded-xl border border-border bg-card space-y-3">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-accent" strokeWidth={1.75} />
-                {renameField("hq", hqLabel)}
-              </div>
-              {canManage && (
-                <ConfirmDeleteDialog
-                  onConfirm={removeHq}
-                  trigger={
-                    <button className="p-1 rounded-md hover:bg-destructive/10 text-destructive" title={t("delete")}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  }
-                />
-              )}
-            </div>
-            <div className="flex items-center justify-between text-sm font-body">
-              <span className="flex items-center gap-1.5 text-muted-foreground">
-                <Users className="w-3.5 h-3.5" /> {hqTeam.length}
-              </span>
-              <button onClick={() => setAnalyticsFor({ key: "hq", name: hqLabel, members: hqTeam })} className="flex items-center gap-1 text-xs text-accent hover:underline">
-                <BarChart3 className="w-3.5 h-3.5" /> {t("analytics")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <DragDropContext onDragEnd={handleDragEnd}>
       {Object.entries(groups).map(([type, items]) => {
         return (
@@ -270,7 +227,7 @@ export default function Stations() {
                   {(provided) => (
                     <div ref={provided.innerRef} {...provided.droppableProps} className="contents">
                       {items.map((s, index) => {
-                        const team = data.employees.filter((e) => e.stationId === s.id);
+                        const team = data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === s.id);
                         const manager = data.employees.find((e) => e.id === s.managerId);
                         const tasks = data.tasks.filter((tk) => tk.stationId === s.id);
                         // Station managers can set the GPS location of their own station.
@@ -278,7 +235,7 @@ export default function Stations() {
                         const done = tasks.filter((tk) => tk.status === "completed").length;
                         const pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
                         return (
-                          <Draggable key={s.id} draggableId={s.id} index={index} isDragDisabled={!canManage}>
+                          <Draggable key={s.id} draggableId={s.id} index={index} isDragDisabled={!canManage || s.id === HQ_STATION_ID}>
                             {(dragProvided, dragSnapshot) => (
                               <div
                                 ref={dragProvided.innerRef}
@@ -287,14 +244,17 @@ export default function Stations() {
                               >
                                 <div className="flex items-start justify-between">
                                   <div className="flex items-center gap-2">
-                                    {canManage && (
+                                    {canManage && s.id !== HQ_STATION_ID && (
                                       <span {...dragProvided.dragHandleProps} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0">
                                         <GripVertical className="w-4 h-4" />
                                       </span>
                                     )}
-                                    <Radio className="w-4 h-4 text-accent shrink-0" strokeWidth={1.75} />
+                                    {s.id === HQ_STATION_ID ? <Building2 className="w-4 h-4 text-accent shrink-0" strokeWidth={1.75} /> : <Radio className="w-4 h-4 text-accent shrink-0" strokeWidth={1.75} />}
                                     <div>
-                                      {renameField(s.id, s.name)}
+                                      <div className="flex items-center gap-2">
+                                        {renameField(s.id, s.name)}
+                                        {s.id === HQ_STATION_ID && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-body text-accent">{t("hq")}</span>}
+                                      </div>
                                       {editingTypeId === s.id ? (
                                         <StationTypeEditor t={t} onSave={(val) => saveType(s.id, val)} onCancel={() => setEditingTypeId(null)} />
                                       ) : (
@@ -313,7 +273,7 @@ export default function Stations() {
                                     <button onClick={() => cycleStatus(s.id)} disabled={!canManage} className={`px-2 py-0.5 rounded-full text-[10px] font-body ${statusTone(s.status)} ${canManage ? "cursor-pointer" : "cursor-default"}`}>
                                       {s.status}
                                     </button>
-                                    {canManage && (
+                                    {canManage && s.id !== HQ_STATION_ID && (
                                       <ConfirmDeleteDialog
                                         onConfirm={() => removeStation(s.id)}
                                         trigger={

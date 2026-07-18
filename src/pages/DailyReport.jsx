@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { formatDateTime } from "@/lib/dateFormat";
 import { visibleStations, canSeeAllStations, isCompanyOwner } from "@/lib/permissions";
+import { HQ_STATION_ID } from "@/lib/store";
 import moment from "moment";
 import { FileText, ListTodo, AlertTriangle, Activity, Building2, Palette } from "lucide-react";
 import ReportCard from "@/components/reports/ReportCard";
@@ -46,16 +47,16 @@ export default function DailyReport() {
 
   const stationName = (id) => data.stations.find((s) => s.id === id)?.name || "—";
   const employeeName = (id) => data.employees.find((e) => e.id === id)?.name || "—";
-  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || null;
+  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || HQ_STATION_ID;
 
   const targetStationKey = (tg) => {
     if (tg.assignment_type === "station_team") return tg.assignment_id || tg.station_id || null;
-    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || null;
-    if (tg.assignment_type === "hq_team") return "hq";
-    return tg.station_id || null;
+    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || HQ_STATION_ID;
+    if (tg.assignment_type === "hq_team") return HQ_STATION_ID;
+    return tg.station_id || HQ_STATION_ID;
   };
-  const stationLabel = (key) => (key === "hq" ? t("hq") : key ? stationName(key) : "—");
-  const inScope = (key) => seesAll || key === "hq" ? true : stationIds.has(key);
+  const stationLabel = (key) => (key === HQ_STATION_ID ? t("hq") : key ? stationName(key) : "—");
+  const inScope = (key) => seesAll || stationIds.has(key);
 
   const isToday = (dateStr) => dateStr && moment(dateStr).isSame(moment(), "day");
 

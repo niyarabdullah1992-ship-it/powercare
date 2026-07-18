@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { updateCompany, addNotification, updateEmployeeProfile, setAllowedEmailDomain, deleteEmployeeAccount } from "@/lib/store";
+import { updateCompany, addNotification, updateEmployeeProfile, setAllowedEmailDomain, deleteEmployeeAccount, HQ_STATION_ID } from "@/lib/store";
 import { canManageEmployees, isCompanyOwner, canManageStations, visibleStations, visibleEmployees } from "@/lib/permissions";
 import { canAddEmployee } from "@/lib/planLimits";
 import { Link } from "react-router-dom";
@@ -161,35 +161,16 @@ export default function Employees() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {(() => {
-            const hqTeam = data.employees.filter((e) => !e.stationId && e.role !== "pgm");
-            if (hqTeam.length === 0) return null;
-            return (
-              <button onClick={() => setSelectedStation("HQ")} className="text-start p-5 rounded-xl border border-border bg-card hover:border-accent transition-colors space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-heading font-semibold">{t("hq")}</h3>
-                </div>
-                <p className="text-sm text-muted-foreground font-body">{hqTeam.length} {t("team").toLowerCase()}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {ROLES.filter((r) => hqTeam.some((e) => e.role === r)).map((r) => (
-                    <span key={r} className="px-2 py-0.5 rounded-full bg-muted text-[10px] font-body text-muted-foreground">
-                      {hqTeam.filter((e) => e.role === r).length} {getRoleLabel(company, r, t)}
-                    </span>
-                  ))}
-                </div>
-              </button>
-            );
-          })()}
           <DragDropContext onDragEnd={handleStationDragEnd}>
             <Droppable droppableId="employees-station-cards">
               {(provided) => (
                 <div ref={provided.innerRef} {...provided.droppableProps} className="contents">
                   {stations.map((s, index) => {
-                    const team = data.employees.filter((e) => e.stationId === s.id || (["pgm", "station_manager"].includes(e.role) && (e.managedStations || []).includes(s.id)));
+                    const team = data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === s.id || (["pgm", "station_manager"].includes(e.role) && (e.managedStations || []).includes(s.id)));
                     const hasManager = team.some((e) => e.role === "station_manager");
                     const counts = ROLES.reduce((acc, r) => ({ ...acc, [r]: team.filter((e) => e.role === r).length }), {});
                     return (
-                      <Draggable key={s.id} draggableId={s.id} index={index} isDragDisabled={!canReorderStations}>
+                      <Draggable key={s.id} draggableId={s.id} index={index} isDragDisabled={!canReorderStations || s.id === HQ_STATION_ID}>
                         {(dragProvided, dragSnapshot) => (
                           <button
                             ref={dragProvided.innerRef}
@@ -199,12 +180,13 @@ export default function Employees() {
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                {canReorderStations && (
+                                {canReorderStations && s.id !== HQ_STATION_ID && (
                                   <span {...dragProvided.dragHandleProps} onClick={(e) => e.stopPropagation()} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0">
                                     <GripVertical className="w-4 h-4" />
                                   </span>
                                 )}
                                 <h3 className="font-heading font-semibold">{s.name}</h3>
+                                {s.id === HQ_STATION_ID && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-body text-accent">{t("hq")}</span>}
                               </div>
                               {!hasManager && (
                                 <span className="flex items-center gap-1 text-[10px] text-amber-600 font-body">
@@ -237,12 +219,10 @@ export default function Employees() {
     );
   }
 
-  // Station team view (or HQ / company-wide team when selectedStation === "HQ")
-  const isHQ = selectedStation === "HQ";
-  const station = isHQ ? null : data.stations.find((s) => s.id === selectedStation);
-  let team = isHQ
-    ? data.employees.filter((e) => !e.stationId && e.role !== "pgm")
-    : data.employees.filter((e) => e.stationId === selectedStation || (["pgm", "station_manager"].includes(e.role) && (e.managedStations || []).includes(selectedStation)));
+  // Station team view — employees without a station belong to the real HQ station.
+  const isHQ = selectedStation === HQ_STATION_ID;
+  const station = data.stations.find((s) => s.id === selectedStation);
+  let team = data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === selectedStation || (["pgm", "station_manager"].includes(e.role) && (e.managedStations || []).includes(selectedStation)));
   if (search) team = team.filter((e) => e.name.toLowerCase().includes(search.toLowerCase()) || e.email.toLowerCase().includes(search.toLowerCase()));
   if (roleFilter !== "all") team = team.filter((e) => e.role === roleFilter);
 
@@ -294,7 +274,7 @@ export default function Employees() {
       if (!emp) return;
       const oldStation = d.stations.find((s) => s.managerId === id);
       if (oldStation) oldStation.managerId = null;
-      emp.stationId = newStationId || null;
+      emp.stationId = newStationId === HQ_STATION_ID ? null : (newStationId || null);
     });
   };
 
@@ -311,7 +291,7 @@ export default function Employees() {
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h1 className="font-heading text-3xl font-semibold">{isHQ ? t("hq") : station?.name}</h1>
+          <h1 className="flex items-center gap-2 font-heading text-3xl font-semibold">{station?.name}{isHQ && <span className="rounded-full bg-accent/10 px-2 py-1 text-xs font-body text-accent">{t("hq")}</span>}</h1>
           <p className="text-muted-foreground font-body text-sm">{t("team")}</p>
         </div>
       </div>
@@ -441,14 +421,11 @@ export default function Employees() {
                 <div className="w-40">
                   <StationCombobox
                     t={t}
-                    value={e.stationId || "HQ"}
-                    onChange={(val) => moveEmployee(e.id, val === "HQ" ? null : val)}
+                    value={e.stationId || HQ_STATION_ID}
+                    onChange={(val) => moveEmployee(e.id, val)}
                     placeholder={t("moveStation")}
                     className="h-7 px-2 py-1 text-xs"
-                    options={[
-                      { value: "HQ", label: t("hq") },
-                      ...data.stations.map((s) => ({ value: s.id, label: s.name })),
-                    ]}
+                    options={data.stations.map((s) => ({ value: s.id, label: s.id === HQ_STATION_ID ? `${s.name} · ${t("hq")}` : s.name }))}
                   />
                 </div>
               )}
