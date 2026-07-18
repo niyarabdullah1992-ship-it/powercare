@@ -26,6 +26,14 @@ function FitBounds({ points }) {
   return null;
 }
 
+function distanceMeters(a, b) {
+  const R = 6371000;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const value = Math.sin(dLat / 2) ** 2 + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return Math.round(2 * R * Math.asin(Math.sqrt(value)));
+}
+
 // Manager map dashboard — plots every check-in location for a chosen day against
 // station locations/radii so managers can verify attendance data accuracy.
 export default function AttendanceMapDashboard({ employees, t }) {
@@ -44,17 +52,24 @@ export default function AttendanceMapDashboard({ employees, t }) {
       .finally(() => setLoading(false));
   }, [date, employees.length]);
 
-  const defaultStationId = data?.stations?.[0]?.id || null;
+  const allStations = data?.stations || [];
+  const defaultStationId = allStations[0]?.id || null;
   const located = rows.filter((r) => r.check_in_lat != null && r.check_in_lng != null)
-    .filter((r) => stationFilter === "all" || (r.station_id || defaultStationId) === stationFilter);
-  const stations = (data?.stations || []).filter((s) => s.lat != null && s.lng != null)
+    .map((r) => {
+      const stationId = r.station_id || defaultStationId;
+      const station = allStations.find((s) => s.id === stationId && s.lat != null && s.lng != null);
+      const distance = station ? distanceMeters({ lat: Number(r.check_in_lat), lng: Number(r.check_in_lng) }, { lat: Number(station.lat), lng: Number(station.lng) }) : null;
+      return { ...r, mapStationId: stationId, mapDistance: distance, mapInside: distance != null && distance <= (Number(station.radiusMeters) || 200) };
+    })
+    .filter((r) => stationFilter === "all" || r.mapStationId === stationFilter);
+  const stations = allStations.filter((s) => s.lat != null && s.lng != null)
     .filter((s) => stationFilter === "all" || s.id === stationFilter);
 
   const points = [
     ...located.map((r) => [r.check_in_lat, r.check_in_lng]),
     ...stations.map((s) => [s.lat, s.lng]),
   ];
-  const insideCount = located.filter((r) => r.location_status === "inside").length;
+  const insideCount = located.filter((r) => r.mapInside).length;
   const outsideCount = located.length - insideCount;
 
   return (
@@ -80,7 +95,7 @@ export default function AttendanceMapDashboard({ employees, t }) {
         <ComparisonExportButtons
           title={`${t("mapTab")} — ${date}`}
           headers={[t("employeeName"), t("checkIn"), t("locationStatus"), t("distanceMeters"), "Latitude", "Longitude"]}
-          rows={located.map((r) => [r.employee_name || r.employee_id, r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—", r.location_status || "—", r.distance_meters ?? "—", r.check_in_lat, r.check_in_lng])}
+          rows={located.map((r) => [r.employee_name || r.employee_id, r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—", r.mapInside ? t("insideLocation") : t("outsideLocation"), r.mapDistance ?? "—", r.check_in_lat, r.check_in_lng])}
         />
         <div className="flex items-center gap-3 text-xs font-body ms-auto">
           <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-500" /> {t("insideLocation")} ({insideCount})</span>
@@ -98,24 +113,28 @@ export default function AttendanceMapDashboard({ employees, t }) {
           <MapContainer center={points[0] || [24.7, 46.7]} zoom={12} style={{ height: "100%", width: "100%" }}>
             <GoogleTiles />
             <FitBounds points={points} />
-            {stations.map((s) => (
-              <React.Fragment key={s.id}>
-                <Marker position={[s.lat, s.lng]} icon={stationIcon}>
-                  <Popup><span dir="auto">{s.name}</span></Popup>
-                </Marker>
-                {s.radiusMeters != null && (
-                  <Circle center={[s.lat, s.lng]} radius={s.radiusMeters} pathOptions={{ color: "#b8860b", fillOpacity: 0.08, weight: 1.5 }} />
-                )}
-              </React.Fragment>
-            ))}
+            {stations.map((s) => {
+              const stationRows = located.filter((r) => r.mapStationId === s.id);
+              const zoneColor = stationRows.length === 0 ? "#b8860b" : stationRows.every((r) => r.mapInside) ? "#059669" : "#dc2626";
+              return (
+                <React.Fragment key={s.id}>
+                  <Marker position={[s.lat, s.lng]} icon={stationIcon}>
+                    <Popup><span dir="auto">{s.name}</span></Popup>
+                  </Marker>
+                  {s.radiusMeters != null && (
+                    <Circle center={[s.lat, s.lng]} radius={s.radiusMeters} pathOptions={{ color: zoneColor, fillColor: zoneColor, fillOpacity: 0.08, weight: 2 }} />
+                  )}
+                </React.Fragment>
+              );
+            })}
             {located.map((r) => (
               <CircleMarker
                 key={r.id}
                 center={[r.check_in_lat, r.check_in_lng]}
                 radius={9}
                 pathOptions={{
-                  color: r.location_status === "inside" ? "#059669" : "#dc2626",
-                  fillColor: r.location_status === "inside" ? "#10b981" : "#ef4444",
+                  color: r.mapInside ? "#059669" : "#dc2626",
+                  fillColor: r.mapInside ? "#10b981" : "#ef4444",
                   fillOpacity: 0.85,
                   weight: 2,
                 }}
@@ -124,12 +143,10 @@ export default function AttendanceMapDashboard({ employees, t }) {
                   <div className="text-xs space-y-0.5" dir="auto">
                     <EmployeeNameLink employeeId={r.employee_id} employeeName={r.employee_name || r.employee_id} className="font-semibold" />
                     <p>{t("checkedInAt")} {r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—"}</p>
-                    {r.distance_meters != null && <p>{t("distanceMeters")}: {r.distance_meters}m</p>}
-                    {r.location_status && (
-                      <p className={r.location_status === "inside" ? "text-emerald-700" : "text-red-700"}>
-                        {r.location_status === "inside" ? t("insideLocation") : t("outsideLocation")}
-                      </p>
-                    )}
+                    {r.mapDistance != null && <p>{t("distanceMeters")}: {r.mapDistance}m</p>}
+                    <p className={r.mapInside ? "text-emerald-700" : "text-red-700"}>
+                      {r.mapInside ? t("insideLocation") : t("outsideLocation")}
+                    </p>
                   </div>
                 </Popup>
               </CircleMarker>
