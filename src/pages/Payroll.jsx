@@ -6,6 +6,7 @@ import { ensurePayrollRun, getRun, monthKey, netOf, payrollItemIssues, updatePay
 import { printReport } from "@/lib/printReport";
 import PayrollRow from "@/components/payroll/PayrollRow";
 import PayrollTemplateCard from "@/components/payroll/PayrollTemplateCard";
+import StationMultiSelect from "@/components/payroll/StationMultiSelect";
 import { hasHRPermission, hrScopeStations } from "@/lib/permissions";
 import { toast } from "@/components/ui/use-toast";
 
@@ -14,6 +15,7 @@ export default function Payroll() {
   const ar = lang === "ar";
   const { company, data, currentUser } = useAuth();
   const [month, setMonth] = useState(monthKey());
+  const [stationFilter, setStationFilter] = useState([]);
 
   const canView = data?.ownerId === currentUser?.id || ["director", "ops_manager"].includes(currentUser?.role) || hasHRPermission(currentUser, data, "manage_payroll");
 
@@ -35,7 +37,13 @@ export default function Payroll() {
     position: item.employeePosition || "",
     stationId: item.employeeStationId || null,
   };
-  const visible = items.filter((item) => payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (hrScope === null || (item.employeeStationId && hrScope.includes(item.employeeStationId)))));
+  const allowedStations = (data.stations || []).filter((station) => hrScope === null || hrScope.includes(station.id));
+  const allowedStationIds = new Set(allowedStations.map((station) => station.id));
+  const selectedStationIds = stationFilter.filter((id) => allowedStationIds.has(id));
+  const scopedItems = items.filter((item) => payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (hrScope === null || (item.employeeStationId && hrScope.includes(item.employeeStationId)))));
+  const visible = selectedStationIds.length === 0 ? scopedItems : scopedItems.filter((item) => selectedStationIds.includes(item.employeeStationId));
+  const selectedStationNames = allowedStations.filter((station) => selectedStationIds.includes(station.id)).map((station) => station.name);
+  const stationLabel = selectedStationNames.length ? selectedStationNames.join(", ") : (ar ? "جميع المحطات" : "All stations");
   const currency = visible[0]?.currency || "SAR";
   const totalNet = visible.reduce((s, i) => s + netOf(i), 0);
   const paidCount = visible.filter((i) => i.paid).length;
@@ -60,7 +68,7 @@ export default function Payroll() {
 
   const exportPayroll = () => {
     printReport({
-      title: ar ? `مسيّر رواتب — ${monthLabel}` : `Payroll Run — ${monthLabel}`,
+      title: ar ? `مسيّر رواتب — ${monthLabel} — ${stationLabel}` : `Payroll Run — ${monthLabel} — ${stationLabel}`,
       companyName: company.name, periodLabel: monthLabel, dir,
       logoUrl: branding.logoUrl || "", color: branding.color || "#b07d3f",
       stats: [
@@ -121,6 +129,7 @@ export default function Payroll() {
             className="px-3 py-2 rounded-md border border-input bg-card text-sm font-body"
             dir="ltr"
           />
+          <StationMultiSelect stations={allowedStations} value={selectedStationIds} onChange={setStationFilter} ar={ar} />
           <button onClick={syncFromProfiles} className="flex items-center gap-1.5 rounded-md border border-input bg-card px-3.5 py-2 text-sm font-body text-foreground hover:bg-secondary">
             <RefreshCw className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تحديث من الملفات الشخصية" : "Refresh from profiles"}
           </button>
