@@ -14,25 +14,56 @@ import RequestsList from "@/components/inventory/RequestsList";
 import MovementForm from "@/components/inventory/MovementForm";
 import MovementList from "@/components/inventory/MovementList";
 import IssueScanner from "@/components/inventory/IssueScanner";
+import StationWarehousePicker from "@/components/inventory/StationWarehousePicker";
 import { toast } from "@/components/ui/use-toast";
 
 const emptyData = { items: [], units: [], movements: [], requests: [], stations: [], employees: [], canManage: false };
+
 export default function Inventory() {
-  const { session } = useAuth(); const { lang } = useI18n(); const ar = lang === "ar";
-  const [active, setActive] = useState("overview"); const [state, setState] = useState(emptyData); const [loading, setLoading] = useState(true); const [selectedItem, setSelectedItem] = useState(null); const [selectedRequest, setSelectedRequest] = useState("");
+  const { session, currentUser } = useAuth();
+  const { lang } = useI18n();
+  const ar = lang === "ar";
+  const [active, setActive] = useState("overview");
+  const [state, setState] = useState(emptyData);
+  const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedRequest, setSelectedRequest] = useState("");
+  const [selectedStation, setSelectedStation] = useState(currentUser?.stationId || "");
+
   const load = async () => { setLoading(true); try { setState(await inventoryCall(session, "list")); } finally { setLoading(false); } };
   useEffect(() => { load(); }, [session?.token]);
-  const run = async (action, payload) => { try { await inventoryCall(session, action, payload); await load(); toast({ description: ar ? "تم حفظ العملية بنجاح." : "Operation saved." }); return true; } catch (error) { toast({ description: error?.response?.data?.error || error.message, variant: "destructive" }); return false; } };
+  useEffect(() => {
+    if (!selectedStation && state.stations.length) setSelectedStation(currentUser?.stationId || state.stations[0].stationId);
+  }, [state.stations, currentUser?.stationId, selectedStation]);
+
+  const run = async (action, payload) => {
+    try { await inventoryCall(session, action, payload); await load(); toast({ description: ar ? "تم حفظ العملية بنجاح." : "Operation saved." }); return true; }
+    catch (error) { toast({ description: error?.response?.data?.error || error.message, variant: "destructive" }); return false; }
+  };
+  const activeStation = currentUser?.role === "employee" ? (currentUser.stationId || selectedStation) : selectedStation;
+  const stationUnits = state.units.filter((unit) => unit.locationId === activeStation);
+  const stationItems = state.items.filter((item) => item.currentLocationId === activeStation || item.locationBalances?.some((balance) => balance.locationId === activeStation) || stationUnits.some((unit) => unit.itemId === item.id)).map((item) => ({
+    ...item,
+    quantity: item.trackingMode === "serialized" ? stationUnits.filter((unit) => unit.itemId === item.id && unit.status === "available").length : Number(item.locationBalances?.find((balance) => balance.locationId === activeStation)?.quantity || 0),
+  }));
+  const stationMovements = state.movements.filter((movement) => movement.fromLocationId === activeStation || movement.toLocationId === activeStation);
+  const stationRequests = state.requests.filter((request) => request.stationId === activeStation);
+  const selected = stationItems.find((item) => item.id === selectedItem?.id) || null;
+  const changeStation = (stationId) => { setSelectedStation(stationId); setSelectedItem(null); setSelectedRequest(""); };
   const openIssue = (id) => { setSelectedRequest(id); setActive("scanner"); };
-  return <div className="space-y-6"><PageHeader title={ar ? "المخزن الصناعي" : "Industrial Inventory"} description={ar ? "إدارة الأصناف والحركات وطلبات المواد عبر المحطات." : "Manage items, movements and material requests across stations."} icon={Warehouse} />
-    <InventoryStats items={state.items} requests={state.requests} movements={state.movements} ar={ar} /><InventoryTabs active={active} onChange={setActive} canManage={state.canManage} ar={ar} />
+
+  return <div className="space-y-6">
+    <PageHeader title={ar ? "المخزن الصناعي" : "Industrial Inventory"} description={ar ? "إدارة الأصناف والحركات وطلبات المواد عبر المحطات." : "Manage items, movements and material requests across stations."} icon={Warehouse} />
+    {!loading && <StationWarehousePicker stations={state.stations} value={activeStation} onChange={changeStation} locked={currentUser?.role === "employee"} ar={ar} />}
+    <InventoryStats items={stationItems} requests={stationRequests} movements={stationMovements} ar={ar} />
+    <InventoryTabs active={active} onChange={setActive} canManage={state.canManage} ar={ar} />
     {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <>
-      {active === "overview" && <ItemList items={state.items.filter((item) => Number(item.quantity) <= Number(item.minimumStock))} stations={state.stations} onSelect={setSelectedItem} ar={ar} />}
-      {active === "items" && <div className="space-y-4">{state.canManage && <ItemForm stations={state.stations} onSubmit={(payload) => run("createItem", payload)} ar={ar} />}<ItemList items={state.items} stations={state.stations} onSelect={setSelectedItem} ar={ar} /></div>}
-      {active === "requests" && <div className="space-y-4"><MaterialRequestForm items={state.items} onSubmit={(payload) => run("request", payload)} ar={ar} /><RequestsList requests={state.requests} items={state.items} employees={state.employees} canManage={state.canManage} onReview={(requestId, decision) => run("reviewRequest", { requestId, decision })} onIssue={openIssue} ar={ar} /></div>}
-      {active === "movements" && <div className="space-y-4">{state.canManage && <MovementForm items={state.items} stations={state.stations} onSubmit={(action, payload) => run(action, payload)} ar={ar} />}<MovementList movements={state.movements} items={state.items} stations={state.stations} ar={ar} /></div>}
-      {active === "scanner" && <IssueScanner key={selectedRequest} requests={state.requests} items={state.items} selectedRequest={selectedRequest} onIssue={(requestId, qrCode) => run("issueRequest", { requestId, qrCode })} ar={ar} />}
+      {active === "overview" && <ItemList items={stationItems.filter((item) => Number(item.quantity) <= Number(item.minimumStock))} stations={state.stations} onSelect={setSelectedItem} ar={ar} />}
+      {active === "items" && <div className="space-y-4">{state.canManage && <ItemForm key={activeStation} stations={state.stations} defaultStationId={activeStation} onSubmit={(payload) => run("createItem", payload)} ar={ar} />}<ItemList items={stationItems} stations={state.stations} onSelect={setSelectedItem} ar={ar} /></div>}
+      {active === "requests" && <div className="space-y-4"><MaterialRequestForm items={stationItems} stationId={activeStation} onSubmit={(payload) => run("request", payload)} ar={ar} /><RequestsList requests={stationRequests} items={state.items} employees={state.employees} canManage={state.canManage} onReview={(requestId, decision) => run("reviewRequest", { requestId, decision })} onIssue={openIssue} ar={ar} /></div>}
+      {active === "movements" && <div className="space-y-4">{state.canManage && <MovementForm key={activeStation} items={stationItems} stations={state.stations} stationId={activeStation} onSubmit={(action, payload) => run(action, payload)} ar={ar} />}<MovementList movements={stationMovements} items={state.items} stations={state.stations} ar={ar} /></div>}
+      {active === "scanner" && <IssueScanner key={`${activeStation}-${selectedRequest}`} requests={stationRequests} items={state.items} selectedRequest={selectedRequest} onIssue={(requestId, qrCode) => run("issueRequest", { requestId, qrCode })} ar={ar} />}
     </>}
-    <ItemDetails item={selectedItem} units={state.units} stations={state.stations} onClose={() => setSelectedItem(null)} ar={ar} />
+    <ItemDetails item={selected} units={stationUnits} stations={state.stations} onClose={() => setSelectedItem(null)} ar={ar} />
   </div>;
 }
