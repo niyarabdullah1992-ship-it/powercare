@@ -48,8 +48,11 @@ export function checklistCompliance(results = {}) {
 export function safetyKpis(rec = {}) {
   const hours = Number(rec.workHoursMonthly) || 0;
   const month = new Date().toISOString().slice(0, 7);
-  const incidents = (rec.incidentLog || []).filter((item) => String(item.at || "").slice(0, 7) === month).length;
+  const loggedIncidents = (rec.incidentLog || []).filter((item) => String(item.at || "").slice(0, 7) === month).length;
   const lti = Number(rec.ltiCount) || 0;
+  // Every lost-time injury is recordable. Use the larger count because logged
+  // incidents may already include the same LTI cases and must not be doubled.
+  const incidents = Math.max(loggedIncidents, lti);
   const last = [...(rec.incidentLog || [])].filter((item) => item.at).sort((a, b) => new Date(b.at) - new Date(a.at))[0]?.at || rec.lastIncidentAt || rec.createdAt;
   const days = last ? Math.max(0, Math.floor((Date.now() - new Date(last).getTime()) / 86400000)) : 0;
   return { incidents, trir: hours ? (incidents * 200000) / hours : 0, ltifr: hours ? (lti * 1000000) / hours : 0, days };

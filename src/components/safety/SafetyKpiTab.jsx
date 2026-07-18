@@ -17,5 +17,6 @@ export default function SafetyKpiTab({ rec, canEdit, lang, onUpdate }) {
     {!rec?.workHoursMonthly && <p className="text-[11px] text-amber-600">{L("أدخل ساعات العمل لتفعيل الحسابات.", "Enter work hours to activate calculations.")}</p>}
     <KpiBar label="TRIR" value={kpi.trir} target={3} /><KpiBar label="LTIFR" value={kpi.ltifr} target={1} />
     <p className="text-[10px] text-muted-foreground">TRIR = ({kpi.incidents} × 200,000) ÷ {rec?.workHoursMonthly || 0} · LTIFR = ({rec?.ltiCount || 0} × 1,000,000) ÷ {rec?.workHoursMonthly || 0}</p>
+    <p className="text-[10px] text-muted-foreground">{L("تُحتسب إصابات الوقت الضائع LTI ضمن حوادث TRIR القابلة للتسجيل.", "Lost-time injuries (LTI) are included in TRIR recordable incidents.")}</p>
   </div>;
 }
