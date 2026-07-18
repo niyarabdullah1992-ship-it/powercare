@@ -27,6 +27,9 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
   const [loading, setLoading] = useState(true);
   const [mapRow, setMapRow] = useState(null);
   const [manualLoadingId, setManualLoadingId] = useState(null);
+  const [checkoutEmployeeId, setCheckoutEmployeeId] = useState(null);
+  const [checkoutReason, setCheckoutReason] = useState("");
+  const [checkoutError, setCheckoutError] = useState("");
 
   const load = () => {
     if (!employees.length) { setRows([]); setLoading(false); return; }
@@ -42,7 +45,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employees.map((e) => e.id).join(",")]);
 
-  const canManual = currentUser?.id === data?.ownerId || ["station_manager", "ops_manager", "director"].includes(currentUser?.role);
+  const isManager = currentUser?.id === data?.ownerId || ["station_manager", "ops_manager", "director"].includes(currentUser?.role);
 
   const manualCheckIn = async (employee) => {
     setManualLoadingId(employee.id);
@@ -53,6 +56,32 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
         setRows((prev) => [...prev.filter((row) => row.employee_id !== employee.id), attendance]);
         window.dispatchEvent(new CustomEvent("attendance-updated", { detail: attendance }));
       }
+    } finally {
+      setManualLoadingId(null);
+    }
+  };
+
+  const manualCheckOut = async (employee) => {
+    const reason = checkoutReason.trim();
+    if (!reason) {
+      setCheckoutError(lang === "ar" ? "سبب الإغلاق مطلوب." : "A reason is required.");
+      return;
+    }
+    setCheckoutError("");
+    setManualLoadingId(employee.id);
+    try {
+      const res = await base44.functions.invoke("supabaseAttendance", {
+        action: "manualCheckOut", companyId: company.id, employeeId: employee.id, reason,
+      });
+      const attendance = res?.data?.attendance;
+      if (attendance) {
+        setRows((prev) => prev.map((row) => (row.employee_id === employee.id ? attendance : row)));
+        setCheckoutEmployeeId(null);
+        setCheckoutReason("");
+        window.dispatchEvent(new CustomEvent("attendance-updated", { detail: attendance }));
+      }
+    } catch (error) {
+      setCheckoutError(error?.response?.data?.error || (lang === "ar" ? "تعذر إغلاق الحضور." : "Could not close attendance."));
     } finally {
       setManualLoadingId(null);
     }
@@ -190,11 +219,37 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                     </td>
                     <td className="px-2 py-3 text-center">
                       <div className="flex flex-col items-center justify-center gap-1.5">
+                      {isManager && isPastCheckoutMissing(r) && (
+                        checkoutEmployeeId === e.id ? (
+                          <div className="w-full space-y-1.5 rounded-md border border-violet-200 bg-violet-50 p-2 text-start">
+                            <input
+                              value={checkoutReason}
+                              onChange={(event) => { setCheckoutReason(event.target.value); setCheckoutError(""); }}
+                              placeholder={lang === "ar" ? "سبب الإغلاق" : "Reason for closing"}
+                              className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-xs"
+                              autoFocus
+                            />
+                            {checkoutError && <p className="text-[11px] text-destructive">{checkoutError}</p>}
+                            <div className="flex gap-1">
+                              <button onClick={() => manualCheckOut(e)} disabled={manualLoadingId === e.id} className="inline-flex items-center gap-1 rounded-md bg-violet-700 px-2 py-1 text-xs text-white disabled:opacity-50">
+                                {manualLoadingId === e.id && <Loader2 className="h-3 w-3 animate-spin" />}{lang === "ar" ? "حفظ" : "Save"}
+                              </button>
+                              <button onClick={() => { setCheckoutEmployeeId(null); setCheckoutReason(""); setCheckoutError(""); }} className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground">
+                                {lang === "ar" ? "إلغاء" : "Cancel"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button onClick={() => { setCheckoutEmployeeId(e.id); setCheckoutReason(""); setCheckoutError(""); }} className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-violet-300 px-2 py-1 text-xs text-violet-700 hover:bg-violet-50">
+                            <PenLine className="h-3.5 w-3.5" />{lang === "ar" ? "إغلاق يدوي" : "Manual check-out"}
+                          </button>
+                        )
+                      )}
                       {(r?.manual_override || r?.location_status === "manual") ? (
                         <span title={`${lang === "ar" ? "حضور يدوي بواسطة" : "Manual by"} ${r.override_by || r.excused_by_name || "—"}`} className="inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-xs text-violet-700">
                           <PenLine className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{lang === "ar" ? "يدوي" : "Manual"} · {r.override_by || r.excused_by_name || "—"}</span>
                         </span>
-                      ) : canManual && !r?.check_in_at ? (
+                      ) : isManager && !r?.check_in_at ? (
                         <button onClick={() => manualCheckIn(e)} disabled={manualLoadingId === e.id} className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-violet-300 px-2 py-1 text-xs text-violet-700 hover:bg-violet-50 disabled:opacity-50">
                           {manualLoadingId === e.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PenLine className="h-3.5 w-3.5" />}{lang === "ar" ? "تحضير يدوي" : "Manual check-in"}
                         </button>

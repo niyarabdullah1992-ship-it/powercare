@@ -99,12 +99,11 @@ Deno.serve(async (req) => {
       return !!start && !!end && start <= date && date <= end;
     });
     const getScheduledShift = async (companyId, employeeId) => {
-      const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Riyadh", weekday: "short" }).format(new Date());
-      const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
+      const dateKey = todayStr();
       const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "schedules" });
       for (const schedule of (blobs[0]?.payload || [])) {
         for (const shift of (schedule.shiftTypes || [])) {
-          if ((schedule.assignments?.[dayIndex]?.[shift.id] || []).includes(employeeId)) return { ...shift, stationId: schedule.stationId };
+          if ((schedule.assignments?.[dateKey]?.[shift.id] || []).includes(employeeId)) return { ...shift, stationId: schedule.stationId };
         }
       }
       return null;
@@ -306,15 +305,8 @@ Deno.serve(async (req) => {
     // are eligible, preventing owners, off-duty staff, and unscheduled employees from
     // receiving false absence alerts.
     if (action === "checkLateAlerts") {
-      const now = new Date();
-      const dateParts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit",
-        hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-      }).formatToParts(now).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
-      const date = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
-      const nowMinutes = Number(dateParts.hour) * 60 + Number(dateParts.minute);
-      const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Riyadh", weekday: "short" }).format(now);
-      const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
+      const date = todayStr();
+      const nowMinutes = riyadhMinutes();
       const dirRes = await fetch(`${SUPABASE_URL}/rest/v1/employees_directory?select=*`, { headers });
       const directory = await dirRes.json();
       if (!dirRes.ok || !Array.isArray(directory) || directory.length === 0) return Response.json({ ok: true, alerted: 0 });
@@ -350,7 +342,7 @@ Deno.serve(async (req) => {
         const schedules = await getSchedules(emp.company_id);
         const stationSchedule = schedules.find((schedule) => schedule.stationId === emp.station_id);
         const shift = (stationSchedule?.shiftTypes || []).find((item) =>
-          (stationSchedule.assignments?.[dayIndex]?.[item.id] || []).includes(emp.employee_id)
+          (stationSchedule.assignments?.[date]?.[item.id] || []).includes(emp.employee_id)
         );
         if (!shift) continue;
         const settings = await getSettings(emp.company_id);
@@ -559,6 +551,36 @@ Deno.serve(async (req) => {
       return Response.json({ attendance: Array.isArray(saved) ? saved[0] : saved });
     }
 
+    if (action === "manualCheckOut") {
+      if (!auth?.admin && !MANUAL_ATTENDANCE_ROLES.includes(auth?.role)) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const employeeId = String(body.employeeId || "");
+      const reason = String(body.reason || "").trim();
+      if (!employeeId || !reason) return Response.json({ error: "Employee and reason are required" }, { status: 400 });
+      if (!(await employeeInCompany(employeeId))) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const date = todayStr();
+      const currentRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
+      const currentRows = await currentRes.json();
+      const current = Array.isArray(currentRows) ? currentRows[0] : null;
+      if (!current?.check_in_at) return Response.json({ error: "NOT_CHECKED_IN" }, { status: 400 });
+      if (current.check_out_at) return Response.json({ error: "ALREADY_CHECKED_OUT", attendance: current }, { status: 400 });
+      const now = new Date();
+      const workHours = Math.round(((now.getTime() - new Date(current.check_in_at).getTime()) / 3600000) * 100) / 100;
+      const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(current.id)}`, {
+        method: "PATCH",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify({
+          check_out_at: now.toISOString(), location_status: "manual", override_by: auth.name || "Manager",
+          manual_override: true, excused_note: reason, work_hours: workHours,
+        }),
+      });
+      const updated = await patchRes.json();
+      if (!patchRes.ok) {
+        console.error("manualCheckOut failed:", updated?.message || updated);
+        return Response.json({ error: updated?.message || "Failed to record manual check-out" }, { status: 400 });
+      }
+      return Response.json({ attendance: Array.isArray(updated) ? updated[0] : updated });
+    }
+
     // ---- Manager: excuse a late/absent record (keeps the record, removes the penalty) ----
 
     if (action === "excuseAttendance") {
@@ -684,8 +706,6 @@ Deno.serve(async (req) => {
       const attRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(companyId)}&date=eq.${date}&select=employee_id`, { headers });
       const attRows = await attRes.json();
       const already = new Set((Array.isArray(attRows) ? attRows : []).map((row) => row.employee_id));
-      const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Riyadh", weekday: "short" }).format(new Date());
-      const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
       const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "schedules" });
       const schedules = blobs[0]?.payload || [];
       const missing = [];
@@ -695,7 +715,7 @@ Deno.serve(async (req) => {
         const employee = employeeById.get(directoryEmployee.employee_id);
         if (!employee || already.has(directoryEmployee.employee_id)) continue;
         const hasShift = schedules.some((schedule) => (schedule.shiftTypes || []).some((shift) =>
-          (schedule.assignments?.[dayIndex]?.[shift.id] || []).includes(directoryEmployee.employee_id)
+          (schedule.assignments?.[date]?.[shift.id] || []).includes(directoryEmployee.employee_id)
         ));
         if (!hasShift) { notScheduled++; continue; }
         if (isOnApprovedLeave(employee, date)) { onLeave++; continue; }
