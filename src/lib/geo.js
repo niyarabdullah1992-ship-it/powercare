@@ -4,29 +4,9 @@
 // watchPosition keeps improving the fix and we resolve with the most accurate
 // reading — early once it's good enough.
 const GOOD_ACCURACY_M = 25;
-// Above this, the browser fix is considered too coarse (typical for desktops
-// without GPS) and we try Google's Geolocation API as a smarter fallback.
-const COARSE_ACCURACY_M = 300;
-
-import { base44 } from "@/api/base44Client";
-import { getSession, getCompanyToken } from "@/lib/store";
-
-// Paid Google lookup — called only when the free browser fix is missing/coarse.
-async function googleFallback() {
-  try {
-    const s = getSession();
-    if (!s?.companyId) return null;
-    const res = await base44.functions.invoke("googleGeolocate", {
-      companyId: s.companyId,
-      sessionToken: getCompanyToken(s.companyId),
-    });
-    const d = res?.data;
-    if (d?.lat != null && d?.lng != null) return { lat: d.lat, lng: d.lng, accuracy: d.accuracy ?? null };
-  } catch {
-    // fallback unavailable — keep whatever the browser gave us
-  }
-  return null;
-}
+// Attendance must use the employee device's GPS. Network/IP fixes can point to
+// a completely different place, so readings coarser than this are rejected.
+const MAX_ACCEPTABLE_ACCURACY_M = 100;
 
 /* ----------------------------- warm-fix cache -----------------------------
    startGeoWarmup() runs a short background GPS watch (e.g. when the attendance
@@ -59,17 +39,10 @@ export async function getAccuratePosition({ timeoutMs = 10000 } = {}) {
     return warmFix;
   }
   const browserFix = await getBrowserPosition({ timeoutMs });
-  // No browser fix means the user denied (or has no) location access — never
-  // substitute a network-based guess; location permission is mandatory.
-  if (!browserFix) return null;
-  // Good browser fix → done, no paid call.
-  if (browserFix.accuracy != null && browserFix.accuracy <= COARSE_ACCURACY_M) return browserFix;
-  const googleFix = await googleFallback();
-  if (!googleFix) return browserFix;
-  // Both available — keep the more accurate one.
-  const bAcc = browserFix.accuracy ?? Infinity;
-  const gAcc = googleFix.accuracy ?? Infinity;
-  return gAcc < bAcc ? googleFix : browserFix;
+  // Never substitute an IP/server location for the employee's device location.
+  // If the device cannot provide a sufficiently precise reading, check-in stops.
+  if (!browserFix || browserFix.accuracy == null || browserFix.accuracy > MAX_ACCEPTABLE_ACCURACY_M) return null;
+  return browserFix;
 }
 
 function getBrowserPosition({ timeoutMs = 20000 } = {}) {

@@ -81,11 +81,8 @@ export default function QuickCheckInCard({ currentUser, company }) {
     setLoading(true);
     try {
       // Location is MANDATORY before check-in — no location, no check-in.
-      let c = coords;
-      if (!c) {
-        c = await getAccuratePosition();
-        if (c) { setCoords(c); setLocState("ready"); }
-      }
+      const c = await getAccuratePosition();
+      if (c) { setCoords(c); setLocState("ready"); }
       if (!c) {
         setLocState("denied");
         setError(t("locationDenied"));
@@ -119,11 +116,8 @@ export default function QuickCheckInCard({ currentUser, company }) {
     setLoading(true);
     try {
       // Location is also MANDATORY at check-out — same rule as check-in.
-      let c = coords;
-      if (!c) {
-        c = await getAccuratePosition();
-        if (c) { setCoords(c); setLocState("ready"); }
-      }
+      const c = await getAccuratePosition();
+      if (c) { setCoords(c); setLocState("ready"); }
       if (!c) {
         setLocState("denied");
         setError(t("locationDenied"));
