@@ -10,6 +10,18 @@ import { Calendar, TrendingUp, Users, Building2, BarChart3 } from "lucide-react"
 import moment from "moment";
 import IssuesList from "@/components/performance/IssuesList";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
+
+function EmployeeAxisTick({ x, y, payload, employees }) {
+  const employee = employees.find((item) => item.id === payload.value);
+  return (
+    <foreignObject x={x - 92} y={y - 12} width="88" height="24">
+      <div className="text-end leading-tight">
+        <EmployeeNameLink employeeId={employee?.id} employeeName={employee?.name || "—"} className="block truncate text-[10px] font-body" />
+      </div>
+    </foreignObject>
+  );
+}
 
 const RANGES = [
   { val: "daily", bucket: "day", count: 14 },
@@ -119,7 +131,7 @@ export default function PerformanceAnalytics() {
     const stationName = (id) => data.stations.find((s) => s.id === id)?.name || t("hq");
 
     const perEmployee = Object.entries(empMap)
-      .map(([id, value]) => ({ name: employeeName(id), value }))
+      .map(([id, value]) => ({ id, name: employeeName(id), value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 10);
 
@@ -252,7 +264,7 @@ export default function PerformanceAnalytics() {
                     <BarChart data={perEmployee} layout="vertical" margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                       <XAxis type="number" {...axisProps} allowDecimals={false} />
-                      <YAxis type="category" dataKey="name" {...axisProps} width={90} />
+                      <YAxis type="category" dataKey="id" {...axisProps} width={100} tick={(props) => <EmployeeAxisTick {...props} employees={perEmployee} />} />
                       <Tooltip {...tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
                       <Bar dataKey="value" name={t("completedTasks")} fill="hsl(var(--accent))" radius={[0, 4, 4, 0]} barSize={18} />
                     </BarChart>

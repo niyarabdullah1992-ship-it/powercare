@@ -1,6 +1,6 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { FileText, CheckCircle2, Circle } from "lucide-react";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import { netOf } from "@/lib/payroll";
 
 export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid, onPayslip }) {
@@ -21,13 +21,7 @@ export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid,
   return (
     <tr className={`align-middle [&>td]:py-2 [&>td]:pe-3 ${item.paid ? "opacity-70" : ""}`}>
       <td data-label={ar ? "الموظف" : "Employee"}>
-        {employee?.role ? (
-          <Link to={`/app/employees/${item.employeeId}`} className="text-sm font-body font-medium text-accent hover:underline hover:underline-offset-2">
-            {employee.name || "—"}
-          </Link>
-        ) : (
-          <p className="text-sm font-body font-medium">{employee?.name || "—"}</p>
-        )}
+        <EmployeeNameLink employeeId={employee?.role ? item.employeeId : null} employeeName={employee?.name || "—"} className="text-sm font-body font-medium" />
         <p className="text-[11px] text-muted-foreground font-body">{employee?.position || employee?.role || ""}</p>
       </td>
       <td data-label={ar ? "الأساسي" : "Base"}>{cell("base")}</td>

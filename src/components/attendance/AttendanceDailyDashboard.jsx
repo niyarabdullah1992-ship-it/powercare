@@ -6,6 +6,7 @@ import ComparisonExportButtons from "@/components/reports/ComparisonExportButton
 import { useI18n } from "@/lib/i18n";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 import { getAttendanceStatus } from "@/lib/attendance";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 const STATUS_STYLE = {
   present: "bg-emerald-100 text-emerald-700 border-emerald-300",
@@ -123,7 +124,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                 const status = statusFor(e);
                 return (
                   <tr key={e.id} className="border-b border-border/60">
-                    <td className="py-2 pe-3">{e.name}</td>
+                    <td className="py-2 pe-3"><EmployeeNameLink employeeId={e.id} employeeName={e.name} className="font-medium" /></td>
                     <td className="py-2 pe-3">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className={`px-2 py-0.5 rounded-full text-xs border ${STATUS_STYLE[status]}`}>

@@ -5,6 +5,7 @@ import { groupLevelsByOrder, levelName, levelNote } from "@/lib/hrLevels";
 import HRTierCard from "@/components/hr/HRTierCard";
 import StationManagerAssignModal from "@/components/hr/StationManagerAssignModal";
 import { UserCircle2 } from "lucide-react";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 // Vertical org chart for one station's HR reporting line: highest authority down to
 // the station's own HR position, connected with elegant tapered lines. The set of
@@ -105,9 +106,7 @@ function StationManagerNode({ stationManager, t, station, data, company, canMana
           )}
         </div>
         {stationManager ? (
-          <span dir="auto" className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-body">
-            {stationManager.name}
-          </span>
+          <EmployeeNameLink employeeId={stationManager.id} employeeName={stationManager.name} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-body" />
         ) : (
           <p className="text-xs text-amber-600 font-body">⚠ {t("noManager")}</p>
         )}

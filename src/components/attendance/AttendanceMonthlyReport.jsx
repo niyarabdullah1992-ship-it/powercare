@@ -5,6 +5,7 @@ import MobileSelect from "@/components/mobile/MobileSelect";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { useI18n } from "@/lib/i18n";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 const RANGES = [
   { val: "monthly", amount: 1, unit: "months" },
@@ -87,6 +88,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
           placeholder={t("employeeName")}
           options={employees.map((e) => ({ value: e.id, label: e.name }))}
         />
+        <EmployeeNameLink employeeId={employeeId} employeeName={employees.find((e) => e.id === employeeId)?.name} className="text-sm font-body font-medium" />
         <ComparisonExportButtons
           title={`${t("monthlyAttendanceReport")} — ${employees.find((e) => e.id === employeeId)?.name || ""}`}
           headers={exportHeaders}

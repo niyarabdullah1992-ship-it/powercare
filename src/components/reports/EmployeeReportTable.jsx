@@ -6,6 +6,7 @@ import { exportCSV } from "@/lib/exportReport";
 import ReportCard from "@/components/reports/ReportCard";
 import ReportTableHead from "@/components/reports/ReportTableHead";
 import GroupVsGroupComparison from "@/components/reports/GroupVsGroupComparison";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 // Free-form employee comparison table for the company owner — pick any employees
 // (regardless of station) and see every aspect side by side, with a full Excel export.
@@ -174,7 +175,7 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
             <tbody>
               {compared.map((r) => (
                 <tr key={r.id} className="border-b border-border/60 last:border-0">
-                  <td data-label={t("employeeName")} className="py-2.5 px-2 font-medium whitespace-nowrap">{r.name}</td>
+                  <td data-label={t("employeeName")} className="py-2.5 px-2 font-medium whitespace-nowrap"><EmployeeNameLink employeeId={r.id} employeeName={r.name} /></td>
                   <td data-label={t("station")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.station}</td>
                   <td data-label={t("role")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.role}</td>
                   <td data-label={t("position")} className="py-2.5 px-2 text-muted-foreground whitespace-nowrap">{r.position}</td>

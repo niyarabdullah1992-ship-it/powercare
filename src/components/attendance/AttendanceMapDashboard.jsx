@@ -8,6 +8,7 @@ import { Loader2, MapPin } from "lucide-react";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import "leaflet/dist/leaflet.css";
 import { HQ_STATION_ID } from "@/lib/store";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 const stationIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -122,7 +123,7 @@ export default function AttendanceMapDashboard({ employees, t }) {
               >
                 <Popup>
                   <div className="text-xs space-y-0.5" dir="auto">
-                    <p className="font-semibold">{r.employee_name || r.employee_id}</p>
+                    <EmployeeNameLink employeeId={r.employee_id} employeeName={r.employee_name || r.employee_id} className="font-semibold" />
                     <p>{t("checkedInAt")} {r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—"}</p>
                     {r.distance_meters != null && <p>{t("distanceMeters")}: {r.distance_meters}m</p>}
                     {r.location_status && (

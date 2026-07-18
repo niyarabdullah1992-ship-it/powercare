@@ -28,6 +28,7 @@ import MobileSelect from "@/components/mobile/MobileSelect";
 import PageHeader from "@/components/PageHeader";
 import { queryClientInstance } from "@/lib/query-client";
 import { toast } from "@/components/ui/use-toast";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -684,10 +685,10 @@ export default function MyTasks() {
       ((tg.escalation_level || 0) > 0 && handlersForLevel(Math.min(tg.escalation_level, STAGE_COUNT - 1), { stationId: targetStationKey(tg) }, data).some((h) => h.id === currentUser.id)));
 
   const assignmentLabel = (tg) => {
-    if (tg.assignment_type === "member") return `${t("member")}: ${employeeName(tg.employee_id)}`;
+    if (tg.assignment_type === "member") return <>{t("member")}: <EmployeeNameLink employeeId={tg.employee_id} employeeName={employeeName(tg.employee_id)} /></>;
     if (tg.assignment_type === "station_team") return `${t("stationTeam")}: ${stationName(tg.assignment_id)}`;
     if (tg.assignment_type === "hq_team") return t("hqTeam");
-    return employeeName(tg.employee_id);
+    return <EmployeeNameLink employeeId={tg.employee_id} employeeName={employeeName(tg.employee_id)} />;
   };
 
   const canLog = (tg) => {

@@ -7,6 +7,7 @@ import EmployeePoints from "@/components/employees/EmployeePoints";
 import PresenceStatusPicker from "@/components/employees/PresenceStatusPicker";
 import QuickCheckInCard from "@/components/attendance/QuickCheckInCard";
 import EmployeeTour from "@/components/onboarding/EmployeeTour";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 export default function EmployeeDashboard({ user, company, data }) {
   const { t } = useI18n();
@@ -50,7 +51,7 @@ export default function EmployeeDashboard({ user, company, data }) {
 
       <div className="border-b border-border pb-6 flex items-center justify-between flex-wrap gap-4">
         <div>
-          <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{user.name}</p>
+          <EmployeeNameLink employeeId={user.id} employeeName={user.name} className="inline-block text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2" />
           <h1 className="hero-title text-4xl md:text-5xl">{t("myDay")}</h1>
         </div>
         <div className="flex items-center gap-3">
@@ -68,7 +69,7 @@ export default function EmployeeDashboard({ user, company, data }) {
         <div className="flex items-center gap-2">
           <UserCircle className="w-4 h-4 text-accent" strokeWidth={1.5} />
           <span className="text-xs text-muted-foreground font-body">{t("manager")}:</span>
-          <span className="text-sm font-medium font-body">{manager ? manager.name : t("noManager")}</span>
+          {manager ? <EmployeeNameLink employeeId={manager.id} employeeName={manager.name} className="text-sm font-medium font-body" /> : <span className="text-sm font-medium font-body">{t("noManager")}</span>}
         </div>
       </div>
 

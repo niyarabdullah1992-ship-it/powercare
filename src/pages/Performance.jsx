@@ -15,6 +15,7 @@ import ComparisonExportButtons from "@/components/reports/ComparisonExportButton
 import { isCompanyOwner } from "@/lib/permissions";
 import { Palette } from "lucide-react";
 import { HQ_STATION_ID } from "@/lib/store";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 export default function Performance() {
   const { t, dir, lang } = useI18n();
@@ -193,7 +194,7 @@ export default function Performance() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium font-body truncate">{e.name}</p>
+                      <EmployeeNameLink employeeId={e.id} employeeName={e.name} className="block text-sm font-medium font-body truncate" />
                       <span className="text-[10px] text-muted-foreground">{roleLabel(e)}</span>
                     </div>
                     <p className="text-xs text-muted-foreground font-body">
@@ -337,7 +338,7 @@ export default function Performance() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           {i < 3 && rankIcon(i)}
-                          <p className="text-sm font-medium font-body truncate">{e.name}</p>
+                          <EmployeeNameLink employeeId={e.id} employeeName={e.name} className="block text-sm font-medium font-body truncate" />
                         </div>
                         <p className="text-xs text-muted-foreground font-body truncate">
                           {roleLabel(e)} · {stationName(e.stationId || HQ_STATION_ID)}

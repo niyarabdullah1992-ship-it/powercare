@@ -8,6 +8,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import moment from "moment";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { HQ_STATION_ID } from "@/lib/store";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 // Full performance report for a single selected employee — points, badge, tasks,
 // certificates, leave, and a completed-tasks trend over the last 6 months.
@@ -139,7 +140,7 @@ export default function EmployeeSingleReport({ t }) {
           {emp.name.charAt(0)}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-heading text-lg font-semibold truncate">{emp.name}</p>
+          <EmployeeNameLink employeeId={emp.id} employeeName={emp.name} className="block font-heading text-lg font-semibold truncate" />
           <p className="text-xs text-muted-foreground font-body">{emp.customTitle || getRoleLabel(company, emp.role, t)} · {stationName}</p>
         </div>
         <div className="text-end shrink-0">

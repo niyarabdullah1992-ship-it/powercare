@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { UserCog, Eye, Plus, X, Pencil, Check } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 // One role slot within a tier card (Manager or Assistant), listing assigned employees.
 export default function HRSlotRow({ label, roleTag, employees, canManage, onAdd, onRemove, onUpdatePosition }) {
@@ -58,7 +59,7 @@ export default function HRSlotRow({ label, roleTag, employees, canManage, onAdd,
                 </>
               ) : (
                 <>
-                  <span dir="auto" className="truncate font-body text-[13px]">{e.name}{e.position ? <span className="text-muted-foreground font-body"> — {e.position}</span> : ""}</span>
+                  <span dir="auto" className="truncate font-body text-[13px]"><EmployeeNameLink employeeId={e.id} employeeName={e.name} />{e.position ? <span className="text-muted-foreground font-body"> — {e.position}</span> : ""}</span>
                   {canManage && (
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => startEdit(e)} className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" title={t("edit")}>

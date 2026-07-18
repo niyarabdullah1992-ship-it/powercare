@@ -1,5 +1,6 @@
 import React from "react";
 import { formatDate } from "@/lib/dateFormat";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 const statusStyle = {
   approved: "bg-emerald-100 text-emerald-700 border-emerald-300",
@@ -23,7 +24,7 @@ export default function AttendanceLeaveRequests({ employees, stations, t, lang }
               {[t("employeeName"), t("station"), t("leaveType"), t("startDate"), t("endDate"), t("days"), t("status")].map((label) => <th key={label} className="px-2 py-2 text-start text-xs">{label}</th>)}
             </tr></thead>
             <tbody>{requests.map((request) => <tr key={`${request.employee.id}-${request.id}`} className="border-b border-border/60 last:border-0">
-              <td data-label={t("employeeName")} className="px-2 py-2.5 font-medium">{request.employee.name}</td>
+              <td data-label={t("employeeName")} className="px-2 py-2.5 font-medium"><EmployeeNameLink employeeId={request.employee.id} employeeName={request.employee.name} /></td>
               <td data-label={t("station")} className="px-2 py-2.5 text-muted-foreground">{stationName(request.employee.stationId)}</td>
               <td data-label={t("leaveType")} className="px-2 py-2.5 text-muted-foreground">{t(request.type)}</td>
               <td data-label={t("startDate")} className="px-2 py-2.5 text-muted-foreground">{formatDate(request.startDate, lang)}</td>

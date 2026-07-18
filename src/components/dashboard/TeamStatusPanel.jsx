@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { isOnLeaveToday } from "@/lib/leaveTypes";
 import { PRESENCE_OPTIONS } from "@/components/employees/PresenceStatusPicker";
 import { Users } from "lucide-react";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 // Manager-facing snapshot of every visible employee's current status: on leave,
 // checked out, live presence (online/away/busy/in a call), or not checked in yet.
@@ -60,7 +61,7 @@ function TeamStatusPanel({ employees, t }) {
                   {e.name.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium font-body truncate">{e.name}</p>
+                  <EmployeeNameLink employeeId={e.id} employeeName={e.name} className="block text-sm font-medium font-body truncate" />
                   <p className="text-xs text-muted-foreground font-body">
                     {att?.check_in_at ? `${t("checkedInAt")} ${new Date(att.check_in_at).toLocaleTimeString()}` : "—"}
                     {att?.check_out_at ? ` · ${t("checkedOutAt")} ${new Date(att.check_out_at).toLocaleTimeString()}` : ""}

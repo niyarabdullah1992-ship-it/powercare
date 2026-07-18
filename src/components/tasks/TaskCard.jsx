@@ -7,6 +7,7 @@ import { NO_SECTION } from "@/lib/taskFolders";
 import EscalationSteps from "@/components/escalation/EscalationSteps";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import FlowSwipeAction from "@/components/flow/FlowSwipeAction";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 // A single task target card — progress, comments, and management actions.
 export default function TaskCard({
@@ -237,7 +238,7 @@ export default function TaskCard({
                   <div key={c.id} className={`text-xs font-body p-2 rounded-md ${c.is_issue || c.is_rejection ? "bg-red-50 border border-red-200" : c.is_dispute || c.is_escalation ? "bg-orange-50 border border-orange-200" : "bg-muted/50"}`}>
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-medium text-foreground flex items-center gap-1">
-                        {c.user_name}
+                        <EmployeeNameLink employeeId={c.user_id} employeeName={c.user_name} />
                         {c.is_issue && (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-red-100 text-red-700 border border-red-300">
                             <AlertTriangle className="w-2.5 h-2.5" /> {t("stoppageIssue")}

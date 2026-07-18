@@ -21,6 +21,7 @@ import StationCombobox from "@/components/stations/StationCombobox";
 import { logAudit } from "@/lib/auditLog";
 import PageHeader from "@/components/PageHeader";
 import MobileSelect from "@/components/mobile/MobileSelect";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 const ROLES = ["employee", "station_manager", "pgm", "ops_manager", "director"];
 
@@ -376,7 +377,7 @@ export default function Employees() {
                 <div className="min-w-0 flex-1">
                   {editingTitle === e.id ? (
                     <div className="flex items-center gap-1">
-                      <p className="font-heading font-semibold truncate">{e.name}</p>
+                      <EmployeeNameLink employeeId={e.id} employeeName={e.name} className="block font-heading font-semibold truncate" />
                     </div>
                   ) : (
                     <p className="font-heading font-semibold truncate">{e.name}</p>

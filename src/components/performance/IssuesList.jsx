@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { formatDateTime } from "@/lib/dateFormat";
 import { AlertTriangle } from "lucide-react";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 // Lists free-text "stoppage issue" comments reported across task targets.
 export default function IssuesList() {
@@ -66,7 +67,7 @@ export default function IssuesList() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-medium font-body truncate">{c.user_name} <span className="text-muted-foreground font-normal">· {c.taskTitle}</span></p>
+                  <p className="text-xs font-medium font-body truncate"><EmployeeNameLink employeeId={c.user_id} employeeName={c.user_name} /> <span className="text-muted-foreground font-normal">· {c.taskTitle}</span></p>
                   <span className="text-[10px] text-muted-foreground font-body whitespace-nowrap shrink-0">{c.created_at ? formatDateTime(c.created_at, lang) : ""}</span>
                 </div>
                 <p className="text-xs text-foreground/80 font-body mt-0.5 truncate">{c.content}</p>

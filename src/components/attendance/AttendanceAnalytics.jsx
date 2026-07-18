@@ -2,6 +2,18 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
+
+function EmployeeAxisTick({ x, y, payload, employees }) {
+  const employee = employees.find((item) => item.employeeId === payload.value);
+  return (
+    <foreignObject x={x - 55} y={y + 4} width="110" height="28">
+      <div className="text-center leading-tight">
+        <EmployeeNameLink employeeId={employee?.employeeId} employeeName={employee?.name || "—"} className="block truncate text-[10px] font-body" />
+      </div>
+    </foreignObject>
+  );
+}
 
 // Manager-only analytics: attendance rate and late frequency compared across the team.
 export default function AttendanceAnalytics({ employees, t }) {
@@ -25,6 +37,7 @@ export default function AttendanceAnalytics({ employees, t }) {
 
   const nameOf = (id) => employees.find((e) => e.id === id)?.name || "—";
   const chartData = stats.map((s) => ({
+    employeeId: s.employeeId,
     name: nameOf(s.employeeId),
     attendanceRate: s.attendanceRate ?? 0,
     lateCount: s.late + s.excusedLate,
@@ -64,7 +77,7 @@ export default function AttendanceAnalytics({ employees, t }) {
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <XAxis dataKey="employeeId" tick={(props) => <EmployeeAxisTick {...props} employees={chartData} />} height={42} />
                 <YAxis tick={{ fontSize: 11 }} unit="%" />
                 <Tooltip />
                 <Bar dataKey="attendanceRate" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
@@ -77,7 +90,7 @@ export default function AttendanceAnalytics({ employees, t }) {
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <XAxis dataKey="employeeId" tick={(props) => <EmployeeAxisTick {...props} employees={chartData} />} height={42} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip />
                 <Bar dataKey="lateCount" fill="#d97706" radius={[4, 4, 0, 0]} />

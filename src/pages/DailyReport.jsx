@@ -10,6 +10,7 @@ import { FileText, ListTodo, AlertTriangle, Activity, Building2, Palette } from 
 import ReportCard from "@/components/reports/ReportCard";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
+import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 export default function DailyReport() {
   const { t, lang } = useI18n();
@@ -225,7 +226,7 @@ export default function DailyReport() {
                     <div key={a.id} className="p-3 rounded-lg border border-border/60">
                       <div className="flex items-center justify-between gap-2 text-xs font-body text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <Building2 className="w-3 h-3" /> {stationLabel(a.stationKey)} · {a.targetTitle} · {a.user_name}
+                          <Building2 className="w-3 h-3" /> {stationLabel(a.stationKey)} · {a.targetTitle} · <EmployeeNameLink employeeId={a.user_id} employeeName={a.user_name} />
                         </span>
                         <span>{formatDateTime(a.created_at, lang)}</span>
                       </div>
