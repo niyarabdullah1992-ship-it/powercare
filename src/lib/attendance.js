@@ -1,6 +1,17 @@
 import { base44 } from "@/api/base44Client";
 import { isOnLeaveToday } from "@/lib/leaveTypes";
 
+function getRiyadhDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Riyadh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const value = (type) => parts.find((part) => part.type === type)?.value;
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
 // Thin helpers around the supabaseAttendance backend function, shared by the
 // check-in widget, manager dashboards, and the task-gating check in MyTasks.
 export async function getTodayAttendance(employeeId) {
@@ -25,11 +36,10 @@ export function isCheckedIn(att) {
 
 export function isScheduledToday(employee, data) {
   if (!employee?.id) return false;
-  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Riyadh", weekday: "short" }).format(new Date());
-  const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
+  const dateKey = getRiyadhDateKey();
   return (data?.schedules || []).some((schedule) =>
     (schedule.shiftTypes || []).some((shift) =>
-      (schedule.assignments?.[dayIndex]?.[shift.id] || []).includes(employee.id)
+      (schedule.assignments?.[dateKey]?.[shift.id] || []).includes(employee.id)
     )
   );
 }
@@ -46,12 +56,11 @@ export function getAttendanceStatus(employee, attRow, data) {
 export function getTodaysShift(data, employee) {
   if (!employee?.id) return null;
   const stationIds = [employee.stationId || data?.stations?.[0]?.id, ...(employee.managedStations || [])].filter(Boolean);
-  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Riyadh", weekday: "short" }).format(new Date());
-  const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
+  const dateKey = getRiyadhDateKey();
   for (const stationId of stationIds) {
     const schedule = (data?.schedules || []).find((s) => s.stationId === stationId);
     for (const st of schedule?.shiftTypes || []) {
-      const ids = schedule.assignments?.[dayIndex]?.[st.id] || [];
+      const ids = schedule.assignments?.[dateKey]?.[st.id] || [];
       if (ids.includes(employee.id)) return { start: st.start, end: st.end, label: st.label, stationId };
     }
   }
