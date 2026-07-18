@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { LayoutDashboard, Grid3X3, Gauge, ClipboardCheck, FileSignature, Building2 } from "lucide-react";
+import { LayoutDashboard, Grid3X3, Gauge, ClipboardCheck, FileSignature, Building2, ChevronDown } from "lucide-react";
 import SafetyOverviewTab from "@/components/safety/SafetyOverviewTab";
 import RiskAssessmentTab from "@/components/safety/RiskAssessmentTab";
 import SafetyKpiTab from "@/components/safety/SafetyKpiTab";
@@ -9,6 +9,7 @@ import { checklistCompliance } from "@/lib/safetyStandards";
 
 export default function StationSafetyCard({ station, rec, canEdit, canApprove, approvalIssues = [], lang, signerName, onUpdate, onCloseHazard, onApprove, onIncident }) {
   const [tab, setTab] = useState("overview");
+  const [expanded, setExpanded] = useState(true);
   const ar = lang === "ar";
   const tabs = [
     ["overview", LayoutDashboard, ar ? "نظرة عامة" : "Overview"],
@@ -21,14 +22,14 @@ export default function StationSafetyCard({ station, rec, canEdit, canApprove, a
 
   return (
     <section className="space-y-3 rounded-2xl border-2 border-accent/20 bg-secondary/40 p-3 shadow-sm" dir={ar ? "rtl" : "ltr"}>
-      <header className="flex items-center justify-between gap-3 px-1">
-        <div className="flex min-w-0 items-center gap-2.5">
+      <button type="button" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} className="flex w-full items-center justify-between gap-3 rounded-xl px-1 text-start">
+        <span className="flex min-w-0 items-center gap-2.5">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent"><Building2 className="h-4 w-4" /></span>
-          <div className="min-w-0"><p className="text-[10px] text-muted-foreground">{ar ? "المحطة" : "Station"}</p><h3 className="truncate text-sm font-semibold">{station.name}</h3></div>
-        </div>
-        <span className="rounded-full bg-accent/10 px-2 py-1 text-[10px] font-semibold text-accent">{checklistCompliance(rec?.checklistResults || {})}%</span>
-      </header>
-      <div className="space-y-4 rounded-xl border border-border bg-card p-4">
+          <span className="min-w-0"><span className="block text-[10px] text-muted-foreground">{ar ? "المحطة" : "Station"}</span><span className="block truncate text-sm font-semibold">{station.name}</span></span>
+        </span>
+        <span className="flex shrink-0 items-center gap-2"><span className="rounded-full bg-accent/10 px-2 py-1 text-[10px] font-semibold text-accent">{checklistCompliance(rec?.checklistResults || {})}%</span><ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} /></span>
+      </button>
+      {expanded && <div className="space-y-4 rounded-xl border border-border bg-card p-4">
       <div className="no-scrollbar flex gap-1 overflow-x-auto border-b pb-2">
         {tabs.map(([key, Icon, label]) => (
           <button key={key} onClick={() => setTab(key)} className={`flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] ${tab === key ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground"}`}>
@@ -41,7 +42,7 @@ export default function StationSafetyCard({ station, rec, canEdit, canApprove, a
       {tab === "kpis" && <SafetyKpiTab {...shared} />}
       {tab === "checklist" && <SafetyChecklistTab results={rec?.checklistResults || {}} canEdit={canEdit} lang={lang} onChange={(checklistResults) => onUpdate({ checklistResults })} />}
       {tab === "permits" && <PermitWorkTab permits={rec?.permits || []} canEdit={canEdit} lang={lang} signerName={signerName} onChange={(permits) => onUpdate({ permits })} />}
-      </div>
+      </div>}
     </section>
   );
 }
