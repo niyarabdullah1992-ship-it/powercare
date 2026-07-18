@@ -45,6 +45,11 @@ export default function WelcomeHero({ name, companyName, t, lang, alerts = [], e
       )}
       <div className="absolute -top-20 -end-16 w-64 h-64 rounded-full bg-landing-gold/25 blur-[80px] pointer-events-none" />
       <div className="absolute -bottom-24 -start-10 w-56 h-56 rounded-full bg-landing-gold-light/20 blur-[80px] pointer-events-none" />
+      <img
+        src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/d1de0f5de_generated_image.png"
+        alt={lang === "ar" ? "موظف مبتسم" : "Smiling employee"}
+        className="pointer-events-none absolute bottom-0 end-0 hidden h-full w-56 object-cover object-top opacity-80 md:block"
+      />
 
       {employee && companyId && (
         <button
@@ -58,7 +63,7 @@ export default function WelcomeHero({ name, companyName, t, lang, alerts = [], e
       )}
       <input ref={bannerInput} type="file" accept="image/*" className="hidden" onChange={(e) => changeBanner(e.target.files?.[0])} />
 
-      <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+      <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between md:pe-52">
         <div className="flex items-center gap-4">
           <div className="relative h-16 w-16 shrink-0">
             <button
@@ -83,10 +88,15 @@ export default function WelcomeHero({ name, companyName, t, lang, alerts = [], e
             </h2>
             <p className="text-white/40 font-body text-sm mt-1">{companyName}</p>
           </div>
+          <img
+            src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/d1de0f5de_generated_image.png"
+            alt={lang === "ar" ? "موظف مبتسم" : "Smiling employee"}
+            className="ms-auto h-20 w-16 shrink-0 rounded-xl border border-landing-gold/30 object-cover object-top shadow-lg md:hidden"
+          />
         </div>
       </div>
 
-      <div className="relative mt-6 flex flex-wrap gap-3">
+      <div className="relative mt-6 flex flex-wrap gap-3 md:pe-52">
         {hasAlerts ? (
           alerts.filter((a) => a.value > 0).map((a) => (
             <div
