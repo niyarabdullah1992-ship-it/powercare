@@ -11,20 +11,19 @@ export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid,
       value={item[field] ?? 0}
       disabled={!editable || item.paid}
       onChange={(e) => onChange(field, Number(e.target.value) || 0)}
-      className="w-24 px-2 py-1.5 rounded-md border border-input bg-background text-sm font-body text-end disabled:opacity-60"
+      aria-invalid={field === "base" && num(item.base) <= 0}
+      title={field === "base" && num(item.base) <= 0 ? (ar ? "الراتب لم يُحدَّد بعد" : "Salary has not been set yet") : undefined}
+      className={`h-8 w-24 rounded-md border bg-background px-2 text-end text-sm font-body disabled:opacity-60 ${field === "base" && num(item.base) <= 0 ? "border-destructive/60" : "border-input"}`}
       dir="ltr"
     />
   );
   return (
-    <tr className={item.paid ? "opacity-70" : ""}>
+    <tr className={`align-middle [&>td]:py-2 [&>td]:pe-3 ${item.paid ? "opacity-70" : ""}`}>
       <td data-label={ar ? "الموظف" : "Employee"}>
         <p className="text-sm font-body font-medium">{employee?.name || "—"}</p>
         <p className="text-[11px] text-muted-foreground font-body">{employee?.position || employee?.role || ""}</p>
       </td>
-      <td data-label={ar ? "الأساسي" : "Base"}>
-        {cell("base")}
-        {num(item.base) <= 0 && <p className="mt-1 text-[10px] text-destructive font-body">{ar ? "الراتب لم يُحدَّد بعد" : "Salary has not been set yet"}</p>}
-      </td>
+      <td data-label={ar ? "الأساسي" : "Base"}>{cell("base")}</td>
       <td data-label={ar ? "البدلات" : "Allowances"}>{cell("allowances")}</td>
       <td data-label={ar ? "مكافآت" : "Bonus"}>{cell("bonus")}</td>
       <td data-label={ar ? "خصومات" : "Deductions"}>{cell("deductions")}</td>
