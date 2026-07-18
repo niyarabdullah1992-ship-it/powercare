@@ -189,8 +189,10 @@ export default function QuickCheckInCard({ currentUser, company }) {
         <div className="flex-1 space-y-2 text-center md:text-start">
           <h3 className="font-heading text-xl font-semibold">{t("myAttendance")}</h3>
 
-          {settings?.gps_enabled === false && <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-800">{lang === "ar" ? "شرط الموقع متوقف حاليًا." : "Location requirement is currently disabled."}</p>}
-          {settings?.schedule_required === false && <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-800">{lang === "ar" ? "شرط جدول اليوم متوقف حاليًا." : "Today's schedule requirement is currently disabled."}</p>}
+          <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
+            {settings?.gps_enabled === false && <p className="inline-flex w-fit rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800">{lang === "ar" ? "شرط الموقع متوقف" : "Location requirement disabled"}</p>}
+            {settings?.schedule_required === false && <p className="inline-flex w-fit rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800">{lang === "ar" ? "شرط الجدول متوقف" : "Schedule requirement disabled"}</p>}
+          </div>
 
           {!shift && !checkedIn && settings?.schedule_required !== false && (
             <p className="text-xs text-amber-700 font-body">
