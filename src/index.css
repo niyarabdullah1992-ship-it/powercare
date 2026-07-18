@@ -327,7 +327,7 @@ input, textarea, [contenteditable] {
 }
 
 /* Dense 2090 HUD geometry — visual only, never intercepts touch. */
-.future-interface-layer { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; color:hsl(var(--accent)); }
+.future-interface-layer { position:fixed; inset:0; z-index:2; pointer-events:none; overflow:hidden; color:hsl(var(--accent)); }
 .powercare-shell > aside, .powercare-shell > div:not(.future-interface-layer) { position:relative; z-index:1; }
 .future-grid { position:absolute; inset:0; opacity:.34; background-image:linear-gradient(hsl(var(--accent) / .13) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--accent) / .13) 1px,transparent 1px),linear-gradient(45deg,transparent 49.5%,hsl(var(--accent) / .08) 50%,transparent 50.5%); background-size:44px 44px,44px 44px,88px 88px; mask-image:radial-gradient(circle at 55% 42%,black,transparent 78%); }
 .future-orbit { position:absolute; aspect-ratio:1; border:1px solid hsl(var(--accent) / .34); border-radius:50%; box-shadow:0 0 35px hsl(var(--accent) / .12),inset 0 0 35px hsl(var(--accent) / .08); animation:future-orbit-spin 18s linear infinite; }

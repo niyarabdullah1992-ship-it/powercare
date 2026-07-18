@@ -25,7 +25,6 @@ import { shouldShowNotification } from "@/lib/notificationFilters";
 import { routeForNotification } from "@/lib/notificationRoute";
 import SectionGuide from "@/components/SectionGuide";
 import CompanyNameEditor from "@/components/CompanyNameEditor";
-import FuturisticInterfaceLayer from "@/components/FuturisticInterfaceLayer";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -186,7 +185,6 @@ export default function Layout({ children }) {
 
   return (
     <div className="powercare-shell min-h-screen bg-background flex" dir={dir}>
-      <FuturisticInterfaceLayer />
       {/* Desktop navigation */}
       <aside className={`hidden md:flex flex-col w-[248px] ${sidebarSide} top-0 h-screen sticky bg-primary pt-safe z-40 shadow-elevated`}>
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
