@@ -81,20 +81,23 @@ export default function MyTasks() {
   const [completionMode, setCompletionMode] = useState("onsite");
 
   // Smart form memory — opening the create form pre-fills the user's usual choices.
-  const openCreateForm = () => {
-    if (!showCreate) {
+  const openCreateForm = (stationId = null) => {
+    const opening = !showCreate;
+    if (opening) {
       const d = loadSmartDefaults(`task_${currentUser?.id}`);
       if (d) {
         if (d.assignType && !isIndividual) setAssignType(d.assignType);
-        if (d.formStation) setFormStation(d.formStation);
+        if (d.formStation && !stationId) setFormStation(d.formStation);
         if (d.priority) setPriority(d.priority);
         if (d.datePreset && d.datePreset !== "custom") setDatePreset(d.datePreset);
         setPrefilled(true);
       } else {
         setPrefilled(false);
       }
+      if (stationId) setFormStation(stationId);
     }
-    setShowCreate(!showCreate);
+    setShowCreate(opening);
+    if (opening) requestAnimationFrame(() => document.getElementById("task-create-form")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   // Individual (personal) workspaces: no stations, no attendance gate, no escalation.
@@ -814,14 +817,6 @@ export default function MyTasks() {
       <PageHeader
         title={t("myTasks")}
         icon={Target}
-        actions={canCreateTasks(currentUser) && (
-          <button
-            onClick={openCreateForm}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-foreground text-background text-sm font-body hover:bg-accent transition-colors"
-          >
-            <Plus className="w-4 h-4" /> {t("newTaskTarget")}
-          </button>
-        )}
       />
 
       {!isIndividual && !checkedInToday && (
@@ -854,7 +849,7 @@ export default function MyTasks() {
 
       {/* Unified Target form */}
       {showCreate && canCreateTasks(currentUser) && (
-        <form onSubmit={createTarget} className="mx-auto w-full max-w-3xl rounded-2xl border border-accent/50 bg-secondary/60 p-3 shadow-soft sm:p-4">
+        <form id="task-create-form" onSubmit={createTarget} className="mx-auto w-full max-w-3xl scroll-mt-6 rounded-2xl border border-accent/50 bg-secondary/60 p-3 shadow-soft sm:p-4">
           <TaskWizardStepper lang={lang} />
           <div className="space-y-5 rounded-xl border border-accent/40 bg-card p-4 sm:p-6">
           {prefilled && (
@@ -1112,17 +1107,26 @@ export default function MyTasks() {
             className="space-y-3"
           >
             {!isIndividual && (
-              <>
-                <button
-                  onClick={() => { setSelectedStation(null); setFolderPath(null); }}
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground"
-                >
-                  <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
-                </button>
-
-                <h3 className="font-heading font-semibold">{selectedStationName}</h3>
-              </>
+              <button
+                onClick={() => { setSelectedStation(null); setFolderPath(null); setShowCreate(false); }}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground"
+              >
+                <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
+              </button>
             )}
+
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/25 bg-secondary/40 p-3">
+              <h3 className="font-heading text-lg font-semibold">{isIndividual ? t("myTasks") : selectedStationName}</h3>
+              {canCreateTasks(currentUser) && (
+                <button
+                  type="button"
+                  onClick={() => openCreateForm(selectedStation)}
+                  className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"
+                >
+                  <Plus className="h-4 w-4" /> {t("newTaskTarget")}
+                </button>
+              )}
+            </div>
 
             {hasAnyContent && (
               <div className="flex flex-col sm:flex-row gap-2">
