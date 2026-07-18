@@ -123,16 +123,25 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
         <p className="text-sm text-muted-foreground font-body">{t("noAttendanceRecords")}</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm font-body">
+          <table className="w-full min-w-[900px] table-fixed text-sm font-body">
+            <colgroup>
+              <col className="w-[15%]" />
+              <col className="w-[16%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+              <col className="w-[17%]" />
+              <col className="w-[22%]" />
+            </colgroup>
             <thead>
               <tr className="text-start text-xs text-muted-foreground border-b border-border">
-                <th className="py-2 pe-3 text-start">{t("employeeName")}</th>
-                <th className="py-2 pe-3 text-start">{t("status")}</th>
-                <th className="py-2 pe-3 text-start">{t("checkIn")}</th>
-                <th className="py-2 pe-3 text-start">{t("checkOut")}</th>
-                <th className="py-2 pe-3 text-start">{t("workHoursLabel")}</th>
-                <th className="py-2 pe-3 text-start">{t("locationStatus")}</th>
-                <th className="py-2 pe-3 text-start">{lang === "ar" ? "الإجراء" : "Action"}</th>
+                <th className="px-2 py-3 text-start">{t("employeeName")}</th>
+                <th className="px-2 py-3 text-center">{t("status")}</th>
+                <th className="px-2 py-3 text-center">{t("checkIn")}</th>
+                <th className="px-2 py-3 text-center">{t("checkOut")}</th>
+                <th className="px-2 py-3 text-center">{t("workHoursLabel")}</th>
+                <th className="px-2 py-3 text-center">{t("locationStatus")}</th>
+                <th className="px-2 py-3 text-center">{lang === "ar" ? "الإجراء" : "Action"}</th>
               </tr>
             </thead>
             <tbody>
@@ -140,11 +149,11 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                 const r = byEmployee[e.id];
                 const status = statusFor(e);
                 return (
-                  <tr key={e.id} className="border-b border-border/60">
-                    <td className="py-2 pe-3"><EmployeeNameLink employeeId={e.id} employeeName={e.name} className="font-medium" /></td>
-                    <td className="py-2 pe-3">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className={`px-2 py-0.5 rounded-full text-xs border ${STATUS_STYLE[status]}`}>
+                  <tr key={e.id} className="border-b border-border/60 align-middle">
+                    <td className="px-2 py-3 text-start"><EmployeeNameLink employeeId={e.id} employeeName={e.name} className="block font-medium leading-tight" /></td>
+                    <td className="px-2 py-3 text-center">
+                      <div className="flex flex-col items-center justify-center gap-1.5">
+                        <span className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLE[status]}`}>
                           {statusLabel(status)}
                         </span>
                         {status === "late" && Number(r?.late_minutes) > 0 && (
@@ -152,25 +161,25 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                         )}
                         {r?.excused && <span className="text-[11px] text-emerald-700">{t("excused")}</span>}
                         {isPastCheckoutMissing(r) && (
-                          <span className="px-1.5 py-0.5 rounded-full text-[10px] border border-red-300 bg-red-50 text-red-700">{t("missingCheckoutLabel")}</span>
+                          <span className="whitespace-nowrap rounded-full border border-red-300 bg-red-50 px-1.5 py-0.5 text-[10px] text-red-700">{t("missingCheckoutLabel")}</span>
                         )}
                         {r?.early_checkout && (
-                          <span className="px-1.5 py-0.5 rounded-full text-[10px] border border-amber-300 bg-amber-50 text-amber-700">{t("earlyCheckoutLabel")}</span>
+                          <span className="whitespace-nowrap rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-700">{t("earlyCheckoutLabel")}</span>
                         )}
                       </div>
                     </td>
-                    <td className="py-2 pe-3 text-muted-foreground">{r?.check_in_at ? formatTime(r.check_in_at, format, lang) : "—"}</td>
-                    <td className="py-2 pe-3 text-muted-foreground">{r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—"}</td>
-                    <td className="py-2 pe-3 text-muted-foreground">{r?.work_hours ?? "—"}</td>
-                    <td className="py-2 pe-3">
+                    <td className="px-2 py-3 text-center text-muted-foreground">{r?.check_in_at ? formatTime(r.check_in_at, format, lang) : "—"}</td>
+                    <td className="px-2 py-3 text-center text-muted-foreground">{r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—"}</td>
+                    <td className="px-2 py-3 text-center text-muted-foreground">{r?.work_hours ?? "—"}</td>
+                    <td className="px-2 py-3 text-center">
                       {r?.location_status === "manual" ? (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">
                           <MapPin className="h-3 w-3" />{lang === "ar" ? "الموقع غير متحقق" : "Location not verified"}
                         </span>
                       ) : r?.location_status ? (
                         <button
                           onClick={() => setMapRow(r)}
-                          className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs hover:opacity-80 ${r.location_status === "inside" ? "border-emerald-300 bg-emerald-100 text-emerald-700" : "border-red-300 bg-red-100 text-red-700"}`}
+                          className={`mx-auto flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-1 text-xs hover:opacity-80 ${r.location_status === "inside" ? "border-emerald-300 bg-emerald-100 text-emerald-700" : "border-red-300 bg-red-100 text-red-700"}`}
                           title={t("viewOnMap")}
                         >
                           <MapPin className="h-3 w-3" />
@@ -179,21 +188,21 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                         </button>
                       ) : <span className="text-muted-foreground">—</span>}
                     </td>
-                    <td className="min-w-40 py-2 pe-3">
-                      <div className="flex flex-wrap items-center gap-1.5">
+                    <td className="px-2 py-3 text-center">
+                      <div className="flex flex-col items-center justify-center gap-1.5">
                       {(r?.manual_override || r?.location_status === "manual") ? (
-                        <span className="inline-flex items-center gap-1 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-xs text-violet-700">
-                          <PenLine className="h-3.5 w-3.5" />{lang === "ar" ? "حضور يدوي بواسطة" : "Manual by"} {r.override_by || r.excused_by_name || "—"}
+                        <span title={`${lang === "ar" ? "حضور يدوي بواسطة" : "Manual by"} ${r.override_by || r.excused_by_name || "—"}`} className="inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-xs text-violet-700">
+                          <PenLine className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{lang === "ar" ? "يدوي" : "Manual"} · {r.override_by || r.excused_by_name || "—"}</span>
                         </span>
                       ) : canManual && !r?.check_in_at ? (
-                        <button onClick={() => manualCheckIn(e)} disabled={manualLoadingId === e.id} className="inline-flex items-center gap-1 rounded-md border border-violet-300 px-2 py-1 text-xs text-violet-700 hover:bg-violet-50 disabled:opacity-50">
+                        <button onClick={() => manualCheckIn(e)} disabled={manualLoadingId === e.id} className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-violet-300 px-2 py-1 text-xs text-violet-700 hover:bg-violet-50 disabled:opacity-50">
                           {manualLoadingId === e.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PenLine className="h-3.5 w-3.5" />}{lang === "ar" ? "تحضير يدوي" : "Manual check-in"}
                         </button>
                       ) : null}
                       {(status === "late" || status === "absent") && r?.id && (
                         <button
                           onClick={() => toggleExcuse(r)}
-                          className={`px-2 py-1 rounded-md text-xs font-body border transition ${r?.excused ? "border-border text-muted-foreground hover:bg-muted" : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"}`}
+                          className={`whitespace-nowrap rounded-md border px-2 py-1 text-xs font-body transition ${r?.excused ? "border-border text-muted-foreground hover:bg-muted" : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"}`}
                         >
                           {status === "absent"
                             ? (r?.excused ? (lang === "ar" ? "إلغاء إعفاء الغياب" : "Remove absence excuse") : (lang === "ar" ? "إعفاء الغياب" : "Excuse absence"))
