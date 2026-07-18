@@ -100,7 +100,7 @@ export default function Safety() {
         />
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 lg:grid-cols-2">
             {stations.map((station) => (
               <StationSafetyCard
                 key={station.id}
@@ -110,6 +110,7 @@ export default function Safety() {
                 canApprove={canApprove}
                 approvalIssues={safetyApprovalIssues(recFor(station.id), ar)}
                 lang={lang}
+                signerName={currentUser.name}
                 onUpdate={(updates) => handleUpdate(station.id, updates)}
                 onCloseHazard={(index) => closeSafetyHazard(company.id, station.id, index, currentUser.name)}
                 onApprove={() => handleApprove(station.id)}

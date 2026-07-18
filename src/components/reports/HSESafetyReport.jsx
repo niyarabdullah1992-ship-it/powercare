@@ -4,6 +4,7 @@ import { ShieldCheck, ShieldAlert, Timer, Printer, BadgeCheck, PenLine } from "l
 import { printReport } from "@/lib/printReport";
 import { formatDate, formatDateTime } from "@/lib/dateFormat";
 import moment from "moment";
+import { CHECKLIST_GROUPS, PERMIT_REQUIREMENTS, PERMIT_TYPES, checklistCompliance, safetyKpis } from "@/lib/safetyStandards";
 
 // HSE monthly safety report per station — calculated from the approved data entered
 // in the Safety (HSE) section: incidents log, hazards, safety level and a live
@@ -73,6 +74,26 @@ export default function HSESafetyReport({ data, company, stations, lang, dir }) 
             rec?.lastIncidentAt ? formatDateTime(rec.lastIncidentAt, lang) : (ar ? "لا يوجد" : "None"),
           ]],
         },
+        {
+          heading: ar ? "مصفوفة تقييم المخاطر" : "Risk Assessment Matrix",
+          headers: [ar ? "الخطر" : "Hazard", "P", "S", ar ? "المستوى" : "Level", ar ? "الإجراء" : "Action", ar ? "المسؤول" : "Owner", ar ? "الموعد" : "Due"],
+          rows: (rec?.riskItems || []).map((item) => [item.hazard, item.probability, item.severity, Number(item.probability) * Number(item.severity), item.correctiveAction || "—", item.owner || "—", item.dueDate || "—"]),
+        },
+        {
+          heading: ar ? "مؤشرات أداء السلامة" : "Safety KPIs",
+          headers: [ar ? "ساعات العمل" : "Work hours", ar ? "حوادث الشهر" : "Month incidents", "TRIR", "LTI", "LTIFR", ar ? "أيام بلا حوادث" : "Incident-free days", ar ? "المطابقة" : "Compliance"],
+          rows: (() => { const k = safetyKpis(rec || {}); return [[rec?.workHoursMonthly || 0, k.incidents, k.trir.toFixed(2), rec?.ltiCount || 0, k.ltifr.toFixed(2), k.days, `${checklistCompliance(rec?.checklistResults || {})}%`]]; })(),
+        },
+        {
+          heading: ar ? "نتائج قوائم التحقق" : "Checklist Results",
+          headers: [ar ? "البند" : "Item", ar ? "النتيجة" : "Result", ar ? "التعليق" : "Comment"],
+          rows: CHECKLIST_GROUPS.flatMap((group) => group.items.map(([id, a, e]) => [ar ? a : e, rec?.checklistResults?.[id]?.status || "—", rec?.checklistResults?.[id]?.comment || "—"])),
+        },
+        {
+          heading: ar ? "تصاريح العمل" : "Permits to Work",
+          headers: [ar ? "النوع" : "Type", ar ? "الوصف" : "Description", ar ? "الفريق" : "Team", ar ? "الاشتراطات" : "Requirements", ar ? "الحالة" : "Status", ar ? "صالح حتى" : "Valid until", ar ? "المعتمد" : "Signed by"],
+          rows: (rec?.permits || []).map((permit) => [PERMIT_TYPES.find(([id]) => id === permit.type)?.[ar ? 1 : 2] || permit.type, permit.description, permit.team, (permit.requirements || []).map((id) => PERMIT_REQUIREMENTS.find(([key]) => key === id)?.[ar ? 1 : 2] || id).join(", "), permit.status, permit.validUntil, `${permit.signedBy || "—"} — ${permit.signedAt || "—"}`]),
+        },
       ],
       logoUrl: branding.logoUrl,
       color: branding.color,
@@ -92,10 +113,11 @@ export default function HSESafetyReport({ data, company, stations, lang, dir }) 
       ],
       sections: [{
         heading: ar ? "ملخص السلامة حسب المحطة" : "Safety summary by station",
-        headers: [ar ? "المحطة" : "Station", ar ? "ساعات بدون حوادث" : "Hours w/o incidents", ar ? "حوادث الشهر" : "Month incidents", ar ? "إجمالي الحوادث" : "Total", ar ? "المستوى" : "Level"],
+        headers: [ar ? "المحطة" : "Station", ar ? "ساعات بدون حوادث" : "Hours w/o incidents", ar ? "حوادث الشهر" : "Month incidents", ar ? "إجمالي الحوادث" : "Total", ar ? "المستوى" : "Level", "TRIR", "LTIFR", ar ? "المطابقة" : "Compliance"],
         rows: stations.map((s) => {
           const rec = recFor(s.id);
-          return [s.name, hoursSafe(s, rec).toLocaleString(), incidentsThisMonth(rec), (rec?.incidentLog || []).length, levelLabel(rec?.level)];
+          const kpi = safetyKpis(rec || {});
+          return [s.name, hoursSafe(s, rec).toLocaleString(), incidentsThisMonth(rec), (rec?.incidentLog || []).length, levelLabel(rec?.level), kpi.trir.toFixed(2), kpi.ltifr.toFixed(2), `${checklistCompliance(rec?.checklistResults || {})}%`];
         }),
       }],
       logoUrl: branding.logoUrl,

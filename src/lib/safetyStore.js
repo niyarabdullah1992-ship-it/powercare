@@ -11,10 +11,15 @@ export function updateSafetyRecord(companyId, stationId, updates) {
     data.safety = data.safety || [];
     let rec = data.safety.find((item) => item.stationId === stationId);
     if (!rec) {
-      rec = { id: uid("safe"), stationId, hazards: [], level: null };
+      rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], workHoursMonthly: 0, ltiCount: 0, checklistResults: {}, permits: [], createdAt: new Date().toISOString() };
       data.safety.push(rec);
     }
     const next = { ...updates };
+    if (next.riskItems && !Array.isArray(next.riskItems)) delete next.riskItems;
+    if (next.permits && !Array.isArray(next.permits)) delete next.permits;
+    if (next.checklistResults && typeof next.checklistResults !== "object") delete next.checklistResults;
+    if ("workHoursMonthly" in next) next.workHoursMonthly = Math.max(0, Number(next.workHoursMonthly) || 0);
+    if ("ltiCount" in next) next.ltiCount = Math.max(0, Math.floor(Number(next.ltiCount) || 0));
     if (next.lastInspection && new Date(next.lastInspection) > new Date()) delete next.lastInspection;
     if (next.level && !["green", "amber", "red"].includes(next.level)) delete next.level;
     Object.assign(rec, next);
@@ -54,7 +59,14 @@ export function approveSafetyRecord(companyId, stationId, approvedBy) {
     rec.incidentClearedAt = at;
     rec.approvalLog = [{ by: approvedBy, at }, ...(rec.approvalLog || [])];
     rec.incidentLog = (rec.incidentLog || []).map((incident) => incident.status === "closed" ? incident : { ...incident, status: "closed", reviewedBy: approvedBy, reviewedAt: at });
-    rec.approvalSnapshot = { level: rec.level, lastInspection: rec.lastInspection, hazards: [...(rec.hazards || [])], incidentCount: (rec.incidentLog || []).length, approvedAt: at };
+    rec.approvalSnapshot = {
+      level: rec.level,
+      lastInspection: rec.lastInspection,
+      hazards: [...(rec.hazards || [])],
+      incidentCount: (rec.incidentLog || []).length,
+      checklistResults: JSON.parse(JSON.stringify(rec.checklistResults || {})),
+      approvedAt: at,
+    };
     approved = true;
   });
   return approved;
@@ -72,7 +84,7 @@ export function recordSafetyIncident(companyId, stationId, description, actorNam
     current.safety = current.safety || [];
     let rec = current.safety.find((item) => item.stationId === stationId);
     if (!rec) {
-      rec = { id: uid("safe"), stationId, hazards: [], level: null };
+      rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], workHoursMonthly: 0, ltiCount: 0, checklistResults: {}, permits: [], createdAt: new Date().toISOString() };
       current.safety.push(rec);
     }
     rec.lastIncidentAt = new Date().toISOString();

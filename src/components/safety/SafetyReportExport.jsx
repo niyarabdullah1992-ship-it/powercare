@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { exportExcelColored } from "@/lib/exportExcelColored";
 import { printReport } from "@/lib/printReport";
 import { FileSpreadsheet, FileText, CalendarRange } from "lucide-react";
+import { CHECKLIST_GROUPS, PERMIT_REQUIREMENTS, PERMIT_TYPES, checklistCompliance, safetyKpis } from "@/lib/safetyStandards";
 
 // تقرير السلامة (HSE): حالة كل محطة + سجل الحوادث خلال الفترة — PDF وExcel.
 const PRESETS = [
@@ -88,9 +89,17 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
         .map((i) => [st.name, fmt(i.at), i.description || "—"])
     );
 
+    const riskHeaders = [L("المحطة", "Station"), L("الخطر", "Hazard"), "P", "S", L("المستوى", "Risk level"), L("الإجراء التصحيحي", "Corrective action"), L("المسؤول", "Owner"), L("الموعد", "Due date")];
+    const riskRows = scopedStations.flatMap((st) => (recFor(st.id)?.riskItems || []).map((item) => [st.name, item.hazard, item.probability, item.severity, Number(item.probability) * Number(item.severity), item.correctiveAction || "—", item.owner || "—", fmt(item.dueDate)]));
+    const kpiHeaders = [L("المحطة", "Station"), L("ساعات العمل", "Work hours"), L("حوادث الشهر", "Month incidents"), "TRIR", "LTI", "LTIFR", L("أيام بدون حوادث", "Days incident-free")];
+    const kpiRows = scopedStations.map((st) => { const rec = recFor(st.id) || {}; const k = safetyKpis(rec); return [st.name, rec.workHoursMonthly || 0, k.incidents, k.trir.toFixed(2), rec.ltiCount || 0, k.ltifr.toFixed(2), k.days]; });
+    const checklistHeaders = [L("المحطة", "Station"), L("نسبة المطابقة", "Compliance"), L("البند", "Checklist item"), L("النتيجة", "Result"), L("التعليق", "Comment")];
+    const checklistRows = scopedStations.flatMap((st) => { const results = recFor(st.id)?.checklistResults || {}; const standards = CHECKLIST_GROUPS.flatMap((group) => group.items.map(([id, a, e]) => [id, ar ? a : e])); const custom = Object.entries(results).filter(([id]) => id.startsWith("custom_")).map(([id, value]) => [id, value.label]); return [...standards, ...custom].map(([id, label]) => [st.name, `${checklistCompliance(results)}%`, label, ({ yes: L("نعم", "Yes"), no: L("لا", "No"), note: L("ملاحظة", "Observation") })[results[id]?.status] || L("غير محدد", "Not set"), results[id]?.comment || "—"]); });
+    const permitHeaders = [L("المحطة", "Station"), L("النوع", "Type"), L("الوصف", "Description"), L("الفريق", "Team"), L("الاشتراطات", "Requirements"), L("الحالة", "Status"), L("الصلاحية حتى", "Valid until"), L("المعتمد", "Signed by")];
+    const permitRows = scopedStations.flatMap((st) => (recFor(st.id)?.permits || []).map((p) => { const status = p.status === "cancelled" ? "cancelled" : new Date(p.validUntil).getTime() < Date.now() ? "expired" : "open"; return [st.name, PERMIT_TYPES.find(([id]) => id === p.type)?.[ar ? 1 : 2] || p.type, p.description, p.team, (p.requirements || []).map((id) => PERMIT_REQUIREMENTS.find(([key]) => key === id)?.[ar ? 1 : 2] || id).join(", "), status, fmt(p.validUntil), `${p.signedBy || "—"} — ${fmt(p.signedAt)}`]; }));
     const stationLabel = stationFilter === "all" ? L("كل المحطات", "All stations") : scopedStations[0]?.name || "";
     const periodLabel = `${stationLabel} • ${fmt(start)} → ${fmt(end)}`;
-    return { statusHeaders, statusRows, incidentHeaders, incidentRows, periodLabel };
+    return { statusHeaders, statusRows, incidentHeaders, incidentRows, riskHeaders, riskRows, kpiHeaders, kpiRows, checklistHeaders, checklistRows, permitHeaders, permitRows, periodLabel };
   };
 
   const exportExcel = () => {
@@ -102,8 +111,11 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
       rows: [
         ...r.statusRows,
         [],
-        r.incidentHeaders,
-        ...r.incidentRows,
+        r.incidentHeaders, ...r.incidentRows, [],
+        [L("مصفوفة تقييم المخاطر", "Risk Assessment Matrix")], r.riskHeaders, ...r.riskRows, [],
+        [L("مؤشرات أداء السلامة", "Safety KPIs")], r.kpiHeaders, ...r.kpiRows, [],
+        [L("نتائج قوائم التحقق", "Checklist Results")], r.checklistHeaders, ...r.checklistRows, [],
+        [L("تصاريح العمل", "Permits to Work")], r.permitHeaders, ...r.permitRows,
       ],
       color,
       dir,
@@ -130,7 +142,11 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
       sections: [
         { heading: L("حالة السلامة لكل محطة", "Safety status per station"), headers: r.statusHeaders, rows: r.statusRows },
         { heading: L("سجل الحوادث خلال الفترة", "Incident log in period"), headers: r.incidentHeaders, rows: r.incidentRows.length ? r.incidentRows : [[L("لا توجد حوادث", "No incidents"), "—", "—"]] },
-      ],
+        { heading: L("مصفوفة تقييم المخاطر", "Risk Assessment Matrix"), headers: r.riskHeaders, rows: r.riskRows },
+        { heading: L("مؤشرات أداء السلامة", "Safety KPIs"), headers: r.kpiHeaders, rows: r.kpiRows },
+        { heading: L("نتائج قوائم التحقق", "Checklist Results"), headers: r.checklistHeaders, rows: r.checklistRows },
+        { heading: L("تصاريح العمل", "Permits to Work"), headers: r.permitHeaders, rows: r.permitRows },
+        ],
     });
   };
 
