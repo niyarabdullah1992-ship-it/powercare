@@ -130,6 +130,7 @@ export default function Dashboard() {
   const scheduledEmployees = teamEmployees.filter((employee) => isScheduledToday(employee, data) && !isOnLeaveToday(employee));
   const scheduledIds = new Set(scheduledEmployees.map((employee) => employee.id));
   const checkedInCount = attendanceRows.filter((row) => isActiveAttendance(row) && scheduledIds.has(row.employee_id)).length;
+  const activeMembersCount = new Set(attendanceRows.filter((row) => ["present", "late"].includes(row.status) || isActiveAttendance(row)).map((row) => row.employee_id)).size;
   const attendanceRate = scheduledEmployees.length ? Math.round((checkedInCount / scheduledEmployees.length) * 100) : 0;
   const absentCount = Math.max(0, scheduledEmployees.length - checkedInCount);
   const now = Date.now();
@@ -234,7 +235,7 @@ export default function Dashboard() {
         attendanceRate={attendanceRate}
         completed={completed}
         total={tasks.length}
-        activeMembers={checkedInCount}
+        activeMembers={activeMembersCount}
         totalMembers={teamEmployees.length}
         t={t}
       />

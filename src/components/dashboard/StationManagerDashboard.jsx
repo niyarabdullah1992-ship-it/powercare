@@ -40,6 +40,7 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
   }, [team.map((e) => e.id).join(",")]);
 
   const checkedInCount = attendanceRows.filter(isActiveAttendance).length;
+  const activeMembersCount = new Set(attendanceRows.filter((row) => ["present", "late"].includes(row.status) || isActiveAttendance(row)).map((row) => row.employee_id)).size;
   const attendanceRate = team.length ? Math.round((checkedInCount / team.length) * 100) : 0;
 
   // Real six-month task activity for the trend chart.
@@ -121,7 +122,7 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
         attendanceRate={attendanceRate}
         completed={completed}
         total={tasks.length}
-        activeMembers={checkedInCount}
+        activeMembers={activeMembersCount}
         totalMembers={team.length}
         t={t}
       />
