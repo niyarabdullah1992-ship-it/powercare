@@ -1,5 +1,6 @@
 import React from "react";
-import { FileText, CheckCircle2, Circle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { FileText, CheckCircle2, Circle, LockKeyhole } from "lucide-react";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import { netOf } from "@/lib/payroll";
 
@@ -13,7 +14,7 @@ export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid,
       disabled={!editable || item.paid}
       onChange={(e) => onChange(field, Number(e.target.value) || 0)}
       aria-invalid={field === "base" && num(item.base) <= 0}
-      title={field === "base" && num(item.base) <= 0 ? (ar ? "الراتب لم يُحدَّد بعد" : "Salary has not been set yet") : undefined}
+      title={field === "base" ? (ar ? "يُعدَّل من الملف الشخصي للموظف" : "Edit from the employee profile") : undefined}
       className={`h-8 w-24 rounded-md border bg-background px-2 text-end text-sm font-body disabled:opacity-60 ${field === "base" && num(item.base) <= 0 ? "border-destructive/60" : "border-input"}`}
       dir="ltr"
     />
@@ -24,7 +25,17 @@ export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid,
         <EmployeeNameLink employeeId={employee?.role ? item.employeeId : null} employeeName={employee?.name || "—"} className="text-sm font-body font-medium" />
         <p className="text-[11px] text-muted-foreground font-body">{employee?.position || employee?.role || ""}</p>
       </td>
-      <td data-label={ar ? "الأساسي" : "Base"}>{cell("base")}</td>
+      <td data-label={ar ? "الأساسي" : "Base"}>
+        <div className="flex flex-col items-start gap-1">
+          <span className="relative">
+            {cell("base", false)}
+            <LockKeyhole className="pointer-events-none absolute end-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+          </span>
+          <Link to={`/app/employees/${encodeURIComponent(item.employeeId)}`} className="text-[10px] font-body font-semibold text-accent hover:underline">
+            {ar ? "تغييره من الملف الشخصي" : "Change in profile"}
+          </Link>
+        </div>
+      </td>
       <td data-label={ar ? "البدلات" : "Allowances"}>{cell("allowances")}</td>
       <td data-label={ar ? "مكافآت" : "Bonus"}>{cell("bonus")}</td>
       <td data-label={ar ? "خصومات" : "Deductions"}>{cell("deductions")}</td>

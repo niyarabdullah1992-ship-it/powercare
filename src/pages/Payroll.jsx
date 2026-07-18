@@ -7,6 +7,7 @@ import { printReport } from "@/lib/printReport";
 import PayrollRow from "@/components/payroll/PayrollRow";
 import PayrollTemplateCard from "@/components/payroll/PayrollTemplateCard";
 import StationMultiSelect from "@/components/payroll/StationMultiSelect";
+import PayrollSalaryNotice from "@/components/payroll/PayrollSalaryNotice";
 import { canAdjustPayroll, hrScopeStations } from "@/lib/permissions";
 import { toast } from "@/components/ui/use-toast";
 
@@ -141,6 +142,8 @@ export default function Payroll() {
           </button>
         </div>
       </div>
+
+      <PayrollSalaryNotice ar={ar} />
 
       <PayrollTemplateCard company={company} data={data} employees={payrollEmployees} month={month} ar={ar} />
 
