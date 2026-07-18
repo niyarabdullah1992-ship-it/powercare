@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { updateEmployeeProfile } from "@/lib/store";
 import { Mail, Building2, Loader2, X, Images } from "lucide-react";
 import BannerGallery from "@/components/employees/BannerGallery";
+import PresenceDot from "@/components/employees/PresenceDot";
 
 export default function ProfileHero({ employee, companyId, canEdit, roleLabel, stationName }) {
   const { t, lang } = useI18n();
@@ -52,6 +53,7 @@ export default function ProfileHero({ employee, companyId, canEdit, roleLabel, s
             {uploading === "avatarUrl" && <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40"><Loader2 className="h-5 w-5 animate-spin text-white" /></span>}
           </button>
           {canEdit && profile.avatarUrl && <button type="button" onClick={() => remove("avatarUrl")} className="absolute -top-1 -end-1 rounded-full bg-destructive p-1 text-destructive-foreground shadow-md" title={t("removeFile")}><X className="h-3 w-3" /></button>}
+          <PresenceDot employee={employee} className="absolute bottom-1 end-1 h-4 w-4 ring-2 ring-card" />
           <input ref={avatarInput} type="file" accept="image/*" className="hidden" onChange={(e) => upload(e.target.files?.[0], "avatarUrl")} />
         </div>
 

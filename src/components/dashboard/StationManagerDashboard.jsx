@@ -12,6 +12,7 @@ import { Radio, AlertTriangle, FileText, MapPin, ShieldCheck } from "lucide-reac
 import { formatDate } from "@/lib/dateFormat";
 import QuickCheckInCard from "@/components/attendance/QuickCheckInCard";
 import { useAuth } from "@/lib/PowerCareAuth";
+import { isActiveAttendance } from "@/lib/attendance";
 
 const SAFETY_COLORS = { green: "bg-emerald-500", amber: "bg-amber-500", red: "bg-destructive" };
 
@@ -37,7 +38,7 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
       .catch(() => setAttendanceRows([]));
   }, [team.map((e) => e.id).join(",")]);
 
-  const checkedInCount = attendanceRows.filter((r) => r.check_in_at).length;
+  const checkedInCount = attendanceRows.filter(isActiveAttendance).length;
   const attendanceRate = team.length ? Math.round((checkedInCount / team.length) * 100) : 0;
 
   // Real six-month task activity for the trend chart.

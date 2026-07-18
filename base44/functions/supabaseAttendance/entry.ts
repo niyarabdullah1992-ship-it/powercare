@@ -1,6 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
 
 const MANAGER_ROLES = ["director", "ops_manager", "pgm", "station_manager"];
+const MANUAL_ATTENDANCE_ROLES = ["owner", "director", "ops_manager", "station_manager"];
 
 Deno.serve(async (req) => {
   try {
@@ -28,10 +29,10 @@ Deno.serve(async (req) => {
     const platformUser = await base44.auth.me().catch(() => null);
     if (SWEEP_ACTIONS.includes(action)) {
       if (!platformUser || platformUser.role !== "admin") return Response.json({ error: "Forbidden" }, { status: 403 });
-      auth = { admin: true, isManager: true, role: "owner", companyId: body.companyId || null, userId: null };
+      auth = { admin: true, isManager: true, role: "owner", name: platformUser.full_name || platformUser.email || "Administrator", companyId: body.companyId || null, userId: null };
     } else {
       if (platformUser && platformUser.role === "admin") {
-        auth = { admin: true, isManager: true, role: "owner", companyId: body.companyId || null, userId: body.userId || null };
+        auth = { admin: true, isManager: true, role: "owner", name: platformUser.full_name || platformUser.email || "Administrator", companyId: body.companyId || null, userId: body.userId || null };
       } else {
         const { sessionToken, companyId } = body;
         if (sessionToken && companyId) {
@@ -39,12 +40,13 @@ Deno.serve(async (req) => {
           const s = sessions[0];
           if (s && new Date(s.expiresAt).getTime() > Date.now()) {
             if (s.role === "owner") {
-              auth = { isManager: true, role: "owner", companyId, userId: s.userId || null };
+              const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
+              auth = { isManager: true, role: "owner", name: accounts[0]?.name || accounts[0]?.ownerEmail || "Owner", companyId, userId: s.userId || null };
             } else {
               const emps = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: s.userId });
               const emp = emps[0] || null;
               auth = {
-                isManager: MANAGER_ROLES.includes(emp?.role), role: emp?.role || "employee",
+                isManager: MANAGER_ROLES.includes(emp?.role), role: emp?.role || "employee", name: emp?.name || "Manager",
                 companyId, userId: s.userId, stationId: emp?.stationId || null,
                 stationIds: Array.isArray(emp?.stationIds) ? emp.stationIds : [],
                 managedStations: Array.isArray(emp?.managedStations) ? emp.managedStations : [],
@@ -160,13 +162,13 @@ Deno.serve(async (req) => {
     // null plus the distance to the closest workplace when they're outside all.
     const matchWorkplace = (workplaces, lat, lng, accuracyMargin) => {
       let best = null;
-      let nearestDist = null;
+      let nearest = null;
       for (const w of workplaces) {
         const d = Math.round(distanceMeters(lat, lng, w.lat, w.lng));
-        if (nearestDist == null || d < nearestDist) nearestDist = d;
+        if (!nearest || d < nearest.dist) nearest = { ...w, dist: d };
         if (d - accuracyMargin <= w.radiusMeters && (!best || d < best.dist)) best = { ...w, dist: d };
       }
-      return { best, nearestDist };
+      return { best, nearest, nearestDist: nearest?.dist ?? null };
     };
 
     if (action === "getSettings") {
@@ -354,32 +356,34 @@ Deno.serve(async (req) => {
       // GPS readings carry an accuracy radius — give the employee the benefit of
       // that margin (capped at 100m) so an imprecise fix isn't wrongly "outside".
       const accuracyMargin = Math.min(Number(accuracy) || 0, 100);
-      const { best: workplace, nearestDist } = matchWorkplace(workplaces, lat, lng, accuracyMargin);
-      if (!workplace) {
-        return Response.json({ error: "OUTSIDE_STATION", distanceMeters: nearestDist }, { status: 400 });
-      }
+      const { best: workplace, nearest, nearestDist } = matchWorkplace(workplaces, lat, lng, accuracyMargin);
+      const inZone = !!workplace;
+      const recordedWorkplace = workplace || nearest;
       const now = new Date();
       const startMinutes = toMinutes(scheduledShift.start) ?? toMinutes(settings.work_start_time) ?? 480;
       const nowMinutes = riyadhMinutes();
       const lateMinutes = Math.max(0, nowMinutes - startMinutes);
-      const status = lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present";
-      const distMeters = workplace.dist;
-      const locationStatus = "inside";
+      const status = inZone ? (lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present") : "absent";
+      const distMeters = recordedWorkplace?.dist ?? nearestDist;
+      const locationStatus = inZone ? "inside" : "outside";
       const payload = {
         company_id: companyId,
         employee_id: employeeId,
         employee_name: employeeName || "",
-        station_id: workplace.stationId || stationId || null,
+        station_id: recordedWorkplace?.stationId || stationId || null,
         date,
         check_in_at: now.toISOString(),
         status,
         late_minutes: status === "late" ? lateMinutes : 0,
+        in_zone: inZone,
+        manual_override: false,
+        override_by: null,
         excused: false,
         early_checkout: false,
         check_in_lat: lat ?? null,
         check_in_lng: lng ?? null,
-        station_lat: workplace.lat,
-        station_lng: workplace.lng,
+        station_lat: recordedWorkplace?.lat ?? null,
+        station_lng: recordedWorkplace?.lng ?? null,
         distance_meters: distMeters,
         location_status: locationStatus,
       };
@@ -397,9 +401,21 @@ Deno.serve(async (req) => {
           body: JSON.stringify(payload),
         });
       }
-      const saved = await res.json();
+      let saved = await res.json();
+      if (!res.ok && /in_zone|manual_override|override_by/i.test(saved?.message || "")) {
+        const compatiblePayload = { ...payload };
+        delete compatiblePayload.in_zone;
+        delete compatiblePayload.manual_override;
+        delete compatiblePayload.override_by;
+        const compatibleUrl = Array.isArray(existing) && existing.length > 0
+          ? `${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(existing[0].id)}`
+          : `${SUPABASE_URL}/rest/v1/attendance`;
+        res = await fetch(compatibleUrl, { method: Array.isArray(existing) && existing.length > 0 ? "PATCH" : "POST", headers: { ...headers, Prefer: "return=representation" }, body: JSON.stringify(compatiblePayload) });
+        saved = await res.json();
+      }
       if (!res.ok) {
-        return Response.json({ error: saved?.message || "Failed to check in — run: CREATE TABLE IF NOT EXISTS attendance (id uuid primary key default gen_random_uuid(), company_id text, employee_id text, employee_name text, station_id text, date text, check_in_at timestamptz, check_out_at timestamptz, status text, late_minutes numeric default 0, excused boolean default false, excused_by text, excused_by_name text, excused_note text, excused_at timestamptz, early_checkout boolean default false, work_hours numeric, check_in_lat numeric, check_in_lng numeric, station_lat numeric, station_lng numeric, distance_meters numeric, location_status text, created_at timestamptz default now()); -- if the table already exists, instead run: ALTER TABLE attendance ADD COLUMN IF NOT EXISTS station_lat numeric, ADD COLUMN IF NOT EXISTS station_lng numeric, ADD COLUMN IF NOT EXISTS distance_meters numeric, ADD COLUMN IF NOT EXISTS location_status text;" }, { status: 400 });
+        console.error("checkIn failed:", saved?.message || saved);
+        return Response.json({ error: saved?.message || "Failed to check in — run: ALTER TABLE attendance ADD COLUMN IF NOT EXISTS in_zone boolean DEFAULT false, ADD COLUMN IF NOT EXISTS manual_override boolean DEFAULT false, ADD COLUMN IF NOT EXISTS override_by text;" }, { status: 400 });
       }
       await fetch(`${SUPABASE_URL}/rest/v1/employees_directory`, {
         method: "POST",
@@ -449,6 +465,44 @@ Deno.serve(async (req) => {
         return Response.json({ error: updated?.message || "Failed to save checkout location" }, { status: 400 });
       }
       return Response.json({ attendance: updated[0], checkoutDistance });
+    }
+
+    // ---- Authorized manager: record attendance without GPS ----
+
+    if (action === "manualCheckIn") {
+      if (!auth?.admin && !MANUAL_ATTENDANCE_ROLES.includes(auth?.role)) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const { employeeId } = body;
+      if (!employeeId || !(await employeeInCompany(employeeId))) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const employees = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId });
+      const employee = employees[0];
+      if (!employee) return Response.json({ error: "Employee not found" }, { status: 404 });
+      const date = todayStr();
+      const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
+      const existingRows = await existingRes.json();
+      const existing = Array.isArray(existingRows) ? existingRows[0] : null;
+      const payload = {
+        company_id: auth.companyId, employee_id: employeeId, employee_name: employee.name || "",
+        station_id: employee.stationId || "hq", date, check_in_at: new Date().toISOString(), check_out_at: null,
+        status: "present", late_minutes: 0, excused: false, early_checkout: false,
+        in_zone: false, manual_override: true, override_by: auth.role === "owner" && body.managerName ? String(body.managerName).slice(0, 120) : (auth.name || "Manager"), location_status: "manual",
+      };
+      const url = existing ? `${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(existing.id)}` : `${SUPABASE_URL}/rest/v1/attendance`;
+      const res = await fetch(url, { method: existing ? "PATCH" : "POST", headers: { ...headers, Prefer: "return=representation" }, body: JSON.stringify(payload) });
+      let saved = await res.json();
+      if (!res.ok && /in_zone|manual_override|override_by/i.test(saved?.message || "")) {
+        const compatiblePayload = { ...payload, excused_by_name: payload.override_by };
+        delete compatiblePayload.in_zone;
+        delete compatiblePayload.manual_override;
+        delete compatiblePayload.override_by;
+        const retry = await fetch(url, { method: existing ? "PATCH" : "POST", headers: { ...headers, Prefer: "return=representation" }, body: JSON.stringify(compatiblePayload) });
+        saved = await retry.json();
+        if (retry.ok) return Response.json({ attendance: Array.isArray(saved) ? saved[0] : saved });
+      }
+      if (!res.ok) {
+        console.error("manualCheckIn failed:", saved?.message || saved);
+        return Response.json({ error: saved?.message || "Failed to record manual attendance — run: ALTER TABLE attendance ADD COLUMN IF NOT EXISTS in_zone boolean DEFAULT false, ADD COLUMN IF NOT EXISTS manual_override boolean DEFAULT false, ADD COLUMN IF NOT EXISTS override_by text;" }, { status: 400 });
+      }
+      return Response.json({ attendance: Array.isArray(saved) ? saved[0] : saved });
     }
 
     // ---- Manager: excuse a late/absent record (keeps the record, removes the penalty) ----

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { MapPin } from "lucide-react";
+import { Loader2, MapPin, PenLine } from "lucide-react";
 import LocationMapModal from "@/components/attendance/LocationMapModal";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { useI18n } from "@/lib/i18n";
@@ -26,6 +26,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mapRow, setMapRow] = useState(null);
+  const [manualLoadingId, setManualLoadingId] = useState(null);
 
   const load = () => {
     if (!employees.length) { setRows([]); setLoading(false); return; }
@@ -40,6 +41,22 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employees.map((e) => e.id).join(",")]);
+
+  const canManual = currentUser?.id === data?.ownerId || ["station_manager", "ops_manager", "director"].includes(currentUser?.role);
+
+  const manualCheckIn = async (employee) => {
+    setManualLoadingId(employee.id);
+    try {
+      const res = await base44.functions.invoke("supabaseAttendance", { action: "manualCheckIn", companyId: company.id, employeeId: employee.id, managerName: currentUser.name });
+      const attendance = res?.data?.attendance;
+      if (attendance) {
+        setRows((prev) => [...prev.filter((row) => row.employee_id !== employee.id), attendance]);
+        window.dispatchEvent(new CustomEvent("attendance-updated", { detail: attendance }));
+      }
+    } finally {
+      setManualLoadingId(null);
+    }
+  };
 
   const toggleExcuse = async (r) => {
     try {
@@ -83,10 +100,10 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
         <div className="flex flex-wrap items-center gap-2">
         <ComparisonExportButtons
           title={t("dailyAttendance")}
-          headers={[t("employeeName"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("locationStatus")]}
+          headers={[t("employeeName"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("locationStatus"), lang === "ar" ? "التحضير" : "Attendance source"]}
           rows={employees.map((e) => {
             const r = byEmployee[e.id];
-            return [e.name, statusLabel(statusFor(e)), r?.check_in_at ? formatTime(r.check_in_at, format, lang) : "—", r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—", r?.work_hours ?? "—", r?.location_status || "—"];
+            return [e.name, statusLabel(statusFor(e)), r?.check_in_at ? formatTime(r.check_in_at, format, lang) : "—", r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—", r?.work_hours ?? "—", r?.location_status || "—", (r?.manual_override || r?.location_status === "manual") ? `${lang === "ar" ? "يدوي" : "Manual"} — ${r.override_by || r.excused_by_name || "—"}` : "—"];
           })}
         />
         </div>
@@ -134,6 +151,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                           <span className="text-[11px] text-amber-700">{t("lateBy")} {r.late_minutes} {t("minutesUnit")}</span>
                         )}
                         {r?.excused && <span className="text-[11px] text-emerald-700">{t("excused")}</span>}
+                        {(r?.manual_override || r?.location_status === "manual") && <span className="inline-flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-1.5 py-0.5 text-[10px] text-violet-700"><PenLine className="h-3 w-3" />{lang === "ar" ? "يدوي" : "Manual"} · {r.override_by || r.excused_by_name || "—"}</span>}
                         {isPastCheckoutMissing(r) && (
                           <span className="px-1.5 py-0.5 rounded-full text-[10px] border border-red-300 bg-red-50 text-red-700">{t("missingCheckoutLabel")}</span>
                         )}
@@ -149,18 +167,24 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                       {r?.location_status ? (
                         <button
                           onClick={() => setMapRow(r)}
-                          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border hover:opacity-80 ${r.location_status === "inside" ? "bg-emerald-100 text-emerald-700 border-emerald-300" : "bg-red-100 text-red-700 border-red-300"}`}
-                          title={t("viewOnMap")}
+                          className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border hover:opacity-80 ${r.location_status === "inside" ? "bg-emerald-100 text-emerald-700 border-emerald-300" : r.location_status === "manual" ? "bg-violet-50 text-violet-700 border-violet-300" : "bg-red-100 text-red-700 border-red-300"}`}
+                          title={r.location_status === "manual" ? (lang === "ar" ? "تحضير يدوي" : "Manual attendance") : t("viewOnMap")}
                         >
-                          <MapPin className="w-3 h-3" />
-                          {r.location_status === "inside" ? t("insideLocation") : t("outsideLocation")}
-                          {r.distance_meters != null && ` · ${r.distance_meters}m`}
+                          {r.location_status === "manual" ? <PenLine className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
+                          {r.location_status === "inside" ? t("insideLocation") : r.location_status === "manual" ? (lang === "ar" ? "تحضير يدوي" : "Manual") : t("outsideLocation")}
+                          {r.location_status !== "manual" && r.distance_meters != null && ` · ${r.distance_meters}m`}
                         </button>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </td>
                     <td className="py-2 pe-3">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                      {canManual && (
+                        <button onClick={() => manualCheckIn(e)} disabled={manualLoadingId === e.id} className="inline-flex items-center gap-1 rounded-md border border-violet-300 px-2 py-1 text-xs text-violet-700 hover:bg-violet-50 disabled:opacity-50">
+                          {manualLoadingId === e.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PenLine className="h-3.5 w-3.5" />}{lang === "ar" ? "تحضير يدوي" : "Manual check-in"}
+                        </button>
+                      )}
                       {(status === "late" || status === "absent") && r?.id && (
                         <button
                           onClick={() => toggleExcuse(r)}
@@ -171,6 +195,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                             : (r?.excused ? t("unexcuseLate") : t("excuseLate"))}
                         </button>
                       )}
+                      </div>
                     </td>
                   </tr>
                 );

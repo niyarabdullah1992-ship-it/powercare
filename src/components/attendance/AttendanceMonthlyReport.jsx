@@ -69,12 +69,13 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
 
   const statusLabel = (r) => t(`attendanceStatus${r.status.charAt(0).toUpperCase()}${r.status.slice(1).replace(/_([a-z])/, (m, c) => c.toUpperCase())}`);
 
-  const exportHeaders = [t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("lateMinutesLabel")];
+  const exportHeaders = [t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("lateMinutesLabel"), lang === "ar" ? "تحضير يدوي" : "Manual attendance"];
   const exportRows = rows.map((r) => [
     r.date, statusLabel(r) + (r.excused ? ` (${t("excused")})` : ""),
     r.check_in_at ? formatTime(r.check_in_at, format, lang) : "—",
     r.check_out_at ? formatTime(r.check_out_at, format, lang) : "—",
     r.work_hours ?? "—", r.status === "late" ? (r.late_minutes ?? "—") : "—",
+    (r.manual_override || r.location_status === "manual") ? `${lang === "ar" ? "يدوي" : "Manual"} — ${r.override_by || r.excused_by_name || "—"}` : "—",
   ]);
 
   return (
@@ -149,6 +150,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
                 <th className="py-2 pe-3 text-start">{t("checkOut")}</th>
                 <th className="py-2 pe-3 text-start">{t("workHoursLabel")}</th>
                 <th className="py-2 pe-3 text-start">{t("lateMinutesLabel")}</th>
+                <th className="py-2 pe-3 text-start">{lang === "ar" ? "التحضير" : "Attendance source"}</th>
               </tr>
             </thead>
             <tbody>
@@ -163,6 +165,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
                   <td data-label={t("checkOut")} className="py-2 pe-3 text-muted-foreground">{r.check_out_at ? formatTime(r.check_out_at, format, lang) : "—"}</td>
                   <td data-label={t("workHoursLabel")} className="py-2 pe-3 text-muted-foreground">{r.work_hours ?? "—"}</td>
                   <td data-label={t("lateMinutesLabel")} className="py-2 pe-3 text-muted-foreground">{r.status === "late" ? (r.late_minutes ?? "—") : "—"}</td>
+                  <td data-label={lang === "ar" ? "التحضير" : "Attendance source"} className="py-2 pe-3 text-muted-foreground">{(r.manual_override || r.location_status === "manual") ? <span className="rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[10px] text-violet-700">{lang === "ar" ? "يدوي" : "Manual"} · {r.override_by || r.excused_by_name || "—"}</span> : "—"}</td>
                 </tr>
               ))}
             </tbody>

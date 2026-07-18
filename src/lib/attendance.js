@@ -13,8 +13,15 @@ export async function getTodayAttendance(employeeId) {
   }
 }
 
+export function isActiveAttendance(att) {
+  if (!att?.check_in_at || att.check_out_at) return false;
+  const inZone = att.in_zone === true || att.inZone === true || att.location_status === "inside";
+  const manualOverride = att.manual_override === true || att.manualOverride === true || att.location_status === "manual";
+  return inZone || manualOverride;
+}
+
 export function isCheckedIn(att) {
-  return !!(att && att.check_in_at && att.status !== "absent");
+  return isActiveAttendance(att);
 }
 
 export function isScheduledToday(employee, data) {
@@ -29,11 +36,10 @@ export function isScheduledToday(employee, data) {
 }
 
 export function getAttendanceStatus(employee, attRow, data) {
+  if (isActiveAttendance(attRow)) return attRow.status === "late" ? "late" : "present";
   if (isOnLeaveToday(employee)) return "on_leave";
   if (!isScheduledToday(employee, data)) return "not_scheduled";
-  if (!attRow) return "absent";
-  if (attRow.status === "present" || attRow.status === "late" || attRow.status === "not_yet") return attRow.status;
-  return attRow.check_in_at ? "present" : "absent";
+  return "absent";
 }
 
 // Looks up the employee's shift for today from the station's existing weekly schedule

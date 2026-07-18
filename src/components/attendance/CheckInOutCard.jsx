@@ -84,7 +84,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         radiusMeters: station?.radiusMeters ?? null,
       });
       const att = res?.data?.attendance;
-      if (att) { setAttendance(att); onStatusChange?.(att); }
+      if (att) { setAttendance(att); onStatusChange?.(att); window.dispatchEvent(new CustomEvent("attendance-updated", { detail: att })); }
     } catch (err) {
       const code = err?.response?.data?.error;
       setError(code === "NOT_SCHEDULED" ? (lang === "ar" ? "لا يمكنك تسجيل الحضور لأنك غير مدرج في جدول اليوم." : "You cannot check in because you are not scheduled today.") : code === "GPS_REQUIRED" ? t("locationDenied") : code === "STATION_LOCATION_REQUIRED" ? t("locationNotSet") : code === "OUTSIDE_STATION" ? t("outsideLocation") : (code || "Failed to check in"));
@@ -116,7 +116,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         radiusMeters: station?.radiusMeters ?? null,
       });
       const att = res?.data?.attendance;
-      if (att) { setAttendance(att); onStatusChange?.(att); }
+      if (att) { setAttendance(att); onStatusChange?.(att); window.dispatchEvent(new CustomEvent("attendance-updated", { detail: att })); }
     } catch (err) {
       const code = err?.response?.data?.error;
       setError(code === "GPS_REQUIRED" ? t("locationDenied") : code === "STATION_LOCATION_REQUIRED" ? t("locationNotSet") : code === "OUTSIDE_STATION" ? t("outsideLocation") : (code || "Failed to check out"));

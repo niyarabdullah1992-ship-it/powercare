@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { isOnLeaveToday } from "@/lib/leaveTypes";
 import { PRESENCE_OPTIONS } from "@/components/employees/PresenceStatusPicker";
-import { Users } from "lucide-react";
+import { PenLine, Users } from "lucide-react";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
+import { isActiveAttendance } from "@/lib/attendance";
 
 // Manager-facing snapshot of every visible employee's current status: on leave,
 // checked out, live presence (online/away/busy/in a call), or not checked in yet.
@@ -14,21 +14,25 @@ function TeamStatusPanel({ employees, t }) {
 
   useEffect(() => {
     if (!employees.length) { setRows([]); setLoading(false); return; }
+    let active = true;
+    const load = () => base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: employees.map((e) => e.id) })
+      .then((res) => { if (active) setRows(res?.data?.rows || []); })
+      .catch(() => { if (active) setRows([]); })
+      .finally(() => { if (active) setLoading(false); });
     setLoading(true);
-    base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: employees.map((e) => e.id) })
-      .then((res) => setRows(res?.data?.rows || []))
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false));
+    load();
+    const timer = window.setInterval(load, 5000);
+    const refresh = () => load();
+    window.addEventListener("attendance-updated", refresh);
+    return () => { active = false; window.clearInterval(timer); window.removeEventListener("attendance-updated", refresh); };
   }, [employees.map((e) => e.id).join(",")]);
 
   const byEmployee = Object.fromEntries(rows.map((r) => [r.employee_id, r]));
+  const activeEmployees = employees.filter((employee) => isActiveAttendance(byEmployee[employee.id]));
 
-  const statusFor = (emp, att) => {
-    if (isOnLeaveToday(emp)) return { labelKey: "onLeaveStatus", dot: "bg-sky-500" };
-    if (!att?.check_in_at) return { labelKey: "attendanceStatusNotYet", dot: "bg-muted-foreground" };
-    if (att.check_out_at) return { labelKey: "checkedOutStatus", dot: "bg-slate-400" };
+  const statusFor = (emp) => {
     const presence = PRESENCE_OPTIONS.find((o) => o.key === emp.presenceStatus) || PRESENCE_OPTIONS[0];
-    return { labelKey: presence.labelKey, dot: presence.dot };
+    return { labelKey: presence.labelKey, dot: "bg-emerald-500" };
   };
 
   return (
@@ -48,13 +52,13 @@ function TeamStatusPanel({ employees, t }) {
             </div>
           ))}
         </div>
-      ) : employees.length === 0 ? (
+      ) : activeEmployees.length === 0 ? (
         <p className="text-sm text-muted-foreground font-body">{t("noAttendanceRecords")}</p>
       ) : (
         <div className="divide-y divide-border">
-          {employees.map((e) => {
+          {activeEmployees.map((e) => {
             const att = byEmployee[e.id];
-            const status = statusFor(e, att);
+            const status = statusFor(e);
             return (
               <div key={e.id} className="flex items-center gap-3 py-3">
                 <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-medium shrink-0">
@@ -66,6 +70,7 @@ function TeamStatusPanel({ employees, t }) {
                     {att?.check_in_at ? `${t("checkedInAt")} ${new Date(att.check_in_at).toLocaleTimeString()}` : "—"}
                     {att?.check_out_at ? ` · ${t("checkedOutAt")} ${new Date(att.check_out_at).toLocaleTimeString()}` : ""}
                   </p>
+                  {(att?.manual_override || att?.location_status === "manual") && <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[10px] text-violet-700"><PenLine className="h-3 w-3" />{t("manual") || "Manual"} · {att.override_by || att.excused_by_name || "—"}</span>}
                 </div>
                 <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border text-xs font-body shrink-0">
                   <span className={`w-2 h-2 rounded-full ${status.dot}`} />

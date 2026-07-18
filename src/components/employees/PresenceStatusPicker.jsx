@@ -3,6 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { setPresenceStatus } from "@/lib/store";
 import { isOnLeaveToday } from "@/lib/leaveTypes";
+import useAttendancePresence from "@/hooks/useAttendancePresence";
 
 export const PRESENCE_OPTIONS = [
   { key: "online", labelKey: "presenceOnline", dot: "bg-emerald-500" },
@@ -17,7 +18,11 @@ export default function PresenceStatusPicker({ user }) {
   const { t } = useI18n();
   const { company } = useAuth();
   const onLeave = isOnLeaveToday(user);
+  const attendance = useAttendancePresence(user?.id);
   const current = PRESENCE_OPTIONS.find((o) => o.key === user.presenceStatus) || PRESENCE_OPTIONS[0];
+  const checkedIn = !!attendance?.check_in_at && !attendance?.check_out_at;
+  const inZone = attendance?.in_zone === true || attendance?.inZone === true || attendance?.location_status === "inside";
+  const attendanceDot = checkedIn && inZone ? "bg-emerald-500" : checkedIn ? "bg-amber-500" : "bg-slate-400";
 
   if (onLeave) {
     return (
@@ -29,7 +34,7 @@ export default function PresenceStatusPicker({ user }) {
 
   return (
     <div className="flex items-center gap-1.5">
-      <span className={`w-2 h-2 rounded-full ${current.dot}`} />
+      <span className={`w-2 h-2 rounded-full ${attendanceDot}`} />
       <select
         value={current.key}
         onChange={(e) => setPresenceStatus(company.id, user.id, e.target.value)}

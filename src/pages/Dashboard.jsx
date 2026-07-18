@@ -22,7 +22,7 @@ import CommandCenterHero from "@/components/dashboard/CommandCenterHero";
 import RiskForecastPanel from "@/components/dashboard/RiskForecastPanel";
 import DecisionQueue from "@/components/dashboard/DecisionQueue";
 import { getRiskWeights } from "@/lib/riskWeights";
-import { isScheduledToday } from "@/lib/attendance";
+import { isActiveAttendance, isScheduledToday } from "@/lib/attendance";
 import { isOnLeaveToday } from "@/lib/leaveTypes";
 
 export default function Dashboard() {
@@ -129,7 +129,7 @@ export default function Dashboard() {
   const teamEmployees = visibleEmployees(currentUser, data);
   const scheduledEmployees = teamEmployees.filter((employee) => isScheduledToday(employee, data) && !isOnLeaveToday(employee));
   const scheduledIds = new Set(scheduledEmployees.map((employee) => employee.id));
-  const checkedInCount = attendanceRows.filter((row) => row.check_in_at && scheduledIds.has(row.employee_id)).length;
+  const checkedInCount = attendanceRows.filter((row) => isActiveAttendance(row) && scheduledIds.has(row.employee_id)).length;
   const attendanceRate = scheduledEmployees.length ? Math.round((checkedInCount / scheduledEmployees.length) * 100) : 0;
   const absentCount = Math.max(0, scheduledEmployees.length - checkedInCount);
   const now = Date.now();

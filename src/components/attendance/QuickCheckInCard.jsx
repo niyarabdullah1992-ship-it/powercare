@@ -108,7 +108,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
         stationLng: station?.lng ?? null,
         radiusMeters: station?.radiusMeters ?? null,
       });
-      if (res?.data?.attendance) setAttendance(res.data.attendance);
+      if (res?.data?.attendance) { setAttendance(res.data.attendance); window.dispatchEvent(new CustomEvent("attendance-updated", { detail: res.data.attendance })); }
     } catch (err) {
       const code = err?.response?.data?.error;
       setError(code === "NOT_SCHEDULED" ? (lang === "ar" ? "لا يمكنك تسجيل الحضور لأنك غير مدرج في جدول اليوم." : "You cannot check in because you are not scheduled today.") : code === "GPS_REQUIRED" ? t("locationDenied") : code === "STATION_LOCATION_REQUIRED" ? t("locationNotSet") : code === "OUTSIDE_STATION" ? t("outsideLocation") : (code || t("aiActionFailed")));
@@ -144,7 +144,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
         stationLng: station?.lng ?? null,
         radiusMeters: station?.radiusMeters ?? null,
       });
-      if (res?.data?.attendance) setAttendance(res.data.attendance);
+      if (res?.data?.attendance) { setAttendance(res.data.attendance); window.dispatchEvent(new CustomEvent("attendance-updated", { detail: res.data.attendance })); }
     } catch (err) {
       const code = err?.response?.data?.error;
       setError(code === "GPS_REQUIRED" ? t("locationDenied") : code === "STATION_LOCATION_REQUIRED" ? t("locationNotSet") : code === "OUTSIDE_STATION" ? t("outsideLocation") : (code || t("aiActionFailed")));
