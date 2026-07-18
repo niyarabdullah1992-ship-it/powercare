@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { ClipboardCheck, Loader2, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import LocationMapModal from "@/components/attendance/LocationMapModal";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { useI18n } from "@/lib/i18n";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 import { getAttendanceStatus } from "@/lib/attendance";
-import { getCompanyToken } from "@/lib/store";
 
 const STATUS_STYLE = {
   present: "bg-emerald-100 text-emerald-700 border-emerald-300",
@@ -25,8 +24,6 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
   const { format } = useTimeFormat();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [scanning, setScanning] = useState(false);
-  const [scanError, setScanError] = useState("");
   const [mapRow, setMapRow] = useState(null);
 
   const load = () => {
@@ -42,24 +39,6 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employees.map((e) => e.id).join(",")]);
-
-  const markAbsentees = async () => {
-    if (!company?.id || scanning) return;
-    setScanning(true);
-    setScanError("");
-    try {
-      await base44.functions.invoke("supabaseAttendance", {
-        action: "markAbsentees",
-        companyId: company.id,
-        sessionToken: getCompanyToken(company.id),
-      });
-      await load();
-    } catch {
-      setScanError(lang === "ar" ? "تعذر رصد الغياب. حاول مرة أخرى." : "Could not mark absences. Please try again.");
-    } finally {
-      setScanning(false);
-    }
-  };
 
   const toggleExcuse = async (r) => {
     try {
@@ -101,12 +80,6 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h3 className="font-heading text-lg font-semibold">{t("dailyAttendance")}</h3>
         <div className="flex flex-wrap items-center gap-2">
-          {(["owner", "director", "ops_manager", "pgm", "station_manager"].includes(currentUser?.role)) && (
-            <button onClick={markAbsentees} disabled={scanning} className="flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background disabled:opacity-60">
-              {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ClipboardCheck className="h-3.5 w-3.5" />}
-              {lang === "ar" ? "رصد الغياب" : "Mark absences"}
-            </button>
-          )}
         <ComparisonExportButtons
           title={t("dailyAttendance")}
           headers={[t("employeeName"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("locationStatus")]}
@@ -117,7 +90,6 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
         />
         </div>
       </div>
-      {scanError && <p className="text-xs text-destructive font-body">{scanError}</p>}
       {!loading && employees.length > 0 && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-center"><strong className="block text-lg text-emerald-700">{counts.present}</strong><span className="text-xs text-emerald-700">{t("totalPresent")}</span></div>
@@ -193,7 +165,9 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                           onClick={() => toggleExcuse(r)}
                           className={`px-2 py-1 rounded-md text-xs font-body border transition ${r?.excused ? "border-border text-muted-foreground hover:bg-muted" : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"}`}
                         >
-                          {r?.excused ? t("unexcuseLate") : t("excuseLate")}
+                          {status === "absent"
+                            ? (r?.excused ? (lang === "ar" ? "إلغاء إعفاء الغياب" : "Remove absence excuse") : (lang === "ar" ? "إعفاء الغياب" : "Excuse absence"))
+                            : (r?.excused ? t("unexcuseLate") : t("excuseLate"))}
                         </button>
                       )}
                     </td>
