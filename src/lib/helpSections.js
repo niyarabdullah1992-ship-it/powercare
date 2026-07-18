@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Gauge, FileText, ListTodo, ClipboardCheck, MessageSquare,
   FolderOpen, PenLine, Sparkles, Megaphone, Users, Radio, UserCog, Banknote,
-  Trophy, ShieldQuestion, HelpCircle, Warehouse,
+  Trophy, ShieldQuestion, HelpCircle, Warehouse, ReceiptText,
 } from "lucide-react";
 
 export const PLATFORM_HELP_SECTIONS = [
@@ -13,6 +13,7 @@ export const PLATFORM_HELP_SECTIONS = [
   { icon: MessageSquare, ar: ["الدردشة", "تواصل عبر غرفة المحطة أو المجموعة أو الرسائل المباشرة.", "يمكن إرسال النصوص والملفات والصوت والبحث في الرسائل والوسائط السابقة."], en: ["Chat", "Communicate in station rooms, groups or direct messages.", "Send text, files and voice notes, and search previous messages and media."] },
   { icon: FolderOpen, ar: ["الملفات", "أنشئ مجلدات واضحة وارفع الملفات داخل المجلد والمحطة الصحيحين.", "استخدم إعادة التسمية والتنزيل والحذف فقط وفق صلاحيتك."], en: ["Files", "Create clear folders and upload files in the correct station context.", "Rename, download or delete only when your role permits it."] },
   { icon: Warehouse, ar: ["المخزن الصناعي", "أنشئ الأصناف بتتبع كمي أو رقم تسلسلي وحد أدنى للمخزون.", "يطلب الموظف المادة، يعتمدها المشرف، ثم تُصرف بمسح QR وتُسجل الحركة تلقائيًا."], en: ["Industrial inventory", "Create quantity or serialized items with minimum stock levels.", "Employees request material, supervisors approve, then QR scanning records the issue."] },
+  { icon: ReceiptText, ar: ["إدارة المصروفات", "ارفع الإيصال وحدد نوع المصروف وتاريخه والمحطة أو المحطات المستفيدة؛ يحسب النظام الإجمالي تلقائيًا عند التوزيع على عدة محطات.", "يمر الطلب باعتماد المدير ثم المراجعة المالية، ويمكن متابعة الحالة وفتح مصروفات محطة محددة وتصدير السجل إلى Excel أو PDF."], en: ["Expense management", "Upload the receipt and define the expense type, date, and benefiting station or stations; multi-station totals are calculated automatically.", "Claims pass through manager approval and finance review, with station views and Excel or PDF export."] },
   { icon: PenLine, ar: ["التوقيع الرقمي", "احفظ توقيعك ثم حدد موضعه على المستند قبل الإرسال.", "للطلبات المتعددة يتبع الموقّعون ترتيبًا محددًا، ويمكن التحقق من النسخة النهائية."], en: ["Digital signing", "Save your signature and place it on the document before sending.", "Multi-sign requests follow signer order and the final document can be verified."] },
   { icon: Sparkles, ar: ["المساعد نيرو", "اطلب تلخيصًا أو مقارنة أو فتح صفحة أو إنشاء إجراء مسموح.", "اذكر المحطة والفترة والهدف بوضوح، وراجع النتيجة قبل اعتمادها."], en: ["Niro assistant", "Ask for summaries, comparisons, navigation or permitted actions.", "State the station, period and goal clearly, then review the result."] },
   { icon: Megaphone, ar: ["الشكاوى والبلاغات", "اختر نوع البلاغ والمحطة وما إذا كانت الهوية معلنة أو مجهولة.", "تابع الردود، ويمكن التصعيد للمستوى الإداري التالي إذا لم تُحل الحالة."], en: ["Complaints and reports", "Choose the report type, station and identified or anonymous mode.", "Track replies and escalate to the next management level when unresolved."] },

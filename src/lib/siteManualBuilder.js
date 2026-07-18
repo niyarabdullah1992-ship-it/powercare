@@ -1,4 +1,4 @@
-const IDS = ["start","dashboard","stations","employees","hr","tasks","attendance","reports","complaints","chat","files","signing","payroll","safety","performance","niro","subscriptions","security"];
+const IDS = ["start","dashboard","stations","employees","hr","tasks","attendance","reports","complaints","chat","files","signing","payroll","expenses","safety","performance","niro","subscriptions","security"];
 
 export function buildManualContent(config) {
   const MANUAL_META = config.meta;
