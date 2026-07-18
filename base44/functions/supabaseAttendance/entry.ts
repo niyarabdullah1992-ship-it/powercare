@@ -396,12 +396,13 @@ Deno.serve(async (req) => {
       const setRows = await setRes.json();
       const settings = (Array.isArray(setRows) && setRows[0]) || { work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: true, gps_required: true };
       const emergency = await getEmergencyWindow(companyId);
-      if (!emergency?.active && (lat == null || lng == null)) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
+      const locationRequired = settings.gps_enabled !== false && !emergency?.active;
+      if (locationRequired && (lat == null || lng == null)) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       const scheduledStationId = scheduledShift.stationId || auth?.stationId || stationId;
       let workplace = null;
       let recordedWorkplace = null;
       let nearestDist = null;
-      if (!emergency?.active) {
+      if (locationRequired) {
         const workplaces = (await listWorkplaces()).filter((item) => item.stationId === scheduledStationId);
         if (workplaces.length === 0) return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
         const match = matchWorkplace(workplaces, lat, lng);
@@ -409,15 +410,15 @@ Deno.serve(async (req) => {
         recordedWorkplace = match.best || match.nearest;
         nearestDist = match.nearestDist;
       }
-      const inZone = !!workplace;
+      const inZone = !locationRequired || !!workplace;
       const now = new Date();
       const startMinutes = toMinutes(scheduledShift.start) ?? toMinutes(settings.work_start_time) ?? 480;
       const nowMinutes = riyadhMinutes();
       const lateMinutes = Math.max(0, nowMinutes - startMinutes);
       const timelyStatus = lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present";
-      const status = emergency?.active ? timelyStatus : (inZone ? timelyStatus : "absent");
+      const status = inZone ? timelyStatus : "absent";
       const distMeters = recordedWorkplace?.dist ?? nearestDist;
-      const locationStatus = emergency?.active ? "emergency" : (inZone ? "inside" : "outside");
+      const locationStatus = emergency?.active ? "emergency" : (!locationRequired ? "disabled" : (inZone ? "inside" : "outside"));
       const payload = {
         company_id: companyId,
         employee_id: employeeId,
@@ -485,7 +486,11 @@ Deno.serve(async (req) => {
         return Response.json({ error: "Forbidden" }, { status: 403 });
       }
       const emergency = await getEmergencyWindow(auth.companyId);
-      if (!emergency?.active && (lat == null || lng == null)) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
+      const settingsRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(auth.companyId)}`, { headers });
+      const settingsRows = await settingsRes.json();
+      const settings = (Array.isArray(settingsRows) && settingsRows[0]) || { gps_enabled: true };
+      const locationRequired = settings.gps_enabled !== false && !emergency?.active;
+      if (locationRequired && (lat == null || lng == null)) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       const date = todayStr();
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const rows = await res.json();
@@ -493,7 +498,7 @@ Deno.serve(async (req) => {
       if (!row || !row.check_in_at) return Response.json({ error: "NOT_CHECKED_IN" }, { status: 400 });
       if (row.check_out_at) return Response.json({ error: "ALREADY_CHECKED_OUT", attendance: row }, { status: 400 });
       let checkoutDistance = null;
-      if (!emergency?.active) {
+      if (locationRequired) {
         const workplaces = await listWorkplaces();
         if (workplaces.length === 0) return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
         const { best: outWorkplace, nearestDist } = matchWorkplace(workplaces, lat, lng);

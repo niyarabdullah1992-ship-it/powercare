@@ -38,7 +38,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
       ]);
       const loadedSettings = setRes?.data?.settings || null;
       setSettings(loadedSettings);
-      if (!loadedSettings?.emergency_active && hasAssignedStation) startGeoWarmup();
+      if (!loadedSettings?.emergency_active && loadedSettings?.gps_enabled !== false && hasAssignedStation) startGeoWarmup();
       const att = attRes?.data?.attendance || null;
       setAttendance(att);
       onStatusChange?.(att);
@@ -68,8 +68,9 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
       const settingsRes = await base44.functions.invoke("supabaseAttendance", { action: "getSettings", companyId: company.id });
       const currentSettings = settingsRes?.data?.settings || settings;
       setSettings(currentSettings);
-      const coords = currentSettings?.emergency_active ? null : await getAccuratePosition();
-      if (!currentSettings?.emergency_active && !coords) {
+      const locationRequired = !currentSettings?.emergency_active && currentSettings?.gps_enabled !== false;
+      const coords = locationRequired ? await getAccuratePosition() : null;
+      if (locationRequired && !coords) {
         setError(t("locationDenied"));
         setLoading(false);
         return;
@@ -104,8 +105,9 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
       const settingsRes = await base44.functions.invoke("supabaseAttendance", { action: "getSettings", companyId: company.id });
       const currentSettings = settingsRes?.data?.settings || settings;
       setSettings(currentSettings);
-      const coords = currentSettings?.emergency_active ? null : await getAccuratePosition();
-      if (!currentSettings?.emergency_active && !coords) {
+      const locationRequired = !currentSettings?.emergency_active && currentSettings?.gps_enabled !== false;
+      const coords = locationRequired ? await getAccuratePosition() : null;
+      if (locationRequired && !coords) {
         setError(t("locationDenied"));
         setLoading(false);
         return;
@@ -144,7 +146,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         )}
       </div>
 
-      {settings?.emergency_active && <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-800">{lang === "ar" ? "استثناء الموقع للطوارئ نشط حاليًا." : "Emergency location exception is currently active."}</p>}
+      {settings?.gps_enabled === false && <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-800">{lang === "ar" ? "شرط الموقع متوقف حاليًا." : "Location requirement is currently disabled."}</p>}
       {attendance?.check_in_at && (
         <p className="text-xs text-muted-foreground font-body">
           {t("checkedInAt")} {formatTime(attendance.check_in_at, format, lang)}
@@ -173,7 +175,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
       )}
       {attendance?.location_status && (
         <p className={`text-xs font-body ${attendance.location_status === "outside" ? "text-red-700" : "text-emerald-700"}`}>
-          {attendance.location_status === "emergency" ? (lang === "ar" ? "تم التسجيل ضمن استثناء الطوارئ" : "Recorded under the emergency exception") : attendance.location_status === "inside" ? t("insideLocation") : t("outsideLocation")}
+          {attendance.location_status === "disabled" ? (lang === "ar" ? "تم التسجيل دون شرط الموقع" : "Recorded without location requirement") : attendance.location_status === "emergency" ? (lang === "ar" ? "تم التسجيل ضمن استثناء الطوارئ" : "Recorded under the emergency exception") : attendance.location_status === "inside" ? t("insideLocation") : t("outsideLocation")}
           {attendance.distance_meters != null && ` (${attendance.distance_meters}m)`}
         </p>
       )}
@@ -210,7 +212,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         )}
       </div>
 
-      {!settings?.emergency_active && <p className="text-[11px] text-muted-foreground font-body flex items-center gap-1"><MapPin className="w-3 h-3" /> {t("gpsNote")}</p>}
+      {!settings?.emergency_active && settings?.gps_enabled !== false && <p className="text-[11px] text-muted-foreground font-body flex items-center gap-1"><MapPin className="w-3 h-3" /> {t("gpsNote")}</p>}
     </div>
   );
 }

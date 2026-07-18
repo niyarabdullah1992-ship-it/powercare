@@ -84,9 +84,10 @@ export default function QuickCheckInCard({ currentUser, company }) {
       const settingsRes = await base44.functions.invoke("supabaseAttendance", { action: "getSettings", companyId: company.id });
       const currentSettings = settingsRes?.data?.settings || settings;
       setSettings(currentSettings);
-      const c = currentSettings?.emergency_active ? null : await getAccuratePosition();
+      const locationRequired = !currentSettings?.emergency_active && currentSettings?.gps_enabled !== false;
+      const c = locationRequired ? await getAccuratePosition() : null;
       if (c) { setCoords(c); setLocState("ready"); }
-      if (!currentSettings?.emergency_active && !c) {
+      if (locationRequired && !c) {
         setLocState("denied");
         setError(t("locationDenied"));
         setLoading(false);
@@ -121,9 +122,10 @@ export default function QuickCheckInCard({ currentUser, company }) {
       const settingsRes = await base44.functions.invoke("supabaseAttendance", { action: "getSettings", companyId: company.id });
       const currentSettings = settingsRes?.data?.settings || settings;
       setSettings(currentSettings);
-      const c = currentSettings?.emergency_active ? null : await getAccuratePosition();
+      const locationRequired = !currentSettings?.emergency_active && currentSettings?.gps_enabled !== false;
+      const c = locationRequired ? await getAccuratePosition() : null;
       if (c) { setCoords(c); setLocState("ready"); }
-      if (!currentSettings?.emergency_active && !c) {
+      if (locationRequired && !c) {
         setLocState("denied");
         setError(t("locationDenied"));
         setLoading(false);
@@ -187,7 +189,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
         <div className="flex-1 space-y-2 text-center md:text-start">
           <h3 className="font-heading text-xl font-semibold">{t("myAttendance")}</h3>
 
-          {settings?.emergency_active && <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-800">{lang === "ar" ? "استثناء الموقع للطوارئ نشط حاليًا." : "Emergency location exception is currently active."}</p>}
+          {settings?.gps_enabled === false && <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-800">{lang === "ar" ? "شرط الموقع متوقف حاليًا." : "Location requirement is currently disabled."}</p>}
 
           {!shift && !checkedIn && (
             <p className="text-xs text-amber-700 font-body">
