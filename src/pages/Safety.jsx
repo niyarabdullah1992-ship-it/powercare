@@ -24,6 +24,7 @@ export default function Safety() {
 
   const stations = visibleStations(currentUser, data);
   const canEdit = ["director", "ops_manager", "pgm", "station_manager"].includes(currentUser.role) || data.ownerId === currentUser.id;
+  const canCustomize = ["director", "ops_manager", "station_manager"].includes(currentUser.role) || data.ownerId === currentUser.id;
   const canApprove = canApproveReports(currentUser) || data.ownerId === currentUser.id;
   const recFor = (sid) => (data.safety || []).find((s) => s.stationId === sid) || null;
 
@@ -105,10 +106,12 @@ export default function Safety() {
                 rec={recFor(station.id)}
                 canEdit={canEdit}
                 canApprove={canApprove}
+                canCustomize={canCustomize}
                 approvalIssues={safetyApprovalIssues(recFor(station.id), ar)}
                 lang={lang}
                 signerName={currentUser.name}
                 onUpdate={(updates) => handleUpdate(station.id, updates)}
+                onDisabledTabsChange={(disabledTabs) => updateSafetyRecord(company.id, station.id, { disabledTabs })}
                 onCloseHazard={(index) => closeSafetyHazard(company.id, station.id, index, currentUser.name)}
                 onApprove={() => handleApprove(station.id)}
                 onIncident={(desc) => {

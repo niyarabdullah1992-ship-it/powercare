@@ -11,12 +11,13 @@ export function updateSafetyRecord(companyId, stationId, updates) {
     data.safety = data.safety || [];
     let rec = data.safety.find((item) => item.stationId === stationId);
     if (!rec) {
-      rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], workHoursMonthly: 0, ltiCount: 0, checklistResults: {}, permits: [], createdAt: new Date().toISOString() };
+      rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], workHoursMonthly: 0, ltiCount: 0, checklistResults: {}, permits: [], disabledTabs: [], createdAt: new Date().toISOString() };
       data.safety.push(rec);
     }
     const next = { ...updates };
     if (next.riskItems && !Array.isArray(next.riskItems)) delete next.riskItems;
     if (next.permits && !Array.isArray(next.permits)) delete next.permits;
+    if (next.disabledTabs) next.disabledTabs = Array.isArray(next.disabledTabs) ? [...new Set(next.disabledTabs.filter((key) => ["risks", "kpis", "checklist", "permits"].includes(key)))] : [];
     if (next.checklistResults && typeof next.checklistResults !== "object") delete next.checklistResults;
     if ("workHoursMonthly" in next) next.workHoursMonthly = Math.max(0, Number(next.workHoursMonthly) || 0);
     if ("ltiCount" in next) next.ltiCount = Math.max(0, Math.floor(Number(next.ltiCount) || 0));
@@ -84,7 +85,7 @@ export function recordSafetyIncident(companyId, stationId, description, actorNam
     current.safety = current.safety || [];
     let rec = current.safety.find((item) => item.stationId === stationId);
     if (!rec) {
-      rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], workHoursMonthly: 0, ltiCount: 0, checklistResults: {}, permits: [], createdAt: new Date().toISOString() };
+      rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], workHoursMonthly: 0, ltiCount: 0, checklistResults: {}, permits: [], disabledTabs: [], createdAt: new Date().toISOString() };
       current.safety.push(rec);
     }
     rec.lastIncidentAt = new Date().toISOString();
