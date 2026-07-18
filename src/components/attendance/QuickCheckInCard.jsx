@@ -75,7 +75,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
 
   const handleCheckIn = async () => {
     setError("");
-    if (!shift) {
+    if (!shift && settings?.schedule_required !== false) {
       setError(lang === "ar" ? "لا يمكنك تسجيل الحضور لأنك غير مدرج في جدول اليوم." : "You cannot check in because you are not scheduled today.");
       return;
     }
@@ -167,7 +167,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
           ) : (
             <button
               onClick={checkedIn ? handleCheckOut : handleCheckIn}
-              disabled={loading || (!checkedIn && !shift)}
+              disabled={loading || (!checkedIn && !shift && settings?.schedule_required !== false)}
               className={`w-28 h-28 rounded-full flex flex-col items-center justify-center gap-1 text-sm font-body font-medium shadow-lg transition-transform active:scale-95 disabled:opacity-60 ${
                 checkedIn
                   ? "bg-card border-4 border-accent text-accent hover:bg-accent/5"
@@ -190,8 +190,9 @@ export default function QuickCheckInCard({ currentUser, company }) {
           <h3 className="font-heading text-xl font-semibold">{t("myAttendance")}</h3>
 
           {settings?.gps_enabled === false && <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-800">{lang === "ar" ? "شرط الموقع متوقف حاليًا." : "Location requirement is currently disabled."}</p>}
+          {settings?.schedule_required === false && <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-800">{lang === "ar" ? "شرط جدول اليوم متوقف حاليًا." : "Today's schedule requirement is currently disabled."}</p>}
 
-          {!shift && !checkedIn && (
+          {!shift && !checkedIn && settings?.schedule_required !== false && (
             <p className="text-xs text-amber-700 font-body">
               {lang === "ar" ? "أنت غير مدرج في جدول اليوم؛ تسجيل الحضور غير متاح." : "You are not scheduled today; check-in is unavailable."}
             </p>

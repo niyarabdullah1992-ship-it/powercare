@@ -55,7 +55,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
 
   const handleCheckIn = async () => {
     setError("");
-    if (!shift) {
+    if (!shift && settings?.schedule_required !== false) {
       setError(lang === "ar" ? "لا يمكنك تسجيل الحضور لأنك غير مدرج في جدول اليوم." : "You cannot check in because you are not scheduled today.");
       return;
     }
@@ -147,6 +147,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
       </div>
 
       {settings?.gps_enabled === false && <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-800">{lang === "ar" ? "شرط الموقع متوقف حاليًا." : "Location requirement is currently disabled."}</p>}
+      {settings?.schedule_required === false && <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-800">{lang === "ar" ? "شرط جدول اليوم متوقف حاليًا." : "Today's schedule requirement is currently disabled."}</p>}
       {attendance?.check_in_at && (
         <p className="text-xs text-muted-foreground font-body">
           {t("checkedInAt")} {formatTime(attendance.check_in_at, format, lang)}
@@ -179,7 +180,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
           {attendance.distance_meters != null && ` (${attendance.distance_meters}m)`}
         </p>
       )}
-      {!shift ? (
+      {!shift && settings?.schedule_required !== false ? (
         <p className="text-xs text-amber-700 font-body">
           {lang === "ar" ? "أنت غير مدرج في جدول اليوم؛ تسجيل الحضور غير متاح." : "You are not scheduled today; check-in is unavailable."}
         </p>
@@ -194,7 +195,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         {!attendance?.check_in_at ? (
           <button
             onClick={handleCheckIn}
-            disabled={loading || !shift}
+            disabled={loading || (!shift && settings?.schedule_required !== false)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body disabled:opacity-50"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />} {t("checkIn")}

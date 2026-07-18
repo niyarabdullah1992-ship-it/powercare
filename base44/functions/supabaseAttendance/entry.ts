@@ -121,6 +121,10 @@ Deno.serve(async (req) => {
       const now = Date.now();
       return window ? { ...window, active: new Date(window.startAt).getTime() <= now && now <= new Date(window.endAt).getTime() } : null;
     };
+    const getAttendancePolicy = async (companyId) => {
+      const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "attendancePolicy" });
+      return { scheduleRequired: blobs[0]?.payload?.[0]?.scheduleRequired !== false };
+    };
     // Strict date formats — values are interpolated into PostgREST query strings,
     // so anything not matching is rejected (blocks query-parameter injection).
     const isDate = (v) => {
@@ -215,8 +219,9 @@ Deno.serve(async (req) => {
       const rows = await res.json();
       const defaults = { company_id: companyId, work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: true, gps_required: true };
       const emergency = await getEmergencyWindow(companyId);
+      const policy = await getAttendancePolicy(companyId);
       const settings = (!res.ok || !Array.isArray(rows) || rows.length === 0) ? defaults : rows[0];
-      return Response.json({ settings: { ...settings, emergency_active: !!emergency?.active, emergency_start_at: emergency?.startAt || null, emergency_end_at: emergency?.endAt || null, emergency_by: emergency?.activatedBy || null } });
+      return Response.json({ settings: { ...settings, schedule_required: policy.scheduleRequired, emergency_active: !!emergency?.active, emergency_start_at: emergency?.startAt || null, emergency_end_at: emergency?.endAt || null, emergency_by: emergency?.activatedBy || null } });
     }
 
     if (action === "setAttendanceEmergency" || action === "clearAttendanceEmergency") {
@@ -234,6 +239,17 @@ Deno.serve(async (req) => {
       if (blobs[0]) await base44.asServiceRole.entities.CompanyDataBlob.update(blobs[0].id, { payload: [window] });
       else await base44.asServiceRole.entities.CompanyDataBlob.create({ companyId, category: "attendanceEmergency", payload: [window] });
       return Response.json({ ok: true, emergency: window });
+    }
+
+    if (action === "setScheduleRequirement") {
+      if (!auth?.admin && !["owner", "director", "ops_manager"].includes(auth?.role)) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const companyId = auth?.companyId || body.companyId;
+      const scheduleRequired = body.scheduleRequired !== false;
+      const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "attendancePolicy" });
+      const payload = [{ scheduleRequired }];
+      if (blobs[0]) await base44.asServiceRole.entities.CompanyDataBlob.update(blobs[0].id, { payload });
+      else await base44.asServiceRole.entities.CompanyDataBlob.create({ companyId, category: "attendancePolicy", payload });
+      return Response.json({ ok: true, scheduleRequired });
     }
 
     if (action === "updateSettings") {
@@ -385,8 +401,10 @@ Deno.serve(async (req) => {
         return Response.json({ error: "Forbidden" }, { status: 403 });
       }
       const date = todayStr();
-      const scheduledShift = await getScheduledShift(companyId, employeeId);
-      if (!scheduledShift) return Response.json({ error: "NOT_SCHEDULED" }, { status: 400 });
+      const policy = await getAttendancePolicy(companyId);
+      let scheduledShift = await getScheduledShift(companyId, employeeId);
+      if (!scheduledShift && policy.scheduleRequired) return Response.json({ error: "NOT_SCHEDULED" }, { status: 400 });
+      if (!scheduledShift) scheduledShift = { start: null, stationId: auth?.stationId || stationId || null };
       const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const existing = await existingRes.json();
       if (Array.isArray(existing) && existing.length > 0 && existing[0].check_in_at) {
