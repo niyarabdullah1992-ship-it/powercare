@@ -5,13 +5,17 @@ const GUIDES = {
     ar: ["هذه لوحة التحكم — نظرة شاملة على شركتك في شاشة واحدة.", "اقرأ «الملخص الذكي لليوم» أعلى الصفحة لمعرفة أهم ما يحتاج انتباهك.", "تابع «الاقتراحات الذكية» واضغط على أي اقتراح للانتقال مباشرة لمعالجته.", "البطاقات الرقمية تعرض نسبة الحضور والمهام المكتملة وحالة الفريق لحظيًا."],
     en: ["This is your dashboard — your whole company at a glance.", "Read the Smart Brief at the top for what needs attention first.", "Tap any Smart Suggestion to jump straight to fixing it.", "The stat cards show live attendance, task completion and team status."],
   },
+  "/app/executive": {
+    ar: ["هذه لوحة الإدارة العليا لقراءة وضع الشركة كاملًا.", "راجع مؤشرات الأداء والحضور والمخاطر، ثم قارن المحطات في الجدول والخريطة.", "افتح المحطة التي تحتاج تدخلًا وانتقل إلى القسم التشغيلي المرتبط لاتخاذ الإجراء."],
+    en: ["This is the leadership view of the whole company.", "Review performance, attendance and risk, then compare stations in the table and map.", "Open a station requiring attention and continue to the related operational section."],
+  },
   "/app/daily-report": {
     ar: ["هنا تُراجع التقارير اليومية المرسلة من الموظفين.", "اضغط «موافقة» أو «رفض» على كل تقرير معلق.", "استخدم أزرار التصدير لطباعة التقرير أو حفظه PDF/Excel."],
     en: ["Review the daily reports submitted by employees here.", "Approve or reject each pending report.", "Use the export buttons to print or save as PDF/Excel."],
   },
   "/app/tasks": {
-    ar: ["اضغط «مهمة جديدة» لإنشاء مهمة — النموذج يتذكر اختياراتك السابقة تلقائيًا.", "اختر المحطة ثم تنقّل بين المجلدات كأنها ملفات — اسحب مهمة وأفلتها داخل مجلد لنقلها.", "الموظف يسجّل إنجازه من زر «تسجيل المنجز» مع إرفاق إثبات إن طُلب.", "زر «الأرشيف الذكي» يعرض المهام المنتهية مصنفة حسب مدتها (سنوية/نصفية/ربعية/شهرية)."],
-    en: ["Tap “New Task” — the form auto-fills your usual choices.", "Pick a station, then browse folders like files — drag a task onto a folder to move it.", "Employees log progress via “Log Completed”, attaching proof when required.", "The Smart Archive shows finished tasks grouped by duration."],
+    ar: ["يعمل التنظيم بتسلسل ثابت: المحطة ← القسم ← المهام؛ اختر المحطة أولًا.", "أنشئ قسمًا باسم واضح واضغط «حفظ»، ثم افتح القسم لإضافة مهمة داخله.", "يمكن نقل المهمة إلى قسم آخر بالسحب، ولا يمكن حذف قسم ما دام يحتوي على مهام نشطة.", "يسجل الموظف الإنجاز ويرفق الإثبات عند اكتمال الهدف، ثم يراجع المدير النتيجة."],
+    en: ["Work follows a fixed structure: Station → Section → Tasks; choose a station first.", "Create and save a clearly named section, then open it to add a task.", "Tasks can be dragged between sections; a section with active tasks cannot be deleted.", "Employees log progress and attach final proof for manager review."],
   },
   "/app/attendance": {
     ar: ["سجّل حضورك بزر «تسجيل حضور» — قد يُطلب تحديد موقعك للتحقق من وجودك في المقر.", "المدير يتابع حضور الفريق اليومي والتقرير الشهري من التبويبات بالأعلى.", "من «الإعدادات» حدد مواقع المقرات على الخريطة ونطاق المسافة المسموح ووقت الدوام.", "تبويب «خريطة المواقع» يعرض أماكن تسجيل الحضور على الخريطة."],
@@ -66,13 +70,26 @@ const GUIDES = {
     en: ["Pick a time range for a full breakdown of all tasks in it.", "Compare employees or station groups with the comparison tools.", "Export any report as PDF or Excel with your company branding."],
   },
   "/app/assistant": {
-    ar: ["اسأل نيرو أي شيء عن شركتك: لخص التقارير، قارن المحطات، من الأفضل أداءً؟", "يمكنه تنفيذ إجراءات: إنشاء مهام، تصدير ملفات، فتح صفحات.", "جرّب الأسئلة المقترحة أسفل المحادثة للبدء."],
-    en: ["Ask Niro anything about your company: summarize reports, compare stations, top performers.", "It can act too: create tasks, export files, open pages.", "Try the suggested questions to get started."],
+    ar: ["اسأل نيرو سؤالًا محددًا مع ذكر المحطة والفترة عند الحاجة.", "يمكنه تلخيص البيانات والمقارنة وفتح الصفحات وتنفيذ الإجراءات المسموحة لدورك.", "راجع النتيجة والبيانات الحساسة قبل اعتماد أي مستند أو إجراء."],
+    en: ["Ask Niro a specific question, including station and period when needed.", "It can summarize, compare, navigate and perform actions allowed for your role.", "Review results and sensitive data before approving a document or action."],
+  },
+  "/app/payroll": {
+    ar: ["اختر الشهر لإنشاء أو فتح مسير الرواتب.", "راجع الأساسي والبدلات والمكافآت والخصومات وصافي كل موظف.", "عالج التحذيرات قبل اعتماد الدفع، ثم صدّر المسير أو القسائم عند الحاجة."],
+    en: ["Choose a month to create or open its payroll run.", "Review salary, allowances, bonuses, deductions and net pay.", "Resolve warnings before approval, then export the run or payslips."],
+  },
+  "/app/safety": {
+    ar: ["اختر المحطة ثم تنقل بين النظرة العامة والمؤشرات والمخاطر والفحوصات وتصاريح العمل.", "سجل الحوادث والمخاطر والإجراءات التصحيحية مع التاريخ والمسؤول.", "لا تعتمد الحالة الآمنة قبل استيفاء الفحص وإغلاق المخاطر المفتوحة، واستخدم الأرشيف والتصدير للمراجعة."],
+    en: ["Choose a station, then use overview, KPIs, risks, checklists and work permits.", "Record incidents, risks and corrective actions with dates and owners.", "Complete inspections and close open risks before safe approval; use archive and export for review."],
+  },
+  "/app/help": {
+    ar: ["تجد هنا شرحًا مرتبًا لجميع أقسام المنصة حسب تسلسل العمل.", "افتح الدليل التشغيلي الشامل للمزيد من التفاصيل أو للطباعة والحفظ PDF.", "يظهر أيضًا شريط شرح مختصر أعلى كل صفحة ويمكن فتحه عند الحاجة."],
+    en: ["Find an organized explanation of every platform section here.", "Open the complete operations manual for more detail or PDF printing.", "A short contextual guide is also available at the top of each page."],
   },
 };
 
 export function getGuide(pathname, lang) {
-  const guide = GUIDES[pathname];
+  const route = pathname.startsWith("/app/employees/") ? "/app/employees" : pathname;
+  const guide = GUIDES[route];
   if (!guide) return null;
   return lang === "ar" ? guide.ar : guide.en;
 }
