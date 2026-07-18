@@ -1,5 +1,5 @@
 // Role-based permission helpers for PowerCare.
-// Roles: director | ops_manager | pgm | station_manager | employee
+// Roles: director | ops_manager | pgm | station_manager | inventory_keeper | employee
 const employeeStationId = (employee, data) => employee?.stationId || data?.stations?.[0]?.id || null;
 const stationsInOrder = (stations) => [...(stations || [])];
 
@@ -8,6 +8,7 @@ export const ROLE_RANK = {
   ops_manager: 4,
   pgm: 3,
   station_manager: 2,
+  inventory_keeper: 1,
   employee: 1,
 };
 
@@ -28,7 +29,7 @@ export function visibleStations(user, data) {
     const managed = user.managedStations?.length ? user.managedStations : [employeeStationId(user, data)].filter(Boolean);
     return stations.filter((station) => managed.includes(station.id));
   }
-  if (user.role === "employee") return stations.filter((station) => station.id === employeeStationId(user, data));
+  if (["inventory_keeper", "employee"].includes(user.role)) return stations.filter((station) => station.id === employeeStationId(user, data));
   return [];
 }
 

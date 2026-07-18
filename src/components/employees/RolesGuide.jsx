@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { ChevronDown, ShieldCheck, Pencil, Briefcase, GitBranch } from "lucide-react";
 
 // Ranked highest → lowest authority.
-const GRADES = ["director", "ops_manager", "pgm", "station_manager", "employee"];
+const GRADES = ["director", "ops_manager", "pgm", "station_manager", "inventory_keeper", "employee"];
 
 export default function RolesGuide({ company }) {
   const { t } = useI18n();

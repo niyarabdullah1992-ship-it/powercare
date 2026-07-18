@@ -23,7 +23,7 @@ import PageHeader from "@/components/PageHeader";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
-const ROLES = ["employee", "station_manager", "pgm", "ops_manager", "director"];
+const ROLES = ["employee", "inventory_keeper", "station_manager", "pgm", "ops_manager", "director"];
 
 const TASK_STATUS_STYLES = {
   overdue: "border-red-300 bg-red-50 text-red-700",
@@ -83,7 +83,7 @@ export default function Employees() {
   const stations = visibleStations(currentUser, data);
   const defaultStationId = data.stations?.[0]?.id || null;
   // Station managers can only add employees / station managers to their own station
-  const allowedRoles = currentUser.role === "station_manager" ? ["employee", "station_manager"] : ROLES;
+  const allowedRoles = currentUser.role === "station_manager" ? ["employee", "inventory_keeper", "station_manager"] : ROLES;
 
   const saveDomain = () => {
     setAllowedEmailDomain(company.id, domainInput);

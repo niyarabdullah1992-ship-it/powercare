@@ -1,6 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
 
-const managerRoles = ["director", "ops_manager", "pgm", "station_manager"];
+const managerRoles = ["director", "ops_manager", "pgm", "station_manager", "inventory_keeper"];
 const seniorRoles = ["owner", "director", "ops_manager"];
 
 Deno.serve(async (req) => {
