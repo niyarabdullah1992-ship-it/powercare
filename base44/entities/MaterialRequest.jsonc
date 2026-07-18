@@ -1,0 +1,88 @@
+{
+  "name": "MaterialRequest",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "requesterId": {
+      "type": "string"
+    },
+    "stationId": {
+      "type": "string"
+    },
+    "itemId": {
+      "type": "string"
+    },
+    "quantity": {
+      "type": "number",
+      "minimum": 1
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "issued"
+      ]
+    },
+    "supervisorId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reviewedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reviewedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "issuedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "companyId",
+    "requesterId",
+    "stationId",
+    "itemId",
+    "quantity",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

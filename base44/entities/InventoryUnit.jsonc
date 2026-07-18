@@ -1,0 +1,68 @@
+{
+  "name": "InventoryUnit",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "itemId": {
+      "type": "string"
+    },
+    "unitCode": {
+      "type": "string"
+    },
+    "serialNumber": {
+      "type": "string"
+    },
+    "locationId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "issued"
+      ]
+    },
+    "assignedEmployeeId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "qrCode": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "companyId",
+    "itemId",
+    "unitCode",
+    "serialNumber",
+    "locationId",
+    "status",
+    "qrCode"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

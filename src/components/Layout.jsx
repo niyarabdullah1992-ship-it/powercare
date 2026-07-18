@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
-  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Gauge, Banknote,
+  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Gauge, Banknote, Warehouse,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -118,6 +118,7 @@ export default function Layout({ children }) {
     { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling") },
     { to: "/app/chat", icon: MessageSquare, label: t("chat") },
     { to: "/app/files", icon: FolderOpen, label: t("files") },
+    { to: "/app/inventory", icon: Warehouse, label: t("inventory") },
     { to: "/app/signing", icon: PenLine, label: t("fileSigning") },
     { to: "/app/assistant", icon: Sparkles, label: t("aiAssistant") },
     { to: "/app/complaints", icon: Megaphone, label: t("allComplaints") },

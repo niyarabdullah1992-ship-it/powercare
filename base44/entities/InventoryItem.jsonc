@@ -1,0 +1,81 @@
+{
+  "name": "InventoryItem",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "itemCode": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "trackingMode": {
+      "type": "string",
+      "enum": [
+        "quantity",
+        "serialized"
+      ]
+    },
+    "serialNumber": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "currentLocationId": {
+      "type": "string"
+    },
+    "minimumStock": {
+      "type": "number",
+      "minimum": 0
+    },
+    "quantity": {
+      "type": "number",
+      "minimum": 0
+    },
+    "locationBalances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "qrCode": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "companyId",
+    "itemCode",
+    "name",
+    "trackingMode",
+    "currentLocationId",
+    "minimumStock",
+    "quantity",
+    "qrCode"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

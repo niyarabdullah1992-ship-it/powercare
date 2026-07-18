@@ -1,0 +1,90 @@
+{
+  "name": "StockMovement",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "itemId": {
+      "type": "string"
+    },
+    "unitId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "movementType": {
+      "type": "string",
+      "enum": [
+        "receive",
+        "issue",
+        "return",
+        "transfer"
+      ]
+    },
+    "quantity": {
+      "type": "number",
+      "minimum": 0
+    },
+    "fromLocationId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "toLocationId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "employeeId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "requestId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "performedBy": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "companyId",
+    "itemId",
+    "movementType",
+    "quantity",
+    "performedBy"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

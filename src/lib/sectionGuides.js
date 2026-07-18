@@ -41,6 +41,10 @@ const GUIDES = {
     ar: ["أنشئ مجلدات (حتى داخل مجلدات أخرى) بزر «مجلد جديد».", "ارفع أي ملف داخل المجلد الحالي بزر «رفع ملف».", "اضغط على مجلد للدخول إليه، وعلى الملف لتنزيله."],
     en: ["Create folders (even inside folders) with “New Folder”.", "Upload any file into the current folder.", "Tap a folder to open it, a file to download it."],
   },
+  "/app/inventory": {
+    ar: ["أنشئ الأصناف واختر التتبع بالكميات أو برقم تسلسلي لكل قطعة.", "يطلب الموظف المادة أولًا، ثم يعتمد المشرف الطلب قبل الصرف.", "عند الصرف اختر الطلب المعتمد وامسح QR بالكاميرا؛ تُسجل الحركة تلقائيًا.", "استخدم سجل الحركة للاستلام والإرجاع والتحويل بين المحطات ومراقبة الحد الأدنى."],
+    en: ["Create items and choose quantity or per-unit serial tracking.", "Employees request material first; supervisors approve before issue.", "For issue, select the approved request and scan its QR code; movement is recorded automatically.", "Use movements for receipts, returns and station transfers, and monitor minimum stock."],
+  },
   "/app/signing": {
     ar: ["احفظ توقيعك مرة واحدة (كتابة أو رسمًا) — يحصل على رقم تحقق مشفّر فريد.", "من «وقّع وأرسل» ارفع مستندًا وحدد مكان التوقيع وأرسله بالبريد لأي شخص.", "لتواقيع عدة أطراف استخدم «طلب تواقيع متعددة» — كل طرف يوقّع من رابط خاص به.", "تحقق من صحة أي مستند موقّع برقم التحقق من بطاقة «التحقق من مستند»."],
     en: ["Save your signature once (typed or drawn) — it gets a unique encrypted ID.", "Use Sign & Send: upload a document, place your signature, email it to anyone.", "For multiple parties use Multi-Sign — each signer gets their own link.", "Verify any signed document with its verification ID."],

@@ -1,0 +1,7 @@
+import React from "react";
+
+export default function MovementList({ movements, items, stations, ar }) {
+  const itemName = (id) => items.find((item) => item.id === id)?.name || "—";
+  const stationName = (id) => stations.find((station) => station.stationId === id)?.name || "—";
+  return <div className="overflow-hidden rounded-xl border border-border bg-card"><table className="mobile-cards w-full text-sm"><thead className="bg-muted/50"><tr><th className="p-3 text-start">{ar ? "الحركة" : "Type"}</th><th className="p-3 text-start">{ar ? "الصنف" : "Item"}</th><th className="p-3 text-start">{ar ? "الكمية" : "Qty"}</th><th className="p-3 text-start">{ar ? "من / إلى" : "From / To"}</th><th className="p-3 text-start">{ar ? "التاريخ" : "Date"}</th></tr></thead><tbody>{movements.map((entry) => <tr key={entry.id} className="border-t"><td data-label={ar ? "الحركة" : "Type"} className="p-3">{entry.movementType}</td><td data-label={ar ? "الصنف" : "Item"} className="p-3">{itemName(entry.itemId)}</td><td data-label={ar ? "الكمية" : "Qty"} className="p-3">{entry.quantity}</td><td data-label={ar ? "من / إلى" : "From / To"} className="p-3">{stationName(entry.fromLocationId)} / {stationName(entry.toLocationId)}</td><td data-label={ar ? "التاريخ" : "Date"} className="p-3">{new Date(entry.created_date).toLocaleString(ar ? "ar-SA" : "en")}</td></tr>)}</tbody></table>{!movements.length && <p className="p-8 text-center text-muted-foreground">{ar ? "لا توجد حركات." : "No movements."}</p>}</div>;
+}
