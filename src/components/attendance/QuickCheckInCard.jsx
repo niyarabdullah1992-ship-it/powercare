@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { getTodaysShift } from "@/lib/attendance";
+import { HQ_STATION_ID } from "@/lib/store";
 import { getAccuratePosition, startGeoWarmup } from "@/lib/geo";
 import { LogIn, LogOut, MapPin, Loader2, CheckCircle2, Navigation } from "lucide-react";
 
@@ -22,7 +23,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
   const { t } = useI18n();
   const { data } = useAuth();
   const shift = getTodaysShift(data, currentUser);
-  const station = data?.stations?.find((s) => s.id === currentUser.stationId);
+  const station = data?.stations?.find((s) => s.id === (currentUser.stationId || HQ_STATION_ID));
   const [settings, setSettings] = useState(null);
   const [attendance, setAttendance] = useState(null);
   const [coords, setCoords] = useState(null);
@@ -95,7 +96,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
         companyId: company.id,
         employeeId: currentUser.id,
         employeeName: currentUser.name,
-        stationId: currentUser.stationId || null,
+        stationId: currentUser.stationId || HQ_STATION_ID,
         lat: c?.lat, lng: c?.lng,
         accuracy: c?.accuracy ?? null,
         shiftStart: shift?.start,

@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
       if (!companyId) return [];
       const out = [];
       const unrestricted = auth?.admin || ["owner", "director", "ops_manager"].includes(auth?.role);
-      const allowedStationIds = new Set([auth?.stationId, ...(auth?.stationIds || []), ...(auth?.managedStations || [])].filter(Boolean));
+      const allowedStationIds = new Set([auth?.stationId || "hq", ...(auth?.stationIds || []), ...(auth?.managedStations || [])].filter(Boolean));
       const stations = await base44.asServiceRole.entities.Station.filter({ companyId });
       for (const st of stations) {
         if (!unrestricted && !allowedStationIds.has(st.stationId)) continue;

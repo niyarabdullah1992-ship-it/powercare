@@ -5,6 +5,7 @@ import { getTodaysShift } from "@/lib/attendance";
 import { getAccuratePosition, startGeoWarmup } from "@/lib/geo";
 import { useI18n } from "@/lib/i18n";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
+import { HQ_STATION_ID } from "@/lib/store";
 import { LogIn, LogOut, MapPin, Loader2, Clock } from "lucide-react";
 
 const STATUS_STYLE = {
@@ -20,9 +21,9 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
   const { lang } = useI18n();
   const { format } = useTimeFormat();
   const shift = getTodaysShift(data, currentUser);
-  const assignedStationIds = [currentUser?.stationId, ...(currentUser?.managedStations || [])].filter(Boolean);
-  const hasAssignedStation = assignedStationIds.length > 0;
-  const station = data?.stations?.find((s) => s.id === (shift?.stationId || currentUser.stationId || assignedStationIds[0]));
+  const assignedStationIds = [currentUser?.stationId || HQ_STATION_ID, ...(currentUser?.managedStations || [])].filter(Boolean);
+  const hasAssignedStation = assignedStationIds.some((id) => data?.stations?.some((station) => station.id === id));
+  const station = data?.stations?.find((s) => s.id === (shift?.stationId || currentUser.stationId || HQ_STATION_ID));
   const [settings, setSettings] = useState(null);
   const [attendance, setAttendance] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -70,7 +71,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         companyId: company.id,
         employeeId: currentUser.id,
         employeeName: currentUser.name,
-        stationId: currentUser.stationId || null,
+        stationId: currentUser.stationId || HQ_STATION_ID,
         lat: coords?.lat, lng: coords?.lng,
         accuracy: coords?.accuracy ?? null,
         shiftStart: shift?.start,

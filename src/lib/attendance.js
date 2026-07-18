@@ -1,5 +1,6 @@
 import { base44 } from "@/api/base44Client";
 import { isOnLeaveToday } from "@/lib/leaveTypes";
+import { HQ_STATION_ID } from "@/lib/store";
 
 // Thin helpers around the supabaseAttendance backend function, shared by the
 // check-in widget, manager dashboards, and the task-gating check in MyTasks.
@@ -39,8 +40,7 @@ export function getAttendanceStatus(employee, attRow, data) {
 // (Schedules page) — reused here instead of a separate attendance-only schedule.
 export function getTodaysShift(data, employee) {
   if (!employee?.id) return null;
-  const stationIds = [employee.stationId, ...(employee.managedStations || [])].filter(Boolean);
-  if (stationIds.length === 0) return null;
+  const stationIds = [employee.stationId || HQ_STATION_ID, ...(employee.managedStations || [])].filter(Boolean);
   const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Riyadh", weekday: "short" }).format(new Date());
   const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
   for (const stationId of stationIds) {
