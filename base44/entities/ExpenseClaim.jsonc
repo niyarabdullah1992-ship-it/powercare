@@ -14,6 +14,20 @@
     "stationId": {
       "type": "string"
     },
+    "stationIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "stationScope": {
+      "type": "string",
+      "enum": [
+        "single",
+        "selected",
+        "all"
+      ]
+    },
     "expenseType": {
       "type": "string",
       "enum": [
@@ -22,10 +36,18 @@
         "fuel",
         "overtime_meals",
         "tools_equipment",
-        "training"
+        "training",
+        "other"
       ]
     },
+    "customExpenseType": {
+      "type": "string"
+    },
     "amount": {
+      "type": "number",
+      "minimum": 0.01
+    },
+    "totalAmount": {
       "type": "number",
       "minimum": 0.01
     },
@@ -83,8 +105,11 @@
     "requesterId",
     "requesterName",
     "stationId",
+    "stationIds",
+    "stationScope",
     "expenseType",
     "amount",
+    "totalAmount",
     "currency",
     "expenseDate",
     "receiptUrl",

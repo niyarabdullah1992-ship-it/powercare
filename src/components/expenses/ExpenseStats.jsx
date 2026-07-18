@@ -1,7 +1,7 @@
 import React from "react";
 
 export default function ExpenseStats({ claims, ar }) {
-  const total = claims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
+  const total = claims.reduce((sum, claim) => sum + Number(claim.totalAmount || claim.amount || 0), 0);
   const cards = [
     [ar ? "إجمالي الطلبات" : "Total claims", claims.length],
     [ar ? "بانتظار المدير" : "Manager review", claims.filter((claim) => claim.status === "submitted").length],
