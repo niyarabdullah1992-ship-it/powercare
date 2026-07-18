@@ -10,6 +10,7 @@ import { FolderPlus, Upload, Loader2, ChevronRight, ChevronLeft, Home, Radio } f
 import FolderCard from "@/components/files/FolderCard";
 import FileRow from "@/components/files/FileRow";
 import NewFolderDialog from "@/components/files/NewFolderDialog";
+import StationFilesCard from "@/components/files/StationFilesCard";
 
 export default function Files() {
   const { t, dir, lang } = useI18n();
@@ -44,6 +45,9 @@ export default function Files() {
   const folders = childrenOf(currentId).filter((node) => node.type === "folder" && matchesStation(node));
   const files = childrenOf(currentId).filter((node) => node.type === "file" && matchesStation(node));
   const stationName = (id) => data?.stations?.find((s) => s.id === id)?.name || null;
+  const showStationFolders = !isIndividual && stationFilter === "all" && path.length === 0;
+  const activeStationName = stationFilter !== "all" && stationFilter !== "hq" ? stationName(stationFilter) : null;
+  const stationItemCount = (stationId) => nodes.filter((node) => node.stationId === stationId).length;
   const Chevron = dir === "rtl" ? ChevronLeft : ChevronRight;
 
   const handleUpload = async (e) => {
@@ -82,12 +86,13 @@ export default function Files() {
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 flex-wrap text-sm font-body">
         <button
-          onClick={() => setPath([])}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted ${path.length === 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}
+          onClick={() => { setPath([]); if (!isIndividual && !isStationScoped) setStationFilter("all"); }}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted ${path.length === 0 && !activeStationName ? "text-foreground font-medium" : "text-muted-foreground"}`}
         >
           <Home className="w-3.5 h-3.5" />
           {pageTitle}
         </button>
+        {activeStationName && <><Chevron className="w-3.5 h-3.5 text-muted-foreground" /><button onClick={() => setPath([])} className={`px-2 py-1 rounded-md hover:bg-muted ${path.length === 0 ? "text-foreground font-medium" : "text-muted-foreground"}`} dir="auto">{activeStationName}</button></>}
         {path.map((folder, i) => (
           <React.Fragment key={folder.id}>
             <Chevron className="w-3.5 h-3.5 text-muted-foreground" />
@@ -104,11 +109,11 @@ export default function Files() {
 
       {/* Toolbar */}
       <div className="flex items-center gap-2">
-        {canManageFiles && <Button variant="outline" onClick={() => setFolderDialogOpen(true)} className="font-body">
+        {canManageFiles && !showStationFolders && <Button variant="outline" onClick={() => setFolderDialogOpen(true)} className="font-body">
           <FolderPlus className="w-4 h-4 me-2" />
           {t("newFolder")}
         </Button>}
-        {canManageFiles && <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="font-body">
+        {canManageFiles && !showStationFolders && <Button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="font-body">
           {uploading ? <Loader2 className="w-4 h-4 me-2 animate-spin" /> : <Upload className="w-4 h-4 me-2" />}
           {uploading ? t("uploading") : t("uploadFileBtn")}
         </Button>}
@@ -136,8 +141,18 @@ export default function Files() {
         )}
       </div>
 
+      {/* Stations are the top-level file containers. New stations appear here automatically. */}
+      {showStationFolders && (
+        <div>
+          <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground font-body">{lang === "ar" ? "المحطات" : "Stations"}</p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {myStations.map((station) => <StationFilesCard key={station.id} station={station} count={stationItemCount(station.id)} onOpen={() => { setStationFilter(station.id); setPath([]); }} />)}
+          </div>
+        </div>
+      )}
+
       {/* Folders */}
-      {folders.length > 0 && (
+      {!showStationFolders && folders.length > 0 && (
         <div>
           <p className="text-xs uppercase tracking-wider text-muted-foreground font-body mb-2">{t("foldersLabel")}</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -156,7 +171,7 @@ export default function Files() {
       )}
 
       {/* Files */}
-      {files.length > 0 && (
+      {!showStationFolders && files.length > 0 && (
         <div>
           <p className="text-xs uppercase tracking-wider text-muted-foreground font-body mb-2">{t("attachments")}</p>
           <div className="space-y-2">
@@ -167,13 +182,13 @@ export default function Files() {
         </div>
       )}
 
-      {folders.length === 0 && files.length === 0 && (
+      {!showStationFolders && folders.length === 0 && files.length === 0 && (
         <div className="border border-dashed border-border rounded-lg py-16 text-center">
           <p className="text-sm text-muted-foreground font-body">{t("emptyFolderNote")}</p>
         </div>
       )}
 
-      {canManageFiles && <NewFolderDialog
+      {canManageFiles && !showStationFolders && <NewFolderDialog
         open={folderDialogOpen}
         onOpenChange={setFolderDialogOpen}
         onCreate={(name) => addFileFolder(company.id, {
