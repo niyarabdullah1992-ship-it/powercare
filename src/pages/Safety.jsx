@@ -8,6 +8,7 @@ import { safetyApprovalIssues } from "@/lib/safetyLogic";
 import PageHeader from "@/components/PageHeader";
 import StationSafetyCard from "@/components/safety/StationSafetyCard";
 import SafetyReportExport from "@/components/safety/SafetyReportExport";
+import SafetyExplanation from "@/components/safety/SafetyExplanation";
 import RecordSmartArchive from "@/components/RecordSmartArchive";
 
 // HSE management section: safety data is entered and approved per station here,
@@ -46,6 +47,8 @@ export default function Safety() {
         description={ar ? "أدخل بيانات السلامة لكل محطة واعتمدها — تُحسب تقارير السلامة الشهرية من البيانات المعتمدة هنا." : "Enter and approve each station's safety data — monthly HSE reports are calculated from the approved data here."}
         icon={ShieldCheck}
       />
+
+      <SafetyExplanation ar={ar} />
 
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-1.5">
