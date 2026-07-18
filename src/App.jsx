@@ -9,7 +9,6 @@ import { I18nProvider } from '@/lib/i18n';
 import { AuthProvider as PowerCareAuthProvider, useAuth as usePowerCareAuth } from '@/lib/PowerCareAuth';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import FuturisticInterfaceLayer from '@/components/FuturisticInterfaceLayer';
 
 import { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -154,7 +153,6 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <FuturisticInterfaceLayer />
           <ScrollToTop />
           <I18nProvider>
             <PowerCareAuthProvider>
