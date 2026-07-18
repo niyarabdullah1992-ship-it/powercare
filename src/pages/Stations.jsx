@@ -11,12 +11,11 @@ import StationDeleteDialog from "@/components/stations/StationDeleteDialog";
 import StationAnalyticsModal from "@/components/stations/StationAnalyticsModal";
 import StationTypeEditor from "@/components/stations/StationTypeEditor";
 import StationLocationEditor from "@/components/stations/StationLocationEditor";
-import StationExpenseLedger from "@/components/stations/StationExpenseLedger";
 import PageHeader from "@/components/PageHeader";
 
 export default function Stations() {
   const { t, lang } = useI18n();
-  const { data, currentUser, company, session } = useAuth();
+  const { data, currentUser, company } = useAuth();
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", location: "", type: "", lat: null, lng: null, radiusMeters: null });
   const [pickingNewLocation, setPickingNewLocation] = useState(false);
@@ -25,7 +24,6 @@ export default function Stations() {
   const [analyticsFor, setAnalyticsFor] = useState(null);
   const [editingTypeId, setEditingTypeId] = useState(null);
   const [editingLocationId, setEditingLocationId] = useState(null);
-  const [expensesFor, setExpensesFor] = useState(null);
 
   if (!data || !currentUser) return null;
   const stations = visibleStations(currentUser, data);
@@ -286,7 +284,7 @@ export default function Stations() {
                                   <div className="flex items-center justify-between gap-2">
                                     <div className="flex items-center gap-3"><button onClick={() => setAnalyticsFor({ key: s.id, name: s.name, members: team })} className="flex items-center gap-1 text-xs text-accent hover:underline">
                                       <BarChart3 className="w-3.5 h-3.5" /> {t("analytics")}
-                                    </button><button onClick={() => setExpensesFor(s)} className="flex items-center gap-1 text-xs text-accent hover:underline"><ReceiptText className="w-3.5 h-3.5" />{lang === "ar" ? "المصروفات" : "Expenses"}</button></div>
+                                    </button><Link to={`/app/stations/${s.id}/expenses`} className="flex items-center gap-1 text-xs text-accent hover:underline"><ReceiptText className="w-3.5 h-3.5" />{lang === "ar" ? "المصروفات" : "Expenses"}</Link></div>
                                     {canSetLocation && (
                                       <button onClick={() => setEditingLocationId(s.id)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                                         <MapPin className="w-3.5 h-3.5" /> {s.lat != null && s.lng != null ? t("editLocation") : t("setLocation")}
@@ -317,7 +315,6 @@ export default function Stations() {
           onClose={() => setAnalyticsFor(null)}
         />
       )}
-      {expensesFor && <StationExpenseLedger station={expensesFor} session={session} ar={lang === "ar"} onClose={() => setExpensesFor(null)} />}
     </div>
   );
 }
