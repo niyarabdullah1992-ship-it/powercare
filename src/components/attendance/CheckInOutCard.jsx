@@ -65,8 +65,11 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
     }
     setLoading(true);
     try {
-      const coords = settings?.emergency_active ? null : await getAccuratePosition();
-      if (!settings?.emergency_active && !coords) {
+      const settingsRes = await base44.functions.invoke("supabaseAttendance", { action: "getSettings", companyId: company.id });
+      const currentSettings = settingsRes?.data?.settings || settings;
+      setSettings(currentSettings);
+      const coords = currentSettings?.emergency_active ? null : await getAccuratePosition();
+      if (!currentSettings?.emergency_active && !coords) {
         setError(t("locationDenied"));
         setLoading(false);
         return;
@@ -98,8 +101,11 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
     setError("");
     setLoading(true);
     try {
-      const coords = settings?.emergency_active ? null : await getAccuratePosition();
-      if (!settings?.emergency_active && !coords) {
+      const settingsRes = await base44.functions.invoke("supabaseAttendance", { action: "getSettings", companyId: company.id });
+      const currentSettings = settingsRes?.data?.settings || settings;
+      setSettings(currentSettings);
+      const coords = currentSettings?.emergency_active ? null : await getAccuratePosition();
+      if (!currentSettings?.emergency_active && !coords) {
         setError(t("locationDenied"));
         setLoading(false);
         return;

@@ -81,9 +81,12 @@ export default function QuickCheckInCard({ currentUser, company }) {
     }
     setLoading(true);
     try {
-      const c = settings?.emergency_active ? null : await getAccuratePosition();
+      const settingsRes = await base44.functions.invoke("supabaseAttendance", { action: "getSettings", companyId: company.id });
+      const currentSettings = settingsRes?.data?.settings || settings;
+      setSettings(currentSettings);
+      const c = currentSettings?.emergency_active ? null : await getAccuratePosition();
       if (c) { setCoords(c); setLocState("ready"); }
-      if (!settings?.emergency_active && !c) {
+      if (!currentSettings?.emergency_active && !c) {
         setLocState("denied");
         setError(t("locationDenied"));
         setLoading(false);
@@ -115,9 +118,12 @@ export default function QuickCheckInCard({ currentUser, company }) {
     setError("");
     setLoading(true);
     try {
-      const c = settings?.emergency_active ? null : await getAccuratePosition();
+      const settingsRes = await base44.functions.invoke("supabaseAttendance", { action: "getSettings", companyId: company.id });
+      const currentSettings = settingsRes?.data?.settings || settings;
+      setSettings(currentSettings);
+      const c = currentSettings?.emergency_active ? null : await getAccuratePosition();
       if (c) { setCoords(c); setLocState("ready"); }
-      if (!settings?.emergency_active && !c) {
+      if (!currentSettings?.emergency_active && !c) {
         setLocState("denied");
         setError(t("locationDenied"));
         setLoading(false);
