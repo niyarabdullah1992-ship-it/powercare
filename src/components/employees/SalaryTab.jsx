@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { updateEmployeeProfile } from "@/lib/store";
+import { syncEmployeeSalaryToPayroll } from "@/lib/payroll";
 import { base44 } from "@/api/base44Client";
 import { Pencil, Check, FileText, Loader2, Upload } from "lucide-react";
 
@@ -26,6 +27,7 @@ export default function SalaryTab({ employee, companyId, canEdit }) {
       return;
     }
     updateEmployeeProfile(companyId, employee.id, { baseSalary, allowances, currency });
+    syncEmployeeSalaryToPayroll(companyId, employee.id);
     setError("");
     setEditing(false);
   };

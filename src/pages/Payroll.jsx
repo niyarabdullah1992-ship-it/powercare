@@ -7,7 +7,7 @@ import { printReport } from "@/lib/printReport";
 import PayrollRow from "@/components/payroll/PayrollRow";
 import PayrollTemplateCard from "@/components/payroll/PayrollTemplateCard";
 import StationMultiSelect from "@/components/payroll/StationMultiSelect";
-import { hasHRPermission, hrScopeStations } from "@/lib/permissions";
+import { canAdjustPayroll, hrScopeStations } from "@/lib/permissions";
 import { toast } from "@/components/ui/use-toast";
 
 export default function Payroll() {
@@ -17,7 +17,7 @@ export default function Payroll() {
   const [month, setMonth] = useState(monthKey());
   const [stationFilter, setStationFilter] = useState([]);
 
-  const canView = data?.ownerId === currentUser?.id || ["director", "ops_manager"].includes(currentUser?.role) || hasHRPermission(currentUser, data, "manage_payroll");
+  const canView = canAdjustPayroll(currentUser, data);
 
   useEffect(() => {
     if (canView && company) ensurePayrollRun(company.id, month);
@@ -29,19 +29,21 @@ export default function Payroll() {
 
   const run = getRun(data, month);
   const items = run?.items || [];
-  const hrScope = currentUser?.hrLevelId ? hrScopeStations(currentUser, data) : null;
+  const payrollScope = currentUser?.hrLevelId
+    ? hrScopeStations(currentUser, data)
+    : currentUser?.role === "pgm" ? (currentUser.managedStations || []) : null;
   const stationIdOf = (stationId) => stationId || data.stations?.[0]?.id || null;
-  const payrollEmployees = (data.employees || []).filter((employee) => hrScope === null || hrScope.includes(stationIdOf(employee.stationId)));
+  const payrollEmployees = (data.employees || []).filter((employee) => payrollScope === null || payrollScope.includes(stationIdOf(employee.stationId)));
   const employeeForItem = (item) => payrollEmployees.find((employee) => employee.id === item.employeeId) || {
     id: item.employeeId,
     name: item.employeeName || (ar ? "موظف سابق" : "Former employee"),
     position: item.employeePosition || "",
     stationId: stationIdOf(item.employeeStationId),
   };
-  const allowedStations = (data.stations || []).filter((station) => hrScope === null || hrScope.includes(station.id));
+  const allowedStations = (data.stations || []).filter((station) => payrollScope === null || payrollScope.includes(station.id));
   const allowedStationIds = new Set(allowedStations.map((station) => station.id));
   const selectedStationIds = stationFilter.filter((id) => allowedStationIds.has(id));
-  const scopedItems = items.filter((item) => payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (hrScope === null || hrScope.includes(stationIdOf(item.employeeStationId)))));
+  const scopedItems = items.filter((item) => payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (payrollScope === null || payrollScope.includes(stationIdOf(item.employeeStationId)))));
   const visible = selectedStationIds.length === 0 ? scopedItems : scopedItems.filter((item) => selectedStationIds.includes(stationIdOf(item.employeeStationId)));
   const selectedStationNames = allowedStations.filter((station) => selectedStationIds.includes(station.id)).map((station) => station.name);
   const stationLabel = selectedStationNames.length ? selectedStationNames.join(", ") : (ar ? "جميع المحطات" : "All stations");

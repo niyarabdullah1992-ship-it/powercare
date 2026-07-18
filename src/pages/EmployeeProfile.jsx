@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { canManageEmployees, hasHRPermission, canViewEmployeeProfile, isCompanyOwner } from "@/lib/permissions";
+import { canManageEmployees, hasHRPermission, canViewEmployeeProfile, isCompanyOwner, canAdjustPayroll } from "@/lib/permissions";
 import { getRoleLabel } from "@/lib/roles";
 import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle, Lock } from "lucide-react";
 import ProfileHero from "@/components/employees/ProfileHero";
@@ -56,7 +56,7 @@ export default function EmployeeProfile() {
   }
 
   const canManage = canManageEmployees(currentUser) || currentUser.role === "director" || currentUser.role === "ops_manager";
-  const canEditSalary = currentUser.role === "director" || hasHRPermission(currentUser, data, "manage_payroll");
+  const canEditSalary = canAdjustPayroll(currentUser, data);
   const canApproveLeave = canManage || hasHRPermission(currentUser, data, "manage_leave");
   const canApproveCerts = canManage || hasHRPermission(currentUser, data, "manage_leave");
   const stationName = data.stations.find((s) => s.id === employee.stationId)?.name;

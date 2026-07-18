@@ -17,6 +17,7 @@ export function allowedNavFor(user, data) {
   if (["ops_manager", "director"].includes(role)) {
     EXEC_EXTRA.forEach((p) => allowed.add(p));
   }
+  if (role === "pgm") allowed.add("/app/payroll");
   // Employees holding an HR position need the HR section and the employee directory.
   if (user.hrLevelId) {
     allowed.add("/app/hr");

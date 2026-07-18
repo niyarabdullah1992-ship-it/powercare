@@ -104,6 +104,15 @@ export function hasHRPermission(user, data, permKey) {
   return !!level?.permissions?.includes(permKey);
 }
 
+// Payroll adjustments are restricted to HR staff with payroll permission and
+// company roles ranked above Station Manager (PGM, Operations, Director, Owner).
+export function canAdjustPayroll(user, data) {
+  if (!user) return false;
+  return user.id === data?.ownerId
+    || (ROLE_RANK[user.role] || 0) > ROLE_RANK.station_manager
+    || hasHRPermission(user, data, "manage_payroll");
+}
+
 // Stations an HR member can act on: [] none, [stationId, ...] scoped, or null for company-wide reach.
 export function hrScopeStations(user, data) {
   if (!user?.hrLevelId) return [];

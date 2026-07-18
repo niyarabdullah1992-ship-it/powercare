@@ -16,6 +16,17 @@ export function getRun(data, month) {
 export const netOf = (i) =>
   (Number(i.base) || 0) + (Number(i.allowances) || 0) + (Number(i.bonus) || 0) - (Number(i.deductions) || 0);
 
+const itemFromEmployee = (employee) => {
+  const profile = employee.profile || {};
+  const currency = String(profile.currency || "SAR").toUpperCase();
+  return {
+    id: uid("itm"), employeeId: employee.id,
+    employeeName: employee.name, employeePosition: employee.position || employee.role || "", employeeStationId: employee.stationId || null,
+    base: Number(profile.baseSalary) || 0, allowances: Number(profile.allowances) || 0,
+    bonus: 0, deductions: 0, currency: /^[A-Z]{3}$/.test(currency) ? currency : "SAR", paid: false,
+  };
+};
+
 export function payrollItemIssues(item) {
   if (!Number.isFinite(Number(item?.base)) || Number(item.base) <= 0) return ["BASE_REQUIRED"];
   const fields = ["allowances", "bonus", "deductions"];
@@ -39,14 +50,7 @@ export function ensurePayrollRun(companyId, month) {
     (d.employees || []).forEach((employee) => {
       const hiredMonth = employee.createdAt ? monthKey(new Date(employee.createdAt)) : month;
       if (existing.has(employee.id) || hiredMonth > month) return;
-      const profile = employee.profile || {};
-      const currency = String(profile.currency || "SAR").toUpperCase();
-      run.items.push({
-        id: uid("itm"), employeeId: employee.id,
-        employeeName: employee.name, employeePosition: employee.position || employee.role || "", employeeStationId: employee.stationId || null,
-        base: Number(profile.baseSalary) || 0, allowances: Number(profile.allowances) || 0,
-        bonus: 0, deductions: 0, currency: /^[A-Z]{3}$/.test(currency) ? currency : "SAR", paid: false,
-      });
+      run.items.push(itemFromEmployee(employee));
     });
     run.items.forEach((item) => {
       if (!item.paid) {
@@ -82,6 +86,33 @@ export function syncPayrollFromProfiles(companyId, month) {
     });
   });
   return updatedCount;
+}
+
+export function syncEmployeeSalaryToPayroll(companyId, employeeId) {
+  updateCompany(companyId, (d) => {
+    const employee = (d.employees || []).find((entry) => entry.id === employeeId);
+    if (!employee) return;
+    d.payrollRuns = d.payrollRuns || [];
+    const month = monthKey();
+    let run = d.payrollRuns.find((entry) => entry.month === month);
+    if (!run) {
+      run = { id: uid("run"), month, createdAt: new Date().toISOString(), items: [] };
+      d.payrollRuns.push(run);
+    }
+    let item = run.items.find((entry) => entry.employeeId === employeeId);
+    if (!item) {
+      run.items.push(itemFromEmployee(employee));
+      return;
+    }
+    if (item.paid) return;
+    const profileItem = itemFromEmployee(employee);
+    item.base = profileItem.base;
+    item.allowances = profileItem.allowances;
+    item.currency = profileItem.currency;
+    item.employeeName = profileItem.employeeName;
+    item.employeePosition = profileItem.employeePosition;
+    item.employeeStationId = profileItem.employeeStationId;
+  });
 }
 
 export function updatePayrollItem(companyId, month, itemId, updates) {
