@@ -22,6 +22,7 @@ import CommandCenterHero from "@/components/dashboard/CommandCenterHero";
 import RiskForecastPanel from "@/components/dashboard/RiskForecastPanel";
 import DecisionQueue from "@/components/dashboard/DecisionQueue";
 import { getRiskWeights } from "@/lib/riskWeights";
+import { isOnApprovedLeave } from "@/lib/leaveTypes";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -125,9 +126,12 @@ export default function Dashboard() {
   const completed = tasks.filter((tk) => tk.status === "completed").length;
 
   const teamEmployees = visibleEmployees(currentUser, data);
-  const checkedInCount = attendanceRows.filter((r) => r.check_in_at).length;
-  const attendanceRate = teamEmployees.length ? Math.round((checkedInCount / teamEmployees.length) * 100) : 0;
-  const absentCount = Math.max(0, teamEmployees.length - checkedInCount);
+  const checkedInIds = new Set(attendanceRows.filter((row) => row.check_in_at).map((row) => row.employee_id));
+  const checkedInCount = checkedInIds.size;
+  const onLeaveCount = teamEmployees.filter((employee) => !checkedInIds.has(employee.id) && isOnApprovedLeave(employee)).length;
+  const absentCount = Math.max(0, teamEmployees.length - checkedInCount - onLeaveCount);
+  const attendanceBase = Math.max(0, teamEmployees.length - onLeaveCount);
+  const attendanceRate = attendanceBase ? Math.round((checkedInCount / attendanceBase) * 100) : 0;
   const now = Date.now();
   const delayedTasks = tasks.filter((task) => {
     const deadline = task.dueDate || task.endDate;
@@ -230,8 +234,9 @@ export default function Dashboard() {
         attendanceRate={attendanceRate}
         completed={completed}
         total={tasks.length}
-        activeMembers={checkedInCount}
-        totalMembers={teamEmployees.length}
+        presentCount={checkedInCount}
+        absentCount={absentCount}
+        onLeaveCount={onLeaveCount}
         t={t}
       />
 

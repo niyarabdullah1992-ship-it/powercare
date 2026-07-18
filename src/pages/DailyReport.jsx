@@ -3,10 +3,11 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { formatDateTime } from "@/lib/dateFormat";
-import { visibleStations, canSeeAllStations, isCompanyOwner } from "@/lib/permissions";
+import { visibleStations, canSeeAllStations, isCompanyOwner, visibleEmployees } from "@/lib/permissions";
 import { HQ_STATION_ID } from "@/lib/store";
+import { isOnApprovedLeave } from "@/lib/leaveTypes";
 import moment from "moment";
-import { FileText, ListTodo, AlertTriangle, Activity, Building2, Palette } from "lucide-react";
+import { FileText, ListTodo, AlertTriangle, Activity, Building2, Palette, UserCheck, UserX, CalendarDays } from "lucide-react";
 import ReportCard from "@/components/reports/ReportCard";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
@@ -15,6 +16,7 @@ export default function DailyReport() {
   const { t, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [targets, setTargets] = useState([]);
+  const [attendanceRows, setAttendanceRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showBranding, setShowBranding] = useState(false);
 
@@ -38,6 +40,15 @@ export default function DailyReport() {
       }
     })();
   }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (!currentUser || !data) return;
+    const ids = visibleEmployees(currentUser, data).map((employee) => employee.id);
+    if (!ids.length) { setAttendanceRows([]); return; }
+    base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: ids })
+      .then((res) => setAttendanceRows(res?.data?.rows || []))
+      .catch(() => setAttendanceRows([]));
+  }, [currentUser?.id, data?.employees?.length]);
 
   if (!data || !currentUser) return null;
 
@@ -95,6 +106,14 @@ export default function DailyReport() {
   });
   todaysActions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
+  const attendanceEmployees = visibleEmployees(currentUser, data);
+  const checkedInIds = new Set(attendanceRows.filter((row) => row.check_in_at).map((row) => row.employee_id));
+  const onLeaveCount = attendanceEmployees.filter((employee) => !checkedInIds.has(employee.id) && isOnApprovedLeave(employee)).length;
+  const attendanceStats = [
+    { icon: UserCheck, label: t("totalPresent"), value: checkedInIds.size, tone: "emerald" },
+    { icon: UserX, label: t("totalAbsent"), value: Math.max(0, attendanceEmployees.length - checkedInIds.size - onLeaveCount), tone: "red" },
+    { icon: CalendarDays, label: t("onLeaveStatus"), value: onLeaveCount, tone: "violet" },
+  ];
   const stats = [
     { icon: ListTodo, label: t("todayTasks"), value: todaysTasks.length },
     { icon: AlertTriangle, label: t("todayIssues"), value: totalIssuesToday },
@@ -131,6 +150,15 @@ export default function DailyReport() {
           onClose={() => setShowBranding(false)}
         />
       )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {attendanceStats.map((s) => (
+          <ReportCard key={s.label} className={`flex items-center gap-3 ${s.tone === "emerald" ? "border-emerald-200 bg-emerald-50" : s.tone === "red" ? "border-red-200 bg-red-50" : "border-violet-200 bg-violet-50"}`}>
+            <span className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${s.tone === "emerald" ? "bg-emerald-100 text-emerald-700" : s.tone === "red" ? "bg-red-100 text-red-700" : "bg-violet-100 text-violet-700"}`}><s.icon className="w-4 h-4" /></span>
+            <div><p className="text-2xl font-heading font-semibold">{s.value}</p><p className="text-xs text-muted-foreground font-body">{s.label}</p></div>
+          </ReportCard>
+        ))}
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {stats.map((s) => (

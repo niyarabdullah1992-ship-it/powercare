@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { isOnLeaveToday } from "@/lib/leaveTypes";
+import { isOnApprovedLeave } from "@/lib/leaveTypes";
 import { PRESENCE_OPTIONS } from "@/components/employees/PresenceStatusPicker";
 import { Users } from "lucide-react";
 
@@ -23,7 +23,7 @@ function TeamStatusPanel({ employees, t }) {
   const byEmployee = Object.fromEntries(rows.map((r) => [r.employee_id, r]));
 
   const statusFor = (emp, att) => {
-    if (isOnLeaveToday(emp)) return { labelKey: "onLeaveStatus", dot: "bg-sky-500" };
+    if (isOnApprovedLeave(emp)) return { labelKey: "onLeaveStatus", dot: "bg-violet-500" };
     if (!att?.check_in_at) return { labelKey: "attendanceStatusNotYet", dot: "bg-muted-foreground" };
     if (att.check_out_at) return { labelKey: "checkedOutStatus", dot: "bg-slate-400" };
     const presence = PRESENCE_OPTIONS.find((o) => o.key === emp.presenceStatus) || PRESENCE_OPTIONS[0];

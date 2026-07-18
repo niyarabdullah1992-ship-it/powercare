@@ -88,6 +88,13 @@ Deno.serve(async (req) => {
       const part = riyadhParts();
       return Number(part.hour) * 60 + Number(part.minute);
     };
+    const isOnApprovedLeave = (employee, date) => (employee?.leaveRequests || []).some((request) => {
+      if (request.status !== "approved") return false;
+      const useActiveWindow = request.type === "annual" && request.activeStartDate && request.activeEndDate;
+      const start = (useActiveWindow ? request.activeStartDate : request.startDate)?.slice(0, 10);
+      const end = (useActiveWindow ? request.activeEndDate : request.endDate)?.slice(0, 10);
+      return !!start && !!end && start <= date && date <= end;
+    });
     // Strict date formats — values are interpolated into PostgREST query strings,
     // so anything not matching is rejected (blocks query-parameter injection).
     const isDate = (v) => {
@@ -265,9 +272,15 @@ Deno.serve(async (req) => {
         return schedulesCache[companyId];
       };
 
+      const leaveCache = {};
       let alerted = 0;
       for (const emp of directory) {
         if (checkedIn.has(emp.employee_id) || emp.late_alert_sent_date === date || !emp.manager_id) continue;
+        if (!leaveCache[emp.company_id]) {
+          const companyEmployees = await base44.asServiceRole.entities.Employee.filter({ companyId: emp.company_id });
+          leaveCache[emp.company_id] = new Map(companyEmployees.map((employee) => [employee.employeeId, employee]));
+        }
+        if (isOnApprovedLeave(leaveCache[emp.company_id].get(emp.employee_id), date)) continue;
         const schedules = await getSchedules(emp.company_id);
         const stationSchedule = schedules.find((schedule) => schedule.stationId === emp.station_id);
         const shift = (stationSchedule?.shiftTypes || []).find((item) =>
@@ -509,8 +522,10 @@ Deno.serve(async (req) => {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=in.(${idsList})&date=gte.${month}-01&date=lte.${month}-31`, { headers });
       const rows = await res.json();
       if (!res.ok || !Array.isArray(rows)) return Response.json({ stats: [] });
+      const employeeRecords = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId });
+      const employeeById = new Map(employeeRecords.map((employee) => [employee.employeeId, employee]));
       const byEmployee = {};
-      for (const id of employeeIds) byEmployee[id] = { employeeId: id, present: 0, late: 0, excusedLate: 0, absent: 0, offDay: 0, lateMinutesSum: 0 };
+      for (const id of employeeIds) byEmployee[id] = { employeeId: id, present: 0, late: 0, excusedLate: 0, absent: 0, onLeave: 0, offDay: 0, lateMinutesSum: 0 };
       for (const r of rows) {
         const bucket = byEmployee[r.employee_id];
         if (!bucket) continue;
@@ -520,7 +535,8 @@ Deno.serve(async (req) => {
           else bucket.late++;
           bucket.lateMinutesSum += Number(r.late_minutes) || 0;
         } else if (r.status === "absent") {
-          if (!r.excused) bucket.absent++;
+          if (isOnApprovedLeave(employeeById.get(r.employee_id), r.date)) bucket.onLeave++;
+          else if (!r.excused) bucket.absent++;
         } else if (r.status === "off_day") bucket.offDay++;
       }
       const stats = Object.values(byEmployee).map((b) => {
@@ -549,9 +565,15 @@ Deno.serve(async (req) => {
       const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Riyadh", weekday: "short" }).format(new Date());
       const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
       const schedulesByCompany = {};
+      const employeesByCompany = {};
       const scheduled = [];
       for (const employee of directory) {
         if (already.has(employee.employee_id) || !employee.station_id) continue;
+        if (!employeesByCompany[employee.company_id]) {
+          const companyEmployees = await base44.asServiceRole.entities.Employee.filter({ companyId: employee.company_id });
+          employeesByCompany[employee.company_id] = new Map(companyEmployees.map((record) => [record.employeeId, record]));
+        }
+        if (isOnApprovedLeave(employeesByCompany[employee.company_id].get(employee.employee_id), date)) continue;
         if (!schedulesByCompany[employee.company_id]) {
           const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: employee.company_id, category: "schedules" });
           schedulesByCompany[employee.company_id] = blobs[0]?.payload || [];

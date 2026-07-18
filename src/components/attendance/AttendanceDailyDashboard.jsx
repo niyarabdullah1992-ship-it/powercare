@@ -5,11 +5,13 @@ import LocationMapModal from "@/components/attendance/LocationMapModal";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { useI18n } from "@/lib/i18n";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
+import { isOnApprovedLeave } from "@/lib/leaveTypes";
 
 const STATUS_STYLE = {
   present: "bg-emerald-100 text-emerald-700 border-emerald-300",
   late: "bg-amber-100 text-amber-700 border-amber-300",
   absent: "bg-red-100 text-red-700 border-red-300",
+  on_leave: "bg-violet-100 text-violet-700 border-violet-300",
   off_day: "bg-muted text-muted-foreground border-border",
   not_yet: "bg-muted text-muted-foreground border-border",
 };
@@ -55,6 +57,21 @@ export default function AttendanceDailyDashboard({ employees, currentUser, t }) 
   };
 
   const byEmployee = Object.fromEntries(rows.map((r) => [r.employee_id, r]));
+  const statusFor = (employee) => {
+    const attendance = byEmployee[employee.id];
+    if (attendance?.check_in_at) return attendance.status || "present";
+    return isOnApprovedLeave(employee) ? "on_leave" : "absent";
+  };
+  const counts = employees.reduce((total, employee) => {
+    const status = statusFor(employee);
+    if (status === "on_leave") total.onLeave++;
+    else if (status === "absent") total.absent++;
+    else total.present++;
+    return total;
+  }, { present: 0, absent: 0, onLeave: 0 });
+  const statusLabel = (status) => status === "on_leave"
+    ? t("onLeaveStatus")
+    : t(`attendanceStatus${status.charAt(0).toUpperCase()}${status.slice(1).replace(/_([a-z])/, (match, char) => char.toUpperCase())}`);
   const isPastCheckoutMissing = (r) => r?.check_in_at && !r?.check_out_at && r?.status !== "absent";
 
   return (
@@ -66,10 +83,17 @@ export default function AttendanceDailyDashboard({ employees, currentUser, t }) 
           headers={[t("employeeName"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("locationStatus")]}
           rows={employees.map((e) => {
             const r = byEmployee[e.id];
-            return [e.name, r?.status || "not_yet", r?.check_in_at ? formatTime(r.check_in_at, format, lang) : "—", r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—", r?.work_hours ?? "—", r?.location_status || "—"];
+            return [e.name, statusLabel(statusFor(e)), r?.check_in_at ? formatTime(r.check_in_at, format, lang) : "—", r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—", r?.work_hours ?? "—", r?.location_status || "—"];
           })}
         />
       </div>
+      {!loading && employees.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-center"><strong className="block text-lg text-emerald-700">{counts.present}</strong><span className="text-xs text-emerald-700">{t("totalPresent")}</span></div>
+          <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-center"><strong className="block text-lg text-red-700">{counts.absent}</strong><span className="text-xs text-red-700">{t("totalAbsent")}</span></div>
+          <div className="rounded-lg border border-violet-300 bg-violet-50 p-3 text-center"><strong className="block text-lg text-violet-700">{counts.onLeave}</strong><span className="text-xs text-violet-700">{t("onLeaveStatus")}</span></div>
+        </div>
+      )}
       {loading ? (
         <p className="text-sm text-muted-foreground font-body">…</p>
       ) : employees.length === 0 ? (
@@ -91,14 +115,14 @@ export default function AttendanceDailyDashboard({ employees, currentUser, t }) 
             <tbody>
               {employees.map((e) => {
                 const r = byEmployee[e.id];
-                const status = r?.status || "not_yet";
+                const status = statusFor(e);
                 return (
                   <tr key={e.id} className="border-b border-border/60">
                     <td className="py-2 pe-3">{e.name}</td>
                     <td className="py-2 pe-3">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className={`px-2 py-0.5 rounded-full text-xs border ${STATUS_STYLE[status]}`}>
-                          {status === "not_yet" ? t("attendanceStatusNotYet") : t(`attendanceStatus${status.charAt(0).toUpperCase()}${status.slice(1).replace(/_([a-z])/, (m, c) => c.toUpperCase())}`)}
+                          {statusLabel(status)}
                         </span>
                         {status === "late" && Number(r?.late_minutes) > 0 && (
                           <span className="text-[11px] text-amber-700">{t("lateBy")} {r.late_minutes} {t("minutesUnit")}</span>
@@ -131,7 +155,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, t }) 
                       )}
                     </td>
                     <td className="py-2 pe-3">
-                      {(status === "late" || status === "absent") && (
+                      {(status === "late" || status === "absent") && r?.id && (
                         <button
                           onClick={() => toggleExcuse(r)}
                           className={`px-2 py-1 rounded-md text-xs font-body border transition ${r?.excused ? "border-border text-muted-foreground hover:bg-muted" : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"}`}

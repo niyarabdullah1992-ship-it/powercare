@@ -31,10 +31,21 @@ export function computeDays(startDate, endDate) {
   return Math.max(1, Math.round((new Date(endDate) - new Date(startDate)) / 86400000) + 1);
 }
 
-// True if this employee has an approved leave request covering today.
+// True when an approved request covers the supplied day. Annual leave uses its
+// approval-activated window when available; every comparison is date-only and inclusive.
+export function isOnApprovedLeave(employee, date = new Date()) {
+  const day = typeof date === "string"
+    ? date.slice(0, 10)
+    : new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(date);
+  return (employee?.leaveRequests || []).some((request) => {
+    if (request.status !== "approved") return false;
+    const useActiveWindow = request.type === "annual" && request.activeStartDate && request.activeEndDate;
+    const start = (useActiveWindow ? request.activeStartDate : request.startDate)?.slice(0, 10);
+    const end = (useActiveWindow ? request.activeEndDate : request.endDate)?.slice(0, 10);
+    return !!start && !!end && start <= day && day <= end;
+  });
+}
+
 export function isOnLeaveToday(employee) {
-  const todayStr = new Date().toISOString().slice(0, 10);
-  return (employee?.leaveRequests || []).some(
-    (r) => r.status === "approved" && r.startDate <= todayStr && r.endDate >= todayStr
-  );
+  return isOnApprovedLeave(employee, new Date());
 }
