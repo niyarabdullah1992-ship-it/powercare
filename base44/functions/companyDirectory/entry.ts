@@ -607,11 +607,16 @@ Deno.serve(async (req) => {
 
     if (action === 'syncStations') {
       const { stations } = body;
-      // Station definitions and GPS boundaries are company-level configuration.
+      // Only the owner/director may add or remove station definitions. Other
+      // authorized managers may update existing station details within the UI.
       const context = await getActorContext();
       if (!context.senior) return Response.json({ ok: true, ignored: true });
-      const incoming = (Array.isArray(stations) ? stations : []).map(({ id, ...rest }) => ({ ...rest, stationId: id, companyId }));
+      const incoming = (Array.isArray(stations) ? stations : []).map(({ id, isHQ: _legacyFlag, ...rest }) => ({ ...rest, stationId: id, companyId }));
       const current = await base44.asServiceRole.entities.Station.filter({ companyId });
+      const canChangeStructure = auth.admin || auth.role === 'owner' || context.actor?.role === 'director';
+      const incomingIds = new Set(incoming.map((station) => station.stationId));
+      const structureChanged = incoming.length !== current.length || current.some((station) => !incomingIds.has(station.stationId));
+      if (structureChanged && !canChangeStructure) return Response.json({ error: 'Only the owner or director may add or remove stations' }, { status: 403 });
       await diffSync(base44.asServiceRole.entities.Station, current, incoming, 'stationId');
       await bumpSignal(base44, companyId);
       return Response.json({ ok: true });

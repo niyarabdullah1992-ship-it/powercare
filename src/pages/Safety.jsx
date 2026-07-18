@@ -2,10 +2,9 @@ import React, { useState } from "react";
 import { ShieldCheck, FileText, ClipboardCheck, Archive } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { visibleStations, canSeeAllStations, canApproveReports } from "@/lib/permissions";
+import { visibleStations, canApproveReports } from "@/lib/permissions";
 import { updateSafetyRecord, recordSafetyIncident, closeSafetyHazard, approveSafetyRecord } from "@/lib/safetyStore";
 import { safetyApprovalIssues } from "@/lib/safetyLogic";
-import { HQ_STATION_ID } from "@/lib/store";
 import PageHeader from "@/components/PageHeader";
 import StationSafetyCard from "@/components/safety/StationSafetyCard";
 import SafetyReportExport from "@/components/safety/SafetyReportExport";
@@ -22,14 +21,7 @@ export default function Safety() {
 
   if (!data || !currentUser) return null;
 
-  // The permanent HQ already exists in the station list. Only add a legacy
-  // fallback when an older company has no HQ record, then de-duplicate by id.
-  const scopedStations = visibleStations(currentUser, data);
-  const canSeeHq = canSeeAllStations(currentUser) || !currentUser.stationId || data.ownerId === currentUser.id;
-  const withLegacyHq = canSeeHq && !scopedStations.some((station) => station.id === HQ_STATION_ID || station.isHQ)
-    ? [{ id: HQ_STATION_ID, name: ar ? "المقر الرئيسي" : "Headquarters", isHQ: true }, ...scopedStations]
-    : scopedStations;
-  const stations = [...new Map(withLegacyHq.map((station) => [station.id, station])).values()];
+  const stations = visibleStations(currentUser, data);
   const canEdit = ["director", "ops_manager", "pgm", "station_manager"].includes(currentUser.role) || data.ownerId === currentUser.id;
   const canApprove = canApproveReports(currentUser) || data.ownerId === currentUser.id;
   const recFor = (sid) => (data.safety || []).find((s) => s.stationId === sid) || null;

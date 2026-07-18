@@ -14,7 +14,7 @@ export default function AttendanceLocationsPanel({ company, currentUser, t }) {
   if (!data) return null;
 
   // Full managers see every station; a station manager sees only their own.
-  const stations = canManageStations(currentUser)
+  const stations = canManageStations(currentUser, data)
     ? data.stations
     : data.stations.filter((s) => s.managerId === currentUser.id || currentUser.stationId === s.id);
 

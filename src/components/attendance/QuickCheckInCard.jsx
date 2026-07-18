@@ -3,7 +3,6 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { getTodaysShift } from "@/lib/attendance";
-import { HQ_STATION_ID } from "@/lib/store";
 import { getAccuratePosition, startGeoWarmup } from "@/lib/geo";
 import { LogIn, LogOut, MapPin, Loader2, CheckCircle2, Navigation } from "lucide-react";
 
@@ -23,7 +22,8 @@ export default function QuickCheckInCard({ currentUser, company }) {
   const { t, lang } = useI18n();
   const { data } = useAuth();
   const shift = getTodaysShift(data, currentUser);
-  const station = data?.stations?.find((s) => s.id === (currentUser.stationId || HQ_STATION_ID));
+  const scheduledStationId = shift?.stationId || currentUser.stationId || data?.stations?.[0]?.id || null;
+  const station = data?.stations?.find((s) => s.id === scheduledStationId);
   const [settings, setSettings] = useState(null);
   const [attendance, setAttendance] = useState(null);
   const [coords, setCoords] = useState(null);
@@ -61,7 +61,6 @@ export default function QuickCheckInCard({ currentUser, company }) {
 
   // Compare only with the station assigned by today's shift. Another company
   // location must still appear outside for this employee's scheduled workplace.
-  const scheduledStationId = shift?.stationId || currentUser.stationId || HQ_STATION_ID;
   const geoStations = (data?.stations || []).filter((s) => s.id === scheduledStationId && s.lat != null && s.lng != null);
   let nearest = null;
   if (coords) {
@@ -98,7 +97,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
         companyId: company.id,
         employeeId: currentUser.id,
         employeeName: currentUser.name,
-        stationId: currentUser.stationId || HQ_STATION_ID,
+        stationId: scheduledStationId,
         lat: c?.lat, lng: c?.lng,
         accuracy: c?.accuracy ?? null,
         shiftStart: shift?.start,

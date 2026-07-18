@@ -20,14 +20,15 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
     if (selected === null) setSelected(data.employees.map((e) => e.id));
   }, [data.employees]);
 
-  const stationName = (id) => data.stations.find((s) => s.id === id)?.name || t("hq");
-  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || null;
+  const defaultStationId = data.stations?.[0]?.id || null;
+  const stationName = (id) => data.stations.find((s) => s.id === (id || defaultStationId))?.name || "—";
+  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || defaultStationId;
 
   const targetStationKey = (tg) => {
     if (tg.assignment_type === "station_team") return tg.assignment_id || tg.station_id || null;
-    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || null;
-    if (tg.assignment_type === "hq_team") return "hq";
-    return tg.station_id || null;
+    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || defaultStationId;
+    if (tg.assignment_type === "hq_team") return defaultStationId;
+    return tg.station_id || defaultStationId;
   };
 
   const rows = useMemo(() => {
@@ -40,7 +41,7 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
       return {
         id: e.id,
         name: e.name,
-        station: e.stationId ? stationName(e.stationId) : t("hq"),
+        station: stationName(e.stationId || defaultStationId),
         role: getRoleLabel(company, e.role, t),
         position: e.profile?.position || "—",
         email: e.email || "—",
@@ -61,8 +62,8 @@ export default function EmployeeReportTable({ data, company, targets, t, lang })
       .filter((e) => e.name.toLowerCase().includes(search.toLowerCase()))
       .slice()
       .sort((a, b) => {
-        const stA = a.stationId ? stationName(a.stationId) : t("hq");
-        const stB = b.stationId ? stationName(b.stationId) : t("hq");
+        const stA = stationName(a.stationId || defaultStationId);
+        const stB = stationName(b.stationId || defaultStationId);
         return stA === stB ? a.name.localeCompare(b.name) : stA.localeCompare(stB);
       });
   }, [data.employees, data.stations, search, lang]);

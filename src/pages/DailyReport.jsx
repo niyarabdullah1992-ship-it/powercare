@@ -4,7 +4,6 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { formatDateTime } from "@/lib/dateFormat";
 import { visibleStations, canSeeAllStations, isCompanyOwner } from "@/lib/permissions";
-import { HQ_STATION_ID } from "@/lib/store";
 import moment from "moment";
 import { FileText, ListTodo, AlertTriangle, Activity, Building2, Palette } from "lucide-react";
 import ReportCard from "@/components/reports/ReportCard";
@@ -46,17 +45,18 @@ export default function DailyReport() {
   const myStations = visibleStations(currentUser, data);
   const stationIds = new Set(myStations.map((s) => s.id));
 
-  const stationName = (id) => data.stations.find((s) => s.id === id)?.name || "—";
+  const defaultStationId = data.stations?.[0]?.id || null;
+  const stationName = (id) => data.stations.find((s) => s.id === (id || defaultStationId))?.name || "—";
   const employeeName = (id) => data.employees.find((e) => e.id === id)?.name || "—";
-  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || HQ_STATION_ID;
+  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || defaultStationId;
 
   const targetStationKey = (tg) => {
     if (tg.assignment_type === "station_team") return tg.assignment_id || tg.station_id || null;
-    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || HQ_STATION_ID;
-    if (tg.assignment_type === "hq_team") return HQ_STATION_ID;
-    return tg.station_id || HQ_STATION_ID;
+    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || defaultStationId;
+    if (tg.assignment_type === "hq_team") return defaultStationId;
+    return tg.station_id || defaultStationId;
   };
-  const stationLabel = (key) => (key === HQ_STATION_ID ? t("hq") : key ? stationName(key) : "—");
+  const stationLabel = (key) => key ? stationName(key) : "—";
   const inScope = (key) => seesAll || stationIds.has(key);
 
   const isToday = (dateStr) => dateStr && moment(dateStr).isSame(moment(), "day");
@@ -81,7 +81,7 @@ export default function DailyReport() {
   const todaysComplaints = [
     ...(data.anonymousReports || []).map((r) => ({ ...r, kind: "anonymous" })),
     ...(data.publicReports || []).map((r) => ({ ...r, kind: "public" })),
-  ].filter((r) => inScope(r.stationId || "hq") && isToday(r.createdAt));
+  ].filter((r) => inScope(r.stationId || defaultStationId) && isToday(r.createdAt));
 
   const totalIssuesToday = todaysTaskIssues.length + todaysComplaints.length;
 
@@ -200,7 +200,7 @@ export default function DailyReport() {
                     <div key={r.id} className="p-3 rounded-lg border border-amber-200 bg-amber-50/60">
                       <div className="flex items-center justify-between gap-2 text-xs font-body text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <Building2 className="w-3 h-3" /> {r.stationId ? stationName(r.stationId) : t("hq")} · {r.kind === "anonymous" ? t("anonymous") : t("publicComplaints")}
+                          <Building2 className="w-3 h-3" /> {stationName(r.stationId || defaultStationId)} · {r.kind === "anonymous" ? t("anonymous") : t("publicComplaints")}
                         </span>
                         <span>{formatDateTime(r.createdAt, lang)}</span>
                       </div>

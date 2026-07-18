@@ -61,12 +61,13 @@ export default function TaskReportExport({ targets, t, lang, dir, stationKeyOf, 
     return { start: s, end };
   };
 
-  const stationName = (id) => (id === "hq" ? t("hq") : data?.stations.find((s) => s.id === id)?.name || "—");
+  const firstStationId = data?.stations?.[0]?.id || null;
+  const stationName = (id) => data?.stations.find((s) => s.id === (id || firstStationId))?.name || "—";
   const employeeName = (id) => data?.employees.find((e) => e.id === id)?.name || "—";
   const assigneeOf = (tg) => {
     if (tg.assignment_type === "member") return employeeName(tg.employee_id);
     if (tg.assignment_type === "station_team") return `${t("stationTeam")}: ${stationName(tg.assignment_id)}`;
-    if (tg.assignment_type === "hq_team") return t("hqTeam");
+    if (tg.assignment_type === "hq_team") return `${t("stationTeam")}: ${stationName(firstStationId)}`;
     return employeeName(tg.employee_id);
   };
   const statusLabel = (s) => ({
@@ -103,7 +104,7 @@ export default function TaskReportExport({ targets, t, lang, dir, stationKeyOf, 
   const toRow = (tg) => [
     tg.title || "—",
     tg.section || "—",
-    stationName(tg.assignment_type === "hq_team" ? "hq" : (tg.station_id || tg.assignment_id)),
+    stationName(tg.assignment_type === "hq_team" ? firstStationId : (tg.station_id || tg.assignment_id)),
     assigneeOf(tg),
     ({ urgent: t("urgent"), high: t("high"), medium: t("medium"), low: t("low") })[tg.priority] || tg.priority || "—",
     statusLabel(tg.status),
@@ -156,7 +157,6 @@ export default function TaskReportExport({ targets, t, lang, dir, stationKeyOf, 
       <div className="flex flex-wrap gap-2">
         {[
           { key: "all", name: L("كل المحطات", "All stations") },
-          { key: "hq", name: t("hq") },
           ...(data?.stations || []).map((s) => ({ key: s.id, name: s.name })),
         ].map((s) => (
           <button

@@ -19,7 +19,8 @@ export default function ExportCenter({ targets = [] }) {
   const logoUrl = data.reportBranding?.logoUrl || "";
   const companyName = data.name || company?.name || "";
 
-  const stationName = (id) => (id ? data.stations.find((s) => s.id === id)?.name || "—" : ar ? "المقر" : "HQ");
+  const defaultStationId = data.stations?.[0]?.id || null;
+  const stationName = (id) => data.stations.find((s) => s.id === (id || defaultStationId))?.name || "—";
   const employeeName = (id) => data.employees.find((e) => e.id === id)?.name || "—";
   const statusLabel = (s) => (s === "completed" ? t("completed") : s === "overdue" ? t("overdue") : t("inProgress"));
 
@@ -31,7 +32,7 @@ export default function ExportCenter({ targets = [] }) {
     {
       key: "tasks-report", icon: ListTodo, title: ar ? "تقرير المهام" : "Tasks report", count: targets.length,
       headers: [t("title"), t("station"), t("status"), t("taskCompletion"), t("priority"), t("startDate"), t("endDate")],
-      rows: targets.map((tg) => [tg.title || "—", tg.assignment_type === "hq_team" ? (ar ? "المقر" : "HQ") : stationName(tg.station_id), statusLabel(tg.status), `${tg.completed_tasks}/${tg.task_target}`, t(tg.priority), formatDate(tg.start_date, lang), formatDate(tg.end_date, lang)]),
+      rows: targets.map((tg) => [tg.title || "—", stationName(tg.assignment_type === "hq_team" ? defaultStationId : tg.station_id), statusLabel(tg.status), `${tg.completed_tasks}/${tg.task_target}`, t(tg.priority), formatDate(tg.start_date, lang), formatDate(tg.end_date, lang)]),
     },
     {
       key: "leaves-report", icon: CalendarDays, title: t("leaveRequests"), count: leaves.length,
@@ -46,7 +47,7 @@ export default function ExportCenter({ targets = [] }) {
     {
       key: "stations-report", icon: Building2, title: ar ? "تقرير المحطات" : "Stations report", count: data.stations.length,
       headers: [ar ? "المحطة" : "Station", ar ? "الموقع" : "Location", ar ? "النوع" : "Type", t("status"), ar ? "المدير" : "Manager", ar ? "عدد الموظفين" : "Employees"],
-      rows: data.stations.map((s) => [s.name, s.location || "—", s.type || "—", s.status || "—", s.managerId ? employeeName(s.managerId) : "—", data.employees.filter((e) => e.stationId === s.id).length]),
+      rows: data.stations.map((s) => [s.name, s.location || "—", s.type || "—", s.status || "—", s.managerId ? employeeName(s.managerId) : "—", data.employees.filter((e) => (e.stationId || defaultStationId) === s.id).length]),
     },
     {
       key: "performance-report", icon: Trophy, title: ar ? "تقرير الأداء والنقاط" : "Performance & points report", count: ranked.length,

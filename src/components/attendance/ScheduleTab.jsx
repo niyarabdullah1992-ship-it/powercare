@@ -6,7 +6,6 @@ import { ArrowLeft, CalendarClock } from "lucide-react";
 import StationScheduleEditor, { getMonthDates, dateKey } from "@/components/schedules/StationScheduleEditor";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
-import { HQ_STATION_ID } from "@/lib/store";
 
 // Monthly station shift schedule — now embedded as a tab inside Attendance instead of
 // a separate page, since both cover the same "who works when" concept.
@@ -29,7 +28,6 @@ export default function ScheduleTab() {
               <div className="flex items-center gap-2">
                 <CalendarClock className="w-4 h-4 text-accent" />
                 <h3 className="font-heading font-semibold">{s.name}</h3>
-                {s.id === HQ_STATION_ID && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] text-accent">HQ</span>}
               </div>
               <p className="text-sm text-muted-foreground font-body">{t("monthlySchedule")}</p>
             </button>

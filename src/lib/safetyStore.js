@@ -1,7 +1,7 @@
 import { getCompanyData, logAudit, updateCompany } from "@/lib/store";
 
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
-const stationExists = (data, stationId) => stationId === "hq" || (data?.stations || []).some((station) => station.id === stationId);
+const stationExists = (data, stationId) => (data?.stations || []).some((station) => station.id === stationId);
 const dayKey = (value) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value));
 const normalize = (value) => String(value || "").trim().toLocaleLowerCase().replace(/\s+/g, " ");
 
@@ -78,7 +78,7 @@ export function recordSafetyIncident(companyId, stationId, description, actorNam
   if (!text || !stationExists(data, stationId)) return false;
   const existing = (data.safety || []).find((item) => item.stationId === stationId);
   if ((existing?.incidentLog || []).some((item) => dayKey(item.at) === dayKey(new Date()) && normalize(item.description) === normalize(text))) return false;
-  const stationName = stationId === "hq" ? "Headquarters" : data.stations.find((station) => station.id === stationId)?.name || stationId;
+  const stationName = data.stations.find((station) => station.id === stationId)?.name || stationId;
   logAudit(companyId, "safety_incident_logged", `Safety incident logged at station "${stationName}" — ${text}.`);
   updateCompany(companyId, (current) => {
     current.safety = current.safety || [];

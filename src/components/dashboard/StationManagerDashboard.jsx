@@ -23,7 +23,8 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
   const stations = visibleStations(user, data);
   const stationIds = new Set(stations.map((s) => s.id));
 
-  const team = data.employees.filter((e) => e.stationId && stationIds.has(e.stationId));
+  const defaultStationId = data.stations?.[0]?.id || null;
+  const team = data.employees.filter((e) => stationIds.has(e.stationId || defaultStationId));
   const tasks = data.tasks.filter((tk) => stationIds.has(tk.stationId));
   const reports = data.reports.filter((r) => stationIds.has(r.stationId));
   const anon = data.anonymousReports.filter((a) => stationIds.has(a.stationId));

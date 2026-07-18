@@ -142,8 +142,8 @@ Deno.serve(async (req) => {
       if (!companyId) return [];
       const out = [];
       const unrestricted = auth?.admin || ["owner", "director", "ops_manager"].includes(auth?.role);
-      const allowedStationIds = new Set([auth?.stationId || "hq", ...(auth?.stationIds || []), ...(auth?.managedStations || [])].filter(Boolean));
       const stations = await base44.asServiceRole.entities.Station.filter({ companyId });
+      const allowedStationIds = new Set([auth?.stationId || stations[0]?.stationId, ...(auth?.stationIds || []), ...(auth?.managedStations || [])].filter(Boolean));
       for (const st of stations) {
         if (!unrestricted && !allowedStationIds.has(st.stationId)) continue;
         if (st.lat != null && st.lng != null) {
@@ -170,6 +170,32 @@ Deno.serve(async (req) => {
       }
       return { best, nearest, nearestDist: nearest?.dist ?? null };
     };
+
+    if (action === "stationDataSummary" || action === "removeStationData") {
+      if (!auth?.admin && !["owner", "director"].includes(auth?.role)) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const stationId = String(body.stationId || "");
+      const mode = body.mode;
+      const targetStationId = String(body.targetStationId || "");
+      if (!stationId) return Response.json({ error: "Missing stationId" }, { status: 400 });
+      const sourceStations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId, stationId });
+      if (!sourceStations.length) return Response.json({ error: "Station not found" }, { status: 404 });
+      if (action === "removeStationData") {
+        if (!["transfer", "delete"].includes(mode)) return Response.json({ error: "Invalid mode" }, { status: 400 });
+        if (mode === "transfer") {
+          if (!targetStationId || targetStationId === stationId) return Response.json({ error: "Invalid target station" }, { status: 400 });
+          const targetStations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId, stationId: targetStationId });
+          if (!targetStations.length) return Response.json({ error: "Target station not found" }, { status: 404 });
+        }
+      }
+      const attendanceUrl = `${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&station_id=eq.${encodeURIComponent(stationId)}`;
+      const rowsRes = await fetch(`${attendanceUrl}&select=id`, { headers });
+      const rows = await rowsRes.json();
+      if (action === "stationDataSummary") return Response.json({ attendance: Array.isArray(rows) ? rows.length : 0 });
+      if (mode === "delete") await fetch(attendanceUrl, { method: "DELETE", headers });
+      else await fetch(attendanceUrl, { method: "PATCH", headers, body: JSON.stringify({ station_id: targetStationId }) });
+      await fetch(`${SUPABASE_URL}/rest/v1/employees_directory?company_id=eq.${encodeURIComponent(auth.companyId)}&station_id=eq.${encodeURIComponent(stationId)}`, { method: "PATCH", headers, body: JSON.stringify({ station_id: mode === "transfer" ? targetStationId : null }) });
+      return Response.json({ ok: true, attendance: Array.isArray(rows) ? rows.length : 0 });
+    }
 
     if (action === "getSettings") {
       const { companyId } = body;
@@ -227,13 +253,15 @@ Deno.serve(async (req) => {
       const companyEmployees = await base44.asServiceRole.entities.Employee.filter({ companyId });
       const validManagerIds = new Set(companyEmployees.map((employee) => employee.employeeId));
       const requestedById = new Map(employees.map((employee) => [employee.id, employee]));
+      const companyStations = await base44.asServiceRole.entities.Station.filter({ companyId });
+      const defaultStationId = companyStations[0]?.stationId || null;
       const rows = companyEmployees
         .filter((employee) => requestedIds.has(employee.employeeId) && canAccessEmployee(employee))
         .map((employee) => {
           const requested = requestedById.get(employee.employeeId);
           return {
             employee_id: employee.employeeId, company_id: companyId, name: employee.name,
-            station_id: employee.stationId || null,
+            station_id: employee.stationId || defaultStationId,
             manager_id: validManagerIds.has(requested?.managerId) ? requested.managerId : null,
           };
         });
@@ -477,9 +505,11 @@ Deno.serve(async (req) => {
       const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const existingRows = await existingRes.json();
       const existing = Array.isArray(existingRows) ? existingRows[0] : null;
+      const defaultStations = employee.stationId ? [] : await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
+      const effectiveStationId = employee.stationId || defaultStations[0]?.stationId || null;
       const payload = {
         company_id: auth.companyId, employee_id: employeeId, employee_name: employee.name || "",
-        station_id: employee.stationId || "hq", date, check_in_at: new Date().toISOString(), check_out_at: null,
+        station_id: effectiveStationId, date, check_in_at: new Date().toISOString(), check_out_at: null,
         status: "present", late_minutes: 0, excused: false, early_checkout: false,
         in_zone: false, manual_override: true, override_by: auth.role === "owner" && body.managerName ? String(body.managerName).slice(0, 120) : (auth.name || "Manager"), location_status: "manual",
       };

@@ -2,19 +2,19 @@ import React, { useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { updateCompany, HQ_STATION_ID } from "@/lib/store";
+import { updateCompany } from "@/lib/store";
 import { canManageStations, visibleStations } from "@/lib/permissions";
 import { canAddStation } from "@/lib/planLimits";
 import { Link } from "react-router-dom";
-import { Plus, Radio, Building2, Users, Trash2, Pencil, Check, X, BarChart3, GripVertical, MapPin } from "lucide-react";
-import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
+import { Plus, Radio, Users, Pencil, Check, X, BarChart3, GripVertical, MapPin } from "lucide-react";
+import StationDeleteDialog from "@/components/stations/StationDeleteDialog";
 import StationAnalyticsModal from "@/components/stations/StationAnalyticsModal";
 import StationTypeEditor from "@/components/stations/StationTypeEditor";
 import StationLocationEditor from "@/components/stations/StationLocationEditor";
 import PageHeader from "@/components/PageHeader";
 
 export default function Stations() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", location: "", type: "", lat: null, lng: null, radiusMeters: null });
@@ -27,7 +27,7 @@ export default function Stations() {
 
   if (!data || !currentUser) return null;
   const stations = visibleStations(currentUser, data);
-  const canManage = canManageStations(currentUser);
+  const canManage = canManageStations(currentUser, data);
 
   const stationLimitReached = !canAddStation(company, data);
 
@@ -59,13 +59,6 @@ export default function Stations() {
     updateCompany(company.id, (d) => {
       const s = d.stations.find((x) => x.id === id);
       if (s) s.status = order[(order.indexOf(s.status) + 1) % order.length];
-    });
-  };
-
-  const removeStation = (id) => {
-    if (!canManage || id === HQ_STATION_ID) return;
-    updateCompany(company.id, (d) => {
-      d.stations = d.stations.filter((x) => x.id !== id);
     });
   };
 
@@ -126,12 +119,10 @@ export default function Stations() {
   const submitRename = () => {
     const name = renameVal.trim();
     if (!name) { setRenamingId(null); return; }
-    if (renamingId !== HQ_STATION_ID) {
-      updateCompany(company.id, (d) => {
-        const s = d.stations.find((x) => x.id === renamingId);
-        if (s) s.name = name;
-      });
-    }
+    updateCompany(company.id, (d) => {
+      const s = d.stations.find((x) => x.id === renamingId);
+      if (s) s.name = name;
+    });
     setRenamingId(null);
   };
 
@@ -157,7 +148,7 @@ export default function Stations() {
     ) : (
       <div className="flex items-center gap-1.5 group">
         <h3 className="font-heading font-semibold">{name}</h3>
-        {canManage && id !== HQ_STATION_ID && (
+        {canManage && (
           <button onClick={() => startRename(id, name)} className="p-0.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground">
             <Pencil className="w-3 h-3" />
           </button>
@@ -227,7 +218,7 @@ export default function Stations() {
                   {(provided) => (
                     <div ref={provided.innerRef} {...provided.droppableProps} className="contents">
                       {items.map((s, index) => {
-                        const team = data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === s.id);
+                        const team = data.employees.filter((e) => (e.stationId || data.stations[0]?.id) === s.id);
                         const manager = data.employees.find((e) => e.id === s.managerId);
                         const tasks = data.tasks.filter((tk) => tk.stationId === s.id);
                         // Station managers can set the GPS location of their own station.
@@ -235,7 +226,7 @@ export default function Stations() {
                         const done = tasks.filter((tk) => tk.status === "completed").length;
                         const pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
                         return (
-                          <Draggable key={s.id} draggableId={s.id} index={index} isDragDisabled={!canManage || s.id === HQ_STATION_ID}>
+                          <Draggable key={s.id} draggableId={s.id} index={index} isDragDisabled={!canManage}>
                             {(dragProvided, dragSnapshot) => (
                               <div
                                 ref={dragProvided.innerRef}
@@ -244,16 +235,15 @@ export default function Stations() {
                               >
                                 <div className="flex items-start justify-between">
                                   <div className="flex items-center gap-2">
-                                    {canManage && s.id !== HQ_STATION_ID && (
+                                    {canManage && (
                                       <span {...dragProvided.dragHandleProps} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0">
                                         <GripVertical className="w-4 h-4" />
                                       </span>
                                     )}
-                                    {s.id === HQ_STATION_ID ? <Building2 className="w-4 h-4 text-accent shrink-0" strokeWidth={1.75} /> : <Radio className="w-4 h-4 text-accent shrink-0" strokeWidth={1.75} />}
+                                    <Radio className="w-4 h-4 text-accent shrink-0" strokeWidth={1.75} />
                                     <div>
                                       <div className="flex items-center gap-2">
                                         {renameField(s.id, s.name)}
-                                        {s.id === HQ_STATION_ID && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-body text-accent">{t("hq")}</span>}
                                       </div>
                                       {editingTypeId === s.id ? (
                                         <StationTypeEditor t={t} onSave={(val) => saveType(s.id, val)} onCancel={() => setEditingTypeId(null)} />
@@ -273,16 +263,7 @@ export default function Stations() {
                                     <button onClick={() => cycleStatus(s.id)} disabled={!canManage} className={`px-2 py-0.5 rounded-full text-[10px] font-body ${statusTone(s.status)} ${canManage ? "cursor-pointer" : "cursor-default"}`}>
                                       {s.status}
                                     </button>
-                                    {canManage && s.id !== HQ_STATION_ID && (
-                                      <ConfirmDeleteDialog
-                                        onConfirm={() => removeStation(s.id)}
-                                        trigger={
-                                          <button className="p-1 rounded-md hover:bg-destructive/10 text-destructive" title={t("delete")}>
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                          </button>
-                                        }
-                                      />
-                                    )}
+                                    {canManage && <StationDeleteDialog station={s} stations={data.stations} data={data} company={company} lang={lang} />}
                                   </div>
                                 </div>
                                 <div className="flex items-center justify-between text-sm font-body">

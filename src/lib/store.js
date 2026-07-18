@@ -7,21 +7,9 @@ import { sendEmailAlert } from "./emailAlerts";
 const REGISTRY_KEY = "powercare_registry";
 const COMPANY_PREFIX = "powercare_company_";
 const SESSION_KEY = "powercare_session";
+// Legacy identifier retained only so older stored records can be migrated safely.
+// It no longer creates, protects, sorts, or otherwise privileges any station.
 export const HQ_STATION_ID = "hq";
-
-const createHQStation = () => ({
-  id: HQ_STATION_ID,
-  name: "HQ",
-  isHQ: true,
-  location: "",
-  type: "Headquarters",
-  status: "active",
-  managerId: null,
-  lat: null,
-  lng: null,
-  radiusMeters: null,
-  createdAt: new Date().toISOString(),
-});
 
 /* ----------------------------- helpers ----------------------------- */
 function read(key, fallback) {
@@ -77,7 +65,7 @@ export function logAudit(companyId, action, details) {
 function getStationHRManager(data, employeeId) {
   const emp = data.employees.find((e) => e.id === employeeId);
   if (!emp) return null;
-  const employeeStationId = emp.stationId || HQ_STATION_ID;
+  const employeeStationId = emp.stationId || data.stations?.[0]?.id || null;
   const groups = groupLevelsByOrder(data.hrLevels || []);
   for (const group of groups) {
     if (!group.manager) continue;
@@ -252,7 +240,7 @@ function emptyCompanyData(meta) {
     plan: meta.plan,
     directorId: null,   // user id of Operations Director
     ownerId: null,     // user id owning the company account
-    stations: [createHQStation()],
+    stations: [],
     employees: [],
     tasks: [],
     reports: [],
@@ -282,21 +270,6 @@ export function getCompanyData(id) {
   return read(companyKey(id), null);
 }
 
-export function ensureHQStation(companyId) {
-  const data = getCompanyData(companyId);
-  if (!data) return null;
-  const existing = (data.stations || []).find((station) => station.id === HQ_STATION_ID || String(station.name || "").trim().toUpperCase() === "HQ");
-  if (existing?.isHQ && data.stations[0]?.id === existing.id) return existing;
-  updateCompany(companyId, (draft) => {
-    draft.stations = draft.stations || [];
-    const hq = draft.stations.find((station) => station.id === HQ_STATION_ID || String(station.name || "").trim().toUpperCase() === "HQ");
-    if (hq) hq.isHQ = true;
-    else draft.stations.unshift(createHQStation());
-    draft.stations.sort((a, b) => Number(b.id === HQ_STATION_ID || b.isHQ) - Number(a.id === HQ_STATION_ID || a.isHQ));
-  });
-  return getCompanyData(companyId)?.stations?.[0] || null;
-}
-
 // Persists authoritative cloud reads into the local cache without re-uploading
 // them or emitting a write event, preventing stale local data from resurfacing.
 export function cacheCloudData(companyId, updates) {
@@ -304,10 +277,6 @@ export function cacheCloudData(companyId, updates) {
   if (!current) return;
   localStorage.setItem(companyKey(companyId), JSON.stringify({ ...current, ...updates }));
 }
-// Tracks when this browser last wrote to a company's data, so the periodic
-// cross-device poll (see PowerCareAuth.jsx) can avoid overwriting a very
-// fresh local edit with a stale cloud copy that hasn't finished syncing yet —
-// a simple "recent local edits win" conflict-resolution rule.
 const lastLocalWriteAt = {};
 export function getLastLocalWriteAt(companyId) {
   return lastLocalWriteAt[companyId] || 0;
@@ -325,13 +294,6 @@ function scheduleCompanyPush(id, data) {
 function saveCompanyData(id, data) {
   data.employees = dedupeEmployees(data.employees);
   data.stations = data.stations || [];
-  let hq = data.stations.find((station) => station.id === HQ_STATION_ID || String(station.name || "").trim().toUpperCase() === "HQ");
-  if (!hq) {
-    hq = createHQStation();
-    data.stations.unshift(hq);
-  }
-  hq.isHQ = true;
-  data.stations.sort((a, b) => Number(b.id === HQ_STATION_ID || b.isHQ) - Number(a.id === HQ_STATION_ID || a.isHQ));
   lastLocalWriteAt[id] = Date.now();
   write(companyKey(id), data);
   scheduleCompanyPush(id, data);
@@ -356,10 +318,7 @@ function pushCompanyDataToCloud(id, data) {
   }]);
 }
 
-/* ----------------------------- sync retry loop -----------------------------
-   Cloud-first hardening: a failed background sync is no longer silently dropped.
-   The company is marked dirty and the loop below re-pushes its latest snapshot
-   every few seconds until the cloud write succeeds. */
+/* ----------------------------- sync retry loop ----------------------------- */
 const pendingResync = new Set();
 const syncHealth = { lastSyncedAt: null };
 export function getSyncStatus() {
@@ -509,7 +468,6 @@ export async function hydrateStationsFromEntity(companyId) {
       lat: r.lat,
       lng: r.lng,
       radiusMeters: r.radiusMeters,
-      isHQ: r.stationId === HQ_STATION_ID,
       createdAt: r.created_date,
     }));
   } catch {
@@ -866,7 +824,7 @@ function emailNewEvents(companyId, data, before) {
     if (before.tasks.has(t.id) || !t.assignedTo) return;
     const emp = (data.employees || []).find((e) => e.id === t.assignedTo);
     if (emp?.email) {
-      const station = (data.stations || []).find((s) => s.id === (t.stationId || HQ_STATION_ID));
+      const station = (data.stations || []).find((s) => s.id === (t.stationId || data.stations?.[0]?.id));
       const priorityLabels = { high: "عالية · High", medium: "متوسطة · Medium", low: "منخفضة · Low" };
       const deadline = t.dueDate || t.endDate;
       const details = [
@@ -889,7 +847,7 @@ function emailNewEvents(companyId, data, before) {
     ...(data.publicReports || []).filter((r) => !before.pubIds.has(r.id)),
   ];
   newReports.forEach((r) => {
-    const station = (data.stations || []).find((s) => s.id === (r.stationId || HQ_STATION_ID));
+    const station = (data.stations || []).find((s) => s.id === (r.stationId || data.stations?.[0]?.id));
     const manager = (data.employees || []).find((e) => e.id === station?.managerId);
     const toEmail = manager?.email || getCompanyMeta(companyId)?.ownerEmail;
     if (toEmail) {

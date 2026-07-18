@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { addNotification, addPoints, HQ_STATION_ID } from "@/lib/store";
+import { addNotification, addPoints } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { PRIORITY_POINTS } from "@/lib/rewards";
 import { handlersForLevel, hasHandlerAtLevel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
@@ -40,6 +40,7 @@ const DATE_PRESETS = [
 ];
 
 const PRIORITY_WEIGHT = { urgent: 0, high: 1, medium: 2, low: 3 };
+const PERSONAL_WORKSPACE_ID = "hq"; // Legacy backend room used only by Individual plans.
 
 export default function MyTasks() {
   const { t, dir, lang } = useI18n();
@@ -136,7 +137,7 @@ export default function MyTasks() {
 
   // Individuals go straight into their personal folder browser and self-assign tasks.
   useEffect(() => {
-    if (isIndividual) { setSelectedStation("hq"); setAssignType("hq_team"); }
+    if (isIndividual) { setSelectedStation(PERSONAL_WORKSPACE_ID); setAssignType("hq_team"); }
   }, [isIndividual]);
 
   const fetchFolders = async () => {
@@ -161,7 +162,7 @@ export default function MyTasks() {
   // Re-tapping the Tasks bottom tab resets the station/folder browser to root.
   useEffect(() => {
     const onReset = (e) => {
-      if (e.detail === "/app/tasks") { setSelectedStation(isIndividual ? "hq" : null); setFolderPath(null); }
+      if (e.detail === "/app/tasks") { setSelectedStation(isIndividual ? PERSONAL_WORKSPACE_ID : null); setFolderPath(null); }
     };
     window.addEventListener("powercare:tab-reset", onReset);
     return () => window.removeEventListener("powercare:tab-reset", onReset);
@@ -352,14 +353,13 @@ export default function MyTasks() {
 
   if (!data || !currentUser) return null;
 
-  const stationName = (id) => data.stations.find((s) => s.id === (id || HQ_STATION_ID))?.name || "—";
+  const firstStationId = data.stations?.[0]?.id || null;
+  const stationName = (id) => data.stations.find((s) => s.id === id)?.name || "—";
   const employeeName = (id) => data.employees.find((e) => e.id === id)?.name || "—";
 
-  const memberCandidates = formStation === HQ_STATION_ID
-    ? data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === HQ_STATION_ID)
-    : formStation
-      ? data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === formStation)
-      : data.employees;
+  const memberCandidates = formStation
+    ? data.employees.filter((e) => (e.stationId || firstStationId) === formStation)
+    : data.employees;
 
   const computeDates = () => {
     const start = new Date();
@@ -398,7 +398,7 @@ export default function MyTasks() {
       employeeId = fd.get("assignedTo");
       if (!employeeId) { alert(t("selectEmployee")); return; }
       const emp = data.employees.find((x) => x.id === employeeId);
-      stationId = emp?.stationId || HQ_STATION_ID;
+      stationId = emp?.stationId || firstStationId;
       assignmentId = employeeId;
     } else if (aType === "station_team") {
       stationId = fd.get("stationId");
@@ -437,7 +437,7 @@ export default function MyTasks() {
       // Remember these choices for the next task (smart pre-fill).
       saveSmartDefaults(`task_${currentUser.id}`, { assignType: aType, formStation, priority, datePreset });
       if (section) {
-        ensureFolder(section, aType === "hq_team" ? "hq" : stationId);
+        ensureFolder(section, aType === "hq_team" ? PERSONAL_WORKSPACE_ID : stationId);
       }
       if (aType === "member" && employeeId) {
         addNotification(company.id, employeeId, `${t("setTarget")}: ${title} — ${total} ${t("tasksUnit")}.`);
@@ -540,9 +540,9 @@ export default function MyTasks() {
         if (tg.assignment_type === "member" && tg.employee_id) {
           recipients = [tg.employee_id];
         } else if (tg.assignment_type === "station_team") {
-          recipients = data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === tg.assignment_id).map((e) => e.id);
-        } else if (tg.assignment_type === "hq_team") {
-          recipients = data.employees.filter((e) => !e.stationId).map((e) => e.id);
+          recipients = data.employees.filter((e) => (e.stationId || firstStationId) === tg.assignment_id).map((e) => e.id);
+          } else if (tg.assignment_type === "hq_team") {
+          recipients = data.employees.filter((e) => (e.stationId || firstStationId) === firstStationId).map((e) => e.id);
         }
         for (const rid of recipients) {
           addPoints(company.id, rid, pts, `${t("taskCompleted")}: ${tg.title || ""}`);
@@ -680,21 +680,21 @@ export default function MyTasks() {
     canCreateTasks(currentUser) &&
     (tg.manager_id === currentUser.id ||
       canSeeAllStations(currentUser) ||
-      (currentUser.role === "station_manager" && targetStationKey(tg) === (currentUser.stationId || HQ_STATION_ID)) ||
+      (currentUser.role === "station_manager" && targetStationKey(tg) === (currentUser.stationId || firstStationId)) ||
       // Escalated dispute: the next-level HR handler also gains review rights on this task.
       ((tg.escalation_level || 0) > 0 && handlersForLevel(Math.min(tg.escalation_level, STAGE_COUNT - 1), { stationId: targetStationKey(tg) }, data).some((h) => h.id === currentUser.id)));
 
   const assignmentLabel = (tg) => {
     if (tg.assignment_type === "member") return <>{t("member")}: <EmployeeNameLink employeeId={tg.employee_id} employeeName={employeeName(tg.employee_id)} /></>;
     if (tg.assignment_type === "station_team") return `${t("stationTeam")}: ${stationName(tg.assignment_id)}`;
-    if (tg.assignment_type === "hq_team") return t("hqTeam");
+    if (tg.assignment_type === "hq_team") return `${t("stationTeam")}: ${stationName(firstStationId)}`;
     return <EmployeeNameLink employeeId={tg.employee_id} employeeName={employeeName(tg.employee_id)} />;
   };
 
   const canLog = (tg) => {
     if (tg.assignment_type === "member") return tg.employee_id === currentUser.id;
-    if (tg.assignment_type === "station_team") return tg.assignment_id === (currentUser.stationId || HQ_STATION_ID);
-    if (tg.assignment_type === "hq_team") return (currentUser.stationId || HQ_STATION_ID) === HQ_STATION_ID;
+    if (tg.assignment_type === "station_team") return tg.assignment_id === (currentUser.stationId || firstStationId);
+    if (tg.assignment_type === "hq_team") return (currentUser.stationId || firstStationId) === firstStationId;
     return tg.employee_id === currentUser.id;
   };
 
@@ -708,12 +708,12 @@ export default function MyTasks() {
   })[val] || val;
 
   // Group targets by station
-  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || HQ_STATION_ID;
+  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || firstStationId;
   const targetStationKey = (tg) => {
-    if (tg.assignment_type === "station_team") return tg.assignment_id || tg.station_id || HQ_STATION_ID;
-    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || HQ_STATION_ID;
-    if (tg.assignment_type === "hq_team") return HQ_STATION_ID;
-    return tg.station_id || HQ_STATION_ID;
+    if (tg.assignment_type === "station_team") return tg.assignment_id || tg.station_id || firstStationId;
+    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || firstStationId;
+    if (tg.assignment_type === "hq_team") return firstStationId;
+    return tg.station_id || firstStationId;
   };
   const groupMap = {};
   for (const tg of targets) {
@@ -722,7 +722,7 @@ export default function MyTasks() {
     groupMap[key].count++;
   }
   const visible = visibleStations(currentUser, data);
-  const stationGroups = visible.map((s) => ({ key: s.id, name: s.name, count: groupMap[s.id]?.count || 0, isHQ: s.id === HQ_STATION_ID }));
+  const stationGroups = visible.map((s) => ({ key: s.id, name: s.name, count: groupMap[s.id]?.count || 0 }));
   const stationTargetsAll = selectedStation ? targets.filter((tg) => targetStationKey(tg) === selectedStation) : [];
   const allStationFolders = withAncestors([
     ...folders.filter((f) => f.station_id === selectedStation).map((f) => f.path),
@@ -730,7 +730,7 @@ export default function MyTasks() {
   ]);
   // Only show sections that belong to the station/team currently selected in the form —
   // otherwise every section from every station across the company piles up in one list.
-  const sectionScopeKey = assignType === "hq_team" ? "hq" : (formStation || null);
+  const sectionScopeKey = assignType === "hq_team" ? PERSONAL_WORKSPACE_ID : (formStation || null);
   const existingSections = sectionScopeKey
     ? Array.from(new Set([
         ...targets.filter((tg) => tg.section && targetStationKey(tg) === sectionScopeKey).map((tg) => tg.section),
@@ -741,7 +741,7 @@ export default function MyTasks() {
     { key: NO_SECTION, name: t("noSection") },
     ...allStationFolders.map((p) => ({ key: p, name: p })),
   ];
-  const selectedStationName = selectedStation === HQ_STATION_ID ? t("hq") : stationName(selectedStation);
+  const selectedStationName = stationName(selectedStation);
   const hasAnyContent = folders.filter((f) => f.station_id === selectedStation).length > 0 || stationTargetsAll.length > 0;
 
   const isDueToday = (tg) => {
@@ -866,7 +866,6 @@ export default function MyTasks() {
               {[
                 { val: "member", label: t("member"), icon: User },
                 { val: "station_team", label: t("stationTeam"), icon: Users },
-                { val: "hq_team", label: t("hqTeam"), icon: Building2 },
               ].map(({ val, label, icon: OptIcon }) => (
                 <button
                   key={val}
@@ -892,7 +891,7 @@ export default function MyTasks() {
                 placeholder={t("all")}
                 options={[
                   { value: "", label: t("all") },
-                  ...data.stations.map((s) => ({ value: s.id, label: s.id === HQ_STATION_ID ? `${s.name} · ${t("hq")}` : s.name })),
+                  ...data.stations.map((s) => ({ value: s.id, label: s.name })),
                 ]}
               />
               <MobileSelect
@@ -901,7 +900,7 @@ export default function MyTasks() {
                 placeholder={t("selectEmployee")}
                 options={memberCandidates
                   .filter((e) => e.role === "employee" || e.role === "station_manager")
-                  .map((e) => ({ value: e.id, label: `${e.name} — ${e.stationId ? stationName(e.stationId) : t("hq")}` }))}
+                  .map((e) => ({ value: e.id, label: `${e.name} — ${stationName(e.stationId || firstStationId)}` }))}
               />
             </div>
           )}
@@ -919,9 +918,6 @@ export default function MyTasks() {
             </>
           )}
 
-          {assignType === "hq_team" && !isIndividual && (
-            <p className="text-xs text-muted-foreground font-body">{t("hqTeamNote")}</p>
-          )}
 
           {/* Section — searchable existing folders or a new section name */}
           <div>
@@ -1062,7 +1058,7 @@ export default function MyTasks() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                      {g.isHQ ? <Building2 className="w-4 h-4 text-accent" /> : <Radio className="w-4 h-4" />}
+                      <Radio className="w-4 h-4" />
                     </div>
                     <div>
                       <p className="text-sm font-medium font-body">{g.name}</p>

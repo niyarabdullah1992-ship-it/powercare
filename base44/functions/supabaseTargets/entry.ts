@@ -136,6 +136,7 @@ Deno.serve(async (req) => {
       return false;
     };
     const canManageTarget = (tg) => !!tg && canManageStation(targetStationId(tg));
+    const canManageStations = !!auth?.admin || ["owner", "director"].includes(auth?.role);
     // ---- Identity boundary: callers may only act/read as themselves ----
     let companyMetaCache;
     const getCompanyMeta = async () => {
@@ -192,6 +193,50 @@ Deno.serve(async (req) => {
       if (!scope.employeeIds.has(otherUserId)) return null;
       return `${auth.companyId}_dm_${[auth.userId, otherUserId].sort().join("_")}`;
     };
+    if (action === "stationDataSummary" || action === "removeStationData") {
+      if (!canManageStations) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const stationId = String(body.stationId || "");
+      const mode = body.mode;
+      const targetStationIdValue = String(body.targetStationId || "");
+      if (!stationId) return Response.json({ error: "Missing stationId" }, { status: 400 });
+      const sourceStations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId, stationId });
+      if (!sourceStations.length) return Response.json({ error: "Station not found" }, { status: 404 });
+      if (action === "removeStationData") {
+        if (!["transfer", "delete"].includes(mode)) return Response.json({ error: "Invalid mode" }, { status: 400 });
+        if (mode === "transfer") {
+          if (!targetStationIdValue || targetStationIdValue === stationId) return Response.json({ error: "Invalid target station" }, { status: 400 });
+          const targetStations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId, stationId: targetStationIdValue });
+          if (!targetStations.length) return Response.json({ error: "Target station not found" }, { status: 404 });
+        }
+      }
+      const targetRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?order=created_at.desc`, { headers });
+      const allTargets = await targetRes.json();
+      const scope = await getCompanyScope();
+      const linkedTargets = (Array.isArray(allTargets) ? allTargets : []).filter((target) => targetInScope(target, scope) && targetStationId(target) === stationId);
+      const sourceRoom = stationId === "hq" ? `${auth.companyId}_hq` : stationId;
+      const folderRes = await fetch(`${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(sourceRoom)}`, { headers });
+      const folders = await folderRes.json();
+      if (action === "stationDataSummary") return Response.json({ openTasks: linkedTargets.filter((target) => target.status !== "completed").length, folders: Array.isArray(folders) ? folders.length : 0 });
+      for (const target of linkedTargets) {
+        const url = `${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(target.id)}`;
+        if (mode === "delete") await fetch(url, { method: "DELETE", headers });
+        else {
+          const patch = target.assignment_type === "station_team" || target.assignment_type === "hq_team"
+            ? { assignment_type: "station_team", assignment_id: targetStationIdValue, station_id: targetStationIdValue }
+            : { station_id: targetStationIdValue };
+          await fetch(url, { method: "PATCH", headers, body: JSON.stringify(patch) });
+        }
+      }
+      if (Array.isArray(folders) && folders.length) {
+        if (mode === "delete") await fetch(`${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(sourceRoom)}`, { method: "DELETE", headers });
+        else {
+          const targetRoom = targetStationIdValue === "hq" ? `${auth.companyId}_hq` : targetStationIdValue;
+          await fetch(`${SUPABASE_URL}/rest/v1/task_folders?station_id=eq.${encodeURIComponent(sourceRoom)}`, { method: "PATCH", headers, body: JSON.stringify({ station_id: targetRoom }) });
+        }
+      }
+      return Response.json({ ok: true, tasks: linkedTargets.length, folders: Array.isArray(folders) ? folders.length : 0 });
+    }
+
     if (action === "listTargets") {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?order=created_at.desc`, { headers });
       let rows = await res.json();
@@ -260,7 +305,8 @@ Deno.serve(async (req) => {
         return Response.json({ targets: rows });
       }
       // Employee: filter by assignment type (identity from the session, not the body)
-      const myStation = auth.stationId || null;
+      const employeeScope = await getCompanyScope();
+      const myStation = auth.stationId || employeeScope.stationIds.values().next().value || null;
       const filtered = rows.filter((tg) => {
         if (tg.assignment_type === "member") return tg.employee_id === auth.userId;
         if (tg.assignment_type === "station_team") return tg.assignment_id === myStation;
@@ -294,7 +340,7 @@ Deno.serve(async (req) => {
       let resolvedStationId = stationId || null;
       if (aType === "member") {
         const assigned = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId });
-        resolvedStationId = assigned[0]?.stationId || null;
+        resolvedStationId = assigned[0]?.stationId || companyScope.stationIds.values().next().value || null;
       } else if (aType === "station_team") resolvedStationId = assignmentId;
       else resolvedStationId = "hq";
       if (!canManageStation(resolvedStationId)) return Response.json({ error: "Assignment is outside your management scope" }, { status: 403 });

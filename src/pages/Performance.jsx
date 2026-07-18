@@ -3,7 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { badgeFor, nextBadge, getBadges } from "@/lib/rewards";
 import { getRoleLabel } from "@/lib/roles";
-import { Trophy, Medal, Crown, Users, Building2, Award } from "lucide-react";
+import { Trophy, Medal, Crown, Users, Award } from "lucide-react";
 import PerformanceAnalytics from "@/components/performance/PerformanceAnalytics";
 import MonthlyTrends from "@/components/performance/MonthlyTrends";
 import BadgeLegend from "@/components/performance/BadgeLegend";
@@ -14,7 +14,6 @@ import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { isCompanyOwner } from "@/lib/permissions";
 import { Palette } from "lucide-react";
-import { HQ_STATION_ID } from "@/lib/store";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 export default function Performance() {
@@ -28,7 +27,8 @@ export default function Performance() {
   const canBrand = isCompanyOwner(currentUser, data) || currentUser.role === "director";
 
   const badges = getBadges(company);
-  const stationName = (id) => data.stations.find((s) => s.id === (id || HQ_STATION_ID))?.name || t("hq");
+  const defaultStationId = data.stations?.[0]?.id || null;
+  const stationName = (id) => data.stations.find((s) => s.id === (id || defaultStationId))?.name || "—";
   const roleLabel = (e) => e.customTitle || getRoleLabel(company, e.role, t);
 
   // Regular employees see only their own station's team — so every member can
@@ -36,23 +36,20 @@ export default function Performance() {
   const isManager = currentUser.role !== "employee";
   const scopedEmployees = isManager
     ? data.employees
-    : data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === (currentUser.stationId || HQ_STATION_ID));
+    : data.employees.filter((e) => (e.stationId || defaultStationId) === (currentUser.stationId || defaultStationId));
 
   const ranked = [...scopedEmployees]
     .map((e) => ({ ...e, points: e.points || 0 }))
     .sort((a, b) => b.points - a.points);
 
   const stationTotals = data.stations
-    .filter((station) => station.id !== HQ_STATION_ID)
     .map((s) => {
-      const members = data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === s.id);
+      const members = data.employees.filter((e) => (e.stationId || defaultStationId) === s.id);
       const total = members.reduce((sum, e) => sum + (e.points || 0), 0);
       return { ...s, points: total, memberCount: members.length };
     })
     .sort((a, b) => b.points - a.points);
 
-  const hqMembers = data.employees.filter((e) => (e.stationId || HQ_STATION_ID) === HQ_STATION_ID);
-  const hqTotal = hqMembers.reduce((sum, e) => sum + (e.points || 0), 0);
 
   const rankIcon = (i) =>
     i === 0 ? <Crown className="w-4 h-4 text-yellow-500" /> :
@@ -69,7 +66,7 @@ export default function Performance() {
           </h1>
           {!isManager && (
             <p className="text-sm text-muted-foreground font-body mt-1">
-              {t("myStation")}: {stationName(currentUser.stationId || HQ_STATION_ID)}
+              {t("myStation")}: {stationName(currentUser.stationId || defaultStationId)}
             </p>
           )}
         </div>
@@ -153,7 +150,7 @@ export default function Performance() {
           <ComparisonExportButtons
             title={view === "achievements" ? t("achievementsBoard") : t("individualRanking")}
             headers={["#", t("employeeName"), t("station"), t("points")]}
-            rows={ranked.map((e, i) => [i + 1, e.name, stationName(e.stationId || HQ_STATION_ID), e.points])}
+            rows={ranked.map((e, i) => [i + 1, e.name, stationName(e.stationId || defaultStationId), e.points])}
           />
         </div>
       )}
@@ -162,7 +159,7 @@ export default function Performance() {
           <ComparisonExportButtons
             title={t("stationRanking")}
             headers={["#", t("stations"), t("members"), t("points")]}
-            rows={[{ name: t("hq"), points: hqTotal, memberCount: hqMembers.length }, ...stationTotals].map((s, i) => [i + 1, s.name, s.memberCount, s.points])}
+            rows={stationTotals.map((s, i) => [i + 1, s.name, s.memberCount, s.points])}
           />
         </div>
       )}
@@ -198,7 +195,7 @@ export default function Performance() {
                       <span className="text-[10px] text-muted-foreground">{roleLabel(e)}</span>
                     </div>
                     <p className="text-xs text-muted-foreground font-body">
-                      {stationName(e.stationId || HQ_STATION_ID)}
+                      {stationName(e.stationId || defaultStationId)}
                     </p>
                     {next && (
                       <div className="mt-1.5">
@@ -230,10 +227,7 @@ export default function Performance() {
         <div className="space-y-5">
           {/* Podium for top 3 */}
           {(() => {
-            const all = [
-              { key: "hq", name: t("hq"), points: hqTotal, memberCount: hqMembers.length, isHq: true },
-              ...stationTotals.map((s) => ({ key: s.id, name: s.name, points: s.points, memberCount: s.memberCount, isHq: false })),
-            ].filter((x) => x.memberCount > 0 || x.points > 0)
+            const all = stationTotals.map((s) => ({ key: s.id, name: s.name, points: s.points, memberCount: s.memberCount })).filter((x) => x.memberCount > 0 || x.points > 0)
               .sort((a, b) => b.points - a.points);
             const top3 = all.slice(0, 3);
             const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
@@ -271,10 +265,7 @@ export default function Performance() {
           {/* Full leaderboard */}
           <div className="space-y-2">
             {(() => {
-              const all = [
-                { key: "hq", name: t("hq"), points: hqTotal, memberCount: hqMembers.length, isHq: true },
-                ...stationTotals.map((s) => ({ key: s.id, name: s.name, points: s.points, memberCount: s.memberCount, isHq: false })),
-              ].sort((a, b) => b.points - a.points);
+              const all = stationTotals.map((s) => ({ key: s.id, name: s.name, points: s.points, memberCount: s.memberCount })).sort((a, b) => b.points - a.points);
               return all.map((team, i) => (
                 <div
                   key={team.key}
@@ -284,7 +275,7 @@ export default function Performance() {
                     {i < 3 ? <span className="text-base">{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}</span> : <span className="text-xs text-muted-foreground">{i + 1}</span>}
                   </div>
                   <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center shrink-0">
-                    {team.isHq ? <Building2 className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+                    <Users className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium font-body truncate">{team.name}</p>
@@ -299,7 +290,7 @@ export default function Performance() {
               ));
             })()}
           </div>
-          {stationTotals.every((s) => s.points === 0) && hqTotal === 0 && (
+          {stationTotals.every((s) => s.points === 0) && (
             <p className="text-sm text-muted-foreground font-body text-center">{t("noPoints")}</p>
           )}
         </div>
@@ -341,7 +332,7 @@ export default function Performance() {
                           <EmployeeNameLink employeeId={e.id} employeeName={e.name} className="block text-sm font-medium font-body truncate" />
                         </div>
                         <p className="text-xs text-muted-foreground font-body truncate">
-                          {roleLabel(e)} · {stationName(e.stationId || HQ_STATION_ID)}
+                          {roleLabel(e)} · {stationName(e.stationId || defaultStationId)}
                         </p>
                       </div>
                       <div className="ms-auto text-end shrink-0">

@@ -1,6 +1,5 @@
 import React from "react";
-import { Building2, Check, ChevronDown, MapPin } from "lucide-react";
-import { HQ_STATION_ID } from "@/lib/store";
+import { Check, ChevronDown, MapPin } from "lucide-react";
 
 export default function StationMultiSelect({ stations, value, onChange, ar }) {
   const selected = stations.filter((station) => value.includes(station.id));
@@ -27,9 +26,7 @@ export default function StationMultiSelect({ stations, value, onChange, ar }) {
         {stations.map((station) => (
           <button key={station.id} type="button" onClick={() => toggle(station.id)} className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-start text-sm hover:bg-secondary">
             <span className="flex min-w-0 items-center gap-2">
-              {station.id === HQ_STATION_ID && <Building2 className="h-3.5 w-3.5 shrink-0 text-accent" />}
               <span className="truncate">{station.name}</span>
-              {station.id === HQ_STATION_ID && <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[10px] text-accent">HQ</span>}
             </span>
             {value.includes(station.id) && <Check className="h-4 w-4 shrink-0 text-accent" />}
           </button>

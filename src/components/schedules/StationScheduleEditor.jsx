@@ -30,7 +30,8 @@ export default function StationScheduleEditor({ companyId, stationId, canManage 
   const schedule = (data.schedules || []).find((s) => s.stationId === stationId);
   const shiftTypes = schedule?.shiftTypes || [];
   const assignments = schedule?.assignments || {};
-  const stationEmployees = (data.employees || []).filter((e) => e.stationId === stationId);
+  const defaultStationId = data.stations?.[0]?.id || null;
+  const stationEmployees = (data.employees || []).filter((e) => (e.stationId || defaultStationId) === stationId);
   const monthDates = getMonthDates(cursor.year, cursor.month);
   const monthLabel = new Date(cursor.year, cursor.month, 1).toLocaleDateString(lang, { month: "long", year: "numeric" });
   const changeMonth = (delta) => {

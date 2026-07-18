@@ -11,7 +11,8 @@ import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 export default function EmployeeDashboard({ user, company, data }) {
   const { t } = useI18n();
-  const station = user.stationId ? data?.stations.find((s) => s.id === user.stationId) : null;
+  const effectiveStationId = user.stationId || data?.stations?.[0]?.id || null;
+  const station = data?.stations.find((s) => s.id === effectiveStationId) || null;
   const manager = station?.managerId ? data?.employees.find((e) => e.id === station.managerId) : null;
   const [targets, setTargets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,8 +35,8 @@ export default function EmployeeDashboard({ user, company, data }) {
 
   const mine = targets.filter((tg) => {
     if (tg.assignment_type === "member") return tg.employee_id === user.id;
-    if (tg.assignment_type === "station_team") return tg.assignment_id === user.stationId;
-    if (tg.assignment_type === "hq_team") return !user.stationId;
+    if (tg.assignment_type === "station_team") return tg.assignment_id === effectiveStationId;
+    if (tg.assignment_type === "hq_team") return tg.assignment_id === effectiveStationId || !tg.assignment_id;
     return false;
   });
   const open = mine.filter((tg) => tg.status === "active");
@@ -64,7 +65,7 @@ export default function EmployeeDashboard({ user, company, data }) {
         <div className="flex items-center gap-2">
           <Radio className="w-4 h-4 text-accent" strokeWidth={1.5} />
           <span className="text-xs text-muted-foreground font-body">{t("station")}:</span>
-          <span className="text-sm font-medium font-body">{station ? station.name : t("hq")}</span>
+          <span className="text-sm font-medium font-body">{station ? station.name : "—"}</span>
         </div>
         <div className="flex items-center gap-2">
           <UserCircle className="w-4 h-4 text-accent" strokeWidth={1.5} />

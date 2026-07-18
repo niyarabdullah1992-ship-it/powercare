@@ -7,7 +7,6 @@ import { Search, Award, CheckCircle2, Clock, FileBadge, CalendarDays } from "luc
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import moment from "moment";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
-import { HQ_STATION_ID } from "@/lib/store";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 // Full performance report for a single selected employee — points, badge, tasks,
@@ -71,7 +70,8 @@ export default function EmployeeSingleReport({ t }) {
   const badge = badgeFor(emp.points || 0, badges);
   const next = nextBadge(emp.points || 0, badges);
   const pct = next ? Math.min(Math.round(((emp.points || 0) / next.min) * 100), 100) : 100;
-  const stationName = data.stations.find((s) => s.id === (emp.stationId || HQ_STATION_ID))?.name || t("hq");
+  const defaultStationId = data.stations?.[0]?.id || null;
+  const stationName = data.stations.find((s) => s.id === (emp.stationId || defaultStationId))?.name || "—";
 
   const memberTargets = targets.filter((tg) => tg.employee_id === emp.id);
   const completedCount = (data.tasks || []).filter((tk) => tk.assignedTo === emp.id && tk.status === "completed").length

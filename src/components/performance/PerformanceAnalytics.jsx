@@ -54,9 +54,10 @@ export default function PerformanceAnalytics() {
     const seesAll = canSeeAllStations(currentUser);
     const stations = visibleStations(currentUser, data);
     const visibleStationIds = new Set(stations.map((s) => s.id));
+    const defaultStationId = data.stations?.[0]?.id || null;
     const visibleEmpIds = new Set(
       data.employees
-        .filter((e) => (e.stationId ? visibleStationIds.has(e.stationId) : seesAll))
+        .filter((e) => visibleStationIds.has(e.stationId || defaultStationId) || seesAll)
         .map((e) => e.id)
     );
 
@@ -128,7 +129,7 @@ export default function PerformanceAnalytics() {
     }
 
     const employeeName = (id) => data.employees.find((e) => e.id === id)?.name || "—";
-    const stationName = (id) => data.stations.find((s) => s.id === id)?.name || t("hq");
+    const stationName = (id) => data.stations.find((s) => s.id === (id || defaultStationId))?.name || "—";
 
     const perEmployee = Object.entries(empMap)
       .map(([id, value]) => ({ id, name: employeeName(id), value }))

@@ -9,7 +9,6 @@ import PayrollTemplateCard from "@/components/payroll/PayrollTemplateCard";
 import StationMultiSelect from "@/components/payroll/StationMultiSelect";
 import { hasHRPermission, hrScopeStations } from "@/lib/permissions";
 import { toast } from "@/components/ui/use-toast";
-import { HQ_STATION_ID } from "@/lib/store";
 
 export default function Payroll() {
   const { lang, dir } = useI18n();
@@ -31,7 +30,7 @@ export default function Payroll() {
   const run = getRun(data, month);
   const items = run?.items || [];
   const hrScope = currentUser?.hrLevelId ? hrScopeStations(currentUser, data) : null;
-  const stationIdOf = (stationId) => stationId || HQ_STATION_ID;
+  const stationIdOf = (stationId) => stationId || data.stations?.[0]?.id || null;
   const payrollEmployees = (data.employees || []).filter((employee) => hrScope === null || hrScope.includes(stationIdOf(employee.stationId)));
   const employeeForItem = (item) => payrollEmployees.find((employee) => employee.id === item.employeeId) || {
     id: item.employeeId,
@@ -39,9 +38,7 @@ export default function Payroll() {
     position: item.employeePosition || "",
     stationId: stationIdOf(item.employeeStationId),
   };
-  const allowedStations = [...(data.stations || [])]
-    .filter((station) => hrScope === null || hrScope.includes(station.id))
-    .sort((a, b) => Number(b.id === HQ_STATION_ID) - Number(a.id === HQ_STATION_ID));
+  const allowedStations = (data.stations || []).filter((station) => hrScope === null || hrScope.includes(station.id));
   const allowedStationIds = new Set(allowedStations.map((station) => station.id));
   const selectedStationIds = stationFilter.filter((id) => allowedStationIds.has(id));
   const scopedItems = items.filter((item) => payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (hrScope === null || hrScope.includes(stationIdOf(item.employeeStationId)))));
