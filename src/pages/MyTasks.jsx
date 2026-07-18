@@ -8,19 +8,17 @@ import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permis
 import { PRIORITY_POINTS } from "@/lib/rewards";
 import { handlersForLevel, hasHandlerAtLevel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
 import { base44 } from "@/api/base44Client";
-import { getParentPath, withAncestors, NO_SECTION } from "@/lib/taskFolders";
+import { getLeafName, getParentPath, NO_SECTION } from "@/lib/taskFolders";
 import { logAudit } from "@/lib/auditLog";
 import { loadSmartDefaults, saveSmartDefaults } from "@/lib/smartDefaults";
 import { getTodayAttendance } from "@/lib/attendance";
 import { Link } from "react-router-dom";
 import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, Clock, Search, Pencil, X, ClipboardCheck, Archive, Sparkles } from "lucide-react";
-import StationCombobox from "@/components/stations/StationCombobox";
 import TaskStats from "@/components/tasks/TaskStats";
 import TaskCard from "@/components/tasks/TaskCard";
-import FolderTree from "@/components/tasks/FolderTree";
+import StationSections from "@/components/tasks/StationSections";
 import SmartArchive from "@/components/tasks/SmartArchive";
 import TaskReportExport from "@/components/tasks/TaskReportExport";
-import SectionPicker from "@/components/tasks/SectionPicker";
 import CommentFiles from "@/components/tasks/CommentFiles";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
@@ -81,7 +79,7 @@ export default function MyTasks() {
   const [completionMode, setCompletionMode] = useState("onsite");
 
   // Smart form memory — opening the create form pre-fills the user's usual choices.
-  const openCreateForm = (stationId = null) => {
+  const openCreateForm = (stationId = null, sectionPath = null) => {
     const opening = !showCreate;
     if (opening) {
       const d = loadSmartDefaults(`task_${currentUser?.id}`);
@@ -95,6 +93,7 @@ export default function MyTasks() {
         setPrefilled(false);
       }
       if (stationId) setFormStation(stationId);
+      if (sectionPath) setSectionValue(sectionPath);
     }
     setShowCreate(opening);
     if (opening) requestAnimationFrame(() => document.getElementById("task-create-form")?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -176,16 +175,15 @@ export default function MyTasks() {
     return () => window.removeEventListener("powercare:tab-reset", onReset);
   }, [isIndividual]);
 
-  const addFolderAt = async (parentPath, name) => {
+  const addFolderAt = async (_parentPath, name) => {
     if (!selectedStation) return;
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const path = parentPath ? `${parentPath}/${trimmed}` : trimmed;
+    const path = name.trim().replaceAll("/", "-");
+    if (!path) return;
     if (folders.some((f) => f.station_id === selectedStation && f.path === path)) {
       alert(t("sectionAlreadyExists") || "This section already exists.");
       return;
     }
-    const sortOrder = folders.filter((f) => f.station_id === selectedStation && getParentPath(f.path) === parentPath).length;
+    const sortOrder = folders.filter((f) => f.station_id === selectedStation).length;
     try {
       const res = await base44.functions.invoke("supabaseTargets", { action: "createFolder", stationId: selectedStation, path, sortOrder });
       const created = res?.data?.folder;
@@ -230,9 +228,8 @@ export default function MyTasks() {
   };
 
   const renameFolder = async (oldPath, newName) => {
-    const parent = getParentPath(oldPath);
-    const newPath = parent ? `${parent}/${newName}` : newName;
-    const affectedTasks = targets.filter((tg) => targetStationKey(tg) === selectedStation && (tg.section === oldPath || (tg.section || "").startsWith(`${oldPath}/`)));
+    const newPath = newName.trim().replaceAll("/", "-");
+    const affectedTasks = targets.filter((tg) => targetStationKey(tg) === selectedStation && tg.section === oldPath);
     try {
       await Promise.all(
         affectedTasks.map((tg) =>
@@ -240,7 +237,7 @@ export default function MyTasks() {
             action: "updateTarget",
             userRole: currentUser.role,
             targetId: tg.id,
-            section: tg.section === oldPath ? newPath : newPath + tg.section.slice(oldPath.length),
+            section: newPath,
           })
         )
       );
@@ -258,7 +255,11 @@ export default function MyTasks() {
   };
 
   const deleteFolder = async (folderPath) => {
-    const affectedTasks = targets.filter((tg) => targetStationKey(tg) === selectedStation && (tg.section === folderPath || (tg.section || "").startsWith(`${folderPath}/`)));
+    const affectedTasks = targets.filter((tg) => targetStationKey(tg) === selectedStation && tg.section === folderPath);
+    if (affectedTasks.length > 0) {
+      alert(lang === "ar" ? "انقل مهام القسم إلى قسم آخر قبل حذفه." : "Move this section's tasks to another section before deleting it.");
+      return;
+    }
     try {
       await Promise.all(
         affectedTasks.map((tg) =>
@@ -304,15 +305,13 @@ export default function MyTasks() {
 
     if (type === "FOLDER") {
       if (source.droppableId !== destination.droppableId || source.index === destination.index) return;
-      const parentKey = source.droppableId.replace(/^folders-/, "");
-      const parentPath = parentKey === "root" ? null : parentKey;
       const siblings = folders
-        .filter((f) => f.station_id === selectedStation && getParentPath(f.path) === parentPath)
+        .filter((f) => f.station_id === selectedStation)
         .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999));
       const reordered = Array.from(siblings);
       const [moved] = reordered.splice(source.index, 1);
       reordered.splice(destination.index, 0, moved);
-      reorderChildren(parentPath, reordered.map((f) => f.id));
+      reorderChildren(null, reordered.map((f) => f.id));
       return;
     }
 
@@ -395,6 +394,7 @@ export default function MyTasks() {
     const description = fd.get("description") || "";
     const steps = fd.get("steps") || "";
     const section = fd.get("section") || "";
+    if (!section) { alert(t("sectionName")); return; }
     const total = Number(fd.get("totalTasks") || 1);
     const aType = fd.get("assignType") || "member";
 
@@ -745,23 +745,11 @@ export default function MyTasks() {
   const visible = visibleStations(currentUser, data);
   const stationGroups = visible.map((s) => ({ key: s.id, name: s.name, count: groupMap[s.id]?.count || 0 }));
   const stationTargetsAll = selectedStation ? targets.filter((tg) => targetStationKey(tg) === selectedStation) : [];
-  const allStationFolders = withAncestors([
+  const allStationFolders = Array.from(new Set([
     ...folders.filter((f) => f.station_id === selectedStation).map((f) => f.path),
     ...stationTargetsAll.filter((tg) => tg.section).map((tg) => tg.section),
-  ]);
-  // Only show sections that belong to the station/team currently selected in the form —
-  // otherwise every section from every station across the company piles up in one list.
-  const sectionScopeKey = assignType === "hq_team" ? PERSONAL_WORKSPACE_ID : (formStation || null);
-  const existingSections = sectionScopeKey
-    ? Array.from(new Set([
-        ...targets.filter((tg) => tg.section && targetStationKey(tg) === sectionScopeKey).map((tg) => tg.section),
-        ...folders.filter((f) => f.station_id === sectionScopeKey).map((f) => f.path),
-      ]))
-    : [];
-  const allSectionFolders = [
-    { key: NO_SECTION, name: t("noSection") },
-    ...allStationFolders.map((p) => ({ key: p, name: p })),
-  ];
+  ]));
+  const allSectionFolders = allStationFolders.map((path) => ({ key: path, name: getLeafName(path) }));
   const selectedStationName = stationName(selectedStation);
   const hasAnyContent = folders.filter((f) => f.station_id === selectedStation).length > 0 || stationTargetsAll.length > 0;
 
@@ -896,7 +884,7 @@ export default function MyTasks() {
                 <button
                   key={val}
                   type="button"
-                  onClick={() => { setAssignType(val); setFormStation(""); }}
+                  onClick={() => setAssignType(val)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${assignType === val ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
                 >
                   <OptIcon className="w-3.5 h-3.5" /> {label}
@@ -909,24 +897,15 @@ export default function MyTasks() {
 
           {/* Conditional assignment fields */}
           {assignType === "member" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <StationCombobox
-                t={t}
-                value={formStation}
-                onChange={setFormStation}
-                placeholder={t("all")}
-                options={[
-                  { value: "", label: t("all") },
-                  ...data.stations.map((s) => ({ value: s.id, label: s.name })),
-                ]}
-              />
+            <div className="space-y-2">
+              <div className="rounded-lg border border-accent/30 bg-secondary/50 px-3 py-2 text-sm font-medium">{stationName(formStation)}</div>
               <MobileSelect
                 name="assignedTo"
                 defaultValue=""
                 placeholder={t("selectEmployee")}
                 options={memberCandidates
                   .filter((e) => e.role === "employee" || e.role === "station_manager")
-                  .map((e) => ({ value: e.id, label: `${e.name} — ${stationName(e.stationId || firstStationId)}` }))}
+                  .map((e) => ({ value: e.id, label: e.name }))}
               />
             </div>
           )}
@@ -934,28 +913,16 @@ export default function MyTasks() {
           {assignType === "station_team" && (
             <>
               <input type="hidden" name="stationId" value={formStation} />
-              <StationCombobox
-                t={t}
-                value={formStation}
-                onChange={setFormStation}
-                placeholder={t("selectStation")}
-                options={data.stations.map((s) => ({ value: s.id, label: s.name }))}
-              />
+              <div className="rounded-lg border border-accent/30 bg-secondary/50 px-3 py-2 text-sm font-medium">{stationName(formStation)}</div>
             </>
           )}
 
 
-          {/* Section — searchable existing folders or a new section name */}
+          {/* The task belongs to the section from which creation was opened. */}
           <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> {t("section")}</p>
-            <SectionPicker
-              value={sectionValue}
-              onChange={setSectionValue}
-              options={existingSections}
-              placeholder={t("sectionName")}
-              ar={lang === "ar"}
-            />
-            <p className="text-[11px] text-muted-foreground font-body mt-1">{t("sectionTaskTypeHint")}</p>
+            <p className="mb-2 flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground"><FileText className="h-3.5 w-3.5" /> {t("section")}</p>
+            <input type="hidden" name="section" value={sectionValue} />
+            <div className="rounded-lg border border-accent/30 bg-secondary/50 px-3 py-2 text-sm font-medium">{getLeafName(sectionValue)}</div>
           </div>
 
           {/* Priority */}
@@ -1117,15 +1084,7 @@ export default function MyTasks() {
 
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/25 bg-secondary/40 p-3">
               <h3 className="font-heading text-lg font-semibold">{isIndividual ? t("myTasks") : selectedStationName}</h3>
-              {canCreateTasks(currentUser) && (
-                <button
-                  type="button"
-                  onClick={() => openCreateForm(selectedStation)}
-                  className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"
-                >
-                  <Plus className="h-4 w-4" /> {t("newTaskTarget")}
-                </button>
-              )}
+
             </div>
 
             {hasAnyContent && (
@@ -1179,10 +1138,10 @@ export default function MyTasks() {
               <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
             ) : (
               <DragDropContext onDragEnd={handleTreeDragEnd}>
-                <FolderTree
+                <StationSections
                   stationId={selectedStation}
                   currentPath={folderPath}
-                  onNavigate={setFolderPath}
+                  onNavigate={(path) => { setFolderPath(path); if (!path) setShowCreate(false); }}
                   folders={folders}
                   tasksAll={stationTargetsAll}
                   canManage={canCreateTasks(currentUser)}
@@ -1191,6 +1150,7 @@ export default function MyTasks() {
                   onAddFolder={addFolderAt}
                   onRenameFolder={renameFolder}
                   onDeleteFolder={deleteFolder}
+                  onCreateTask={(sectionPath) => openCreateForm(selectedStation, sectionPath)}
                   t={t}
                   dir={dir}
                   lang={lang}
@@ -1222,7 +1182,12 @@ export default function MyTasks() {
             </div>
             <div>
               <label className="text-xs text-muted-foreground font-body block mb-1">{t("section")}</label>
-              <input name="section" defaultValue={editTarget.section || ""} placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+              <MobileSelect
+                name="section"
+                defaultValue={editTarget.section || ""}
+                placeholder={t("sectionName")}
+                options={allSectionFolders.map((section) => ({ value: section.key, label: section.name }))}
+              />
             </div>
             <textarea name="steps" rows={3} defaultValue={editTarget.steps || ""} placeholder={t("stepsPlaceholder")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-y" />
             {canSetCompletionMode && (
