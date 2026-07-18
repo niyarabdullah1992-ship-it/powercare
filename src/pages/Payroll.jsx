@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { Banknote, Download, Users, CheckCircle2, Wallet } from "lucide-react";
-import { ensurePayrollRun, getRun, monthKey, netOf, payrollItemIssues, updatePayrollItem, setItemPaid } from "@/lib/payroll";
+import { Banknote, Download, Users, CheckCircle2, Wallet, RefreshCw } from "lucide-react";
+import { ensurePayrollRun, getRun, monthKey, netOf, payrollItemIssues, updatePayrollItem, setItemPaid, syncPayrollFromProfiles } from "@/lib/payroll";
 import { printReport } from "@/lib/printReport";
 import PayrollRow from "@/components/payroll/PayrollRow";
 import PayrollTemplateCard from "@/components/payroll/PayrollTemplateCard";
 import { hasHRPermission, hrScopeStations } from "@/lib/permissions";
+import { toast } from "@/components/ui/use-toast";
 
 export default function Payroll() {
   const { lang, dir } = useI18n();
@@ -44,6 +45,18 @@ export default function Payroll() {
   const headers = ar
     ? ["الموظف", "الأساسي", "البدلات", "مكافآت", "خصومات", "الصافي", "الحالة"]
     : ["Employee", "Base", "Allowances", "Bonus", "Deductions", "Net", "Status"];
+
+  const syncFromProfiles = () => {
+    const confirmed = window.confirm(ar
+      ? "سيتم تحديث الراتب الأساسي والبدلات والعملة للموظفين غير المدفوعين فقط. هل تريد المتابعة؟"
+      : "Base salary, allowances, and currency will be refreshed for unpaid employees only. Continue?");
+    if (!confirmed) return;
+    const count = syncPayrollFromProfiles(company.id, month);
+    toast({
+      title: ar ? "تم تحديث بيانات الرواتب" : "Payroll data refreshed",
+      description: ar ? `تم تحديث بيانات ${count} موظف.` : `${count} employee profiles were updated.`,
+    });
+  };
 
   const exportPayroll = () => {
     printReport({
@@ -100,7 +113,7 @@ export default function Payroll() {
             <p className="text-xs text-muted-foreground font-body">{ar ? "مسيّر رواتب شهري مبني على ملفات الموظفين" : "Monthly payroll run built from employee salary profiles"}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="month"
             value={month}
@@ -108,6 +121,9 @@ export default function Payroll() {
             className="px-3 py-2 rounded-md border border-input bg-card text-sm font-body"
             dir="ltr"
           />
+          <button onClick={syncFromProfiles} className="flex items-center gap-1.5 rounded-md border border-input bg-card px-3.5 py-2 text-sm font-body text-foreground hover:bg-secondary">
+            <RefreshCw className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تحديث من الملفات الشخصية" : "Refresh from profiles"}
+          </button>
           <button onClick={exportPayroll} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-foreground text-background text-sm font-body hover:opacity-90">
             <Download className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تصدير PDF" : "Export PDF"}
           </button>

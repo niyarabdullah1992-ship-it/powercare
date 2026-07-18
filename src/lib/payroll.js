@@ -57,6 +57,33 @@ export function ensurePayrollRun(companyId, month) {
   });
 }
 
+export function syncPayrollFromProfiles(companyId, month) {
+  let updatedCount = 0;
+  updateCompany(companyId, (d) => {
+    const run = (d.payrollRuns || []).find((r) => r.month === month);
+    if (!run) return;
+    const employees = new Map((d.employees || []).map((employee) => [employee.id, employee]));
+    run.items.forEach((item) => {
+      if (item.paid) return;
+      const employee = employees.get(item.employeeId);
+      if (!employee) return;
+      const profile = employee.profile || {};
+      const profileCurrency = String(profile.currency || "SAR").toUpperCase();
+      const next = {
+        base: Number(profile.baseSalary) || 0,
+        allowances: Number(profile.allowances) || 0,
+        currency: /^[A-Z]{3}$/.test(profileCurrency) ? profileCurrency : "SAR",
+      };
+      if (item.base === next.base && item.allowances === next.allowances && item.currency === next.currency) return;
+      item.base = next.base;
+      item.allowances = next.allowances;
+      item.currency = next.currency;
+      updatedCount += 1;
+    });
+  });
+  return updatedCount;
+}
+
 export function updatePayrollItem(companyId, month, itemId, updates) {
   if (Object.prototype.hasOwnProperty.call(updates || {}, "currency")) {
     const currency = String(updates.currency || "").toUpperCase();
