@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, ListTodo, MessageSquare, ClipboardCheck, FolderOpen, Warehouse, ReceiptText } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -27,6 +27,7 @@ export default function BottomTabBar() {
   const { currentUser, data } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const touchStart = useRef(null);
 
   // Persist the last sub-route accessed inside each tab's module.
   useEffect(() => {
@@ -54,8 +55,17 @@ export default function BottomTabBar() {
     }
   };
 
+  const swipeTabs = (event) => {
+    if (touchStart.current === null) return;
+    const delta = event.changedTouches[0].clientX - touchStart.current;
+    if (Math.abs(delta) < 55) return;
+    const activeIndex = tabs.findIndex((tab) => matchesTab(tab, location.pathname));
+    const nextIndex = Math.max(0, Math.min(tabs.length - 1, activeIndex + (delta < 0 ? 1 : -1)));
+    if (nextIndex !== activeIndex) openTab(tabs[nextIndex]);
+  };
+
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl no-select md:hidden">
+    <nav onTouchStart={(event) => { touchStart.current = event.touches[0].clientX; }} onTouchEnd={swipeTabs} className="tech-bottom-nav fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.06)] backdrop-blur-xl no-select md:hidden">
       <div className="flex px-1 pt-1">
         {tabs.map((tab) => {
           const active = matchesTab(tab, location.pathname);

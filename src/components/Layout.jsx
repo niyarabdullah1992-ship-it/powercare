@@ -184,7 +184,7 @@ export default function Layout({ children }) {
   const sidebarSide = dir === "rtl" ? "right-0" : "left-0";
 
   return (
-    <div className="min-h-screen bg-background flex" dir={dir}>
+    <div className="powercare-shell min-h-screen bg-background flex" dir={dir}>
       {/* Desktop navigation */}
       <aside className={`hidden md:flex flex-col w-[248px] ${sidebarSide} top-0 h-screen sticky bg-primary pt-safe z-40 shadow-elevated`}>
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">

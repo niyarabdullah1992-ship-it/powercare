@@ -1,7 +1,8 @@
 import React, { useRef, useState } from "react";
 import { Play, RotateCcw } from "lucide-react";
+import VideoTechHud from "@/components/tiktok-ad/VideoTechHud";
 
-export default function GeneratedVideoAd({ urls, audioUrl }) {
+export default function GeneratedVideoAd({ urls, audioUrl, logoUrl }) {
   const videos = useRef([]);
   const audio = useRef(null);
   const advancing = useRef(false);
@@ -28,6 +29,7 @@ export default function GeneratedVideoAd({ urls, audioUrl }) {
   return <>
     {urls.map((url, item) => <video key={url} ref={(node) => { videos.current[item] = node; }} src={url} muted playsInline preload="auto" onTimeUpdate={(event) => { if (event.currentTarget.duration - event.currentTarget.currentTime < .55) advance(item); }} onEnded={() => advance(item)} className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${item === index ? "opacity-100" : "opacity-0"}`} />)}
     <audio ref={audio} src={audioUrl} preload="auto" />
+    <VideoTechHud index={index} logoUrl={logoUrl} />
     <div className="ad-progress">{urls.map((_, item) => <i key={item} className={item <= index ? "is-active" : ""} />)}</div>
     {!started && <button onClick={start} className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-landing-cinema/55 font-semibold text-landing-bg backdrop-blur-sm"><span className="flex h-16 w-16 items-center justify-center rounded-full border border-landing-gold bg-landing-cinema/70"><Play className="h-7 w-7 fill-current" /></span>تشغيل الإعلان</button>}
     {ended && <div className="absolute inset-0 z-20 flex items-center justify-center bg-landing-cinema/55 backdrop-blur-sm"><button className="ad-replay" onClick={replay}><RotateCcw /> إعادة التشغيل</button></div>}

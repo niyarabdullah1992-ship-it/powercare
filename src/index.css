@@ -297,3 +297,31 @@ input, textarea, [contenteditable] {
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--accent));
 }
+
+/* PowerCare 2090 — touch-first spatial interface */
+.powercare-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 85% 8%, hsl(var(--accent) / .11), transparent 28rem),
+    linear-gradient(hsl(var(--border) / .16) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / .16) 1px, transparent 1px),
+    hsl(var(--background));
+  background-size: auto, 44px 44px, 44px 44px, auto;
+}
+.powercare-shell > aside { background-image: linear-gradient(155deg, hsl(var(--primary)), hsl(var(--primary) / .88)); border-inline-end: 1px solid hsl(var(--accent) / .3); }
+.powercare-shell > div > header { border-color: hsl(var(--accent) / .24); box-shadow: 0 10px 40px hsl(var(--foreground) / .07), inset 0 -1px hsl(var(--accent) / .1); }
+.powercare-shell main :is(button, a, input, select, textarea) { touch-action: manipulation; }
+.powercare-shell main :is(.rounded-xl, .rounded-2xl) { box-shadow: inset 0 1px hsl(var(--card-foreground) / .03), 0 14px 45px hsl(var(--foreground) / .055); }
+.powercare-shell button:active, .powercare-shell [role="button"]:active { transform: scale(.97); }
+.tech-bottom-nav { border-color: hsl(var(--accent) / .3); box-shadow: 0 -14px 45px hsl(var(--foreground) / .1); touch-action: pan-y; }
+.tech-hud-grid { position:absolute; inset:0; opacity:.18; background-image:linear-gradient(hsl(var(--landing-gold) / .24) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--landing-gold) / .24) 1px,transparent 1px); background-size:42px 42px; mask-image:linear-gradient(to bottom,black,transparent 70%); }
+.tech-hud-scan { position:absolute; inset-inline:0; height:18%; background:linear-gradient(transparent,hsl(var(--landing-gold) / .13),transparent); animation:tech-scan 4s linear infinite; }
+.tech-hud-reticle { position:absolute; inset:40% 27%; border:1px solid hsl(var(--landing-gold) / .24); border-radius:999px; }
+.tech-hud-reticle i { position:absolute; width:12px; height:12px; border-color:hsl(var(--landing-gold) / .75); }
+.tech-hud-reticle i:nth-child(1){top:-1px;left:-1px;border-top:2px solid;border-left:2px solid}.tech-hud-reticle i:nth-child(2){top:-1px;right:-1px;border-top:2px solid;border-right:2px solid}.tech-hud-reticle i:nth-child(3){bottom:-1px;left:-1px;border-bottom:2px solid;border-left:2px solid}.tech-hud-reticle i:nth-child(4){bottom:-1px;right:-1px;border-bottom:2px solid;border-right:2px solid}
+@keyframes tech-scan { from { transform:translateY(-100%); } to { transform:translateY(650%); } }
+@media (pointer: coarse) {
+  .powercare-shell :is(button, [role="button"], input, select) { min-height:48px; }
+  .powercare-shell a { min-height:44px; }
+}
