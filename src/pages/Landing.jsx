@@ -12,6 +12,7 @@ import { trackVisit } from "@/lib/trackVisit";
 import { base44 } from "@/api/base44Client";
 import GoogleIcon from "@/components/GoogleIcon";
 import WhyPowerCare from "@/components/landing/WhyPowerCare";
+import LoginTypeSelector from "@/components/landing/LoginTypeSelector";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
 
@@ -19,6 +20,7 @@ export default function Landing() {
   const { t, lang, setLang, languages } = useI18n();
   const { login, loginWithGoogle, verifyOtp, session } = useAuth();
   const navigate = useNavigate();
+  const [loginKind, setLoginKind] = useState("company");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -58,14 +60,16 @@ export default function Landing() {
     }
   }, [langOpen]);
 
-  const handleCompanyLogin = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (submitting) return;
     setError("");
     setSubmitting(true);
-    const r = await login(email, password, "company");
+    const r = await login(email, password, loginKind);
     if (!r) setError(t("errBadCredentials"));
-    else if (r.otpRequired) {
+    else if (r.wrongKind) {
+      setError(lang === "ar" ? "هذا الحساب لا يتبع قسم الدخول المحدد" : "This account does not belong to the selected login section");
+    } else if (r.otpRequired) {
       setOtpPending(r.pendingId);
       setOtpAccounts(r.accounts || []);
     }
@@ -79,7 +83,7 @@ export default function Landing() {
   };
 
   const handleResendOtp = async () => {
-    const result = await login(email, password, "company");
+    const result = await login(email, password, loginKind);
     if (!result?.otpRequired) return false;
     setOtpPending(result.pendingId);
     setOtpAccounts(result.accounts || []);
@@ -167,11 +171,20 @@ export default function Landing() {
                 <PasswordResetForm initialEmail={email} onDone={(value) => { setEmail(value); setResetOpen(false); setError(""); }} onBack={() => setResetOpen(false)} />
               ) : (
               <div className="space-y-4">
-                <button type="button" onClick={() => handleSocialLogin("sso")} disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-3 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg disabled:opacity-50">
-                  <GoogleIcon className="h-5 w-5" /> {t("continueWithGoogle")}
-                </button>
-                <div className="flex items-center gap-3 text-xs text-[#3a2f22]/40"><span className="h-px flex-1 bg-landing-gold/20" />{t("orDivider")}<span className="h-px flex-1 bg-landing-gold/20" /></div>
-              <form onSubmit={handleCompanyLogin} noValidate className="space-y-4">
+                <LoginTypeSelector
+                  value={loginKind}
+                  onChange={(value) => { setLoginKind(value); setError(""); }}
+                  lang={lang}
+                />
+                {loginKind === "company" && (
+                  <>
+                    <button type="button" onClick={() => handleSocialLogin("sso")} disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-3 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg disabled:opacity-50">
+                      <GoogleIcon className="h-5 w-5" /> {t("continueWithGoogle")}
+                    </button>
+                    <div className="flex items-center gap-3 text-xs text-[#3a2f22]/40"><span className="h-px flex-1 bg-landing-gold/20" />{t("orDivider")}<span className="h-px flex-1 bg-landing-gold/20" /></div>
+                  </>
+                )}
+              <form onSubmit={handleLogin} noValidate className="space-y-4">
                 <div>
                   <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("email")}</label>
                   <input
@@ -200,9 +213,15 @@ export default function Landing() {
                 >
                   {submitting ? t("pleaseWaitBtn") : t("login")}
                 </button>
-                <button type="button" onClick={() => { setResetOpen(true); setError(""); }} className="w-full cursor-pointer text-center text-sm font-body font-semibold text-landing-gold underline underline-offset-4 hover:text-landing-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-gold">
-                  {t("forgotPasswordLink")}
-                </button>
+                {loginKind === "company" ? (
+                  <button type="button" onClick={() => { setResetOpen(true); setError(""); }} className="w-full cursor-pointer text-center text-sm font-body font-semibold text-landing-gold underline underline-offset-4 hover:text-landing-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-gold">
+                    {t("forgotPasswordLink")}
+                  </button>
+                ) : (
+                  <p className="text-center text-xs font-body text-[#3a2f22]/55">
+                    {lang === "ar" ? "استخدم البريد وكلمة المرور الممنوحة لك من شركتك" : "Use the email and password provided by your company"}
+                  </p>
+                )}
               </form>
               </div>
               )}
