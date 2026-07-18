@@ -54,6 +54,7 @@ const CopyrightDoc = lazy(() => import('./pages/CopyrightDoc'));
 const SourceCodeDoc = lazy(() => import('./pages/SourceCodeDoc'));
 const ProjectGuideDoc = lazy(() => import('./pages/ProjectGuideDoc'));
 const SiteManual = lazy(() => import('./pages/SiteManual'));
+const TiktokAd = lazy(() => import('./pages/TiktokAd'));
 
 // After the first page is interactive, quietly download the most-used pages in
 // the background so navigating to them later is instant.
@@ -110,6 +111,7 @@ function AppRoutes() {
       <Route path="/source-code-doc" element={<SourceCodeDoc />} />
       <Route path="/project-guide" element={<ProjectGuideDoc />} />
       <Route path="/manual" element={<SiteManual />} />
+      <Route path="/tiktok-ad" element={<TiktokAd />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/owner-panel" element={<OwnerPanel />} />
         <Route path="/owner-subscribers" element={<Navigate to="/owner-panel" replace />} />
