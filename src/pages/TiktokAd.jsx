@@ -1,37 +1,20 @@
-import React, { useEffect, useState } from "react";
-import { RotateCcw } from "lucide-react";
-import AdScene from "@/components/tiktok-ad/AdScene";
-import { useAmbientScore } from "@/components/tiktok-ad/useAmbientScore";
+import React from "react";
+import GeneratedVideoAd from "@/components/tiktok-ad/GeneratedVideoAd";
 import "@/components/tiktok-ad/tiktok-ad.css";
 
-const DURATIONS = [8000, 9000, 8000, 8000, 9000, 9000, 9000];
+const AD_VIDEOS = [
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/bc4de59f2__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/a6b5a5973__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/b05ef556e__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/e8c129f35__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/6291a8ae8__.mp4",
+];
 
 export default function TiktokAd() {
-  const [scene, setScene] = useState(0);
-  const [run, setRun] = useState(0);
-  const { restartScore } = useAmbientScore(run);
-
-  useEffect(() => {
-    if (scene >= DURATIONS.length - 1) return;
-    const timer = setTimeout(() => setScene((value) => value + 1), DURATIONS[scene]);
-    return () => clearTimeout(timer);
-  }, [scene, run]);
-
-  const replay = () => {
-    setScene(0);
-    setRun((value) => value + 1);
-    restartScore();
-  };
-
   return (
     <main className="ad-page" dir="rtl">
-      <section className="ad-phone" aria-label="إعلان PowerCare السينمائي">
-        <div className="ad-grain" />
-        <AdScene key={`${run}-${scene}`} scene={scene} />
-        <div className="ad-progress">
-          {DURATIONS.map((_, index) => <i key={index} className={index <= scene ? "is-active" : ""} />)}
-        </div>
-        <button className="ad-replay" onClick={replay}><RotateCcw /> إعادة التشغيل</button>
+      <section className="ad-phone" aria-label="إعلان PowerCare عن الموظفين والعمليات">
+        <GeneratedVideoAd urls={AD_VIDEOS} />
       </section>
     </main>
   );
