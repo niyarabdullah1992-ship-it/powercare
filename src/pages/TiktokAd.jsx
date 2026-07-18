@@ -3,11 +3,11 @@ import GeneratedVideoAd from "@/components/tiktok-ad/GeneratedVideoAd";
 import "@/components/tiktok-ad/tiktok-ad.css";
 
 const AD_VIDEOS = [
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/a68d4d516_2090__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/e1e7ab634_2090__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/3995716f6_2090__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/687b6feaa_2090__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/d3dd379e5_2090__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/778392daf__2090_.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/0c9dd8f9a__2090_.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/28b6e4b69__2090_.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/1292e366b__2090_.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/322c6b9aa__2090_.mp4",
 ];
 const AD_LOGO = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/65a30b8a4_9a8843bf0_generated_image.png";
 const AD_AUDIO = "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/59e28a277_speech.mp3";
