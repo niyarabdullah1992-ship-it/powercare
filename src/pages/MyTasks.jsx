@@ -176,20 +176,23 @@ export default function MyTasks() {
   }, [isIndividual]);
 
   const addFolderAt = async (_parentPath, name) => {
-    if (!selectedStation) return;
+    if (!selectedStation) return false;
     const path = name.trim().replaceAll("/", "-");
-    if (!path) return;
+    if (!path) return false;
     if (folders.some((f) => f.station_id === selectedStation && f.path === path)) {
       alert(t("sectionAlreadyExists") || "This section already exists.");
-      return;
+      return false;
     }
     const sortOrder = folders.filter((f) => f.station_id === selectedStation).length;
     try {
       const res = await base44.functions.invoke("supabaseTargets", { action: "createFolder", stationId: selectedStation, path, sortOrder });
       const created = res?.data?.folder;
-      if (created) setFolders((prev) => [...prev, created]);
+      if (!created) return false;
+      setFolders((prev) => [...prev, created]);
+      return true;
     } catch (err) {
       alert(err?.response?.data?.error || err?.message || "Failed to create section");
+      return false;
     }
   };
 

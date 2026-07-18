@@ -7,6 +7,7 @@ import { groupTasksByPeriod, SCOPE_BADGES } from "@/lib/taskTimeScope";
 
 export default function StationSections({ stationId, currentPath, onNavigate, folders, tasksAll, canManage, renderTask, filterTasks, onAddFolder, onRenameFolder, onDeleteFolder, onCreateTask, t, dir, lang }) {
   const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [newName, setNewName] = useState("");
   const [renamingPath, setRenamingPath] = useState(null);
   const [renameVal, setRenameVal] = useState("");
@@ -15,10 +16,13 @@ export default function StationSections({ stationId, currentPath, onNavigate, fo
   const directTasks = currentPath === NO_SECTION ? tasksAll.filter((task) => !task.section) : tasksAll.filter((task) => task.section === currentPath);
   const periodGroups = groupTasksByPeriod(filterTasks(directTasks), lang, t);
 
-  const addSection = () => {
+  const addSection = async () => {
     const name = newName.trim();
-    if (!name) return;
-    onAddFolder(null, name);
+    if (!name || saving) return;
+    setSaving(true);
+    const saved = await onAddFolder(null, name);
+    setSaving(false);
+    if (!saved) return;
     setNewName("");
     setAdding(false);
   };
@@ -34,7 +38,7 @@ export default function StationSections({ stationId, currentPath, onNavigate, fo
       {canManage && (adding ? (
         <div className="flex items-center gap-2">
           <input autoFocus value={newName} onChange={(event) => setNewName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addSection(); } if (event.key === "Escape") setAdding(false); }} placeholder={t("newSectionPlaceholder")} className="max-w-xs flex-1 rounded-md border border-input px-2.5 py-1.5 text-xs font-body" />
-          <button type="button" onClick={addSection} className="rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background">{t("save")}</button>
+          <button type="button" onClick={addSection} disabled={saving} className="rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background disabled:opacity-50">{t("save")}</button>
           <button type="button" onClick={() => setAdding(false)} className="rounded-md border border-border px-2.5 py-1.5 text-xs">{t("cancel")}</button>
         </div>
       ) : (

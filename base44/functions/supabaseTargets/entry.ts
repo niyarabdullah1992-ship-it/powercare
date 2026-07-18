@@ -824,7 +824,10 @@ Deno.serve(async (req) => {
       if (["station_manager", "employee"].includes(auth.role)) stationIds = stationIds.filter((id) => id === auth.stationId);
       const allowed = new Set(stationIds);
       if (["owner", "director", "ops_manager"].includes(auth.role) || !auth.stationId) allowed.add(`${auth.companyId}_hq`);
-      return Response.json({ folders: (rows || []).filter((folder) => allowed.has(folder.station_id)) });
+      const visibleFolders = (rows || [])
+        .filter((folder) => allowed.has(folder.station_id))
+        .map((folder) => folder.station_id === `${auth.companyId}_hq` ? { ...folder, station_id: "hq" } : folder);
+      return Response.json({ folders: visibleFolders });
     }
 
     if (action === "createFolder") {
@@ -839,7 +842,7 @@ Deno.serve(async (req) => {
       );
       const existing = await checkRes.json();
       if (Array.isArray(existing) && existing.length > 0) {
-        return Response.json({ folder: existing[0] });
+        return Response.json({ folder: { ...existing[0], station_id: stationId } });
       }
       const res = await fetch(`${SUPABASE_URL}/rest/v1/task_folders`, {
         method: "POST",
@@ -850,7 +853,8 @@ Deno.serve(async (req) => {
       if (!res.ok) {
         return Response.json({ error: created?.message || "Failed to create section — run: CREATE TABLE IF NOT EXISTS task_folders (id uuid primary key default gen_random_uuid(), station_id text, path text, sort_order integer default 0, created_at timestamptz default now());" }, { status: 400 });
       }
-      return Response.json({ folder: Array.isArray(created) ? created[0] : created });
+      const createdFolder = Array.isArray(created) ? created[0] : created;
+      return Response.json({ folder: { ...createdFolder, station_id: stationId } });
     }
 
     if (action === "reorderFolders") {
