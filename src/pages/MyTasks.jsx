@@ -1201,13 +1201,21 @@ export default function MyTasks() {
       {/* Edit modal */}
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setEditTarget(null)}>
-          <form onClick={(e) => e.stopPropagation()} onSubmit={saveEdit} className="w-full max-w-lg p-5 rounded-xl border border-border bg-card space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <h3 className="font-heading text-lg font-semibold flex items-center gap-2"><Pencil className="w-4 h-4" /> {t("editTask")}</h3>
-              <button type="button" onClick={() => setEditTarget(null)} className="p-1 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
+          <form onClick={(e) => e.stopPropagation()} onSubmit={saveEdit} className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-accent/50 bg-secondary/60 p-3 shadow-elevated sm:p-4">
+            <div className="flex items-center justify-between px-2 pb-1">
+              <h3 className="flex items-center gap-2 font-heading text-lg font-semibold"><Pencil className="h-4 w-4 text-accent" /> {t("editTask")}</h3>
+              <button type="button" onClick={() => setEditTarget(null)} className="rounded-full border border-accent/30 bg-card p-1.5 hover:bg-secondary"><X className="h-4 w-4" /></button>
             </div>
-            <input name="title" defaultValue={editTarget.title || ""} placeholder={t("taskTitle")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-            <input name="description" defaultValue={editTarget.description || ""} placeholder={t("taskDescription")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <TaskWizardStepper lang={lang} />
+            <div className="space-y-5 rounded-xl border border-accent/40 bg-card p-4 sm:p-6">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-foreground">{t("taskTitle")}</label>
+              <input name="title" defaultValue={editTarget.title || ""} placeholder={t("taskTitle")} required className="w-full rounded-lg border border-input px-3 py-2.5 text-sm font-body focus:border-accent focus:ring-1 focus:ring-accent" />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-foreground">{t("taskDescription")}</label>
+              <textarea name="description" rows={3} defaultValue={editTarget.description || ""} placeholder={t("taskDescription")} className="w-full resize-y rounded-lg border border-input px-3 py-2.5 text-sm font-body focus:border-accent focus:ring-1 focus:ring-accent" />
+            </div>
             <div>
               <label className="text-xs text-muted-foreground font-body block mb-1">{t("section")}</label>
               <input name="section" defaultValue={editTarget.section || ""} placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
@@ -1246,9 +1254,10 @@ export default function MyTasks() {
               <label className="text-xs text-muted-foreground font-body block mb-1">{t("endDate")}</label>
               <input name="endDate" type="date" defaultValue={editTarget.end_date ? new Date(editTarget.end_date).toISOString().slice(0, 10) : ""} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             </div>
-            <div className="flex gap-2 pt-1">
-              <button type="submit" className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-body">{t("update")}</button>
-              <button type="button" onClick={() => setEditTarget(null)} className="px-4 py-2 rounded-md border border-border text-sm font-body">{t("cancel")}</button>
+            <div className="grid grid-cols-2 gap-3 border-t border-border pt-4">
+              <button type="submit" className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground hover:bg-accent/90">{t("update")}</button>
+              <button type="button" onClick={() => setEditTarget(null)} className="rounded-lg border border-accent/60 bg-secondary/60 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary">{t("cancel")}</button>
+            </div>
             </div>
           </form>
         </div>
