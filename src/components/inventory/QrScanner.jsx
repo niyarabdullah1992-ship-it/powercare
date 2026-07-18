@@ -19,17 +19,28 @@ export default function QrScanner({ value, onChange, ar }) {
         streamRef.current = stream;
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
-        if (!("BarcodeDetector" in window)) {
-          setError(ar ? "الكاميرا تعمل، لكن هذا المتصفح لا يدعم قراءة QR تلقائيًا. استخدم Chrome أو أدخل الرمز يدويًا." : "The camera works, but this browser cannot scan QR automatically. Use Chrome or enter the code manually.");
-          return;
+        let readCode;
+        if ("BarcodeDetector" in window) {
+          const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+          readCode = async () => (await detector.detect(videoRef.current).catch(() => []))[0]?.rawValue;
+        } else {
+          const { default: jsQR } = await import(/* @vite-ignore */ "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/+esm");
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d", { willReadFrequently: true });
+          readCode = async () => {
+            canvas.width = videoRef.current.videoWidth;
+            canvas.height = videoRef.current.videoHeight;
+            context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+            const frame = context.getImageData(0, 0, canvas.width, canvas.height);
+            return jsQR(frame.data, frame.width, frame.height, { inversionAttempts: "attemptBoth" })?.data;
+          };
         }
-        const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
         timer = setInterval(async () => {
           if (detecting || !videoRef.current?.videoWidth) return;
           detecting = true;
-          const found = await detector.detect(videoRef.current).catch(() => []);
+          const code = await readCode().catch(() => null);
           detecting = false;
-          if (found[0]?.rawValue) { onChange(found[0].rawValue); setOpen(false); }
+          if (code) { onChange(code); setOpen(false); }
         }, 400);
       } catch (mediaError) {
         const code = mediaError?.code || "failed";
