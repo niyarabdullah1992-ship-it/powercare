@@ -19,7 +19,7 @@ import InventoryWorkflow from "@/components/inventory/InventoryWorkflow";
 import InventoryExportButtons from "@/components/inventory/InventoryExportButtons";
 import { toast } from "@/components/ui/use-toast";
 
-const emptyData = { items: [], units: [], movements: [], requests: [], stations: [], employees: [], canManage: false };
+const emptyData = { items: [], units: [], movements: [], requests: [], stations: [], transferStations: [], employees: [], canManage: false };
 
 export default function Inventory() {
   const { session, currentUser } = useAuth();
@@ -63,7 +63,7 @@ export default function Inventory() {
       {active === "overview" && <div className="space-y-4"><InventoryWorkflow canManage={state.canManage} onNavigate={setActive} ar={ar} /><ItemList items={stationItems.filter((item) => Number(item.quantity) <= Number(item.minimumStock))} stations={state.stations} onSelect={setSelectedItem} ar={ar} /></div>}
       {active === "items" && <div className="space-y-4">{state.canManage && <ItemForm key={activeStation} stations={state.stations} defaultStationId={activeStation} onSubmit={(payload) => run("createItem", payload)} ar={ar} />}<ItemList items={stationItems} stations={state.stations} onSelect={setSelectedItem} ar={ar} /></div>}
       {active === "requests" && <div className="space-y-4"><MaterialRequestForm items={stationItems} stationId={activeStation} onSubmit={(payload) => run("request", payload)} ar={ar} /><RequestsList requests={stationRequests} items={state.items} employees={state.employees} canManage={state.canManage} onReview={(requestId, decision) => run("reviewRequest", { requestId, decision })} onIssue={openIssue} ar={ar} /></div>}
-      {active === "movements" && <div className="space-y-4">{state.canManage && <MovementForm key={activeStation} items={stationItems} stations={state.stations} stationId={activeStation} onSubmit={(action, payload) => run(action, payload)} ar={ar} />}<MovementList movements={stationMovements} items={state.items} stations={state.stations} ar={ar} /></div>}
+      {active === "movements" && <div className="space-y-4">{state.canManage && <MovementForm key={activeStation} items={stationItems} stations={state.stations} transferStations={state.transferStations} stationId={activeStation} onSubmit={(action, payload) => run(action, payload)} ar={ar} />}<MovementList movements={stationMovements} items={state.items} stations={state.transferStations} ar={ar} /></div>}
       {active === "scanner" && <IssueScanner key={`${activeStation}-${selectedRequest}`} requests={stationRequests} items={state.items} selectedRequest={selectedRequest} onIssue={(requestId, qrCode) => run("issueRequest", { requestId, qrCode })} ar={ar} />}
     </>}
     <ItemDetails item={selected} units={stationUnits} stations={state.stations} onClose={() => setSelectedItem(null)} ar={ar} />

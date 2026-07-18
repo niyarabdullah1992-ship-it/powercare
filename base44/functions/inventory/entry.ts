@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
       const scopedItems = items.filter((item) => seniorRoles.includes(auth.role) || visible.has(item.currentLocationId) || balances(item).some((entry) => visible.has(entry.locationId)));
       const itemIds = new Set(scopedItems.map((item) => item.id));
       const scopedRequests = requests.filter((request) => auth.manager ? visible.has(request.stationId) || seniorRoles.includes(auth.role) : request.requesterId === auth.userId);
-      return Response.json({ items: scopedItems, units: units.filter((unit) => itemIds.has(unit.itemId)), movements: movements.filter((entry) => itemIds.has(entry.itemId)), requests: scopedRequests, stations: stations.filter((station) => seniorRoles.includes(auth.role) || visible.has(station.stationId)), employees, canManage: auth.manager });
+      return Response.json({ items: scopedItems, units: units.filter((unit) => itemIds.has(unit.itemId)), movements: movements.filter((entry) => itemIds.has(entry.itemId)), requests: scopedRequests, stations: stations.filter((station) => seniorRoles.includes(auth.role) || visible.has(station.stationId)), transferStations: auth.manager ? stations : [], employees, canManage: auth.manager });
     }
 
     if (body.action === "createItem") {
@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
         await movement({ itemId: item.id, unitId, movementType: "return", quantity: item.trackingMode === "serialized" ? 1 : quantity, fromLocationId: null, toLocationId: body.toLocationId, employeeId: body.employeeId || null, requestId: null });
       }
       if (body.action === "transfer") {
-        if (!ensureStation(body.fromLocationId) || !ensureStation(body.toLocationId) || body.fromLocationId === body.toLocationId) return Response.json({ error: "Invalid transfer" }, { status: 400 });
+        if (!ensureStation(body.fromLocationId) || !allStationIds.includes(body.toLocationId) || body.fromLocationId === body.toLocationId) return Response.json({ error: "Invalid transfer" }, { status: 400 });
         if (item.trackingMode === "serialized") { const unit = await getUnitByQr(body.qrCode); if (!unit || unit.itemId !== item.id || unit.status !== "available" || unit.locationId !== body.fromLocationId) return Response.json({ error: "Unit is not available at source" }, { status: 400 }); await base44.asServiceRole.entities.InventoryUnit.update(unit.id, { locationId: body.toLocationId }); unitId = unit.id; }
         else { let next = adjustBalance(item, body.fromLocationId, -quantity); next = (() => { const clone = { ...item, locationBalances: next }; return adjustBalance(clone, body.toLocationId, quantity); })(); await base44.asServiceRole.entities.InventoryItem.update(item.id, { locationBalances: next, currentLocationId: body.toLocationId }); }
         await movement({ itemId: item.id, unitId, movementType: "transfer", quantity: item.trackingMode === "serialized" ? 1 : quantity, fromLocationId: body.fromLocationId, toLocationId: body.toLocationId, employeeId: null, requestId: null });
