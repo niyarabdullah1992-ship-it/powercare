@@ -53,6 +53,10 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
 
   const handleCheckIn = async () => {
     setError("");
+    if (!shift) {
+      setError(lang === "ar" ? "لا يمكنك تسجيل الحضور لأنك غير مدرج في جدول اليوم." : "You cannot check in because you are not scheduled today.");
+      return;
+    }
     if (!hasAssignedStation) {
       setError(lang === "ar" ? "لا يمكنك تسجيل الحضور قبل تعيين محطة عمل لك. تواصل مع إدارة الشركة." : "You cannot check in until a workplace is assigned to you. Contact company management.");
       return;
@@ -83,7 +87,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
       if (att) { setAttendance(att); onStatusChange?.(att); }
     } catch (err) {
       const code = err?.response?.data?.error;
-      setError(code === "GPS_REQUIRED" ? t("locationDenied") : code === "STATION_LOCATION_REQUIRED" ? t("locationNotSet") : code === "OUTSIDE_STATION" ? t("outsideLocation") : (code || "Failed to check in"));
+      setError(code === "NOT_SCHEDULED" ? (lang === "ar" ? "لا يمكنك تسجيل الحضور لأنك غير مدرج في جدول اليوم." : "You cannot check in because you are not scheduled today.") : code === "GPS_REQUIRED" ? t("locationDenied") : code === "STATION_LOCATION_REQUIRED" ? t("locationNotSet") : code === "OUTSIDE_STATION" ? t("outsideLocation") : (code || "Failed to check in"));
     } finally {
       setLoading(false);
     }
@@ -166,7 +170,11 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
           {attendance.distance_meters != null && ` (${attendance.distance_meters}m)`}
         </p>
       )}
-      {!hasAssignedStation && (
+      {!shift ? (
+        <p className="text-xs text-amber-700 font-body">
+          {lang === "ar" ? "أنت غير مدرج في جدول اليوم؛ تسجيل الحضور غير متاح." : "You are not scheduled today; check-in is unavailable."}
+        </p>
+      ) : !hasAssignedStation && (
         <p className="text-xs text-amber-700 font-body">
           {lang === "ar" ? "لم تُعيَّن لك محطة عمل بعد؛ تسجيل الحضور غير متاح." : "No workplace is assigned yet; check-in is unavailable."}
         </p>
@@ -177,7 +185,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         {!attendance?.check_in_at ? (
           <button
             onClick={handleCheckIn}
-            disabled={loading}
+            disabled={loading || !shift}
             className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body disabled:opacity-50"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />} {t("checkIn")}

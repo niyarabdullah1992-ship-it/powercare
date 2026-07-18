@@ -20,7 +20,7 @@ function distanceMeters(a, b) {
 // Smart one-tap attendance hero: pre-locates the employee on load, shows live
 // in/out-of-range status against their station, then checks in with a single tap.
 export default function QuickCheckInCard({ currentUser, company }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { data } = useAuth();
   const shift = getTodaysShift(data, currentUser);
   const station = data?.stations?.find((s) => s.id === (currentUser.stationId || HQ_STATION_ID));
@@ -77,6 +77,10 @@ export default function QuickCheckInCard({ currentUser, company }) {
 
   const handleCheckIn = async () => {
     setError("");
+    if (!shift) {
+      setError(lang === "ar" ? "لا يمكنك تسجيل الحضور لأنك غير مدرج في جدول اليوم." : "You cannot check in because you are not scheduled today.");
+      return;
+    }
     setLoading(true);
     try {
       // Location is MANDATORY before check-in — no location, no check-in.
@@ -107,7 +111,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
       if (res?.data?.attendance) setAttendance(res.data.attendance);
     } catch (err) {
       const code = err?.response?.data?.error;
-      setError(code === "GPS_REQUIRED" ? t("locationDenied") : code === "STATION_LOCATION_REQUIRED" ? t("locationNotSet") : code === "OUTSIDE_STATION" ? t("outsideLocation") : (code || t("aiActionFailed")));
+      setError(code === "NOT_SCHEDULED" ? (lang === "ar" ? "لا يمكنك تسجيل الحضور لأنك غير مدرج في جدول اليوم." : "You cannot check in because you are not scheduled today.") : code === "GPS_REQUIRED" ? t("locationDenied") : code === "STATION_LOCATION_REQUIRED" ? t("locationNotSet") : code === "OUTSIDE_STATION" ? t("outsideLocation") : (code || t("aiActionFailed")));
     } finally {
       setLoading(false);
     }
@@ -165,7 +169,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
           ) : (
             <button
               onClick={checkedIn ? handleCheckOut : handleCheckIn}
-              disabled={loading}
+              disabled={loading || (!checkedIn && !shift)}
               className={`w-28 h-28 rounded-full flex flex-col items-center justify-center gap-1 text-sm font-body font-medium shadow-lg transition-transform active:scale-95 disabled:opacity-60 ${
                 checkedIn
                   ? "bg-card border-4 border-accent text-accent hover:bg-accent/5"
@@ -186,6 +190,12 @@ export default function QuickCheckInCard({ currentUser, company }) {
         {/* Status + smart location */}
         <div className="flex-1 space-y-2 text-center md:text-start">
           <h3 className="font-heading text-xl font-semibold">{t("myAttendance")}</h3>
+
+          {!shift && !checkedIn && (
+            <p className="text-xs text-amber-700 font-body">
+              {lang === "ar" ? "أنت غير مدرج في جدول اليوم؛ تسجيل الحضور غير متاح." : "You are not scheduled today; check-in is unavailable."}
+            </p>
+          )}
 
           {checkedIn && (
             <p className="text-xs text-muted-foreground font-body">

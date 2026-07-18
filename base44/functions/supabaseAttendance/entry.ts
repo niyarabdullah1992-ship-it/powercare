@@ -96,6 +96,17 @@ Deno.serve(async (req) => {
       const end = (useActiveWindow ? request.activeEndDate : request.endDate)?.slice(0, 10);
       return !!start && !!end && start <= date && date <= end;
     });
+    const getScheduledShift = async (companyId, employeeId) => {
+      const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Riyadh", weekday: "short" }).format(new Date());
+      const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
+      const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "schedules" });
+      for (const schedule of (blobs[0]?.payload || [])) {
+        for (const shift of (schedule.shiftTypes || [])) {
+          if ((schedule.assignments?.[dayIndex]?.[shift.id] || []).includes(employeeId)) return shift;
+        }
+      }
+      return null;
+    };
     // Strict date formats — values are interpolated into PostgREST query strings,
     // so anything not matching is rejected (blocks query-parameter injection).
     const isDate = (v) => {
@@ -314,13 +325,15 @@ Deno.serve(async (req) => {
     // page) — the frontend resolves the employee's shift for today and passes it in.
 
     if (action === "checkIn") {
-      const { companyId, employeeId, employeeName, stationId, lat, lng, accuracy, shiftStart } = body;
+      const { companyId, employeeId, employeeName, stationId, lat, lng, accuracy } = body;
       if (!companyId || !employeeId) return Response.json({ error: "Missing fields" }, { status: 400 });
       // Check-in is always personal; management privileges never permit impersonation.
       if (!auth?.admin && employeeId !== auth?.userId) {
         return Response.json({ error: "Forbidden" }, { status: 403 });
       }
       const date = todayStr();
+      const scheduledShift = await getScheduledShift(companyId, employeeId);
+      if (!scheduledShift) return Response.json({ error: "NOT_SCHEDULED" }, { status: 400 });
       const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const existing = await existingRes.json();
       if (Array.isArray(existing) && existing.length > 0 && existing[0].check_in_at) {
@@ -346,7 +359,7 @@ Deno.serve(async (req) => {
         return Response.json({ error: "OUTSIDE_STATION", distanceMeters: nearestDist }, { status: 400 });
       }
       const now = new Date();
-      const startMinutes = toMinutes(shiftStart) ?? toMinutes(settings.work_start_time) ?? 480;
+      const startMinutes = toMinutes(scheduledShift.start) ?? toMinutes(settings.work_start_time) ?? 480;
       const nowMinutes = riyadhMinutes();
       const lateMinutes = Math.max(0, nowMinutes - startMinutes);
       const status = lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present";
