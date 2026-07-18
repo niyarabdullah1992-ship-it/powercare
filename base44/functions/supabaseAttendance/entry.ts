@@ -109,6 +109,12 @@ Deno.serve(async (req) => {
       }
       return null;
     };
+    const getEmergencyWindow = async (companyId) => {
+      const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "attendanceEmergency" });
+      const window = blobs[0]?.payload?.[0] || null;
+      const now = Date.now();
+      return window ? { ...window, active: new Date(window.startAt).getTime() <= now && now <= new Date(window.endAt).getTime() } : null;
+    };
     // Strict date formats — values are interpolated into PostgREST query strings,
     // so anything not matching is rejected (blocks query-parameter injection).
     const isDate = (v) => {
@@ -202,8 +208,26 @@ Deno.serve(async (req) => {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(companyId)}`, { headers });
       const rows = await res.json();
       const defaults = { company_id: companyId, work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: true, gps_required: true };
-      if (!res.ok || !Array.isArray(rows) || rows.length === 0) return Response.json({ settings: defaults });
-      return Response.json({ settings: rows[0] });
+      const emergency = await getEmergencyWindow(companyId);
+      const settings = (!res.ok || !Array.isArray(rows) || rows.length === 0) ? defaults : rows[0];
+      return Response.json({ settings: { ...settings, emergency_active: !!emergency?.active, emergency_start_at: emergency?.startAt || null, emergency_end_at: emergency?.endAt || null, emergency_by: emergency?.activatedBy || null } });
+    }
+
+    if (action === "setAttendanceEmergency" || action === "clearAttendanceEmergency") {
+      if (!auth?.admin && !["owner", "director", "ops_manager", "station_manager"].includes(auth?.role)) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const companyId = auth?.companyId || body.companyId;
+      const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "attendanceEmergency" });
+      if (action === "clearAttendanceEmergency") {
+        if (blobs[0]) await base44.asServiceRole.entities.CompanyDataBlob.update(blobs[0].id, { payload: [] });
+        return Response.json({ ok: true });
+      }
+      const start = new Date(body.startAt);
+      const end = new Date(body.endAt);
+      if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end) return Response.json({ error: "Invalid emergency time range" }, { status: 400 });
+      const window = { startAt: start.toISOString(), endAt: end.toISOString(), activatedBy: auth?.name || auth?.role, activatedAt: new Date().toISOString() };
+      if (blobs[0]) await base44.asServiceRole.entities.CompanyDataBlob.update(blobs[0].id, { payload: [window] });
+      else await base44.asServiceRole.entities.CompanyDataBlob.create({ companyId, category: "attendanceEmergency", payload: [window] });
+      return Response.json({ ok: true, emergency: window });
     }
 
     if (action === "updateSettings") {
@@ -372,26 +396,29 @@ Deno.serve(async (req) => {
       const setRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(companyId)}`, { headers });
       const setRows = await setRes.json();
       const settings = (Array.isArray(setRows) && setRows[0]) || { work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: true, gps_required: true };
-      if (lat == null || lng == null) {
-        return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
-      }
-      // Verify only against the station assigned by today's schedule. Being at a
-      // different company location must not be reported as inside this workplace.
+      const emergency = await getEmergencyWindow(companyId);
+      if (!emergency?.active && (lat == null || lng == null)) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       const scheduledStationId = scheduledShift.stationId || auth?.stationId || stationId;
-      const workplaces = (await listWorkplaces()).filter((workplace) => workplace.stationId === scheduledStationId);
-      if (workplaces.length === 0) {
-        return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
+      let workplace = null;
+      let recordedWorkplace = null;
+      let nearestDist = null;
+      if (!emergency?.active) {
+        const workplaces = (await listWorkplaces()).filter((item) => item.stationId === scheduledStationId);
+        if (workplaces.length === 0) return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
+        const match = matchWorkplace(workplaces, lat, lng);
+        workplace = match.best;
+        recordedWorkplace = match.best || match.nearest;
+        nearestDist = match.nearestDist;
       }
-      const { best: workplace, nearest, nearestDist } = matchWorkplace(workplaces, lat, lng);
       const inZone = !!workplace;
-      const recordedWorkplace = workplace || nearest;
       const now = new Date();
       const startMinutes = toMinutes(scheduledShift.start) ?? toMinutes(settings.work_start_time) ?? 480;
       const nowMinutes = riyadhMinutes();
       const lateMinutes = Math.max(0, nowMinutes - startMinutes);
-      const status = inZone ? (lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present") : "absent";
+      const timelyStatus = lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present";
+      const status = emergency?.active ? timelyStatus : (inZone ? timelyStatus : "absent");
       const distMeters = recordedWorkplace?.dist ?? nearestDist;
-      const locationStatus = inZone ? "inside" : "outside";
+      const locationStatus = emergency?.active ? "emergency" : (inZone ? "inside" : "outside");
       const payload = {
         company_id: companyId,
         employee_id: employeeId,
@@ -402,8 +429,8 @@ Deno.serve(async (req) => {
         status,
         late_minutes: status === "late" ? lateMinutes : 0,
         in_zone: inZone,
-        manual_override: false,
-        override_by: null,
+        manual_override: !!emergency?.active,
+        override_by: emergency?.active ? emergency.activatedBy : null,
         excused: false,
         early_checkout: false,
         check_in_lat: lat ?? null,
@@ -458,22 +485,22 @@ Deno.serve(async (req) => {
       if (!auth?.admin && employeeId !== auth?.userId) {
         return Response.json({ error: "Forbidden" }, { status: 403 });
       }
-      if (lat == null || lng == null) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
+      const emergency = await getEmergencyWindow(auth.companyId);
+      if (!emergency?.active && (lat == null || lng == null)) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       const date = todayStr();
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const rows = await res.json();
       const row = Array.isArray(rows) && rows[0];
       if (!row || !row.check_in_at) return Response.json({ error: "NOT_CHECKED_IN" }, { status: 400 });
       if (row.check_out_at) return Response.json({ error: "ALREADY_CHECKED_OUT", attendance: row }, { status: 400 });
-      // Verify the checkout location against the server-stored workplaces — the
-      // employee may check out from any company station (e.g. moved stations mid-day).
-      const workplaces = await listWorkplaces();
-      if (workplaces.length === 0) return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
-      const { best: outWorkplace, nearestDist } = matchWorkplace(workplaces, lat, lng);
-      if (!outWorkplace) {
-        return Response.json({ error: "OUTSIDE_STATION", distanceMeters: nearestDist }, { status: 400 });
+      let checkoutDistance = null;
+      if (!emergency?.active) {
+        const workplaces = await listWorkplaces();
+        if (workplaces.length === 0) return Response.json({ error: "STATION_LOCATION_REQUIRED" }, { status: 400 });
+        const { best: outWorkplace, nearestDist } = matchWorkplace(workplaces, lat, lng);
+        if (!outWorkplace) return Response.json({ error: "OUTSIDE_STATION", distanceMeters: nearestDist }, { status: 400 });
+        checkoutDistance = outWorkplace.dist;
       }
-      const checkoutDistance = outWorkplace.dist;
       const now = new Date();
       const workHours = Math.round(((now.getTime() - new Date(row.check_in_at).getTime()) / 3600000) * 100) / 100;
       const nowMinutes = riyadhMinutes();
@@ -482,7 +509,7 @@ Deno.serve(async (req) => {
       const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(row.id)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
-        body: JSON.stringify({ check_out_at: now.toISOString(), work_hours: workHours, early_checkout: earlyCheckout, check_out_lat: lat, check_out_lng: lng }),
+        body: JSON.stringify({ check_out_at: now.toISOString(), work_hours: workHours, early_checkout: earlyCheckout, check_out_lat: lat ?? null, check_out_lng: lng ?? null }),
       });
       const updated = await patchRes.json();
       if (!patchRes.ok) {

@@ -36,7 +36,9 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         base44.functions.invoke("supabaseAttendance", { action: "getSettings", companyId: company.id }),
         base44.functions.invoke("supabaseAttendance", { action: "getTodayStatus", employeeId: currentUser.id }),
       ]);
-      setSettings(setRes?.data?.settings || null);
+      const loadedSettings = setRes?.data?.settings || null;
+      setSettings(loadedSettings);
+      if (!loadedSettings?.emergency_active && hasAssignedStation) startGeoWarmup();
       const att = attRes?.data?.attendance || null;
       setAttendance(att);
       onStatusChange?.(att);
@@ -47,8 +49,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
 
   useEffect(() => {
     load();
-    // Never request GPS until the employee has at least one assigned workplace.
-    if (hasAssignedStation) startGeoWarmup();
+    // GPS warmup starts after settings load, unless an emergency exception is active.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id, company?.id]);
 
@@ -64,9 +65,8 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
     }
     setLoading(true);
     try {
-      // Location is MANDATORY before check-in — no location, no check-in.
-      const coords = await getAccuratePosition();
-      if (!coords) {
+      const coords = settings?.emergency_active ? null : await getAccuratePosition();
+      if (!settings?.emergency_active && !coords) {
         setError(t("locationDenied"));
         setLoading(false);
         return;
@@ -98,9 +98,8 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
     setError("");
     setLoading(true);
     try {
-      // Location is also MANDATORY at check-out — same rule as check-in.
-      const coords = await getAccuratePosition();
-      if (!coords) {
+      const coords = settings?.emergency_active ? null : await getAccuratePosition();
+      if (!settings?.emergency_active && !coords) {
         setError(t("locationDenied"));
         setLoading(false);
         return;
@@ -110,8 +109,8 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         companyId: company.id,
         employeeId: currentUser.id,
         shiftEnd: shift?.end,
-        lat: coords.lat, lng: coords.lng,
-        accuracy: coords.accuracy ?? null,
+        lat: coords?.lat ?? null, lng: coords?.lng ?? null,
+        accuracy: coords?.accuracy ?? null,
         stationLat: station?.lat ?? null,
         stationLng: station?.lng ?? null,
         radiusMeters: station?.radiusMeters ?? null,
@@ -139,6 +138,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         )}
       </div>
 
+      {settings?.emergency_active && <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-800">{lang === "ar" ? "استثناء الموقع للطوارئ نشط حاليًا." : "Emergency location exception is currently active."}</p>}
       {attendance?.check_in_at && (
         <p className="text-xs text-muted-foreground font-body">
           {t("checkedInAt")} {formatTime(attendance.check_in_at, format, lang)}
@@ -166,8 +166,8 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         <p className="text-xs text-amber-700 font-body">{t("earlyCheckoutLabel")}</p>
       )}
       {attendance?.location_status && (
-        <p className={`text-xs font-body ${attendance.location_status === "inside" ? "text-emerald-700" : "text-red-700"}`}>
-          {attendance.location_status === "inside" ? t("insideLocation") : t("outsideLocation")}
+        <p className={`text-xs font-body ${attendance.location_status === "outside" ? "text-red-700" : "text-emerald-700"}`}>
+          {attendance.location_status === "emergency" ? (lang === "ar" ? "تم التسجيل ضمن استثناء الطوارئ" : "Recorded under the emergency exception") : attendance.location_status === "inside" ? t("insideLocation") : t("outsideLocation")}
           {attendance.distance_meters != null && ` (${attendance.distance_meters}m)`}
         </p>
       )}
@@ -204,7 +204,7 @@ export default function CheckInOutCard({ currentUser, company, t, onStatusChange
         )}
       </div>
 
-      <p className="text-[11px] text-muted-foreground font-body flex items-center gap-1"><MapPin className="w-3 h-3" /> {t("gpsNote")}</p>
+      {!settings?.emergency_active && <p className="text-[11px] text-muted-foreground font-body flex items-center gap-1"><MapPin className="w-3 h-3" /> {t("gpsNote")}</p>}
     </div>
   );
 }

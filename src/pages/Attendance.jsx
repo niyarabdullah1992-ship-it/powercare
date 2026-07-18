@@ -16,6 +16,7 @@ import PageHeader from "@/components/PageHeader";
 // the page itself now appears instantly with the check-in card + team list.
 const AttendanceMonthlyReport = lazy(() => import("@/components/attendance/AttendanceMonthlyReport"));
 const AttendanceSettingsPanel = lazy(() => import("@/components/attendance/AttendanceSettingsPanel"));
+const AttendanceEmergencyPanel = lazy(() => import("@/components/attendance/AttendanceEmergencyPanel"));
 const AttendanceLocationsPanel = lazy(() => import("@/components/attendance/AttendanceLocationsPanel"));
 const AttendanceAnalytics = lazy(() => import("@/components/attendance/AttendanceAnalytics"));
 const AttendanceMapDashboard = lazy(() => import("@/components/attendance/AttendanceMapDashboard"));
@@ -35,6 +36,7 @@ export default function Attendance() {
   const canManageLeave = data && currentUser && (isManager || hasHRPermission(currentUser, data, "manage_leave"));
   // Company-wide attendance policy is restricted to the owner and senior operations roles.
   const canEditSettings = data && currentUser && (isCompanyOwner(currentUser, data) || ["director", "ops_manager"].includes(currentUser.role));
+  const canManageEmergency = data && currentUser && (canEditSettings || currentUser.role === "station_manager");
   const defaultEmployees = data && currentUser ? visibleEmployees(currentUser, data) : [];
   const leaveScope = data && currentUser?.hrLevelId ? hrScopeStations(currentUser, data) : null;
   const defaultStationId = data?.stations?.[0]?.id || null;
@@ -79,7 +81,7 @@ export default function Attendance() {
       { key: "analytics", label: t("analyticsTab") },
     ] : []),
     ...(canManageLeave ? [{ key: "leaves", label: t("leaveRequests") }] : []),
-    ...(canEditSettings ? [{ key: "settings", label: t("settingsTab") }] : []),
+    ...(canManageEmergency ? [{ key: "settings", label: t("settingsTab") }] : []),
   ];
   const activeTab = tabs.some((item) => item.key === tab) ? tab : tabs[0]?.key;
 
@@ -119,10 +121,11 @@ export default function Attendance() {
             {activeTab === "report" && <AttendanceMonthlyReport employees={employees} defaultEmployeeId={currentUser.id} t={t} />}
             {activeTab === "analytics" && <AttendanceAnalytics employees={employees} t={t} />}
             {activeTab === "leaves" && <AttendanceLeaveRequests employees={employees} stations={data.stations || []} t={t} lang={lang} />}
-            {activeTab === "settings" && canEditSettings && (
+            {activeTab === "settings" && canManageEmergency && (
               <div className="space-y-4">
-                <AttendanceLocationsPanel company={company} currentUser={currentUser} t={t} />
-                <AttendanceSettingsPanel company={company} currentUser={currentUser} t={t} />
+                <AttendanceEmergencyPanel company={company} currentUser={currentUser} />
+                {canEditSettings && <AttendanceLocationsPanel company={company} currentUser={currentUser} t={t} />}
+                {canEditSettings && <AttendanceSettingsPanel company={company} currentUser={currentUser} t={t} />}
               </div>
             )}
           </Suspense>

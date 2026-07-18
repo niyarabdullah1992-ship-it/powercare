@@ -41,9 +41,10 @@ export default function QuickCheckInCard({ currentUser, company }) {
           base44.functions.invoke("supabaseAttendance", { action: "getSettings", companyId: company.id }),
           base44.functions.invoke("supabaseAttendance", { action: "getTodayStatus", employeeId: currentUser.id }),
         ]);
-        setSettings(setRes?.data?.settings || null);
+        const loadedSettings = setRes?.data?.settings || null;
+        setSettings(loadedSettings);
         setAttendance(attRes?.data?.attendance || null);
-        if (setRes?.data?.settings?.gps_enabled !== false) locate();
+        if (!loadedSettings?.emergency_active && loadedSettings?.gps_enabled !== false) locate();
       } catch {
         // settings unavailable — GPS is on by default, still ask for the location
         locate();
@@ -80,10 +81,9 @@ export default function QuickCheckInCard({ currentUser, company }) {
     }
     setLoading(true);
     try {
-      // Location is MANDATORY before check-in — no location, no check-in.
-      const c = await getAccuratePosition();
+      const c = settings?.emergency_active ? null : await getAccuratePosition();
       if (c) { setCoords(c); setLocState("ready"); }
-      if (!c) {
+      if (!settings?.emergency_active && !c) {
         setLocState("denied");
         setError(t("locationDenied"));
         setLoading(false);
@@ -115,10 +115,9 @@ export default function QuickCheckInCard({ currentUser, company }) {
     setError("");
     setLoading(true);
     try {
-      // Location is also MANDATORY at check-out — same rule as check-in.
-      const c = await getAccuratePosition();
+      const c = settings?.emergency_active ? null : await getAccuratePosition();
       if (c) { setCoords(c); setLocState("ready"); }
-      if (!c) {
+      if (!settings?.emergency_active && !c) {
         setLocState("denied");
         setError(t("locationDenied"));
         setLoading(false);
@@ -129,8 +128,8 @@ export default function QuickCheckInCard({ currentUser, company }) {
         companyId: company.id,
         employeeId: currentUser.id,
         shiftEnd: shift?.end,
-        lat: c.lat, lng: c.lng,
-        accuracy: c.accuracy ?? null,
+        lat: c?.lat ?? null, lng: c?.lng ?? null,
+        accuracy: c?.accuracy ?? null,
         stationLat: station?.lat ?? null,
         stationLng: station?.lng ?? null,
         radiusMeters: station?.radiusMeters ?? null,
@@ -182,6 +181,8 @@ export default function QuickCheckInCard({ currentUser, company }) {
         <div className="flex-1 space-y-2 text-center md:text-start">
           <h3 className="font-heading text-xl font-semibold">{t("myAttendance")}</h3>
 
+          {settings?.emergency_active && <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-800">{lang === "ar" ? "استثناء الموقع للطوارئ نشط حاليًا." : "Emergency location exception is currently active."}</p>}
+
           {!shift && !checkedIn && (
             <p className="text-xs text-amber-700 font-body">
               {lang === "ar" ? "أنت غير مدرج في جدول اليوم؛ تسجيل الحضور غير متاح." : "You are not scheduled today; check-in is unavailable."}
@@ -204,7 +205,7 @@ export default function QuickCheckInCard({ currentUser, company }) {
           )}
 
           {/* Live GPS indicator */}
-          {(!settings || settings.gps_enabled) && !checkedOut && (
+          {!settings?.emergency_active && (!settings || settings.gps_enabled) && !checkedOut && (
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
               {locState === "locating" && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-xs font-body text-muted-foreground">
