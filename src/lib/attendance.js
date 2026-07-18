@@ -1,4 +1,5 @@
 import { base44 } from "@/api/base44Client";
+import { isOnLeaveToday } from "@/lib/leaveTypes";
 
 // Thin helpers around the supabaseAttendance backend function, shared by the
 // check-in widget, manager dashboards, and the task-gating check in MyTasks.
@@ -13,6 +14,25 @@ export async function getTodayAttendance(employeeId) {
 
 export function isCheckedIn(att) {
   return !!(att && att.check_in_at && att.status !== "absent");
+}
+
+export function isScheduledToday(employee, data) {
+  if (!employee?.id) return false;
+  const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Riyadh", weekday: "short" }).format(new Date());
+  const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
+  return (data?.schedules || []).some((schedule) =>
+    (schedule.shiftTypes || []).some((shift) =>
+      (schedule.assignments?.[dayIndex]?.[shift.id] || []).includes(employee.id)
+    )
+  );
+}
+
+export function getAttendanceStatus(employee, attRow, data) {
+  if (isOnLeaveToday(employee)) return "on_leave";
+  if (!isScheduledToday(employee, data)) return "not_scheduled";
+  if (!attRow) return "absent";
+  if (attRow.status === "present" || attRow.status === "late" || attRow.status === "not_yet") return attRow.status;
+  return attRow.check_in_at ? "present" : "absent";
 }
 
 // Looks up the employee's shift for today from the station's existing weekly schedule

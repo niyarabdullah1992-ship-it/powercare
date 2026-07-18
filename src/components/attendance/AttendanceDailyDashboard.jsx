@@ -1,28 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { MapPin } from "lucide-react";
+import { ClipboardCheck, Loader2, MapPin } from "lucide-react";
 import LocationMapModal from "@/components/attendance/LocationMapModal";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { useI18n } from "@/lib/i18n";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
-import { isOnApprovedLeave } from "@/lib/leaveTypes";
+import { getAttendanceStatus } from "@/lib/attendance";
+import { getCompanyToken } from "@/lib/store";
 
 const STATUS_STYLE = {
   present: "bg-emerald-100 text-emerald-700 border-emerald-300",
   late: "bg-amber-100 text-amber-700 border-amber-300",
   absent: "bg-red-100 text-red-700 border-red-300",
-  on_leave: "bg-violet-100 text-violet-700 border-violet-300",
+  on_leave: "bg-sky-100 text-sky-700 border-sky-300",
+  not_scheduled: "bg-muted text-muted-foreground border-border",
   off_day: "bg-muted text-muted-foreground border-border",
   not_yet: "bg-muted text-muted-foreground border-border",
 };
 
 // Manager-facing daily attendance table — merges the visible employee roster (local
 // data) with today's attendance rows (Supabase) so unrecorded employees still show up.
-export default function AttendanceDailyDashboard({ employees, currentUser, t }) {
+export default function AttendanceDailyDashboard({ employees, currentUser, company, data, t }) {
   const { lang } = useI18n();
   const { format } = useTimeFormat();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState("");
   const [mapRow, setMapRow] = useState(null);
 
   const load = () => {
@@ -38,6 +42,24 @@ export default function AttendanceDailyDashboard({ employees, currentUser, t }) 
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employees.map((e) => e.id).join(",")]);
+
+  const markAbsentees = async () => {
+    if (!company?.id || scanning) return;
+    setScanning(true);
+    setScanError("");
+    try {
+      await base44.functions.invoke("supabaseAttendance", {
+        action: "markAbsentees",
+        companyId: company.id,
+        sessionToken: getCompanyToken(company.id),
+      });
+      await load();
+    } catch {
+      setScanError(lang === "ar" ? "تعذر رصد الغياب. حاول مرة أخرى." : "Could not mark absences. Please try again.");
+    } finally {
+      setScanning(false);
+    }
+  };
 
   const toggleExcuse = async (r) => {
     try {
@@ -57,27 +79,34 @@ export default function AttendanceDailyDashboard({ employees, currentUser, t }) 
   };
 
   const byEmployee = Object.fromEntries(rows.map((r) => [r.employee_id, r]));
-  const statusFor = (employee) => {
-    const attendance = byEmployee[employee.id];
-    if (attendance?.check_in_at) return attendance.status || "present";
-    return isOnApprovedLeave(employee) ? "on_leave" : "absent";
-  };
+  const statusFor = (employee) => getAttendanceStatus(employee, byEmployee[employee.id], data);
   const counts = employees.reduce((total, employee) => {
     const status = statusFor(employee);
     if (status === "on_leave") total.onLeave++;
+    else if (status === "not_scheduled") total.notScheduled++;
     else if (status === "absent") total.absent++;
+    else if (status === "late") total.late++;
     else total.present++;
     return total;
-  }, { present: 0, absent: 0, onLeave: 0 });
-  const statusLabel = (status) => status === "on_leave"
-    ? t("onLeaveStatus")
-    : t(`attendanceStatus${status.charAt(0).toUpperCase()}${status.slice(1).replace(/_([a-z])/, (match, char) => char.toUpperCase())}`);
+  }, { present: 0, late: 0, absent: 0, onLeave: 0, notScheduled: 0 });
+  const statusLabel = (status) => {
+    if (status === "on_leave") return t("onLeaveStatus");
+    if (status === "not_scheduled") return lang === "ar" ? "غير مجدول" : "Not scheduled";
+    return t(`attendanceStatus${status.charAt(0).toUpperCase()}${status.slice(1).replace(/_([a-z])/, (match, char) => char.toUpperCase())}`);
+  };
   const isPastCheckoutMissing = (r) => r?.check_in_at && !r?.check_out_at && r?.status !== "absent";
 
   return (
     <div className="p-5 rounded-xl border border-border bg-card space-y-3">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h3 className="font-heading text-lg font-semibold">{t("dailyAttendance")}</h3>
+        <div className="flex flex-wrap items-center gap-2">
+          {(["director", "ops_manager", "pgm", "station_manager"].includes(currentUser?.role)) && (
+            <button onClick={markAbsentees} disabled={scanning} className="flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background disabled:opacity-60">
+              {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ClipboardCheck className="h-3.5 w-3.5" />}
+              {lang === "ar" ? "رصد الغياب" : "Mark absences"}
+            </button>
+          )}
         <ComparisonExportButtons
           title={t("dailyAttendance")}
           headers={[t("employeeName"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("locationStatus")]}
@@ -86,12 +115,16 @@ export default function AttendanceDailyDashboard({ employees, currentUser, t }) 
             return [e.name, statusLabel(statusFor(e)), r?.check_in_at ? formatTime(r.check_in_at, format, lang) : "—", r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—", r?.work_hours ?? "—", r?.location_status || "—"];
           })}
         />
+        </div>
       </div>
+      {scanError && <p className="text-xs text-destructive font-body">{scanError}</p>}
       {!loading && employees.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-center"><strong className="block text-lg text-emerald-700">{counts.present}</strong><span className="text-xs text-emerald-700">{t("totalPresent")}</span></div>
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-center"><strong className="block text-lg text-amber-700">{counts.late}</strong><span className="text-xs text-amber-700">{t("totalLate")}</span></div>
           <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-center"><strong className="block text-lg text-red-700">{counts.absent}</strong><span className="text-xs text-red-700">{t("totalAbsent")}</span></div>
-          <div className="rounded-lg border border-violet-300 bg-violet-50 p-3 text-center"><strong className="block text-lg text-violet-700">{counts.onLeave}</strong><span className="text-xs text-violet-700">{t("onLeaveStatus")}</span></div>
+          <div className="rounded-lg border border-sky-300 bg-sky-50 p-3 text-center"><strong className="block text-lg text-sky-700">{counts.onLeave}</strong><span className="text-xs text-sky-700">{t("onLeaveStatus")}</span></div>
+          <div className="rounded-lg border border-border bg-muted p-3 text-center"><strong className="block text-lg">{counts.notScheduled}</strong><span className="text-xs text-muted-foreground">{lang === "ar" ? "غير مجدول" : "Not scheduled"}</span></div>
         </div>
       )}
       {loading ? (

@@ -21,8 +21,9 @@ Deno.serve(async (req) => {
     // ---- Server-side authorization ----
     // Roles are never trusted from the request body. The caller must present the
     // session token issued at login; the role is derived from the server's own
-    // Employee record. Scheduled-workflow sweeps run without a user session.
-    const SWEEP_ACTIONS = ["checkLateAlerts", "markAbsentees"];
+    // Employee record. The late-alert sweep runs without a company user session;
+    // absence classification is manager-triggered and follows normal authorization.
+    const SWEEP_ACTIONS = ["checkLateAlerts"];
     let auth = null;
     const platformUser = await base44.auth.me().catch(() => null);
     if (SWEEP_ACTIONS.includes(action)) {
@@ -553,37 +554,36 @@ Deno.serve(async (req) => {
     }
 
     if (action === "markAbsentees") {
-      // Called by the daily scheduled workflow — marks anyone in the roster with
-      // no attendance row yet today as absent.
+      if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const companyId = auth?.companyId || body.companyId;
+      if (!companyId) return Response.json({ error: "Missing companyId" }, { status: 400 });
       const date = todayStr();
-      const dirRes = await fetch(`${SUPABASE_URL}/rest/v1/employees_directory?select=*`, { headers });
+      const dirRes = await fetch(`${SUPABASE_URL}/rest/v1/employees_directory?company_id=eq.${encodeURIComponent(companyId)}&select=*`, { headers });
       const directory = await dirRes.json();
-      if (!dirRes.ok || !Array.isArray(directory) || directory.length === 0) return Response.json({ ok: true, marked: 0 });
-      const attRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?date=eq.${date}&select=employee_id`, { headers });
+      if (!dirRes.ok || !Array.isArray(directory) || directory.length === 0) return Response.json({ ok: true, marked: 0, onLeave: 0, notScheduled: 0 });
+      const employeeRecords = await base44.asServiceRole.entities.Employee.filter({ companyId });
+      const employeeById = new Map(employeeRecords.filter(canAccessEmployee).map((record) => [record.employeeId, record]));
+      const attRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(companyId)}&date=eq.${date}&select=employee_id`, { headers });
       const attRows = await attRes.json();
-      const already = new Set((Array.isArray(attRows) ? attRows : []).map((r) => r.employee_id));
+      const already = new Set((Array.isArray(attRows) ? attRows : []).map((row) => row.employee_id));
       const weekday = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Riyadh", weekday: "short" }).format(new Date());
       const dayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
-      const schedulesByCompany = {};
-      const employeesByCompany = {};
-      const scheduled = [];
-      for (const employee of directory) {
-        if (already.has(employee.employee_id) || !employee.station_id) continue;
-        if (!employeesByCompany[employee.company_id]) {
-          const companyEmployees = await base44.asServiceRole.entities.Employee.filter({ companyId: employee.company_id });
-          employeesByCompany[employee.company_id] = new Map(companyEmployees.map((record) => [record.employeeId, record]));
-        }
-        if (isOnApprovedLeave(employeesByCompany[employee.company_id].get(employee.employee_id), date)) continue;
-        if (!schedulesByCompany[employee.company_id]) {
-          const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: employee.company_id, category: "schedules" });
-          schedulesByCompany[employee.company_id] = blobs[0]?.payload || [];
-        }
-        const stationSchedule = schedulesByCompany[employee.company_id].find((item) => item.stationId === employee.station_id);
-        const hasShift = (stationSchedule?.shiftTypes || []).some((shift) => (stationSchedule.assignments?.[dayIndex]?.[shift.id] || []).includes(employee.employee_id));
-        if (hasShift) scheduled.push(employee);
+      const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "schedules" });
+      const schedules = blobs[0]?.payload || [];
+      const missing = [];
+      let onLeave = 0;
+      let notScheduled = 0;
+      for (const directoryEmployee of directory) {
+        const employee = employeeById.get(directoryEmployee.employee_id);
+        if (!employee || already.has(directoryEmployee.employee_id)) continue;
+        const hasShift = schedules.some((schedule) => (schedule.shiftTypes || []).some((shift) =>
+          (schedule.assignments?.[dayIndex]?.[shift.id] || []).includes(directoryEmployee.employee_id)
+        ));
+        if (!hasShift) { notScheduled++; continue; }
+        if (isOnApprovedLeave(employee, date)) { onLeave++; continue; }
+        missing.push(directoryEmployee);
       }
-      const missing = scheduled;
-      if (missing.length === 0) return Response.json({ ok: true, marked: 0 });
+      if (missing.length === 0) return Response.json({ ok: true, marked: 0, onLeave, notScheduled });
       const inserts = missing.map((e) => ({
         company_id: e.company_id,
         employee_id: e.employee_id,
@@ -605,7 +605,7 @@ Deno.serve(async (req) => {
         const err = await res.json();
         return Response.json({ error: err?.message || "Failed to mark absentees" }, { status: 400 });
       }
-      return Response.json({ ok: true, marked: missing.length });
+      return Response.json({ ok: true, marked: missing.length, onLeave, notScheduled });
     }
 
     return Response.json({ error: "Unknown action" }, { status: 400 });

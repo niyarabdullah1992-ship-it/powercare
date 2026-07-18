@@ -112,7 +112,7 @@ export default function Attendance() {
             ))}
           </div>
 
-          {activeTab === "team" && <AttendanceDailyDashboard employees={employees} currentUser={currentUser} t={t} />}
+          {activeTab === "team" && <AttendanceDailyDashboard employees={employees} currentUser={currentUser} company={company} data={data} t={t} />}
           <Suspense fallback={<TabLoader />}>
             {activeTab === "map" && <AttendanceMapDashboard employees={employees} t={t} />}
             {activeTab === "schedule" && <ScheduleTab />}
