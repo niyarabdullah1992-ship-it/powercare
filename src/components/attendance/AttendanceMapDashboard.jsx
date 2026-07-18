@@ -11,7 +11,6 @@ import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 const stationIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
 });
@@ -56,7 +55,7 @@ export default function AttendanceMapDashboard({ employees, t }) {
     ...stations.map((s) => [s.lat, s.lng]),
   ];
   const insideCount = located.filter((r) => r.location_status === "inside").length;
-  const outsideCount = located.filter((r) => r.location_status === "outside").length;
+  const outsideCount = located.length - insideCount;
 
   return (
     <div className="space-y-4">
@@ -115,8 +114,8 @@ export default function AttendanceMapDashboard({ employees, t }) {
                 center={[r.check_in_lat, r.check_in_lng]}
                 radius={9}
                 pathOptions={{
-                  color: r.location_status === "outside" ? "#dc2626" : "#059669",
-                  fillColor: r.location_status === "outside" ? "#ef4444" : "#10b981",
+                  color: r.location_status === "inside" ? "#059669" : "#dc2626",
+                  fillColor: r.location_status === "inside" ? "#10b981" : "#ef4444",
                   fillOpacity: 0.85,
                   weight: 2,
                 }}
