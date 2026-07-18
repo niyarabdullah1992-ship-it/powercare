@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { Banknote, Download, Users, CheckCircle2, Wallet, RefreshCw } from "lucide-react";
+import { Banknote, Download, Users, CheckCircle2, Wallet, RefreshCw, FileSpreadsheet } from "lucide-react";
 import { ensurePayrollRun, getRun, monthKey, netOf, payrollItemIssues, updatePayrollItem, setItemPaid, syncPayrollFromProfiles } from "@/lib/payroll";
 import { printReport } from "@/lib/printReport";
+import { exportExcelColored } from "@/lib/exportExcelColored";
 import PayrollRow from "@/components/payroll/PayrollRow";
-import PayrollTemplateCard from "@/components/payroll/PayrollTemplateCard";
 import StationMultiSelect from "@/components/payroll/StationMultiSelect";
 import PayrollSalaryNotice from "@/components/payroll/PayrollSalaryNotice";
 import { canAdjustPayroll, hrScopeStations } from "@/lib/permissions";
@@ -91,6 +91,20 @@ export default function Payroll() {
     });
   };
 
+  const exportPayrollExcel = () => {
+    exportExcelColored({
+      filename: `payroll_${month}`,
+      title: ar ? `مسيّر رواتب — ${monthLabel} — ${stationLabel}` : `Payroll Run — ${monthLabel} — ${stationLabel}`,
+      headers,
+      rows: visible.map((item) => {
+        const employee = employeeForItem(item);
+        return [employee?.name || "—", item.base, item.allowances, item.bonus, item.deductions, netOf(item), item.paid ? (ar ? "مدفوع" : "Paid") : (ar ? "غير مدفوع" : "Unpaid")];
+      }),
+      color: branding.color || "#b07d3f",
+      dir,
+    });
+  };
+
   const exportPayslip = (item) => {
     const e = employeeForItem(item);
     printReport({
@@ -137,15 +151,16 @@ export default function Payroll() {
           <button onClick={syncFromProfiles} className="flex items-center gap-1.5 rounded-md border border-input bg-card px-3.5 py-2 text-sm font-body text-foreground hover:bg-secondary">
             <RefreshCw className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تحديث من الملفات الشخصية" : "Refresh from profiles"}
           </button>
+          <button onClick={exportPayrollExcel} className="flex items-center gap-1.5 rounded-md border border-input bg-card px-3.5 py-2 text-sm font-body text-foreground hover:bg-secondary">
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" strokeWidth={1.75} /> {ar ? "تنزيل Excel" : "Download Excel"}
+          </button>
           <button onClick={exportPayroll} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-foreground text-background text-sm font-body hover:opacity-90">
-            <Download className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تصدير PDF" : "Export PDF"}
+            <Download className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تنزيل PDF" : "Download PDF"}
           </button>
         </div>
       </div>
 
       <PayrollSalaryNotice ar={ar} />
-
-      <PayrollTemplateCard company={company} data={data} employees={payrollEmployees} month={month} ar={ar} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
