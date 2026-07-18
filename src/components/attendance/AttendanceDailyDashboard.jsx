@@ -32,7 +32,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
   const load = () => {
     if (!employees.length) { setRows([]); setLoading(false); return; }
     setLoading(true);
-    base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: employees.map((e) => e.id) })
+    return base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: employees.map((e) => e.id) })
       .then((res) => setRows(res?.data?.rows || []))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
@@ -101,7 +101,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h3 className="font-heading text-lg font-semibold">{t("dailyAttendance")}</h3>
         <div className="flex flex-wrap items-center gap-2">
-          {(["director", "ops_manager", "pgm", "station_manager"].includes(currentUser?.role)) && (
+          {(["owner", "director", "ops_manager", "pgm", "station_manager"].includes(currentUser?.role)) && (
             <button onClick={markAbsentees} disabled={scanning} className="flex items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background disabled:opacity-60">
               {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ClipboardCheck className="h-3.5 w-3.5" />}
               {lang === "ar" ? "رصد الغياب" : "Mark absences"}

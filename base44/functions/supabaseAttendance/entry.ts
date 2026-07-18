@@ -523,10 +523,8 @@ Deno.serve(async (req) => {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=in.(${idsList})&date=gte.${month}-01&date=lte.${month}-31`, { headers });
       const rows = await res.json();
       if (!res.ok || !Array.isArray(rows)) return Response.json({ stats: [] });
-      const employeeRecords = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId });
-      const employeeById = new Map(employeeRecords.map((employee) => [employee.employeeId, employee]));
       const byEmployee = {};
-      for (const id of employeeIds) byEmployee[id] = { employeeId: id, present: 0, late: 0, excusedLate: 0, absent: 0, onLeave: 0, offDay: 0, lateMinutesSum: 0 };
+      for (const id of employeeIds) byEmployee[id] = { employeeId: id, present: 0, late: 0, excusedLate: 0, absent: 0, offDay: 0, lateMinutesSum: 0 };
       for (const r of rows) {
         const bucket = byEmployee[r.employee_id];
         if (!bucket) continue;
@@ -536,8 +534,7 @@ Deno.serve(async (req) => {
           else bucket.late++;
           bucket.lateMinutesSum += Number(r.late_minutes) || 0;
         } else if (r.status === "absent") {
-          if (isOnApprovedLeave(employeeById.get(r.employee_id), r.date)) bucket.onLeave++;
-          else if (!r.excused) bucket.absent++;
+          if (!r.excused) bucket.absent++;
         } else if (r.status === "off_day") bucket.offDay++;
       }
       const stats = Object.values(byEmployee).map((b) => {

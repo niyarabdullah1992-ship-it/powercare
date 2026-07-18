@@ -29,7 +29,6 @@ export default function AttendanceAnalytics({ employees, t }) {
     attendanceRate: s.attendanceRate ?? 0,
     lateCount: s.late + s.excusedLate,
     avgLateMinutes: s.avgLateMinutes,
-    onLeave: s.onLeave || 0,
   }));
   const avgRate = stats.length
     ? Math.round((stats.reduce((sum, s) => sum + (s.attendanceRate || 0), 0) / stats.length) * 10) / 10
@@ -42,8 +41,8 @@ export default function AttendanceAnalytics({ employees, t }) {
         <div className="flex items-center gap-2 flex-wrap">
           <ComparisonExportButtons
             title={`${t("employeeComparisonLabel")} — ${month}`}
-            headers={[t("employeeName"), t("attendanceRateLabel"), t("lateFrequencyLabel"), t("avgLateMinutes"), t("onLeaveStatus")]}
-            rows={chartData.map((r) => [r.name, `${r.attendanceRate}%`, r.lateCount, r.avgLateMinutes, r.onLeave])}
+            headers={[t("employeeName"), t("attendanceRateLabel"), t("lateFrequencyLabel"), t("avgLateMinutes")]}
+            rows={chartData.map((r) => [r.name, `${r.attendanceRate}%`, r.lateCount, r.avgLateMinutes])}
           />
           <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body" />
         </div>

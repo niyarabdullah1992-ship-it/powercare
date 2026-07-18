@@ -5,7 +5,6 @@ import MobileSelect from "@/components/mobile/MobileSelect";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { useI18n } from "@/lib/i18n";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
-import { isOnApprovedLeave } from "@/lib/leaveTypes";
 
 const RANGES = [
   { val: "monthly", amount: 1, unit: "months" },
@@ -56,28 +55,21 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
       .finally(() => setLoading(false));
   }, [employeeId, dateWindow.startDate, dateWindow.endDate]);
 
-  const selectedEmployee = employees.find((employee) => employee.id === employeeId);
-  const displayRows = rows.map((row) => (
-    row.status === "absent" && isOnApprovedLeave(selectedEmployee, row.date) ? { ...row, status: "on_leave" } : row
-  ));
-  const totals = displayRows.reduce(
+  const totals = rows.reduce(
     (acc, r) => {
       if (r.status === "present") acc.present++;
       else if (r.status === "late") acc.late++;
       else if (r.status === "absent") acc.absent++;
-      else if (r.status === "on_leave") acc.onLeave++;
       acc.hours += Number(r.work_hours) || 0;
       return acc;
     },
-    { present: 0, late: 0, absent: 0, onLeave: 0, hours: 0 }
+    { present: 0, late: 0, absent: 0, hours: 0 }
   );
 
-  const statusLabel = (r) => r.status === "on_leave"
-    ? t("onLeaveStatus")
-    : t(`attendanceStatus${r.status.charAt(0).toUpperCase()}${r.status.slice(1).replace(/_([a-z])/, (m, c) => c.toUpperCase())}`);
+  const statusLabel = (r) => t(`attendanceStatus${r.status.charAt(0).toUpperCase()}${r.status.slice(1).replace(/_([a-z])/, (m, c) => c.toUpperCase())}`);
 
   const exportHeaders = [t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("lateMinutesLabel")];
-  const exportRows = displayRows.map((r) => [
+  const exportRows = rows.map((r) => [
     r.date, statusLabel(r) + (r.excused ? ` (${t("excused")})` : ""),
     r.check_in_at ? formatTime(r.check_in_at, format, lang) : "—",
     r.check_out_at ? formatTime(r.check_out_at, format, lang) : "—",
@@ -121,7 +113,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
         )}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-3 rounded-lg border border-emerald-300 bg-emerald-50 text-center">
           <p className="text-lg font-semibold text-emerald-700">{totals.present}</p>
           <p className="text-[11px] text-emerald-700 font-body">{t("totalPresent")}</p>
@@ -134,10 +126,6 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
           <p className="text-lg font-semibold text-red-700">{totals.absent}</p>
           <p className="text-[11px] text-red-700 font-body">{t("totalAbsent")}</p>
         </div>
-        <div className="p-3 rounded-lg border border-violet-300 bg-violet-50 text-center">
-          <p className="text-lg font-semibold text-violet-700">{totals.onLeave}</p>
-          <p className="text-[11px] text-violet-700 font-body">{t("onLeaveStatus")}</p>
-        </div>
         <div className="p-3 rounded-lg border border-border bg-muted text-center">
           <p className="text-lg font-semibold">{totals.hours.toFixed(1)}</p>
           <p className="text-[11px] text-muted-foreground font-body">{t("totalWorkHours")}</p>
@@ -146,7 +134,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
 
       {loading ? (
         <p className="text-sm text-muted-foreground font-body">…</p>
-      ) : displayRows.length === 0 ? (
+      ) : rows.length === 0 ? (
         <p className="text-sm text-muted-foreground font-body">{t("noAttendanceRecords")}</p>
       ) : (
         <div className="overflow-x-auto">
@@ -162,7 +150,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
               </tr>
             </thead>
             <tbody>
-              {displayRows.map((r) => (
+              {rows.map((r) => (
                 <tr key={r.id} className="border-b border-border/60">
                   <td data-label={t("date")} className="py-2 pe-3">{r.date}</td>
                   <td data-label={t("status")} className="py-2 pe-3 text-muted-foreground">

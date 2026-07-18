@@ -22,7 +22,8 @@ import CommandCenterHero from "@/components/dashboard/CommandCenterHero";
 import RiskForecastPanel from "@/components/dashboard/RiskForecastPanel";
 import DecisionQueue from "@/components/dashboard/DecisionQueue";
 import { getRiskWeights } from "@/lib/riskWeights";
-import { isOnApprovedLeave } from "@/lib/leaveTypes";
+import { isScheduledToday } from "@/lib/attendance";
+import { isOnLeaveToday } from "@/lib/leaveTypes";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -126,12 +127,11 @@ export default function Dashboard() {
   const completed = tasks.filter((tk) => tk.status === "completed").length;
 
   const teamEmployees = visibleEmployees(currentUser, data);
-  const checkedInIds = new Set(attendanceRows.filter((row) => row.check_in_at).map((row) => row.employee_id));
-  const checkedInCount = checkedInIds.size;
-  const onLeaveCount = teamEmployees.filter((employee) => !checkedInIds.has(employee.id) && isOnApprovedLeave(employee)).length;
-  const absentCount = Math.max(0, teamEmployees.length - checkedInCount - onLeaveCount);
-  const attendanceBase = Math.max(0, teamEmployees.length - onLeaveCount);
-  const attendanceRate = attendanceBase ? Math.round((checkedInCount / attendanceBase) * 100) : 0;
+  const scheduledEmployees = teamEmployees.filter((employee) => isScheduledToday(employee, data) && !isOnLeaveToday(employee));
+  const scheduledIds = new Set(scheduledEmployees.map((employee) => employee.id));
+  const checkedInCount = attendanceRows.filter((row) => row.check_in_at && scheduledIds.has(row.employee_id)).length;
+  const attendanceRate = scheduledEmployees.length ? Math.round((checkedInCount / scheduledEmployees.length) * 100) : 0;
+  const absentCount = Math.max(0, scheduledEmployees.length - checkedInCount);
   const now = Date.now();
   const delayedTasks = tasks.filter((task) => {
     const deadline = task.dueDate || task.endDate;
@@ -234,9 +234,8 @@ export default function Dashboard() {
         attendanceRate={attendanceRate}
         completed={completed}
         total={tasks.length}
-        presentCount={checkedInCount}
-        absentCount={absentCount}
-        onLeaveCount={onLeaveCount}
+        activeMembers={checkedInCount}
+        totalMembers={teamEmployees.length}
         t={t}
       />
 
