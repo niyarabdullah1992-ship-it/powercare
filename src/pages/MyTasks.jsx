@@ -11,7 +11,7 @@ import { base44 } from "@/api/base44Client";
 import { getParentPath, withAncestors, NO_SECTION } from "@/lib/taskFolders";
 import { logAudit } from "@/lib/auditLog";
 import { loadSmartDefaults, saveSmartDefaults } from "@/lib/smartDefaults";
-import { getTodayAttendance, isCheckedIn } from "@/lib/attendance";
+import { getTodayAttendance } from "@/lib/attendance";
 import { Link } from "react-router-dom";
 import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, Clock, Search, Pencil, X, ClipboardCheck, Archive, Sparkles } from "lucide-react";
 import StationCombobox from "@/components/stations/StationCombobox";
@@ -29,6 +29,7 @@ import PageHeader from "@/components/PageHeader";
 import { queryClientInstance } from "@/lib/query-client";
 import { toast } from "@/components/ui/use-toast";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
+import CompletionModeToggle from "@/components/tasks/CompletionModeToggle";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -41,6 +42,7 @@ const DATE_PRESETS = [
 
 const PRIORITY_WEIGHT = { urgent: 0, high: 1, medium: 2, low: 3 };
 const PERSONAL_WORKSPACE_ID = "hq"; // Legacy backend room used only by Individual plans.
+const hasTodayCheckIn = (attendance) => ["present", "late"].includes(attendance?.status);
 
 export default function MyTasks() {
   const { t, dir, lang } = useI18n();
@@ -75,6 +77,7 @@ export default function MyTasks() {
   const [showArchive, setShowArchive] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
+  const [completionMode, setCompletionMode] = useState("onsite");
 
   // Smart form memory — opening the create form pre-fills the user's usual choices.
   const openCreateForm = () => {
@@ -95,6 +98,7 @@ export default function MyTasks() {
 
   // Individual (personal) workspaces: no stations, no attendance gate, no escalation.
   const isIndividual = String(data?.plan || company?.plan || "").toLowerCase() === "individual";
+  const canSetCompletionMode = currentUser?.id === data?.ownerId || ["station_manager", "ops_manager", "director"].includes(currentUser?.role);
 
   const fetchTargets = async () => {
     if (!currentUser) return;
@@ -132,7 +136,7 @@ export default function MyTasks() {
   useEffect(() => {
     if (!currentUser) return;
     if (isIndividual) { setCheckedInToday(true); return; }
-    getTodayAttendance(currentUser.id).then((att) => setCheckedInToday(isCheckedIn(att)));
+    getTodayAttendance(currentUser.id).then((att) => setCheckedInToday(hasTodayCheckIn(att)));
   }, [currentUser?.id, isIndividual]);
 
   // Individuals go straight into their personal folder browser and self-assign tasks.
@@ -427,6 +431,7 @@ export default function MyTasks() {
         employeeId,
         stationId,
         priority,
+        completionMode: canSetCompletionMode ? completionMode : "onsite",
         startDate,
         endDate,
       });
@@ -451,6 +456,7 @@ export default function MyTasks() {
       setCustomDays("");
       setTaskFiles([]);
       setPriority("medium");
+      setCompletionMode("onsite");
       setSectionValue("");
       fetchTargets();
     } catch (err) {
@@ -459,9 +465,10 @@ export default function MyTasks() {
   };
 
   const logCompleted = async (targetId) => {
-    if (!isIndividual && !checkedInToday) {
+    const tg = targets.find((x) => x.id === targetId);
+    if (!isIndividual && (tg?.completionMode || "onsite") === "onsite" && !checkedInToday) {
       const attendance = await getTodayAttendance(currentUser.id);
-      if (!isCheckedIn(attendance)) {
+      if (!hasTodayCheckIn(attendance)) {
         toast({ description: t("mustCheckInFirst"), variant: "destructive" });
         return;
       }
@@ -469,7 +476,6 @@ export default function MyTasks() {
     }
     const amt = Number(logAmount) || 0;
     if (amt <= 0) return;
-    const tg = targets.find((x) => x.id === targetId);
     // Optimistic update: reflect the new progress immediately, roll back on failure.
     const prevSnapshot = tg ? { ...tg } : null;
     const proofFiles = logProofFiles;
@@ -635,6 +641,16 @@ export default function MyTasks() {
     }
   };
 
+  const convertToRemote = async (tg) => {
+    try {
+      const res = await base44.functions.invoke("supabaseTargets", { action: "convertToRemote", targetId: tg.id });
+      const updated = res?.data?.target;
+      if (updated) setTargets((prev) => prev.map((item) => item.id === updated.id ? updated : item));
+    } catch (err) {
+      alert(err?.response?.data?.error || "Failed to convert task");
+    }
+  };
+
   const deleteTarget = async (targetId) => {
     const tg = targets.find((x) => x.id === targetId);
     try {
@@ -661,7 +677,8 @@ export default function MyTasks() {
         priority: fd.get("priority"),
         endDate: fd.get("endDate"),
         taskTarget: fd.get("totalTasks"),
-      });
+        completionMode: canSetCompletionMode ? (fd.get("completionMode") || "onsite") : undefined,
+        });
       const updated = res?.data?.target;
       if (updated) {
         setTargets((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
@@ -780,6 +797,9 @@ export default function MyTasks() {
       commentsOpen={commentsOpen} setCommentsOpen={setCommentsOpen} commentText={commentText} setCommentText={setCommentText} commentFiles={commentFiles} setCommentFiles={setCommentFiles} submitComment={submitComment}
       markIssue={markIssue} setMarkIssue={setMarkIssue}
       allSectionFolders={allSectionFolders} moveTaskToSection={moveTaskToSection} setEditTarget={setEditTarget} deleteTarget={deleteTarget}
+      taskLocked={!canManage(tg) && !isIndividual && (tg.completionMode || "onsite") === "onsite" && !checkedInToday}
+      convertToRemote={convertToRemote}
+      canChangeCompletionMode={canSetCompletionMode}
     />
   );
 
@@ -843,6 +863,8 @@ export default function MyTasks() {
             <input name="title" placeholder={t("taskTitle")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             <input name="description" placeholder={t("taskDescription")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
           </div>
+
+          {canSetCompletionMode && <CompletionModeToggle value={completionMode} onChange={setCompletionMode} lang={lang} />}
 
           {/* Steps */}
           <div>
@@ -1181,6 +1203,13 @@ export default function MyTasks() {
               <input name="section" defaultValue={editTarget.section || ""} placeholder={t("sectionName")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             </div>
             <textarea name="steps" rows={3} defaultValue={editTarget.steps || ""} placeholder={t("stepsPlaceholder")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-y" />
+            {canSetCompletionMode && (
+              <CompletionModeToggle
+                value={editTarget.completionMode || "onsite"}
+                onChange={(value) => setEditTarget((current) => ({ ...current, completionMode: value }))}
+                lang={lang}
+              />
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground font-body block mb-1">{t("priority")}</label>

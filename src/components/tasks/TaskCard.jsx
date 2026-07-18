@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2, HelpCircle } from "lucide-react";
+import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2, HelpCircle, Lock } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import { formatDateTime } from "@/lib/dateFormat";
@@ -18,6 +18,7 @@ export default function TaskCard({
   commentsOpen, setCommentsOpen, commentText, setCommentText, commentFiles, setCommentFiles, submitComment,
   markIssue, setMarkIssue,
   allSectionFolders, moveTaskToSection, setEditTarget, deleteTarget,
+  taskLocked, convertToRemote, canChangeCompletionMode,
 }) {
   const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
   const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
@@ -32,7 +33,8 @@ export default function TaskCard({
   const lastComment = comments[comments.length - 1];
   const canObject = !canManage && tg.status === "active" && lastComment?.is_rejection;
   const disputeSent = !canManage && tg.status === "active" && lastComment?.is_dispute;
-  const canLogThis = canLog;
+  const completionMode = tg.completionMode || "onsite";
+  const canLogThis = canLog && !taskLocked;
   const isUrgent = tg.priority === "urgent";
   const totalDur = new Date(tg.end_date).getTime() - new Date(tg.start_date).getTime();
   const elapsed = Date.now() - new Date(tg.start_date).getTime();
@@ -46,7 +48,9 @@ export default function TaskCard({
     : pendingReview
     ? "bg-blue-100 text-blue-700 border-blue-300"
     : "bg-amber-100 text-amber-700 border-amber-300";
-  const cardBorder = overdue
+  const cardBorder = taskLocked
+    ? "border-border bg-muted/70 opacity-80"
+    : overdue
     ? "border-red-300 bg-red-50/40"
     : done
     ? "border-emerald-300 bg-emerald-50/30"
@@ -69,7 +73,12 @@ export default function TaskCard({
     <div className={`p-4 sm:p-5 rounded-xl border space-y-3 shadow-sm transition-colors ${cardBorder}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium font-body">{tg.title || t("setTarget")}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium font-body">{tg.title || t("setTarget")}</p>
+            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-body ${completionMode === "remote" ? "border-border bg-muted text-muted-foreground" : "border-accent/40 bg-accent/10 text-accent"}`}>
+              {completionMode === "remote" ? (lang === "ar" ? "🌐 عن بُعد" : "🌐 Remote") : (lang === "ar" ? "🏢 حضوري" : "🏢 On-site")}
+            </span>
+          </div>
           {tg.description && <p className="text-xs text-muted-foreground font-body mt-0.5">{tg.description}</p>}
           {tg.steps && (
             <div className="text-xs text-muted-foreground font-body mt-1 p-2 rounded bg-muted/50 whitespace-pre-wrap">
@@ -118,6 +127,17 @@ export default function TaskCard({
           )}
         </div>
       </div>
+      {taskLocked && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs font-body text-amber-800">
+          <Lock className="h-4 w-4 shrink-0" />
+          <span>{lang === "ar" ? "هذه المهمة تتطلب الحضور في الموقع — يرجى تسجيل الدخول أولًا" : "This task requires on-site attendance — please check in first."}</span>
+        </div>
+      )}
+      {canManage && canChangeCompletionMode && completionMode === "onsite" && !done && (
+        <button onClick={() => convertToRemote(tg)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-body text-muted-foreground hover:text-foreground">
+          🌐 {lang === "ar" ? "تحويل إلى عن بُعد" : "Convert to remote"}
+        </button>
+      )}
       <div className="flex items-center gap-1.5 text-xs font-body">
         {done ? (
           <span className="text-emerald-600 font-medium">{t("targetDone")}</span>
@@ -226,7 +246,7 @@ export default function TaskCard({
         </div>
       )}
 
-      <div className="pt-2 border-t border-border">
+      {!taskLocked && <div className="pt-2 border-t border-border">
         <button onClick={() => { const next = commentsOpen === tg.id ? null : tg.id; setCommentsOpen(next); setCommentText(""); setCommentFiles([]); setMarkIssue(false); }} className="flex items-center gap-1.5 text-xs text-muted-foreground font-body hover:text-foreground">
           <MessageCircle className="w-3.5 h-3.5" /> {t("comments")} ({Array.isArray(tg.comments) ? tg.comments.length : 0})
         </button>
@@ -276,7 +296,7 @@ export default function TaskCard({
             </div>
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

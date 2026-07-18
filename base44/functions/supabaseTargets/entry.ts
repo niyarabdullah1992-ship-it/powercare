@@ -98,6 +98,7 @@ Deno.serve(async (req) => {
       if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
     const isManager = !!auth?.isManager;
+    const canSetCompletionMode = !!auth?.admin || ["owner", "director", "ops_manager", "station_manager"].includes(auth?.role);
 
     // ---- Multi-tenant boundary ----
     // The shared targets table has no company column, so membership is resolved
@@ -115,6 +116,41 @@ Deno.serve(async (req) => {
     const targetInScope = (tg, scope) =>
       scope.employeeIds.has(tg.employee_id) || scope.employeeIds.has(tg.manager_id) ||
       scope.stationIds.has(tg.station_id) || scope.stationIds.has(tg.assignment_id);
+    let taskBlobCache;
+    const getTaskBlob = async () => {
+      if (taskBlobCache !== undefined) return taskBlobCache;
+      const records = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: auth.companyId, category: "tasks" });
+      taskBlobCache = records[0] || null;
+      return taskBlobCache;
+    };
+    const taskMetadataFor = async (targetId) => {
+      const blob = await getTaskBlob();
+      return (blob?.payload || []).find((item) => item.id === targetId) || null;
+    };
+    const withTaskMetadata = async (target) => {
+      const metadata = await taskMetadataFor(target.id);
+      return {
+        ...target,
+        completionMode: metadata?.completionMode || "onsite",
+        remoteConvertedBy: metadata?.remoteConvertedBy || null,
+        remoteConvertedAt: metadata?.remoteConvertedAt || null,
+      };
+    };
+    const saveTaskMetadata = async (target, updates) => {
+      const blob = await getTaskBlob();
+      const payload = Array.isArray(blob?.payload) ? [...blob.payload] : [];
+      const index = payload.findIndex((item) => item.id === target.id);
+      const current = index >= 0 ? payload[index] : { id: target.id, title: target.title || "" };
+      const next = { ...current, title: target.title || current.title || "", ...updates };
+      if (index >= 0) payload[index] = next;
+      else payload.push(next);
+      if (blob) {
+        taskBlobCache = await base44.asServiceRole.entities.CompanyDataBlob.update(blob.id, { payload });
+      } else {
+        taskBlobCache = await base44.asServiceRole.entities.CompanyDataBlob.create({ companyId: auth.companyId, category: "tasks", payload });
+      }
+      return next;
+    };
     // Fetches one target and verifies it belongs to the caller's company.
     const getScopedTarget = async (targetId) => {
       const getRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, { headers });
@@ -124,7 +160,7 @@ Deno.serve(async (req) => {
       if (auth?.admin && !auth?.companyId) return tg;
       if (!auth?.companyId) return null;
       const scope = await getCompanyScope();
-      return targetInScope(tg, scope) ? tg : null;
+      return targetInScope(tg, scope) ? await withTaskMetadata(tg) : null;
     };
     const targetStationId = (tg) => tg.assignment_type === "station_team"
       ? (tg.assignment_id || tg.station_id)
@@ -144,6 +180,22 @@ Deno.serve(async (req) => {
       const rows = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: auth.companyId, category: "companyMeta" });
       companyMetaCache = rows[0]?.payload?.[0] || {};
       return companyMetaCache;
+    };
+    const taskVisibilityRecipients = async (target) => {
+      const stationId = targetStationId(target);
+      const meta = await getCompanyMeta();
+      const linkedStations = new Set([stationId].filter(Boolean));
+      for (const group of meta.stationChatGroups || []) {
+        if ((group.stationIds || []).includes(stationId)) (group.stationIds || []).forEach((id) => linkedStations.add(id));
+      }
+      const employees = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId });
+      return employees.filter((employee) => {
+        if (employee.employeeId === target.manager_id) return true;
+        if (["director", "ops_manager"].includes(employee.role)) return true;
+        if (employee.role === "pgm") return (employee.managedStations || []).some((id) => linkedStations.has(id));
+        if (employee.role === "station_manager") return linkedStations.has(employee.stationId) || (employee.managedStations || []).some((id) => linkedStations.has(id));
+        return linkedStations.has(employee.stationId);
+      });
     };
     const canActAs = async (userId) => {
       if (!userId) return false;
@@ -248,6 +300,7 @@ Deno.serve(async (req) => {
         const scope = await getCompanyScope();
         rows = rows.filter((tg) => targetInScope(tg, scope));
       }
+      rows = await Promise.all(rows.map((target) => withTaskMetadata(target)));
       // Overdue detection: auto-close targets past their end date
       const now = Date.now();
       for (const tg of rows) {
@@ -321,7 +374,7 @@ Deno.serve(async (req) => {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can create targets" }, { status: 403 });
       }
-      const { managerId, taskTarget, days, title, description, steps, fileUrl, fileUrls, assignmentType, assignmentId, employeeId, stationId, priority, startDate: customStart, endDate: customEnd, section, taskType } = body;
+      const { managerId, taskTarget, days, title, description, steps, fileUrl, fileUrls, assignmentType, assignmentId, employeeId, stationId, priority, startDate: customStart, endDate: customEnd, section, taskType, completionMode = "onsite" } = body;
       const targetAmount = Number(taskTarget);
       if (!(title || "").trim() || !Number.isFinite(targetAmount) || targetAmount <= 0) {
         return Response.json({ error: "A title and positive task target are required" }, { status: 400 });
@@ -334,6 +387,8 @@ Deno.serve(async (req) => {
       const aType = assignmentType || "member";
       if (!["member", "station_team", "hq_team"].includes(aType)) return Response.json({ error: "Invalid assignment type" }, { status: 400 });
       if (!["urgent", "high", "medium", "low"].includes(priority || "medium")) return Response.json({ error: "Invalid priority" }, { status: 400 });
+      if (!["onsite", "remote"].includes(completionMode)) return Response.json({ error: "Invalid completion mode" }, { status: 400 });
+      if (completionMode !== "onsite" && !canSetCompletionMode) return Response.json({ error: "Forbidden" }, { status: 403 });
       const companyScope = await getCompanyScope();
       if (aType === "member" && (!employeeId || !companyScope.employeeIds.has(employeeId))) return Response.json({ error: "Select an employee in your company" }, { status: 400 });
       if (aType === "station_team" && (!assignmentId || !companyScope.stationIds.has(assignmentId))) return Response.json({ error: "Select a station in your company" }, { status: 400 });
@@ -379,6 +434,8 @@ Deno.serve(async (req) => {
       if (!res.ok) {
         return Response.json({ error: created?.message || "Failed to create target — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS section text; ALTER TABLE targets ADD COLUMN IF NOT EXISTS task_type text;" }, { status: 400 });
       }
+      const createdTarget = Array.isArray(created) ? created[0] : created;
+      await saveTaskMetadata(createdTarget, { completionMode });
       // Notify the assigned employee (member only)
       if (aType === "member" && employeeId) {
         await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
@@ -414,7 +471,7 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error("Calendar sync failed:", e.message);
       }
-      return Response.json({ target: Array.isArray(created) ? created[0] : created });
+      return Response.json({ target: await withTaskMetadata(createdTarget) });
     }
 
     if (action === "updateProgress") {
@@ -433,12 +490,12 @@ Deno.serve(async (req) => {
       if (!auth?.admin && auth?.userId) {
         const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: auth.companyId });
         const isIndividual = String(accounts[0]?.plan || "").toLowerCase() === "individual";
-        if (!isIndividual) {
+        if (!isIndividual && tg.completionMode !== "remote") {
           const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
           const attendanceRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(auth.userId)}&date=eq.${today}`, { headers });
           const attendanceRows = await attendanceRes.json();
           const attendance = Array.isArray(attendanceRows) && attendanceRows[0];
-          if (!attendance?.check_in_at || attendance.status === "absent") return Response.json({ error: "CHECK_IN_REQUIRED" }, { status: 403 });
+          if (!attendance || !["present", "late"].includes(attendance.status)) return Response.json({ error: "CHECK_IN_REQUIRED" }, { status: 403 });
         }
       }
       const newCompleted = Math.min((Number(tg.completed_tasks) || 0) + progressAmount, Number(tg.task_target));
@@ -473,6 +530,15 @@ Deno.serve(async (req) => {
       if (!patchRes.ok) {
         return Response.json({ error: updated?.message || "Failed to update progress — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS completion_proof jsonb; ALTER TABLE targets ADD COLUMN IF NOT EXISTS pre_review_completed integer;" }, { status: 400 });
       }
+      if (reachesTarget && tg.completionMode === "remote") {
+        const recipients = await taskVisibilityRecipients(tg);
+        const message = `${auth?.name || "الموظف"} أنجز مهمة عن بُعد: ${tg.title || "مهمة"}`;
+        await Promise.all(recipients.map((recipient) => fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ user_id: recipient.employeeId, message }),
+        })));
+      }
       // Notify the recorded manager using the authenticated actor identity.
       await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
         method: "POST",
@@ -484,7 +550,7 @@ Deno.serve(async (req) => {
             : `${auth?.name || "Employee"} completed ${progressAmount} tasks (${newCompleted}/${tg.task_target}).`,
         }),
       });
-      return Response.json({ target: updated[0] });
+      return Response.json({ target: await withTaskMetadata(updated[0]) });
     }
 
     if (action === "reviewCompletion") {
@@ -539,7 +605,7 @@ Deno.serve(async (req) => {
           }),
         });
       }
-      return Response.json({ target: updated[0] });
+      return Response.json({ target: await withTaskMetadata(updated[0]) });
     }
 
     if (action === "disputeRejection") {
@@ -589,7 +655,7 @@ Deno.serve(async (req) => {
           }),
         });
       }
-      return Response.json({ target: updated[0] });
+      return Response.json({ target: await withTaskMetadata(updated[0]) });
     }
 
     if (action === "deleteTarget") {
@@ -612,7 +678,7 @@ Deno.serve(async (req) => {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can edit targets" }, { status: 403 });
       }
-      const { targetId, title, description, steps, priority, endDate, taskTarget, section, taskType } = body;
+      const { targetId, title, description, steps, priority, endDate, taskTarget, section, taskType, completionMode } = body;
       if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
       const existingTg = await getScopedTarget(targetId);
       if (!existingTg) return Response.json({ error: "Target not found" }, { status: 404 });
@@ -639,6 +705,8 @@ Deno.serve(async (req) => {
       }
       if (section !== undefined) patch.section = section;
       if (taskType !== undefined) patch.task_type = taskType;
+      if (completionMode !== undefined && !["onsite", "remote"].includes(completionMode)) return Response.json({ error: "Invalid completion mode" }, { status: 400 });
+      if (completionMode !== undefined && !canSetCompletionMode) return Response.json({ error: "Forbidden" }, { status: 403 });
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=representation" },
@@ -648,7 +716,34 @@ Deno.serve(async (req) => {
       if (!res.ok) {
         return Response.json({ error: updated?.message || "Failed to update target" }, { status: 400 });
       }
-      return Response.json({ target: Array.isArray(updated) ? updated[0] : updated });
+      const updatedTarget = Array.isArray(updated) ? updated[0] : updated;
+      if (completionMode !== undefined) {
+        const conversion = existingTg.completionMode !== "remote" && completionMode === "remote"
+          ? { completionMode, remoteConvertedBy: auth?.userId || auth?.name || "owner", remoteConvertedAt: new Date().toISOString() }
+          : { completionMode };
+        await saveTaskMetadata(updatedTarget, conversion);
+      }
+      return Response.json({ target: await withTaskMetadata(updatedTarget) });
+    }
+
+    if (action === "convertToRemote") {
+      if (!isManager || !canSetCompletionMode) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const target = await getScopedTarget(body.targetId);
+      if (!target) return Response.json({ error: "Target not found" }, { status: 404 });
+      if (!canManageTarget(target)) return Response.json({ error: "Forbidden" }, { status: 403 });
+      await saveTaskMetadata(target, {
+        completionMode: "remote",
+        remoteConvertedBy: auth?.userId || auth?.name || "owner",
+        remoteConvertedAt: new Date().toISOString(),
+      });
+      const recipients = await taskVisibilityRecipients(target);
+      const message = `${auth?.name || "المدير"} حوّل المهمة إلى عن بُعد: ${target.title || "مهمة"}`;
+      await Promise.all(recipients.map((recipient) => fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ user_id: recipient.employeeId, message }),
+      })));
+      return Response.json({ target: await withTaskMetadata(target) });
     }
 
     if (action === "listNotifications") {
