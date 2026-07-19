@@ -28,5 +28,5 @@ export default function SafetyDashboardCharts({ months, hazards, lang }) {
 }
 
 function Chart({ title, children }) {
-  return <div className="rounded-xl border border-border bg-card p-4 shadow-soft"><h3 className="mb-4 text-end text-sm font-semibold text-foreground">{title}</h3><div className="h-56 w-full"><ResponsiveContainer width="100%" height="100%">{children}</ResponsiveContainer></div></div>;
+  return <div className="rounded-2xl border border-border bg-card p-4 shadow-sm"><h3 className="mb-4 text-start font-heading text-base font-semibold text-foreground">{title}</h3><div className="h-56 w-full"><ResponsiveContainer width="100%" height="100%">{children}</ResponsiveContainer></div></div>;
 }
