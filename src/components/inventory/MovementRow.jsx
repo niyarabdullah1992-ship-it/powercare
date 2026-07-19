@@ -8,11 +8,11 @@ export default function MovementRow({ entry, itemName, stationName, performerNam
   const [open, setOpen] = useState(false);
   const decrease = Number(entry.balanceAfter) < Number(entry.balanceBefore);
   const tone = decrease ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700";
-  const label = { purchase: ar ? "شراء" : "Purchase", receive: ar ? "استلام" : "Receive", issue: ar ? "صرف" : "Issue", return: ar ? "إرجاع" : "Return", transfer: ar ? "نقل" : "Transfer" }[entry.movementType] || entry.movementType;
+  const label = { purchase: ar ? "شراء" : "Purchase", receive: ar ? "استلام" : "Receive", issue: t("issueToWork"), return: ar ? "إرجاع" : "Return", transfer: ar ? "نقل" : "Transfer" }[entry.movementType] || entry.movementType;
   return <Fragment><tr className="border-t">
     <td data-label={ar ? "التاريخ" : "Date"} className="p-3">{new Date(entry.created_date).toLocaleString(ar ? "ar-SA" : "en")}</td>
     <td data-label={ar ? "الصنف" : "Item"} className="p-3 font-medium">{itemName(entry.itemId)}</td>
-    <td data-label={ar ? "الحركة" : "Type"} className="p-3">{label}</td><td data-label={ar ? "الكمية" : "Qty"} className="p-3">{entry.quantity}</td>
+    <td data-label={ar ? "الحركة" : "Type"} className="p-3"><span>{label}</span>{entry.movementType === "issue" && <span className="mt-1 block w-fit rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">{t("finalInventoryMovement")}</span>}</td><td data-label={ar ? "الكمية" : "Qty"} className="p-3">{entry.quantity}</td>
     <td data-label={ar ? "من / إلى" : "From / To"} className="p-3">{stationName(entry.fromLocationId)} / {stationName(entry.toLocationId)}</td>
     <td data-label={ar ? "المنفذ" : "Performed by"} className="p-3">{performerName(entry.performedBy)}</td>
     <td data-label={ar ? "قبل" : "Before"} className={`p-3 font-semibold ${tone}`}>{entry.balanceBefore ?? "—"}</td>

@@ -57,7 +57,7 @@ export const extraTranslations = {
     employeeComparison: "Mitarbeitervergleich", stationComparison: "Stationsvergleich",
     notCheckedInYet: "Sie haben heute noch nicht eingecheckt", alreadyCheckedOut: "Sie haben heute ausgecheckt",
     mustCheckInFirst: "Bitte checken Sie zuerst ein, bevor Sie an Aufgaben arbeiten.", goToAttendance: "Zur Anwesenheit",
-    uploadImages: "Bilder hochladen", uploadingImages: "Bilder werden hochgeladen...", maxImagesError: "Maximal 10 Bilder.", supportedImageFormats: "Unterstützte Formate: JPEG, PNG und WEBP.", imageUploadFailed: "Bilder konnten nicht hochgeladen werden.", removeImage: "Bild entfernen", closeImage: "Schließen", previousImage: "Vorheriges Bild", nextImage: "Nächstes Bild", imageLabel: "Bild", itemImages: "Artikelbilder", invoiceGoodsImages: "Rechnungs- oder Warenbilder", completedWorkImages: "Bilder der abgeschlossenen Arbeit", noPurchaseImages: "Keine Bilder für diesen Einkauf.", itemImagesUpdated: "Artikelbilder aktualisiert.",
+    uploadImages: "Bilder hochladen", uploadingImages: "Bilder werden hochgeladen...", maxImagesError: "Maximal 10 Bilder.", supportedImageFormats: "Unterstützte Formate: JPEG, PNG und WEBP.", imageUploadFailed: "Bilder konnten nicht hochgeladen werden.", removeImage: "Bild entfernen", closeImage: "Schließen", previousImage: "Vorheriges Bild", nextImage: "Nächstes Bild", imageLabel: "Bild", itemImages: "Artikelbilder", invoiceGoodsImages: "Rechnungs- oder Warenbilder", completedWorkImages: "Bilder der abgeschlossenen Arbeit", noPurchaseImages: "Keine Bilder für diesen Einkauf.", itemImagesUpdated: "Artikelbilder aktualisiert.", issueToWork: "Für die Arbeit ausgeben", finalInventoryMovement: "Letzte Bewegung — für die Arbeit ausgegeben",
   },
   fr: {
     attendanceScheduling: "Présence & Planification", chat: "Discussion", files: "Fichiers", fileSigning: "Signature de documents",
@@ -115,7 +115,7 @@ export const extraTranslations = {
     employeeComparison: "Comparaison des employés", stationComparison: "Comparaison des stations",
     notCheckedInYet: "Vous n'avez pas pointé aujourd'hui", alreadyCheckedOut: "Vous avez pointé votre départ",
     mustCheckInFirst: "Vous devez pointer avant de travailler sur les tâches.", goToAttendance: "Aller à la présence",
-    uploadImages: "Téléverser des images", uploadingImages: "Téléversement des images...", maxImagesError: "Maximum 10 images.", supportedImageFormats: "Formats pris en charge : JPEG, PNG et WEBP.", imageUploadFailed: "Impossible de téléverser les images.", removeImage: "Supprimer l’image", closeImage: "Fermer", previousImage: "Image précédente", nextImage: "Image suivante", imageLabel: "Image", itemImages: "Images de l’article", invoiceGoodsImages: "Images de la facture ou des marchandises", completedWorkImages: "Images du travail terminé", noPurchaseImages: "Aucune image pour cet achat.", itemImagesUpdated: "Images de l’article mises à jour.",
+    uploadImages: "Téléverser des images", uploadingImages: "Téléversement des images...", maxImagesError: "Maximum 10 images.", supportedImageFormats: "Formats pris en charge : JPEG, PNG et WEBP.", imageUploadFailed: "Impossible de téléverser les images.", removeImage: "Supprimer l’image", closeImage: "Fermer", previousImage: "Image précédente", nextImage: "Image suivante", imageLabel: "Image", itemImages: "Images de l’article", invoiceGoodsImages: "Images de la facture ou des marchandises", completedWorkImages: "Images du travail terminé", noPurchaseImages: "Aucune image pour cet achat.", itemImagesUpdated: "Images de l’article mises à jour.", issueToWork: "Sortie pour travaux", finalInventoryMovement: "Dernier mouvement — sorti pour travaux",
   },
   es: {
     attendanceScheduling: "Asistencia y horarios", chat: "Chat", files: "Archivos", fileSigning: "Firma de documentos",
@@ -173,7 +173,7 @@ export const extraTranslations = {
     employeeComparison: "Comparación de empleados", stationComparison: "Comparación de estaciones",
     notCheckedInYet: "No has registrado tu entrada hoy", alreadyCheckedOut: "Ya registraste tu salida hoy",
     mustCheckInFirst: "Debes registrar tu entrada antes de trabajar en tareas.", goToAttendance: "Ir a asistencia",
-    uploadImages: "Subir imágenes", uploadingImages: "Subiendo imágenes...", maxImagesError: "Máximo 10 imágenes.", supportedImageFormats: "Formatos compatibles: JPEG, PNG y WEBP.", imageUploadFailed: "No se pudieron subir las imágenes.", removeImage: "Eliminar imagen", closeImage: "Cerrar", previousImage: "Imagen anterior", nextImage: "Imagen siguiente", imageLabel: "Imagen", itemImages: "Imágenes del artículo", invoiceGoodsImages: "Imágenes de factura o mercancía", completedWorkImages: "Imágenes del trabajo completado", noPurchaseImages: "No hay imágenes para esta compra.", itemImagesUpdated: "Imágenes del artículo actualizadas.",
+    uploadImages: "Subir imágenes", uploadingImages: "Subiendo imágenes...", maxImagesError: "Máximo 10 imágenes.", supportedImageFormats: "Formatos compatibles: JPEG, PNG y WEBP.", imageUploadFailed: "No se pudieron subir las imágenes.", removeImage: "Eliminar imagen", closeImage: "Cerrar", previousImage: "Imagen anterior", nextImage: "Imagen siguiente", imageLabel: "Imagen", itemImages: "Imágenes del artículo", invoiceGoodsImages: "Imágenes de factura o mercancía", completedWorkImages: "Imágenes del trabajo completado", noPurchaseImages: "No hay imágenes para esta compra.", itemImagesUpdated: "Imágenes del artículo actualizadas.", issueToWork: "Salida para trabajo", finalInventoryMovement: "Movimiento final — entregado para trabajo",
   },
   pt: {
     attendanceScheduling: "Presença e escalas", chat: "Chat", files: "Arquivos", fileSigning: "Assinatura de documentos",
@@ -231,7 +231,7 @@ export const extraTranslations = {
     employeeComparison: "Comparação de funcionários", stationComparison: "Comparação de estações",
     notCheckedInYet: "Você ainda não registrou entrada hoje", alreadyCheckedOut: "Você já registrou saída hoje",
     mustCheckInFirst: "Registre sua entrada antes de trabalhar nas tarefas.", goToAttendance: "Ir para presença",
-    uploadImages: "Enviar imagens", uploadingImages: "Enviando imagens...", maxImagesError: "Máximo de 10 imagens.", supportedImageFormats: "Formatos aceitos: JPEG, PNG e WEBP.", imageUploadFailed: "Não foi possível enviar as imagens.", removeImage: "Remover imagem", closeImage: "Fechar", previousImage: "Imagem anterior", nextImage: "Próxima imagem", imageLabel: "Imagem", itemImages: "Imagens do item", invoiceGoodsImages: "Imagens da fatura ou mercadoria", completedWorkImages: "Imagens do trabalho concluído", noPurchaseImages: "Não há imagens para esta compra.", itemImagesUpdated: "Imagens do item atualizadas.",
+    uploadImages: "Enviar imagens", uploadingImages: "Enviando imagens...", maxImagesError: "Máximo de 10 imagens.", supportedImageFormats: "Formatos aceitos: JPEG, PNG e WEBP.", imageUploadFailed: "Não foi possível enviar as imagens.", removeImage: "Remover imagem", closeImage: "Fechar", previousImage: "Imagem anterior", nextImage: "Próxima imagem", imageLabel: "Imagem", itemImages: "Imagens do item", invoiceGoodsImages: "Imagens da fatura ou mercadoria", completedWorkImages: "Imagens do trabalho concluído", noPurchaseImages: "Não há imagens para esta compra.", itemImagesUpdated: "Imagens do item atualizadas.", issueToWork: "Saída para trabalho", finalInventoryMovement: "Movimento final — entregue para trabalho",
   },
   ru: {
     attendanceScheduling: "Посещаемость и графики", chat: "Чат", files: "Файлы", fileSigning: "Подписание документов",
@@ -289,7 +289,7 @@ export const extraTranslations = {
     employeeComparison: "Сравнение сотрудников", stationComparison: "Сравнение станций",
     notCheckedInYet: "Вы ещё не отметились сегодня", alreadyCheckedOut: "Вы уже отметили уход",
     mustCheckInFirst: "Сначала отметьте приход, прежде чем работать над задачами.", goToAttendance: "К посещаемости",
-    uploadImages: "Загрузить изображения", uploadingImages: "Загрузка изображений...", maxImagesError: "Максимум 10 изображений.", supportedImageFormats: "Поддерживаемые форматы: JPEG, PNG и WEBP.", imageUploadFailed: "Не удалось загрузить изображения.", removeImage: "Удалить изображение", closeImage: "Закрыть", previousImage: "Предыдущее изображение", nextImage: "Следующее изображение", imageLabel: "Изображение", itemImages: "Изображения товара", invoiceGoodsImages: "Изображения счёта или товара", completedWorkImages: "Изображения выполненной работы", noPurchaseImages: "Для этой покупки нет изображений.", itemImagesUpdated: "Изображения товара обновлены.",
+    uploadImages: "Загрузить изображения", uploadingImages: "Загрузка изображений...", maxImagesError: "Максимум 10 изображений.", supportedImageFormats: "Поддерживаемые форматы: JPEG, PNG и WEBP.", imageUploadFailed: "Не удалось загрузить изображения.", removeImage: "Удалить изображение", closeImage: "Закрыть", previousImage: "Предыдущее изображение", nextImage: "Следующее изображение", imageLabel: "Изображение", itemImages: "Изображения товара", invoiceGoodsImages: "Изображения счёта или товара", completedWorkImages: "Изображения выполненной работы", noPurchaseImages: "Для этой покупки нет изображений.", itemImagesUpdated: "Изображения товара обновлены.", issueToWork: "Выдача для работ", finalInventoryMovement: "Последнее движение — выдано для работ",
   },
   ja: {
     dayPlanner: "デイプランナー", lifeJournal: "ライフジャーナル", monthlyCalendar: "月間カレンダー", publicComplaints: "公開の申し立て",
@@ -341,7 +341,7 @@ export const extraTranslations = {
     employeeComparison: "従業員比較", stationComparison: "ステーション比較",
     notCheckedInYet: "今日はまだ出勤していません", alreadyCheckedOut: "今日は退勤済みです",
     mustCheckInFirst: "タスクに取り組む前に出勤を記録してください。", goToAttendance: "勤怠へ移動",
-    uploadImages: "画像をアップロード", uploadingImages: "画像をアップロード中...", maxImagesError: "画像は最大10枚です。", supportedImageFormats: "対応形式：JPEG、PNG、WEBP。", imageUploadFailed: "画像をアップロードできませんでした。", removeImage: "画像を削除", closeImage: "閉じる", previousImage: "前の画像", nextImage: "次の画像", imageLabel: "画像", itemImages: "アイテム画像", invoiceGoodsImages: "請求書または商品の画像", completedWorkImages: "完了した作業の画像", noPurchaseImages: "この購入には画像がありません。", itemImagesUpdated: "アイテム画像を更新しました。",
+    uploadImages: "画像をアップロード", uploadingImages: "画像をアップロード中...", maxImagesError: "画像は最大10枚です。", supportedImageFormats: "対応形式：JPEG、PNG、WEBP。", imageUploadFailed: "画像をアップロードできませんでした。", removeImage: "画像を削除", closeImage: "閉じる", previousImage: "前の画像", nextImage: "次の画像", imageLabel: "画像", itemImages: "アイテム画像", invoiceGoodsImages: "請求書または商品の画像", completedWorkImages: "完了した作業の画像", noPurchaseImages: "この購入には画像がありません。", itemImagesUpdated: "アイテム画像を更新しました。", issueToWork: "作業への払出", finalInventoryMovement: "最終移動 — 作業へ払出済み",
   },
   ko: {
     dayPlanner: "데일리 플래너", lifeJournal: "라이프 저널", monthlyCalendar: "월간 캘린더", publicComplaints: "공개 민원",
@@ -393,6 +393,6 @@ export const extraTranslations = {
     employeeComparison: "직원 비교", stationComparison: "현장 비교",
     notCheckedInYet: "오늘 아직 출근하지 않았습니다", alreadyCheckedOut: "오늘 퇴근 처리되었습니다",
     mustCheckInFirst: "작업 전에 먼저 출근을 기록해야 합니다.", goToAttendance: "출퇴근으로 이동",
-    uploadImages: "이미지 업로드", uploadingImages: "이미지 업로드 중...", maxImagesError: "이미지는 최대 10개입니다.", supportedImageFormats: "지원 형식: JPEG, PNG, WEBP.", imageUploadFailed: "이미지를 업로드할 수 없습니다.", removeImage: "이미지 삭제", closeImage: "닫기", previousImage: "이전 이미지", nextImage: "다음 이미지", imageLabel: "이미지", itemImages: "품목 이미지", invoiceGoodsImages: "송장 또는 상품 이미지", completedWorkImages: "완료된 작업 이미지", noPurchaseImages: "이 구매에는 이미지가 없습니다.", itemImagesUpdated: "품목 이미지가 업데이트되었습니다.",
+    uploadImages: "이미지 업로드", uploadingImages: "이미지 업로드 중...", maxImagesError: "이미지는 최대 10개입니다.", supportedImageFormats: "지원 형식: JPEG, PNG, WEBP.", imageUploadFailed: "이미지를 업로드할 수 없습니다.", removeImage: "이미지 삭제", closeImage: "닫기", previousImage: "이전 이미지", nextImage: "다음 이미지", imageLabel: "이미지", itemImages: "품목 이미지", invoiceGoodsImages: "송장 또는 상품 이미지", completedWorkImages: "완료된 작업 이미지", noPurchaseImages: "이 구매에는 이미지가 없습니다.", itemImagesUpdated: "품목 이미지가 업데이트되었습니다.", issueToWork: "작업용 출고", finalInventoryMovement: "최종 이동 — 작업용으로 출고됨",
   },
 };
