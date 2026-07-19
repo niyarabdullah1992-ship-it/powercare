@@ -11,11 +11,13 @@ export function updateSafetyRecord(companyId, stationId, updates) {
     data.safety = data.safety || [];
     let rec = data.safety.find((item) => item.stationId === stationId);
     if (!rec) {
-      rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], workHoursMonthly: 0, ltiCount: 0, checklistResults: {}, permits: [], disabledTabs: [], createdAt: new Date().toISOString() };
+      rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], dailyHours: [], ltiEntries: [], checklistResults: {}, permits: [], disabledTabs: [], createdAt: new Date().toISOString() };
       data.safety.push(rec);
     }
     const next = { ...updates };
     if (next.riskItems && !Array.isArray(next.riskItems)) delete next.riskItems;
+    if (next.dailyHours) next.dailyHours = Array.isArray(next.dailyHours) ? next.dailyHours.filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(item?.date)).map((item) => ({ date: item.date, hours: Math.max(0, Number(item.hours) || 0) })) : [];
+    if (next.ltiEntries) next.ltiEntries = Array.isArray(next.ltiEntries) ? next.ltiEntries.filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(item?.date)).map((item) => ({ date: item.date, ...(String(item.description || "").trim() ? { description: String(item.description).trim() } : {}) })) : [];
     if (next.permits && !Array.isArray(next.permits)) delete next.permits;
     if (next.disabledTabs) next.disabledTabs = Array.isArray(next.disabledTabs) ? [...new Set(next.disabledTabs.filter((key) => ["risks", "kpis", "checklist", "permits"].includes(key)))] : [];
     if (next.checklistResults && typeof next.checklistResults !== "object") delete next.checklistResults;
@@ -24,6 +26,8 @@ export function updateSafetyRecord(companyId, stationId, updates) {
     if (next.lastInspection && new Date(next.lastInspection) > new Date()) delete next.lastInspection;
     if (next.level && !["green", "amber", "red"].includes(next.level)) delete next.level;
     Object.assign(rec, next);
+    if ("dailyHours" in next) delete rec.workHoursMonthly;
+    if ("ltiEntries" in next) delete rec.ltiCount;
     if ("level" in next || "lastInspection" in next || "hazards" in next) {
       rec.approvedBy = null;
       rec.approvedAt = null;
@@ -53,7 +57,7 @@ export function approveSafetyRecord(companyId, stationId, approvedBy) {
     data.safety = data.safety || [];
     let rec = data.safety.find((item) => item.stationId === stationId);
     if (!rec) {
-      rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], workHoursMonthly: 0, ltiCount: 0, checklistResults: {}, permits: [], disabledTabs: [], createdAt: new Date().toISOString() };
+      rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], dailyHours: [], ltiEntries: [], checklistResults: {}, permits: [], disabledTabs: [], createdAt: new Date().toISOString() };
       data.safety.push(rec);
     }
     const at = new Date().toISOString();
@@ -103,7 +107,7 @@ export function recordSafetyIncident(companyId, stationId, description, actorNam
     current.safety = current.safety || [];
     let rec = current.safety.find((item) => item.stationId === stationId);
     if (!rec) {
-      rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], workHoursMonthly: 0, ltiCount: 0, checklistResults: {}, permits: [], disabledTabs: [], createdAt: new Date().toISOString() };
+      rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], dailyHours: [], ltiEntries: [], checklistResults: {}, permits: [], disabledTabs: [], createdAt: new Date().toISOString() };
       current.safety.push(rec);
     }
     rec.lastIncidentAt = new Date().toISOString();

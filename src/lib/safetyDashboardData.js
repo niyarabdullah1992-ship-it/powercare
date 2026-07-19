@@ -1,4 +1,4 @@
-import { checklistCompliance } from "@/lib/safetyStandards";
+import { checklistCompliance, safetyKpis } from "@/lib/safetyStandards";
 
 const levelColors = {
   green: "hsl(160 60% 38%)",
@@ -29,10 +29,12 @@ export function buildSafetyDashboardData(safety = [], stations = [], lang = "en"
     const record = safety.find((item) => item.stationId === station.id);
     return { station: station.name, hazards: (record?.hazards || []).length, fill: levelColors[record?.level] || "hsl(var(--muted-foreground))" };
   });
-  const currentMonth = monthMap.get(monthKey(now))?.incidents || 0;
-  const totalHours = safety.reduce((sum, record) => sum + (Number(record.workHoursMonthly) || 0), 0);
-  const totalLti = safety.reduce((sum, record) => sum + (Number(record.ltiCount) || 0), 0);
-  const totalIncidents = safety.reduce((sum, record) => sum + (record.incidentLog || []).length, 0);
+  const selectedMonth = monthKey(now);
+  const currentMonth = monthMap.get(selectedMonth)?.incidents || 0;
+  const monthlyKpis = safety.map((record) => safetyKpis(record, selectedMonth));
+  const totalHours = monthlyKpis.reduce((sum, kpi) => sum + kpi.hours, 0);
+  const totalLti = monthlyKpis.reduce((sum, kpi) => sum + kpi.lti, 0);
+  const totalIncidents = monthlyKpis.reduce((sum, kpi) => sum + kpi.incidents, 0);
   const complianceValues = stations.map((station) => checklistCompliance(safety.find((item) => item.stationId === station.id)?.checklistResults || {}));
   const compliance = complianceValues.length ? Math.round(complianceValues.reduce((sum, value) => sum + value, 0) / complianceValues.length) : 0;
 

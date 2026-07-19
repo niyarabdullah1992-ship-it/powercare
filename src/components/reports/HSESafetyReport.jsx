@@ -82,7 +82,7 @@ export default function HSESafetyReport({ data, company, stations, lang, dir }) 
         {
           heading: ar ? "مؤشرات أداء السلامة" : "Safety KPIs",
           headers: [ar ? "ساعات العمل" : "Work hours", ar ? "حوادث الشهر" : "Month incidents", "TRIR", "LTI", "LTIFR", ar ? "أيام بلا حوادث" : "Incident-free days", ar ? "المطابقة" : "Compliance"],
-          rows: (() => { const k = safetyKpis(rec || {}); return [[rec?.workHoursMonthly || 0, k.incidents, k.trir.toFixed(2), rec?.ltiCount || 0, k.ltifr.toFixed(2), k.days, `${checklistCompliance(rec?.checklistResults || {})}%`]]; })(),
+          rows: (() => { const k = safetyKpis(rec || {}); return [[k.hours, k.incidents, k.trir.toFixed(2), k.lti, k.ltifr.toFixed(2), k.days, `${checklistCompliance(rec?.checklistResults || {})}%`]]; })(),
         },
         {
           heading: ar ? "نتائج قوائم التحقق" : "Checklist Results",

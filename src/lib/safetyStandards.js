@@ -45,15 +45,23 @@ export function checklistCompliance(results = {}) {
   return ids.length ? Math.round((yes / ids.length) * 100) : 0;
 }
 
-export function safetyKpis(rec = {}) {
-  const hours = Number(rec.workHoursMonthly) || 0;
-  const month = new Date().toISOString().slice(0, 7);
-  const loggedIncidents = (rec.incidentLog || []).filter((item) => String(item.at || "").slice(0, 7) === month).length;
-  const lti = Number(rec.ltiCount) || 0;
-  // Every lost-time injury is recordable. Use the larger count because logged
-  // incidents may already include the same LTI cases and must not be doubled.
+const currentMonthKey = () => { const date = new Date(); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`; };
+
+export function getMonthlyHours(dailyHours = [], yearMonth = currentMonthKey()) {
+  return dailyHours.filter((item) => String(item.date || "").startsWith(yearMonth)).reduce((sum, item) => sum + Math.max(0, Number(item.hours) || 0), 0);
+}
+
+export function getMonthlyLti(ltiEntries = [], yearMonth = currentMonthKey()) {
+  return ltiEntries.filter((item) => String(item.date || "").startsWith(yearMonth)).length;
+}
+
+export function safetyKpis(rec = {}, yearMonth = currentMonthKey()) {
+  const current = yearMonth === currentMonthKey();
+  const hours = Array.isArray(rec.dailyHours) ? getMonthlyHours(rec.dailyHours, yearMonth) : current ? Number(rec.workHoursMonthly) || 0 : 0;
+  const lti = Array.isArray(rec.ltiEntries) ? getMonthlyLti(rec.ltiEntries, yearMonth) : current ? Number(rec.ltiCount) || 0 : 0;
+  const loggedIncidents = (rec.incidentLog || []).filter((item) => String(item.at || "").slice(0, 7) === yearMonth).length;
   const incidents = Math.max(loggedIncidents, lti);
   const last = [...(rec.incidentLog || [])].filter((item) => item.at).sort((a, b) => new Date(b.at) - new Date(a.at))[0]?.at || rec.lastIncidentAt || rec.createdAt;
   const days = last ? Math.max(0, Math.floor((Date.now() - new Date(last).getTime()) / 86400000)) : 0;
-  return { incidents, trir: hours ? (incidents * 200000) / hours : 0, ltifr: hours ? (lti * 1000000) / hours : 0, days };
+  return { hours, lti, incidents, trir: hours ? (incidents * 200000) / hours : 0, ltifr: hours ? (lti * 1000000) / hours : 0, days };
 }
