@@ -367,7 +367,7 @@ Deno.serve(async (req) => {
       return Response.json({
         kind: 'employee', token,
         employee: { companyId: rec.companyId, employeeId: rec.employeeId },
-        company: { companyId: rec.companyId, name: acc.name || '', plan: acc.plan || '', allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '', emailLanguage: acc.emailLanguage || 'en' },
+        company: { companyId: rec.companyId, name: acc.name || '', plan: acc.plan || '', allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '', emailLanguage: acc.emailLanguage || 'en', subscriptionStart: acc.subscriptionStart || null, subscriptionEnd: acc.subscriptionEnd || null },
       });
     }
 
@@ -384,7 +384,7 @@ Deno.serve(async (req) => {
     const auth = await getAuth(base44, body);
 
     if (action === 'syncAccount') {
-      const { name, ownerEmail, ownerPassword, plan, allowedEmailDomain, emailLanguage } = body;
+      const { name, ownerEmail, ownerPassword, plan, allowedEmailDomain, emailLanguage, subscriptionStart, subscriptionEnd } = body;
       const existing = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
       // Existing accounts may only be modified by their owner (or the platform builder).
       if (existing.length && (!auth || auth.role !== 'owner')) {
@@ -408,7 +408,7 @@ Deno.serve(async (req) => {
         if (sameKind) return Response.json({ error: 'email_exists' }, { status: 409 });
       }
       const supportedEmailLanguages = ['en', 'ar', 'de', 'fr', 'es', 'pt', 'ru', 'ja', 'ko'];
-      const fields = { companyId, name, ownerEmail, ownerPassword: storedPassword, plan, allowedEmailDomain: allowedEmailDomain || '', emailLanguage: supportedEmailLanguages.includes(emailLanguage) ? emailLanguage : (existing[0]?.emailLanguage || 'en') };
+      const fields = { companyId, name, ownerEmail, ownerPassword: storedPassword, plan, allowedEmailDomain: allowedEmailDomain || '', emailLanguage: supportedEmailLanguages.includes(emailLanguage) ? emailLanguage : (existing[0]?.emailLanguage || 'en'), subscriptionStart: Object.prototype.hasOwnProperty.call(body, 'subscriptionStart') ? subscriptionStart : (existing[0]?.subscriptionStart ?? null), subscriptionEnd: Object.prototype.hasOwnProperty.call(body, 'subscriptionEnd') ? subscriptionEnd : (existing[0]?.subscriptionEnd ?? null) };
       let token = null;
       if (existing.length) {
         await base44.asServiceRole.entities.CompanyAccount.update(existing[0].id, fields);

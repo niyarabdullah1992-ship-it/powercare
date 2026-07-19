@@ -9,6 +9,7 @@ import { I18nProvider } from '@/lib/i18n';
 import { AuthProvider as PowerCareAuthProvider, useAuth as usePowerCareAuth } from '@/lib/PowerCareAuth';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import TrialExpiryGate from '@/components/TrialExpiryGate';
 
 import { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -83,12 +84,12 @@ function PageLoader() {
 }
 
 function RequireAuth({ children }) {
-  const { session, data, currentUser } = usePowerCareAuth();
+  const { session, company, data, currentUser } = usePowerCareAuth();
   if (!session) return <Navigate to="/" replace />;
   // While the workspace is still loading (fresh device / restored account),
   // show a spinner instead of the blank page that pages render without a user.
   if (!data || (session.userId && !currentUser)) return <PageLoader />;
-  return <Layout>{children}</Layout>;
+  return <TrialExpiryGate company={company}><Layout>{children}</Layout></TrialExpiryGate>;
 }
 
 function AppRoutes() {

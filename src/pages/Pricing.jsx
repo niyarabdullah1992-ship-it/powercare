@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { activateCompanySession, createCompany, deleteCompany, syncCompanyAccount, getCompanyToken } from "@/lib/store";
+import { activateCompanySession, createCompany, deleteCompany, syncCompanyAccount, getCompanyToken, updateCompanyPlan } from "@/lib/store";
+import { useAuth as usePowerCareAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { Check, Loader2, ArrowLeft } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -10,6 +11,8 @@ import SignupDialog from "@/components/pricing/SignupDialog";
 export default function Pricing() {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
+  const { session, company } = usePowerCareAuth();
+  const renewal = new URLSearchParams(window.location.search).has("expired") && !!session && !!company;
   const [activePlan, setActivePlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -41,10 +44,13 @@ export default function Pricing() {
     base44.auth.loginWithProvider("sso", "/pricing?google_signup=1");
   };
 
-  const handleFreeSignup = async ({ companyName, ownerEmail, ownerPassword, authMethod }) => {
+  const handleTrialSignup = async ({ companyName, ownerEmail, ownerPassword, authMethod }) => {
     setError("");
+    const trialStart = new Date();
+    const trialEnd = new Date(trialStart);
+    trialEnd.setMonth(trialEnd.getMonth() + 3);
     const company = pendingCompanyRef.current || createCompany(
-      { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: "Free" },
+      { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: activePlan.id === "free" ? "Free" : (activePlan.id === "professional" ? "Professional" : activePlan.id === "enterprise" ? "Enterprise" : "Starter"), subscriptionStart: trialStart.toISOString().slice(0, 10), subscriptionEnd: trialEnd.toISOString().slice(0, 10) },
       { sync: false }
     );
     pendingCompanyRef.current = company;
@@ -62,6 +68,23 @@ export default function Pricing() {
     base44.functions.invoke("subscriberEmails", { action: "welcome", companyId: company.id, sessionToken: getCompanyToken(company.id) }).catch(() => {});
     navigate("/app");
     return true;
+  };
+
+  const handleRenewal = async (plan) => {
+    setActivePlan(plan);
+    if (plan.id === "free") {
+      await updateCompanyPlan(company.id, "Free", new Date().toISOString().slice(0, 10), null);
+      navigate("/app");
+      return;
+    }
+    if (window.self !== window.top) { setError(t("checkoutIframeError")); return; }
+    setLoading(true); setError("");
+    try {
+      const res = await base44.functions.invoke("stripeCheckout", { action: "createSession", plan: plan.id, billing, companyId: company.id, sessionToken: getCompanyToken(company.id), returnUrl: window.location.origin });
+      if (res.data?.url) window.location.href = res.data.url;
+      else setError(res.data?.error || t("checkoutGenericError"));
+    } catch { setError(t("checkoutGenericError")); }
+    finally { setLoading(false); }
   };
 
   const handlePaidSignup = async ({ companyName, ownerEmail, authMethod }) => {
@@ -141,10 +164,7 @@ export default function Pricing() {
               {plan.price > 0 && billing === "yearly" && (
                 <p className="text-xs text-[#3a2f22]/45 font-body">${plan.price * 10 / 12 % 1 === 0 ? plan.price * 10 / 12 : (plan.price * 10 / 12).toFixed(2)}{t("perMonth")} · {t("billedYearlyNote")}</p>
               )}
-              {plan.price > 0 && (
-                <p className="text-xs text-landing-gold font-body font-medium mb-4">{t("trialBadge")}</p>
-              )}
-              {plan.price === 0 && <div className="mb-4" />}
+              <p className="text-xs text-landing-gold font-body font-medium mb-4">{renewal ? (lang === "ar" ? "اختر خطتك للمتابعة" : "Choose your plan to continue") : t("trialBadge")}</p>
               <ul className="space-y-2 mb-6 flex-1">
                 {plan.features.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm text-[#3a2f22]/70 font-body">
@@ -154,11 +174,11 @@ export default function Pricing() {
                 ))}
               </ul>
               <button
-                onClick={() => setActivePlan(plan)}
+                onClick={() => renewal ? handleRenewal(plan) : setActivePlan(plan)}
                 disabled={loading}
                 className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {loading && activePlan?.id === plan.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (plan.price === 0 ? t("startFree") : t("startTrialBtn"))}
+                {loading && activePlan?.id === plan.id ? <Loader2 className="w-4 h-4 animate-spin" /> : renewal ? (lang === "ar" ? "اختيار الخطة" : "Choose plan") : t("startTrialBtn")}
               </button>
             </div>
           ))}
@@ -170,7 +190,7 @@ export default function Pricing() {
           key={`${activePlan.id}-${googleEmail}`}
           plan={activePlan}
           onClose={() => { pendingCompanyRef.current = null; setActivePlan(null); setError(""); }}
-          onSubmit={activePlan.price === 0 ? handleFreeSignup : handlePaidSignup}
+          onSubmit={handleTrialSignup}
           onGoogle={handleGoogleSignup}
           googleEmail={googleEmail}
           error={error}

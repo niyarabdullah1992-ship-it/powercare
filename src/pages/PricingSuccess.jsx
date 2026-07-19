@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { activateCompanySession, createCompany, syncCompanyAccount, getCompanyToken } from "@/lib/store";
+import { activateCompanySession, createCompany, syncCompanyAccount, getCompanyToken, updateCompanyPlan } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -28,6 +28,10 @@ export default function PricingSuccess() {
       .invoke("stripeCheckout", { action: "verifySession", sessionId })
       .then((res) => {
         if (res.data?.paid) {
+          if (res.data.renewal && res.data.companyId) {
+            updateCompanyPlan(res.data.companyId, PLAN_LABELS[res.data.plan] || "Starter", new Date().toISOString().slice(0, 10), null).then(() => navigate("/app"));
+            return;
+          }
           setSession(res.data);
           setStatus("password");
         } else {

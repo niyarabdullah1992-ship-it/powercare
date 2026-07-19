@@ -127,10 +127,10 @@ function saveRegistry(reg) {
 export function listCompanies() {
   return getRegistry().companies;
 }
-export function createCompany({ name, ownerEmail, ownerPassword, plan = "Starter", allowedEmailDomain = "" }, { sync = true } = {}) {
+export function createCompany({ name, ownerEmail, ownerPassword, plan = "Starter", allowedEmailDomain = "", subscriptionStart = null, subscriptionEnd = null }, { sync = true } = {}) {
   const reg = getRegistry();
   const id = uid("comp");
-  const company = { id, name: name.trim(), ownerEmail: ownerEmail.trim().toLowerCase(), ownerPassword, plan, allowedEmailDomain: allowedEmailDomain.trim(), createdAt: new Date().toISOString() };
+  const company = { id, name: name.trim(), ownerEmail: ownerEmail.trim().toLowerCase(), ownerPassword, plan, allowedEmailDomain: allowedEmailDomain.trim(), subscriptionStart, subscriptionEnd, createdAt: new Date().toISOString() };
   reg.companies.push(company);
   saveRegistry(reg);
   // seed empty company workspace
@@ -152,6 +152,8 @@ async function syncAccountToEntity(company) {
       ownerPassword: company.ownerPassword,
       plan: company.plan,
       allowedEmailDomain: company.allowedEmailDomain || "",
+      subscriptionStart: company.subscriptionStart || null,
+      subscriptionEnd: company.subscriptionEnd || null,
     });
     // Brand-new signups get an owner session token back — keep it for future calls.
     if (res?.data?.token) setCompanyToken(company.id, res.data.token);
@@ -164,6 +166,20 @@ async function syncAccountToEntity(company) {
 }
 
 export async function syncCompanyAccount(company) {
+  return syncAccountToEntity(company);
+}
+
+export async function updateCompanyPlan(companyId, plan, subscriptionStart = null, subscriptionEnd = null) {
+  const reg = getRegistry();
+  const company = reg.companies.find((item) => item.id === companyId);
+  if (!company) return false;
+  company.plan = plan;
+  company.subscriptionStart = subscriptionStart;
+  company.subscriptionEnd = subscriptionEnd;
+  saveRegistry(reg);
+  const data = getCompanyData(companyId);
+  if (data) localStorage.setItem(companyKey(companyId), JSON.stringify({ ...data, plan }));
+  notify();
   return syncAccountToEntity(company);
 }
 // Rebuilds a missing local workspace so cloud hydration can repopulate it.
@@ -578,7 +594,8 @@ export async function employeeLogin(email, password) {
       company = {
         id: companyId, name: result.company?.name || "", ownerEmail: result.company?.ownerEmail || "",
         ownerPassword: null, plan: result.company?.plan || "Starter",
-        allowedEmailDomain: result.company?.allowedEmailDomain || "", createdAt: new Date().toISOString(),
+        allowedEmailDomain: result.company?.allowedEmailDomain || "", subscriptionStart: result.company?.subscriptionStart || null,
+        subscriptionEnd: result.company?.subscriptionEnd || null, createdAt: new Date().toISOString(),
       };
       reg.companies.push(company);
       saveRegistry(reg);
@@ -641,6 +658,7 @@ function finishOwnerLogin(result) {
     company = {
       id: remote.companyId, name: remote.name, ownerEmail: remote.ownerEmail,
       plan: remote.plan, allowedEmailDomain: remote.allowedEmailDomain || "",
+      subscriptionStart: remote.subscriptionStart || null, subscriptionEnd: remote.subscriptionEnd || null,
       createdAt: remote.created_date,
     };
     reg.companies.push(company);
@@ -650,6 +668,8 @@ function finishOwnerLogin(result) {
     company.name = remote.name ?? company.name;
     company.plan = remote.plan ?? company.plan;
     company.allowedEmailDomain = remote.allowedEmailDomain ?? company.allowedEmailDomain;
+    company.subscriptionStart = remote.subscriptionStart ?? company.subscriptionStart ?? null;
+    company.subscriptionEnd = remote.subscriptionEnd ?? company.subscriptionEnd ?? null;
   }
   saveRegistry(reg);
   if (!getCompanyData(company.id)) write(companyKey(company.id), emptyCompanyData(company));
@@ -686,7 +706,8 @@ export async function completeLoginOtp(pendingId, code, typedPassword, chooseCom
     company = {
       id: companyId, name: result.company?.name || "", ownerEmail: result.company?.ownerEmail || "",
       ownerPassword: null, plan: result.company?.plan || "Starter",
-      allowedEmailDomain: result.company?.allowedEmailDomain || "", createdAt: new Date().toISOString(),
+      allowedEmailDomain: result.company?.allowedEmailDomain || "", subscriptionStart: result.company?.subscriptionStart || null,
+      subscriptionEnd: result.company?.subscriptionEnd || null, createdAt: new Date().toISOString(),
     };
     reg.companies.push(company);
     saveRegistry(reg);

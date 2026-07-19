@@ -12,7 +12,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
   const [ownerPassword, setOwnerPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const isFree = plan.price === 0;
+  const isTrial = true;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,7 +29,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
         </button>
         <h3 className="font-heading text-xl text-[#3a2f22] mb-1">{plan.name || t(plan.nameKey)}</h3>
         <p className="text-sm text-[#3a2f22]/55 font-body mb-5">
-          {isFree ? t("signupFreeDesc") : t("signupPaidDesc")}
+          {t("trialSignupDesc")}
         </p>
         {!googleEmail && (
           <>
@@ -56,7 +56,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
             required
             className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
           />
-          {isFree && !googleEmail && (
+          {isTrial && !googleEmail && (
             <input
               type="password"
               value={ownerPassword}
@@ -73,7 +73,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
             disabled={submitting}
             className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {submitting ? t("pleaseWaitBtn") : isFree ? t("createAccountBtn") : t("continueToPaymentBtn")}
+            {submitting ? t("pleaseWaitBtn") : t("startThreeMonthTrial")}
           </button>
         </form>
         <button
