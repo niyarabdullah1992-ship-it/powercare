@@ -11,19 +11,6 @@
     "name": {
       "type": "string"
     },
-    "trackingMode": {
-      "type": "string",
-      "enum": [
-        "quantity",
-        "serialized"
-      ]
-    },
-    "serialNumber": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "currentLocationId": {
       "type": "string"
     },
@@ -50,7 +37,6 @@
     "companyId",
     "itemCode",
     "name",
-    "trackingMode",
     "currentLocationId",
     "minimumStock",
     "quantity",

@@ -11,7 +11,6 @@ export default function MovementForm({ items, stations, transferStations = stati
     {type === "transfer" && <><input type="hidden" name="fromLocationId" value={stationId} /><div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm"><span className="text-muted-foreground">{ar ? "من: " : "From: "}</span>{source?.name || "—"}</div></>}
     <select key={`${type}-${stationId}`} name="toLocationId" required defaultValue={type === "transfer" ? "" : stationId || ""} className="rounded-lg border px-3 py-2"><option value="">{type === "transfer" ? (ar ? "اختر محطة الوجهة" : "Choose destination") : (ar ? "إلى محطة" : "To station")}</option>{(type === "transfer" ? destinations : stations).map((station) => <option key={station.stationId} value={station.stationId}>{station.name}</option>)}</select>
     <input name="quantity" type="number" min="1" defaultValue="1" className="rounded-lg border px-3 py-2" />
-    <input name="serialNumber" placeholder={ar ? "الرقم التسلسلي عند الاستلام" : "Serial on receipt"} className="rounded-lg border px-3 py-2" />
     {type !== "receive" && <input name="qrCode" placeholder={ar ? "امسح أو أدخل رمز QR" : "Scan or enter QR"} className="rounded-lg border px-3 py-2" />}
     <button disabled={type === "transfer" && !destinations.length} className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground disabled:cursor-not-allowed disabled:opacity-40">{ar ? "تنفيذ الحركة" : "Post movement"}</button>
   </form>;
