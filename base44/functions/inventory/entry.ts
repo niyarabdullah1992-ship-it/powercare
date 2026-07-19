@@ -48,6 +48,8 @@ Deno.serve(async (req) => {
     const centralWarehouseId = "central_warehouse";
     const warehouseAccess = auth.owner || ["director", "warehouse_manager"].includes(auth.role);
     const canPurchase = auth.owner || managerRoles.includes(auth.role);
+    const canApproveProcurement = auth.owner || ["director", "ops_manager"].includes(auth.role);
+    const canReceiveProcurement = auth.owner || managerRoles.includes(auth.role);
     const allStationIds = stations.map((station) => station.stationId);
     const allLocationIds = [...allStationIds];
     const visibleIds = seniorRoles.includes(auth.role) ? allStationIds : auth.role === "pgm" ? auth.managedStations : auth.role === "station_manager" ? [auth.stationId, ...auth.managedStations].filter(Boolean) : [auth.stationId].filter(Boolean);
@@ -66,20 +68,68 @@ Deno.serve(async (req) => {
     const movement = async (data) => await base44.asServiceRole.entities.StockMovement.create({ companyId: auth.companyId, performedBy: auth.userId || auth.name, notes: "", ...data });
 
     if (body.action === "list") {
-      const [items, movements, requests, employees] = await Promise.all([
+      const [items, movements, requests, employees, procurementRequests, purchaseOrders] = await Promise.all([
         base44.asServiceRole.entities.InventoryItem.filter({ companyId: auth.companyId }, "-updated_date", 500),
         base44.asServiceRole.entities.StockMovement.filter({ companyId: auth.companyId }, "-created_date", 300),
         base44.asServiceRole.entities.MaterialRequest.filter({ companyId: auth.companyId }, "-created_date", 300),
         base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId }),
+        base44.asServiceRole.entities.ProcurementRequest.filter({ companyId: auth.companyId }, "-created_date", 300),
+        base44.asServiceRole.entities.PurchaseOrder.filter({ companyId: auth.companyId }, "-created_date", 300),
       ]);
       const scopedItems = items.filter((item) => warehouseAccess || visible.has(item.currentLocationId) || balances(item).some((entry) => visible.has(entry.locationId)));
       const scopedRequests = requests.filter((request) => warehouseAccess || visible.has(request.stationId) || request.requesterId === auth.userId);
       const scopedMovements = movements.filter((entry) => seniorRoles.includes(auth.role) || visible.has(entry.fromLocationId) || visible.has(entry.toLocationId));
       const scopedStations = stations.filter((station) => seniorRoles.includes(auth.role) || visible.has(station.stationId));
       const purchases = scopedMovements.filter((entry) => entry.movementType === "purchase" || (entry.movementType === "receive" && entry.supplierName));
+      const scopedProcurementRequests = procurementRequests.filter((entry) => seniorRoles.includes(auth.role) || visible.has(entry.stationId) || entry.requesterId === auth.userId);
+      const scopedPurchaseOrders = purchaseOrders.filter((entry) => seniorRoles.includes(auth.role) || visible.has(entry.stationId));
       const locations = scopedStations;
       const transferStations = auth.manager ? stations : [];
-      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, purchases, requests: scopedRequests, stations: scopedStations, locations, transferStations, employees, canManage: canPurchase, canPurchase, canDelete: warehouseAccess, canViewAllPurchases: seniorRoles.includes(auth.role), canWarehouseManage: false, canTransfer: auth.manager, canSetCentralWarehouse: false, centralWarehouseId: null });
+      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, purchases, procurementRequests: scopedProcurementRequests, purchaseOrders: scopedPurchaseOrders, requests: scopedRequests, stations: scopedStations, locations, transferStations, employees, canManage: canPurchase, canPurchase, canDelete: warehouseAccess, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: seniorRoles.includes(auth.role), canWarehouseManage: false, canTransfer: auth.manager, canSetCentralWarehouse: false, centralWarehouseId: null });
+    }
+
+    if (body.action === "submitProcurement") {
+      const stationId = String(body.stationId || auth.stationId || "");
+      const items = Array.isArray(body.items) ? body.items.map((item) => ({ itemCode: String(item.itemCode || "").trim(), name: String(item.name || "").trim(), quantity: Number(item.quantity), estimatedUnitCost: Number(item.estimatedUnitCost || 0) })) : [];
+      if (!ensureStation(stationId) || !String(body.justification || "").trim() || !items.length || items.some((item) => !item.itemCode || !item.name || !Number.isFinite(item.quantity) || item.quantity <= 0 || !Number.isFinite(item.estimatedUnitCost) || item.estimatedUnitCost < 0)) return Response.json({ error: "Valid station, items and justification are required" }, { status: 400 });
+      await base44.asServiceRole.entities.ProcurementRequest.create({ companyId: auth.companyId, requestNumber: `PR-${Date.now().toString(36).toUpperCase()}`, stationId, requesterId: auth.userId, requesterName: auth.name, items, justification: String(body.justification).trim(), status: "pending", reviewedBy: null, reviewedAt: null });
+      return Response.json({ ok: true });
+    }
+
+    if (body.action === "reviewProcurement") {
+      if (!canApproveProcurement) return Response.json({ error: "Procurement approval permission required" }, { status: 403 });
+      const rows = await base44.asServiceRole.entities.ProcurementRequest.filter({ id: body.requestId, companyId: auth.companyId }); const request = rows[0];
+      if (!request || request.status !== "pending" || !["approved", "rejected"].includes(body.decision)) return Response.json({ error: "Request cannot be reviewed" }, { status: 400 });
+      await base44.asServiceRole.entities.ProcurementRequest.update(request.id, { status: body.decision, reviewedBy: auth.userId || auth.name, reviewedAt: new Date().toISOString() });
+      return Response.json({ ok: true });
+    }
+
+    if (body.action === "createPurchaseOrder") {
+      if (!canApproveProcurement) return Response.json({ error: "Purchase order permission required" }, { status: 403 });
+      const rows = await base44.asServiceRole.entities.ProcurementRequest.filter({ id: body.requestId, companyId: auth.companyId }); const request = rows[0];
+      const supplierName = String(body.supplierName || "").trim();
+      const items = Array.isArray(body.items) ? body.items.map((item) => ({ itemCode: String(item.itemCode || "").trim(), name: String(item.name || "").trim(), quantity: Number(item.quantity), unitPrice: Number(item.unitPrice) })) : [];
+      if (!request || request.status !== "approved" || !supplierName || items.length !== request.items.length || items.some((item) => !item.itemCode || !item.name || item.quantity <= 0 || !Number.isFinite(item.unitPrice) || item.unitPrice < 0)) return Response.json({ error: "Approved request, supplier and valid prices are required" }, { status: 400 });
+      const totalCost = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+      await base44.asServiceRole.entities.PurchaseOrder.create({ companyId: auth.companyId, orderNumber: `PO-${Date.now().toString(36).toUpperCase()}`, requestId: request.id, stationId: request.stationId, supplierName, items, totalCost, status: "issued", issuedBy: auth.userId || auth.name, issuedAt: new Date().toISOString(), receivedBy: null, receivedAt: null });
+      await base44.asServiceRole.entities.ProcurementRequest.update(request.id, { status: "ordered" });
+      return Response.json({ ok: true });
+    }
+
+    if (body.action === "receivePurchaseOrder") {
+      if (!canReceiveProcurement) return Response.json({ error: "Receiving permission required" }, { status: 403 });
+      const rows = await base44.asServiceRole.entities.PurchaseOrder.filter({ id: body.orderId, companyId: auth.companyId }); const order = rows[0];
+      if (!order || order.status !== "issued" || !ensureStation(order.stationId)) return Response.json({ error: "Purchase order cannot be received" }, { status: 400 });
+      for (const line of order.items) {
+        const duplicates = await base44.asServiceRole.entities.InventoryItem.filter({ companyId: auth.companyId, itemCode: line.itemCode });
+        let item = duplicates[0]; const quantity = Number(line.quantity); const before = item ? balanceAt(item, order.stationId) : 0;
+        if (item) { const next = adjustBalance(item, order.stationId, quantity); await base44.asServiceRole.entities.InventoryItem.update(item.id, { name: line.name, quantity: Number(item.quantity || 0) + quantity, locationBalances: next, currentLocationId: order.stationId }); }
+        else item = await base44.asServiceRole.entities.InventoryItem.create({ companyId: auth.companyId, itemCode: line.itemCode, name: line.name, currentLocationId: order.stationId, minimumStock: 0, quantity, locationBalances: [{ locationId: order.stationId, quantity }], qrCode: `PC-ITEM:${auth.companyId}:${line.itemCode}` });
+        await movement({ itemId: item.id, movementType: "purchase", quantity, fromLocationId: null, toLocationId: order.stationId, employeeId: auth.userId, requestId: order.requestId, balanceBefore: before, balanceAfter: before + quantity, sourceBalanceBefore: null, sourceBalanceAfter: null, destinationBalanceBefore: before, destinationBalanceAfter: before + quantity, purchasePrice: Number(line.unitPrice), unitPrice: Number(line.unitPrice), totalCost: quantity * Number(line.unitPrice), supplierName: order.supplierName, purchaseDate: new Date().toISOString(), notes: order.orderNumber });
+      }
+      await base44.asServiceRole.entities.PurchaseOrder.update(order.id, { status: "received", receivedBy: auth.userId || auth.name, receivedAt: new Date().toISOString() });
+      await base44.asServiceRole.entities.ProcurementRequest.update(order.requestId, { status: "received" });
+      return Response.json({ ok: true });
     }
 
     if (body.action === "deleteItem") {

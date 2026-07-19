@@ -1,0 +1,67 @@
+{
+  "name": "PurchaseOrder",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "orderNumber": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "stationId": {
+      "type": "string"
+    },
+    "supplierName": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "totalCost": {
+      "type": "number",
+      "minimum": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "issued",
+        "received"
+      ]
+    },
+    "issuedBy": {
+      "type": "string"
+    },
+    "issuedAt": {
+      "type": "string"
+    },
+    "receivedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "receivedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "companyId",
+    "orderNumber",
+    "requestId",
+    "stationId",
+    "supplierName",
+    "items",
+    "totalCost",
+    "status"
+  ]
+}
