@@ -1,12 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
+import MultiImageUploader from "@/components/inventory/MultiImageUploader";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function ItemForm({ stations, defaultStationId, onSubmit, ar }) {
+  const [imageUrls, setImageUrls] = useState([]);
   const submit = async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
-    if (await onSubmit(Object.fromEntries(new FormData(form)))) form.reset();
+    if (await onSubmit({ ...Object.fromEntries(new FormData(form)), imageUrls })) { form.reset(); setImageUrls([]); }
   };
   return <form onSubmit={submit} className="grid gap-3 rounded-xl border border-border bg-card p-4 md:grid-cols-2 xl:grid-cols-4">
     <div className="md:col-span-2 xl:col-span-4"><h2 className="font-heading text-xl font-semibold">{ar ? "شراء جديد" : "New purchase"}</h2><p className="text-xs text-muted-foreground">{ar ? "سجّل عملية الشراء مباشرة في مخزن المحطة." : "Record a purchase directly in the station store."}</p></div>
@@ -18,6 +20,7 @@ export default function ItemForm({ stations, defaultStationId, onSubmit, ar }) {
     <input name="totalCost" type="number" min="0" step="0.01" required placeholder={ar ? "التكلفة الإجمالية" : "Total cost"} className="rounded-lg border px-3 py-2" />
     <input name="supplierName" required placeholder={ar ? "اسم المورد" : "Supplier name"} className="rounded-lg border px-3 py-2" />
     <input name="purchaseDate" type="date" defaultValue={today()} required className="rounded-lg border px-3 py-2" />
+    <MultiImageUploader value={imageUrls} onChange={setImageUrls} ar={ar} />
     <button className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground">{ar ? "حفظ الشراء" : "Save purchase"}</button>
   </form>;
 }

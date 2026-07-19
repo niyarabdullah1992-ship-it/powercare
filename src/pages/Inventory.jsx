@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Warehouse } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { inventoryCall } from "@/lib/inventoryApi";
@@ -38,8 +39,36 @@ export default function Inventory() {
   }, [state.locations, currentUser?.stationId, selectedStation]);
 
   const run = async (action, payload) => {
-    try { await inventoryCall(session, action, payload); await load(); toast({ description: ar ? "تم حفظ العملية بنجاح." : "Operation saved." }); return true; }
-    catch (error) { toast({ description: error?.response?.data?.error || error.message, variant: "destructive" }); return false; }
+    try {
+      const imageUrls = payload.imageUrls || [];
+      await inventoryCall(session, action, payload);
+      let next = await inventoryCall(session, "list");
+      if (imageUrls.length && action === "createItem") {
+        const item = next.items.find((entry) => entry.itemCode === payload.itemCode);
+        const purchase = next.movements.find((entry) => entry.movementType === "purchase" && entry.itemId === item?.id && entry.toLocationId === payload.locationId);
+        await Promise.all([
+          item && base44.entities.InventoryItem.update(item.id, { imageUrls: [...(item.imageUrls || []), ...imageUrls].slice(-10) }),
+          purchase && base44.entities.StockMovement.update(purchase.id, { imageUrls }),
+        ].filter(Boolean));
+        next = await inventoryCall(session, "list");
+      }
+      if (imageUrls.length && action === "issueToWork") {
+        const issue = next.movements.find((entry) => entry.movementType === "issue" && entry.itemId === payload.itemId && entry.fromLocationId === payload.fromLocationId && entry.workReference === payload.workReference);
+        if (issue) await base44.entities.StockMovement.update(issue.id, { imageUrls });
+        next = await inventoryCall(session, "list");
+      }
+      setState(next);
+      toast({ description: ar ? "تم حفظ العملية بنجاح." : "Operation saved." });
+      return true;
+    } catch (error) { toast({ description: error?.response?.data?.error || error.message, variant: "destructive" }); return false; }
+  };
+  const updateItemImages = async (itemId, imageUrls) => {
+    try {
+      await base44.entities.InventoryItem.update(itemId, { imageUrls });
+      const next = await inventoryCall(session, "list");
+      setState(next);
+      toast({ description: ar ? "تم تحديث صور الصنف." : "Item images updated." });
+    } catch (error) { toast({ description: error.message, variant: "destructive" }); }
   };
   const activeStation = selectedStation || currentUser?.stationId || "";
   const stationItems = state.items.filter((item) => item.currentLocationId === activeStation || item.locationBalances?.some((balance) => balance.locationId === activeStation)).map((item) => {
@@ -68,6 +97,6 @@ export default function Inventory() {
       {active === "workIssue" && <WorkIssueTab key={activeStation} items={stationItems} movements={stationMovements} employees={state.employees} stations={state.locations} stationId={activeStation} canIssue={state.canIssueToWork} onSubmit={(payload) => run("issueToWork", payload)} ar={ar} />}
       {active === "movements" && <MovementList movements={state.movements.filter((entry) => ["purchase", "transfer", "issue"].includes(entry.movementType))} items={state.requestItems} stations={state.locations} employees={state.employees} ar={ar} />}
     </>}
-    <ItemDetails item={selected} stations={state.locations} canDelete={state.canDelete} onDelete={async (itemId) => { if (await run("deleteItem", { itemId })) setSelectedItem(null); }} onClose={() => setSelectedItem(null)} ar={ar} />
+    <ItemDetails item={selected} stations={state.locations} canDelete={state.canDelete} onDelete={async (itemId) => { if (await run("deleteItem", { itemId })) setSelectedItem(null); }} onImagesChange={updateItemImages} onClose={() => setSelectedItem(null)} ar={ar} />
   </div>;
 }

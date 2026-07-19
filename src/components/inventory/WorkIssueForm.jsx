@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
+import MultiImageUploader from "@/components/inventory/MultiImageUploader";
 
 export default function WorkIssueForm({ items, employees, stationId, onSubmit, ar }) {
   const today = new Date().toISOString().slice(0, 10);
+  const [imageUrls, setImageUrls] = useState([]);
   const submit = async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
-    if (await onSubmit(Object.fromEntries(new FormData(form)))) form.reset();
+    if (await onSubmit({ ...Object.fromEntries(new FormData(form)), imageUrls })) { form.reset(); setImageUrls([]); }
   };
   return <form onSubmit={submit} className="grid gap-3 rounded-xl border border-border bg-card p-4 md:grid-cols-2 xl:grid-cols-4">
     <input type="hidden" name="fromLocationId" value={stationId} />
@@ -16,6 +18,7 @@ export default function WorkIssueForm({ items, employees, stationId, onSubmit, a
     <input name="workReference" required placeholder={ar ? "المهمة أو المشروع" : "Task or project"} className="rounded-lg border px-3 py-2" />
     <input name="workDate" type="date" defaultValue={today} required className="rounded-lg border px-3 py-2" />
     <input name="notes" placeholder={ar ? "ملاحظات (اختياري)" : "Notes (optional)"} className="rounded-lg border px-3 py-2 md:col-span-2" />
+    <MultiImageUploader value={imageUrls} onChange={setImageUrls} ar={ar} />
     <button disabled={!stationId || !items.some((item) => Number(item.quantity) > 0)} className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground disabled:opacity-40">{ar ? "تأكيد الصرف للعمل" : "Confirm work issue"}</button>
   </form>;
 }

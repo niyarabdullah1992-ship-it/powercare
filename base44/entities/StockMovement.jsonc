@@ -133,6 +133,13 @@
         "null"
       ],
       "description": "Purchase timestamp in ISO format."
+    },
+    "imageUrls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10
     }
   },
   "required": [
