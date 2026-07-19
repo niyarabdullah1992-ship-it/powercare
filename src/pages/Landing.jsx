@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
-import { ShieldCheck, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, Download } from "lucide-react";
+import { ShieldCheck, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, Download, Building2, UserRound } from "lucide-react";
 import Logo from "@/components/Logo";
 import VideoIntro from "@/components/landing/VideoIntro";
 import StatsBand from "@/components/landing/StatsBand";
@@ -103,11 +103,10 @@ export default function Landing() {
 
           <div className="mx-1 rounded-3xl border border-landing-gold/20 bg-card p-7 shadow-elevated sm:mx-0 sm:p-9">
             <Logo size={56} />
-            <h2 className="mt-6 font-heading text-3xl font-semibold text-primary">{lang === "ar" ? "ابدأ من بوابة PowerCare الجديدة" : "Enter through the new PowerCare portal"}</h2>
-            <p className="mt-3 text-sm leading-7 text-primary/60">{lang === "ar" ? "تم توحيد الدخول في صفحات مستقلة لتجربة أوضح وأكثر موثوقية." : "Sign-in now uses dedicated pages for a clearer and more reliable experience."}</p>
-            <div className="mt-7 grid gap-3">
-              <Link to="/login" className="rounded-xl bg-gradient-to-b from-landing-gold-light to-landing-gold px-5 py-3 text-center text-sm font-semibold text-white shadow-sm hover:opacity-90">{t("login")}</Link>
-              <Link to="/register" className="rounded-xl border border-landing-gold/30 px-5 py-3 text-center text-sm font-semibold text-primary hover:bg-landing-bg">{lang === "ar" ? "إنشاء حساب" : "Create account"}</Link>
+            <h2 className="mt-6 font-heading text-3xl font-semibold text-primary">{lang === "ar" ? "اختر نوع تسجيل الدخول" : "Choose your login type"}</h2>
+            <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <Link to="/login?type=company" className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-landing-gold-light to-landing-gold px-5 py-4 text-center text-sm font-semibold text-white shadow-sm hover:opacity-90"><Building2 className="h-5 w-5" />{lang === "ar" ? "دخول الشركات" : "Company login"}</Link>
+              <Link to="/login?type=individual" className="flex items-center justify-center gap-2 rounded-xl border border-landing-gold/30 px-5 py-4 text-center text-sm font-semibold text-primary hover:bg-landing-bg"><UserRound className="h-5 w-5" />{lang === "ar" ? "دخول الأفراد" : "Individual login"}</Link>
             </div>
           </div>
         </div>

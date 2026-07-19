@@ -3,8 +3,8 @@ import { Building2, Users } from "lucide-react";
 
 export default function LoginTypeSelector({ value, onChange, lang }) {
   const options = [
-    { value: "company", icon: Building2, ar: "دخول الشركة", en: "Company login" },
-    { value: "employee", icon: Users, ar: "دخول الموظفين", en: "Employee login" },
+    { value: "company", icon: Building2, ar: "دخول الشركات", en: "Company login" },
+    { value: "individual", icon: Users, ar: "دخول الأفراد", en: "Individual login" },
   ];
 
   return (

@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 export default function usePowerCareLogin() {
   const { login, loginWithGoogle, verifyOtp, session } = useAuth();
   const navigate = useNavigate();
-  const [kind, setKind] = useState("company");
+  const [kind, setKind] = useState(() => new URLSearchParams(window.location.search).get("type") === "individual" ? "individual" : "company");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,7 +18,9 @@ export default function usePowerCareLogin() {
   useEffect(() => {
     if (!new URLSearchParams(window.location.search).has("google_login")) return;
     setLoading(true);
-    loginWithGoogle("company").then((company) => {
+    const loginKind = new URLSearchParams(window.location.search).get("type") === "individual" ? "individual" : "company";
+    setKind(loginKind);
+    loginWithGoogle(loginKind).then((company) => {
       if (!company) setError("No company is linked to this Google account");
     }).catch((error) => setError(error.message || "Google login failed"))
       .finally(() => setLoading(false));
@@ -48,6 +50,6 @@ export default function usePowerCareLogin() {
       setError(error.message || "Could not resend the code"); return false;
     }
   };
-  const google = () => base44.auth.loginWithProvider("sso", "/login?google_login=1");
+  const google = () => base44.auth.loginWithProvider("sso", `/login?google_login=1&type=${kind}`);
   return { kind, setKind, email, setEmail, password, setPassword, error, loading, pendingId, accounts, setPendingId, submit, verify, resend, google };
 }
