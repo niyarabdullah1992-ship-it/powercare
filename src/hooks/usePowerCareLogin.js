@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 
-export default function usePowerCareLogin() {
+export default function usePowerCareLogin(returnPath = "/login") {
   const { login, loginWithGoogle, verifyOtp, session } = useAuth();
   const navigate = useNavigate();
   const [kind, setKind] = useState(() => new URLSearchParams(window.location.search).get("type") === "individual" ? "individual" : "company");
@@ -50,6 +50,6 @@ export default function usePowerCareLogin() {
       setError(error.message || "Could not resend the code"); return false;
     }
   };
-  const google = () => base44.auth.loginWithProvider("sso", `/login?google_login=1&type=${kind}`);
+  const google = () => base44.auth.loginWithProvider("sso", `${returnPath}?google_login=1&type=${kind}`);
   return { kind, setKind, email, setEmail, password, setPassword, error, loading, pendingId, accounts, setPendingId, submit, verify, resend, google };
 }

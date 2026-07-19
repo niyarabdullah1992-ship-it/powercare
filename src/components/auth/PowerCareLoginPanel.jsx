@@ -5,12 +5,14 @@ import { useI18n } from "@/lib/i18n";
 import usePowerCareLogin from "@/hooks/usePowerCareLogin";
 import GoogleIcon from "@/components/GoogleIcon";
 import OtpStep from "@/components/landing/OtpStep";
+import LoginTypeSelector from "@/components/landing/LoginTypeSelector";
 
-export default function PowerCareLoginPanel() {
-  const { t } = useI18n();
-  const flow = usePowerCareLogin();
+export default function PowerCareLoginPanel({ showTypeSelector = false, returnPath = "/login" }) {
+  const { t, lang } = useI18n();
+  const flow = usePowerCareLogin(returnPath);
   if (flow.pendingId) return <OtpStep email={flow.email} accounts={flow.accounts} onVerify={flow.verify} onResend={flow.resend} onBack={() => flow.setPendingId(null)} />;
   return <div className="space-y-4">
+    {showTypeSelector && <LoginTypeSelector value={flow.kind} onChange={flow.setKind} lang={lang} />}
     {flow.kind === "company" && <>
       <button type="button" onClick={flow.google} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-3 text-sm font-semibold hover:bg-muted disabled:opacity-50"><GoogleIcon className="h-5 w-5" />{t("continueWithGoogle")}</button>
       <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />{t("orDivider")}<span className="h-px flex-1 bg-border" /></div>
