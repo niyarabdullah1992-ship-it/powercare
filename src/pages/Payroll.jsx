@@ -186,11 +186,21 @@ export default function Payroll() {
             {ar ? "لا يوجد موظفون بعد — أضف موظفين وحدّد رواتبهم من ملفاتهم الشخصية (تبويب الراتب)." : "No employees yet — add employees and set their salaries from their profiles (Salary tab)."}
           </p>
         ) : (
-          <table className="w-full mobile-cards">
+          <table className="w-full min-w-[830px] table-fixed mobile-cards">
+            <colgroup>
+              <col className="w-[120px]" />
+              <col className="w-[130px]" />
+              <col className="w-[100px]" />
+              <col className="w-[100px]" />
+              <col className="w-[100px]" />
+              <col className="w-[100px]" />
+              <col className="w-[110px]" />
+              <col className="w-[70px]" />
+            </colgroup>
             <thead>
-              <tr className="text-start">
+              <tr>
                 {[...headers, ar ? "قسيمة" : "Payslip"].map((h) => (
-                  <th key={h} className="text-start text-[11px] font-body font-semibold text-muted-foreground pb-3 pe-3">{h}</th>
+                  <th key={h} className="px-2 pb-3 text-center text-[11px] font-body font-semibold text-muted-foreground">{h}</th>
                 ))}
               </tr>
             </thead>

@@ -15,18 +15,18 @@ export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid,
       onChange={(e) => onChange(field, Number(e.target.value) || 0)}
       aria-invalid={field === "base" && num(item.base) <= 0}
       title={field === "base" ? (ar ? "يُعدَّل من الملف الشخصي للموظف" : "Edit from the employee profile") : undefined}
-      className={`h-8 w-24 rounded-md border bg-background px-2 text-end text-sm font-body disabled:opacity-60 ${field === "base" && num(item.base) <= 0 ? "border-destructive/60" : "border-input"}`}
+      className={`h-8 w-full max-w-24 rounded-md border bg-background px-2 text-center text-sm font-body disabled:opacity-60 ${field === "base" && num(item.base) <= 0 ? "border-destructive/60" : "border-input"}`}
       dir="ltr"
     />
   );
   return (
-    <tr className={`align-middle [&>td]:py-2 [&>td]:pe-3 ${item.paid ? "opacity-70" : ""}`}>
+    <tr className={`align-middle [&>td]:px-2 [&>td]:py-3 [&>td]:text-center ${item.paid ? "opacity-70" : ""}`}>
       <td data-label={ar ? "الموظف" : "Employee"}>
-        <EmployeeNameLink employeeId={employee?.role ? item.employeeId : null} employeeName={employee?.name || "—"} className="text-sm font-body font-medium" />
+        <EmployeeNameLink employeeId={employee?.role ? item.employeeId : null} employeeName={employee?.name || "—"} className="block text-center text-sm font-body font-medium" />
         <p className="text-[11px] text-muted-foreground font-body">{employee?.position || employee?.role || ""}</p>
       </td>
       <td data-label={ar ? "الأساسي" : "Base"}>
-        <div className="flex flex-col items-start gap-1">
+        <div className="flex flex-col items-center gap-1">
           <span className="relative">
             {cell("base", false)}
             <LockKeyhole className="pointer-events-none absolute end-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
