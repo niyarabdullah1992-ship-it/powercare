@@ -120,6 +120,7 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
       ],
       color,
       dir,
+      theme: "executiveGold",
     });
   };
 
@@ -134,6 +135,7 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
       dir,
       logoUrl: branding.logoUrl || "",
       color,
+      theme: "executiveGold",
       stats: [
         { value: r.statusRows.length, label: L("المحطات", "Stations") },
         { value: critical, label: L("محطات حرجة", "Critical stations") },

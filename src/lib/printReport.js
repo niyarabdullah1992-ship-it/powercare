@@ -5,9 +5,9 @@ import { PDF_THEME } from "@/lib/pdfTheme";
 // it renders real HTML instead of drawing glyphs into a PDF canvas.
 // Each company can supply its own logo and brand color; the color drives all
 // accents in the document, with light tints derived via hex-alpha.
-export function printReport({ title, companyName, periodLabel, dir = "ltr", stats = [], sections = [], logoUrl = "", color = "#b07d3f" }) {
+export function printReport({ title, companyName, periodLabel, dir = "ltr", stats = [], sections = [], logoUrl = "", color = "#b07d3f", theme = "default" }) {
   const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const isWide = sections.some((section) => (section.headers || []).length > 8);
+  const isWide = theme === "executiveGold" || sections.some((section) => (section.headers || []).length > 8);
   const locale = dir === "rtl" ? "ar-SA" : "en-GB";
   const generatedAt = new Date().toLocaleString(locale);
 
@@ -61,10 +61,26 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   .empty { font-size: 12px; color: ${PDF_THEME.muted}; padding: 10px 0; }
   .foot { margin-top: 30px; padding-top: 10px; border-top: 1px solid ${PDF_THEME.line}; font-size: 9px; color: ${PDF_THEME.muted}; display: flex; justify-content: space-between; }
   .head img { width: 58px; height: 58px; object-fit: contain; }
+  .executive-gold { color: #2d2117; }
+  .executive-gold .top-rule { height: 9px; background: linear-gradient(90deg, #21150d 0 68%, #b8873a 68% 86%, #ddb96d 86% 100%); }
+  .executive-gold .head { padding: 8px 4px 22px; border-bottom: 2px solid #b8873a; }
+  .executive-gold .monogram { width: 60px; height: 60px; border: 2px solid #b8873a; background: #21150d; color: #ddb96d; box-shadow: 4px 4px 0 #ead9b7; }
+  .executive-gold .document-label { color: #9b6a25; letter-spacing: .24em; }
+  .executive-gold .head h1 { font-size: 28px; color: #21150d; }
+  .executive-gold .stats { gap: 12px; }
+  .executive-gold .stat { border: 1px solid #d9c49e; border-top: 4px solid #b8873a; background: linear-gradient(145deg, #fffdf8, #f4ead7); box-shadow: 0 4px 12px rgba(59,39,20,.08); }
+  .executive-gold .stat .val { color: #8b5f25; font-size: 25px; }
+  .executive-gold h2 { margin-top: 28px; padding: 9px 12px; border: 0; border-inline-start: 5px solid #b8873a; background: #f4ead7; color: #21150d; }
+  .executive-gold h2::before { display: none; }
+  .executive-gold table { border: 1px solid #d9c49e; box-shadow: 0 3px 10px rgba(59,39,20,.05); }
+  .executive-gold th { background: #21150d; color: #f5ddb0; border-color: #6f512e; padding: 9px 8px; }
+  .executive-gold td { border: 1px solid #e5d8c2; }
+  .executive-gold tr:nth-child(even) td { background: #f8f2e7; }
+  .executive-gold .foot { border-top: 2px solid #b8873a; color: #765d40; }
   @media print { body { padding: 0; } .top-rule { margin-top: 0; } }
 </style>
 </head>
-<body class="${isWide ? "wide" : "standard"}">
+<body class="${isWide ? "wide" : "standard"} ${theme === "executiveGold" ? "executive-gold" : ""}">
   <div class="top-rule"></div>
   <div class="head">
     <div class="identity">
