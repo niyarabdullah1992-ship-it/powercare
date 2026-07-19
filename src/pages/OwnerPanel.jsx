@@ -8,8 +8,8 @@ import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn } from
 import Logo from "@/components/Logo";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import NewsBroadcast from "@/components/owner/NewsBroadcast";
-import VisitorStatsCard from "@/components/owner/VisitorStatsCard";
 import SubscribersDashboard from "@/components/owner/SubscribersDashboard";
+import SaasAnalyticsDashboard from "@/components/owner/SaasAnalyticsDashboard";
 import PlatformRoadmap from "@/components/owner/PlatformRoadmap";
 
 export default function OwnerPanel() {
@@ -19,7 +19,7 @@ export default function OwnerPanel() {
   const [companies, setCompanies] = useState([]);
   const [form, setForm] = useState({ name: "", ownerEmail: "", ownerPassword: "", plan: "Starter", allowedEmailDomain: "" });
   const [auditLogs, setAuditLogs] = useState([]);
-  const [tab, setTab] = useState("manage");
+  const [tab, setTab] = useState("analytics");
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => setUser(null));
@@ -82,7 +82,7 @@ export default function OwnerPanel() {
 
   return (
     <div className="min-h-screen bg-landing-bg px-4 py-10 sm:px-6" dir={lang === "ar" ? "rtl" : "ltr"}>
-      <div className={`mx-auto space-y-6 ${tab === "manage" ? "max-w-2xl" : "max-w-6xl"}`}>
+      <div className={`mx-auto space-y-6 ${tab === "companies" ? "max-w-2xl" : "max-w-6xl"}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Logo size={28} />
@@ -100,8 +100,9 @@ export default function OwnerPanel() {
 
         <div className="flex bg-white rounded-2xl p-1 shadow-sm">
           {[
-            { key: "manage", ar: "🏢 الإدارة", en: "🏢 Management" },
-            { key: "money", ar: "💰 المال والمشتركون", en: "💰 Money & Subscribers" },
+            { key: "analytics", ar: "تحليلات SaaS", en: "SaaS Analytics" },
+            { key: "companies", ar: "إدارة الشركات", en: "Companies" },
+            { key: "subscriptions", ar: "إدارة الاشتراكات", en: "Subscriptions" },
             { key: "roadmap", ar: "خارطة التطوير", en: "Roadmap" },
           ].map((tb) => (
             <button
@@ -116,10 +117,11 @@ export default function OwnerPanel() {
           ))}
         </div>
 
-        {tab === "money" && <SubscribersDashboard ar={lang === "ar"} />}
+        {tab === "analytics" && <SaasAnalyticsDashboard lang={lang} />}
+        {tab === "subscriptions" && <SubscribersDashboard ar={lang === "ar"} />}
         {tab === "roadmap" && <PlatformRoadmap ar={lang === "ar"} />}
 
-        {tab === "manage" && (<>
+        {tab === "companies" && (<>
         <div className="bg-white rounded-2xl p-6 shadow-xl space-y-6">
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -176,8 +178,6 @@ export default function OwnerPanel() {
             </button>
           </form>
         </div>
-
-        <VisitorStatsCard lang={lang} />
 
         <NewsBroadcast />
 
