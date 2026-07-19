@@ -12,6 +12,7 @@
       "type": "string",
       "enum": [
         "receive",
+        "purchase",
         "issue",
         "return",
         "transfer"
@@ -86,6 +87,38 @@
         "number",
         "null"
       ]
+    },
+    "purchasePrice": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Optional unit price recorded for a direct station purchase."
+    },
+    "unitPrice": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "totalCost": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "supplierName": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "purchaseDate": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Purchase timestamp in ISO format."
     }
   },
   "required": [

@@ -46,14 +46,14 @@ Deno.serve(async (req) => {
 
     const stations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
     const centralWarehouseId = "central_warehouse";
-    const centralWarehouse = { id: centralWarehouseId, stationId: centralWarehouseId, name: "Central Warehouse", type: "central_warehouse", isCentralWarehouse: true };
     const warehouseAccess = auth.owner || ["director", "warehouse_manager"].includes(auth.role);
+    const canPurchase = auth.owner || managerRoles.includes(auth.role);
     const allStationIds = stations.map((station) => station.stationId);
-    const allLocationIds = [centralWarehouseId, ...allStationIds];
+    const allLocationIds = [...allStationIds];
     const visibleIds = seniorRoles.includes(auth.role) ? allStationIds : auth.role === "pgm" ? auth.managedStations : auth.role === "station_manager" ? [auth.stationId, ...auth.managedStations].filter(Boolean) : [auth.stationId].filter(Boolean);
     const visible = new Set(visibleIds);
     const ensureStation = (id) => allStationIds.includes(id) && (seniorRoles.includes(auth.role) || visible.has(id));
-    const warehouseGuard = () => warehouseAccess ? null : Response.json({ error: "Central warehouse permission required" }, { status: 403 });
+    const warehouseGuard = () => warehouseAccess ? null : Response.json({ error: "Inventory management permission required" }, { status: 403 });
     const getItem = async (id) => (await base44.asServiceRole.entities.InventoryItem.filter({ id, companyId: auth.companyId }))[0];
     const balances = (item) => Array.isArray(item.locationBalances) ? item.locationBalances.map((entry) => ({ locationId: entry.locationId, quantity: Number(entry.quantity) || 0 })) : [];
     const balanceAt = (item, stationId) => balances(item).find((entry) => entry.locationId === stationId)?.quantity || 0;
@@ -74,11 +74,12 @@ Deno.serve(async (req) => {
       ]);
       const scopedItems = items.filter((item) => warehouseAccess || visible.has(item.currentLocationId) || balances(item).some((entry) => visible.has(entry.locationId)));
       const scopedRequests = requests.filter((request) => warehouseAccess || visible.has(request.stationId) || request.requesterId === auth.userId);
-      const scopedMovements = movements.filter((entry) => warehouseAccess || visible.has(entry.fromLocationId) || visible.has(entry.toLocationId));
-      const scopedStations = stations.filter((station) => warehouseAccess || visible.has(station.stationId));
-      const locations = warehouseAccess ? [centralWarehouse, ...stations] : scopedStations;
-      const transferStations = warehouseAccess ? [centralWarehouse, ...stations] : auth.manager ? stations : [];
-      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, requests: scopedRequests, stations: scopedStations, locations, transferStations, employees, canManage: warehouseAccess, canWarehouseManage: warehouseAccess, canTransfer: warehouseAccess || auth.manager, canSetCentralWarehouse: false, centralWarehouseId });
+      const scopedMovements = movements.filter((entry) => seniorRoles.includes(auth.role) || visible.has(entry.fromLocationId) || visible.has(entry.toLocationId));
+      const scopedStations = stations.filter((station) => seniorRoles.includes(auth.role) || visible.has(station.stationId));
+      const purchases = scopedMovements.filter((entry) => entry.movementType === "purchase" || (entry.movementType === "receive" && entry.supplierName));
+      const locations = scopedStations;
+      const transferStations = auth.manager ? stations : [];
+      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, purchases, requests: scopedRequests, stations: scopedStations, locations, transferStations, employees, canManage: canPurchase, canPurchase, canDelete: warehouseAccess, canViewAllPurchases: seniorRoles.includes(auth.role), canWarehouseManage: false, canTransfer: auth.manager, canSetCentralWarehouse: false, centralWarehouseId: null });
     }
 
     if (body.action === "deleteItem") {
@@ -94,16 +95,26 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "createItem") {
-      const denied = warehouseGuard(); if (denied) return denied;
+      if (!canPurchase) return Response.json({ error: "Purchase permission required" }, { status: 403 });
       const name = String(body.name || "").trim(); const itemCode = String(body.itemCode || "").trim();
-      const minimum = Number(body.minimumStock || 0); const locationId = centralWarehouseId;
-      if (!name || !itemCode || minimum < 0) return Response.json({ error: "Invalid item data" }, { status: 400 });
-      const duplicate = await base44.asServiceRole.entities.InventoryItem.filter({ companyId: auth.companyId, itemCode });
-      if (duplicate.length) return Response.json({ error: "Item code already exists" }, { status: 409 });
-      const qrCode = `PC-ITEM:${auth.companyId}:${itemCode}`;
-      const initialQty = Math.max(0, Number(body.quantity || 0));
-      const created = await base44.asServiceRole.entities.InventoryItem.create({ companyId: auth.companyId, itemCode, name, currentLocationId: locationId, minimumStock: minimum, quantity: initialQty, locationBalances: [{ locationId, quantity: initialQty }], qrCode });
-      if (initialQty > 0) await movement({ itemId: created.id, movementType: "receive", quantity: initialQty, fromLocationId: null, toLocationId: locationId, employeeId: null, requestId: null, balanceBefore: 0, balanceAfter: initialQty, sourceBalanceBefore: null, sourceBalanceAfter: null, destinationBalanceBefore: 0, destinationBalanceAfter: initialQty });
+      const supplierName = String(body.supplierName || "").trim(); const locationId = String(body.locationId || auth.stationId || "");
+      const quantity = Number(body.quantity); const totalCost = Number(body.totalCost); const enteredUnitPrice = body.unitPrice === "" || body.unitPrice == null ? null : Number(body.unitPrice);
+      const unitPrice = enteredUnitPrice == null ? totalCost / quantity : enteredUnitPrice;
+      const selectedDate = String(body.purchaseDate || "");
+      const purchaseMoment = selectedDate.length === 10 ? new Date(`${selectedDate}T${new Date().toTimeString().slice(0, 8)}`) : new Date(selectedDate || Date.now());
+      const purchaseDate = purchaseMoment.toISOString();
+      if (!name || !itemCode || !supplierName || !ensureStation(locationId) || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(totalCost) || totalCost < 0 || !Number.isFinite(unitPrice) || unitPrice < 0) return Response.json({ error: "Valid item, station, quantity, supplier and cost are required" }, { status: 400 });
+      const duplicates = await base44.asServiceRole.entities.InventoryItem.filter({ companyId: auth.companyId, itemCode });
+      let item = duplicates[0]; let before = 0;
+      if (item) {
+        before = balanceAt(item, locationId);
+        const next = adjustBalance(item, locationId, quantity);
+        await base44.asServiceRole.entities.InventoryItem.update(item.id, { name, quantity: Number(item.quantity || 0) + quantity, locationBalances: next, currentLocationId: locationId });
+      } else {
+        const qrCode = `PC-ITEM:${auth.companyId}:${itemCode}`;
+        item = await base44.asServiceRole.entities.InventoryItem.create({ companyId: auth.companyId, itemCode, name, currentLocationId: locationId, minimumStock: Math.max(0, Number(body.minimumStock || 0)), quantity, locationBalances: [{ locationId, quantity }], qrCode });
+      }
+      await movement({ itemId: item.id, movementType: "purchase", quantity, fromLocationId: null, toLocationId: locationId, employeeId: auth.userId, requestId: null, balanceBefore: before, balanceAfter: before + quantity, sourceBalanceBefore: null, sourceBalanceAfter: null, destinationBalanceBefore: before, destinationBalanceAfter: before + quantity, purchasePrice: unitPrice, unitPrice, totalCost, supplierName, purchaseDate });
       return Response.json({ ok: true });
     }
 
@@ -146,7 +157,7 @@ Deno.serve(async (req) => {
     }
 
     if (["receive", "return", "transfer"].includes(body.action)) {
-      if (body.action === "transfer" && !warehouseAccess && !auth.manager) return Response.json({ error: "Station transfer permission required" }, { status: 403 });
+      if (body.action === "transfer" && !auth.manager) return Response.json({ error: "Station transfer permission required" }, { status: 403 });
       if (body.action !== "transfer") { const denied = warehouseGuard(); if (denied) return denied; }
       const item = await getItem(body.itemId); if (!item) return Response.json({ error: "Item not found" }, { status: 404 });
       const quantity = Number(body.quantity || 1);
@@ -171,7 +182,7 @@ Deno.serve(async (req) => {
       if (body.action === "transfer") {
         if (body.fromLocationId === body.toLocationId) return Response.json({ error: "لا يمكن النقل إلى الموقع نفسه" }, { status: 400 });
         if (!allLocationIds.includes(body.fromLocationId) || !allLocationIds.includes(body.toLocationId)) return Response.json({ error: "Invalid transfer" }, { status: 400 });
-        if (!warehouseAccess && (!visible.has(body.fromLocationId) || body.toLocationId === centralWarehouseId)) return Response.json({ error: "Station transfer permission required" }, { status: 403 });
+        if (!seniorRoles.includes(auth.role) && !visible.has(body.fromLocationId)) return Response.json({ error: "Station transfer permission required" }, { status: 403 });
         const sourceBefore = balanceAt(item, body.fromLocationId); const destinationBefore = balanceAt(item, body.toLocationId);
         let next = adjustBalance(item, body.fromLocationId, -quantity);
         next = adjustBalance({ ...item, locationBalances: next }, body.toLocationId, quantity);

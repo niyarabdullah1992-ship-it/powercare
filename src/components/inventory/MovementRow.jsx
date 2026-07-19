@@ -5,7 +5,7 @@ export default function MovementRow({ entry, itemName, stationName, performerNam
   const [open, setOpen] = useState(false);
   const decrease = Number(entry.balanceAfter) < Number(entry.balanceBefore);
   const tone = decrease ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700";
-  const label = { receive: ar ? "استلام" : "Receive", issue: ar ? "صرف" : "Issue", return: ar ? "إرجاع" : "Return", transfer: ar ? "نقل" : "Transfer" }[entry.movementType] || entry.movementType;
+  const label = { purchase: ar ? "شراء" : "Purchase", receive: ar ? "استلام" : "Receive", issue: ar ? "صرف" : "Issue", return: ar ? "إرجاع" : "Return", transfer: ar ? "نقل" : "Transfer" }[entry.movementType] || entry.movementType;
   return <Fragment><tr className="border-t">
     <td data-label={ar ? "التاريخ" : "Date"} className="p-3">{new Date(entry.created_date).toLocaleString(ar ? "ar-SA" : "en")}</td>
     <td data-label={ar ? "الصنف" : "Item"} className="p-3 font-medium">{itemName(entry.itemId)}</td>
