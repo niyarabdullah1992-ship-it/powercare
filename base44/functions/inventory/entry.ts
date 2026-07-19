@@ -74,12 +74,14 @@ Deno.serve(async (req) => {
       const scopedItems = items.filter((item) => warehouseAccess || visible.has(item.currentLocationId) || balances(item).some((entry) => visible.has(entry.locationId)));
       const scopedRequests = requests.filter((request) => warehouseAccess || visible.has(request.stationId) || request.requesterId === auth.userId);
       const scopedMovements = movements.filter((entry) => warehouseAccess || visible.has(entry.fromLocationId) || visible.has(entry.toLocationId));
-      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, requests: scopedRequests, stations: stations.filter((station) => warehouseAccess || visible.has(station.stationId)), transferStations: warehouseAccess ? stations : [], employees, canManage: warehouseAccess, canWarehouseManage: warehouseAccess, canSetCentralWarehouse: auth.owner || auth.role === "director", centralWarehouseId });
+      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, requests: scopedRequests, stations: stations.filter((station) => warehouseAccess || visible.has(station.stationId)), transferStations: warehouseAccess ? stations : [], employees, canManage: warehouseAccess, canWarehouseManage: warehouseAccess, canSetCentralWarehouse: warehouseAccess || auth.role === "director", centralWarehouseId });
     }
 
     if (body.action === "setCentralWarehouse") {
-      if ((!auth.owner && auth.role !== "director") || !allStationIds.includes(body.stationId)) return Response.json({ error: "Company owner or director permission required" }, { status: 403 });
-      await base44.asServiceRole.entities.Station.bulkUpdate(stations.map((station) => ({ id: station.id, isCentralWarehouse: station.stationId === body.stationId })));
+      if (!warehouseAccess && auth.role !== "director") return Response.json({ error: "Central warehouse management permission required" }, { status: 403 });
+      const target = stations.find((station) => station.stationId === body.stationId || station.id === body.stationId);
+      if (!target) return Response.json({ error: "Selected warehouse was not found" }, { status: 400 });
+      await base44.asServiceRole.entities.Station.bulkUpdate(stations.map((station) => ({ id: station.id, isCentralWarehouse: station.id === target.id })));
       return Response.json({ ok: true });
     }
 
