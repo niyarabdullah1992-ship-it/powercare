@@ -17,6 +17,7 @@ import IssueScanner from "@/components/inventory/IssueScanner";
 import StationWarehousePicker from "@/components/inventory/StationWarehousePicker";
 import InventoryWorkflow from "@/components/inventory/InventoryWorkflow";
 import InventoryExportButtons from "@/components/inventory/InventoryExportButtons";
+import GlobalInventorySearch from "@/components/inventory/GlobalInventorySearch";
 import { toast } from "@/components/ui/use-toast";
 
 const emptyData = { items: [], units: [], movements: [], requests: [], stations: [], transferStations: [], employees: [], canManage: false };
@@ -61,7 +62,7 @@ export default function Inventory() {
 
   return <div className="space-y-6">
     <PageHeader title={ar ? "المخزن الصناعي" : "Industrial Inventory"} description={ar ? "إدارة الأصناف والحركات وطلبات المواد عبر المحطات." : "Manage items, movements and material requests across stations."} icon={Warehouse} actions={<InventoryExportButtons items={stationItems} stations={state.stations} ar={ar} />} />
-    {!loading && <StationWarehousePicker stations={state.stations} value={activeStation} onChange={changeStation} locked={currentUser?.role === "employee"} ar={ar} />}
+    {!loading && <><GlobalInventorySearch items={state.items} units={state.units} stations={state.stations} ar={ar} onOpen={(item, stationId) => { changeStation(stationId); setActive("items"); setSelectedItem(item); }} /><StationWarehousePicker stations={state.stations} value={activeStation} onChange={changeStation} locked={currentUser?.role === "employee"} ar={ar} /></>}
     <InventoryStats items={stationItems} requests={stationRequests} movements={stationMovements} ar={ar} />
     <InventoryTabs active={active} onChange={setActive} canManage={state.canManage} ar={ar} />
     {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <>
