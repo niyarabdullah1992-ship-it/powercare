@@ -74,11 +74,11 @@ Deno.serve(async (req) => {
       const scopedItems = items.filter((item) => warehouseAccess || visible.has(item.currentLocationId) || balances(item).some((entry) => visible.has(entry.locationId)));
       const scopedRequests = requests.filter((request) => warehouseAccess || visible.has(request.stationId) || request.requesterId === auth.userId);
       const scopedMovements = movements.filter((entry) => warehouseAccess || visible.has(entry.fromLocationId) || visible.has(entry.toLocationId));
-      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, requests: scopedRequests, stations: stations.filter((station) => warehouseAccess || visible.has(station.stationId)), transferStations: warehouseAccess ? stations : [], employees, canManage: warehouseAccess, canWarehouseManage: warehouseAccess, canSetCentralWarehouse: auth.owner, centralWarehouseId });
+      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, requests: scopedRequests, stations: stations.filter((station) => warehouseAccess || visible.has(station.stationId)), transferStations: warehouseAccess ? stations : [], employees, canManage: warehouseAccess, canWarehouseManage: warehouseAccess, canSetCentralWarehouse: auth.owner || auth.role === "director", centralWarehouseId });
     }
 
     if (body.action === "setCentralWarehouse") {
-      if (!auth.owner || !allStationIds.includes(body.stationId)) return Response.json({ error: "Owner permission required" }, { status: 403 });
+      if ((!auth.owner && auth.role !== "director") || !allStationIds.includes(body.stationId)) return Response.json({ error: "Company owner or director permission required" }, { status: 403 });
       await base44.asServiceRole.entities.Station.bulkUpdate(stations.map((station) => ({ id: station.id, isCentralWarehouse: station.stationId === body.stationId })));
       return Response.json({ ok: true });
     }
