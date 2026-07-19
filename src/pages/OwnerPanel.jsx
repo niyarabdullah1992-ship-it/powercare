@@ -10,6 +10,7 @@ import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import NewsBroadcast from "@/components/owner/NewsBroadcast";
 import VisitorStatsCard from "@/components/owner/VisitorStatsCard";
 import SubscribersDashboard from "@/components/owner/SubscribersDashboard";
+import PlatformRoadmap from "@/components/owner/PlatformRoadmap";
 
 export default function OwnerPanel() {
   const { t, lang } = useI18n();
@@ -81,7 +82,7 @@ export default function OwnerPanel() {
 
   return (
     <div className="min-h-screen bg-landing-bg px-4 py-10 sm:px-6" dir={lang === "ar" ? "rtl" : "ltr"}>
-      <div className={`mx-auto space-y-6 ${tab === "money" ? "max-w-5xl" : "max-w-2xl"}`}>
+      <div className={`mx-auto space-y-6 ${tab === "manage" ? "max-w-2xl" : "max-w-6xl"}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Logo size={28} />
@@ -101,6 +102,7 @@ export default function OwnerPanel() {
           {[
             { key: "manage", ar: "🏢 الإدارة", en: "🏢 Management" },
             { key: "money", ar: "💰 المال والمشتركون", en: "💰 Money & Subscribers" },
+            { key: "roadmap", ar: "خارطة التطوير", en: "Roadmap" },
           ].map((tb) => (
             <button
               key={tb.key}
@@ -115,6 +117,7 @@ export default function OwnerPanel() {
         </div>
 
         {tab === "money" && <SubscribersDashboard ar={lang === "ar"} />}
+        {tab === "roadmap" && <PlatformRoadmap ar={lang === "ar"} />}
 
         {tab === "manage" && (<>
         <div className="bg-white rounded-2xl p-6 shadow-xl space-y-6">
