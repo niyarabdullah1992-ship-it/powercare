@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
+import { base44 } from "@/api/base44Client";
+import { LANGUAGES } from "@/lib/i18n";
 import { updateCompany, setEmployeePassword, changeOwnerPassword, purgeCompanyAccount } from "@/lib/store";
 import { KeyRound, Pencil, AlertTriangle, Loader2, Building2 } from "lucide-react";
 
@@ -10,9 +12,11 @@ import { KeyRound, Pencil, AlertTriangle, Loader2, Building2 } from "lucide-reac
 export default function AccountSettingsCard({ employee, company }) {
   const { t, lang } = useI18n();
   const ar = lang === "ar";
-  const { logout } = useAuth();
+  const { logout, session } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState(employee.name);
+  const [emailLanguage, setEmailLanguage] = useState(company.emailLanguage || lang);
+  const [savingEmailLanguage, setSavingEmailLanguage] = useState(false);
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -44,6 +48,20 @@ export default function AccountSettingsCard({ employee, company }) {
     if (ok) setPassword("");
   };
 
+  const saveEmailLanguage = async () => {
+    setSavingEmailLanguage(true);
+    const response = await base44.functions.invoke("companyDirectory", {
+      action: "updateEmailLanguage",
+      companyId: company.id,
+      sessionToken: session?.token,
+      emailLanguage,
+    }).catch(() => null);
+    setSavingEmailLanguage(false);
+    setMsg(response?.data?.ok
+      ? (ar ? "تم حفظ لغة رسائل البريد." : "Email language saved.")
+      : (ar ? "تعذّر حفظ لغة البريد." : "Couldn't save email language."));
+  };
+
   return (
     <div className="space-y-4 rounded-2xl border border-border bg-card p-5">
       <h3 className="font-heading font-semibold">{t("myAccount")}</h3>
@@ -67,6 +85,21 @@ export default function AccountSettingsCard({ employee, company }) {
         </div>
       ) : (
         <p className="text-xs text-muted-foreground font-body">{t("emailRequiredForLogin")}</p>
+      )}
+      {isOwner && (
+        <div className="flex flex-wrap items-end gap-2 border-t border-border pt-4">
+          <div className="min-w-[220px] flex-1">
+            <label className="mb-1 block text-xs text-muted-foreground font-body">
+              {ar ? "لغة رسائل البريد الإلكتروني" : "Email message language"}
+            </label>
+            <select value={emailLanguage} onChange={(event) => setEmailLanguage(event.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-body">
+              {LANGUAGES.map((language) => <option key={language.code} value={language.code}>{language.flag} {language.label}</option>)}
+            </select>
+          </div>
+          <button onClick={saveEmailLanguage} disabled={savingEmailLanguage} className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-body disabled:opacity-50">
+            {savingEmailLanguage ? (ar ? "جارٍ الحفظ..." : "Saving...") : t("save")}
+          </button>
+        </div>
       )}
       {msg && <p className="text-xs text-accent font-body">{msg}</p>}
 

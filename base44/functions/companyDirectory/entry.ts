@@ -36,6 +36,19 @@ function emailHtml({ title, lines = [], code = null, footerNote = '' }) {
   </td></tr></table></body></html>`;
 }
 
+const SYSTEM_MAIL_COPY = {
+  en:{verifyTitle:'Login verification code',verifyLine:'Use the following code to complete signing in to your account:',valid:'The code is valid for 10 minutes. If you did not try to sign in, ignore this email.',employeeTitle:'Welcome to PowerCare',employeeReady:'Your PowerCare account is ready.',employeeAccess:'Sign in with this email and the temporary password provided securely by your company manager. A 10-minute verification code will then be emailed to you.'},
+  ar:{verifyTitle:'رمز التحقق لتسجيل الدخول',verifyLine:'استخدم الرمز التالي لإتمام تسجيل الدخول إلى حسابك:',valid:'الرمز صالح لمدة 10 دقائق. إذا لم تحاول تسجيل الدخول، تجاهل هذه الرسالة.',employeeTitle:'مرحبًا بك في PowerCare',employeeReady:'تم تجهيز حسابك في PowerCare.',employeeAccess:'سجّل الدخول بهذا البريد وكلمة المرور المؤقتة التي يزوّدك بها مدير الشركة، وسيصلك بعدها رمز تحقق صالح لمدة 10 دقائق.'},
+  de:{verifyTitle:'Bestätigungscode für die Anmeldung',verifyLine:'Verwenden Sie diesen Code, um die Anmeldung abzuschließen:',valid:'Der Code ist 10 Minuten gültig. Falls Sie sich nicht anmelden wollten, ignorieren Sie diese E-Mail.',employeeTitle:'Willkommen bei PowerCare',employeeReady:'Ihr PowerCare-Konto ist bereit.',employeeAccess:'Melden Sie sich mit dieser E-Mail und dem temporären Passwort Ihres Managers an. Anschließend erhalten Sie einen 10 Minuten gültigen Bestätigungscode.'},
+  fr:{verifyTitle:'Code de vérification de connexion',verifyLine:'Utilisez le code suivant pour terminer votre connexion :',valid:'Le code est valable 10 minutes. Si vous n’avez pas tenté de vous connecter, ignorez cet e-mail.',employeeTitle:'Bienvenue sur PowerCare',employeeReady:'Votre compte PowerCare est prêt.',employeeAccess:'Connectez-vous avec cet e-mail et le mot de passe temporaire fourni par votre responsable. Un code valable 10 minutes vous sera ensuite envoyé.'},
+  es:{verifyTitle:'Código de verificación de acceso',verifyLine:'Usa el siguiente código para completar el inicio de sesión:',valid:'El código es válido durante 10 minutos. Si no intentaste iniciar sesión, ignora este correo.',employeeTitle:'Bienvenido a PowerCare',employeeReady:'Tu cuenta de PowerCare está lista.',employeeAccess:'Inicia sesión con este correo y la contraseña temporal proporcionada por tu responsable. Después recibirás un código válido durante 10 minutos.'},
+  pt:{verifyTitle:'Código de verificação de login',verifyLine:'Use o código abaixo para concluir seu login:',valid:'O código é válido por 10 minutos. Se você não tentou entrar, ignore este e-mail.',employeeTitle:'Bem-vindo ao PowerCare',employeeReady:'Sua conta PowerCare está pronta.',employeeAccess:'Entre com este e-mail e a senha temporária fornecida pelo seu gestor. Em seguida, você receberá um código válido por 10 minutos.'},
+  ru:{verifyTitle:'Код подтверждения входа',verifyLine:'Используйте следующий код для завершения входа:',valid:'Код действует 10 минут. Если вы не пытались войти, проигнорируйте это письмо.',employeeTitle:'Добро пожаловать в PowerCare',employeeReady:'Ваша учётная запись PowerCare готова.',employeeAccess:'Войдите с этой почтой и временным паролем от руководителя. Затем вы получите код подтверждения, действующий 10 минут.'},
+  ja:{verifyTitle:'ログイン確認コード',verifyLine:'ログインを完了するには、次のコードを使用してください。',valid:'コードは10分間有効です。ログイン操作をしていない場合は、このメールを無視してください。',employeeTitle:'PowerCareへようこそ',employeeReady:'PowerCareアカウントの準備が完了しました。',employeeAccess:'このメールアドレスと会社管理者から安全に共有された仮パスワードでログインしてください。その後、10分間有効な確認コードが届きます。'},
+  ko:{verifyTitle:'로그인 인증 코드',verifyLine:'로그인을 완료하려면 다음 코드를 사용하세요.',valid:'코드는 10분간 유효합니다. 로그인을 시도하지 않았다면 이 이메일을 무시하세요.',employeeTitle:'PowerCare에 오신 것을 환영합니다',employeeReady:'PowerCare 계정이 준비되었습니다.',employeeAccess:'이 이메일과 회사 관리자가 안전하게 제공한 임시 비밀번호로 로그인하세요. 이후 10분간 유효한 인증 코드가 전송됩니다.'},
+};
+function systemMailCopy(language) { return SYSTEM_MAIL_COPY[language] || SYSTEM_MAIL_COPY.en; }
+
 async function sendSystemEmail(base44, { to, subject, body, html }) {
   try {
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
@@ -119,19 +132,14 @@ async function createLoginOtp(base44, { kind, companyId, employeeId, email }) {
     codeHash: await sha256Hex(pendingId + '::' + code),
     expiresAt: new Date(Date.now() + OTP_TTL_MS).toISOString(), attempts: 0,
   });
+  const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
+  const language = SYSTEM_MAIL_COPY[accounts[0]?.emailLanguage] ? accounts[0].emailLanguage : 'en';
+  const copy = systemMailCopy(language);
   await sendSystemEmail(base44, {
     to: email,
-    subject: 'PowerCare — رمز التحقق لتسجيل الدخول / Login Verification Code',
-    body: `رمز التحقق الخاص بك هو: ${code}\n\nYour verification code is: ${code}\n\nصالح لمدة 10 دقائق. إذا لم تحاول تسجيل الدخول، تجاهل هذه الرسالة.\nValid for 10 minutes. If you didn't try to log in, ignore this email.`,
-    html: emailHtml({
-      title: 'رمز التحقق لتسجيل الدخول · Login Verification Code',
-      lines: [
-        'استخدم الرمز التالي لإتمام تسجيل الدخول إلى حسابك:',
-        'Use the code below to complete signing in to your account:',
-      ],
-      code,
-      footerNote: 'الرمز صالح لمدة 10 دقائق · Valid for 10 minutes — إذا لم تحاول تسجيل الدخول تجاهل هذه الرسالة · If you didn\'t try to log in, ignore this email.',
-    }),
+    subject: `PowerCare — ${copy.verifyTitle}`,
+    body: `${copy.verifyLine}\n\n${code}\n\n${copy.valid}`,
+    html: emailHtml({ title: copy.verifyTitle, lines: [copy.verifyLine], code, footerNote: copy.valid }),
   });
   return pendingId;
 }
@@ -359,7 +367,7 @@ Deno.serve(async (req) => {
       return Response.json({
         kind: 'employee', token,
         employee: { companyId: rec.companyId, employeeId: rec.employeeId },
-        company: { companyId: rec.companyId, name: acc.name || '', plan: acc.plan || '', allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '' },
+        company: { companyId: rec.companyId, name: acc.name || '', plan: acc.plan || '', allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '', emailLanguage: acc.emailLanguage || 'en' },
       });
     }
 
@@ -376,7 +384,7 @@ Deno.serve(async (req) => {
     const auth = await getAuth(base44, body);
 
     if (action === 'syncAccount') {
-      const { name, ownerEmail, ownerPassword, plan, allowedEmailDomain } = body;
+      const { name, ownerEmail, ownerPassword, plan, allowedEmailDomain, emailLanguage } = body;
       const existing = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
       // Existing accounts may only be modified by their owner (or the platform builder).
       if (existing.length && (!auth || auth.role !== 'owner')) {
@@ -399,7 +407,8 @@ Deno.serve(async (req) => {
         const sameKind = dupes.some((d) => (String(d.plan || '').toLowerCase() === 'individual') === newIsIndividual);
         if (sameKind) return Response.json({ error: 'email_exists' }, { status: 409 });
       }
-      const fields = { companyId, name, ownerEmail, ownerPassword: storedPassword, plan, allowedEmailDomain: allowedEmailDomain || '' };
+      const supportedEmailLanguages = ['en', 'ar', 'de', 'fr', 'es', 'pt', 'ru', 'ja', 'ko'];
+      const fields = { companyId, name, ownerEmail, ownerPassword: storedPassword, plan, allowedEmailDomain: allowedEmailDomain || '', emailLanguage: supportedEmailLanguages.includes(emailLanguage) ? emailLanguage : (existing[0]?.emailLanguage || 'en') };
       let token = null;
       if (existing.length) {
         await base44.asServiceRole.entities.CompanyAccount.update(existing[0].id, fields);
@@ -412,6 +421,16 @@ Deno.serve(async (req) => {
     }
 
     if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (action === 'updateEmailLanguage') {
+      if (auth.role !== 'owner' && !auth.admin) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const supported = ['en', 'ar', 'de', 'fr', 'es', 'pt', 'ru', 'ja', 'ko'];
+      if (!supported.includes(body.emailLanguage)) return Response.json({ error: 'Unsupported language' }, { status: 400 });
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
+      if (!accounts[0]) return Response.json({ error: 'Account not found' }, { status: 404 });
+      await base44.asServiceRole.entities.CompanyAccount.update(accounts[0].id, { emailLanguage: body.emailLanguage });
+      return Response.json({ ok: true, emailLanguage: body.emailLanguage });
+    }
 
     // Server-side privilege of the acting user, derived from the server's own
     // Employee record (never from the request body):
@@ -548,19 +567,14 @@ Deno.serve(async (req) => {
         ]);
         const employeeName = employees[0]?.name || normalizedEmail;
         const companyName = accounts[0]?.name || 'PowerCare';
+        const language = SYSTEM_MAIL_COPY[accounts[0]?.emailLanguage] ? accounts[0].emailLanguage : 'en';
+        const copy = systemMailCopy(language);
+        const readyLine = `${employeeName} — ${copy.employeeReady} ${companyName}`;
         await sendSystemEmail(base44, {
           to: normalizedEmail,
-          subject: 'مرحبًا بك في PowerCare / Welcome to PowerCare',
-          body: `مرحبًا ${employeeName}،\n\nتهانينا، تم تجهيز حسابك في شركة ${companyName} على منصة PowerCare.\nيمكنك تسجيل الدخول باستخدام هذا البريد الإلكتروني وكلمة المرور المؤقتة التي يزوّدك بها مدير الشركة. بعد إدخالها سيصلك رمز تحقق صالح لمدة 10 دقائق.\n\nWelcome ${employeeName},\n\nYour account for ${companyName} is ready on PowerCare. Sign in with this email address and the temporary password provided securely by your company manager. A 10-minute verification code will then be sent to your email.`,
-          html: emailHtml({
-            title: `مرحبًا بك في PowerCare · Welcome to PowerCare`,
-            lines: [
-              `مرحبًا <b>${employeeName}</b>، تهانينا! تم تجهيز حسابك في شركة <b>${companyName}</b> على منصة PowerCare.`,
-              'يمكنك تسجيل الدخول باستخدام هذا البريد الإلكتروني وكلمة المرور المؤقتة التي يزوّدك بها مدير الشركة، وسيصلك بعدها رمز تحقق صالح لمدة 10 دقائق.',
-              `Welcome <b>${employeeName}</b> — your account for <b>${companyName}</b> is ready on PowerCare.`,
-              'Sign in with this email and the temporary password provided by your company manager. A 10-minute verification code will then be emailed to you.',
-            ],
-          }),
+          subject: `PowerCare — ${copy.employeeTitle}`,
+          body: `${readyLine}\n\n${copy.employeeAccess}`,
+          html: emailHtml({ title: copy.employeeTitle, lines: [readyLine, copy.employeeAccess] }),
         });
         emailSent = true;
       } catch (emailError) {

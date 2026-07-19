@@ -22,6 +22,22 @@
     "allowedEmailDomain": {
       "type": "string"
     },
+    "emailLanguage": {
+      "type": "string",
+      "enum": [
+        "en",
+        "ar",
+        "de",
+        "fr",
+        "es",
+        "pt",
+        "ru",
+        "ja",
+        "ko"
+      ],
+      "default": "en",
+      "description": "Manually selected language for automated company email messages."
+    },
     "trialReminderSent": {
       "type": "boolean",
       "default": false,

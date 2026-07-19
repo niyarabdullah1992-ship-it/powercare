@@ -12,26 +12,30 @@ function toBase64Url(str) {
 function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
-function emailHtml(title, text) {
+function emailHtml(title, text, language = 'en') {
+  const direction = language === 'ar' ? 'rtl' : 'ltr';
   const paragraphs = escapeHtml(text).split(/\n{2,}/)
-    .map((p) => `<p style="margin:0 0 12px;font-size:14px;line-height:1.8;color:#4a3d2c;" dir="auto">${p.replace(/\n/g, '<br/>')}</p>`)
+    .map((p) => `<p style="margin:0 0 12px;font-size:14px;line-height:1.8;color:#4a3d2c;" dir="${direction}">${p.replace(/\n/g, '<br/>')}</p>`)
     .join('');
-  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5efe4;font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5efe4;padding:32px 12px;"><tr><td align="center">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #eadfc9;">
-      <tr><td style="background:linear-gradient(180deg,#d8b578,#b8863e);padding:26px;text-align:center;">
-        <img src="${EMAIL_LOGO}" width="52" height="52" alt="PowerCare" style="display:block;margin:0 auto 8px;" />
-        <div style="font-size:20px;font-weight:700;color:#ffffff;font-family:Georgia,serif;letter-spacing:1px;">PowerCare</div>
-      </td></tr>
-      <tr><td style="padding:30px 30px 10px;">
-        <h1 style="margin:0 0 16px;font-size:18px;color:#3a2f22;font-family:Georgia,serif;" dir="auto">${escapeHtml(title)}</h1>
-        ${paragraphs}
-      </td></tr>
-      <tr><td style="padding:18px 30px 26px;border-top:1px solid #f0e8d8;">
-        <p style="margin:0;font-size:12px;color:#a08c6a;text-align:center;" dir="auto">PowerCare — إدارة ذكية لفريقك ومهامك · Smart workforce management</p>
-      </td></tr>
-    </table>
-  </td></tr></table></body></html>`;
+  return `<!DOCTYPE html><html lang="${language}" dir="${direction}"><body style="margin:0;padding:0;background:#f5efe4;font-family:Arial,Helvetica,sans-serif;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5efe4;padding:32px 12px;"><tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #eadfc9;"><tr><td style="background:linear-gradient(180deg,#d8b578,#b8863e);padding:26px;text-align:center;"><img src="${EMAIL_LOGO}" width="52" height="52" alt="PowerCare" style="display:block;margin:0 auto 8px;" /><div style="font-size:20px;font-weight:700;color:#ffffff;font-family:Georgia,serif;letter-spacing:1px;">PowerCare</div></td></tr><tr><td style="padding:30px 30px 10px;"><h1 style="margin:0 0 16px;font-size:18px;color:#3a2f22;font-family:Georgia,serif;" dir="${direction}">${escapeHtml(title)}</h1>${paragraphs}</td></tr><tr><td style="padding:18px 30px 26px;border-top:1px solid #f0e8d8;"><p style="margin:0;font-size:12px;color:#a08c6a;text-align:center;">PowerCare · Smart workforce management</p></td></tr></table></td></tr></table></body></html>`;
+}
+const MESSAGE_COPY = {
+  en:{hello:'Hello',welcome:'Welcome to PowerCare',created:'Your PowerCare account has been created successfully.',next:'You can now sign in, add your stations and team, and manage operations from one place.',confirmed:'Your PowerCare subscription is confirmed',thanks:'Thank you for subscribing to PowerCare.',trial:'Your 120-day free trial starts today. Billing begins after it ends, and you can cancel beforehand.',reminder:'Your PowerCare free trial ends soon',days:'days remaining',reminderBody:'Your free trial is nearing its end. Subscription billing will begin automatically afterward; you may change or cancel your plan before then.',team:'The PowerCare Team'},
+  ar:{hello:'مرحبًا',welcome:'مرحبًا بك في PowerCare',created:'تم إنشاء حسابك في PowerCare بنجاح.',next:'يمكنك الآن تسجيل الدخول وإضافة المحطات والفريق وإدارة عملياتك من مكان واحد.',confirmed:'تم تأكيد اشتراكك في PowerCare',thanks:'شكرًا لاشتراكك في PowerCare.',trial:'تبدأ اليوم تجربتك المجانية لمدة 120 يومًا، ويبدأ التحصيل بعد انتهائها، ويمكنك الإلغاء قبل ذلك.',reminder:'تجربتك المجانية في PowerCare تنتهي قريبًا',days:'يومًا متبقيًا',reminderBody:'تقترب تجربتك المجانية من نهايتها. سيبدأ تحصيل الاشتراك تلقائيًا بعدها، ويمكنك تغيير الباقة أو إلغاؤها قبل ذلك.',team:'فريق PowerCare'},
+  de:{hello:'Hallo',welcome:'Willkommen bei PowerCare',created:'Ihr PowerCare-Konto wurde erfolgreich erstellt.',next:'Sie können sich jetzt anmelden, Standorte und Team hinzufügen und Ihre Abläufe zentral verwalten.',confirmed:'Ihr PowerCare-Abonnement wurde bestätigt',thanks:'Vielen Dank für Ihr PowerCare-Abonnement.',trial:'Ihre 120-tägige kostenlose Testphase beginnt heute. Danach startet die Abrechnung; vorher können Sie kündigen.',reminder:'Ihre kostenlose PowerCare-Testphase endet bald',days:'Tage verbleiben',reminderBody:'Ihre Testphase endet bald. Danach beginnt die Abrechnung automatisch; Sie können Ihren Tarif vorher ändern oder kündigen.',team:'Das PowerCare-Team'},
+  fr:{hello:'Bonjour',welcome:'Bienvenue sur PowerCare',created:'Votre compte PowerCare a été créé avec succès.',next:'Vous pouvez maintenant vous connecter, ajouter vos stations et votre équipe, puis gérer vos opérations au même endroit.',confirmed:'Votre abonnement PowerCare est confirmé',thanks:'Merci de votre abonnement à PowerCare.',trial:'Votre essai gratuit de 120 jours commence aujourd’hui. La facturation débutera ensuite; vous pouvez annuler avant.',reminder:'Votre essai gratuit PowerCare se termine bientôt',days:'jours restants',reminderBody:'Votre essai touche à sa fin. La facturation commencera automatiquement ensuite; vous pouvez modifier ou annuler votre offre avant.',team:'L’équipe PowerCare'},
+  es:{hello:'Hola',welcome:'Bienvenido a PowerCare',created:'Tu cuenta de PowerCare se creó correctamente.',next:'Ya puedes iniciar sesión, añadir estaciones y equipo, y gestionar tus operaciones desde un solo lugar.',confirmed:'Tu suscripción a PowerCare está confirmada',thanks:'Gracias por suscribirte a PowerCare.',trial:'Tu prueba gratuita de 120 días comienza hoy. La facturación empezará al terminar; puedes cancelar antes.',reminder:'Tu prueba gratuita de PowerCare termina pronto',days:'días restantes',reminderBody:'Tu prueba está por finalizar. La facturación comenzará automáticamente después; puedes cambiar o cancelar tu plan antes.',team:'El equipo de PowerCare'},
+  pt:{hello:'Olá',welcome:'Bem-vindo ao PowerCare',created:'Sua conta PowerCare foi criada com sucesso.',next:'Agora você pode entrar, adicionar estações e equipe e gerenciar suas operações em um só lugar.',confirmed:'Sua assinatura PowerCare foi confirmada',thanks:'Obrigado por assinar o PowerCare.',trial:'Seu teste grátis de 120 dias começa hoje. A cobrança começa depois; você pode cancelar antes.',reminder:'Seu teste grátis do PowerCare termina em breve',days:'dias restantes',reminderBody:'Seu teste está próximo do fim. A cobrança começará automaticamente depois; você pode alterar ou cancelar o plano antes.',team:'Equipe PowerCare'},
+  ru:{hello:'Здравствуйте',welcome:'Добро пожаловать в PowerCare',created:'Ваша учётная запись PowerCare успешно создана.',next:'Теперь вы можете войти, добавить станции и команду и управлять работой в одном месте.',confirmed:'Подписка PowerCare подтверждена',thanks:'Спасибо за подписку на PowerCare.',trial:'Сегодня начинается бесплатный 120-дневный период. После него начнётся оплата; до этого можно отменить подписку.',reminder:'Пробный период PowerCare скоро закончится',days:'дней осталось',reminderBody:'Пробный период подходит к концу. Затем автоматически начнётся оплата; до этого можно изменить или отменить тариф.',team:'Команда PowerCare'},
+  ja:{hello:'こんにちは',welcome:'PowerCareへようこそ',created:'PowerCareアカウントが正常に作成されました。',next:'ログインしてステーションとチームを追加し、業務を一元管理できます。',confirmed:'PowerCareのサブスクリプションが確認されました',thanks:'PowerCareをご利用いただきありがとうございます。',trial:'本日から120日間の無料トライアルが始まります。終了後に課金が開始され、事前にキャンセルできます。',reminder:'PowerCare無料トライアル終了のお知らせ',days:'日残っています',reminderBody:'無料トライアルの終了が近づいています。終了後は自動的に課金が始まりますが、事前にプラン変更またはキャンセルできます。',team:'PowerCareチーム'},
+  ko:{hello:'안녕하세요',welcome:'PowerCare에 오신 것을 환영합니다',created:'PowerCare 계정이 성공적으로 생성되었습니다.',next:'이제 로그인하여 현장과 팀을 추가하고 모든 운영을 한 곳에서 관리할 수 있습니다.',confirmed:'PowerCare 구독이 확인되었습니다',thanks:'PowerCare를 구독해 주셔서 감사합니다.',trial:'오늘부터 120일 무료 체험이 시작됩니다. 종료 후 결제가 시작되며 그 전에 취소할 수 있습니다.',reminder:'PowerCare 무료 체험이 곧 종료됩니다',days:'일 남음',reminderBody:'무료 체험 종료가 다가오고 있습니다. 이후 자동 결제가 시작되며 그 전에 요금제를 변경하거나 취소할 수 있습니다.',team:'PowerCare 팀'},
+};
+function copyFor(language) { return MESSAGE_COPY[language] || MESSAGE_COPY.en; }
+function localizedMessage(type, language, companyName, plan, daysLeft) {
+  const c = copyFor(language);
+  if (type === 'welcome') return { subject:`${c.welcome}${companyName ? ` — ${companyName}` : ''}`, body:`${c.hello},\n\n${c.created}${companyName ? ` (${companyName})` : ''}\n\n${c.next}\n\n— ${c.team}` };
+  if (type === 'confirmed') return { subject:`${c.confirmed}${plan ? ` — ${plan}` : ''}`, body:`${c.hello},\n\n${c.thanks}${companyName ? ` (${companyName})` : ''}\n\n${c.trial}\n\n— ${c.team}` };
+  return { subject:`${c.reminder} — ${daysLeft} ${c.days}`, body:`${c.hello},\n\n${companyName}\n\n${c.reminderBody}\n\n${daysLeft} ${c.days}.\n\n— ${c.team}` };
 }
 
 // Subscriber email hub for PowerCare:
@@ -50,14 +54,14 @@ Deno.serve(async (req) => {
 
     // Sends a branded HTML email via the connected Gmail account, falling back to
     // the built-in email service (plain text) if Gmail is unavailable.
-    const send = async (to, subject, emailBody) => {
+    const send = async (to, subject, emailBody, language = 'en') => {
       try {
         const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
         const msg = createMimeMessage();
         msg.setSender({ name: 'PowerCare', addr: 'no-reply@powercare.app' });
         msg.setRecipient(to);
         msg.setSubject(subject);
-        msg.addMessage({ contentType: 'text/html', data: emailHtml(subject, emailBody) });
+        msg.addMessage({ contentType: 'text/html', data: emailHtml(subject, emailBody, language) });
         const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
           method: 'POST',
           headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -93,19 +97,14 @@ Deno.serve(async (req) => {
       const acc = accounts[0];
       if (!acc?.ownerEmail) return Response.json({ error: 'Account not found' }, { status: 404 });
       const companyName = String(acc.name || '').replace(/[\r\n]/g, ' ').slice(0, 120);
+      const language = MESSAGE_COPY[acc.emailLanguage] ? acc.emailLanguage : 'en';
       if (action === 'welcome') {
-        await send(
-          acc.ownerEmail,
-          `Welcome to PowerCare${companyName ? ` — ${companyName}` : ''}`,
-          `Hello,\n\nYour PowerCare account${companyName ? ` for "${companyName}"` : ''} has been created successfully.\n\nYou can now sign in with this email address, add your stations and team, and start managing your operations from one place.\n\nIf you have any questions, just reply to this email.\n\n— The PowerCare Team`
-        );
+        const message = localizedMessage('welcome', language, companyName, '', 0);
+        await send(acc.ownerEmail, message.subject, message.body, language);
       } else {
         const plan = String(acc.plan || '').replace(/[\r\n]/g, ' ').slice(0, 40);
-        await send(
-          acc.ownerEmail,
-          `Your PowerCare ${plan} subscription is confirmed`,
-          `Hello,\n\nThank you for subscribing to PowerCare${plan ? ` (${plan} plan)` : ''}${companyName ? ` for "${companyName}"` : ''}.\n\nYour ${TRIAL_DAYS}-day free trial starts today — you won't be charged until it ends, and you can cancel anytime before then.\n\nEnjoy the platform!\n\n— The PowerCare Team`
-        );
+        const message = localizedMessage('confirmed', language, companyName, plan, 0);
+        await send(acc.ownerEmail, message.subject, message.body, language);
       }
       return Response.json({ ok: true });
     }
@@ -128,11 +127,9 @@ Deno.serve(async (req) => {
         if (ageDays < REMIND_AT_DAY || ageDays >= TRIAL_DAYS) continue;
         const daysLeft = Math.max(1, Math.ceil(TRIAL_DAYS - ageDays));
         try {
-          await send(
-            acc.ownerEmail,
-            `Your PowerCare free trial ends in ${daysLeft} day${daysLeft > 1 ? 's' : ''}`,
-            `Hello,\n\nJust a heads-up: the ${TRIAL_DAYS}-day free trial for "${acc.name || 'your company'}" (${acc.plan} plan) ends in ${daysLeft} day${daysLeft > 1 ? 's' : ''}.\n\nAfter that, your subscription billing will begin automatically. If you'd like to change or cancel your plan, you can do so anytime before the trial ends.\n\n— The PowerCare Team`
-          );
+          const language = MESSAGE_COPY[acc.emailLanguage] ? acc.emailLanguage : 'en';
+          const message = localizedMessage('reminder', language, acc.name || 'PowerCare', acc.plan || '', daysLeft);
+          await send(acc.ownerEmail, message.subject, message.body, language);
           await base44.asServiceRole.entities.CompanyAccount.update(acc.id, { trialReminderSent: true });
           sent++;
         } catch (e) {
