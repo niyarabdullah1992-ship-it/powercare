@@ -16,7 +16,6 @@ import InventoryWorkflow from "@/components/inventory/InventoryWorkflow";
 import InventoryExportButtons from "@/components/inventory/InventoryExportButtons";
 import GlobalInventorySearch from "@/components/inventory/GlobalInventorySearch";
 import PurchasesTab from "@/components/inventory/PurchasesTab";
-import ProcurementTab from "@/components/inventory/ProcurementTab";
 import { toast } from "@/components/ui/use-toast";
 
 const emptyData = { items: [], requestItems: [], movements: [], purchases: [], procurementRequests: [], purchaseOrders: [], requests: [], stations: [], locations: [], transferStations: [], employees: [], canManage: false, canPurchase: false, canDelete: false, canApproveProcurement: false, canReceiveProcurement: false, canViewAllPurchases: false, canWarehouseManage: false, canTransfer: false, centralWarehouseId: null };
@@ -64,7 +63,6 @@ export default function Inventory() {
     {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <>
       {active === "overview" && <div className="space-y-4"><InventoryWorkflow canManage={state.canManage} onNavigate={setActive} ar={ar} /><ItemList items={stationItems.filter((item) => Number(item.quantity) <= Number(item.minimumStock))} stations={state.stations} onSelect={setSelectedItem} ar={ar} /></div>}
       {active === "items" && <div className="space-y-4">{state.canPurchase && <ItemForm key={activeStation} stations={state.locations} defaultStationId={activeStation} onSubmit={(payload) => run("createItem", payload)} ar={ar} />}<ItemList items={stationItems} stations={state.locations} onSelect={setSelectedItem} ar={ar} /></div>}
-      {active === "procurement" && <ProcurementTab requests={state.procurementRequests} orders={state.purchaseOrders} stationId={activeStation} canApprove={state.canApproveProcurement} canReceive={state.canReceiveProcurement} run={run} ar={ar} />}
       {active === "purchases" && <PurchasesTab purchases={state.purchases} items={state.requestItems} stations={state.locations} activeStation={activeStation} canViewAll={state.canViewAllPurchases} ar={ar} />}
       {active === "movements" && <div className="space-y-4">{state.canTransfer && <MovementForm key={activeStation} items={stationItems} stations={state.transferStations} stationId={activeStation} onSubmit={(action, payload) => run(action, payload)} ar={ar} />}<MovementList movements={stationMovements} items={state.requestItems} stations={state.transferStations.length ? state.transferStations : state.locations} employees={state.employees} ar={ar} /></div>}
     </>}

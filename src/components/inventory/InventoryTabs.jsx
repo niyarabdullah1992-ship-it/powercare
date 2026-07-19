@@ -1,11 +1,10 @@
 import React from "react";
-import { Boxes, ArrowLeftRight, LayoutDashboard, ShoppingCart, ClipboardList } from "lucide-react";
+import { Boxes, ArrowLeftRight, LayoutDashboard, ShoppingCart } from "lucide-react";
 
 export default function InventoryTabs({ active, onChange, canManage, ar }) {
   const tabs = [
     ["overview", LayoutDashboard, ar ? "نظرة عامة" : "Overview"],
     ["items", Boxes, ar ? "الأصناف" : "Items"],
-    ["procurement", ClipboardList, ar ? "المشتريات والتوريد" : "Procurement"],
     ...(canManage ? [["purchases", ShoppingCart, ar ? "سجل التكاليف" : "Purchase costs"]] : []),
     ["movements", ArrowLeftRight, ar ? "سجل الحركة" : "Movements"],
   ];
