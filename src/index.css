@@ -54,6 +54,9 @@
     --sign-surface: 0 0% 100%;
     --sign-ink: 30 25% 15%;
     --sign-gold: 33 46% 53%;
+    --icon-gold: 32 58% 49%;
+    --icon-gold-soft: 35 55% 67%;
+    --icon-halo: 32 58% 49%;
   }
 
   .dark {
@@ -94,6 +97,9 @@
     --sign-surface: 0 0% 100%;
     --sign-ink: 30 25% 15%;
     --sign-gold: 33 46% 53%;
+    --icon-gold: 35 61% 58%;
+    --icon-gold-soft: 37 52% 72%;
+    --icon-halo: 35 61% 58%;
   }
 }
 
@@ -273,6 +279,52 @@ input, textarea, [contenteditable] {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--accent));
+}
+
+/* PowerCare identity — technical gold icon system */
+svg.lucide {
+  stroke-linecap: square;
+  stroke-linejoin: bevel;
+  filter: drop-shadow(0 1px 1px hsl(var(--foreground) / .08));
+  transition: color 150ms ease, filter 150ms ease, transform 150ms ease;
+}
+
+:is(.powercare-shell, .powercare-public) :is(button, a, [role="button"]):hover svg.lucide {
+  filter: drop-shadow(0 0 5px hsl(var(--icon-halo) / .28));
+}
+
+:is(.powercare-shell, .powercare-public) :is(button, a, [role="button"]):active svg.lucide {
+  transform: scale(.94);
+}
+
+:is(.powercare-shell, .powercare-public) :is(.text-accent, .text-landing-gold) svg.lucide,
+:is(.powercare-shell, .powercare-public) svg.lucide.text-accent,
+:is(.powercare-shell, .powercare-public) svg.lucide.text-landing-gold {
+  color: hsl(var(--icon-gold));
+  filter: drop-shadow(0 0 4px hsl(var(--icon-halo) / .22));
+}
+
+.powercare-shell > aside svg.lucide {
+  color: hsl(var(--icon-gold-soft));
+  filter: drop-shadow(0 0 4px hsl(var(--icon-halo) / .16));
+}
+
+.powercare-shell > aside a:hover svg.lucide,
+.powercare-shell > aside a[aria-current="page"] svg.lucide {
+  color: hsl(var(--icon-gold));
+  filter: drop-shadow(0 0 6px hsl(var(--icon-halo) / .34));
+}
+
+.powercare-public :is(.rounded-full, .rounded-xl, .rounded-2xl) > svg.lucide,
+.powercare-shell main :is(.rounded-full, .rounded-xl, .rounded-2xl) > svg.lucide {
+  color: hsl(var(--icon-gold));
+}
+
+/* Preserve semantic status colors while retaining the technical geometry. */
+:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, .text-green-600, .text-emerald-500, .text-emerald-600) svg.lucide,
+svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, .text-green-600, .text-emerald-500, .text-emerald-600) {
+  color: inherit;
+  filter: drop-shadow(0 1px 1px hsl(var(--foreground) / .08));
 }
 
 /* PowerCare 2090 — touch-first spatial interface */

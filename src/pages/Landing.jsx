@@ -29,7 +29,7 @@ export default function Landing() {
   }, [langOpen]);
 
   return (
-    <div className="min-h-screen bg-landing-bg font-body text-primary">
+    <div className="powercare-public min-h-screen bg-landing-bg font-body text-primary">
       <div className="sticky top-0 z-50 flex items-center justify-between border-b border-landing-gold/15 bg-landing-bg/90 px-4 py-3 shadow-sm backdrop-blur-xl sm:px-6 md:px-10 md:py-4">
         <div className="flex items-center gap-2">
           <Logo size={30} />
