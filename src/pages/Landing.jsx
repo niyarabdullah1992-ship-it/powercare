@@ -85,18 +85,6 @@ export default function Landing() {
         </div>
       </div>
 
-      <div className="bg-landing-bg px-4 py-6 sm:px-6">
-        <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 rounded-2xl border border-landing-gold/25 bg-white px-6 py-6 text-center shadow-sm sm:flex-row sm:justify-between sm:text-start">
-          <div>
-            <p className="font-heading text-xl text-[#3a2f22]">{lang === "ar" ? "جرّب PowerCare لشركتك اليوم" : "Try PowerCare for your company today"}</p>
-            <p className="mt-1 text-sm font-body text-[#3a2f22]/60">{lang === "ar" ? "إعداد سريع، بدون بطاقة ائتمان" : "Quick setup, no credit card required"}</p>
-          </div>
-          <Link to="/pricing" className="shrink-0 rounded-full bg-gradient-to-b from-landing-gold-light to-landing-gold px-7 py-3 text-sm font-body font-semibold text-white transition-opacity hover:opacity-90">
-            {lang === "ar" ? "ابدأ الآن مجاناً" : "Start free now"}
-          </Link>
-        </div>
-      </div>
-
       <StatsBand lang={lang} />
       <VideoIntro />
       <GoldDivider />
