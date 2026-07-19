@@ -8,9 +8,9 @@ export default function ItemForm({ items, units, stations, defaultStationId, onS
   const availableItems = items.filter((item) => item.trackingMode === "serialized" ? units.some((unit) => unit.itemId === item.id && unit.locationId === sourceStation && unit.status === "available") : Number(item.locationBalances?.find((balance) => balance.locationId === sourceStation)?.quantity || 0) > 0);
   const selectedItem = items.find((item) => item.id === itemId);
   const submit = async (event) => {
-    event.preventDefault(); const values = Object.fromEntries(new FormData(event.currentTarget));
+    event.preventDefault(); const formElement = event.currentTarget; const values = Object.fromEntries(new FormData(formElement));
     const ok = sourceType === "purchase" ? await onSubmit(values) : await onTransfer({ ...values, itemId, fromLocationId: sourceStation, toLocationId: defaultStationId });
-    if (ok) { event.currentTarget.reset(); setMode("quantity"); setSourceType("purchase"); setSourceStation(""); setItemId(""); }
+    if (ok) { formElement.reset(); setMode("quantity"); setSourceType("purchase"); setSourceStation(""); setItemId(""); }
   };
   return <form onSubmit={submit} className="grid gap-3 rounded-xl border border-border bg-card p-4 md:grid-cols-2 xl:grid-cols-4">
     <select value={sourceType} onChange={(event) => { setSourceType(event.target.value); setSourceStation(""); setItemId(""); }} className="rounded-lg border px-3 py-2"><option value="purchase">{ar ? "المصدر: مشتريات" : "Source: Purchase"}</option><option value="transfer">{ar ? "المصدر: تحويل بين الفروع أو المحطات" : "Source: Branch or station transfer"}</option></select>
