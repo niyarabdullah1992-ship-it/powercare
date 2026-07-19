@@ -60,11 +60,12 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
     (acc, r) => {
       if (r.status === "present") acc.present++;
       else if (r.status === "late") acc.late++;
+      else if (r.status === "absent" && r.excused) acc.excusedAbsent++;
       else if (r.status === "absent") acc.absent++;
       acc.hours += Number(r.work_hours) || 0;
       return acc;
     },
-    { present: 0, late: 0, absent: 0, hours: 0 }
+    { present: 0, late: 0, absent: 0, excusedAbsent: 0, hours: 0 }
   );
 
   const statusLabel = (r) => t(`attendanceStatus${r.status.charAt(0).toUpperCase()}${r.status.slice(1).replace(/_([a-z])/, (m, c) => c.toUpperCase())}`);
@@ -116,7 +117,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
         )}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div className="p-3 rounded-lg border border-emerald-300 bg-emerald-50 text-center">
           <p className="text-lg font-semibold text-emerald-700">{totals.present}</p>
           <p className="text-[11px] text-emerald-700 font-body">{t("totalPresent")}</p>
@@ -128,6 +129,10 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
         <div className="p-3 rounded-lg border border-red-300 bg-red-50 text-center">
           <p className="text-lg font-semibold text-red-700">{totals.absent}</p>
           <p className="text-[11px] text-red-700 font-body">{t("totalAbsent")}</p>
+        </div>
+        <div className="p-3 rounded-lg border border-sky-300 bg-sky-50 text-center">
+          <p className="text-lg font-semibold text-sky-700">{totals.excusedAbsent}</p>
+          <p className="text-[11px] text-sky-700 font-body">{t("totalAbsent")} ({t("excused")})</p>
         </div>
         <div className="p-3 rounded-lg border border-border bg-muted text-center">
           <p className="text-lg font-semibold">{totals.hours.toFixed(1)}</p>
