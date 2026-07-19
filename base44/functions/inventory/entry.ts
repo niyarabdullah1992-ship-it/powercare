@@ -53,6 +53,18 @@ Deno.serve(async (req) => {
       return Response.json({ items: scopedItems, movements: movements.filter((entry) => itemIds.has(entry.itemId)), requests: scopedRequests, stations: stations.filter((station) => seniorRoles.includes(auth.role) || visible.has(station.stationId)), transferStations: auth.manager ? stations : [], employees, canManage: auth.manager });
     }
 
+    if (body.action === "deleteItem") {
+      const denied = managerGuard(); if (denied) return denied;
+      const item = await getItem(body.itemId);
+      if (!item) return Response.json({ error: "Item not found" }, { status: 404 });
+      await Promise.all([
+        base44.asServiceRole.entities.StockMovement.deleteMany({ companyId: auth.companyId, itemId: item.id }),
+        base44.asServiceRole.entities.MaterialRequest.deleteMany({ companyId: auth.companyId, itemId: item.id }),
+      ]);
+      await base44.asServiceRole.entities.InventoryItem.delete(item.id);
+      return Response.json({ ok: true });
+    }
+
     if (body.action === "createItem") {
       const denied = managerGuard(); if (denied) return denied;
       const name = String(body.name || "").trim(); const itemCode = String(body.itemCode || "").trim();

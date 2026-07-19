@@ -71,6 +71,6 @@ export default function Inventory() {
       {active === "movements" && <div className="space-y-4">{state.canManage && <MovementForm key={activeStation} items={stationItems} stations={state.stations} transferStations={state.transferStations} stationId={activeStation} onSubmit={(action, payload) => run(action, payload)} ar={ar} />}<MovementList movements={stationMovements} items={state.items} stations={state.transferStations} ar={ar} /></div>}
       {active === "scanner" && <IssueScanner key={`${activeStation}-${selectedRequest}`} requests={stationRequests} items={state.items} selectedRequest={selectedRequest} onIssue={(requestId, qrCode) => run("issueRequest", { requestId, qrCode })} ar={ar} />}
     </>}
-    <ItemDetails item={selected} stations={state.stations} onClose={() => setSelectedItem(null)} ar={ar} />
+    <ItemDetails item={selected} stations={state.stations} canDelete={state.canManage} onDelete={async (itemId) => { if (await run("deleteItem", { itemId })) setSelectedItem(null); }} onClose={() => setSelectedItem(null)} ar={ar} />
   </div>;
 }
