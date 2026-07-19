@@ -17,6 +17,7 @@ import { Loader2 } from 'lucide-react';
 // Landing stays eager so the first paint is instant; every other page is
 // lazy-loaded on demand — the initial bundle shrinks dramatically.
 import Landing from './pages/Landing';
+import Assistant from './pages/Assistant';
 
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
@@ -41,7 +42,6 @@ const DailyReport = lazy(() => import('./pages/DailyReport'));
 const Attendance = lazy(() => import('./pages/Attendance'));
 const Files = lazy(() => import('./pages/Files'));
 const FileSigning = lazy(() => import('./pages/FileSigning'));
-const Assistant = lazy(() => import('./pages/Assistant'));
 const About = lazy(() => import('./pages/About'));
 const Help = lazy(() => import('./pages/Help'));
 const Verify = lazy(() => import('./pages/Verify'));

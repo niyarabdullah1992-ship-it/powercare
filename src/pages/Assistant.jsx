@@ -4,7 +4,6 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { buildAssistantContext } from "@/lib/assistantContext";
 import { getCompanyToken } from "@/lib/store";
-import { executeAssistantAction } from "@/lib/assistantActions";
 import AssistantMessage from "@/components/assistant/AssistantMessage";
 import SuggestedQuestions from "@/components/assistant/SuggestedQuestions";
 import VoiceControl from "@/components/assistant/VoiceControl";
@@ -198,14 +197,16 @@ Answer the last user question.`,
       const wantsSign = /توقيع|توقيعي|وق[ّ]?ع|اعتماد|اعتمد|ختم|sign/i.test(q);
       const wantsNavigation = /افتح|اذهب|انتقل|ودني|خذني|روح|open|go to|navigate|take me|öffne|gehe|ouvre|aller à|abre|ve a|abrir|ir para|открой|перейди|開いて|移動して|열어|이동해/i.test(q);
       const docs = [];
-      for (const rawAction of res?.actions || []) {
+      const actions = res?.actions || [];
+      const actionTools = actions.length ? await import("@/lib/assistantActions") : null;
+      for (const rawAction of actions) {
         if (rawAction.type === "open_page" && !wantsNavigation) continue;
         const action = wantsSign && rawAction.type === "export_data"
           ? { ...rawAction, type: "sign_report" }
           : rawAction;
         let result;
         try {
-          result = await executeAssistantAction(action, { data, company, currentUser, t });
+          result = await actionTools.executeAssistantAction(action, { data, company, currentUser, t });
         } catch (err) {
           console.error("Assistant action failed:", action?.type, err);
           result = { ok: false, message: t("aiActionFailed") };
