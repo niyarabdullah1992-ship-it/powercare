@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { base44 } from "@/api/base44Client";
 import { makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
+import { STAMP_WIDTH_PERCENT } from "@/lib/signatureStampGeometry";
 
 // Renders the verification badge to PNG bytes using an ALREADY-LOADED QR image
 // (prefetched while the user was choosing the file) — no network wait here.
@@ -37,27 +38,25 @@ export async function drawTextField(pdf, page, field, rawValue) {
 // Stamps the verification badge onto the PDF, uploads the signed copy and
 // returns { url, bytes } — bytes are used to hash the file locally without
 // re-downloading it.
-export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot, qrImg, sizeScale = 1, uploadResult = true) {
+export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot, qrImg, sizeScale = 1, uploadResult = true, fields = null, textValues = {}) {
   const sc = Math.min(Math.max(Number(sizeScale) || 1, 0.5), 2);
   const pdfBytes = await fetch(docUrl).then((r) => r.arrayBuffer());
   const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   const badge = await badgePngBytes(sigId, signerName, qrImg);
   const badgeImg = await pdf.embedPng(badge.bytes);
   const pages = pdf.getPages();
-  const page = spot ? pages[Math.min(spot.page - 1, pages.length - 1)] : pages[pages.length - 1];
-  const { width, height } = page.getSize();
-  const bw = Math.min(240, width * 0.42) * sc;
-  const bh = bw * badge.ratio;
-  let bx, by;
-  if (spot) {
-    // Center the badge on the chosen spot (spot.y measured from top).
-    bx = Math.min(Math.max((width * spot.x) / 100 - bw / 2, 8), width - bw - 8);
-    by = Math.min(Math.max(height - (height * spot.y) / 100 - bh / 2, 8), height - bh - 8);
-  } else {
-    bx = width - bw - 36;
-    by = 48;
+  const assignedFields = Array.isArray(fields) && fields.length ? fields : [{ ...(spot || { page: pages.length, x: 76, y: 88 }), id: "signature", type: "signature", scale: sc * 100 }];
+  for (const field of assignedFields) {
+    const page = pages[Math.min(Math.max(Number(field.page) || 1, 1), pages.length) - 1];
+    if (field.type === "text") { await drawTextField(pdf, page, field, textValues[field.id]); continue; }
+    const { width, height } = page.getSize();
+    const fieldScale = Math.min(2, Math.max(0.5, Number(field.scale || sc * 100) / 100));
+    const bw = width * (STAMP_WIDTH_PERCENT / 100) * fieldScale;
+    const bh = bw * badge.ratio;
+    const bx = Math.min(Math.max((width * Number(field.x)) / 100 - bw / 2, 8), width - bw - 8);
+    const by = Math.min(Math.max(height - (height * Number(field.y)) / 100 - bh / 2, 8), height - bh - 8);
+    page.drawImage(badgeImg, { x: bx, y: by, width: bw, height: bh });
   }
-  page.drawImage(badgeImg, { x: bx, y: by, width: bw, height: bh });
   const out = await pdf.save();
   if (!uploadResult) return { url: null, bytes: out };
   const file = new File([out], "signed-document.pdf", { type: "application/pdf" });

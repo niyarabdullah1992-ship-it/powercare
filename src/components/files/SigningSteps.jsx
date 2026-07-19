@@ -5,12 +5,12 @@ export default function SigningSteps({ ar }) {
   const steps = ar
     ? [
         { icon: Check, title: "احفظ نوع التوقيع", text: "اكتب اسمك، اختر شكل التوقيع، ثم اضغط حفظ التوقيع." },
-        { icon: Upload, title: "ارفع الملف", text: "اختر ملف PDF أو صورة وحدد مكان ظهور التوقيع." },
+        { icon: Upload, title: "ارفع الملف", text: "اختر ملف PDF ثم ضع حقول التوقيع والنص في أماكنها." },
         { icon: FileSignature, title: "وقّع الوثيقة", text: "اضغط توقيع الوثيقة لتنزيل الملف الموقّع والموثّق." },
       ]
     : [
         { icon: Check, title: "Save your signature", text: "Enter your name, choose a signature style, then select Save signature." },
-        { icon: Upload, title: "Upload the file", text: "Choose a PDF or image and set where the signature should appear." },
+        { icon: Upload, title: "Upload the file", text: "Choose a PDF, then place signature and text fields where needed." },
         { icon: FileSignature, title: "Sign the document", text: "Select Sign document to create your verified signed file." },
       ];
 
