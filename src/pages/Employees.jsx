@@ -23,7 +23,7 @@ import PageHeader from "@/components/PageHeader";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
-const ROLES = ["employee", "inventory_keeper", "financial_officer", "station_manager", "pgm", "ops_manager", "director"];
+const ROLES = ["employee", "inventory_keeper", "warehouse_manager", "financial_officer", "station_manager", "pgm", "ops_manager", "director"];
 
 const TASK_STATUS_STYLES = {
   overdue: "border-red-300 bg-red-50 text-red-700",
@@ -83,7 +83,7 @@ export default function Employees() {
   const stations = visibleStations(currentUser, data);
   const defaultStationId = data.stations?.[0]?.id || null;
   // Station managers can only add employees / station managers to their own station
-  const allowedRoles = currentUser.role === "station_manager" ? ["employee", "inventory_keeper", "station_manager"] : ROLES;
+  const allowedRoles = currentUser.role === "station_manager" ? ["employee", "inventory_keeper", "station_manager"] : canTransfer ? ROLES : ROLES.filter((role) => role !== "warehouse_manager");
 
   const saveDomain = () => {
     setAllowedEmailDomain(company.id, domainInput);
@@ -253,6 +253,7 @@ export default function Employees() {
         emp.stationId = null;
         emp.managedStations = pgmStations;
       }
+      if (form.role === "warehouse_manager") emp.stationId = null;
       d.employees.push(emp);
       if (form.role === "station_manager") {
         const s = d.stations.find((x) => x.id === selectedStation);
@@ -275,6 +276,17 @@ export default function Employees() {
       const oldStation = d.stations.find((s) => s.managerId === id);
       if (oldStation) oldStation.managerId = null;
       emp.stationId = newStationId || null;
+    });
+  };
+
+  const changeEmployeeRole = (id, role) => {
+    if (!canTransfer) return;
+    updateCompany(company.id, (d) => {
+      const employee = d.employees.find((entry) => entry.id === id);
+      if (!employee) return;
+      employee.role = role;
+      if (role === "warehouse_manager") employee.stationId = null;
+      else if (!employee.stationId) employee.stationId = selectedStation;
     });
   };
 
@@ -417,7 +429,8 @@ export default function Employees() {
             <EmployeePerformance targets={targets.filter((tg) => tg.assignment_type === "member" && tg.employee_id === e.id)} />
 
             <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border flex-wrap">
-              {canManage && e.role !== "pgm" && (
+              {canTransfer && e.id !== currentUser.id && <div className="w-48"><MobileSelect value={e.role} onChange={(role) => changeEmployeeRole(e.id, role)} placeholder={t("role")} className="h-7 px-2 py-1 text-xs" options={ROLES.map((role) => ({ value: role, label: getRoleLabel(company, role, t) }))} /></div>}
+              {canManage && !["pgm", "warehouse_manager"].includes(e.role) && (
                 <div className="w-40">
                   <StationCombobox
                     t={t}

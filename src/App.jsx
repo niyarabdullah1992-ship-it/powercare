@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider } from '@/lib/AuthContext';
 import ScrollToTop from './components/ScrollToTop';
@@ -85,10 +85,12 @@ function PageLoader() {
 
 function RequireAuth({ children }) {
   const { session, company, data, currentUser } = usePowerCareAuth();
+  const location = useLocation();
   if (!session) return <Navigate to="/" replace />;
   // While the workspace is still loading (fresh device / restored account),
   // show a spinner instead of the blank page that pages render without a user.
   if (!data || (session.userId && !currentUser)) return <PageLoader />;
+  if (currentUser?.role === "warehouse_manager" && !["/app/inventory", "/app/help"].includes(location.pathname)) return <Navigate to="/app/inventory" replace />;
   return <TrialExpiryGate company={company}><Layout>{children}</Layout></TrialExpiryGate>;
 }
 

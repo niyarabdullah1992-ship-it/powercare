@@ -48,6 +48,11 @@
         "null"
       ],
       "description": "Allowed check-in radius around the workplace location, in meters."
+    },
+    "isCentralWarehouse": {
+      "type": "boolean",
+      "default": false,
+      "description": "Marks the single station used as the company's central warehouse."
     }
   },
   "required": [

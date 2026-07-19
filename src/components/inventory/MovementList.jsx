@@ -1,7 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
+import MovementFilters from "@/components/inventory/MovementFilters";
+import MovementExportButtons from "@/components/inventory/MovementExportButtons";
+import MovementRow from "@/components/inventory/MovementRow";
 
-export default function MovementList({ movements, items, stations, ar }) {
+export default function MovementList({ movements, items, stations, employees = [], ar }) {
+  const [stationId, setStationId] = useState(""); const [type, setType] = useState("");
+  const filtered = movements.filter((entry) => (!stationId || entry.fromLocationId === stationId || entry.toLocationId === stationId) && (!type || entry.movementType === type));
   const itemName = (id) => items.find((item) => item.id === id)?.name || "—";
   const stationName = (id) => stations.find((station) => station.stationId === id)?.name || "—";
-  return <div className="overflow-hidden rounded-xl border border-border bg-card"><table className="mobile-cards w-full text-sm"><thead className="bg-muted/50"><tr><th className="p-3 text-start">{ar ? "الحركة" : "Type"}</th><th className="p-3 text-start">{ar ? "الصنف" : "Item"}</th><th className="p-3 text-start">{ar ? "الكمية" : "Qty"}</th><th className="p-3 text-start">{ar ? "من / إلى" : "From / To"}</th><th className="p-3 text-start">{ar ? "التاريخ" : "Date"}</th></tr></thead><tbody>{movements.map((entry) => <tr key={entry.id} className="border-t"><td data-label={ar ? "الحركة" : "Type"} className="p-3">{entry.movementType}</td><td data-label={ar ? "الصنف" : "Item"} className="p-3">{itemName(entry.itemId)}</td><td data-label={ar ? "الكمية" : "Qty"} className="p-3">{entry.quantity}</td><td data-label={ar ? "من / إلى" : "From / To"} className="p-3">{stationName(entry.fromLocationId)} / {stationName(entry.toLocationId)}</td><td data-label={ar ? "التاريخ" : "Date"} className="p-3">{new Date(entry.created_date).toLocaleString(ar ? "ar-SA" : "en")}</td></tr>)}</tbody></table>{!movements.length && <p className="p-8 text-center text-muted-foreground">{ar ? "لا توجد حركات." : "No movements."}</p>}</div>;
+  const performerName = (id) => employees.find((employee) => employee.employeeId === id)?.name || id || "—";
+  return <div className="space-y-3"><div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 lg:flex-row lg:items-center lg:justify-between"><MovementFilters stationId={stationId} type={type} stations={stations} onStation={setStationId} onType={setType} ar={ar} /><MovementExportButtons movements={filtered} items={items} stations={stations} ar={ar} /></div>
+    <div className="overflow-hidden rounded-xl border border-border bg-card"><table className="mobile-cards w-full text-sm"><thead className="bg-muted/50"><tr><th className="p-3 text-start">{ar ? "التاريخ" : "Date"}</th><th className="p-3 text-start">{ar ? "الصنف" : "Item"}</th><th className="p-3 text-start">{ar ? "الحركة" : "Type"}</th><th className="p-3 text-start">{ar ? "الكمية" : "Qty"}</th><th className="p-3 text-start">{ar ? "من / إلى" : "From / To"}</th><th className="p-3 text-start">{ar ? "المنفذ" : "Performed by"}</th><th className="p-3 text-start">{ar ? "قبل" : "Before"}</th><th className="p-3 text-start">{ar ? "بعد" : "After"}</th><th /></tr></thead><tbody>{filtered.map((entry) => <MovementRow key={entry.id} entry={entry} itemName={itemName} stationName={stationName} performerName={performerName} ar={ar} />)}</tbody></table>{!filtered.length && <p className="p-8 text-center text-muted-foreground">{ar ? "لا توجد حركات مطابقة." : "No matching movements."}</p>}</div>
+  </div>;
 }

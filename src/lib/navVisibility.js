@@ -7,6 +7,7 @@ const EXEC_EXTRA = ["/app/hr", "/app/executive", "/app/payroll"];
 
 export function allowedNavFor(user, data) {
   if (!user) return new Set(BASE);
+  if (user.role === "warehouse_manager") return new Set(["/app/inventory", "/app/help"]);
   const allowed = new Set(BASE);
   const role = user.role;
   const hrLevel = user.hrLevelId && Array.isArray(data?.hrLevels) ? data.hrLevels.find((level) => level.id === user.hrLevelId) : null;

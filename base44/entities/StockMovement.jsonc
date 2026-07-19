@@ -8,12 +8,6 @@
     "itemId": {
       "type": "string"
     },
-    "unitId": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "movementType": {
       "type": "string",
       "enum": [
@@ -56,6 +50,42 @@
     },
     "notes": {
       "type": "string"
+    },
+    "balanceBefore": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "balanceAfter": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "sourceBalanceBefore": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "sourceBalanceAfter": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "destinationBalanceBefore": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "destinationBalanceAfter": {
+      "type": [
+        "number",
+        "null"
+      ]
     }
   },
   "required": [

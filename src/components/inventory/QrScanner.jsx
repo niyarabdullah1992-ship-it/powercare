@@ -1,62 +1,39 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Camera, ExternalLink, X } from "lucide-react";
-import { getMediaStream, mediaErrorText, openStandalone } from "@/lib/mediaAccess";
+import React, { useState } from "react";
+import { ImageUp, Loader2 } from "lucide-react";
 
 export default function QrScanner({ value, onChange, ar }) {
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
-  const [open, setOpen] = useState(false);
-  const [error, setError] = useState("");
-  const [errorCode, setErrorCode] = useState("");
+  const [preview, setPreview] = useState("");
+  const [status, setStatus] = useState("");
+  const [reading, setReading] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-    let timer;
-    let detecting = false;
-    (async () => {
-      try {
-        const stream = await getMediaStream({ video: { facingMode: { ideal: "environment" } }, audio: false });
-        streamRef.current = stream;
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        let readCode;
-        if ("BarcodeDetector" in window) {
-          const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
-          readCode = async () => (await detector.detect(videoRef.current).catch(() => []))[0]?.rawValue;
-        } else {
-          const { default: jsQR } = await import(/* @vite-ignore */ "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/+esm");
-          const canvas = document.createElement("canvas");
-          const context = canvas.getContext("2d", { willReadFrequently: true });
-          readCode = async () => {
-            canvas.width = videoRef.current.videoWidth;
-            canvas.height = videoRef.current.videoHeight;
-            context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-            const frame = context.getImageData(0, 0, canvas.width, canvas.height);
-            return jsQR(frame.data, frame.width, frame.height, { inversionAttempts: "attemptBoth" })?.data;
-          };
-        }
-        timer = setInterval(async () => {
-          if (detecting || !videoRef.current?.videoWidth) return;
-          detecting = true;
-          const code = await readCode().catch(() => null);
-          detecting = false;
-          if (code) { onChange(code); setOpen(false); }
-        }, 400);
-      } catch (mediaError) {
-        const code = mediaError?.code || "failed";
-        setErrorCode(code);
-        setError(mediaErrorText(code, ar));
+  const readImage = async (file) => {
+    if (!file) return;
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview(URL.createObjectURL(file)); setReading(true); setStatus(""); onChange("");
+    try {
+      const bitmap = await window.createImageBitmap(file); let code = "";
+      if ("BarcodeDetector" in window) {
+        const detected = await new window.BarcodeDetector().detect(bitmap).catch(() => []);
+        code = detected[0]?.rawValue || "";
+      } else {
+        const { default: jsQR } = await import(/* @vite-ignore */ "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/+esm");
+        const canvas = document.createElement("canvas"); canvas.width = bitmap.width; canvas.height = bitmap.height;
+        const context = canvas.getContext("2d", { willReadFrequently: true }); context.drawImage(bitmap, 0, 0);
+        const image = context.getImageData(0, 0, canvas.width, canvas.height);
+        code = jsQR(image.data, image.width, image.height, { inversionAttempts: "attemptBoth" })?.data || "";
       }
-    })();
-    return () => {
-      clearInterval(timer);
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    };
-  }, [open, ar, onChange]);
+      bitmap.close();
+      if (code) { onChange(code); setStatus(ar ? `تمت القراءة: ${code}` : `Code read: ${code}`); }
+      else setStatus(ar ? "تعذرت قراءة الباركود من الصورة." : "No barcode could be read from this image.");
+    } catch {
+      setStatus(ar ? "تعذرت معالجة الصورة. استخدم JPEG أو PNG واضحاً." : "The image could not be processed. Use a clear JPEG or PNG.");
+    } finally { setReading(false); }
+  };
 
-  return <div className="space-y-2">
-    <div className="flex gap-2"><input value={value} onChange={(event) => onChange(event.target.value)} placeholder={ar ? "رمز QR" : "QR code"} className="min-w-0 flex-1 rounded-lg border px-3 py-2" /><button type="button" onClick={() => { setError(""); setErrorCode(""); setOpen(true); }} className="rounded-lg border p-2" aria-label={ar ? "فتح الكاميرا" : "Open camera"}><Camera className="h-5 w-5" /></button></div>
-    {open && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"><div className="w-full max-w-md"><button type="button" onClick={() => setOpen(false)} className="mb-3 text-white"><X /></button><video ref={videoRef} playsInline muted autoPlay className="aspect-square w-full rounded-2xl bg-black object-cover" /><p className="mt-3 text-center text-sm text-white">{error || (ar ? "وجّه الكاميرا نحو رمز QR" : "Point the camera at the QR code")}</p>{errorCode === "embedded" && <button type="button" onClick={openStandalone} className="mx-auto mt-4 flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground"><ExternalLink className="h-4 w-4" />{ar ? "فتح التطبيق في نافذة مستقلة" : "Open app in a new tab"}</button>}</div></div>}
+  return <div className="space-y-3">
+    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-accent/50 bg-accent/5 p-4 text-sm font-medium text-accent"><input type="file" accept="image/jpeg,image/png,image/*" className="hidden" onChange={(event) => readImage(event.target.files?.[0])} />{reading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageUp className="h-5 w-5" />}{ar ? "رفع صورة الباركود" : "Upload barcode image"}</label>
+    {preview && <img src={preview} alt={ar ? "معاينة الباركود" : "Barcode preview"} className="h-28 w-full rounded-xl border object-contain" />}
+    {status && <p className={`rounded-lg px-3 py-2 text-xs ${value ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>{status}</p>}
+    <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={ar ? "أو أدخل الكود يدوياً" : "Or enter the code manually"} className="w-full rounded-lg border px-3 py-2" />
   </div>;
 }
