@@ -6,25 +6,25 @@
 
 @layer base {
   :root {
-    --background: 39 44% 94%;
-    --foreground: 30 25% 15%;
+    --background: 37 38% 90%;
+    --foreground: 30 28% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 30 25% 15%;
+    --card-foreground: 30 28% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 30 25% 15%;
-    --primary: 30 25% 15%;
+    --popover-foreground: 30 28% 12%;
+    --primary: 30 28% 13%;
     --primary-foreground: 39 44% 97%;
-    --secondary: 38 34% 91%;
-    --secondary-foreground: 30 25% 15%;
-    --muted: 38 27% 92%;
-    --muted-foreground: 31 13% 43%;
-    --accent: 33 46% 53%;
+    --secondary: 37 31% 87%;
+    --secondary-foreground: 30 28% 13%;
+    --muted: 37 25% 88%;
+    --muted-foreground: 30 15% 38%;
+    --accent: 32 52% 48%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 37 27% 85%;
-    --input: 37 27% 85%;
-    --ring: 33 46% 53%;
+    --border: 36 30% 80%;
+    --input: 36 30% 80%;
+    --ring: 32 56% 45%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -35,14 +35,14 @@
     --font-body: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
     --font-display: 'Cormorant Garamond', ui-serif, Georgia, serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 28 30% 15%;
-    --sidebar-primary: 28 30% 15%;
-    --sidebar-primary-foreground: 36 56% 97%;
-    --sidebar-accent: 36 40% 94%;
-    --sidebar-accent-foreground: 28 30% 15%;
-    --sidebar-border: 36 25% 88%;
-    --sidebar-ring: 32 48% 52%;
+    --sidebar-background: 30 25% 14%;
+    --sidebar-foreground: 37 32% 92%;
+    --sidebar-primary: 32 52% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 32 52% 48%;
+    --sidebar-accent-foreground: 38 48% 94%;
+    --sidebar-border: 32 35% 28%;
+    --sidebar-ring: 32 56% 52%;
     --landing-bg: 36 56% 96%;
     --landing-olive: 28 30% 15%;
     --landing-olive-card: 0 0% 100%;
@@ -109,11 +109,15 @@
   }
 
   button, a, input, textarea, select {
-    @apply transition-colors duration-200;
+    @apply transition-colors duration-150;
   }
 
   input, textarea, select {
-    @apply border-input bg-card text-foreground placeholder:text-muted-foreground/70;
+    @apply border-input bg-card text-foreground placeholder:text-muted-foreground/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1;
+  }
+
+  h1, h2, h3 {
+    font-weight: 600;
   }
 }
 
@@ -276,18 +280,24 @@ input, textarea, [contenteditable] {
   position: relative;
   isolation: isolate;
   background:
-    radial-gradient(circle at 85% 8%, hsl(var(--accent) / .11), transparent 28rem),
-    linear-gradient(hsl(var(--border) / .16) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--border) / .16) 1px, transparent 1px),
+    radial-gradient(circle at 85% 8%, hsl(var(--accent) / .14), transparent 28rem),
+    linear-gradient(180deg, hsl(var(--card) / .16), transparent 18rem),
+    linear-gradient(hsl(var(--border) / .2) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / .2) 1px, transparent 1px),
     hsl(var(--background));
-  background-size: auto, 44px 44px, 44px 44px, auto;
+  background-size: auto, auto, 44px 44px, 44px 44px, auto;
 }
-.powercare-shell > aside { background-image: linear-gradient(155deg, hsl(var(--primary)), hsl(var(--primary) / .88)); border-inline-end: 1px solid hsl(var(--accent) / .3); }
-.powercare-shell > div > header { border-color: hsl(var(--accent) / .24); box-shadow: 0 10px 40px hsl(var(--foreground) / .07), inset 0 -1px hsl(var(--accent) / .1); }
+.powercare-shell > aside { background: linear-gradient(155deg, hsl(var(--sidebar-background)), hsl(var(--primary))); border-inline-end: 1px solid hsl(var(--accent) / .42); }
+.powercare-shell > aside a { color: hsl(var(--sidebar-foreground) / .72); }
+.powercare-shell > aside a:hover { color: hsl(var(--sidebar-foreground)); background: hsl(var(--accent) / .08); }
+.powercare-shell > aside a[aria-current="page"] { color: hsl(var(--sidebar-accent-foreground)); background: hsl(var(--accent) / .12); border-inline-start: 3px solid hsl(var(--accent)); box-shadow: inset 0 1px hsl(var(--sidebar-foreground) / .08), 0 5px 18px hsl(30 30% 5% / .18); }
+.powercare-shell > aside a[aria-current="page"] svg { color: hsl(var(--accent)); }
+.powercare-shell > div > header { border-color: hsl(var(--accent) / .3); box-shadow: 0 10px 40px hsl(var(--foreground) / .09), inset 0 -1px hsl(var(--accent) / .14); }
 .powercare-shell main :is(button, a, input, select, textarea) { touch-action: manipulation; }
-.powercare-shell main :is(.rounded-xl, .rounded-2xl) { box-shadow: inset 0 1px hsl(var(--card-foreground) / .03), 0 14px 45px hsl(var(--foreground) / .055); }
+.powercare-shell main :is(.rounded-xl, .rounded-2xl) { box-shadow: 0 1px 0 hsl(var(--card-foreground) / .04) inset, 0 4px 16px hsl(var(--foreground) / .06); transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease; }
+.powercare-shell main :is(a.rounded-xl, a.rounded-2xl, button.rounded-xl, button.rounded-2xl):hover { transform: translateY(-1px); box-shadow: 0 1px 0 hsl(var(--card-foreground) / .05) inset, 0 8px 22px hsl(var(--foreground) / .1); }
 .powercare-shell button:active, .powercare-shell [role="button"]:active { transform: scale(.97); }
-.tech-bottom-nav { border-color: hsl(var(--accent) / .3); box-shadow: 0 -14px 45px hsl(var(--foreground) / .1); touch-action: pan-y; }
+.tech-bottom-nav { border-color: hsl(var(--accent) / .42); background: hsl(var(--card) / .96); box-shadow: 0 -10px 32px hsl(var(--foreground) / .14), inset 0 1px hsl(var(--accent) / .12); touch-action: pan-y; }
 .tech-hud-grid { position:absolute; inset:0; opacity:.18; background-image:linear-gradient(hsl(var(--landing-gold) / .24) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--landing-gold) / .24) 1px,transparent 1px); background-size:42px 42px; mask-image:linear-gradient(to bottom,black,transparent 70%); }
 .tech-hud-scan { position:absolute; inset-inline:0; height:18%; background:linear-gradient(transparent,hsl(var(--landing-gold) / .13),transparent); animation:tech-scan 4s linear infinite; }
 .tech-hud-reticle { position:absolute; inset:40% 27%; border:1px solid hsl(var(--landing-gold) / .24); border-radius:999px; }
