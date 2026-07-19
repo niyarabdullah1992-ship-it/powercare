@@ -60,8 +60,8 @@ export default function Landing() {
 
       <div className="relative overflow-hidden">
         <img src={PATTERN_IMG} alt="" width="1536" height="1024" loading="lazy" className="absolute inset-0 w-full h-full object-cover opacity-40" />
-        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 md:px-10 md:py-24 lg:grid-cols-[1.15fr,0.85fr] lg:gap-16">
-          <div className="text-center lg:text-start">
+        <div dir="ltr" className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 md:px-10 md:py-24 lg:grid-cols-[0.85fr,1.15fr] lg:gap-16">
+          <div dir={lang === "ar" ? "rtl" : "ltr"} className="text-center lg:order-2 lg:text-start">
             <h1 className="hero-title break-words text-5xl uppercase text-landing-gold sm:text-6xl md:text-8xl">{t("appName")}</h1>
             <p className="mx-auto mt-5 max-w-lg text-base font-body leading-relaxed text-[#3a2f22]/65 lg:mx-0">{t("heroSubtitle")}</p>
             <div className="mx-auto mt-8 max-w-lg lg:mx-0">
@@ -74,7 +74,7 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="mx-1 rounded-3xl border border-landing-gold/20 bg-card p-7 shadow-elevated sm:mx-0 sm:p-9">
+          <div dir={lang === "ar" ? "rtl" : "ltr"} className="mx-1 rounded-3xl border border-landing-gold/20 bg-card p-7 shadow-elevated sm:mx-0 sm:p-9 lg:order-1">
             <Logo size={56} />
             <h2 className="mt-6 font-heading text-3xl font-semibold text-primary">{lang === "ar" ? "اختر نوع تسجيل الدخول" : "Choose your login type"}</h2>
             <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
