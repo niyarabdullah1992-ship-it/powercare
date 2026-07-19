@@ -10,7 +10,7 @@ import { checklistCompliance } from "@/lib/safetyStandards";
 
 export default function StationSafetyCard({ station, rec, canEdit, canApprove, canCustomize, approvalIssues = [], lang, signerName, onUpdate, onDisabledTabsChange, onCloseHazard, onApprove, onRevokeApproval, onIncident }) {
   const [tab, setTab] = useState("overview");
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const ar = lang === "ar";
   const tabs = [
     ["overview", LayoutDashboard, ar ? "نظرة عامة" : "Overview"],
