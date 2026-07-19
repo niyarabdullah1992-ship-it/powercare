@@ -9,6 +9,7 @@ import PageHeader from "@/components/PageHeader";
 import StationSafetyCard from "@/components/safety/StationSafetyCard";
 import SafetyReportExport from "@/components/safety/SafetyReportExport";
 import SafetyExplanation from "@/components/safety/SafetyExplanation";
+import SafetyDashboard from "@/components/safety/SafetyDashboard";
 import RecordSmartArchive from "@/components/RecordSmartArchive";
 
 // HSE management section: safety data is entered and approved per station here,
@@ -51,6 +52,10 @@ export default function Safety() {
       />
 
       <SafetyExplanation ar={ar} />
+
+      {(canEdit || canApprove || data.ownerId === currentUser.id) && (
+        <SafetyDashboard safety={data.safety || []} stations={data.stations || []} lang={lang} />
+      )}
 
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-1.5">
