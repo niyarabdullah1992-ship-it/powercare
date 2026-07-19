@@ -24,7 +24,7 @@ const emptyData = { items: [], requestItems: [], movements: [], purchases: [], p
 
 export default function Inventory() {
   const { session, currentUser } = useAuth();
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const ar = lang === "ar";
   const [active, setActive] = useState("overview");
   const [state, setState] = useState(emptyData);
@@ -67,7 +67,7 @@ export default function Inventory() {
       await base44.entities.InventoryItem.update(itemId, { imageUrls });
       const next = await inventoryCall(session, "list");
       setState(next);
-      toast({ description: ar ? "تم تحديث صور الصنف." : "Item images updated." });
+      toast({ description: t("itemImagesUpdated") });
     } catch (error) { toast({ description: error.message, variant: "destructive" }); }
   };
   const activeStation = selectedStation || currentUser?.stationId || "";
