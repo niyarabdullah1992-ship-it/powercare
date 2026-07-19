@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { exportExcelColored } from "@/lib/exportExcelColored";
 import { printReport } from "@/lib/printReport";
 import { FileSpreadsheet, FileText, CalendarRange } from "lucide-react";
+import SafetyStationPicker from "@/components/safety/SafetyStationPicker";
 import { CHECKLIST_GROUPS, PERMIT_REQUIREMENTS, PERMIT_TYPES, checklistCompliance, safetyKpis } from "@/lib/safetyStandards";
 
 // تقرير السلامة (HSE): حالة كل محطة + سجل الحوادث خلال الفترة — PDF وExcel.
@@ -156,18 +157,7 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
         <CalendarRange className="w-3.5 h-3.5" /> {L("تقرير السلامة (PDF / Excel)", "Safety report (PDF / Excel)")}
       </p>
 
-      <div className="flex flex-wrap gap-2">
-        {[{ key: "all", name: L("كل المحطات", "All stations") }, ...stations.map((s) => ({ key: s.id, name: s.name }))].map((s) => (
-          <button
-            key={s.key}
-            type="button"
-            onClick={() => setStationFilter(s.key)}
-            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${stationFilter === s.key ? "bg-accent text-accent-foreground border-accent" : "border-border hover:bg-muted"}`}
-          >
-            {s.name}
-          </button>
-        ))}
-      </div>
+      <SafetyStationPicker stations={stations} value={stationFilter} onChange={setStationFilter} lang={lang} />
 
       <div className="flex flex-wrap gap-2">
         {PRESETS.map(({ val }) => (
