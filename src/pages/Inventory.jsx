@@ -44,10 +44,15 @@ export default function Inventory() {
   };
   const activeStation = currentUser?.role === "employee" ? (currentUser.stationId || selectedStation) : selectedStation;
   const stationUnits = state.units.filter((unit) => unit.locationId === activeStation);
-  const stationItems = state.items.filter((item) => item.currentLocationId === activeStation || item.locationBalances?.some((balance) => balance.locationId === activeStation) || stationUnits.some((unit) => unit.itemId === item.id)).map((item) => ({
-    ...item,
-    quantity: item.trackingMode === "serialized" ? stationUnits.filter((unit) => unit.itemId === item.id && unit.status === "available").length : Number(item.locationBalances?.find((balance) => balance.locationId === activeStation)?.quantity || 0),
-  }));
+  const stationItems = state.items.filter((item) => item.currentLocationId === activeStation || item.locationBalances?.some((balance) => balance.locationId === activeStation) || stationUnits.some((unit) => unit.itemId === item.id)).map((item) => {
+    const inbound = state.movements.find((movement) => movement.itemId === item.id && movement.toLocationId === activeStation && ["receive", "transfer"].includes(movement.movementType));
+    return {
+      ...item,
+      quantity: item.trackingMode === "serialized" ? stationUnits.filter((unit) => unit.itemId === item.id && unit.status === "available").length : Number(item.locationBalances?.find((balance) => balance.locationId === activeStation)?.quantity || 0),
+      sourceType: inbound?.movementType === "transfer" ? "transfer" : "purchase",
+      sourceLocationId: inbound?.movementType === "transfer" ? inbound.fromLocationId : null,
+    };
+  });
   const stationMovements = state.movements.filter((movement) => movement.fromLocationId === activeStation || movement.toLocationId === activeStation);
   const stationRequests = state.requests.filter((request) => request.stationId === activeStation);
   const selected = stationItems.find((item) => item.id === selectedItem?.id) || null;
@@ -61,7 +66,7 @@ export default function Inventory() {
     <InventoryTabs active={active} onChange={setActive} canManage={state.canManage} ar={ar} />
     {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <>
       {active === "overview" && <div className="space-y-4"><InventoryWorkflow canManage={state.canManage} onNavigate={setActive} ar={ar} /><ItemList items={stationItems.filter((item) => Number(item.quantity) <= Number(item.minimumStock))} stations={state.stations} onSelect={setSelectedItem} ar={ar} /></div>}
-      {active === "items" && <div className="space-y-4">{state.canManage && <ItemForm key={activeStation} stations={state.stations} defaultStationId={activeStation} onSubmit={(payload) => run("createItem", payload)} ar={ar} />}<ItemList items={stationItems} stations={state.stations} onSelect={setSelectedItem} ar={ar} /></div>}
+      {active === "items" && <div className="space-y-4">{state.canManage && <ItemForm key={activeStation} items={state.items} units={state.units} stations={state.stations} defaultStationId={activeStation} onSubmit={(payload) => run("createItem", payload)} onTransfer={(payload) => run("transfer", payload)} ar={ar} />}<ItemList items={stationItems} stations={state.stations} onSelect={setSelectedItem} ar={ar} /></div>}
       {active === "requests" && <div className="space-y-4"><MaterialRequestForm items={stationItems} stationId={activeStation} onSubmit={(payload) => run("request", payload)} ar={ar} /><RequestsList requests={stationRequests} items={state.items} employees={state.employees} canManage={state.canManage} onReview={(requestId, decision) => run("reviewRequest", { requestId, decision })} onIssue={openIssue} ar={ar} /></div>}
       {active === "movements" && <div className="space-y-4">{state.canManage && <MovementForm key={activeStation} items={stationItems} stations={state.stations} transferStations={state.transferStations} stationId={activeStation} onSubmit={(action, payload) => run(action, payload)} ar={ar} />}<MovementList movements={stationMovements} items={state.items} stations={state.transferStations} ar={ar} /></div>}
       {active === "scanner" && <IssueScanner key={`${activeStation}-${selectedRequest}`} requests={stationRequests} items={state.items} selectedRequest={selectedRequest} onIssue={(requestId, qrCode) => run("issueRequest", { requestId, qrCode })} ar={ar} />}

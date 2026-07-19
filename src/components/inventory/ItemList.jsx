@@ -8,7 +8,8 @@ export default function ItemList({ items, stations, onSelect, ar }) {
     const low = Number(item.quantity) <= Number(item.minimumStock);
     return <button key={item.id} onClick={() => onSelect(item)} className="rounded-xl border border-border bg-card p-4 text-start hover:border-accent/50">
       <div className="flex items-start justify-between gap-3"><div><p className="font-semibold">{item.name}</p><p className="text-xs text-muted-foreground">{item.itemCode} · {stationName(item.currentLocationId)}</p></div><QrCode className="h-5 w-5 text-accent" /></div>
-      <div className="mt-4 flex items-center justify-between"><span className="text-2xl font-semibold">{item.quantity}</span>{low && <span className="flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-1 text-[10px] text-destructive"><AlertTriangle className="h-3 w-3" />{ar ? "منخفض" : "Low"}</span>}</div>
+      <p className="mt-3 text-xs text-muted-foreground">{ar ? "المصدر: " : "Source: "}<span className="font-medium text-foreground">{item.sourceType === "transfer" ? `${ar ? "تحويل من" : "Transfer from"} ${stationName(item.sourceLocationId)}` : (ar ? "المشتريات" : "Purchase")}</span></p>
+      <div className="mt-3 flex items-center justify-between"><span className="text-2xl font-semibold">{item.quantity}</span>{low && <span className="flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-1 text-[10px] text-destructive"><AlertTriangle className="h-3 w-3" />{ar ? "منخفض" : "Low"}</span>}</div>
     </button>;
   })}</div>;
 }
