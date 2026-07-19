@@ -193,13 +193,20 @@ Deno.serve(async (req) => {
           email: String(s.email || '').toLowerCase().trim().slice(0, 160),
           status: 'pending',
           signedAt: null,
-          // Creator-assigned signing spot: this signer may ONLY sign here.
-          spot:
-            s.spot && typeof s.spot === 'object'
-              ? { page: Math.max(1, Number(s.spot.page) || 1), x: Math.min(100, Math.max(0, Number(s.spot.x) || 0)), y: Math.min(100, Math.max(0, Number(s.spot.y) || 0)), scale: Math.min(200, Math.max(50, Number(s.spot.scale) || 100)) }
-              : null,
+          // Creator-assigned fields: one signature plus optional text fields.
+          spots: (Array.isArray(s.spots) ? s.spots : s.spot ? [{ ...s.spot, type: 'signature' }] : []).slice(0, 30).map((field, fieldIndex) => ({
+            id: String(field.id || `field-${fieldIndex}`).slice(0, 80),
+            type: field.type === 'text' ? 'text' : 'signature',
+            label: String(field.label || '').slice(0, 60),
+            page: Math.max(1, Number(field.page) || 1),
+            x: Math.min(100, Math.max(0, Number(field.x) || 0)),
+            y: Math.min(100, Math.max(0, Number(field.y) || 0)),
+            scale: Math.min(200, Math.max(50, Number(field.scale) || 100)),
+          })),
+          spot: null,
         }))
-        .filter((s, index, rows) => s.name && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.email) && rows.findIndex((row) => row.email === s.email) === index);
+        .map((s) => ({ ...s, spot: s.spots.find((field) => field.type === 'signature') || null }))
+        .filter((s, index, rows) => s.name && s.spot && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.email) && rows.findIndex((row) => row.email === s.email) === index);
       if (signers.length === 0 || signers.length !== signersIn.length || !isAllowedDocUrl(body.docUrl) || !String(body.fileName || '').toLowerCase().endsWith('.pdf') || !String(body.verificationId || '').trim()) {
         return Response.json({ error: 'A PDF document and a valid, unique email for every signer are required' }, { status: 400 });
       }
@@ -323,7 +330,7 @@ Deno.serve(async (req) => {
         expiresAt: rec.expiresAt,
         verificationId: rec.verificationId,
         finalHash: rec.finalHash || null,
-        signer: { name: signer.name, email: signer.email, status: signer.status, spot: signer.spot || null },
+        signer: { name: signer.name, email: signer.email, status: signer.status, spot: signer.spot || null, spots: signer.spots || (signer.spot ? [{ ...signer.spot, id: 'signature', type: 'signature', label: '' }] : []) },
         signedCount: (rec.signers || []).filter((s) => s.status === 'signed').length,
         totalCount: (rec.signers || []).length,
         canSign: signer.status === 'signed' || pending[0]?.token === signer.token,
@@ -345,9 +352,13 @@ Deno.serve(async (req) => {
       if (completingNow && !/^[0-9a-f]{64}$/.test(fileHash)) return Response.json({ error: 'Final file fingerprint is required' }, { status: 400 });
       const newDocUrl = String(body.newDocUrl || '').slice(0, 2000);
       if (!isAllowedDocUrl(newDocUrl)) return Response.json({ error: 'A valid signed document URL is required' }, { status: 400 });
+      const submittedValues = body.textValues && typeof body.textValues === 'object' ? body.textValues : {};
+      const textFields = (signer.spots || []).filter((field) => field.type === 'text');
+      const fieldValues = Object.fromEntries(textFields.map((field) => [field.id, String(submittedValues[field.id] || '').trim().slice(0, 1000)]));
+      if (textFields.some((field) => !fieldValues[field.id])) return Response.json({ error: 'All text fields are required' }, { status: 400 });
 
       const signers = (rec.signers || []).map((s) =>
-        s.token === signer.token ? { ...s, status: 'signed', signedAt: new Date().toISOString() } : s
+        s.token === signer.token ? { ...s, status: 'signed', signedAt: new Date().toISOString(), fieldValues } : s
       );
       const completed = signers.every((s) => s.status === 'signed');
       let registryRecord = null;

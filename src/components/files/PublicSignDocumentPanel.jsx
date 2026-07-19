@@ -1,15 +1,23 @@
-import React from "react";
-import { ExternalLink, FileText, MousePointerClick, ShieldCheck } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, FileText, Loader2, PenLine, ShieldCheck } from "lucide-react";
+import * as pdfjsLib from "pdfjs-dist";
 
-export default function PublicSignDocumentPanel({ ar, info, chosenSpot, onChooseSpot }) {
-  const spot = chosenSpot || info.signer.spot;
-  return (
-    <aside className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
-      <div className="border-b border-border p-5"><p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{ar ? "المستند المطلوب" : "Requested document"}</p><a href={info.docUrl} target="_blank" rel="noreferrer" className="mt-4 flex items-center gap-3 rounded-2xl bg-secondary p-4 transition hover:ring-2 hover:ring-ring/30"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-card shadow-sm"><FileText className="h-5 w-5 text-accent" /></span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{info.fileName}</span><span className="mt-1 block text-[10px] text-muted-foreground">PDF · {ar ? "فتح المعاينة" : "Open preview"}</span></span><ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" /></a></div>
-      <div className="space-y-5 p-5">
-        <div><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary text-accent"><MousePointerClick className="h-4 w-4" /></span><p className="mt-3 text-sm font-semibold">{ar ? "موضع التوقيع" : "Signature placement"}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{spot ? (ar ? `سيظهر توقيعك في الصفحة ${spot.page}.` : `Your signature will appear on page ${spot.page}.`) : (ar ? "اختر موضع توقيعك داخل المستند." : "Choose where your signature appears in the document.")}</p><button onClick={onChooseSpot} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-2.5 text-xs font-semibold text-foreground hover:bg-secondary">{spot ? (ar ? "تعديل الموضع" : "Edit placement") : (ar ? "اختيار الموضع" : "Choose placement")}</button></div>
-        {info.verificationId && <div className="border-t border-border pt-5"><p className="flex items-center gap-2 text-xs font-semibold"><ShieldCheck className="h-4 w-4 text-accent" />{ar ? "معرّف التحقق المشفّر" : "Encrypted verification ID"}</p><p dir="ltr" className="mt-2 break-all rounded-xl bg-secondary px-3 py-2 font-mono text-[10px] text-muted-foreground">{info.verificationId}</p></div>}
-      </div>
-    </aside>
-  );
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+const fieldWidth = (field) => (field.type === "text" ? 26 : 22) * ((field.scale || 100) / 100);
+
+export default function PublicSignDocumentPanel({ ar, info, textValues, onTextChange, onSignatureClick }) {
+  const fields = info.signer.spots || (info.signer.spot ? [{ ...info.signer.spot, id: "signature", type: "signature" }] : []);
+  const [pdfDoc, setPdfDoc] = useState(null); const [page, setPage] = useState(fields[0]?.page || 1); const [pages, setPages] = useState(1); const [loading, setLoading] = useState(true);
+  const canvasRef = useRef(null); const wrapRef = useRef(null);
+  useEffect(() => { let cancelled = false; (async () => { const bytes = await fetch(info.docUrl).then((response) => response.arrayBuffer()); const loaded = await pdfjsLib.getDocument({ data: bytes }).promise; if (!cancelled) { setPdfDoc(loaded); setPages(loaded.numPages); } })().catch(() => setLoading(false)); return () => { cancelled = true; }; }, [info.docUrl]);
+  useEffect(() => { if (!pdfDoc || !canvasRef.current) return; let cancelled = false; (async () => { setLoading(true); const pdfPage = await pdfDoc.getPage(page); const base = pdfPage.getViewport({ scale: 1 }); const scale = Math.min((wrapRef.current?.clientWidth || 700) / base.width, 1.5) * (window.devicePixelRatio || 1); const viewport = pdfPage.getViewport({ scale }); const canvas = canvasRef.current; canvas.width = viewport.width; canvas.height = viewport.height; canvas.style.width = "100%"; await pdfPage.render({ canvasContext: canvas.getContext("2d"), viewport }).promise; if (!cancelled) setLoading(false); })(); return () => { cancelled = true; }; }, [pdfDoc, page]);
+  return <aside className="overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+    <div className="flex items-center justify-between border-b border-border p-5"><div><p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{ar ? "المستند والحقول" : "Document & fields"}</p><p className="mt-1 flex items-center gap-2 text-sm font-semibold"><FileText className="h-4 w-4 text-accent" />{info.fileName}</p></div>{pages > 1 && <div className="flex items-center gap-1 text-xs"><button onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page === 1} className="rounded-lg border p-1.5 disabled:opacity-30"><ChevronLeft className="h-4 w-4" /></button><span>{page}/{pages}</span><button onClick={() => setPage((value) => Math.min(pages, value + 1))} disabled={page === pages} className="rounded-lg border p-1.5 disabled:opacity-30"><ChevronRight className="h-4 w-4" /></button></div>}</div>
+    <div className="overflow-auto bg-muted/40 p-3"><div ref={wrapRef} className="relative mx-auto bg-white shadow-md"><canvas ref={canvasRef} className="block w-full" />{loading && <div className="absolute inset-0 flex items-center justify-center bg-white/70"><Loader2 className="h-5 w-5 animate-spin text-accent" /></div>}
+      {fields.filter((field) => field.page === page).map((field) => <div key={field.id} className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-md ${field.type === "text" ? "border-2 border-blue-600 bg-blue-50/95 p-1" : "border-2 border-accent bg-card/95"}`} style={{ left: `${field.x}%`, top: `${field.y}%`, width: `${fieldWidth(field)}%`, minHeight: field.type === "text" ? 42 : 52 }}>
+        {field.type === "text" ? <label className="relative block h-full"><span className="mb-0.5 flex items-center gap-1 truncate text-[8px] font-semibold text-blue-700"><PenLine className="h-2.5 w-2.5" />{field.label || (ar ? "اكتب النص" : "Enter text")}</span><input value={textValues[field.id] || ""} onChange={(event) => onTextChange(field.id, event.target.value)} className="h-7 w-full rounded border border-blue-300 bg-white px-1 text-[10px] text-slate-900 outline-none focus:ring-1 focus:ring-blue-600" /></label> : <button onClick={onSignatureClick} className="flex h-full min-h-12 w-full items-center justify-center gap-1 text-[9px] font-semibold text-accent"><PenLine className="h-3 w-3" />{ar ? "اضغط لإضافة التوقيع" : "Tap to add signature"}</button>}
+      </div>)}
+    </div></div>
+    {info.verificationId && <div className="border-t border-border p-4"><p className="flex items-center gap-2 text-xs font-semibold"><ShieldCheck className="h-4 w-4 text-accent" />{ar ? "معرّف التحقق" : "Verification ID"}</p><p dir="ltr" className="mt-2 break-all rounded-xl bg-secondary px-3 py-2 font-mono text-[10px] text-muted-foreground">{info.verificationId}</p></div>}
+  </aside>;
 }

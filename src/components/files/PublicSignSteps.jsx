@@ -1,7 +1,7 @@
 import React from "react";
 
 export default function PublicSignSteps({ ar, current = 2 }) {
-  const steps = ar ? ["مراجعة المستند", "إضافة التوقيع", "التحقق والإرسال"] : ["Review document", "Add signature", "Verify & submit"];
+  const steps = ar ? ["مراجعة المستند", "تعبئة الحقول والتوقيع", "التحقق والإرسال"] : ["Review document", "Complete fields & sign", "Verify & submit"];
   return (
     <div className="mb-5 rounded-3xl border border-border bg-card p-4 shadow-elevated sm:p-5">
       <div className="grid grid-cols-3">

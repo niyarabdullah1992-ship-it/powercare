@@ -1,4 +1,4 @@
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { base44 } from "@/api/base44Client";
 import { makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
 
@@ -8,6 +8,30 @@ async function badgePngBytes(sigId, signerName, qrImg) {
   const canvas = makeVerificationBadgeCanvas(sigId, signerName, qrImg);
   const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
   return { bytes: await blob.arrayBuffer(), ratio: canvas.height / canvas.width };
+}
+
+export async function drawTextField(pdf, page, field, rawValue) {
+  const value = String(rawValue || "").trim();
+  if (!value) return;
+  const { width, height } = page.getSize();
+  const scale = Math.min(2, Math.max(0.5, Number(field.scale || 100) / 100));
+  const boxWidth = width * 0.26 * scale;
+  const boxHeight = Math.max(20, height * 0.055 * scale);
+  const centerX = width * Number(field.x || 0) / 100;
+  const centerY = height - height * Number(field.y || 0) / 100;
+  const fontSize = Math.min(18, Math.max(8, boxHeight * 0.42));
+  try {
+    const font = await pdf.embedFont(StandardFonts.Helvetica);
+    let printable = value;
+    while (printable.length > 1 && font.widthOfTextAtSize(printable, fontSize) > boxWidth - 8) printable = `${printable.slice(0, -2)}…`;
+    page.drawText(printable, { x: centerX - boxWidth / 2 + 4, y: centerY - fontSize / 2, size: fontSize, font, color: rgb(0.08, 0.12, 0.18), maxWidth: boxWidth - 8 });
+  } catch {
+    const canvas = document.createElement("canvas"); canvas.width = 1200; canvas.height = 220;
+    const context = canvas.getContext("2d"); context.fillStyle = "#111827"; context.font = "52px Arial"; context.textAlign = "center"; context.textBaseline = "middle"; context.direction = /[\u0600-\u06ff]/.test(value) ? "rtl" : "ltr"; context.fillText(value.slice(0, 160), 600, 110, 1160);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    const image = await pdf.embedPng(await blob.arrayBuffer());
+    page.drawImage(image, { x: centerX - boxWidth / 2, y: centerY - boxHeight / 2, width: boxWidth, height: boxHeight });
+  }
 }
 
 // Stamps the verification badge onto the PDF, uploads the signed copy and
