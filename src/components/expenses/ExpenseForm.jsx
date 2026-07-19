@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Camera, Loader2 } from "lucide-react";
+import { Loader2, Upload } from "lucide-react";
 import StationExpenseScope from "@/components/expenses/StationExpenseScope";
 
 const TYPES = ["travel", "accommodation", "fuel", "overtime_meals", "tools_equipment", "training"];
@@ -13,7 +13,7 @@ export default function ExpenseForm({ stations, canPickStations, onSubmit, ar })
     <div><input list="expense-types" required value={type} onChange={(event) => setType(event.target.value)} placeholder={ar ? "اختر أو اكتب نوع المصروف" : "Choose or write expense type"} className="w-full rounded-lg border px-3 py-2" /><datalist id="expense-types">{TYPES.map((item) => <option key={item} value={LABELS[item][ar ? 1 : 0]} />)}</datalist></div>
     <input value={amount || ""} onChange={(event) => setAmount(event.target.value)} type="number" min="0.01" step="0.01" required placeholder={ar ? "المبلغ لكل محطة" : "Amount per station"} className="rounded-lg border px-3 py-2" />
     <input name="expenseDate" type="date" required className="rounded-lg border px-3 py-2" />
-    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-accent/50 px-3 py-2 text-sm"><Camera className="h-4 w-4 text-accent" />{ar ? "تصوير أو رفع الإيصال" : "Capture or upload receipt"}<input name="receipt" type="file" accept="image/*,application/pdf" capture="environment" required className="hidden" /></label>
+    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-accent/50 px-3 py-2 text-sm"><Upload className="h-4 w-4 text-accent" />{ar ? "رفع صورة الإيصال" : "Upload receipt image"}<input name="receipt" type="file" accept="image/*" required className="hidden" /></label>
     <StationExpenseScope stations={stations} scope={scope} setScope={setScope} selected={selected} setSelected={setSelected} canPick={canPickStations} ar={ar} />
     <div className="rounded-lg bg-accent/10 px-3 py-2 text-sm text-accent md:col-span-2 xl:col-span-5">{ar ? `الحساب الذكي: ${amount || 0} × ${count} محطة = ${total.toLocaleString()} ر.س` : `Smart total: ${amount || 0} × ${count} stations = ${total.toLocaleString()} SAR`}</div>
     <input name="description" placeholder={ar ? "وصف مختصر" : "Short description"} className="rounded-lg border px-3 py-2 xl:col-span-4" /><button disabled={saving || !count} className="flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground disabled:opacity-50">{saving && <Loader2 className="h-4 w-4 animate-spin" />}{ar ? "إرسال المصروف" : "Submit expense"}</button>
