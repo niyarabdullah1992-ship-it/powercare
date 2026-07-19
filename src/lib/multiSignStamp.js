@@ -36,7 +36,9 @@ export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot, s
     const sh = sw * (stampImg.height / stampImg.width);
     const cx = (Number(field.x) / 100) * width;
     const cy = height - (Number(field.y) / 100) * height;
-    page.drawImage(stampImg, { x: cx - sw / 2, y: cy - sh / 2, width: sw, height: sh });
+    const drawX = Math.min(width - sw, Math.max(0, cx - sw / 2));
+    const drawY = Math.min(height - sh, Math.max(0, cy - sh / 2));
+    page.drawImage(stampImg, { x: drawX, y: drawY, width: sw, height: sh });
   }
 
   if (badge) {
