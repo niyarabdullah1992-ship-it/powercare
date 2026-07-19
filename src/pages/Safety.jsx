@@ -3,7 +3,7 @@ import { ShieldCheck, FileText, ClipboardCheck, Archive } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canApproveReports } from "@/lib/permissions";
-import { updateSafetyRecord, recordSafetyIncident, closeSafetyHazard, approveSafetyRecord } from "@/lib/safetyStore";
+import { updateSafetyRecord, recordSafetyIncident, closeSafetyHazard, approveSafetyRecord, revokeSafetyApproval } from "@/lib/safetyStore";
 import { safetyApprovalIssues } from "@/lib/safetyLogic";
 import PageHeader from "@/components/PageHeader";
 import StationSafetyCard from "@/components/safety/StationSafetyCard";
@@ -40,6 +40,7 @@ export default function Safety() {
 
   // Approval is committed only after the store re-validates every dependency.
   const handleApprove = (stationId) => approveSafetyRecord(company.id, stationId, currentUser.name);
+  const handleRevokeApproval = (stationId) => revokeSafetyApproval(company.id, stationId, currentUser.name);
 
   return (
     <div className="space-y-6">
@@ -114,6 +115,7 @@ export default function Safety() {
                 onDisabledTabsChange={(disabledTabs) => updateSafetyRecord(company.id, station.id, { disabledTabs })}
                 onCloseHazard={(index) => closeSafetyHazard(company.id, station.id, index, currentUser.name)}
                 onApprove={() => handleApprove(station.id)}
+                onRevokeApproval={() => handleRevokeApproval(station.id)}
                 onIncident={(desc) => {
                   // Duplicate guard: the exact same incident can't be logged twice on the same day.
                   const dup = (recFor(station.id)?.incidentLog || []).some(

@@ -73,6 +73,22 @@ export function approveSafetyRecord(companyId, stationId, approvedBy) {
   return approved;
 }
 
+export function revokeSafetyApproval(companyId, stationId, revokedBy) {
+  let revoked = false;
+  updateCompany(companyId, (data) => {
+    const rec = (data.safety || []).find((item) => item.stationId === stationId);
+    const approvedAt = new Date(rec?.approvedAt).getTime();
+    const elapsed = Date.now() - approvedAt;
+    if (!rec?.approvedBy || !Number.isFinite(approvedAt) || elapsed < 0 || elapsed > 24 * 60 * 60 * 1000) return;
+    rec.approvalRevocationLog = [{ by: revokedBy, at: new Date().toISOString(), approvalAt: rec.approvedAt }, ...(rec.approvalRevocationLog || [])];
+    rec.approvedBy = null;
+    rec.approvedAt = null;
+    rec.approvalSnapshot = null;
+    revoked = true;
+  });
+  return revoked;
+}
+
 export function recordSafetyIncident(companyId, stationId, description, actorName = "") {
   const text = String(description || "").trim();
   const data = getCompanyData(companyId);

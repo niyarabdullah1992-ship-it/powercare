@@ -8,7 +8,7 @@ import PermitWorkTab from "@/components/safety/PermitWorkTab";
 import SafetyTabsSettings from "@/components/safety/SafetyTabsSettings";
 import { checklistCompliance } from "@/lib/safetyStandards";
 
-export default function StationSafetyCard({ station, rec, canEdit, canApprove, canCustomize, approvalIssues = [], lang, signerName, onUpdate, onDisabledTabsChange, onCloseHazard, onApprove, onIncident }) {
+export default function StationSafetyCard({ station, rec, canEdit, canApprove, canCustomize, approvalIssues = [], lang, signerName, onUpdate, onDisabledTabsChange, onCloseHazard, onApprove, onRevokeApproval, onIncident }) {
   const [tab, setTab] = useState("overview");
   const [expanded, setExpanded] = useState(true);
   const ar = lang === "ar";
@@ -48,7 +48,7 @@ export default function StationSafetyCard({ station, rec, canEdit, canApprove, c
           </button>
         ))}
       </div>
-      {tab === "overview" && <SafetyOverviewTab station={station} {...shared} canApprove={canApprove} approvalIssues={approvalIssues} onCloseHazard={onCloseHazard} onApprove={onApprove} onIncident={onIncident} />}
+      {tab === "overview" && <SafetyOverviewTab station={station} {...shared} canApprove={canApprove} approvalIssues={approvalIssues} onCloseHazard={onCloseHazard} onApprove={onApprove} onRevokeApproval={onRevokeApproval} onIncident={onIncident} />}
       {tab === "risks" && <RiskAssessmentTab items={rec?.riskItems || []} canEdit={canEdit} lang={lang} onChange={(riskItems) => onUpdate({ riskItems })} />}
       {tab === "kpis" && <SafetyKpiTab {...shared} />}
       {tab === "checklist" && <SafetyChecklistTab results={rec?.checklistResults || {}} canEdit={canEdit} lang={lang} onChange={(checklistResults) => onUpdate({ checklistResults })} />}
