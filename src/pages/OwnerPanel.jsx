@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
 import { listCompanies, createCompany, deleteCompany, getCompanyData, setSession } from "@/lib/store";
 import { logAudit, fetchAllAuditLog } from "@/lib/auditLog";
-import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn, Sparkles, GitBranch } from "lucide-react";
+import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn } from "lucide-react";
 import Logo from "@/components/Logo";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import NewsBroadcast from "@/components/owner/NewsBroadcast";

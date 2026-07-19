@@ -117,7 +117,6 @@ function AppRoutes() {
       <Route path="/tiktok-ad" element={<TiktokAd />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/owner-panel" element={<OwnerPanel />} />
-        <Route path="/owner-subscribers" element={<Navigate to="/owner-panel" replace />} />
       </Route>
       <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/app/executive" element={<RequireAuth><ExecutiveDashboard /></RequireAuth>} />
@@ -131,7 +130,6 @@ function AppRoutes() {
       <Route path="/app/hr" element={<RequireAuth><HR /></RequireAuth>} />
       <Route path="/app/payroll" element={<RequireAuth><Payroll /></RequireAuth>} />
       <Route path="/app/performance" element={<RequireAuth><Performance /></RequireAuth>} />
-      <Route path="/app/reports" element={<Navigate to="/app/attendance" replace />} />
       <Route path="/app/safety" element={<RequireAuth><Safety /></RequireAuth>} />
       <Route path="/app/daily-report" element={<RequireAuth><DailyReport /></RequireAuth>} />
       <Route path="/app/attendance" element={<RequireAuth><Attendance /></RequireAuth>} />

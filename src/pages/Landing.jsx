@@ -1,51 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
-import { useAuth } from "@/lib/PowerCareAuth";
 import { ShieldCheck, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, Download } from "lucide-react";
 import Logo from "@/components/Logo";
 import VideoIntro from "@/components/landing/VideoIntro";
 import StatsBand from "@/components/landing/StatsBand";
-import OtpStep from "@/components/landing/OtpStep";
-import PasswordResetForm from "@/components/landing/PasswordResetForm";
 import { trackVisit } from "@/lib/trackVisit";
-import { base44 } from "@/api/base44Client";
-import GoogleIcon from "@/components/GoogleIcon";
 import WhyPowerCare from "@/components/landing/WhyPowerCare";
-import LoginTypeSelector from "@/components/landing/LoginTypeSelector";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
 
 export default function Landing() {
   const { t, lang, setLang, languages } = useI18n();
-  const { login, loginWithGoogle, verifyOtp, session } = useAuth();
-  const navigate = useNavigate();
-  const [loginKind, setLoginKind] = useState("company");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [otpPending, setOtpPending] = useState(null); // pendingId while awaiting the emailed code
-  const [otpAccounts, setOtpAccounts] = useState([]); // all accounts this email+password unlocks
-  const [resetOpen, setResetOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const currentLang = languages.find((l) => l.code === lang);
-
-  useEffect(() => {
-    if (session) navigate("/app");
-  }, [session, navigate]);
-
-  useEffect(() => {
-    if (!new URLSearchParams(window.location.search).has("google_login")) return;
-    setSubmitting(true);
-    loginWithGoogle("company").then((company) => {
-      if (!company) setError(t("errNoGoogleCompany"));
-    }).finally(() => setSubmitting(false));
-  }, []);
-
-  const handleSocialLogin = (provider) => {
-    base44.auth.loginWithProvider(provider, "/?google_login=1");
-  };
 
   // Anonymous visit tracking (once per browser session) — powers the Owner Panel stats.
   useEffect(() => {
@@ -59,36 +27,6 @@ export default function Landing() {
       return () => document.removeEventListener("click", close);
     }
   }, [langOpen]);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    if (submitting) return;
-    setError("");
-    setSubmitting(true);
-    const r = await login(email, password, loginKind);
-    if (!r) setError(t("errBadCredentials"));
-    else if (r.wrongKind) {
-      setError(lang === "ar" ? "هذا الحساب لا يتبع قسم الدخول المحدد" : "This account does not belong to the selected login section");
-    } else if (r.otpRequired) {
-      setOtpPending(r.pendingId);
-      setOtpAccounts(r.accounts || []);
-    }
-    setSubmitting(false);
-    // r.company → session set, useEffect above redirects to /app
-  };
-
-  const handleVerifyOtp = async (code, chooseCompanyId) => {
-    const c = await verifyOtp(otpPending, code, password, chooseCompanyId);
-    return !!c;
-  };
-
-  const handleResendOtp = async () => {
-    const result = await login(email, password, loginKind);
-    if (!result?.otpRequired) return false;
-    setOtpPending(result.pendingId);
-    setOtpAccounts(result.accounts || []);
-    return true;
-  };
 
   return (
     <div className="min-h-screen bg-landing-bg font-body text-primary">
@@ -163,74 +101,14 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Login card */}
-          <div className="mx-1 rounded-3xl border border-landing-gold/20 bg-card p-5 pb-7 shadow-elevated sm:mx-0 sm:p-7">
-              {otpPending ? (
-                <OtpStep email={email} accounts={otpAccounts} onVerify={handleVerifyOtp} onResend={handleResendOtp} onBack={() => setOtpPending(null)} />
-              ) : resetOpen ? (
-                <PasswordResetForm initialEmail={email} onDone={(value) => { setEmail(value); setResetOpen(false); setError(""); }} onBack={() => setResetOpen(false)} />
-              ) : (
-              <div className="space-y-4">
-                <LoginTypeSelector
-                  value={loginKind}
-                  onChange={(value) => { setLoginKind(value); setError(""); }}
-                  lang={lang}
-                />
-                {loginKind === "company" && (
-                  <>
-                    <button type="button" onClick={() => handleSocialLogin("sso")} disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-3 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg disabled:opacity-50">
-                      <GoogleIcon className="h-5 w-5" /> {t("continueWithGoogle")}
-                    </button>
-                    <div className="flex items-center gap-3 text-xs text-[#3a2f22]/40"><span className="h-px flex-1 bg-landing-gold/20" />{t("orDivider")}<span className="h-px flex-1 bg-landing-gold/20" /></div>
-                  </>
-                )}
-              <form onSubmit={handleLogin} noValidate className="space-y-4">
-                <div>
-                  <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("email")}</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full px-3.5 py-3.5 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] font-body text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-body text-[#3a2f22]/55 mb-1.5">{t("password")}</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full px-3.5 py-3.5 rounded-lg border border-transparent bg-landing-bg text-[#3a2f22] font-body text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold"
-                  />
-                </div>
-                {error && <p className="text-sm text-red-500 font-body">{error}</p>}
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full py-3 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white font-body text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-wait"
-                >
-                  {submitting ? t("pleaseWaitBtn") : t("login")}
-                </button>
-                {loginKind === "company" ? (
-                  <button type="button" onClick={() => { setResetOpen(true); setError(""); }} className="w-full cursor-pointer text-center text-sm font-body font-semibold text-landing-gold underline underline-offset-4 hover:text-landing-gold-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-gold">
-                    {t("forgotPasswordLink")}
-                  </button>
-                ) : (
-                  <p className="text-center text-xs font-body text-[#3a2f22]/55">
-                    {lang === "ar" ? "استخدم البريد وكلمة المرور الممنوحة لك من شركتك" : "Use the email and password provided by your company"}
-                  </p>
-                )}
-              </form>
-              </div>
-              )}
-              <p className="mt-5 text-center text-sm font-body text-[#3a2f22]/55">
-                {t("noAccountYet")}{" "}
-                <Link to="/pricing" className="text-landing-gold font-semibold hover:underline">
-                  {t("viewPlans")}
-                </Link>
-              </p>
+          <div className="mx-1 rounded-3xl border border-landing-gold/20 bg-card p-7 shadow-elevated sm:mx-0 sm:p-9">
+            <Logo size={56} />
+            <h2 className="mt-6 font-heading text-3xl font-semibold text-primary">{lang === "ar" ? "ابدأ من بوابة PowerCare الجديدة" : "Enter through the new PowerCare portal"}</h2>
+            <p className="mt-3 text-sm leading-7 text-primary/60">{lang === "ar" ? "تم توحيد الدخول في صفحات مستقلة لتجربة أوضح وأكثر موثوقية." : "Sign-in now uses dedicated pages for a clearer and more reliable experience."}</p>
+            <div className="mt-7 grid gap-3">
+              <Link to="/login" className="rounded-xl bg-gradient-to-b from-landing-gold-light to-landing-gold px-5 py-3 text-center text-sm font-semibold text-white shadow-sm hover:opacity-90">{t("login")}</Link>
+              <Link to="/register" className="rounded-xl border border-landing-gold/30 px-5 py-3 text-center text-sm font-semibold text-primary hover:bg-landing-bg">{lang === "ar" ? "إنشاء حساب" : "Create account"}</Link>
+            </div>
           </div>
         </div>
       </div>
