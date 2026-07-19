@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function ItemForm({ items, stations, defaultStationId, onSubmit, onTransfer, ar }) {
+export default function ItemForm({ items, stations, defaultStationId, centralWarehouseId, onSubmit, onTransfer, ar }) {
   const [sourceType, setSourceType] = useState("purchase");
   const [sourceStation, setSourceStation] = useState("");
   const [itemId, setItemId] = useState("");
@@ -15,7 +15,8 @@ export default function ItemForm({ items, stations, defaultStationId, onSubmit, 
     {sourceType === "purchase" ? <>
       <input name="name" required placeholder={ar ? "اسم الصنف" : "Item name"} className="rounded-lg border px-3 py-2" />
       <input name="itemCode" required placeholder={ar ? "كود الصنف" : "Item code"} className="rounded-lg border px-3 py-2" />
-      <select name="locationId" required defaultValue={defaultStationId || ""} className="rounded-lg border px-3 py-2"><option value="">{ar ? "المحطة الحالية" : "Current station"}</option>{stations.map((station) => <option key={station.stationId} value={station.stationId}>{station.name}</option>)}</select>
+      <input type="hidden" name="locationId" value={centralWarehouseId} />
+      <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm"><span className="text-muted-foreground">{ar ? "الموقع الابتدائي: " : "Initial location: "}</span>{ar ? "المستودع المركزي" : "Central Warehouse"}</div>
       <input name="quantity" type="number" min="0" defaultValue="0" placeholder={ar ? "الكمية" : "Quantity"} className="rounded-lg border px-3 py-2" />
     </> : <>
       <select required value={sourceStation} onChange={(event) => { setSourceStation(event.target.value); setItemId(""); }} className="rounded-lg border px-3 py-2"><option value="">{ar ? "محطة المصدر" : "Source station"}</option>{stations.filter((station) => station.stationId !== defaultStationId).map((station) => <option key={station.stationId} value={station.stationId}>{station.name}</option>)}</select>
