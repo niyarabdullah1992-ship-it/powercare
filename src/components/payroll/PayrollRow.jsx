@@ -20,18 +20,18 @@ export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid,
     />
   );
   return (
-    <tr className={`align-middle [&>td]:px-2 [&>td]:py-3 [&>td]:text-center ${item.paid ? "opacity-70" : ""}`}>
+    <tr className={`align-middle [&>td]:px-2 [&>td]:py-3 [&>td]:text-center md:[&>td]:h-20 ${item.paid ? "opacity-70" : ""}`}>
       <td data-label={ar ? "الموظف" : "Employee"}>
         <EmployeeNameLink employeeId={employee?.role ? item.employeeId : null} employeeName={employee?.name || "—"} className="block text-center text-sm font-body font-medium" />
         <p className="text-[11px] text-muted-foreground font-body">{employee?.position || employee?.role || ""}</p>
       </td>
       <td data-label={ar ? "الأساسي" : "Base"}>
-        <div className="flex flex-col items-center gap-1">
-          <span className="relative">
+        <div className="relative flex items-center justify-center">
+          <span className="relative block w-24">
             {cell("base", false)}
             <LockKeyhole className="pointer-events-none absolute end-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
           </span>
-          <Link to={`/app/employees/${encodeURIComponent(item.employeeId)}`} className="text-[10px] font-body font-semibold text-accent hover:underline">
+          <Link to={`/app/employees/${encodeURIComponent(item.employeeId)}`} className="absolute inset-x-0 top-full mt-1 text-center text-[10px] font-body font-semibold leading-tight text-accent hover:underline">
             {ar ? "تغييره من الملف الشخصي" : "Change in profile"}
           </Link>
         </div>
