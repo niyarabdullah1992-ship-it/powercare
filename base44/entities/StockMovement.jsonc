@@ -52,6 +52,20 @@
     "notes": {
       "type": "string"
     },
+    "workReference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Task or project for which stock was issued."
+    },
+    "workDate": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Date the material was issued to station work."
+    },
     "balanceBefore": {
       "type": [
         "number",
