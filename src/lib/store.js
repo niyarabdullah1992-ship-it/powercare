@@ -635,6 +635,20 @@ export async function startLogin(email, password, preferKind) {
   return null;
 }
 
+export async function requestPasswordReset(email) {
+  const res = await invokeDirectory({ action: "requestPasswordReset", email: String(email || "").trim().toLowerCase() });
+  return res?.data?.pendingId || null;
+}
+
+export async function resetPassword(pendingId, code, newPassword, email) {
+  try {
+    const res = await invokeDirectory({ action: "resetPassword", pendingId, code, newPassword, email });
+    return !!res?.data?.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function requestOwnerPasswordReset(email) {
   const res = await invokeDirectory({ action: "requestOwnerPasswordReset", email: String(email || "").trim().toLowerCase() });
   return res?.data?.pendingId || null;

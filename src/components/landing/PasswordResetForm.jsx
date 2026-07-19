@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Loader2, MailCheck } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { requestOwnerPasswordReset, resetOwnerPassword } from "@/lib/store";
+import { requestPasswordReset, resetPassword } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import GoogleIcon from "@/components/GoogleIcon";
 
@@ -32,9 +32,9 @@ export default function PasswordResetForm({ initialEmail, onDone, onBack }) {
     setLoading(true);
     try {
       if (!pendingId) {
-        const id = await requestOwnerPasswordReset(email.trim());
+        const id = await requestPasswordReset(email.trim());
         if (id) setPendingId(id); else setError(ar ? "تعذّر إرسال الرمز" : "Could not send the code");
-      } else if (await resetOwnerPassword(pendingId, code, password, email.trim())) onDone(email.trim());
+      } else if (await resetPassword(pendingId, code, password, email.trim())) onDone(email.trim());
       else setError(ar ? "تعذّر التغيير؛ اطلب رمزًا جديدًا وحاول مرة أخرى" : "Reset failed; request a new code and try again");
     } catch {
       setError(ar ? "تعذّر إرسال الرمز؛ استخدم الدخول عبر Google" : "The code could not be sent; continue with Google");

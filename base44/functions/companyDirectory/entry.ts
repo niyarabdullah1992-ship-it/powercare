@@ -295,6 +295,55 @@ Deno.serve(async (req) => {
       return Response.json({ otpRequired: true, pendingId });
     }
 
+    // Unified password recovery for owners and employees. The response never reveals
+    // whether the email exists; after email verification, every credential controlled
+    // by that address receives the new password.
+    if (action === 'requestPasswordReset') {
+      const email = String(body.email || '').trim().toLowerCase();
+      if (!email) return Response.json({ error: 'Missing email' }, { status: 400 });
+      const [accounts, credentials] = await Promise.all([
+        base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email }, '-created_date'),
+        base44.asServiceRole.entities.EmployeeCredential.filter({ email }, '-created_date'),
+      ]);
+      const target = accounts[0]
+        ? { companyId: accounts[0].companyId, employeeId: null }
+        : credentials[0]
+          ? { companyId: credentials[0].companyId, employeeId: credentials[0].employeeId }
+          : null;
+      const pendingId = target
+        ? await createLoginOtp(base44, { kind: 'password_reset', companyId: target.companyId, employeeId: target.employeeId, email })
+        : crypto.randomUUID();
+      return Response.json({ ok: true, pendingId });
+    }
+
+    if (action === 'resetPassword') {
+      const { pendingId, code, newPassword } = body;
+      const email = String(body.email || '').trim().toLowerCase();
+      if ((!pendingId && !email) || !code || String(newPassword || '').length < 6) return Response.json({ error: 'Invalid fields' }, { status: 400 });
+      let recs = email
+        ? await base44.asServiceRole.entities.LoginOtp.filter({ email, kind: 'password_reset' }, '-created_date', 1)
+        : [];
+      if (!recs[0] && pendingId) recs = await base44.asServiceRole.entities.LoginOtp.filter({ pendingId });
+      const rec = recs[0];
+      if (!rec || rec.kind !== 'password_reset' || new Date(rec.expiresAt).getTime() < Date.now() || (rec.attempts || 0) >= 5) {
+        return Response.json({ error: 'invalid_or_expired' }, { status: 401 });
+      }
+      const codeHash = await sha256Hex(rec.pendingId + '::' + String(code).trim());
+      if (codeHash !== rec.codeHash) {
+        await base44.asServiceRole.entities.LoginOtp.update(rec.id, { attempts: (rec.attempts || 0) + 1 });
+        return Response.json({ error: 'invalid_code' }, { status: 401 });
+      }
+      const [accounts, credentials] = await Promise.all([
+        base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: rec.email }),
+        base44.asServiceRole.entities.EmployeeCredential.filter({ email: rec.email }),
+      ]);
+      const passwordHash = await pbkdf2Password(String(newPassword));
+      if (accounts.length) await base44.asServiceRole.entities.CompanyAccount.bulkUpdate(accounts.map((account) => ({ id: account.id, ownerPassword: passwordHash })));
+      if (credentials.length) await base44.asServiceRole.entities.EmployeeCredential.bulkUpdate(credentials.map((credential) => ({ id: credential.id, passwordHash })));
+      await base44.asServiceRole.entities.LoginOtp.delete(rec.id);
+      return Response.json({ ok: true });
+    }
+
     // Secure owner password recovery: requesting a reset never reveals whether an email exists.
     if (action === 'requestOwnerPasswordReset') {
       const email = String(body.email || '').trim().toLowerCase();
