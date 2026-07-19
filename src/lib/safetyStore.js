@@ -49,11 +49,13 @@ export function closeSafetyHazard(companyId, stationId, hazardIndex, closedBy) {
 export function approveSafetyRecord(companyId, stationId, approvedBy) {
   let approved = false;
   updateCompany(companyId, (data) => {
-    const rec = (data.safety || []).find((item) => item.stationId === stationId);
-    const badInspection = !rec?.lastInspection || new Date(rec.lastInspection) > new Date();
-    const inspectionEnd = rec?.lastInspection ? new Date(rec.lastInspection).setHours(23, 59, 59, 999) : 0;
-    const incidentUnreviewed = rec?.lastIncidentAt && inspectionEnd < new Date(rec.lastIncidentAt).getTime();
-    if (!rec?.level || badInspection || (rec.hazards || []).length || incidentUnreviewed) return;
+    if (!stationExists(data, stationId)) return;
+    data.safety = data.safety || [];
+    let rec = data.safety.find((item) => item.stationId === stationId);
+    if (!rec) {
+      rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], workHoursMonthly: 0, ltiCount: 0, checklistResults: {}, permits: [], disabledTabs: [], createdAt: new Date().toISOString() };
+      data.safety.push(rec);
+    }
     const at = new Date().toISOString();
     rec.approvedBy = approvedBy;
     rec.approvedAt = at;

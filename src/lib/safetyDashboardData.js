@@ -1,3 +1,5 @@
+import { checklistCompliance } from "@/lib/safetyStandards";
+
 const levelColors = {
   green: "hsl(160 60% 38%)",
   amber: "hsl(38 92% 50%)",
@@ -28,10 +30,22 @@ export function buildSafetyDashboardData(safety = [], stations = [], lang = "en"
     return { station: station.name, hazards: (record?.hazards || []).length, fill: levelColors[record?.level] || "hsl(var(--muted-foreground))" };
   });
   const currentMonth = monthMap.get(monthKey(now))?.incidents || 0;
+  const totalHours = safety.reduce((sum, record) => sum + (Number(record.workHoursMonthly) || 0), 0);
+  const totalLti = safety.reduce((sum, record) => sum + (Number(record.ltiCount) || 0), 0);
+  const totalIncidents = safety.reduce((sum, record) => sum + (record.incidentLog || []).length, 0);
+  const complianceValues = stations.map((station) => checklistCompliance(safety.find((item) => item.stationId === station.id)?.checklistResults || {}));
+  const compliance = complianceValues.length ? Math.round(complianceValues.reduce((sum, value) => sum + value, 0) / complianceValues.length) : 0;
 
   return {
     months,
     hazards,
+    companyKpis: {
+      trir: totalHours ? (totalIncidents * 200000) / totalHours : 0,
+      ltifr: totalHours ? (totalLti * 1000000) / totalHours : 0,
+      totalHours,
+      totalLti,
+      compliance,
+    },
     stats: {
       currentMonth,
       critical: stations.filter((station) => safety.find((item) => item.stationId === station.id)?.level === "red").length,
