@@ -24,6 +24,26 @@ Deno.serve(async (req) => {
     }
     if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
+    // Some company owners enter through their employee identity (for example after
+    // switching users). Reconcile that identity with the persisted company owner
+    // instead of incorrectly treating the owner as a regular employee.
+    if (!auth.owner && auth.userId) {
+      const [metaRows, accounts, employees] = await Promise.all([
+        base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: auth.companyId, category: "companyMeta" }),
+        base44.asServiceRole.entities.CompanyAccount.filter({ companyId: auth.companyId }),
+        base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId: auth.userId }),
+      ]);
+      const ownerId = metaRows[0]?.payload?.[0]?.ownerId;
+      const employee = employees[0];
+      const ownerEmail = String(accounts[0]?.ownerEmail || "").trim().toLowerCase();
+      const employeeEmail = String(employee?.email || "").trim().toLowerCase();
+      if (ownerId === auth.userId || (ownerEmail && ownerEmail === employeeEmail)) {
+        auth.owner = true;
+        auth.manager = true;
+        auth.role = "owner";
+      }
+    }
+
     const stations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
     const centralWarehouse = stations.find((station) => station.isCentralWarehouse) || stations.find((station) => ["central_warehouse", "warehouse"].includes(String(station.type || "").toLowerCase())) || stations[0] || null;
     const centralWarehouseId = centralWarehouse?.stationId || null;
