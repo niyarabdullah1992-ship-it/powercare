@@ -8,8 +8,9 @@ export default function MovementFilters({ stationId, type, stations, onStation, 
     </select>
     <select value={type} onChange={(event) => onType(event.target.value)} className="rounded-lg border px-3 py-2 text-sm">
       <option value="">{ar ? "كل أنواع الحركة" : "All movement types"}</option>
-      <option value="receive">{ar ? "استلام" : "Receive"}</option><option value="issue">{ar ? "صرف" : "Issue"}</option>
-      <option value="return">{ar ? "إرجاع" : "Return"}</option><option value="transfer">{ar ? "نقل" : "Transfer"}</option>
+      <option value="purchase">{ar ? "شراء" : "Purchase"}</option>
+      <option value="transfer">{ar ? "نقل" : "Transfer"}</option>
+      <option value="issue">{ar ? "صرف للعمل" : "Issue to work"}</option>
     </select>
   </div>;
 }
