@@ -692,10 +692,13 @@ function finishOwnerLogin(result) {
   return company;
 }
 
-export async function googleCompanyLogin(preferKind) {
+export async function googleCompanyLogin(preferKind, accountKey) {
   try {
-    const res = await invokeDirectory({ action: "googleOwnerLogin", preferKind: preferKind || null });
-    return res?.data?.token ? finishOwnerLogin(res.data) : null;
+    const res = await invokeDirectory({ action: "googleOwnerLogin", preferKind: preferKind || null, accountKey: accountKey || null });
+    if (res?.data?.selectionRequired) return res.data;
+    if (res?.data?.kind === "owner" && res.data.token) return finishOwnerLogin(res.data);
+    if (res?.data?.kind === "employee" && res.data.token) return finishEmployeeLogin(res.data);
+    return null;
   } catch {
     return null;
   }
@@ -711,8 +714,11 @@ export async function completeLoginOtp(pendingId, code, typedPassword, chooseCom
   }
   if (!result?.token) return null;
   if (result.kind === "owner") return finishOwnerLogin(result);
+  return finishEmployeeLogin(result);
+}
+
+function finishEmployeeLogin(result) {
   const reg = getRegistry();
-  // employee session
   const { companyId, employeeId } = result.employee;
   setCompanyToken(companyId, result.token);
   let company = reg.companies.find((c) => c.id === companyId);

@@ -222,24 +222,57 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action, companyId } = body;
 
-    // Google-authenticated owners can enter without a password or email OTP because
-    // the platform has already verified their Google identity.
+    // Google verifies the email identity. It may belong to company owners, employees,
+    // or both; when several workspaces match, the user chooses one explicitly.
     if (action === 'googleOwnerLogin') {
       const user = await base44.auth.me().catch(() => null);
       const email = String(user?.email || '').trim().toLowerCase();
       if (!email) return Response.json({ error: 'Google authentication required' }, { status: 401 });
-      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email }, '-created_date');
-      // Honor the login tab the user chose strictly: never fall back to an account
-      // of the other kind — a "Company Login" click must never open an individual
-      // workspace (and vice versa).
+      const [ownerAccounts, credentials] = await Promise.all([
+        base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email }, '-created_date'),
+        base44.asServiceRole.entities.EmployeeCredential.filter({ email }, '-created_date'),
+      ]);
       const wantIndividual = body.preferKind === 'individual';
-      const found = body.preferKind
-        ? accounts.find((a) => (String(a.plan || '').toLowerCase() === 'individual') === wantIndividual)
-        : accounts[0];
-      if (!found) return Response.json({ error: 'No company is linked to this Google account' }, { status: 404 });
-      const { ownerPassword: _password, ...safe } = found;
-      const token = await makeSession(base44, found.companyId, null, 'owner');
-      return Response.json({ kind: 'owner', company: safe, token });
+      const ownerMatches = body.preferKind
+        ? ownerAccounts.filter((account) => (String(account.plan || '').toLowerCase() === 'individual') === wantIndividual)
+        : ownerAccounts;
+      const options = ownerMatches.map((account) => ({
+        accountKey: `owner:${account.companyId}`, kind: 'owner', companyId: account.companyId,
+        name: account.name || 'PowerCare', plan: account.plan || '',
+      }));
+      if (!wantIndividual) {
+        for (const credential of credentials) {
+          const [accounts, employees] = await Promise.all([
+            base44.asServiceRole.entities.CompanyAccount.filter({ companyId: credential.companyId }),
+            base44.asServiceRole.entities.Employee.filter({ companyId: credential.companyId, employeeId: credential.employeeId }),
+          ]);
+          if (accounts[0] && employees[0]) options.push({
+            accountKey: `employee:${credential.companyId}:${credential.employeeId}`,
+            kind: 'employee', companyId: credential.companyId, employeeId: credential.employeeId,
+            name: accounts[0].name || 'PowerCare', employeeName: employees[0].name || email,
+          });
+        }
+      }
+      const uniqueOptions = [...new Map(options.map((option) => [option.accountKey, option])).values()];
+      options.length = 0;
+      options.push(...uniqueOptions);
+      if (!options.length) return Response.json({ error: 'No workspace is linked to this Google account' }, { status: 404 });
+      if (!body.accountKey && options.length > 1) return Response.json({ selectionRequired: true, accounts: options });
+      const selected = body.accountKey ? options.find((option) => option.accountKey === body.accountKey) : options[0];
+      if (!selected) return Response.json({ error: 'Workspace not found' }, { status: 404 });
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: selected.companyId });
+      const account = accounts[0];
+      if (selected.kind === 'owner') {
+        const { ownerPassword: _password, ...safe } = account;
+        const token = await makeSession(base44, selected.companyId, null, 'owner');
+        return Response.json({ kind: 'owner', company: safe, token });
+      }
+      const token = await makeSession(base44, selected.companyId, selected.employeeId, 'employee');
+      return Response.json({
+        kind: 'employee', token,
+        employee: { companyId: selected.companyId, employeeId: selected.employeeId },
+        company: { companyId: selected.companyId, name: account.name || '', plan: account.plan || '', allowedEmailDomain: account.allowedEmailDomain || '', ownerEmail: account.ownerEmail || '', emailLanguage: account.emailLanguage || 'en', subscriptionStart: account.subscriptionStart || null, subscriptionEnd: account.subscriptionEnd || null },
+      });
     }
 
     // Cross-device login lookup — doesn't need a companyId yet, since the caller is

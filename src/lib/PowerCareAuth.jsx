@@ -222,8 +222,8 @@ export function AuthProvider({ children }) {
     return c;
   };
 
-  const loginWithGoogle = async (preferKind) => {
-    const company = await googleCompanyLogin(preferKind);
+  const loginWithGoogle = async (preferKind, accountKey) => {
+    const company = await googleCompanyLogin(preferKind, accountKey);
     if (company) refresh();
     return company;
   };

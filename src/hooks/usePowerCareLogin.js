@@ -13,6 +13,7 @@ export default function usePowerCareLogin(returnPath = "/login") {
   const [loading, setLoading] = useState(false);
   const [pendingId, setPendingId] = useState(null);
   const [accounts, setAccounts] = useState([]);
+  const [googleAccounts, setGoogleAccounts] = useState([]);
 
   useEffect(() => { if (session) navigate("/app", { replace: true }); }, [session, navigate]);
   useEffect(() => {
@@ -20,8 +21,9 @@ export default function usePowerCareLogin(returnPath = "/login") {
     setLoading(true);
     const loginKind = new URLSearchParams(window.location.search).get("type") === "individual" ? "individual" : "company";
     setKind(loginKind);
-    loginWithGoogle(loginKind).then((company) => {
-      if (!company) setError("No company is linked to this Google account");
+    loginWithGoogle(loginKind).then((result) => {
+      if (result?.selectionRequired) setGoogleAccounts(result.accounts || []);
+      else if (!result) setError("No workspace is linked to this Google account");
     }).catch((error) => setError(error.message || "Google login failed"))
       .finally(() => setLoading(false));
   }, []);
@@ -51,5 +53,11 @@ export default function usePowerCareLogin(returnPath = "/login") {
     }
   };
   const google = () => base44.auth.loginWithProvider("sso", `${returnPath}?google_login=1&type=${kind}`);
-  return { kind, setKind, email, setEmail, password, setPassword, error, loading, pendingId, accounts, setPendingId, submit, verify, resend, google };
+  const chooseGoogleAccount = async (accountKey) => {
+    setError(""); setLoading(true);
+    const result = await loginWithGoogle(kind, accountKey);
+    if (!result) setError("Could not open this workspace");
+    setLoading(false);
+  };
+  return { kind, setKind, email, setEmail, password, setPassword, error, loading, pendingId, accounts, googleAccounts, setGoogleAccounts, setPendingId, submit, verify, resend, google, chooseGoogleAccount };
 }

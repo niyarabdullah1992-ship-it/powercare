@@ -6,17 +6,17 @@ import usePowerCareLogin from "@/hooks/usePowerCareLogin";
 import GoogleIcon from "@/components/GoogleIcon";
 import OtpStep from "@/components/landing/OtpStep";
 import LoginTypeSelector from "@/components/landing/LoginTypeSelector";
+import GoogleAccountPicker from "@/components/landing/GoogleAccountPicker";
 
 export default function PowerCareLoginPanel({ showTypeSelector = false, returnPath = "/login" }) {
   const { t, lang } = useI18n();
   const flow = usePowerCareLogin(returnPath);
+  if (flow.googleAccounts.length) return <GoogleAccountPicker accounts={flow.googleAccounts} onSelect={flow.chooseGoogleAccount} onBack={() => flow.setGoogleAccounts([])} loading={flow.loading} lang={lang} />;
   if (flow.pendingId) return <OtpStep email={flow.email} accounts={flow.accounts} onVerify={flow.verify} onResend={flow.resend} onBack={() => flow.setPendingId(null)} />;
   return <div className="space-y-4">
     {showTypeSelector && <LoginTypeSelector value={flow.kind} onChange={flow.setKind} lang={lang} />}
-    {flow.kind === "company" && <>
-      <button type="button" onClick={flow.google} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-3 text-sm font-semibold hover:bg-muted disabled:opacity-50"><GoogleIcon className="h-5 w-5" />{t("continueWithGoogle")}</button>
-      <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />{t("orDivider")}<span className="h-px flex-1 bg-border" /></div>
-    </>}
+    <button type="button" onClick={flow.google} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-3 text-sm font-semibold hover:bg-muted disabled:opacity-50"><GoogleIcon className="h-5 w-5" />{t("continueWithGoogle")}</button>
+    <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />{t("orDivider")}<span className="h-px flex-1 bg-border" /></div>
     <form onSubmit={flow.submit} className="space-y-4">
       <label className="block text-xs text-muted-foreground">{t("email")}<input type="email" required autoComplete="email" value={flow.email} onChange={(e) => flow.setEmail(e.target.value)} className="mt-1.5 w-full rounded-lg border border-input bg-background px-3.5 py-3 text-base text-foreground outline-none focus:ring-2 focus:ring-ring" /></label>
       <label className="block text-xs text-muted-foreground">{t("password")}<input type="password" required autoComplete="current-password" value={flow.password} onChange={(e) => flow.setPassword(e.target.value)} className="mt-1.5 w-full rounded-lg border border-input bg-background px-3.5 py-3 text-base text-foreground outline-none focus:ring-2 focus:ring-ring" /></label>
