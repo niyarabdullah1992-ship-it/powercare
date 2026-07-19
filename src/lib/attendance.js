@@ -1,16 +1,6 @@
 import { base44 } from "@/api/base44Client";
 import { isOnLeaveToday } from "@/lib/leaveTypes";
-
-function getRiyadhDateKey(date = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Riyadh",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const value = (type) => parts.find((part) => part.type === type)?.value;
-  return `${value("year")}-${value("month")}-${value("day")}`;
-}
+import { toRiyadhDateKey } from "@/lib/riyadhDate";
 
 // Thin helpers around the supabaseAttendance backend function, shared by the
 // check-in widget, manager dashboards, and the task-gating check in MyTasks.
@@ -36,7 +26,7 @@ export function isCheckedIn(att) {
 
 export function isScheduledToday(employee, data) {
   if (!employee?.id) return false;
-  const dateKey = getRiyadhDateKey();
+  const dateKey = toRiyadhDateKey();
   return (data?.schedules || []).some((schedule) =>
     (schedule.shiftTypes || []).some((shift) =>
       (schedule.assignments?.[dateKey]?.[shift.id] || []).includes(employee.id)
@@ -56,7 +46,7 @@ export function getAttendanceStatus(employee, attRow, data) {
 export function getTodaysShift(data, employee) {
   if (!employee?.id) return null;
   const stationIds = [employee.stationId || data?.stations?.[0]?.id, ...(employee.managedStations || [])].filter(Boolean);
-  const dateKey = getRiyadhDateKey();
+  const dateKey = toRiyadhDateKey();
   for (const stationId of stationIds) {
     const schedule = (data?.schedules || []).find((s) => s.stationId === stationId);
     for (const st of schedule?.shiftTypes || []) {

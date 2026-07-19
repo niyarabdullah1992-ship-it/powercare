@@ -3,6 +3,7 @@
 import { MANAGER_PERMISSIONS, ASSISTANT_PERMISSIONS, groupLevelsByOrder } from "./hrLevels";
 import { base44 } from "@/api/base44Client";
 import { sendEmailAlert } from "./emailAlerts";
+import { toRiyadhDateKey } from "./riyadhDate";
 
 const REGISTRY_KEY = "powercare_registry";
 const COMPANY_PREFIX = "powercare_company_";
@@ -294,6 +295,10 @@ function scheduleCompanyPush(id, data) {
 function saveCompanyData(id, data) {
   data.employees = dedupeEmployees(data.employees);
   data.stations = data.stations || [];
+  data.personalAttendance = (data.personalAttendance || []).map((record) => {
+    const { dayIndex: _legacyDayIndex, ...clean } = record;
+    return { ...clean, dateKey: toRiyadhDateKey(record.dateKey || record.date || record.createdAt) };
+  });
   lastLocalWriteAt[id] = Date.now();
   write(companyKey(id), data);
   scheduleCompanyPush(id, data);

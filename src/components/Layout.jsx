@@ -34,6 +34,7 @@ export default function Layout({ children }) {
   const [langOpen, setLangOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
+  const [proactiveAlerts, setProactiveAlerts] = useState([]);
   const langRef = useRef(null);
   const notifRef = useRef(null);
   const userRef = useRef(null);
@@ -57,6 +58,17 @@ export default function Layout({ children }) {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
+
+  useEffect(() => {
+    setProactiveAlerts([]);
+    const receive = (event) => {
+      const key = `powercare_proactive_read_${company?.id}_${currentUser?.id}`;
+      const readIds = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
+      setProactiveAlerts((event.detail || []).map((alert) => ({ ...alert, read: readIds.has(alert.id) })));
+    };
+    window.addEventListener("powercare:proactive-alerts", receive);
+    return () => window.removeEventListener("powercare:proactive-alerts", receive);
+  }, [company?.id, currentUser?.id]);
 
   // Real-time notification polling (Supabase → local bell)
   useEffect(() => {
@@ -152,9 +164,12 @@ export default function Layout({ children }) {
     if (company) localStorage.setItem(`powercare_nav_order_${company.id}`, JSON.stringify(newOrder));
   };
 
-  const myNotifs = data.notifications.filter(
-    (notification) => notification.userId === currentUser.id && shouldShowNotification(notification.text, data)
-  );
+  const myNotifs = [
+    ...proactiveAlerts,
+    ...data.notifications.filter(
+      (notification) => notification.userId === currentUser.id && shouldShowNotification(notification.text, data)
+    ),
+  ];
   const unread = myNotifs.filter((n) => !n.read).length;
 
   const markAllRead = () => {
@@ -163,9 +178,16 @@ export default function Layout({ children }) {
         if (n.userId === currentUser.id) n.read = true;
       });
     });
+    const ids = proactiveAlerts.map((alert) => alert.id);
+    localStorage.setItem(`powercare_proactive_read_${company.id}_${currentUser.id}`, JSON.stringify(ids));
+    setProactiveAlerts((alerts) => alerts.map((alert) => ({ ...alert, read: true })));
   };
 
   const dismissNotification = (id) => {
+    if (proactiveAlerts.some((alert) => alert.id === id)) {
+      setProactiveAlerts((alerts) => alerts.filter((alert) => alert.id !== id));
+      return;
+    }
     updateCompany(company.id, (d) => {
       d.notifications = d.notifications.filter((n) => n.id !== id);
     });
@@ -173,12 +195,19 @@ export default function Layout({ children }) {
 
   // Clicking a notification marks it read and jumps to the page it refers to.
   const openNotification = (n) => {
-    updateCompany(company.id, (d) => {
-      const target = d.notifications.find((x) => x.id === n.id);
-      if (target) target.read = true;
-    });
+    if (n.type === "proactive") {
+      const key = `powercare_proactive_read_${company.id}_${currentUser.id}`;
+      const ids = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
+      ids.add(n.id); localStorage.setItem(key, JSON.stringify([...ids]));
+      setProactiveAlerts((alerts) => alerts.map((alert) => alert.id === n.id ? { ...alert, read: true } : alert));
+    } else {
+      updateCompany(company.id, (d) => {
+        const target = d.notifications.find((x) => x.id === n.id);
+        if (target) target.read = true;
+      });
+    }
     setNotifOpen(false);
-    navigate(routeForNotification(n.text));
+    navigate(n.to || routeForNotification(n.text));
   };
 
   const sidebarSide = dir === "rtl" ? "right-0" : "left-0";

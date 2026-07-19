@@ -24,13 +24,16 @@ import DecisionQueue from "@/components/dashboard/DecisionQueue";
 import { getRiskWeights } from "@/lib/riskWeights";
 import { isActiveAttendance, isScheduledToday } from "@/lib/attendance";
 import { isOnLeaveToday } from "@/lib/leaveTypes";
+import useProactiveAlerts from "@/hooks/useProactiveAlerts";
+import OperationalAlerts from "@/components/dashboard/OperationalAlerts";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
-  const { data, currentUser, company, refresh } = useAuth();
+  const { data, currentUser, company, session, refresh } = useAuth();
   const [stoppageCount, setStoppageCount] = useState(0);
   const [showBranding, setShowBranding] = useState(false);
   const [attendanceRows, setAttendanceRows] = useState([]);
+  const { alerts: proactiveAlerts, loading: proactiveLoading } = useProactiveAlerts(data, currentUser, session);
 
   const loadStoppage = async () => {
     if (!currentUser) return;
@@ -102,6 +105,7 @@ export default function Dashboard() {
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="space-y-6">
         {welcomeHero}
+        <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
         <EmployeeDashboard user={currentUser} company={company} data={data} />
       </div>
     </PullToRefresh>
@@ -113,6 +117,7 @@ export default function Dashboard() {
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="space-y-6">
           {welcomeHero}
+          <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
           <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
         </div>
       </PullToRefresh>
@@ -204,6 +209,7 @@ export default function Dashboard() {
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="space-y-8">
       <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
+      <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
       <OnboardingChecklist data={data} lang={lang} t={t} />
       {canEditBranding && (
         <div className="flex justify-end">

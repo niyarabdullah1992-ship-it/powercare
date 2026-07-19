@@ -91,9 +91,19 @@ Deno.serve(async (req) => {
 
     if (body.action === "issueRequest") {
       const denied = managerGuard(); if (denied) return denied;
-      const requests = await base44.asServiceRole.entities.MaterialRequest.filter({ id: body.requestId, companyId: auth.companyId }); const request = requests[0];
-      if (!request || request.status !== "approved" || !ensureStation(request.stationId)) return Response.json({ error: "Approved request required" }, { status: 400 });
+      if (!body.requestId) return Response.json({ error: "لا يمكن الصرف: لا يوجد طلب معتمد" }, { status: 400 });
+      let requests = [];
+      try { requests = await base44.asServiceRole.entities.MaterialRequest.filter({ id: body.requestId, companyId: auth.companyId }); }
+      catch { return Response.json({ error: "لا يمكن الصرف: لا يوجد طلب معتمد" }, { status: 400 }); }
+      const request = requests[0];
+      if (!request || request.status !== "approved" || !ensureStation(request.stationId)) return Response.json({ error: "لا يمكن الصرف: لا يوجد طلب معتمد" }, { status: 400 });
+      const previousIssues = await base44.asServiceRole.entities.StockMovement.filter({ companyId: auth.companyId, requestId: request.id, movementType: "issue" });
+      if (previousIssues.length) return Response.json({ error: "لا يمكن الصرف: تم صرف هذا الطلب مسبقاً" }, { status: 409 });
       const item = await getItem(request.itemId); if (!item) return Response.json({ error: "Item not found" }, { status: 404 });
+      if (item.trackingMode === "quantity") {
+        const available = balances(item).find((entry) => entry.locationId === request.stationId)?.quantity || 0;
+        if (available < Number(request.quantity)) return Response.json({ error: "لا يمكن الصرف: الكمية المطلوبة تتجاوز الرصيد المتاح" }, { status: 400 });
+      }
       let unitId = null;
       if (item.trackingMode === "serialized") {
         const unit = await getUnitByQr(body.qrCode); if (!unit || unit.itemId !== item.id || unit.status !== "available" || unit.locationId !== request.stationId) return Response.json({ error: "Scanned unit is unavailable at this station" }, { status: 400 });
@@ -112,6 +122,7 @@ Deno.serve(async (req) => {
       const denied = managerGuard(); if (denied) return denied;
       const item = await getItem(body.itemId); if (!item) return Response.json({ error: "Item not found" }, { status: 404 });
       const quantity = Number(body.quantity || 1); let unitId = null;
+      if (!Number.isFinite(quantity) || quantity <= 0) return Response.json({ error: "Quantity must be greater than zero" }, { status: 400 });
       if (body.action === "receive") {
         if (!ensureStation(body.toLocationId)) return Response.json({ error: "Invalid destination" }, { status: 400 });
         if (item.trackingMode === "serialized") {
@@ -129,7 +140,8 @@ Deno.serve(async (req) => {
         await movement({ itemId: item.id, unitId, movementType: "return", quantity: item.trackingMode === "serialized" ? 1 : quantity, fromLocationId: null, toLocationId: body.toLocationId, employeeId: body.employeeId || null, requestId: null });
       }
       if (body.action === "transfer") {
-        if (!ensureStation(body.fromLocationId) || !allStationIds.includes(body.toLocationId) || body.fromLocationId === body.toLocationId) return Response.json({ error: "Invalid transfer" }, { status: 400 });
+        if (body.fromLocationId === body.toLocationId) return Response.json({ error: "لا يمكن النقل إلى المحطة نفسها" }, { status: 400 });
+        if (!ensureStation(body.fromLocationId) || !allStationIds.includes(body.toLocationId)) return Response.json({ error: "Invalid transfer" }, { status: 400 });
         if (item.trackingMode === "serialized") { const unit = await getUnitByQr(body.qrCode); if (!unit || unit.itemId !== item.id || unit.status !== "available" || unit.locationId !== body.fromLocationId) return Response.json({ error: "Unit is not available at source" }, { status: 400 }); await base44.asServiceRole.entities.InventoryUnit.update(unit.id, { locationId: body.toLocationId }); unitId = unit.id; }
         else { let next = adjustBalance(item, body.fromLocationId, -quantity); next = (() => { const clone = { ...item, locationBalances: next }; return adjustBalance(clone, body.toLocationId, quantity); })(); await base44.asServiceRole.entities.InventoryItem.update(item.id, { locationBalances: next, currentLocationId: body.toLocationId }); }
         await movement({ itemId: item.id, unitId, movementType: "transfer", quantity: item.trackingMode === "serialized" ? 1 : quantity, fromLocationId: body.fromLocationId, toLocationId: body.toLocationId, employeeId: null, requestId: null });

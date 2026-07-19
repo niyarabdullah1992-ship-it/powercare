@@ -90,8 +90,8 @@ Deno.serve(async (req) => {
     const riyadhParts = (date = new Date()) => Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
       timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
     }).formatToParts(date).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
-    const todayStr = () => {
-      const part = riyadhParts();
+    const toRiyadhDateKey = (date = new Date()) => {
+      const part = riyadhParts(date);
       return `${part.year}-${part.month}-${part.day}`;
     };
     const riyadhMinutes = () => {
@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       return !!start && !!end && start <= date && date <= end;
     });
     const getScheduledShift = async (companyId, employeeId) => {
-      const dateKey = todayStr();
+      const dateKey = toRiyadhDateKey();
       const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "schedules" });
       for (const schedule of (blobs[0]?.payload || [])) {
         for (const shift of (schedule.shiftTypes || [])) {
@@ -328,7 +328,7 @@ Deno.serve(async (req) => {
     // are eligible, preventing owners, off-duty staff, and unscheduled employees from
     // receiving false absence alerts.
     if (action === "checkLateAlerts") {
-      const date = todayStr();
+      const date = toRiyadhDateKey();
       const nowMinutes = riyadhMinutes();
       const dirRes = await fetch(`${SUPABASE_URL}/rest/v1/employees_directory?select=*`, { headers });
       const directory = await dirRes.json();
@@ -400,7 +400,7 @@ Deno.serve(async (req) => {
       if (!auth?.admin && employeeId !== auth?.userId) {
         return Response.json({ error: "Forbidden" }, { status: 403 });
       }
-      const date = todayStr();
+      const date = toRiyadhDateKey();
       const policy = await getAttendancePolicy(companyId);
       let scheduledShift = await getScheduledShift(companyId, employeeId);
       if (!scheduledShift && policy.scheduleRequired) return Response.json({ error: "NOT_SCHEDULED" }, { status: 400 });
@@ -509,7 +509,7 @@ Deno.serve(async (req) => {
       const settings = (Array.isArray(settingsRows) && settingsRows[0]) || { gps_enabled: true };
       const locationRequired = settings.gps_enabled !== false && !emergency?.active;
       if (locationRequired && (lat == null || lng == null)) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
-      const date = todayStr();
+      const date = toRiyadhDateKey();
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const rows = await res.json();
       const row = Array.isArray(rows) && rows[0];
@@ -550,7 +550,7 @@ Deno.serve(async (req) => {
       const employees = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId });
       const employee = employees[0];
       if (!employee) return Response.json({ error: "Employee not found" }, { status: 404 });
-      const date = todayStr();
+      const date = toRiyadhDateKey();
       const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const existingRows = await existingRes.json();
       const existing = Array.isArray(existingRows) ? existingRows[0] : null;
@@ -587,7 +587,7 @@ Deno.serve(async (req) => {
       const reason = String(body.reason || "").trim();
       if (!employeeId || !reason) return Response.json({ error: "Employee and reason are required" }, { status: 400 });
       if (!(await employeeInCompany(employeeId))) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const date = todayStr();
+      const date = toRiyadhDateKey();
       const currentRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const currentRows = await currentRes.json();
       const current = Array.isArray(currentRows) ? currentRows[0] : null;
@@ -638,7 +638,7 @@ Deno.serve(async (req) => {
       const { employeeId } = body;
       if (!employeeId) return Response.json({ error: "Missing employeeId" }, { status: 400 });
       if (!(await employeeInCompany(employeeId))) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const date = todayStr();
+      const date = toRiyadhDateKey();
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const rows = await res.json();
       if (!res.ok) return Response.json({ attendance: null });
@@ -651,7 +651,7 @@ Deno.serve(async (req) => {
       const scopedIds = await filterCompanyEmployeeIds(employeeIds);
       if (scopedIds.length === 0) return Response.json({ rows: [] });
       if (date && !isDate(date)) return Response.json({ error: "Invalid date" }, { status: 400 });
-      const d = date || todayStr();
+      const d = date || toRiyadhDateKey();
       const idsList = scopedIds.map((id) => `"${id}"`).join(",");
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=in.(${idsList})&date=eq.${d}`, { headers });
       const rows = await res.json();
@@ -727,7 +727,7 @@ Deno.serve(async (req) => {
       if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
       const companyId = auth?.companyId || body.companyId;
       if (!companyId) return Response.json({ error: "Missing companyId" }, { status: 400 });
-      const date = todayStr();
+      const date = toRiyadhDateKey();
       const dirRes = await fetch(`${SUPABASE_URL}/rest/v1/employees_directory?company_id=eq.${encodeURIComponent(companyId)}&select=*`, { headers });
       const directory = await dirRes.json();
       if (!dirRes.ok || !Array.isArray(directory) || directory.length === 0) return Response.json({ ok: true, marked: 0, onLeave: 0, notScheduled: 0 });
