@@ -71,6 +71,13 @@ export default function Inventory() {
   const tabFromWorkflow = { purchase: "purchases", items: "items", requests: "requests", consumption: "consumption" };
   const stationIds = state.locations.map((station) => station.stationId || station.id);
   const activeStation = stationIds.includes(selectedStation) ? selectedStation : (state.locations[0]?.stationId || state.locations[0]?.id || currentUser.stationId || "");
+  const stationItems = state.items
+    .filter((item) => (item.locationBalances || []).some((balance) => balance.locationId === activeStation) || (!(item.locationBalances || []).length && item.currentLocationId === activeStation))
+    .map((item) => ({
+      ...item,
+      quantity: (item.locationBalances || []).find((balance) => balance.locationId === activeStation)?.quantity ?? item.quantity,
+      currentLocationId: activeStation,
+    }));
 
   return <div className="space-y-6">
     <PageHeader title={ar ? "المخزون" : "Inventory"} description={ar ? "إدارة الأصناف والحركات والطلبات والمشتريات حسب صلاحياتك." : "Manage items, movements, requests and purchases based on your role."} icon={Warehouse} actions={<InventoryExportButtons items={state.items} stations={state.stations} ar={ar} />} />
@@ -78,17 +85,17 @@ export default function Inventory() {
       <StationWarehousePicker stations={state.locations} value={activeStation} onChange={setSelectedStation} locked={state.locations.length <= 1} ar={ar} />
       <InventoryWorkflow ar={ar} onNavigate={(key) => setActive(tabFromWorkflow[key])} />
       <InventoryTabs active={active} onChange={setActive} ar={ar} />
-      {active === "overview" && <InventoryStats items={state.items} requests={state.requests} movements={state.movements} ar={ar} />}
+      {active === "overview" && <InventoryStats items={stationItems} requests={state.requests} movements={state.movements} ar={ar} />}
       {active === "purchases" && <div className="space-y-4">
         {state.canPurchase && <ItemForm stations={state.locations} defaultStationId={activeStation} onSubmit={(payload) => run("createItem", payload)} ar={ar} />}
         <PurchasesTab purchases={state.purchases} items={state.historyItems} stations={state.transferStations} activeStation={activeStation} canViewAll={state.canViewAllPurchases} ar={ar} />
       </div>}
-      {active === "items" && <div className="space-y-4"><GlobalInventorySearch items={state.items} stations={state.stations} onOpen={(item) => setSelectedItem(item)} ar={ar} /><ItemList items={state.items} stations={state.stations} onSelect={setSelectedItem} ar={ar} /></div>}
+      {active === "items" && <div className="space-y-4"><GlobalInventorySearch items={stationItems} stations={state.stations} onOpen={(item) => setSelectedItem(item)} ar={ar} /><ItemList items={stationItems} stations={state.stations} onSelect={setSelectedItem} ar={ar} /></div>}
       {active === "requests" && <div className="space-y-4">
         {state.canRequest && <MaterialRequestForm items={state.requestItems} stations={state.transferStations} stationId={state.canManage ? activeStation : ""} onSubmit={(payload) => run("request", payload)} ar={ar} />}
         <RequestsList requests={state.requests} items={state.historyItems} employees={state.employees} stations={state.transferStations} canReview={state.canReviewRequests} canReviewAll={state.canReviewAllRequests} reviewerStationId={activeStation} onReview={(requestId, decision) => run("reviewRequest", { requestId, decision })} ar={ar} />
       </div>}
-      {active === "consumption" && <WorkIssueTab items={state.items} stations={state.locations} employees={state.employees} stationId={activeStation} canIssue={state.canIssueToWork} movements={state.movements} onSubmit={(payload) => run("issueToWork", payload)} ar={ar} />}
+      {active === "consumption" && <WorkIssueTab items={stationItems} stations={state.locations} employees={state.employees} stationId={activeStation} canIssue={state.canIssueToWork} movements={state.movements} onSubmit={(payload) => run("issueToWork", payload)} ar={ar} />}
       {active === "movements" && <MovementList movements={state.movements} items={state.historyItems} employees={state.employees} stations={state.transferStations} ar={ar} />}
     </>}
     <ItemDetails item={selectedItem} stations={state.stations} canDelete={state.canDelete} onDelete={async (itemId) => { if (await run("deleteItem", { itemId })) setSelectedItem(null); }} onImagesChange={updateImages} onClose={() => setSelectedItem(null)} ar={ar} />
