@@ -1,6 +1,7 @@
 import base44 from "@base44/vite-plugin"
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { readFileSync } from 'node:fs'
 
 const normalizeRawUrl = (value = "") => value.replace(/([?&])raw=(?=(&|$))/g, "$1raw");
 
@@ -11,6 +12,12 @@ const normalizeRawQuery = {
     const normalized = normalizeRawUrl(source);
     if (normalized === source) return null;
     return this.resolve(normalized, importer, { ...options, skipSelf: true });
+  },
+  load(id) {
+    const [filePath, query = ""] = id.split("?");
+    const isRawText = /\.(html|css)$/i.test(filePath) && /(^|&)raw(?:=)?(?:&|$)/.test(query);
+    if (!isRawText) return null;
+    return `export default ${JSON.stringify(readFileSync(filePath, "utf8"))};`;
   },
   configureServer(server) {
     server.middlewares.use((request, _response, next) => {
