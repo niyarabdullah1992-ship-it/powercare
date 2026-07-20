@@ -27,7 +27,7 @@ export default function VoiceControl({ onCommand }) {
   const { lang } = useI18n();
   const [enabled, setEnabled] = useState(false);
   const [micDenied, setMicDenied] = useState(false);
-  const { supported, listening, awake, denied } = useVoiceWakeWord({ enabled, lang, onCommand });
+  const { supported, listening, awake, directReady, denied } = useVoiceWakeWord({ enabled, lang, onCommand });
   const ar = lang === "ar";
 
   const toggle = async () => {
@@ -63,8 +63,8 @@ export default function VoiceControl({ onCommand }) {
 
   const status = (denied || micDenied)
     ? (ar ? "المتصفح رفض الميكروفون — افتح التطبيق في نافذة مستقلة واسمح بالميكروفون" : "Microphone blocked — open the app in its own tab and allow the microphone")
-    : awake
-      ? (ar ? "نيرو يستمع… تفضل" : "Niro is listening… go ahead")
+    : (awake || directReady)
+      ? (ar ? "نيرو يستمع… قل طلبك مباشرة" : "Niro is listening… say your command")
       : listening
         ? (ar ? "قل «نيرو» ثم اطلب ما تريد" : 'Say "Niro" then ask anything')
         : null;
@@ -72,7 +72,7 @@ export default function VoiceControl({ onCommand }) {
   return (
     <div className="ms-auto flex items-center gap-2">
       {status && (
-        <span className={`max-w-[200px] text-xs font-body leading-tight ${awake ? "text-accent font-semibold" : (denied || micDenied) ? "text-red-500" : "text-muted-foreground"}`}>
+        <span className={`max-w-[200px] text-xs font-body leading-tight ${awake || directReady ? "text-accent font-semibold" : (denied || micDenied) ? "text-red-500" : "text-muted-foreground"}`}>
           {status}
         </span>
       )}
@@ -88,7 +88,7 @@ export default function VoiceControl({ onCommand }) {
       >
         {enabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
         {listening && (
-          <span className={`absolute -top-0.5 -end-0.5 w-2.5 h-2.5 rounded-full ${awake ? "bg-green-500 animate-ping" : "bg-green-500 animate-pulse"}`} />
+          <span className={`absolute -top-0.5 -end-0.5 w-2.5 h-2.5 rounded-full ${awake || directReady ? "bg-green-500 animate-ping" : "bg-green-500 animate-pulse"}`} />
         )}
       </button>
     </div>

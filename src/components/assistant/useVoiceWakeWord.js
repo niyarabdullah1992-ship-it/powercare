@@ -7,6 +7,7 @@ const WAKE_WORDS = ["نيرو", "نيروا", "نيرة", "niro", "nero", "neero
 export default function useVoiceWakeWord({ enabled, lang, onCommand }) {
   const [listening, setListening] = useState(false);
   const [awake, setAwake] = useState(false);
+  const [directReady, setDirectReady] = useState(false);
   const [denied, setDenied] = useState(false);
   const awakeRef = useRef(false);
   const onCommandRef = useRef(onCommand);
@@ -19,7 +20,7 @@ export default function useVoiceWakeWord({ enabled, lang, onCommand }) {
 
   useEffect(() => {
     if (!supported || !enabled) {
-      setListening(false); setAwake(false); awakeRef.current = false;
+      setListening(false); setAwake(false); setDirectReady(false); awakeRef.current = false;
       return;
     }
     // Fresh attempt — clear any previous denial so the toggle doesn't get stuck
@@ -29,6 +30,8 @@ export default function useVoiceWakeWord({ enabled, lang, onCommand }) {
     rec.lang = lang === "ar" ? "ar-SA" : "en-US";
     rec.continuous = true;
     rec.interimResults = false;
+    awakeRef.current = true;
+    setDirectReady(true);
     rec.onstart = () => setListening(true);
     rec.onresult = (e) => {
       const transcript = Array.from(e.results).slice(e.resultIndex)
@@ -40,13 +43,13 @@ export default function useVoiceWakeWord({ enabled, lang, onCommand }) {
         const command = transcript.slice(lower.indexOf(wake) + wake.length).replace(/^[\s,،.؟!يا]+/, "").trim();
         if (command.length > 1) {
           onCommandRef.current(command);
-          setAwake(false); awakeRef.current = false;
+          setAwake(false); setDirectReady(false); awakeRef.current = false;
         } else {
-          setAwake(true); awakeRef.current = true;
+          setDirectReady(false); setAwake(true); awakeRef.current = true;
         }
       } else if (awakeRef.current) {
         onCommandRef.current(transcript);
-        setAwake(false); awakeRef.current = false;
+        setAwake(false); setDirectReady(false); awakeRef.current = false;
       }
     };
     let stopped = false;
@@ -77,9 +80,9 @@ export default function useVoiceWakeWord({ enabled, lang, onCommand }) {
       clearTimeout(restartTimer);
       rec.onend = null;
       try { rec.stop(); } catch { /* ignore */ }
-      setListening(false); setAwake(false); awakeRef.current = false;
+      setListening(false); setAwake(false); setDirectReady(false); awakeRef.current = false;
     };
   }, [enabled, lang, supported, SR]);
 
-  return { supported, listening, awake, denied };
+  return { supported, listening, awake, directReady, denied };
 }

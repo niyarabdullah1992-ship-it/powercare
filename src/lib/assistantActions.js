@@ -1,4 +1,4 @@
-import { updateCompany, addCompanyFile } from "@/lib/store";
+import { addCompanyFile, getCompanyToken } from "@/lib/store";
 import { buildAssistantContext } from "./assistantContext";
 import { printReport } from "@/lib/printReport";
 import { generateSignedReport } from "@/lib/signedReport";
@@ -74,6 +74,7 @@ async function datasetRows(action, data, currentUser) {
 
 export async function executeAssistantAction(action, { data, company, currentUser, t }) {
   const canWrite = WRITE_ROLES.includes(currentUser.role);
+  const sessionAuth = { companyId: company.id, sessionToken: getCompanyToken(company.id) };
 
   if (action.type === "export_data") {
     const dataset = norm(action.dataset);
@@ -168,11 +169,11 @@ export async function executeAssistantAction(action, { data, company, currentUse
   if (action.type === "open_page") {
     const routes = {
       dashboard: "/app", tasks: "/app/tasks", attendance: "/app/attendance",
-      reports: "/app/reports", performance: "/app/performance", employees: "/app/employees",
+      reports: "/app/daily-report", performance: "/app/performance", employees: "/app/employees",
       stations: "/app/stations", hr: "/app/hr", complaints: "/app/complaints",
       chat: "/app/chat", files: "/app/files", daily_report: "/app/daily-report",
       help: "/app/help", signing: "/app/signing", verify: "/verify",
-      planner: "/app/planner", journal: "/app/journal", calendar: "/app/calendar",
+      inventory: "/app/inventory", expenses: "/app/expenses", safety: "/app/safety",
     };
     const path = routes[norm(action.page)];
     if (!path) return { ok: false, message: t("aiActionFailed") };
@@ -182,13 +183,14 @@ export async function executeAssistantAction(action, { data, company, currentUse
 
   if (action.type === "create_task") {
     if (!canWrite) return { ok: false, message: t("aiNoPermission") };
-    const station = data.stations.find((s) => matches(s.name, action.station || ""));
-    const assignee = data.employees.find((e) => matches(e.name, action.assignee || ""));
+    const station = action.station ? data.stations.find((s) => matches(s.name, action.station)) : null;
+    const assignee = action.assignee ? data.employees.find((e) => matches(e.name, action.assignee)) : null;
+    if ((action.station && !station) || (action.assignee && !assignee)) return { ok: false, message: t("aiNoData") };
     const assignmentType = assignee ? "member" : station ? "station_team" : "hq_team";
     try {
       const res = await base44.functions.invoke("supabaseTargets", {
         action: "createTarget",
-        userRole: currentUser.role,
+        ...sessionAuth,
         managerId: currentUser.id,
         title: action.title || "Untitled task",
         description: action.description || "",
@@ -213,15 +215,14 @@ export async function executeAssistantAction(action, { data, company, currentUse
     try {
       const res = await base44.functions.invoke("supabaseTargets", {
         action: "listTargets",
-        userRole: currentUser.role,
+        ...sessionAuth,
         userId: currentUser.id,
-        stationId: currentUser.stationId || null,
-        managedStations: currentUser.managedStations || [],
       });
       const tg = (res?.data?.targets || []).find((x) => matches(x.title, action.taskTitle || ""));
       if (!tg) return { ok: false, message: t("aiNoData") };
       await base44.functions.invoke("supabaseTargets", {
         action: "updateProgress",
+        ...sessionAuth,
         targetId: tg.id,
         amount: Number(action.amount) || 1,
         userId: currentUser.id,
@@ -236,41 +237,26 @@ export async function executeAssistantAction(action, { data, company, currentUse
     }
   }
 
-  if (action.type === "add_planner_item") {
-    if (!action.title) return { ok: false, message: t("aiActionFailed") };
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    const date = /^\d{4}-\d{2}-\d{2}$/.test(action.date || "") ? action.date : today;
-    updateCompany(company.id, (d) => {
-      d.plannerItems = d.plannerItems || [];
-      d.plannerItems.push({
-        id: "pln_" + Math.random().toString(36).slice(2, 11),
-        date,
-        time: /^\d{2}:\d{2}$/.test(action.time || "") ? action.time : "",
-        title: action.title,
-        done: false,
-        createdAt: new Date().toISOString(),
-      });
+  if (action.type === "report_task_issue") {
+    const res = await base44.functions.invoke("supabaseTargets", { action: "listTargets", ...sessionAuth, userId: currentUser.id });
+    const task = (res?.data?.targets || []).find((entry) => matches(entry.title, action.taskTitle || ""));
+    if (!task || !String(action.description || "").trim()) return { ok: false, message: t("aiNoData") };
+    await base44.functions.invoke("supabaseTargets", {
+      action: "addComment", ...sessionAuth, targetId: task.id,
+      content: String(action.description).trim(), files: [], isIssue: true,
     });
-    // Google Calendar sync (best-effort)
-    base44.functions.invoke("calendarSync", { title: action.title, date, time: action.time || "" }).catch(() => {});
-    return { ok: true, message: `${t("dayPlanner")}: ${action.title} ✔` };
+    return { ok: true, message: document.documentElement.dir === "rtl" ? "تم تسجيل مشكلة المهمة وإشعار المسؤول." : "Task issue reported and the responsible manager was notified." };
   }
 
-  if (action.type === "update_task_status") {
-    if (!canWrite) return { ok: false, message: t("aiNoPermission") };
-    const valid = ["pending", "in_progress", "completed", "stopped"];
-    if (!valid.includes(action.newStatus)) return { ok: false, message: t("aiActionFailed") };
-    let found = false;
-    updateCompany(company.id, (d) => {
-      const task = d.tasks.find((tk) => matches(tk.title, action.taskTitle || ""));
-      if (task) {
-        task.status = action.newStatus;
-        if (action.newStatus === "completed") task.progress = task.dailyTarget || task.progress;
-        found = true;
-      }
+  if (action.type === "send_station_message") {
+    const station = data.stations.find((entry) => matches(entry.name, action.station || ""));
+    if (!station || !String(action.message || "").trim()) return { ok: false, message: t("aiNoData") };
+    await base44.functions.invoke("supabaseTargets", {
+      action: "sendChatMessage", ...sessionAuth, stationId: station.id,
+      userId: currentUser.id, userName: currentUser.name,
+      text: String(action.message).trim(), files: [],
     });
-    return found ? { ok: true, message: t("aiStatusUpdated") } : { ok: false, message: t("aiNoData") };
+    return { ok: true, message: document.documentElement.dir === "rtl" ? `تم إرسال الرسالة إلى ${station.name}.` : `Message sent to ${station.name}.` };
   }
 
   return { ok: false, message: t("aiActionFailed") };
