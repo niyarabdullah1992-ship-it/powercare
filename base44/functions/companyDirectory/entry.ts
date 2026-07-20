@@ -496,6 +496,14 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.CompanyAccount.update(existing[0].id, fields);
       } else {
         await base44.asServiceRole.entities.CompanyAccount.create(fields);
+        // Registration can be submitted twice by overlapping browser requests. Keep
+        // one deterministic company record so the same email never appears as a new account.
+        const duplicateRows = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId }, 'created_date');
+        const keeper = duplicateRows[0];
+        for (const duplicate of duplicateRows.slice(1)) {
+          await base44.asServiceRole.entities.CompanyAccount.delete(duplicate.id).catch(() => null);
+        }
+        if (keeper) await base44.asServiceRole.entities.CompanyAccount.update(keeper.id, fields);
         // Brand-new signup — issue the creator an owner session immediately.
         token = await makeSession(base44, companyId, null, 'owner');
       }
