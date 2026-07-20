@@ -54,13 +54,14 @@ export default function ExecutiveDashboard() {
   }, [data]);
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold">{ar ? "اللوحة التنفيذية" : "Executive Dashboard"}</h1>
-        <p className="mt-1 text-sm font-body text-muted-foreground">
+    <div className="ops-command-dashboard space-y-5">
+      <header className="ops-command-header">
+        <p className="ops-eyebrow">PowerCare / {ar ? "القيادة التنفيذية" : "Executive Command"}</p>
+        <h1 className="mt-2 font-heading text-3xl font-semibold md:text-4xl">{ar ? "اللوحة التنفيذية" : "Executive Dashboard"}</h1>
+        <p className="mt-2 max-w-2xl text-sm font-body text-white/60">
           {ar ? "نظرة شاملة لحظية على جميع المحطات والفرق ومؤشرات الأداء" : "A live, company-wide view of every station, team and KPI"}
         </p>
-      </div>
+      </header>
       <ExecKpiCards stats={stats} lang={lang} />
       <ExecStationsMap stations={data?.stations || []} safety={data?.safety || []} lang={lang} />
       <ExecStationTable rows={stationRows} lang={lang} />

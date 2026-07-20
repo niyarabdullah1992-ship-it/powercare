@@ -103,7 +103,7 @@ export default function Dashboard() {
 
   if (isEmployee) return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="space-y-6">
+      <div className="field-dashboard space-y-5">
         {welcomeHero}
         <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
         <EmployeeDashboard user={currentUser} company={company} data={data} />
@@ -115,7 +115,7 @@ export default function Dashboard() {
   if (currentUser.role === "station_manager" || currentUser.role === "pgm") {
     return (
       <PullToRefresh onRefresh={handleRefresh}>
-        <div className="space-y-6">
+        <div className="ops-command-dashboard space-y-6">
           {welcomeHero}
           <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
           <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
@@ -207,7 +207,7 @@ export default function Dashboard() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-    <div className="space-y-8">
+    <div className="ops-command-dashboard space-y-6">
       <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
       <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
       <OnboardingChecklist data={data} lang={lang} t={t} />

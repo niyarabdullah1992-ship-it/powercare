@@ -77,7 +77,7 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
     .slice(0, 8);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="border-b border-border pb-6 flex items-end justify-between flex-wrap gap-3">
         <div>
           <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2" dir="auto">{user.name}</p>

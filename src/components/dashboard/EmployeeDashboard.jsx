@@ -44,7 +44,7 @@ export default function EmployeeDashboard({ user, company, data }) {
   const urgent = open.filter((tg) => tg.priority === "urgent");
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {/* First-login onboarding tour (shows once per employee) */}
       <EmployeeTour user={user} company={company} />
       {/* One-tap GPS check-in — the very first thing on app open */}
@@ -74,20 +74,20 @@ export default function EmployeeDashboard({ user, company, data }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 rounded-2xl overflow-hidden border border-border divide-x divide-y sm:divide-y-0 divide-border rtl:divide-x-reverse">
-        <div className="p-6 bg-card">
+      <div className="grid grid-cols-3 rounded-2xl overflow-hidden border border-border divide-x divide-border rtl:divide-x-reverse">
+        <div className="bg-card p-3 sm:p-6">
           <ListTodo className="w-4 h-4 mb-5 text-accent" strokeWidth={1.5} />
-          <p className="hero-title text-4xl">{open.length}</p>
+          <p className="hero-title text-3xl sm:text-4xl">{open.length}</p>
           <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mt-2">{t("openTasks")}</p>
         </div>
-        <div className="p-6 bg-card">
+        <div className="bg-card p-3 sm:p-6">
           <CheckCircle2 className="w-4 h-4 mb-5 text-foreground" strokeWidth={1.5} />
-          <p className="hero-title text-4xl">{completed.length}</p>
+          <p className="hero-title text-3xl sm:text-4xl">{completed.length}</p>
           <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mt-2">{t("completed")}</p>
         </div>
-        <div className="p-6 bg-card">
+        <div className="bg-card p-3 sm:p-6">
           <AlertTriangle className="w-4 h-4 mb-5 text-destructive" strokeWidth={1.5} />
-          <p className="hero-title text-4xl">{urgent.length}</p>
+          <p className="hero-title text-3xl sm:text-4xl">{urgent.length}</p>
           <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mt-2">{t("urgent")}</p>
         </div>
       </div>
