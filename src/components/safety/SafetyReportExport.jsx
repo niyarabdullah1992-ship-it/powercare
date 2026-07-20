@@ -156,7 +156,7 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
   return (
     <div className="p-4 rounded-xl border border-border bg-card space-y-3">
       <p className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-        <CalendarRange className="w-3.5 h-3.5" /> {L("تقرير السلامة (PDF / Excel)", "Safety report (PDF / Excel)")}
+        <CalendarRange className="w-3.5 h-3.5" /> {L("تقرير السلامة حسب الفترة", "Safety report by period")}
       </p>
 
       <SafetyStationPicker stations={stations} value={stationFilter} onChange={setStationFilter} lang={lang} />
