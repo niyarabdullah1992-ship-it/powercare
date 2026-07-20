@@ -90,7 +90,6 @@ function RequireAuth({ children }) {
   // While the workspace is still loading (fresh device / restored account),
   // show a spinner instead of the blank page that pages render without a user.
   if (!data || (session.userId && !currentUser)) return <PageLoader />;
-  if (currentUser?.role === "warehouse_manager" && !["/app/inventory", "/app/help"].includes(location.pathname)) return <Navigate to="/app/inventory" replace />;
   return <TrialExpiryGate company={company}><Layout>{children}</Layout></TrialExpiryGate>;
 }
 
