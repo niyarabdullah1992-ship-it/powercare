@@ -19,10 +19,17 @@ function toBase64Url(str) {
 //   in the verification registry and the creator is notified.
 
 const rid = () => crypto.randomUUID().replace(/-/g, '');
+const trustedDocumentHosts = new Set(['media.base44.com']);
 const isAllowedDocUrl = (value) => {
   try {
-    const url = new URL(String(value || ''));
-    return url.protocol === 'https:' && Boolean(url.hostname) && url.username === '' && url.password === '';
+    const raw = String(value || '');
+    if (!raw || raw.length > 2000) return false;
+    const url = new URL(raw);
+    return url.protocol === 'https:'
+      && trustedDocumentHosts.has(url.hostname.toLowerCase())
+      && (url.port === '' || url.port === '443')
+      && url.username === ''
+      && url.password === '';
   } catch {
     return false;
   }
