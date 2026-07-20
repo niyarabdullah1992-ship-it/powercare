@@ -35,7 +35,10 @@ export default function Inventory() {
   const load = async () => { setLoading(true); try { setState(await inventoryCall(session, "list")); } finally { setLoading(false); } };
   useEffect(() => { load(); }, [session?.token]);
   useEffect(() => {
-    if (!selectedStation && state.locations.length) setSelectedStation(currentUser?.stationId || state.locations[0].stationId);
+    if (!state.locations.length) return;
+    const stationIds = state.locations.map((station) => station.stationId || station.id);
+    const preferred = currentUser?.stationId;
+    if (!stationIds.includes(selectedStation)) setSelectedStation(stationIds.includes(preferred) ? preferred : stationIds[0]);
   }, [state.locations, currentUser?.stationId, selectedStation]);
 
   const run = async (action, payload) => {
