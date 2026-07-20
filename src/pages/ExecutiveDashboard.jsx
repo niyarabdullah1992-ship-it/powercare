@@ -54,16 +54,22 @@ export default function ExecutiveDashboard() {
   }, [data]);
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold">{ar ? "اللوحة التنفيذية" : "Executive Dashboard"}</h1>
+    <div className="space-y-5 rounded-3xl bg-ops-bg p-3 text-ops-ink sm:p-5 lg:p-6">
+      <header className="rounded-2xl border border-ops-border bg-ops-surface p-5 shadow-sm sm:p-6">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-ops-gold">PowerCare Intelligence</p>
+        <h1 className="mt-1 font-heading text-3xl font-semibold">{ar ? "اللوحة التنفيذية" : "Executive Dashboard"}</h1>
         <p className="mt-1 text-sm font-body text-muted-foreground">
           {ar ? "نظرة شاملة لحظية على جميع المحطات والفرق ومؤشرات الأداء" : "A live, company-wide view of every station, team and KPI"}
         </p>
-      </div>
-      <ExecKpiCards stats={stats} lang={lang} />
-      <ExecStationsMap stations={data?.stations || []} safety={data?.safety || []} lang={lang} />
-      <ExecStationTable rows={stationRows} lang={lang} />
+      </header>
+      <section className="space-y-3">
+        <h2 className="text-end font-heading text-xl font-semibold">{ar ? "المؤشرات والتنبيهات" : "Indicators & Alerts"}</h2>
+        <ExecKpiCards stats={stats} lang={lang} />
+      </section>
+      <section className="grid gap-4 xl:grid-cols-[1.15fr,1fr]">
+        <ExecStationsMap stations={data?.stations || []} safety={data?.safety || []} lang={lang} />
+        <ExecStationTable rows={stationRows} lang={lang} />
+      </section>
     </div>
   );
 }

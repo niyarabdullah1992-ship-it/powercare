@@ -77,8 +77,8 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
     .slice(0, 8);
 
   return (
-    <div className="space-y-8">
-      <div className="border-b border-border pb-6 flex items-end justify-between flex-wrap gap-3">
+    <div className="space-y-5 rounded-3xl bg-ops-bg p-3 text-ops-ink sm:p-5 lg:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-ops-border bg-ops-surface p-5 shadow-sm">
         <div>
           <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2" dir="auto">{user.name}</p>
           <h1 className="hero-title text-4xl md:text-5xl">{t("myStation")}</h1>
@@ -96,7 +96,7 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
         {stations.map((s) => {
           const safety = data.safety.find((sf) => sf.stationId === s.id);
           return (
-            <div key={s.id} className="p-4 rounded-xl border border-border bg-card flex flex-wrap items-center gap-x-6 gap-y-2">
+            <div key={s.id} className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl border border-ops-border bg-ops-surface p-4 shadow-sm">
               <div className="flex items-center gap-2">
                 <Radio className="w-4 h-4 text-accent" strokeWidth={1.5} />
                 <span className="text-sm font-medium font-body" dir="auto">{s.name}</span>
@@ -139,7 +139,7 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
       </div>
 
       {/* Pending reports needing review */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="rounded-2xl border border-ops-border bg-ops-surface p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="hero-title text-2xl">{t("pendingReports")}</h3>
           <Link to="/app/daily-report" className="text-xs text-muted-foreground font-body hover:text-foreground underline">
@@ -164,7 +164,7 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
       <TeamStatusPanel employees={team} t={t} />
 
       {/* Recent activity */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="rounded-2xl border border-ops-border bg-ops-surface p-6 shadow-sm">
         <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{formatDate(new Date(), lang, { month: "short" })}</p>
         <h3 className="hero-title text-2xl mb-4">{t("recentActivity")}</h3>
         <div className="divide-y divide-border">

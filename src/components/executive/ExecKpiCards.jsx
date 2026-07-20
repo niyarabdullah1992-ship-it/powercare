@@ -15,7 +15,7 @@ export default function ExecKpiCards({ stats, lang }) {
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
       {cards.map((c) => (
-        <div key={c.label} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div key={c.label} className="rounded-2xl border border-ops-border bg-ops-surface p-4 shadow-sm">
           <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${c.alert ? "bg-destructive/10 text-destructive" : "bg-accent/10 text-accent"}`}>
             <c.icon className="h-4 w-4" strokeWidth={1.75} />
           </span>

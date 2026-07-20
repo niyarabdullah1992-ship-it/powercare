@@ -13,7 +13,7 @@ export default function ExecStationTable({ rows, lang }) {
   const ar = lang === "ar";
   const levelLabel = { red: ar ? "حرجة" : "Critical", amber: ar ? "متابعة" : "Watch", green: ar ? "آمنة" : "Safe", none: ar ? "غير مقيّمة" : "N/A" };
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-ops-border bg-ops-surface shadow-sm">
       <div className="flex items-center gap-2 px-5 py-3.5 border-b border-border">
         <Radio className="h-4 w-4 text-accent" strokeWidth={1.75} />
         <h3 className="font-heading text-base font-semibold">{ar ? "حالة المحطات" : "Station Status"}</h3>
