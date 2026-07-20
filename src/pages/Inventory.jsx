@@ -63,6 +63,7 @@ export default function Inventory() {
       const code = error?.response?.data?.code;
       const reversalErrors = {
         INSUFFICIENT_REVERSAL_STOCK: ar ? "لا يمكن التراجع لأن الرصيد الحالي لا يكفي؛ ربما تم استهلاك الكمية أو نقلها." : "Cannot reverse because current stock is insufficient; the quantity may have been consumed or moved.",
+        REVERSAL_HAS_DEPENDENCIES: ar ? "انتقلت هذه الكمية أو صُرفت لاحقًا. تراجع عن الحركات الأحدث أولًا." : "This quantity was transferred or issued later. Reverse the newer movements first.",
         MOVEMENT_ALREADY_REVERSED: ar ? "تم التراجع عن هذه الحركة مسبقاً." : "This movement has already been reversed.",
         REVERSAL_REASON_REQUIRED: ar ? "سبب التراجع مطلوب." : "A reversal reason is required.",
       };

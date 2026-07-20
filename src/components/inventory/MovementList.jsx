@@ -18,6 +18,6 @@ export default function MovementList({ movements, items, stations, employees = [
   };
   return <div className="space-y-3"><div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 lg:flex-row lg:items-center lg:justify-between"><MovementFilters stationId={stationId} type={type} stations={stations} onStation={setStationId} onType={setType} ar={ar} /><MovementExportButtons movements={filtered} items={items} stations={stations} employees={employees} ar={ar} /></div>
     <div className="space-y-3">{filtered.map((entry) => <MovementCard key={entry.id} entry={entry} itemName={itemName} stationName={stationName} personName={personName} canReverse={canReverse} onReverse={() => setReversing(entry)} ar={ar} />)}{!filtered.length && <p className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">{ar ? "لا توجد حركات مطابقة." : "No matching movements."}</p>}</div>
-    <ReverseMovementDialog movement={reversing} items={items} stations={stations} onClose={() => setReversing(null)} onConfirm={(reason) => onReverse(reversing.id, reason)} ar={ar} />
+    <ReverseMovementDialog movement={reversing} movements={movements} items={items} stations={stations} onClose={() => setReversing(null)} onConfirm={(reason) => onReverse(reversing.id, reason)} ar={ar} />
   </div>;
 }

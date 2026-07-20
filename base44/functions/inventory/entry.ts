@@ -192,6 +192,12 @@ Deno.serve(async (req) => {
 
       const debitStationId = original.movementType === "issue" ? null : original.toLocationId;
       const creditStationId = original.movementType === "purchase" ? null : original.fromLocationId;
+      if (debitStationId) {
+        const itemMovements = await base44.asServiceRole.entities.StockMovement.filter({ companyId: auth.companyId, itemId: item.id }, "-created_date", 300);
+        const originalTime = new Date(original.created_date).getTime();
+        const laterOutbound = itemMovements.filter((entry) => entry.id !== original.id && !entry.isReversal && !entry.reversedAt && entry.fromLocationId === debitStationId && new Date(entry.created_date).getTime() > originalTime);
+        if (laterOutbound.length) return Response.json({ error: "This stock was transferred or issued later. Reverse the newer movements first.", code: "REVERSAL_HAS_DEPENDENCIES", dependentMovementIds: laterOutbound.map((entry) => entry.id) }, { status: 409 });
+      }
       if ((debitStationId && balanceAt(item, debitStationId) < quantity) || (!debitStationId && !creditStationId)) return Response.json({ error: "Current stock is insufficient because some of this quantity has already been consumed or moved", code: "INSUFFICIENT_REVERSAL_STOCK" }, { status: 409 });
       let next = balances(item);
       const debitBefore = debitStationId ? balanceAt(item, debitStationId) : null;
