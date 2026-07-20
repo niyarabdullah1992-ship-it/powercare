@@ -134,6 +134,20 @@
       ],
       "description": "Purchase timestamp in ISO format."
     },
+    "invoiceUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Uploaded purchase invoice file URL."
+    },
+    "invoiceName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original purchase invoice file name."
+    },
     "imageUrls": {
       "type": "array",
       "items": {
