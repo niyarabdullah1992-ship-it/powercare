@@ -72,14 +72,14 @@ Deno.serve(async (req) => {
     const isWarehouse = false;
     const isSenior = seniorRoles.includes(auth.role);
     const isStationOperator = stationRoles.includes(auth.role) && !!auth.stationId;
-    const canPurchase = isStationOperator;
-    const canCreateItem = isStationOperator;
+    const canPurchase = isStationOperator || isSenior;
+    const canCreateItem = isStationOperator || isSenior;
     const canApproveProcurement = false;
     const canReceiveProcurement = false;
     const allStationIds = stations.map((station) => station.stationId);
     const visibleIds = isSenior ? allStationIds : isStationOperator ? [auth.stationId] : [];
     const visible = new Set(visibleIds);
-    const ensureStation = (id) => isStationOperator && id === auth.stationId;
+    const ensureStation = (id) => isSenior ? allStationIds.includes(id) : isStationOperator && id === auth.stationId;
     const warehouseGuard = () => Response.json({ error: "This workflow is no longer available" }, { status: 410 });
     const getItem = async (id) => (await base44.asServiceRole.entities.InventoryItem.filter({ id, companyId: auth.companyId }))[0];
     const balances = (item) => Array.isArray(item.locationBalances) ? item.locationBalances.map((entry) => ({ locationId: entry.locationId, quantity: Number(entry.quantity) || 0 })) : [];

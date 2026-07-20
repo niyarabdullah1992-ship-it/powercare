@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import MultiImageUploader from "@/components/inventory/MultiImageUploader";
 import MobileSelect from "@/components/mobile/MobileSelect";
 
@@ -7,6 +7,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 export default function ItemForm({ stations, defaultStationId, onSubmit, ar }) {
   const [imageUrls, setImageUrls] = useState([]);
   const [locationId, setLocationId] = useState(defaultStationId || "");
+  useEffect(() => { setLocationId(defaultStationId || ""); }, [defaultStationId]);
   const submit = async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
