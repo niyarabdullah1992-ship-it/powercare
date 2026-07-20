@@ -44,7 +44,31 @@ Deno.serve(async (req) => {
       }
     }
 
-    const stations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
+    let stations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
+    // The owner-controlled local directory is used only to repair missing persisted
+    // station rows. This keeps every module on the same canonical station roster.
+    if (auth.owner && Array.isArray(body.stations) && body.stations.length) {
+      const existingIds = new Set(stations.map((station) => station.stationId));
+      const missing = body.stations
+        .filter((station) => station?.id && !existingIds.has(station.id))
+        .map((station) => ({
+          stationId: station.id,
+          companyId: auth.companyId,
+          name: String(station.name || "Station"),
+          location: String(station.location || ""),
+          type: String(station.type || ""),
+          status: String(station.status || "active"),
+          managerId: station.managerId || null,
+          lat: station.lat != null && station.lat !== "" && Number.isFinite(Number(station.lat)) ? Number(station.lat) : null,
+          lng: station.lng != null && station.lng !== "" && Number.isFinite(Number(station.lng)) ? Number(station.lng) : null,
+          radiusMeters: station.radiusMeters != null && station.radiusMeters !== "" && Number.isFinite(Number(station.radiusMeters)) ? Number(station.radiusMeters) : null,
+          isCentralWarehouse: station.isCentralWarehouse === true,
+        }));
+      if (missing.length) {
+        await base44.asServiceRole.entities.Station.bulkCreate(missing);
+        stations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
+      }
+    }
     const centralWarehouseId = "central_warehouse";
     const warehouseAccess = auth.owner || ["director", "warehouse_manager"].includes(auth.role);
     const canPurchase = auth.owner || managerRoles.includes(auth.role);

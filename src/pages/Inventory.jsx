@@ -23,7 +23,7 @@ import { toast } from "@/components/ui/use-toast";
 const emptyData = { items: [], requestItems: [], movements: [], purchases: [], procurementRequests: [], purchaseOrders: [], requests: [], stations: [], locations: [], transferStations: [], employees: [], canManage: false, canPurchase: false, canCreateItem: false, canIssueToWork: false, canDelete: false, canApproveProcurement: false, canReceiveProcurement: false, canViewAllPurchases: false, canWarehouseManage: false, canTransfer: false, centralWarehouseId: null };
 
 export default function Inventory() {
-  const { session, currentUser } = useAuth();
+  const { session, currentUser, data } = useAuth();
   const { lang, t } = useI18n();
   const ar = lang === "ar";
   const [active, setActive] = useState("overview");
@@ -31,9 +31,10 @@ export default function Inventory() {
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedStation, setSelectedStation] = useState(currentUser?.stationId || "");
+  const stationVersion = (data?.stations || []).map((station) => station.id).sort().join("|");
 
-  const load = async () => { setLoading(true); try { setState(await inventoryCall(session, "list")); } finally { setLoading(false); } };
-  useEffect(() => { load(); }, [session?.token]);
+  const load = async () => { setLoading(true); try { setState(await inventoryCall(session, "list", { stations: data?.stations || [] })); } finally { setLoading(false); } };
+  useEffect(() => { load(); }, [session?.companyId, stationVersion]);
   useEffect(() => {
     if (!state.locations.length) return;
     const stationIds = state.locations.map((station) => station.stationId || station.id);
