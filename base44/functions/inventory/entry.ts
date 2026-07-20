@@ -93,21 +93,17 @@ Deno.serve(async (req) => {
     const movement = async (data) => await base44.asServiceRole.entities.StockMovement.create({ companyId: auth.companyId, performedBy: auth.userId || auth.name, notes: "", ...data });
 
     if (body.action === "list") {
-      const [items, movements, requests, employees, procurementRequests, purchaseOrders] = await Promise.all([
+      const [items, movements, requests, employees] = await Promise.all([
         base44.asServiceRole.entities.InventoryItem.filter({ companyId: auth.companyId }, "-updated_date", 500),
         base44.asServiceRole.entities.StockMovement.filter({ companyId: auth.companyId }, "-created_date", 300),
         base44.asServiceRole.entities.MaterialRequest.filter({ companyId: auth.companyId }, "-created_date", 300),
         base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId }),
-        base44.asServiceRole.entities.ProcurementRequest.filter({ companyId: auth.companyId }, "-created_date", 300),
-        base44.asServiceRole.entities.PurchaseOrder.filter({ companyId: auth.companyId }, "-created_date", 300),
       ]);
       const scopedItems = items.filter((item) => isSenior || balances(item).some((entry) => visible.has(entry.locationId))).map((item) => isSenior ? item : ({ ...item, quantity: balanceAt(item, auth.stationId), currentLocationId: auth.stationId, locationBalances: balances(item).filter((entry) => visible.has(entry.locationId)) }));
       const scopedRequests = requests.filter((request) => isSenior || visible.has(request.stationId) || visible.has(request.sourceStationId));
       const scopedMovements = movements.filter((entry) => isSenior || visible.has(entry.fromLocationId) || visible.has(entry.toLocationId));
       const scopedStations = stations.filter((station) => isSenior || visible.has(station.stationId));
       const purchases = scopedMovements.filter((entry) => entry.movementType === "purchase");
-      const scopedProcurementRequests = procurementRequests.filter((entry) => isSenior || visible.has(entry.stationId));
-      const scopedPurchaseOrders = purchaseOrders.filter((entry) => isSenior || visible.has(entry.stationId));
       return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, purchases, procurementRequests: [], purchaseOrders: [], requests: scopedRequests, stations: scopedStations, locations: scopedStations, transferStations: stations, employees, canManage: isStationOperator, canPurchase, canCreateItem, canIssueToWork: isStationOperator, canRequest: isStationOperator || isSenior, canReviewRequests: isStationOperator, canDelete: false, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: isSenior, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null });
     }
 
@@ -267,6 +263,10 @@ Deno.serve(async (req) => {
     return Response.json({ error: "Unknown action" }, { status: 400 });
   } catch (error) {
     console.error("Inventory error", error);
-    return Response.json({ error: error.message }, { status: 500 });
+    const rateLimited = String(error?.message || "").toLowerCase().includes("rate limit");
+    return Response.json(
+      { error: rateLimited ? "Inventory is busy. Please retry shortly." : error.message },
+      { status: rateLimited ? 429 : 500, headers: rateLimited ? { "Retry-After": "1" } : {} },
+    );
   }
 });
