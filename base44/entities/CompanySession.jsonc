@@ -24,6 +24,13 @@
     "expiresAt": {
       "type": "string",
       "description": "ISO timestamp after which this session is invalid."
+    },
+    "lastSeenAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Latest website heartbeat used to identify users currently online."
     }
   },
   "required": [

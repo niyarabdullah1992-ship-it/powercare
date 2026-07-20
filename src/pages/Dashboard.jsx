@@ -257,7 +257,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <TeamStatusPanel employees={teamEmployees} t={t} />
+      <TeamStatusPanel employees={teamEmployees} companyId={company.id} t={t} lang={lang} />
 
       {/* Recent activity */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">

@@ -37,6 +37,15 @@ const TOKENS_KEY = "powercare_tokens";
 export function getCompanyToken(companyId) {
   return read(TOKENS_KEY, {})[companyId] || null;
 }
+export async function sendPresenceHeartbeat(companyId) {
+  if (!companyId) return;
+  await invokeDirectory({ action: "presenceHeartbeat", companyId });
+}
+export async function getOnlineEmployeeIds(companyId) {
+  if (!companyId) return [];
+  const res = await invokeDirectory({ action: "getOnlineEmployees", companyId });
+  return res?.data?.employeeIds || [];
+}
 function setCompanyToken(companyId, token) {
   if (!companyId || !token) return;
   const map = read(TOKENS_KEY, {});

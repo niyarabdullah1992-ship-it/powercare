@@ -4,6 +4,7 @@ import {
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
   hydrateBlobFromEntity, BLOB_CATEGORIES, getLastLocalWriteAt, fetchCloudVersions, setAuditActor,
   repairOwnerSession, cacheCloudData, googleCompanyLogin, companyAccountExists, ensureLocalCompany,
+  sendPresenceHeartbeat,
 } from "./store";
 import { base44 } from "@/api/base44Client";
 
@@ -173,6 +174,20 @@ export function AuthProvider({ children }) {
       }
     });
   }, [session?.companyId, refresh]);
+
+  // Website presence heartbeat — only a visible tab counts as online.
+  useEffect(() => {
+    if (!session?.companyId) return;
+    const beat = () => {
+      if (document.visibilityState === "visible" && navigator.onLine !== false) {
+        sendPresenceHeartbeat(session.companyId).catch(() => {});
+      }
+    };
+    beat();
+    const interval = window.setInterval(beat, 30000);
+    window.addEventListener("focus", beat);
+    return () => { window.clearInterval(interval); window.removeEventListener("focus", beat); };
+  }, [session?.companyId]);
 
   // Live cross-device sync: periodically pull the latest persisted data while the app stays open,
   // so changes made on another device/browser show up here without needing a manual reload.

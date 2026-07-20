@@ -37,14 +37,22 @@ export default function PresenceStatusPicker({ user }) {
       ? (lang === "ar" ? "تم تسجيل الانصراف" : "Checked out")
       : (lang === "ar" ? "لم يسجل الحضور" : "Not checked in");
     return (
-      <span className="flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-body text-muted-foreground">
-        <span className="h-2 w-2 rounded-full bg-slate-400" /> {label}
-      </span>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="flex items-center gap-1.5 rounded-full border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-body text-sky-700">
+          <span className="h-2 w-2 rounded-full bg-sky-500" /> {lang === "ar" ? "متصل بالموقع الإلكتروني" : "Online on website"}
+        </span>
+        <span className="flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-body text-muted-foreground">
+          <span className="h-2 w-2 rounded-full bg-slate-400" /> {label}
+        </span>
+      </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="flex items-center gap-1.5 rounded-full border border-sky-300 bg-sky-50 px-2.5 py-1.5 text-xs font-body text-sky-700">
+        <span className="h-2 w-2 rounded-full bg-sky-500" /> {lang === "ar" ? "متصل بالموقع الإلكتروني" : "Online on website"}
+      </span>
       <span className={`w-2 h-2 rounded-full ${attendanceDot}`} />
       <select
         value={current.key}

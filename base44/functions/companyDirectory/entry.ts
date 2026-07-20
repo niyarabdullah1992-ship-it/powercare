@@ -151,6 +151,7 @@ async function makeSession(base44, companyId, userId, role) {
   await base44.asServiceRole.entities.CompanySession.create({
     companyId, token, userId: userId || null, role,
     expiresAt: new Date(Date.now() + SESSION_TTL_MS).toISOString(),
+    lastSeenAt: new Date().toISOString(),
   });
   return token;
 }
@@ -509,6 +510,22 @@ Deno.serve(async (req) => {
     }
 
     if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Track visible website sessions independently from physical attendance.
+    if (action === 'presenceHeartbeat') {
+      const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: body.sessionToken, companyId });
+      if (sessions[0]) await base44.asServiceRole.entities.CompanySession.update(sessions[0].id, { lastSeenAt: new Date().toISOString() });
+      return Response.json({ ok: true });
+    }
+
+    if (action === 'getOnlineEmployees') {
+      const cutoff = Date.now() - 90000;
+      const sessions = await base44.asServiceRole.entities.CompanySession.filter({ companyId });
+      const employeeIds = [...new Set(sessions
+        .filter((session) => session.userId && new Date(session.expiresAt).getTime() > Date.now() && new Date(session.lastSeenAt || 0).getTime() >= cutoff)
+        .map((session) => session.userId))];
+      return Response.json({ employeeIds });
+    }
 
     if (action === 'updateEmailLanguage') {
       if (auth.role !== 'owner' && !auth.admin) return Response.json({ error: 'Forbidden' }, { status: 403 });

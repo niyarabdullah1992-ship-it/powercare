@@ -4,37 +4,46 @@ import { PRESENCE_OPTIONS } from "@/components/employees/PresenceStatusPicker";
 import { PenLine, Users } from "lucide-react";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import { isActiveAttendance } from "@/lib/attendance";
+import { getOnlineEmployeeIds } from "@/lib/store";
 
 // Manager-facing snapshot of every visible employee's current status: on leave,
 // checked out, live presence (online/away/busy/in a call), or not checked in yet.
 // Memoized — re-renders only when the employee list or translations change.
-function TeamStatusPanel({ employees, t }) {
+function TeamStatusPanel({ employees, companyId, t, lang }) {
   const [rows, setRows] = useState([]);
+  const [onlineIds, setOnlineIds] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!employees.length) { setRows([]); setLoading(false); return; }
+    if (!employees.length) { setRows([]); setOnlineIds([]); setLoading(false); return; }
     let active = true;
-    const load = () => base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: employees.map((e) => e.id) })
-      .then((res) => { if (active) setRows(res?.data?.rows || []); })
-      .catch(() => { if (active) setRows([]); })
+    const load = () => Promise.all([
+      base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: employees.map((e) => e.id) }),
+      getOnlineEmployeeIds(companyId),
+    ]).then(([attendanceRes, online]) => {
+      if (!active) return;
+      setRows(attendanceRes?.data?.rows || []);
+      setOnlineIds(online);
+    }).catch(() => { if (active) { setRows([]); setOnlineIds([]); } })
       .finally(() => { if (active) setLoading(false); });
     setLoading(true);
     load();
-    const timer = window.setInterval(load, 5000);
+    const timer = window.setInterval(load, 10000);
     const refresh = () => load();
     window.addEventListener("attendance-updated", refresh);
     return () => { active = false; window.clearInterval(timer); window.removeEventListener("attendance-updated", refresh); };
-  }, [employees.map((e) => e.id).join(",")]);
+  }, [companyId, employees.map((e) => e.id).join(",")]);
 
   const byEmployee = Object.fromEntries(rows.map((r) => [r.employee_id, r]));
-  const activeEmployees = employees.filter((employee) => isActiveAttendance(byEmployee[employee.id]));
+  const online = new Set(onlineIds);
+  const visibleEmployees = employees.filter((employee) => isActiveAttendance(byEmployee[employee.id]) || online.has(employee.id));
 
   const statusFor = (emp, attendance) => {
     const inZone = attendance?.in_zone === true || attendance?.inZone === true || attendance?.location_status === "inside";
     const manual = attendance?.manual_override === true || attendance?.manualOverride === true || attendance?.location_status === "manual";
     if (inZone) return { labelKey: "insideLocation", dot: "bg-emerald-500" };
     if (manual) return { labelKey: "manual", dot: "bg-violet-500" };
+    if (online.has(emp.id)) return { label: lang === "ar" ? "متصل بالموقع الإلكتروني" : "Online on website", dot: "bg-sky-500" };
     const presence = PRESENCE_OPTIONS.find((o) => o.key === emp.presenceStatus) || PRESENCE_OPTIONS[0];
     return { labelKey: presence.labelKey, dot: presence.dot };
   };
@@ -56,11 +65,11 @@ function TeamStatusPanel({ employees, t }) {
             </div>
           ))}
         </div>
-      ) : activeEmployees.length === 0 ? (
+      ) : visibleEmployees.length === 0 ? (
         <p className="text-sm text-muted-foreground font-body">{t("noAttendanceRecords")}</p>
       ) : (
         <div className="divide-y divide-border">
-          {activeEmployees.map((e) => {
+          {visibleEmployees.map((e) => {
             const att = byEmployee[e.id];
             const status = statusFor(e, att);
             return (
@@ -78,7 +87,7 @@ function TeamStatusPanel({ employees, t }) {
                 </div>
                 <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border text-xs font-body shrink-0">
                   <span className={`w-2 h-2 rounded-full ${status.dot}`} />
-                  {t(status.labelKey)}
+                  {status.label || t(status.labelKey)}
                 </span>
               </div>
             );
