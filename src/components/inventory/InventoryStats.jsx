@@ -1,15 +1,32 @@
 import React from "react";
 import { Boxes, AlertTriangle, ClipboardList, ArrowLeftRight, Check } from "lucide-react";
 
-export default function InventoryStats({ items, requests, movements, ar }) {
+export default function InventoryStats({ items = [], requests = [], movements = [], ar }) {
   const low = items.filter((item) => Number(item.quantity) <= Number(item.minimumStock)).length;
   const pending = requests.filter((request) => request.status === "pending").length;
-  const percent = (value, total) => total ? Math.round((value / total) * 100) : 0;
   const cards = [
-    { Icon: Boxes, label: ar ? "الأصناف" : "Items", value: items.length, pct: 100, tone: "accent", iconClass: "bg-accent/15 text-accent", valueClass: "text-accent", lineClass: "bg-accent" },
-    { Icon: low ? AlertTriangle : Check, label: ar ? "تحت الحد الأدنى" : "Low stock", value: low, pct: percent(low, items.length), tone: low ? "warning" : "good", iconClass: low ? "bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400", valueClass: low ? "text-orange-700 dark:text-orange-400" : "text-emerald-700 dark:text-emerald-400", lineClass: low ? "bg-orange-500" : "bg-emerald-500" },
-    { Icon: ClipboardList, label: ar ? "طلبات معلقة" : "Pending requests", value: pending, pct: percent(pending, requests.length), tone: pending ? "warning" : "neutral", iconClass: pending ? "bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400" : "bg-muted text-muted-foreground", valueClass: pending ? "text-orange-700 dark:text-orange-400" : "text-foreground", lineClass: pending ? "bg-orange-500" : "bg-muted-foreground/40", pulse: pending > 0 },
-    { Icon: ArrowLeftRight, label: ar ? "حركات المخزون" : "Movements", value: movements.length, pct: 100, tone: "movement", iconClass: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300", valueClass: "text-slate-700 dark:text-slate-300", lineClass: "bg-slate-500" },
+    { icon: Boxes, label: ar ? "الأصناف" : "Items", value: items.length, card: "border-accent/30", iconStyle: "bg-accent/15 text-accent", valueStyle: "text-accent", edge: "bg-accent" },
+    { icon: low ? AlertTriangle : Check, label: ar ? "تحت الحد الأدنى" : "Low stock", value: low, card: low ? "border-orange-300" : "border-emerald-300", iconStyle: low ? "bg-orange-100 text-orange-700" : "bg-emerald-100 text-emerald-700", valueStyle: low ? "text-orange-700" : "text-emerald-700", edge: low ? "bg-orange-500" : "bg-emerald-500" },
+    { icon: ClipboardList, label: ar ? "طلبات معلقة" : "Pending requests", value: pending, card: pending ? "border-orange-300" : "border-border", iconStyle: pending ? "bg-orange-100 text-orange-700" : "bg-muted text-muted-foreground", valueStyle: pending ? "text-orange-700" : "text-foreground", edge: pending ? "bg-orange-500" : "bg-muted-foreground/40", alert: pending > 0 },
+    { icon: ArrowLeftRight, label: ar ? "حركات المخزون" : "Movements", value: movements.length, card: "border-slate-300", iconStyle: "bg-slate-100 text-slate-600", valueStyle: "text-slate-700", edge: "bg-slate-500" },
   ];
-  return <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{cards.map(({ Icon, label, value, pct, tone, iconClass, valueClass, lineClass, pulse }) => <div key={label} className={`relative overflow-hidden rounded-xl border p-4 transition-shadow hover:shadow-soft ${tone === "warning" ? "border-orange-200 bg-orange-50/60 dark:border-orange-900 dark:bg-orange-950/20" : tone === "good" ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/20" : "border-border bg-card"}`}><div className="flex items-start justify-between"><span className={`flex h-10 w-10 items-center justify-center rounded-full ${iconClass}`}><Icon className="h-5 w-5" /></span>{pulse && <span className="relative flex h-3 w-3"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-500 opacity-60" /><span className="relative inline-flex h-3 w-3 rounded-full bg-orange-500" /></span>}</div><p className={`mt-3 text-3xl font-bold tabular-nums ${valueClass}`}>{value}</p><p className="text-xs text-muted-foreground">{label}</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full ${lineClass}`} style={{ width: `${Math.max(value > 0 ? 8 : 0, Math.min(pct, 100))}%` }} /></div><div className={`absolute inset-x-0 bottom-0 h-1 ${lineClass}`} /></div>)}</div>;
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {cards.map((card) => {
+        const Icon = card.icon;
+        return (
+          <div key={card.label} className={`relative overflow-hidden rounded-xl border bg-card p-4 ${card.card}`}>
+            <div className="flex items-start justify-between">
+              <span className={`flex h-10 w-10 items-center justify-center rounded-full ${card.iconStyle}`}><Icon className="h-5 w-5" /></span>
+              {card.alert && <span className="h-3 w-3 animate-pulse rounded-full bg-orange-500" />}
+            </div>
+            <p className={`mt-3 text-3xl font-bold tabular-nums ${card.valueStyle}`}>{card.value}</p>
+            <p className="text-xs text-muted-foreground">{card.label}</p>
+            <div className={`absolute inset-x-0 bottom-0 h-1 ${card.edge}`} />
+          </div>
+        );
+      })}
+    </div>
+  );
 }
