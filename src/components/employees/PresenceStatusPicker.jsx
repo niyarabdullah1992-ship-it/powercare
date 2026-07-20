@@ -15,7 +15,7 @@ export const PRESENCE_OPTIONS = [
 // Lets the employee manually set their own presence status. Automatically
 // overridden to "On Leave" (read-only) if they have an approved leave today.
 export default function PresenceStatusPicker({ user }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { company } = useAuth();
   const onLeave = isOnLeaveToday(user);
   const attendance = useAttendancePresence(user?.id);
@@ -28,6 +28,17 @@ export default function PresenceStatusPicker({ user }) {
     return (
       <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-muted text-xs font-body">
         <span className="w-2 h-2 rounded-full bg-sky-500" /> {t("onLeaveStatus")}
+      </span>
+    );
+  }
+
+  if (!checkedIn) {
+    const label = attendance?.check_out_at
+      ? (lang === "ar" ? "تم تسجيل الانصراف" : "Checked out")
+      : (lang === "ar" ? "لم يسجل الحضور" : "Not checked in");
+    return (
+      <span className="flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-body text-muted-foreground">
+        <span className="h-2 w-2 rounded-full bg-slate-400" /> {label}
       </span>
     );
   }
