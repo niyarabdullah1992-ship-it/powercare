@@ -23,6 +23,8 @@ import { logAudit } from "@/lib/auditLog";
 import PageHeader from "@/components/PageHeader";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
+import EmployeeGlobalSearch from "@/components/employees/EmployeeGlobalSearch";
+import { matchesEmployeeSearch } from "@/lib/employeeSearch";
 
 const ROLES = ["employee", "inventory_keeper", "warehouse_manager", "financial_officer", "station_manager", "pgm", "ops_manager", "director"];
 
@@ -121,6 +123,7 @@ export default function Employees() {
         <PageHeader title={t("employees")} description={`${visibleEmployees(currentUser, data).length} ${t("employees").toLowerCase()}`} icon={Users} />
 
         <RolesGuide company={company} />
+        <EmployeeGlobalSearch employees={visibleEmployees(currentUser, data)} stations={stations} company={company} t={t} />
 
         {(canTransfer || currentUser.role === "director") && (
           <div className="p-4 rounded-xl border border-border bg-card">
@@ -229,7 +232,7 @@ export default function Employees() {
   // Station team view — unassigned employees follow the first available station.
   const station = data.stations.find((s) => s.id === selectedStation);
   let team = data.employees.filter((e) => (e.stationId || defaultStationId) === selectedStation || (["pgm", "station_manager"].includes(e.role) && (e.managedStations || []).includes(selectedStation)));
-  if (search) team = team.filter((e) => e.name.toLowerCase().includes(search.toLowerCase()) || e.email.toLowerCase().includes(search.toLowerCase()));
+  if (search) team = team.filter((employee) => matchesEmployeeSearch(employee, search, data.stations, (role) => getRoleLabel(company, role, t)));
   if (roleFilter !== "all") team = team.filter((e) => e.role === roleFilter);
 
   const employeeLimitReached = !canAddEmployee(company, data);
@@ -318,7 +321,7 @@ export default function Employees() {
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute top-1/2 -translate-y-1/2 start-3 text-muted-foreground" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("search")} className="w-full ps-9 pe-3 py-2 rounded-md border border-input text-sm font-body" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={`${t("search")} — ${t("employees")}`} className="w-full ps-9 pe-3 py-2 rounded-md border border-input text-sm font-body" />
         </div>
         <MobileSelect
           value={roleFilter}
