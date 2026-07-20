@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ArrowLeft, ArrowLeftRight, ArrowRight, CalendarDays, ChevronDown, PackageMinus, ShoppingCart, Undo2, UserRound } from "lucide-react";
 import ImageGallery from "@/components/inventory/ImageGallery";
 import MovementBalancePanel from "@/components/inventory/MovementBalancePanel";
+import MovementTracePath from "@/components/inventory/MovementTracePath";
 import { useI18n } from "@/lib/i18n";
 
 export default function MovementCard({ entry, itemName, stationName, personName, canReverse, onReverse, ar }) {
@@ -31,6 +32,7 @@ export default function MovementCard({ entry, itemName, stationName, personName,
       {!purchase && <div className="flex items-center justify-center rounded-full bg-accent/10 p-2 text-accent md:self-center">{ar ? <ArrowLeft className="h-5 w-5" /> : <ArrowRight className="h-5 w-5" />}</div>}
       <MovementBalancePanel label={issue ? (ar ? "المستلم" : "Recipient") : (ar ? "الوجهة" : "Destination")} name={issue ? personName(entry.employeeId) : stationName(entry.toLocationId)} before={destinationBefore} after={destinationAfter} recipient={issue ? (ar ? "تم تسليم الكمية للعمل" : "Quantity issued for work") : ""} tone="destination" ar={ar} />
     </div>
+    <MovementTracePath allocations={entry.traceAllocations} stationName={stationName} ar={ar} />
     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-xs text-muted-foreground"><span className="flex items-center gap-1"><UserRound className="h-3.5 w-3.5" />{ar ? "نفذها: " : "Performed by: "}<b className="text-foreground">{personName(entry.performedBy)}</b></span><div className="flex items-center gap-2">{canReverse && !reversed && !reversal && <button type="button" onClick={onReverse} className="flex items-center gap-1 rounded-lg border border-accent/40 px-2 py-1 text-accent hover:bg-accent/10"><Undo2 className="h-3.5 w-3.5" />{ar ? "تراجع" : "Reverse"}</button>}{expandable && <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-1 rounded-lg border px-2 py-1 text-foreground">{ar ? "تفاصيل العمل" : "Work details"}<ChevronDown className={`h-4 w-4 ${open ? "rotate-180" : ""}`} /></button>}</div></div>
     {open && <div className="border-t border-border bg-muted/30 p-4 text-sm"><div className="grid gap-3 sm:grid-cols-3"><p><span className="text-muted-foreground">{ar ? "مرجع العمل: " : "Work reference: "}</span>{entry.workReference || "—"}</p><p><span className="text-muted-foreground">{ar ? "تاريخ العمل: " : "Work date: "}</span>{entry.workDate || "—"}</p><p><span className="text-muted-foreground">{ar ? "ملاحظات: " : "Notes: "}</span>{entry.notes || "—"}</p></div>{entry.imageUrls?.length ? <div className="mt-4 border-t pt-4"><p className="mb-2 font-medium">{t("completedWorkImages")}</p><ImageGallery images={entry.imageUrls} ar={ar} /></div> : null}</div>}
   </article>;

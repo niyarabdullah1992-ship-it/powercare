@@ -156,6 +156,14 @@
       },
       "maxItems": 10
     },
+    "traceAllocations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Tracked quantity allocations linking each movement to its origin, parent movement, and station route."
+    },
     "reversedBy": {
       "type": [
         "string",
