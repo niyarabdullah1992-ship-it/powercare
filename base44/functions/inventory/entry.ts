@@ -2,7 +2,7 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
 
 // Inventory actions are authorized and scoped by the active company session.
 const stationRoles = ["station_manager", "inventory_keeper", "warehouse_manager"];
-const seniorRoles = ["owner", "director", "ops_manager"];
+const seniorRoles = ["owner", "director", "ops_manager", "pgm"];
 
 Deno.serve(async (req) => {
   try {
@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
       const scopedMovements = movements.filter((entry) => isSenior || visible.has(entry.fromLocationId) || visible.has(entry.toLocationId));
       const scopedStations = stations.filter((station) => isSenior || visible.has(station.stationId));
       const purchases = scopedMovements.filter((entry) => entry.movementType === "purchase");
-      return Response.json({ items: scopedItems, requestItems: activeItems, historyItems: items, movements: scopedMovements, purchases, procurementRequests: [], purchaseOrders: [], requests: scopedRequests, stations: scopedStations, locations: scopedStations, transferStations: stations, employees, canManage: isStationOperator, canPurchase, canCreateItem, canIssueToWork: isStationOperator, canRequest: isStationOperator || isSenior, canReviewRequests: isStationOperator || isSenior, canReviewAllRequests: isSenior, canDelete, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: isSenior, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null });
+      return Response.json({ items: scopedItems, requestItems: activeItems, historyItems: items, movements: scopedMovements, purchases, procurementRequests: [], purchaseOrders: [], requests: scopedRequests, stations: scopedStations, locations: scopedStations, transferStations: stations, employees, canManage: isStationOperator, canPurchase, canCreateItem, canIssueToWork: isStationOperator || isSenior, canIssueFromAnyStation: isSenior, canRequest: isStationOperator || isSenior, canReviewRequests: isStationOperator || isSenior, canReviewAllRequests: isSenior, canDelete, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: isSenior, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null });
     }
 
     if (["submitProcurement", "reviewProcurement", "createPurchaseOrder", "receivePurchaseOrder", "issueRequest"].includes(body.action)) return Response.json({ error: "This workflow is no longer available" }, { status: 410 });
@@ -160,8 +160,8 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "issueToWork") {
-      if (!isStationOperator) return Response.json({ error: "Station inventory permission required" }, { status: 403 });
-      const itemId = String(body.itemId || ""); const stationId = String(auth.stationId || "");
+      if (!isStationOperator && !isSenior) return Response.json({ error: "Station inventory permission required" }, { status: 403 });
+      const itemId = String(body.itemId || ""); const stationId = String(isSenior ? body.fromLocationId || "" : auth.stationId || "");
       const quantity = Number(body.quantity); const employeeId = String(body.employeeId || "");
       const workReference = String(body.workReference || "").trim(); const workDate = String(body.workDate || ""); const notes = String(body.notes || "").trim();
       if (!itemId || !ensureStation(stationId) || !employeeId || !workReference || !/^\d{4}-\d{2}-\d{2}$/.test(workDate) || !Number.isFinite(quantity) || quantity <= 0) return Response.json({ error: "Valid item, station, quantity, recipient and work reference are required" }, { status: 400 });
