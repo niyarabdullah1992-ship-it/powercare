@@ -9,19 +9,19 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const platformUser = await base44.auth.me().catch(() => null);
     let auth = null;
-    if (platformUser?.role === "admin" && body.companyId) auth = { companyId: body.companyId, userId: body.userId || null, role: "owner", name: platformUser.full_name || "Admin", manager: true, owner: true };
-    if (!auth && body.sessionToken && body.companyId) {
+    if (body.sessionToken && body.companyId) {
       const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: body.sessionToken, companyId: body.companyId });
       const session = sessions[0];
       if (session && new Date(session.expiresAt).getTime() > Date.now()) {
-        if (session.role === "owner") auth = { companyId: body.companyId, userId: session.userId || null, role: "owner", name: "Owner", manager: true, owner: true, stationId: null, managedStations: [] };
-        else {
-          const employees = await base44.asServiceRole.entities.Employee.filter({ companyId: body.companyId, employeeId: session.userId });
-          const employee = employees[0];
-          if (employee) auth = { companyId: body.companyId, userId: employee.employeeId, role: employee.role, name: employee.name, manager: stationRoles.includes(employee.role), owner: false, stationId: employee.stationId || null, managedStations: employee.managedStations || [] };
-        }
+        const employees = session.userId
+          ? await base44.asServiceRole.entities.Employee.filter({ companyId: body.companyId, employeeId: session.userId })
+          : [];
+        const employee = employees[0];
+        if (session.role === "owner") auth = { companyId: body.companyId, userId: employee?.employeeId || session.userId || null, role: "owner", name: employee?.name || "Owner", manager: true, owner: true, stationId: null, managedStations: [] };
+        else if (employee) auth = { companyId: body.companyId, userId: employee.employeeId, role: employee.role, name: employee.name, manager: stationRoles.includes(employee.role), owner: false, stationId: employee.stationId || null, managedStations: employee.managedStations || [] };
       }
     }
+    if (!auth && platformUser?.role === "admin" && body.companyId) auth = { companyId: body.companyId, userId: body.userId || null, role: "owner", name: platformUser.full_name || "Admin", manager: true, owner: true };
     if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     // Some company owners enter through their employee identity (for example after
