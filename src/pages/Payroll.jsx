@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { Banknote, Download, Users, CheckCircle2, Wallet, RefreshCw, FileSpreadsheet } from "lucide-react";
+import { Banknote, Users, CheckCircle2, Wallet, RefreshCw, FileText } from "lucide-react";
 import { ensurePayrollRun, getRun, monthKey, netOf, payrollItemIssues, updatePayrollItem, setItemPaid, syncPayrollFromProfiles } from "@/lib/payroll";
 import { printReport } from "@/lib/printReport";
-import { exportExcelColored } from "@/lib/exportExcelColored";
 import PayrollRow from "@/components/payroll/PayrollRow";
+import PayrollReportExport from "@/components/payroll/PayrollReportExport";
 import StationMultiSelect from "@/components/payroll/StationMultiSelect";
 import PayrollSalaryNotice from "@/components/payroll/PayrollSalaryNotice";
 import { canAdjustPayroll, hrScopeStations } from "@/lib/permissions";
@@ -17,6 +17,7 @@ export default function Payroll() {
   const { company, data, currentUser } = useAuth();
   const [month, setMonth] = useState(monthKey());
   const [stationFilter, setStationFilter] = useState([]);
+  const [showReport, setShowReport] = useState(false);
 
   const canView = canAdjustPayroll(currentUser, data);
 
@@ -70,41 +71,6 @@ export default function Payroll() {
     });
   };
 
-  const exportPayroll = () => {
-    printReport({
-      title: ar ? `مسيّر رواتب — ${monthLabel} — ${stationLabel}` : `Payroll Run — ${monthLabel} — ${stationLabel}`,
-      companyName: company.name, periodLabel: monthLabel, dir,
-      logoUrl: branding.logoUrl || "", color: branding.color || "#b07d3f",
-      stats: [
-        { value: visible.length, label: ar ? "الموظفون" : "Employees" },
-        { value: `${totalNet.toLocaleString()} ${currency}`, label: ar ? "إجمالي الصافي" : "Total net" },
-        { value: `${paidCount}/${visible.length}`, label: ar ? "مدفوع" : "Paid" },
-      ],
-      sections: [{
-        heading: ar ? "تفاصيل الرواتب" : "Salary details",
-        headers,
-        rows: visible.map((i) => {
-          const e = employeeForItem(i);
-          return [e?.name || "—", i.base, i.allowances, i.bonus, i.deductions, `${netOf(i).toLocaleString()} ${i.currency}`, i.paid ? (ar ? "مدفوع" : "Paid") : (ar ? "غير مدفوع" : "Unpaid")];
-        }),
-      }],
-    });
-  };
-
-  const exportPayrollExcel = () => {
-    exportExcelColored({
-      filename: `payroll_${month}`,
-      title: ar ? `مسيّر رواتب — ${monthLabel} — ${stationLabel}` : `Payroll Run — ${monthLabel} — ${stationLabel}`,
-      headers,
-      rows: visible.map((item) => {
-        const employee = employeeForItem(item);
-        return [employee?.name || "—", item.base, item.allowances, item.bonus, item.deductions, netOf(item), item.paid ? (ar ? "مدفوع" : "Paid") : (ar ? "غير مدفوع" : "Unpaid")];
-      }),
-      color: branding.color || "#b07d3f",
-      dir,
-    });
-  };
-
   const exportPayslip = (item) => {
     const e = employeeForItem(item);
     printReport({
@@ -151,16 +117,17 @@ export default function Payroll() {
           <button onClick={syncFromProfiles} className="flex items-center gap-1.5 rounded-md border border-input bg-card px-3.5 py-2 text-sm font-body text-foreground hover:bg-secondary">
             <RefreshCw className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تحديث من الملفات الشخصية" : "Refresh from profiles"}
           </button>
-          <button onClick={exportPayrollExcel} className="flex items-center gap-1.5 rounded-md border border-input bg-card px-3.5 py-2 text-sm font-body text-foreground hover:bg-secondary">
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600" strokeWidth={1.75} /> {ar ? "تنزيل Excel" : "Download Excel"}
-          </button>
-          <button onClick={exportPayroll} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-foreground text-background text-sm font-body hover:opacity-90">
-            <Download className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تنزيل PDF" : "Download PDF"}
-          </button>
         </div>
       </div>
 
       <PayrollSalaryNotice ar={ar} />
+
+      <div className="space-y-3">
+        <button type="button" onClick={() => setShowReport((value) => !value)} className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-body ${showReport ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-muted"}`}>
+          <FileText className="h-4 w-4" /> {ar ? "تقرير الرواتب (PDF / Excel)" : "Payroll report (PDF / Excel)"}
+        </button>
+        {showReport && <PayrollReportExport runs={data.payrollRuns || []} employees={payrollEmployees} stations={allowedStations} companyName={company.name} branding={branding} lang={lang} dir={dir} />}
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
