@@ -8,34 +8,34 @@ export default function CommandCenterHero({ companyName, riskScore, activeStatio
   const ar = lang === "ar";
   const state = riskScore >= 70 ? (ar ? "يحتاج تدخلاً" : "Intervention needed") : riskScore >= 40 ? (ar ? "تحت المراقبة" : "Under observation") : (ar ? "مستقر" : "Stable");
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-landing-olive p-6 text-white shadow-xl md:p-8">
-      <div className="absolute -end-16 -top-20 h-64 w-64 rounded-full bg-landing-gold/20 blur-3xl" />
+    <section className="relative overflow-hidden rounded-3xl border border-ops-border bg-ops-surface p-6 text-ops-ink shadow-sm md:p-7">
+      <div className="absolute -end-16 -top-20 h-64 w-64 rounded-full bg-ops-gold/15 blur-3xl" />
       <div className="relative grid gap-7 lg:grid-cols-[1fr,auto] lg:items-end">
         <div>
-          <div className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-landing-gold-light"><Radio className="h-4 w-4 animate-pulse" /> PowerCare Intelligence Live</div>
-          <p className="text-sm text-white/55">{companyName}</p>
+          <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-ops-gold"><Radio className="h-4 w-4 animate-pulse" /> PowerCare Intelligence Live</div>
+          <p className="text-sm text-muted-foreground">{companyName}</p>
           <h1 className="mt-2 font-heading text-4xl font-semibold md:text-6xl">{ar ? "مركز القيادة الذكي" : "Intelligent Command Center"}</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65">{ar ? "صورة تشغيلية موحدة تتوقع المخاطر، ترتب الأولويات، وتحول البيانات إلى قرارات قابلة للتنفيذ." : "One operational picture that predicts risk, prioritizes attention, and turns data into executable decisions."}</p>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">{ar ? "صورة تشغيلية موحدة تتوقع المخاطر، ترتب الأولويات، وتحول البيانات إلى قرارات قابلة للتنفيذ." : "One operational picture that predicts risk, prioritizes attention, and turns data into executable decisions."}</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <div className="relative min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="relative min-w-32 rounded-2xl border border-ops-border bg-ops-bg/60 p-4">
             {breakdown && <StabilityInfoPopover breakdown={breakdown} riskScore={riskScore} ar={ar} companyId={companyId} canEditWeights={canEditWeights} />}
-            <Activity className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{100 - riskScore}%</p><p className="text-xs text-white/50">{state}</p>
+            <Activity className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{100 - riskScore}%</p><p className="text-xs text-muted-foreground">{state}</p>
           </div>
-          <div className="min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4"><BrainCircuit className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{activeStations}</p><p className="text-xs text-white/50">{ar ? "محطات مراقبة" : "Stations monitored"}</p></div>
+          <div className="min-w-32 rounded-2xl border border-ops-border bg-ops-bg/60 p-4"><BrainCircuit className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{activeStations}</p><p className="text-xs text-muted-foreground">{ar ? "محطات مراقبة" : "Stations monitored"}</p></div>
           {safety && (
-            <RouterLink to="/app/safety" className="min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:bg-white/10">
+            <RouterLink to="/app/safety" className="min-w-32 rounded-2xl border border-ops-border bg-ops-bg/60 p-4 transition hover:bg-white/10">
               {safety.criticalStations > 0 || safety.todayIncidents > 0
                 ? <ShieldAlert className="mb-3 h-4 w-4 text-red-400" />
                 : <ShieldCheck className="mb-3 h-4 w-4 text-emerald-400" />}
               {safety.todayIncidents > 0 ? (
-                <><p className="text-3xl font-heading text-red-300">{safety.todayIncidents}</p><p className="text-xs text-white/50">{ar ? "حوادث سلامة اليوم" : "Safety incidents today"}</p></>
+                <><p className="text-3xl font-heading text-red-300">{safety.todayIncidents}</p><p className="text-xs text-muted-foreground">{ar ? "حوادث سلامة اليوم" : "Safety incidents today"}</p></>
               ) : safety.criticalStations > 0 ? (
-                <><p className="text-3xl font-heading text-red-300">{safety.criticalStations}</p><p className="text-xs text-white/50">{ar ? "محطات سلامة حرجة" : "Critical safety stations"}</p></>
+                <><p className="text-3xl font-heading text-red-300">{safety.criticalStations}</p><p className="text-xs text-muted-foreground">{ar ? "محطات سلامة حرجة" : "Critical safety stations"}</p></>
               ) : safety.openHazards > 0 ? (
-                <><p className="text-3xl font-heading">{safety.openHazards}</p><p className="text-xs text-white/50">{ar ? "مخاطر سلامة مفتوحة" : "Open safety hazards"}</p></>
+                <><p className="text-3xl font-heading">{safety.openHazards}</p><p className="text-xs text-muted-foreground">{ar ? "مخاطر سلامة مفتوحة" : "Open safety hazards"}</p></>
               ) : (
-                <><p className="text-3xl font-heading">{ar ? "آمن" : "Safe"}</p><p className="text-xs text-white/50">{ar ? "السلامة (HSE)" : "Safety (HSE)"}</p></>
+                <><p className="text-3xl font-heading">{ar ? "آمن" : "Safe"}</p><p className="text-xs text-muted-foreground">{ar ? "السلامة (HSE)" : "Safety (HSE)"}</p></>
               )}
             </RouterLink>
           )}

@@ -6,7 +6,7 @@ import { MoreHorizontal } from "lucide-react";
 // a count, and a gold action button linking to the relevant page.
 export default function PendingActionsPanel({ items, t }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="rounded-2xl border border-ops-border bg-ops-surface p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-heading text-base font-semibold">{t("pendingActions")}</h3>
         <MoreHorizontal className="h-4 w-4 text-muted-foreground" />

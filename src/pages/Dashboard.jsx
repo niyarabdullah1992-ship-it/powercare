@@ -207,9 +207,8 @@ export default function Dashboard() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-    <div className="space-y-8">
+    <div className="space-y-5 rounded-3xl bg-ops-bg p-3 text-ops-ink sm:p-5 lg:p-6">
       <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
-      <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
       <OnboardingChecklist data={data} lang={lang} t={t} />
       {canEditBranding && (
         <div className="flex justify-end">
@@ -229,22 +228,24 @@ export default function Dashboard() {
         />
       )}
 
-      {/* AI command layer: daily intelligence, predictive risk and executable decisions */}
-      <SmartDailySummary companyId={company.id} lang={lang} t={t} facts={briefFacts} />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <RiskForecastPanel absentCount={absentCount} delayedTasks={delayedTasks} stoppageCount={stoppageCount} criticalStations={criticalStations} openHazards={openHazards} recentIncidents={recentIncidents} lang={lang} />
-        <DecisionQueue pendingReports={pendingReports} delayedTasks={delayedTasks} safetySignals={criticalStations + recentIncidents} lang={lang} />
-      </div>
+      <section className="space-y-3">
+        <h2 className="text-end font-heading text-xl font-semibold">{lang === "ar" ? "المؤشرات والتنبيهات" : "Indicators & Alerts"}</h2>
+        <div className="grid gap-4 xl:grid-cols-[1fr,1.3fr]">
+          <DashboardStatCards attendanceRate={attendanceRate} completed={completed} total={tasks.length} activeMembers={activeMembersCount} totalMembers={teamEmployees.length} t={t} />
+          <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
+        </div>
+      </section>
 
-      {/* Numbered stat cards (WorkForce style) */}
-      <DashboardStatCards
-        attendanceRate={attendanceRate}
-        completed={completed}
-        total={tasks.length}
-        activeMembers={activeMembersCount}
-        totalMembers={teamEmployees.length}
-        t={t}
-      />
+      <section className="space-y-3">
+        <h2 className="text-end font-heading text-xl font-semibold">{lang === "ar" ? "المخاطر والقرارات" : "Risks & Decisions"}</h2>
+        <div className="rounded-3xl bg-ops-dark p-4 text-white shadow-xl sm:p-6">
+          <SmartDailySummary companyId={company.id} lang={lang} t={t} facts={briefFacts} />
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <RiskForecastPanel absentCount={absentCount} delayedTasks={delayedTasks} stoppageCount={stoppageCount} criticalStations={criticalStations} openHazards={openHazards} recentIncidents={recentIncidents} lang={lang} />
+            <DecisionQueue pendingReports={pendingReports} delayedTasks={delayedTasks} safetySignals={criticalStations + recentIncidents} lang={lang} />
+          </div>
+        </div>
+      </section>
 
       {/* Main analytics grid: big trend chart + map & pending actions column */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
