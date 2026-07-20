@@ -581,35 +581,6 @@ export async function companyLogin(email, password) {
   // password-only or offline login. Every login must complete the OTP flow.
   return startLogin(email, password);
 }
-// Per-employee login — verifies the employee's own credentials against the cloud
-// directory, then opens a session as that employee (works from any device/browser).
-export async function employeeLogin(email, password) {
-  try {
-    const res = await invokeDirectory({ action: "employeeLogin", email, password });
-    const result = res?.data;
-    if (!result?.employee) return null;
-    const { companyId, employeeId } = result.employee;
-    setCompanyToken(companyId, result.token);
-    const reg = getRegistry();
-    let company = reg.companies.find((c) => c.id === companyId);
-    if (!company) {
-      company = {
-        id: companyId, name: result.company?.name || "", ownerEmail: result.company?.ownerEmail || "",
-        ownerPassword: null, plan: result.company?.plan || "Starter",
-        allowedEmailDomain: result.company?.allowedEmailDomain || "", subscriptionStart: result.company?.subscriptionStart || null,
-        subscriptionEnd: result.company?.subscriptionEnd || null, createdAt: new Date().toISOString(),
-      };
-      reg.companies.push(company);
-      saveRegistry(reg);
-    }
-    if (!getCompanyData(companyId)) write(companyKey(companyId), emptyCompanyData(company));
-    setSession({ companyId, userId: employeeId });
-    return company;
-  } catch {
-    return null;
-  }
-}
-
 /* ----------------------------- two-step login (email OTP) -----------------------------
    Step 1: startLogin verifies the password server-side; the server emails a 6-digit code
    and returns a pendingId. Step 2: completeLoginOtp exchanges pendingId + code for the
@@ -705,7 +676,7 @@ export async function googleCompanyLogin(preferKind, accountKey) {
   }
 }
 
-export async function completeLoginOtp(pendingId, code, typedPassword, chooseCompanyId) {
+export async function completeLoginOtp(pendingId, code, chooseCompanyId) {
   let result = null;
   try {
     const res = await invokeDirectory({ action: "verifyLoginOtp", pendingId, code, chooseCompanyId: chooseCompanyId || null });
@@ -760,20 +731,6 @@ export async function changeOwnerPassword(companyId, newPassword) {
 export async function setEmployeePassword(companyId, employeeId, email, password) {
   try {
     const res = await invokeDirectory({ action: "setEmployeePassword", companyId, employeeId, email, password });
-    if (res?.data?.ok) {
-      // Automatically email the employee their login credentials.
-      const emp = getCompanyData(companyId)?.employees.find((e) => e.id === employeeId);
-      sendEmailAlert(
-        companyId, email,
-        "بيانات دخولك إلى PowerCare — Your login details",
-        `مرحبًا ${emp?.name || ""}،\n\nتم تفعيل حسابك في منصة PowerCare. بيانات دخولك أدناه، وعند تسجيل الدخول سيصلك رمز تحقق على بريدك:\n\nHello ${emp?.name || ""}, your PowerCare account is now active. Your login details are below — a verification code will be emailed to you at sign-in:`,
-        [
-          { label: "البريد الإلكتروني · Email", value: email },
-          { label: "كلمة المرور · Password", value: password },
-        ],
-        { label: "تسجيل الدخول · Sign in", url: "https://powercares.pro" }
-      );
-    }
     return !!res?.data?.ok;
   } catch {
     return false;
@@ -848,25 +805,6 @@ export function updateCompany(companyId, updater) {
 // Automatic Gmail alerts: emails the assigned employee when a new task is created
 // for them, and emails the responsible manager when a new complaint/report is filed.
 function emailNewEvents(companyId, data, before) {
-  // Welcome email for newly-added employees. Delayed a few seconds so the cloud
-  // employee-directory sync completes first (the mail server only sends to
-  // registered company employees).
-  (data.employees || []).forEach((e) => {
-    if (before.emp.has(e.id) || !e.email) return;
-    const companyName = data.name || "";
-    setTimeout(() => {
-      sendEmailAlert(
-        companyId, e.email,
-        `تم إنشاء حسابك في PowerCare — Your account is ready`,
-        `مرحبًا ${e.name}،\n\nيسعدنا انضمامك! تم إنشاء حسابك في منصة PowerCare${companyName ? ` ضمن شركة "${companyName}"` : ""}. سيزودك مديرك بكلمة المرور، وبعدها يمكنك تسجيل الدخول بهذا البريد.\n\nWelcome ${e.name}! Your PowerCare account${companyName ? ` at "${companyName}"` : ""} has been created. Your manager will provide your password — then sign in with this email.`,
-        [
-          { label: "البريد الإلكتروني · Email", value: e.email },
-          ...(companyName ? [{ label: "الشركة · Company", value: companyName }] : []),
-        ],
-        { label: "تسجيل الدخول · Sign in", url: "https://powercares.pro" }
-      );
-    }, 6000);
-  });
   (data.tasks || []).forEach((t) => {
     if (before.tasks.has(t.id) || !t.assignedTo) return;
     const emp = (data.employees || []).find((e) => e.id === t.assignedTo);

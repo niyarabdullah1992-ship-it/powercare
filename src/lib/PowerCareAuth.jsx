@@ -207,8 +207,7 @@ export function AuthProvider({ children }) {
     };
   }, [session?.companyId, refresh]);
 
-  // Step 1: password check — either logs in directly (offline fallback) or returns
-  // { otpRequired, pendingId } after the server emails a one-time verification code.
+  // Step 1 verifies the password and returns an OTP challenge after the server emails the code.
   const login = async (email, password, preferKind) => {
     const r = await startLogin(email, password, preferKind);
     if (r?.company) refresh();
@@ -216,8 +215,8 @@ export function AuthProvider({ children }) {
   };
 
   // Step 2: exchanges the emailed code for the real session.
-  const verifyOtp = async (pendingId, code, password, chooseCompanyId) => {
-    const c = await completeLoginOtp(pendingId, code, password, chooseCompanyId);
+  const verifyOtp = async (pendingId, code, chooseCompanyId) => {
+    const c = await completeLoginOtp(pendingId, code, chooseCompanyId);
     if (c) refresh();
     return c;
   };

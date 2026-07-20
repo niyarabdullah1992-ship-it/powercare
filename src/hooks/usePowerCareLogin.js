@@ -48,7 +48,7 @@ export default function usePowerCareLogin(returnPath = "/login") {
       setLoading(false);
     }
   };
-  const verify = async (code, companyId) => !!(await verifyOtp(pendingId, code, password, companyId));
+  const verify = async (code, companyId) => !!(await verifyOtp(pendingId, code, companyId));
   const resend = async () => {
     try {
       const result = googleOtpAccountKey
