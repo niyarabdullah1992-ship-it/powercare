@@ -21,7 +21,6 @@ const IMG = {
   hr: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/9bbacd03c_generated_image.png",
   signing: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/09d46b0b4_generated_image.png",
   assistant: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/1dac196eb_generated_image.png",
-  personal: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/2fa2c3798_generated_image.png",
   reports: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/33c9b16c5_generated_image.png",
   stations: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/4ccd0f2b5_generated_image.png",
   employees: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/c346590d6_generated_image.png",
@@ -95,12 +94,12 @@ export const GUIDE_SECTIONS = [
     titleAr: "لوحة التحكم الرئيسية",
     titleEn: "Main Dashboard",
     bodyAr: [
-      "لوحة التحكم هي أول ما يراه المستخدم بعد تسجيل الدخول، وهي تتكيّف تلقائيًا مع دور المستخدم: فالمالك والمدير التنفيذي يريان صورة شاملة للشركة كلها، بينما يرى مدير المحطة بيانات محطته فقط، ويرى الموظف العادي مهامه وحضوره الشخصي، أما حساب «الفرد» فيحصل على لوحة إنتاجية شخصية مستقلة.",
+      "لوحة التحكم هي أول ما يراه المستخدم بعد تسجيل الدخول، وهي تتكيّف تلقائيًا مع دور المستخدم: فالمالك والمدير التنفيذي يريان صورة شاملة للشركة كلها، بينما يرى مدير المحطة بيانات محطته فقط، ويرى الموظف العادي مهامه وحضوره الشخصي.",
       "تعرض اللوحة بطاقات إحصائية فورية: عدد الموظفين، والمحطات النشطة، والمهام الجارية والمتأخرة، ونسب الحضور اليومية، مع رسم بياني لاتجاه الحضور خلال الأيام الماضية. وتتضمن لوحة «الإجراءات المعلّقة» التي تجمع كل ما يحتاج قرارًا من المدير في مكان واحد: طلبات إجازة، وشهادات بانتظار الاعتماد، ومهام بانتظار مراجعة الإنجاز.",
       "كما تضم اللوحة خريطة تفاعلية تُظهر مواقع جميع المحطات تلقائيًا (من الإحداثيات أو اسم المدينة المسجل)، وملخصًا يوميًا ذكيًا يولّده الذكاء الاصطناعي يلخّص أهم ما حدث في الشركة، وتنبيهات ذكية استباقية تنبه المدير لأي خلل قبل أن يتفاقم.",
     ],
     bodyEn: [
-      "The dashboard is the first screen after login, and it automatically adapts to the user's role: the owner and director see a company-wide overview, a station manager sees only their station's data, a regular employee sees their own tasks and attendance, and Individual accounts get a dedicated personal productivity dashboard.",
+      "The dashboard is the first screen after login, and it automatically adapts to the user's role: the owner and director see a company-wide overview, a station manager sees only their station's data, and a regular employee sees their own tasks and attendance.",
       "It shows live stat cards — employee count, active stations, running and overdue tasks, and daily attendance rates — with an attendance trend chart for recent days. A Pending Actions panel gathers everything awaiting a manager's decision in one place: leave requests, certificates awaiting approval, and task completions awaiting review.",
       "The dashboard also includes an interactive map that automatically plots every station's location (from stored coordinates or city names), an AI-generated smart daily summary of the company's key events, and proactive smart alerts that warn managers about issues before they escalate.",
     ],
@@ -286,21 +285,6 @@ export const GUIDE_SECTIONS = [
     ],
   },
   {
-    image: IMG.personal,
-    titleAr: "المساحة الشخصية: مخطط اليوم واليوميات والتقويم",
-    titleEn: "Personal Workspace: Planner, Journal & Calendar",
-    bodyAr: [
-      "إلى جانب نمط الشركات، توفر المنصة حساب «فرد» بمساحة عمل شخصية كاملة. «مخطط اليوم» شبكة زمنية لتنظيم اليوم ساعة بساعة: مهام بأوقات محددة، وتذكيرات، وقوالب جاهزة لأيام متكررة، وروابط سريعة، ويستطيع نيرو اقتراح خطة يوم كاملة تلقائيًا.",
-      "«يوميات الحياة» دفتر شخصي لتدوين الخواطر والإنجازات اليومية مع تتبع سلسلة الأيام المتتالية (Streak) الذي يحفّز على الاستمرارية، وبطاقة ملخص أسبوعي قابلة للمشاركة. و«التقويم الشهري» يعرض الشهر كاملًا بمهامه ومناسباته مع تصدير بصيغة ICS لمزامنته مع أي تطبيق تقويم خارجي.",
-      "يشمل النمط الفردي أيضًا حضورًا شخصيًا بمواقع يحددها المستخدم بنفسه (مكتبه، ناديه الرياضي...)، وتحليلات التزام شخصية، وأزرار تصدير لكل بياناته. وكل هذه الأدوات متاحة أيضًا لموظفي الشركات في مساحتهم الخاصة.",
-    ],
-    bodyEn: [
-      "Alongside company mode, the platform offers an Individual account with a full personal workspace. The Day Planner is an hour-by-hour time grid: timed tasks, reminders, reusable templates for recurring days and quick links — and Niro can propose a complete day plan automatically.",
-      "The Life Journal is a personal notebook for daily thoughts and achievements with a consecutive-day streak tracker that motivates consistency, plus a shareable weekly summary card. The Monthly Calendar shows the whole month's tasks and events with ICS export for syncing to any external calendar app.",
-      "Individual mode also includes personal attendance at self-defined locations (office, gym…), personal commitment analytics, and export buttons for all data. These tools are equally available to company employees in their own private space.",
-    ],
-  },
-  {
     image: IMG.stations,
     titleAr: "المخزون اللامركزي وإدارة المواد",
     titleEn: "Decentralized Inventory & Materials",
@@ -361,12 +345,12 @@ export const GUIDE_SECTIONS = [
     bodyAr: [
       "الأمان أساس المنصة: عزل كامل لبيانات كل شركة (Multi-Tenancy) بحيث يستحيل اطلاع شركة على بيانات أخرى، وتحقق ثنائي إلزامي برمز OTP يُرسل بالبريد عند كل تسجيل دخول (حتى للمالك)، وكلمات مرور مخزنة بتجزئة PBKDF2 لا تُحفظ نصًا أبدًا، وجلسات مشفرة بصلاحيات تُشتق من الخادم حصرًا، وسجل تدقيق كامل يوثق كل إجراء حساس: من فعل ماذا ومتى.",
       "تدعم المنصة 9 لغات كاملة مع تبديل فوري واتجاه كتابة تلقائي من اليمين لليسار للعربية في كل صفحة ومكوّن، ودخول عبر حساب Google إلى جانب البريد وكلمة المرور.",
-      "تظهر خطط الشركات (المجانية، وستارتر، والاحترافية، والمؤسسات) حاليًا دون رسوم، إضافة إلى الخطة الفردية المجانية، مع لوحة خاصة لمالك المنصة لمتابعة المشتركين والإحصاءات وإدارة الخطط عند تفعيل نموذج الاشتراكات لاحقًا.",
+      "تظهر خطط الشركات (المجانية، وستارتر، والاحترافية، والمؤسسات) حاليًا دون رسوم، مع لوحة خاصة لمالك المنصة لمتابعة المشتركين والإحصاءات وإدارة الخطط عند تفعيل نموذج الاشتراكات لاحقًا.",
     ],
     bodyEn: [
       "Security is foundational: complete multi-tenant isolation makes it impossible for one company to see another's data; mandatory two-step OTP email verification on every login (even for owners); passwords stored only as PBKDF2 hashes, never in plain text; encrypted sessions with server-derived permissions; and a full audit log documenting every sensitive action — who did what and when.",
       "The platform fully supports 9 languages with instant switching and automatic right-to-left layout for Arabic across every page and component, plus Google sign-in alongside email and password.",
-      "Company plans (Free, Starter, Professional and Enterprise) are currently displayed without charge, alongside the free Individual plan, with a platform-owner panel for tracking subscribers and statistics and managing plans when the subscription model is activated later.",
+      "Company plans (Free, Starter, Professional and Enterprise) are currently displayed without charge, with a platform-owner panel for tracking subscribers and statistics and managing plans when the subscription model is activated later.",
     ],
   },
 ];
