@@ -54,7 +54,7 @@ export default function Safety() {
       <SafetyExplanation ar={ar} />
 
       {(canEdit || canApprove || data.ownerId === currentUser.id) && (
-        <SafetyDashboard safety={data.safety || []} stations={data.stations || []} lang={lang} />
+        <SafetyDashboard safety={data.safety || []} stations={stations} lang={lang} />
       )}
 
       <div className="flex items-center justify-between flex-wrap gap-2">

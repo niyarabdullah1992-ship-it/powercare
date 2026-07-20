@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
@@ -16,6 +16,11 @@ export default function HR() {
   const [selectedStation, setSelectedStation] = useState(null);
   const canManage = data && currentUser && canManageHRLevels(currentUser, data);
   const canMultiStation = data && currentUser && canAssignMultiStation(currentUser, data);
+
+  useEffect(() => {
+    if (!data || !currentUser) return;
+    if (selectedStation && !visibleStations(currentUser, data).some((station) => station.id === selectedStation)) setSelectedStation(null);
+  }, [data?.stations, currentUser, selectedStation]);
 
   if (!data || !currentUser) return null;
 

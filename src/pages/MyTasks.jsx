@@ -361,6 +361,11 @@ export default function MyTasks() {
     }
   }, [targets, data, currentUser, company]);
 
+  useEffect(() => {
+    if (!data || !currentUser || isIndividual || !selectedStation) return;
+    if (!visibleStations(currentUser, data).some((station) => station.id === selectedStation)) setSelectedStation(null);
+  }, [data?.stations, currentUser, isIndividual, selectedStation]);
+
   if (!data || !currentUser) return null;
 
   const firstStationId = data.stations?.[0]?.id || null;

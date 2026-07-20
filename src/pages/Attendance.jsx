@@ -2,7 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
-import { canCreateTasks, isCompanyOwner, visibleEmployees, hasHRPermission, hrScopeStations } from "@/lib/permissions";
+import { canCreateTasks, isCompanyOwner, visibleEmployees, visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
 import { ClipboardCheck, Loader2 } from "lucide-react";
 import CheckInOutCard from "@/components/attendance/CheckInOutCard";
 import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDashboard";
@@ -38,6 +38,7 @@ export default function Attendance() {
   const canEditSettings = data && currentUser && (isCompanyOwner(currentUser, data) || ["director", "ops_manager"].includes(currentUser.role));
   const canManageEmergency = data && currentUser && (canEditSettings || currentUser.role === "station_manager");
   const defaultEmployees = data && currentUser ? visibleEmployees(currentUser, data) : [];
+  const stations = data && currentUser ? visibleStations(currentUser, data) : [];
   const leaveScope = data && currentUser?.hrLevelId ? hrScopeStations(currentUser, data) : null;
   const defaultStationId = data?.stations?.[0]?.id || null;
   const employees = canManageLeave && currentUser?.hrLevelId
@@ -120,7 +121,7 @@ export default function Attendance() {
             {activeTab === "schedule" && <ScheduleTab />}
             {activeTab === "report" && <AttendanceMonthlyReport employees={employees} defaultEmployeeId={currentUser.id} t={t} />}
             {activeTab === "analytics" && <AttendanceAnalytics employees={employees} t={t} />}
-            {activeTab === "leaves" && <AttendanceLeaveRequests employees={employees} stations={data.stations || []} t={t} lang={lang} />}
+            {activeTab === "leaves" && <AttendanceLeaveRequests employees={employees} stations={stations} t={t} lang={lang} />}
             {activeTab === "settings" && canManageEmergency && (
               <div className="space-y-4">
                 <AttendanceEmergencyPanel company={company} currentUser={currentUser} />

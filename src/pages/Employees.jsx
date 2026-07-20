@@ -68,6 +68,11 @@ export default function Employees() {
     return () => { ignore = true; };
   }, [currentUser?.id]);
 
+  useEffect(() => {
+    if (!data || !currentUser) return;
+    if (selectedStation && !visibleStations(currentUser, data).some((station) => station.id === selectedStation)) setSelectedStation(null);
+  }, [data?.stations, currentUser, selectedStation]);
+
   const taskStatusFor = (empId) => {
     const mine = targets.filter((tg) => tg.assignment_type === "member" && tg.employee_id === empId);
     if (mine.some((tg) => tg.status === "overdue")) return "overdue";
