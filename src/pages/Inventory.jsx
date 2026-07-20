@@ -8,17 +8,14 @@ import PageHeader from "@/components/PageHeader";
 import InventoryStats from "@/components/inventory/InventoryStats";
 import ItemForm from "@/components/inventory/ItemForm";
 import MovementForm from "@/components/inventory/MovementForm";
-import MaterialRequestForm from "@/components/inventory/MaterialRequestForm";
 import ItemList from "@/components/inventory/ItemList";
 import ItemDetails from "@/components/inventory/ItemDetails";
-import RequestsList from "@/components/inventory/RequestsList";
+import GlobalInventorySearch from "@/components/inventory/GlobalInventorySearch";
 import MovementList from "@/components/inventory/MovementList";
 import PurchasesTab from "@/components/inventory/PurchasesTab";
-import ProcurementTab from "@/components/inventory/ProcurementTab";
 import WorkIssueTab from "@/components/inventory/WorkIssueTab";
 import InventoryTabs from "@/components/inventory/InventoryTabs";
 import InventoryWorkflow from "@/components/inventory/InventoryWorkflow";
-import CentralWarehouseSelector from "@/components/inventory/CentralWarehouseSelector";
 import StationWarehousePicker from "@/components/inventory/StationWarehousePicker";
 import InventoryExportButtons from "@/components/inventory/InventoryExportButtons";
 import { toast } from "@/components/ui/use-toast";
@@ -65,7 +62,6 @@ export default function Inventory() {
   };
 
   if (!currentUser) return null;
-  const issueRequest = (requestId) => run("issueRequest", { requestId });
   const tabFromWorkflow = { purchase: "purchases", transfer: "transfers", issue: "transfers", history: "movements" };
   const stationIds = state.locations.map((station) => station.stationId || station.id);
   const activeStation = stationIds.includes(selectedStation) ? selectedStation : (state.locations[0]?.stationId || state.locations[0]?.id || currentUser.stationId || "");
@@ -73,7 +69,6 @@ export default function Inventory() {
   return <div className="space-y-6">
     <PageHeader title={ar ? "المخزون" : "Inventory"} description={ar ? "إدارة الأصناف والحركات والطلبات والمشتريات حسب صلاحياتك." : "Manage items, movements, requests and purchases based on your role."} icon={Warehouse} actions={<InventoryExportButtons items={state.items} stations={state.stations} ar={ar} />} />
     {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <>
-      {state.canSetCentralWarehouse && <CentralWarehouseSelector stations={state.transferStations} value={state.centralWarehouseId} onChange={(stationId) => run("setCentralWarehouse", { stationId })} ar={ar} />}
       <StationWarehousePicker stations={state.locations} value={activeStation} onChange={setSelectedStation} locked={state.locations.length <= 1} ar={ar} />
       <InventoryWorkflow ar={ar} onSelect={(key) => setActive(tabFromWorkflow[key])} />
       <InventoryTabs active={active} onChange={setActive} ar={ar} />
@@ -81,14 +76,11 @@ export default function Inventory() {
       {active === "purchases" && <div className="space-y-4">
         {state.canPurchase && <ItemForm stations={state.locations} defaultStationId={activeStation} onSubmit={(payload) => run("createItem", payload)} ar={ar} />}
         <PurchasesTab purchases={state.purchases} items={state.requestItems} stations={state.transferStations} activeStation={activeStation} canViewAll={state.canViewAllPurchases} ar={ar} />
-        {(state.canApproveProcurement || state.canReceiveProcurement) && <ProcurementTab state={state} run={run} ar={ar} />}
       </div>}
-      {active === "items" && <ItemList items={state.items} stations={state.stations} onSelect={setSelectedItem} ar={ar} />}
+      {active === "items" && <div className="space-y-4"><GlobalInventorySearch items={state.items} stations={state.stations} onOpen={(item) => setSelectedItem(item)} ar={ar} /><ItemList items={state.items} stations={state.stations} onSelect={setSelectedItem} ar={ar} /></div>}
       {active === "transfers" && <div className="space-y-4">
         {state.canTransfer && <MovementForm items={state.items} stations={state.transferStations} defaultFrom={activeStation} onSubmit={(payload) => run("transfer", payload)} ar={ar} />}
         {state.canIssueToWork && <WorkIssueTab items={state.items} stations={state.locations} employees={state.employees} defaultStationId={activeStation} movements={state.movements} onSubmit={(payload) => run("issueToWork", payload)} ar={ar} />}
-        {state.canManage && <MaterialRequestForm items={state.requestItems} stations={state.transferStations} stationId={activeStation} onSubmit={(payload) => run("request", payload)} ar={ar} />}
-        <RequestsList requests={state.requests} items={state.requestItems} employees={state.employees} stations={state.transferStations} canReview={state.canManage} canIssue={state.canWarehouseManage} onReview={(requestId, decision) => run("reviewRequest", { requestId, decision })} onIssue={issueRequest} ar={ar} />
       </div>}
       {active === "movements" && <MovementList movements={state.movements} items={state.requestItems} employees={state.employees} stations={state.transferStations} ar={ar} />}
     </>}
