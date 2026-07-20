@@ -1,14 +1,13 @@
 import React from "react";
-import { Boxes, ArrowLeftRight, LayoutDashboard, ShoppingCart, PackageMinus } from "lucide-react";
+import { Boxes, ShoppingCart, ArrowLeftRight, History, LayoutDashboard } from "lucide-react";
 
-export default function InventoryTabs({ active, onChange, canManage, ar }) {
+export default function InventoryTabs({ active, onChange, ar }) {
   const tabs = [
-    ["overview", LayoutDashboard, ar ? "نظرة عامة" : "Overview"],
-    ["purchase", ShoppingCart, ar ? "إنشاء صنف / شراء" : "Create item / Purchase"],
-    ["items", Boxes, ar ? "الأصناف" : "Items"],
-    ["transfer", ArrowLeftRight, ar ? "نقل" : "Transfer"],
-    ["workIssue", PackageMinus, ar ? "صرف للعمل" : "Issue to work"],
-    ["movements", ArrowLeftRight, ar ? "الحركات" : "Movements"],
+    { id: "overview", icon: LayoutDashboard, label: ar ? "نظرة عامة" : "Overview" },
+    { id: "purchases", icon: ShoppingCart, label: ar ? "المشتريات" : "Purchases" },
+    { id: "items", icon: Boxes, label: ar ? "الأصناف" : "Items" },
+    { id: "transfers", icon: ArrowLeftRight, label: ar ? "النقل والصرف" : "Transfer & issue" },
+    { id: "movements", icon: History, label: ar ? "سجل الحركات" : "Movements" },
   ];
-  return <div className="flex gap-2 overflow-x-auto no-scrollbar">{tabs.map(([key, Icon, label]) => <button key={key} onClick={() => onChange(key)} className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs ${active === key ? "border-accent bg-accent text-accent-foreground" : "border-border bg-card"}`}><Icon className="h-4 w-4" />{label}</button>)}</div>;
+  return <div className="flex gap-2 overflow-x-auto no-scrollbar">{tabs.map(({ id, icon: Icon, label }) => <button key={id} onClick={() => onChange(id)} className={`flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm ${active === id ? "border-accent bg-accent text-accent-foreground" : "border-border bg-card"}`}><Icon className="h-4 w-4" />{label}</button>)}</div>;
 }
