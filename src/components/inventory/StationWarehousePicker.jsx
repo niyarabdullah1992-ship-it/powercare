@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Search, Warehouse } from "lucide-react";
 
-export default function StationWarehousePicker({ stations, value, onChange, locked, ar }) {
+export default function StationWarehousePicker({ stations = [], value, onChange, locked, ar }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const rootRef = useRef(null);

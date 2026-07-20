@@ -33,6 +33,7 @@ export default function Inventory() {
   const [state, setState] = useState(emptyData);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedStation, setSelectedStation] = useState("");
   const stationVersion = (data?.stations || []).map((station) => station.id).sort().join("|");
 
   const load = async () => { setLoading(true); try { setState(await inventoryCall(session, "list", { stations: data?.stations || [] })); } finally { setLoading(false); } };
@@ -66,13 +67,14 @@ export default function Inventory() {
   if (!currentUser) return null;
   const issueRequest = (requestId) => run("issueRequest", { requestId });
   const tabFromWorkflow = { purchase: "purchases", transfer: "transfers", issue: "transfers", history: "movements" };
-  const activeStation = state.locations[0]?.stationId || currentUser.stationId || "";
+  const stationIds = state.locations.map((station) => station.stationId || station.id);
+  const activeStation = stationIds.includes(selectedStation) ? selectedStation : (state.locations[0]?.stationId || state.locations[0]?.id || currentUser.stationId || "");
 
   return <div className="space-y-6">
     <PageHeader title={ar ? "المخزون" : "Inventory"} description={ar ? "إدارة الأصناف والحركات والطلبات والمشتريات حسب صلاحياتك." : "Manage items, movements, requests and purchases based on your role."} icon={Warehouse} actions={<InventoryExportButtons items={state.items} stations={state.stations} ar={ar} />} />
     {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <>
       {state.canSetCentralWarehouse && <CentralWarehouseSelector stations={state.transferStations} value={state.centralWarehouseId} onChange={(stationId) => run("setCentralWarehouse", { stationId })} ar={ar} />}
-      <StationWarehousePicker locations={state.locations} selected={activeStation} onSelect={() => {}} ar={ar} />
+      <StationWarehousePicker stations={state.locations} value={activeStation} onChange={setSelectedStation} locked={state.locations.length <= 1} ar={ar} />
       <InventoryWorkflow ar={ar} onSelect={(key) => setActive(tabFromWorkflow[key])} />
       <InventoryTabs active={active} onChange={setActive} ar={ar} />
       {active === "overview" && <InventoryStats items={state.items} requests={state.requests} movements={state.movements} ar={ar} />}
