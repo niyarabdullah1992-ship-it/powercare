@@ -30,9 +30,13 @@ function TeamStatusPanel({ employees, t }) {
   const byEmployee = Object.fromEntries(rows.map((r) => [r.employee_id, r]));
   const activeEmployees = employees.filter((employee) => isActiveAttendance(byEmployee[employee.id]));
 
-  const statusFor = (emp) => {
+  const statusFor = (emp, attendance) => {
+    const inZone = attendance?.in_zone === true || attendance?.inZone === true || attendance?.location_status === "inside";
+    const manual = attendance?.manual_override === true || attendance?.manualOverride === true || attendance?.location_status === "manual";
+    if (inZone) return { labelKey: "insideLocation", dot: "bg-emerald-500" };
+    if (manual) return { labelKey: "manual", dot: "bg-violet-500" };
     const presence = PRESENCE_OPTIONS.find((o) => o.key === emp.presenceStatus) || PRESENCE_OPTIONS[0];
-    return { labelKey: presence.labelKey, dot: "bg-emerald-500" };
+    return { labelKey: presence.labelKey, dot: presence.dot };
   };
 
   return (
@@ -58,7 +62,7 @@ function TeamStatusPanel({ employees, t }) {
         <div className="divide-y divide-border">
           {activeEmployees.map((e) => {
             const att = byEmployee[e.id];
-            const status = statusFor(e);
+            const status = statusFor(e, att);
             return (
               <div key={e.id} className="flex items-center gap-3 py-3">
                 <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-medium shrink-0">
