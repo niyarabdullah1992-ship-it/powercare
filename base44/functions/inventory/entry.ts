@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
     const centralWarehouseId = "central_warehouse";
     const warehouseAccess = auth.owner || ["director", "warehouse_manager"].includes(auth.role);
     const canPurchase = auth.owner || managerRoles.includes(auth.role);
+    const canCreateItem = stations.length > 0;
     const canApproveProcurement = auth.owner || ["director", "ops_manager"].includes(auth.role);
     const canReceiveProcurement = auth.owner || managerRoles.includes(auth.role);
     const allStationIds = stations.map((station) => station.stationId);
@@ -85,7 +86,7 @@ Deno.serve(async (req) => {
       const scopedPurchaseOrders = purchaseOrders.filter((entry) => seniorRoles.includes(auth.role) || visible.has(entry.stationId));
       const locations = scopedStations;
       const transferStations = auth.manager ? stations : [];
-      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, purchases, procurementRequests: scopedProcurementRequests, purchaseOrders: scopedPurchaseOrders, requests: scopedRequests, stations: scopedStations, locations, transferStations, employees, canManage: canPurchase, canPurchase, canIssueToWork: canPurchase, canDelete: warehouseAccess, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: seniorRoles.includes(auth.role), canWarehouseManage: false, canTransfer: auth.manager, canSetCentralWarehouse: false, centralWarehouseId: null });
+      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, purchases, procurementRequests: scopedProcurementRequests, purchaseOrders: scopedPurchaseOrders, requests: scopedRequests, stations: scopedStations, locations, transferStations, employees, canManage: canPurchase, canPurchase, canCreateItem, canIssueToWork: canPurchase, canDelete: warehouseAccess, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: seniorRoles.includes(auth.role), canWarehouseManage: false, canTransfer: auth.manager, canSetCentralWarehouse: false, centralWarehouseId: null });
     }
 
     if (body.action === "submitProcurement") {
@@ -161,7 +162,7 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "createItem") {
-      if (!canPurchase) return Response.json({ error: "Purchase permission required" }, { status: 403 });
+      if (!canCreateItem) return Response.json({ error: "A station is required to create an item" }, { status: 403 });
       const name = String(body.name || "").trim(); const itemCode = String(body.itemCode || "").trim();
       const supplierName = String(body.supplierName || "").trim(); const locationId = String(body.locationId || auth.stationId || "");
       const quantity = Number(body.quantity); const totalCost = Number(body.totalCost); const enteredUnitPrice = body.unitPrice === "" || body.unitPrice == null ? null : Number(body.unitPrice);
