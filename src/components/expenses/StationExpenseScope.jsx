@@ -8,6 +8,6 @@ export default function StationExpenseScope({ stations, scope, setScope, selecte
       <button type="button" onClick={() => setScope("all")} className={`rounded-full px-3 py-1.5 text-sm ${scope === "all" ? "bg-accent text-accent-foreground" : "bg-secondary"}`}>{ar ? "جميع المحطات" : "All stations"}</button>
       <button type="button" onClick={() => setScope("selected")} className={`rounded-full px-3 py-1.5 text-sm ${scope === "selected" ? "bg-accent text-accent-foreground" : "bg-secondary"}`}>{ar ? "محطات معينة" : "Selected stations"}</button>
     </div>
-    {scope === "selected" && <div className="flex flex-wrap gap-2">{stations.map((station) => <label key={station.stationId} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"><input type="checkbox" checked={selected.includes(station.stationId)} onChange={() => toggle(station.stationId)} />{station.name}</label>)}</div>}
+    {scope === "selected" && <div className="overflow-hidden rounded-lg border border-border bg-card divide-y divide-border">{stations.map((station) => <label key={station.stationId} className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-secondary/60"><input type="checkbox" checked={selected.includes(station.stationId)} onChange={() => toggle(station.stationId)} className="h-4 w-4 shrink-0" /><span className="flex-1">{station.name}</span></label>)}</div>}
   </div>;
 }
