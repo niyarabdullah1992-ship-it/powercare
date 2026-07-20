@@ -6,7 +6,7 @@ import { exportExcelColored } from "@/lib/exportExcelColored";
 import { printReport } from "@/lib/printReport";
 
 // Colored Excel + branded PDF export for any comparison table.
-export default function ComparisonExportButtons({ title, headers, rows }) {
+export default function ComparisonExportButtons({ title, headers, rows, pdfHeaders = headers, pdfRows = rows }) {
   const { t, dir } = useI18n();
   const pdfLabel = dir === "rtl" ? "تصدير PDF" : "Export PDF";
   const { data, company } = useAuth();
@@ -24,7 +24,7 @@ export default function ComparisonExportButtons({ title, headers, rows }) {
       periodLabel: new Date().toLocaleDateString(),
       dir,
       stats: [],
-      sections: [{ heading: title, headers, rows }],
+      sections: [{ heading: title, headers: pdfHeaders, rows: pdfRows }],
       logoUrl: branding.logoUrl || "",
       color,
     });
