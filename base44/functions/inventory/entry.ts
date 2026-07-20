@@ -217,7 +217,10 @@ Deno.serve(async (req) => {
       const item = await getItem(body.itemId); const quantity = Number(body.quantity); const notes = String(body.notes || "").trim();
       const stationId = isSenior ? String(body.stationId || "") : String(auth.stationId || ""); const sourceStationId = String(body.sourceStationId || "");
       if (!item || !allStationIds.includes(stationId) || !allStationIds.includes(sourceStationId) || sourceStationId === stationId || balanceAt(item, sourceStationId) < quantity || quantity < 1 || !notes) return Response.json({ error: "Choose different source and destination stations, an available item, valid quantity and reason" }, { status: 400 });
-      await base44.asServiceRole.entities.MaterialRequest.create({ companyId: auth.companyId, requesterId: auth.userId || auth.name, stationId, sourceStationId, itemId: item.id, quantity, notes, status: "pending", supervisorId: null, reviewedBy: null, reviewedAt: null, issuedAt: null });
+      const purchaseRows = await base44.asServiceRole.entities.StockMovement.filter({ companyId: auth.companyId, itemId: item.id, movementType: "purchase", toLocationId: sourceStationId }, "-purchaseDate", 1);
+      const unitPrice = Number(purchaseRows[0]?.unitPrice ?? purchaseRows[0]?.purchasePrice ?? 0);
+      const totalCost = quantity * unitPrice;
+      await base44.asServiceRole.entities.MaterialRequest.create({ companyId: auth.companyId, requesterId: auth.userId || auth.name, stationId, sourceStationId, itemId: item.id, quantity, unitPrice, totalCost, notes, status: "pending", supervisorId: null, reviewedBy: null, reviewedAt: null, issuedAt: null });
       return Response.json({ ok: true });
     }
 
@@ -235,7 +238,7 @@ Deno.serve(async (req) => {
       const sourceBefore = balanceAt(item, sourceId); const destinationBefore = balanceAt(item, request.stationId);
       let next = adjustBalance(item, sourceId, -quantity); next = adjustBalance({ ...item, locationBalances: next }, request.stationId, quantity);
       await base44.asServiceRole.entities.InventoryItem.update(item.id, { locationBalances: next, currentLocationId: request.stationId });
-      await movement({ itemId: item.id, movementType: "transfer", quantity, fromLocationId: sourceId, toLocationId: request.stationId, employeeId: request.requesterId, requestId: request.id, sourceBalanceBefore: sourceBefore, sourceBalanceAfter: sourceBefore - quantity, destinationBalanceBefore: destinationBefore, destinationBalanceAfter: destinationBefore + quantity });
+      await movement({ itemId: item.id, movementType: "transfer", quantity, fromLocationId: sourceId, toLocationId: request.stationId, employeeId: request.requesterId, requestId: request.id, sourceBalanceBefore: sourceBefore, sourceBalanceAfter: sourceBefore - quantity, destinationBalanceBefore: destinationBefore, destinationBalanceAfter: destinationBefore + quantity, unitPrice: Number(request.unitPrice || 0), totalCost: Number(request.totalCost || (quantity * Number(request.unitPrice || 0))) });
       await base44.asServiceRole.entities.MaterialRequest.update(request.id, { status: "issued", reviewedBy: auth.userId || auth.name, reviewedAt, issuedAt: reviewedAt });
       return Response.json({ ok: true });
     }

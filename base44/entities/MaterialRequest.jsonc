@@ -25,6 +25,20 @@
       "type": "number",
       "minimum": 1
     },
+    "unitPrice": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Latest purchase unit price at the source station when requested."
+    },
+    "totalCost": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Financial value of the requested transfer quantity."
+    },
     "notes": {
       "type": "string"
     },

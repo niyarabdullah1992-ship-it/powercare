@@ -94,7 +94,7 @@ export default function Inventory() {
       </div>}
       {active === "items" && <ItemList items={stationItems} stations={state.stations} onSelect={setSelectedItem} ar={ar} />}
       {active === "requests" && <div className="space-y-4">
-        {state.canRequest && <MaterialRequestForm items={state.requestItems} stations={state.transferStations} stationId={state.canManage ? activeStation : ""} onSubmit={(payload) => run("request", payload)} ar={ar} />}
+        {state.canRequest && <MaterialRequestForm items={state.requestItems} purchases={state.purchases} stations={state.transferStations} stationId={state.canManage ? activeStation : ""} onSubmit={(payload) => run("request", payload)} ar={ar} />}
         <RequestsList requests={state.requests} items={state.historyItems} employees={state.employees} stations={state.transferStations} canReview={state.canReviewRequests} canReviewAll={state.canReviewAllRequests} reviewerStationId={activeStation} onReview={(requestId, decision) => run("reviewRequest", { requestId, decision })} ar={ar} />
       </div>}
       {active === "consumption" && <WorkIssueTab items={stationItems} stations={state.locations} employees={state.employees} stationId={activeStation} canIssue={state.canIssueToWork} movements={state.movements} onSubmit={(payload) => run("issueToWork", payload)} ar={ar} />}
