@@ -22,8 +22,8 @@ export default function Help() {
         </h1>
         <p className="text-muted-foreground font-body text-sm mt-1">
           {ar
-            ? "شرح واضح لجميع أقسام المنصة، من لوحة التحكم حتى المخزن والمصروفات والسلامة والرواتب والتوقيع الرقمي."
-            : "A clear guide to every platform section, including inventory, expenses, safety, payroll and digital signing."}
+            ? "أحدث دليل لجميع أقسام المنصة، مرتب حسب أقسام النظام من تسجيل الدخول حتى الأمن والخصوصية."
+            : "The latest guide to every platform section, ordered from sign-in through security and privacy."}
         </p>
       </div>
 
