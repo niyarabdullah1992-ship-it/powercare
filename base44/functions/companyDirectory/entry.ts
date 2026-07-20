@@ -12,7 +12,7 @@ function toBase64Url(str) {
 }
 
 // Branded HTML email template — gold header, clean card, bilingual-friendly.
-const EMAIL_LOGO = 'https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/df3e1cbab_generated_image.png';
+const EMAIL_LOGO = 'https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/b75eb58e7_9a8843bf0_generated_image.png';
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 function emailHtml({ title, lines = [], code = null, footerNote = '' }) {
   const paragraphs = lines.map((line) => `<p style="margin:0 0 12px;font-size:14px;line-height:1.8;color:#4a3d2c;" dir="auto">${escapeHtml(line)}</p>`).join('');
