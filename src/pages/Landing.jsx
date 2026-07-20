@@ -8,6 +8,7 @@ import StatsBand from "@/components/landing/StatsBand";
 import { trackVisit } from "@/lib/trackVisit";
 import WhyPowerCare from "@/components/landing/WhyPowerCare";
 import PowerCareLoginPanel from "@/components/auth/PowerCareLoginPanel";
+import IpCertificateBadge from "@/components/landing/IpCertificateBadge";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f202a53a2_generated_image.png";
 
@@ -143,6 +144,7 @@ export default function Landing() {
             </ul>
           </div>
         </div>
+        <IpCertificateBadge lang={lang} />
       </div>
     </div>
   );
