@@ -80,9 +80,10 @@ export default function Inventory() {
   if (!currentUser) return null;
   const tabFromWorkflow = { purchase: "purchases", items: "items", requests: "requests", consumption: "consumption" };
   const stationIds = state.locations.map((station) => station.stationId || station.id);
+  const inventoryViewStationIds = state.stations.map((station) => station.stationId || station.id);
   const allStationsSelected = selectedStation === "all" && state.locations.length > 1;
   const activeStation = allStationsSelected ? "all" : stationIds.includes(selectedStation) ? selectedStation : (state.locations[0]?.stationId || state.locations[0]?.id || currentUser.stationId || "");
-  const visibleInventoryStations = selectedInventoryStations.length ? selectedInventoryStations : stationIds;
+  const visibleInventoryStations = selectedInventoryStations.length ? selectedInventoryStations : inventoryViewStationIds;
   const stationItems = state.items.flatMap((item) => {
     const balances = (item.locationBalances || []).filter((balance) => visibleInventoryStations.includes(balance.locationId));
     if (balances.length) return balances.map((balance) => ({ ...item, displayKey: `${item.id}-${balance.locationId}`, quantity: Number(balance.quantity) || 0, currentLocationId: balance.locationId }));
