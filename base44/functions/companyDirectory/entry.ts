@@ -438,8 +438,10 @@ Deno.serve(async (req) => {
       const acc = accounts[0] || {};
       if (rec.kind === 'owner') {
         const { ownerPassword: _pw2, ...safe } = acc;
+        const metaRows = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: targetCompanyId, category: 'companyMeta' });
+        const ownerId = metaRows[0]?.payload?.[0]?.ownerId || null;
         const token = await makeSession(base44, targetCompanyId, null, 'owner');
-        return Response.json({ kind: 'owner', company: safe, token });
+        return Response.json({ kind: 'owner', company: safe, token, ownerId });
       }
       const token = await makeSession(base44, rec.companyId, rec.employeeId, 'employee');
       return Response.json({

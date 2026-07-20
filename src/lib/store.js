@@ -688,7 +688,8 @@ function finishOwnerLogin(result) {
   saveRegistry(reg);
   if (!getCompanyData(company.id)) write(companyKey(company.id), emptyCompanyData(company));
   else cacheCloudData(company.id, { name: remote.name, plan: remote.plan });
-  setSession({ companyId: company.id, userId: ensureOwnerUser(company.id, company) });
+  const ownerId = result.ownerId || getCompanyData(company.id)?.ownerId;
+  setSession({ companyId: company.id, userId: ownerId || ensureOwnerUser(company.id, company) });
   return company;
 }
 
