@@ -161,17 +161,6 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true });
     }
 
-    if (body.action === "createCatalogItem") {
-      if (!canCreateItem) return Response.json({ error: "A station is required to create an item" }, { status: 403 });
-      const name = String(body.name || "").trim(); const itemCode = String(body.itemCode || "").trim();
-      const locationId = String(body.locationId || auth.stationId || ""); const minimumStock = Math.max(0, Number(body.minimumStock || 0));
-      if (!name || !itemCode || !ensureStation(locationId)) return Response.json({ error: "Valid item name, code and station are required" }, { status: 400 });
-      const duplicates = await base44.asServiceRole.entities.InventoryItem.filter({ companyId: auth.companyId, itemCode });
-      if (duplicates.length) return Response.json({ error: "An item with this code already exists" }, { status: 409 });
-      await base44.asServiceRole.entities.InventoryItem.create({ companyId: auth.companyId, itemCode, name, currentLocationId: locationId, minimumStock, quantity: 0, locationBalances: [{ locationId, quantity: 0 }], qrCode: `PC-ITEM:${auth.companyId}:${itemCode}` });
-      return Response.json({ ok: true });
-    }
-
     if (body.action === "createItem") {
       if (!canCreateItem) return Response.json({ error: "A station is required to create an item" }, { status: 403 });
       const name = String(body.name || "").trim(); const itemCode = String(body.itemCode || "").trim();
