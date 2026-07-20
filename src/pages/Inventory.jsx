@@ -20,7 +20,7 @@ import InventoryWorkflow from "@/components/inventory/InventoryWorkflow";
 import InventoryExportButtons from "@/components/inventory/InventoryExportButtons";
 import { toast } from "@/components/ui/use-toast";
 
-const emptyData = { items: [], requestItems: [], historyItems: [], movements: [], purchases: [], requests: [], stations: [], locations: [], transferStations: [], employees: [], procurementRequests: [], purchaseOrders: [], canManage: false, canPurchase: false, canCreateItem: false, canIssueToWork: false, canIssueFromAnyStation: false, canRequest: false, canReviewRequests: false, canReviewAllRequests: false, canDelete: false, canApproveProcurement: false, canReceiveProcurement: false, canViewAllPurchases: false, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null };
+const emptyData = { items: [], requestItems: [], historyItems: [], movements: [], purchases: [], requests: [], stations: [], locations: [], transferStations: [], employees: [], procurementRequests: [], purchaseOrders: [], canManage: false, canPurchase: false, canCreateItem: false, canIssueToWork: false, canIssueFromAnyStation: false, canRequest: false, canReviewRequests: false, canReviewAllRequests: false, canDelete: false, canApproveProcurement: false, canReceiveProcurement: false, canViewAllPurchases: false, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, canReverse: false, centralWarehouseId: null };
 
 export default function Inventory() {
   const { session, currentUser, data } = useAuth();
@@ -59,7 +59,15 @@ export default function Inventory() {
       setState(next);
       toast({ description: ar ? "تم حفظ العملية بنجاح." : "Operation saved." });
       return true;
-    } catch (error) { toast({ description: error?.response?.data?.error || error.message, variant: "destructive" }); return false; }
+    } catch (error) {
+      const code = error?.response?.data?.code;
+      const reversalErrors = {
+        INSUFFICIENT_REVERSAL_STOCK: ar ? "لا يمكن التراجع لأن الرصيد الحالي لا يكفي؛ ربما تم استهلاك الكمية أو نقلها." : "Cannot reverse because current stock is insufficient; the quantity may have been consumed or moved.",
+        MOVEMENT_ALREADY_REVERSED: ar ? "تم التراجع عن هذه الحركة مسبقاً." : "This movement has already been reversed.",
+        REVERSAL_REASON_REQUIRED: ar ? "سبب التراجع مطلوب." : "A reversal reason is required.",
+      };
+      toast({ description: reversalErrors[code] || error?.response?.data?.error || error.message, variant: "destructive" }); return false;
+    }
   };
 
   const updateImages = async (itemId, imageUrls) => {
@@ -97,7 +105,7 @@ export default function Inventory() {
         <RequestsList requests={state.requests} items={state.historyItems} employees={state.employees} stations={state.transferStations} canReview={state.canReviewRequests} canReviewAll={state.canReviewAllRequests} reviewerStationId={activeStation} onReview={(requestId, decision) => run("reviewRequest", { requestId, decision })} ar={ar} />
       </div>}
       {active === "consumption" && <WorkIssueTab items={stationItems} employees={state.employees} stations={state.locations} stationId={activeStation} canIssue={state.canIssueToWork} canChooseStation={state.canIssueFromAnyStation} onSubmit={(payload) => run("issueToWork", payload)} ar={ar} />}
-      {active === "movements" && <MovementList movements={state.movements} items={state.historyItems} employees={state.employees} stations={state.transferStations} ar={ar} />}
+      {active === "movements" && <MovementList movements={state.movements} items={state.historyItems} employees={state.employees} stations={state.transferStations} canReverse={state.canReverse} onReverse={(movementId, reversalReason) => run("reverseMovement", { movementId, reversalReason })} ar={ar} />}
     </>}
     <ItemDetails item={selectedItem} stations={state.stations} canDelete={state.canDelete} onDelete={async (itemId) => { if (await run("deleteItem", { itemId })) setSelectedItem(null); }} onImagesChange={updateImages} onClose={() => setSelectedItem(null)} ar={ar} />
   </div>;

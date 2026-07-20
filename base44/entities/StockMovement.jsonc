@@ -15,7 +15,8 @@
         "purchase",
         "issue",
         "return",
-        "transfer"
+        "transfer",
+        "reversal"
       ]
     },
     "quantity": {
@@ -154,6 +155,34 @@
         "type": "string"
       },
       "maxItems": 10
+    },
+    "reversedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reversedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reversalReason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reversalMovementId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "isReversal": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [

@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
       const scopedMovements = movements.filter((entry) => isSenior || visible.has(entry.fromLocationId) || visible.has(entry.toLocationId));
       const scopedStations = stations.filter((station) => isSenior || visible.has(station.stationId));
       const purchases = scopedMovements.filter((entry) => entry.movementType === "purchase");
-      return Response.json({ items: scopedItems, requestItems: activeItems, historyItems: items, movements: scopedMovements, purchases, procurementRequests: [], purchaseOrders: [], requests: scopedRequests, stations: scopedStations, locations: scopedStations, transferStations: stations, employees, canManage: isStationOperator, canPurchase, canCreateItem, canIssueToWork: isStationOperator || isSenior, canIssueFromAnyStation: isSenior, canRequest: isStationOperator || isSenior, canReviewRequests: isStationOperator || isSenior, canReviewAllRequests: isSenior, canDelete, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: isSenior, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null });
+      return Response.json({ items: scopedItems, requestItems: activeItems, historyItems: items, movements: scopedMovements, purchases, procurementRequests: [], purchaseOrders: [], requests: scopedRequests, stations: scopedStations, locations: scopedStations, transferStations: stations, employees, canManage: isStationOperator, canPurchase, canCreateItem, canIssueToWork: isStationOperator || isSenior, canIssueFromAnyStation: isSenior, canRequest: isStationOperator || isSenior, canReviewRequests: isStationOperator || isSenior, canReviewAllRequests: isSenior, canDelete, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: isSenior, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, canReverse: isSenior, centralWarehouseId: null });
     }
 
     if (["submitProcurement", "reviewProcurement", "createPurchaseOrder", "receivePurchaseOrder", "issueRequest"].includes(body.action)) return Response.json({ error: "This workflow is no longer available" }, { status: 410 });
@@ -173,6 +173,48 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.InventoryItem.update(item.id, { quantity: Math.max(0, Number(item.quantity || 0) - quantity), locationBalances: next, currentLocationId: stationId });
       await movement({ itemId: item.id, movementType: "issue", quantity, fromLocationId: stationId, toLocationId: null, employeeId, requestId: null, balanceBefore: before, balanceAfter: before - quantity, sourceBalanceBefore: before, sourceBalanceAfter: before - quantity, destinationBalanceBefore: null, destinationBalanceAfter: null, workReference, workDate, notes, imageUrls: Array.isArray(body.imageUrls) ? body.imageUrls.slice(0, 10) : [] });
       return Response.json({ ok: true });
+    }
+
+    if (body.action === "reverseMovement") {
+      if (!isSenior) return Response.json({ error: "Only senior management can reverse inventory movements", code: "REVERSE_FORBIDDEN" }, { status: 403 });
+      const movementId = String(body.movementId || "");
+      const reversalReason = String(body.reversalReason || "").trim();
+      if (!movementId || !reversalReason) return Response.json({ error: "Movement and reversal reason are required", code: "REVERSAL_REASON_REQUIRED" }, { status: 400 });
+      if (!/^[a-f0-9]{24}$/i.test(movementId)) return Response.json({ error: "Movement was not found", code: "MOVEMENT_NOT_FOUND" }, { status: 404 });
+      const original = (await base44.asServiceRole.entities.StockMovement.filter({ id: movementId, companyId: auth.companyId }))[0];
+      if (!original || original.isReversal || original.movementType === "reversal") return Response.json({ error: "This movement cannot be reversed", code: "MOVEMENT_NOT_REVERSIBLE" }, { status: 400 });
+      const priorReversals = await base44.asServiceRole.entities.StockMovement.filter({ companyId: auth.companyId, movementType: "reversal", reversalMovementId: original.id });
+      if (original.reversedAt || original.reversalMovementId || priorReversals.length) return Response.json({ error: "This movement has already been reversed", code: "MOVEMENT_ALREADY_REVERSED" }, { status: 409 });
+      if (!["purchase", "transfer", "issue", "return", "receive"].includes(original.movementType)) return Response.json({ error: "This movement type cannot be reversed", code: "MOVEMENT_NOT_REVERSIBLE" }, { status: 400 });
+      const item = await getItem(original.itemId);
+      const quantity = Number(original.quantity);
+      if (!item || !Number.isFinite(quantity) || quantity <= 0) return Response.json({ error: "Movement item was not found", code: "MOVEMENT_ITEM_NOT_FOUND" }, { status: 404 });
+
+      const debitStationId = original.movementType === "issue" ? null : original.toLocationId;
+      const creditStationId = original.movementType === "purchase" ? null : original.fromLocationId;
+      if ((debitStationId && balanceAt(item, debitStationId) < quantity) || (!debitStationId && !creditStationId)) return Response.json({ error: "Current stock is insufficient because some of this quantity has already been consumed or moved", code: "INSUFFICIENT_REVERSAL_STOCK" }, { status: 409 });
+      let next = balances(item);
+      const debitBefore = debitStationId ? balanceAt(item, debitStationId) : null;
+      const creditBefore = creditStationId ? balanceAt(item, creditStationId) : null;
+      if (debitStationId) next = adjustBalance({ ...item, locationBalances: next }, debitStationId, -quantity);
+      if (creditStationId) next = adjustBalance({ ...item, locationBalances: next }, creditStationId, quantity);
+      const totalDelta = original.movementType === "purchase" ? -quantity : original.movementType === "issue" ? quantity : 0;
+      await base44.asServiceRole.entities.InventoryItem.update(item.id, { quantity: Math.max(0, Number(item.quantity || 0) + totalDelta), locationBalances: next, currentLocationId: creditStationId || debitStationId || item.currentLocationId });
+
+      const affectedIds = [...new Set([debitStationId, creditStationId].filter(Boolean))];
+      const units = await base44.asServiceRole.entities.InventoryUnit.filter({ companyId: auth.companyId, itemId: item.id });
+      const unitUpdates = []; const unitCreates = [];
+      for (const locationId of affectedIds) {
+        const quantityAtLocation = next.find((entry) => entry.locationId === locationId)?.quantity || 0;
+        const unit = units.find((entry) => entry.locationId === locationId);
+        if (unit) unitUpdates.push({ id: unit.id, quantity: quantityAtLocation });
+        else unitCreates.push({ companyId: auth.companyId, itemId: item.id, locationId, quantity: quantityAtLocation });
+      }
+      await Promise.all([unitUpdates.length ? base44.asServiceRole.entities.InventoryUnit.bulkUpdate(unitUpdates) : null, unitCreates.length ? base44.asServiceRole.entities.InventoryUnit.bulkCreate(unitCreates) : null].filter(Boolean));
+      const reversedAt = new Date().toISOString();
+      const reversal = await movement({ itemId: item.id, movementType: "reversal", quantity, fromLocationId: debitStationId, toLocationId: creditStationId, employeeId: original.employeeId || null, requestId: original.requestId || null, sourceBalanceBefore: debitBefore, sourceBalanceAfter: debitBefore == null ? null : debitBefore - quantity, destinationBalanceBefore: creditBefore, destinationBalanceAfter: creditBefore == null ? null : creditBefore + quantity, balanceBefore: debitBefore ?? creditBefore, balanceAfter: debitBefore == null ? creditBefore + quantity : debitBefore - quantity, notes: reversalReason, isReversal: true, reversalMovementId: original.id, reversalReason });
+      await base44.asServiceRole.entities.StockMovement.update(original.id, { reversedBy: auth.userId || auth.name, reversedAt, reversalReason, reversalMovementId: reversal.id });
+      return Response.json({ ok: true, reversalMovementId: reversal.id });
     }
 
     if (body.action === "deleteItem") {
