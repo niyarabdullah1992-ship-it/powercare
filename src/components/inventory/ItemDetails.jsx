@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Trash2, X } from "lucide-react";
+import { Archive, X } from "lucide-react";
 import MultiImageUploader from "@/components/inventory/MultiImageUploader";
 import { useI18n } from "@/lib/i18n";
 
-export default function ItemDetails({ item, stations, canDelete, onDelete, onImagesChange, onClose, ar }) {
+export default function ItemDetails({ item, stations, canArchive, onArchive, onImagesChange, onClose, ar }) {
   const { t } = useI18n();
   const [images, setImages] = useState([]);
   useEffect(() => { setImages(item?.imageUrls || []); }, [item?.id, item?.imageUrls]);
@@ -14,6 +14,6 @@ export default function ItemDetails({ item, stations, canDelete, onDelete, onIma
     <div className="flex justify-between"><div><h2 className="font-heading text-2xl font-semibold">{item.name}</h2><p className="text-sm text-muted-foreground">{item.itemCode}</p></div><button onClick={onClose}><X /></button></div>
     <div className="mt-5 grid gap-5 sm:grid-cols-[220px_1fr]"><img src={qr} alt="Item QR code" className="rounded-xl border bg-card" /><div className="space-y-2 text-sm"><p>{ar ? "الكمية:" : "Quantity:"} <b>{item.quantity}</b></p><p>{ar ? "الحد الأدنى:" : "Minimum:"} <b>{item.minimumStock}</b></p><p>{ar ? "الموقع:" : "Location:"} <b>{station(item.currentLocationId)}</b></p><p>{ar ? "المصدر:" : "Source:"} <b>{item.sourceType === "transfer" ? `${ar ? "تحويل من" : "Transfer from"} ${station(item.sourceLocationId)}` : (ar ? "المشتريات" : "Purchase")}</b></p><p className="break-all text-xs text-muted-foreground">{item.qrCode}</p></div></div>
     <section className="mt-5"><h3 className="mb-2 font-semibold">{t("itemImages")}</h3><MultiImageUploader value={images} onChange={(next) => { setImages(next); onImagesChange(item.id, next); }} ar={ar} /></section>
-    {canDelete && <button type="button" onClick={() => { if (window.confirm(ar ? "هل تريد حذف الصنف وجميع حركاته وطلباته نهائياً؟" : "Delete this item and all related movements and requests permanently?")) onDelete(item.id); }} className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border border-destructive/30 px-4 py-2 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" />{ar ? "حذف الصنف" : "Delete item"}</button>}
+    {canArchive && <button type="button" onClick={() => { if (window.confirm(ar ? "هل تريد أرشفة الصنف؟ سيختفي من القوائم مع بقاء سجله التاريخي." : "Archive this item? It will be hidden from lists while its history remains available.")) onArchive(item.id); }} className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border border-destructive/30 px-4 py-2 text-destructive hover:bg-destructive/10"><Archive className="h-4 w-4" />{ar ? "أرشفة الصنف" : "Archive item"}</button>}
   </div></div>;
 }

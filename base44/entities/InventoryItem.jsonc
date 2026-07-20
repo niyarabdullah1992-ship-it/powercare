@@ -38,6 +38,22 @@
         "type": "string"
       },
       "maxItems": 10
+    },
+    "archived": {
+      "type": "boolean",
+      "default": false
+    },
+    "archivedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "archivedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "required": [

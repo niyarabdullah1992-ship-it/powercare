@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
     const isStationOperator = stationRoles.includes(auth.role) && !!auth.stationId;
     const canPurchase = isStationOperator || isSenior;
     const canCreateItem = isStationOperator || isSenior;
+    const canArchive = isSenior || ["station_manager", "warehouse_manager"].includes(auth.role);
     const canApproveProcurement = false;
     const canReceiveProcurement = false;
     const allStationIds = stations.map((station) => station.stationId);
@@ -81,7 +82,10 @@ Deno.serve(async (req) => {
     const visible = new Set(visibleIds);
     const ensureStation = (id) => isSenior ? allStationIds.includes(id) : isStationOperator && id === auth.stationId;
     const warehouseGuard = () => Response.json({ error: "This workflow is no longer available" }, { status: 410 });
-    const getItem = async (id) => (await base44.asServiceRole.entities.InventoryItem.filter({ id, companyId: auth.companyId }))[0];
+    const getItem = async (id) => {
+      const item = (await base44.asServiceRole.entities.InventoryItem.filter({ id, companyId: auth.companyId }))[0];
+      return item?.archived === true ? null : item;
+    };
     const balances = (item) => Array.isArray(item.locationBalances) ? item.locationBalances.map((entry) => ({ locationId: entry.locationId, quantity: Number(entry.quantity) || 0 })) : [];
     const balanceAt = (item, stationId) => balances(item).find((entry) => entry.locationId === stationId)?.quantity || 0;
     const adjustBalance = (item, stationId, delta) => {
@@ -99,12 +103,13 @@ Deno.serve(async (req) => {
         base44.asServiceRole.entities.MaterialRequest.filter({ companyId: auth.companyId }, "-created_date", 300),
         base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId }),
       ]);
-      const scopedItems = items.filter((item) => isSenior || balances(item).some((entry) => visible.has(entry.locationId))).map((item) => isSenior ? item : ({ ...item, quantity: balanceAt(item, auth.stationId), currentLocationId: auth.stationId, locationBalances: balances(item).filter((entry) => visible.has(entry.locationId)) }));
+      const activeItems = items.filter((item) => item.archived !== true);
+      const scopedItems = activeItems.filter((item) => isSenior || balances(item).some((entry) => visible.has(entry.locationId))).map((item) => isSenior ? item : ({ ...item, quantity: balanceAt(item, auth.stationId), currentLocationId: auth.stationId, locationBalances: balances(item).filter((entry) => visible.has(entry.locationId)) }));
       const scopedRequests = requests.filter((request) => isSenior || visible.has(request.stationId) || visible.has(request.sourceStationId));
       const scopedMovements = movements.filter((entry) => isSenior || visible.has(entry.fromLocationId) || visible.has(entry.toLocationId));
       const scopedStations = stations.filter((station) => isSenior || visible.has(station.stationId));
       const purchases = scopedMovements.filter((entry) => entry.movementType === "purchase");
-      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, purchases, procurementRequests: [], purchaseOrders: [], requests: scopedRequests, stations: scopedStations, locations: scopedStations, transferStations: stations, employees, canManage: isStationOperator, canPurchase, canCreateItem, canIssueToWork: isStationOperator, canRequest: isStationOperator || isSenior, canReviewRequests: isStationOperator, canDelete: false, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: isSenior, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null });
+      return Response.json({ items: scopedItems, requestItems: activeItems, historyItems: items, movements: scopedMovements, purchases, procurementRequests: [], purchaseOrders: [], requests: scopedRequests, stations: scopedStations, locations: scopedStations, transferStations: stations, employees, canManage: isStationOperator, canPurchase, canCreateItem, canIssueToWork: isStationOperator, canRequest: isStationOperator || isSenior, canReviewRequests: isStationOperator, canArchive, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: isSenior, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null });
     }
 
     if (["submitProcurement", "reviewProcurement", "createPurchaseOrder", "receivePurchaseOrder", "issueRequest"].includes(body.action)) return Response.json({ error: "This workflow is no longer available" }, { status: 410 });
@@ -169,15 +174,15 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true });
     }
 
-    if (body.action === "deleteItem") {
-      const denied = warehouseGuard(); if (denied) return denied;
+    if (body.action === "archiveItem") {
+      if (!canArchive) return Response.json({ error: "Management permission required" }, { status: 403 });
       const item = await getItem(body.itemId);
       if (!item) return Response.json({ error: "Item not found" }, { status: 404 });
-      await Promise.all([
-        base44.asServiceRole.entities.StockMovement.deleteMany({ companyId: auth.companyId, itemId: item.id }),
-        base44.asServiceRole.entities.MaterialRequest.deleteMany({ companyId: auth.companyId, itemId: item.id }),
-      ]);
-      await base44.asServiceRole.entities.InventoryItem.delete(item.id);
+      await base44.asServiceRole.entities.InventoryItem.update(item.id, {
+        archived: true,
+        archivedAt: new Date().toISOString(),
+        archivedBy: auth.userId || auth.name,
+      });
       return Response.json({ ok: true });
     }
 
@@ -196,7 +201,7 @@ Deno.serve(async (req) => {
       if (item) {
         before = balanceAt(item, locationId);
         const next = adjustBalance(item, locationId, quantity);
-        await base44.asServiceRole.entities.InventoryItem.update(item.id, { name, quantity: Number(item.quantity || 0) + quantity, locationBalances: next, currentLocationId: locationId });
+        await base44.asServiceRole.entities.InventoryItem.update(item.id, { name, quantity: Number(item.quantity || 0) + quantity, locationBalances: next, currentLocationId: locationId, archived: false, archivedAt: null, archivedBy: null });
       } else {
         const qrCode = `PC-ITEM:${auth.companyId}:${itemCode}`;
         item = await base44.asServiceRole.entities.InventoryItem.create({ companyId: auth.companyId, itemCode, name, currentLocationId: locationId, minimumStock: Math.max(0, Number(body.minimumStock || 0)), quantity, locationBalances: [{ locationId, quantity }], qrCode });
