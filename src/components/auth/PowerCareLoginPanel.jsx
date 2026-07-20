@@ -12,7 +12,7 @@ export default function PowerCareLoginPanel({ showTypeSelector = false, returnPa
   const { t, lang } = useI18n();
   const flow = usePowerCareLogin(returnPath);
   if (flow.googleAccounts.length) return <GoogleAccountPicker accounts={flow.googleAccounts} onSelect={flow.chooseGoogleAccount} onBack={() => flow.setGoogleAccounts([])} loading={flow.loading} lang={lang} />;
-  if (flow.pendingId) return <OtpStep email={flow.email} accounts={flow.accounts} onVerify={flow.verify} onResend={flow.resend} onBack={() => flow.setPendingId(null)} />;
+  if (flow.pendingId) return <OtpStep email={flow.email} accounts={flow.accounts} onVerify={flow.verify} onResend={flow.resend} onBack={flow.backFromOtp} />;
   return <div className="space-y-4">
     {showTypeSelector && <LoginTypeSelector value={flow.kind} onChange={flow.setKind} lang={lang} />}
     <button type="button" onClick={flow.google} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-3 text-sm font-semibold hover:bg-muted disabled:opacity-50"><GoogleIcon className="h-5 w-5" />{t("continueWithGoogle")}</button>

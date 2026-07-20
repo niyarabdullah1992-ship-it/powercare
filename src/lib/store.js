@@ -695,9 +695,7 @@ function finishOwnerLogin(result) {
 export async function googleCompanyLogin(preferKind, accountKey) {
   try {
     const res = await invokeDirectory({ action: "googleOwnerLogin", preferKind: preferKind || null, accountKey: accountKey || null });
-    if (res?.data?.selectionRequired) return res.data;
-    if (res?.data?.kind === "owner" && res.data.token) return finishOwnerLogin(res.data);
-    if (res?.data?.kind === "employee" && res.data.token) return finishEmployeeLogin(res.data);
+    if (res?.data?.selectionRequired || res?.data?.otpRequired) return res.data;
     return null;
   } catch {
     return null;

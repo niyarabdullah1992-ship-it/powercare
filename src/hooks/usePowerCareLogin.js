@@ -14,6 +14,7 @@ export default function usePowerCareLogin(returnPath = "/login") {
   const [pendingId, setPendingId] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [googleAccounts, setGoogleAccounts] = useState([]);
+  const [googleOtpAccountKey, setGoogleOtpAccountKey] = useState(null);
 
   useEffect(() => { if (session) navigate("/app", { replace: true }); }, [session, navigate]);
   useEffect(() => {
@@ -23,7 +24,12 @@ export default function usePowerCareLogin(returnPath = "/login") {
     setKind(loginKind);
     loginWithGoogle(loginKind).then((result) => {
       if (result?.selectionRequired) setGoogleAccounts(result.accounts || []);
-      else if (!result) setError("No workspace is linked to this Google account");
+      else if (result?.otpRequired) {
+        setEmail(result.email || "");
+        setPendingId(result.pendingId);
+        setAccounts([]);
+        setGoogleOtpAccountKey(result.accountKey || null);
+      } else if (!result) setError("No workspace is linked to this Google account");
     }).catch((error) => setError(error.message || "Google login failed"))
       .finally(() => setLoading(false));
   }, []);
@@ -45,7 +51,9 @@ export default function usePowerCareLogin(returnPath = "/login") {
   const verify = async (code, companyId) => !!(await verifyOtp(pendingId, code, password, companyId));
   const resend = async () => {
     try {
-      const result = await login(email, password, kind);
+      const result = googleOtpAccountKey
+        ? await loginWithGoogle(kind, googleOtpAccountKey)
+        : await login(email, password, kind);
       if (!result?.otpRequired) return false;
       setPendingId(result.pendingId); setAccounts(result.accounts || []); return true;
     } catch (error) {
@@ -56,8 +64,15 @@ export default function usePowerCareLogin(returnPath = "/login") {
   const chooseGoogleAccount = async (accountKey) => {
     setError(""); setLoading(true);
     const result = await loginWithGoogle(kind, accountKey);
-    if (!result) setError("Could not open this workspace");
+    if (result?.otpRequired) {
+      setEmail(result.email || "");
+      setPendingId(result.pendingId);
+      setAccounts([]);
+      setGoogleAccounts([]);
+      setGoogleOtpAccountKey(result.accountKey || accountKey);
+    } else if (!result) setError("Could not open this workspace");
     setLoading(false);
   };
-  return { kind, setKind, email, setEmail, password, setPassword, error, loading, pendingId, accounts, googleAccounts, setGoogleAccounts, setPendingId, submit, verify, resend, google, chooseGoogleAccount };
+  const backFromOtp = () => { setPendingId(null); setGoogleOtpAccountKey(null); };
+  return { kind, setKind, email, setEmail, password, setPassword, error, loading, pendingId, accounts, googleAccounts, setGoogleAccounts, submit, verify, resend, google, chooseGoogleAccount, backFromOtp };
 }

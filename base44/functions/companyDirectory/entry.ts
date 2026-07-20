@@ -262,17 +262,13 @@ Deno.serve(async (req) => {
       if (!selected) return Response.json({ error: 'Workspace not found' }, { status: 404 });
       const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: selected.companyId });
       const account = accounts[0];
-      if (selected.kind === 'owner') {
-        const { ownerPassword: _password, ...safe } = account;
-        const token = await makeSession(base44, selected.companyId, null, 'owner');
-        return Response.json({ kind: 'owner', company: safe, token });
-      }
-      const token = await makeSession(base44, selected.companyId, selected.employeeId, 'employee');
-      return Response.json({
-        kind: 'employee', token,
-        employee: { companyId: selected.companyId, employeeId: selected.employeeId },
-        company: { companyId: selected.companyId, name: account.name || '', plan: account.plan || '', allowedEmailDomain: account.allowedEmailDomain || '', ownerEmail: account.ownerEmail || '', emailLanguage: account.emailLanguage || 'en', subscriptionStart: account.subscriptionStart || null, subscriptionEnd: account.subscriptionEnd || null },
+      const pendingId = await createLoginOtp(base44, {
+        kind: selected.kind,
+        companyId: selected.companyId,
+        employeeId: selected.employeeId || null,
+        email,
       });
+      return Response.json({ otpRequired: true, pendingId, email, accountKey: selected.accountKey });
     }
 
     // Cross-device login lookup — doesn't need a companyId yet, since the caller is
