@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { ShieldAlert, Search, Download, RefreshCw } from "lucide-react";
+import { ShieldAlert, Search, Download, RefreshCw, ChevronDown } from "lucide-react";
 import { fetchAuditLog } from "@/lib/auditLog";
 import { useI18n } from "@/lib/i18n";
 
@@ -12,6 +12,7 @@ export default function AuditLogPanel({ companyId }) {
   const [actionFilter, setActionFilter] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
+  const [open, setOpen] = useState(false);
 
   const load = () => {
     setRefreshing(true);
@@ -51,21 +52,23 @@ export default function AuditLogPanel({ companyId }) {
   return (
     <div className="p-4 rounded-xl border border-border bg-card space-y-3">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h3 className="font-heading font-semibold flex items-center gap-2 text-sm">
+        <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className="flex items-center gap-2 text-start">
           <ShieldAlert className="w-4 h-4 text-accent" />
-          {ar ? "سجل التدقيق" : "Audit Log"}
+          <span className="font-heading font-semibold text-sm">{ar ? "سجل التدقيق" : "Audit Log"}</span>
           <span className="text-[10px] font-body text-muted-foreground">({filtered.length})</span>
-        </h3>
-        <div className="flex items-center gap-1.5">
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && <div className="flex items-center gap-1.5">
           <button onClick={load} className="p-1.5 rounded-md hover:bg-muted" title={ar ? "تحديث" : "Refresh"}>
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
           </button>
           <button onClick={exportCsv} disabled={!filtered.length} className="flex items-center gap-1 px-2 py-1.5 rounded-md border border-border text-[11px] font-body hover:bg-muted disabled:opacity-40">
             <Download className="w-3 h-3" /> CSV
           </button>
-        </div>
+        </div>}
       </div>
 
+      {open && <>
       <div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[140px]">
           <Search className="w-3.5 h-3.5 absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -113,6 +116,7 @@ export default function AuditLogPanel({ companyId }) {
           })}
         </div>
       )}
+      </>}
     </div>
   );
 }
