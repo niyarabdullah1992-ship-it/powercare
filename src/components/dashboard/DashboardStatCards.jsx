@@ -5,8 +5,8 @@ import { TrendingUp, Users } from "lucide-react";
 // Memoized — props are primitives, so unrelated dashboard re-renders skip this tree.
 function DashboardStatCards({ attendanceRate, completed, total, activeMembers, totalMembers, t }) {
   return (
-    <div className="grid h-full grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-1">
-      <div className="rounded-2xl border border-ops-border bg-ops-surface p-5 shadow-sm">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <p className="text-xs font-body font-semibold text-foreground/80 mb-3">1. {t("attendanceRateLabel")}</p>
         <div className="flex items-center gap-3">
           <p className="hero-title text-4xl">{attendanceRate}%</p>
@@ -15,13 +15,13 @@ function DashboardStatCards({ attendanceRate, completed, total, activeMembers, t
           </span>
         </div>
       </div>
-      <div className="rounded-2xl border border-ops-border bg-ops-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <p className="text-xs font-body font-semibold text-foreground/80 mb-3">2. {t("completedTasks")}</p>
         <p className="hero-title text-4xl">
           {completed} <span className="text-muted-foreground/50 text-2xl">/ {total}</span>
         </p>
       </div>
-      <div className="rounded-2xl border border-ops-border bg-ops-surface p-5 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <p className="text-xs font-body font-semibold text-foreground/80 mb-3">3. {t("employees")}</p>
         <div className="flex items-center gap-3">
           <p className="hero-title text-4xl">{totalMembers}</p>

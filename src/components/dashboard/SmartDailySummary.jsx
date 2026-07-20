@@ -33,7 +33,7 @@ export default function SmartDailySummary({ companyId, lang, t, facts }) {
   if (!text && !loading) return null;
 
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-ops-gold/30 bg-ops-gold/10 p-5 text-white">
+    <div className="rounded-2xl border border-accent/30 bg-accent/5 p-5 flex items-start gap-3">
       <div className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
         <Sparkles className="w-4 h-4 text-accent" />
       </div>

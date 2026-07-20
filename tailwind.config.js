@@ -74,13 +74,7 @@ module.exports = {
   			'sign-bg': 'hsl(var(--sign-bg))',
   			'sign-surface': 'hsl(var(--sign-surface))',
   			'sign-ink': 'hsl(var(--sign-ink))',
-  			'sign-gold': 'hsl(var(--sign-gold))',
-			'ops-bg': 'hsl(var(--ops-bg))',
-			'ops-surface': 'hsl(var(--ops-surface))',
-			'ops-ink': 'hsl(var(--ops-ink))',
-			'ops-dark': 'hsl(var(--ops-dark))',
-			'ops-gold': 'hsl(var(--ops-gold))',
-			'ops-border': 'hsl(var(--ops-border))'
+  			'sign-gold': 'hsl(var(--sign-gold))'
   		},
   		fontFamily: {
   			heading: ['var(--font-heading)'],

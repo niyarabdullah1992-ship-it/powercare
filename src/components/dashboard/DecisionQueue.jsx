@@ -10,9 +10,9 @@ export default function DecisionQueue({ pendingReports, delayedTasks, safetySign
     { icon: ListChecks, title: ar ? "حلّل المهام المعرضة للتأخير" : "Analyze delay-prone tasks", note: ar ? `${delayedTasks} مهام تحتاج قراراً` : `${delayedTasks} tasks need a decision`, prompt: ar ? "حلل المهام الحالية وحدد المعرض منها للتأخير مع توصيات عملية" : "Analyze current tasks at risk of delay and recommend actions" },
   ];
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm">
+    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-widest text-accent">Decision Engine</p><h2 className="mt-1 font-heading text-2xl font-semibold">{ar ? "قرارات مقترحة" : "Recommended Decisions"}</h2></div><Bot className="h-5 w-5 text-accent" /></div>
-      <div className="space-y-2">{commands.map(({ icon: Icon, title, note, prompt }) => <Link key={title} to={`/app/assistant?prompt=${encodeURIComponent(prompt)}`} className="group flex items-center gap-3 rounded-xl border border-white/10 bg-black/10 p-3 hover:bg-white/10"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent"><Icon className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="text-sm font-medium">{title}</p><p className="text-xs text-white/50">{note}</p></div><Sparkles className="h-4 w-4 text-accent opacity-40 group-hover:opacity-100" /></Link>)}</div>
+      <div className="space-y-2">{commands.map(({ icon: Icon, title, note, prompt }) => <Link key={title} to={`/app/assistant?prompt=${encodeURIComponent(prompt)}`} className="group flex items-center gap-3 rounded-xl bg-muted/60 p-3 hover:bg-muted"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10 text-accent"><Icon className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="text-sm font-medium">{title}</p><p className="text-xs text-muted-foreground">{note}</p></div><Sparkles className="h-4 w-4 text-accent opacity-40 group-hover:opacity-100" /></Link>)}</div>
     </section>
   );
 }

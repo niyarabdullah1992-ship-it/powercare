@@ -57,12 +57,6 @@
     --icon-gold: 32 58% 49%;
     --icon-gold-soft: 35 55% 67%;
     --icon-halo: 32 58% 49%;
-    --ops-bg: 38 45% 92%;
-    --ops-surface: 38 50% 97%;
-    --ops-ink: 28 28% 12%;
-    --ops-dark: 28 32% 9%;
-    --ops-gold: 34 52% 52%;
-    --ops-border: 34 28% 79%;
   }
 
   .dark {
@@ -106,12 +100,6 @@
     --icon-gold: 35 61% 58%;
     --icon-gold-soft: 37 52% 72%;
     --icon-halo: 35 61% 58%;
-    --ops-bg: 28 18% 9%;
-    --ops-surface: 28 16% 13%;
-    --ops-ink: 38 40% 92%;
-    --ops-dark: 28 38% 6%;
-    --ops-gold: 35 57% 58%;
-    --ops-border: 30 18% 25%;
   }
 }
 

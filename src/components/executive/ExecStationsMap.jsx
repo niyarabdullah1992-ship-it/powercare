@@ -27,7 +27,7 @@ export default function ExecStationsMap({ stations, safety, lang }) {
   const levelOf = (id) => (safety || []).find((r) => r.stationId === id)?.level || "none";
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-ops-border bg-ops-surface shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 text-accent" strokeWidth={1.75} />

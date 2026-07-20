@@ -49,7 +49,7 @@ function TeamStatusPanel({ employees, companyId, t, lang }) {
   };
 
   return (
-    <div className="rounded-2xl border border-ops-border bg-ops-surface p-6 shadow-sm">
+    <div className="p-6 rounded-2xl border border-border bg-card">
       <h3 className="hero-title text-2xl mb-4 flex items-center gap-2">
         <Users className="w-4 h-4" strokeWidth={1.5} /> {t("teamStatus")}
       </h3>
