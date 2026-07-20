@@ -11,6 +11,13 @@
     "stationId": {
       "type": "string"
     },
+    "sourceStationId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Station requested to supply the item."
+    },
     "itemId": {
       "type": "string"
     },

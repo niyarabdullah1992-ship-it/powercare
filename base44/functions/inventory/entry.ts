@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
       const scopedPurchaseOrders = purchaseOrders.filter((entry) => seniorRoles.includes(auth.role) || visible.has(entry.stationId));
       const locations = scopedStations;
       const transferStations = auth.manager ? stations : [];
-      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, purchases, procurementRequests: scopedProcurementRequests, purchaseOrders: scopedPurchaseOrders, requests: scopedRequests, stations: scopedStations, locations, transferStations, employees, canManage: canPurchase, canPurchase, canCreateItem, canIssueToWork: canPurchase, canDelete: warehouseAccess, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: seniorRoles.includes(auth.role), canWarehouseManage: false, canTransfer: auth.manager, canSetCentralWarehouse: false, centralWarehouseId: null });
+      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, purchases, procurementRequests: scopedProcurementRequests, purchaseOrders: scopedPurchaseOrders, requests: scopedRequests, stations: scopedStations, locations, transferStations, requestStations: stations, employees, canManage: canPurchase, canPurchase, canCreateItem, canIssueToWork: canPurchase, canDelete: warehouseAccess, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: seniorRoles.includes(auth.role), canWarehouseManage: false, canTransfer: auth.manager, canSetCentralWarehouse: false, centralWarehouseId: null });
     }
 
     if (body.action === "submitProcurement") {
@@ -161,6 +161,17 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true });
     }
 
+    if (body.action === "createCatalogItem") {
+      if (!canCreateItem) return Response.json({ error: "A station is required to create an item" }, { status: 403 });
+      const name = String(body.name || "").trim(); const itemCode = String(body.itemCode || "").trim();
+      const locationId = String(body.locationId || auth.stationId || ""); const minimumStock = Math.max(0, Number(body.minimumStock || 0));
+      if (!name || !itemCode || !ensureStation(locationId)) return Response.json({ error: "Valid item name, code and station are required" }, { status: 400 });
+      const duplicates = await base44.asServiceRole.entities.InventoryItem.filter({ companyId: auth.companyId, itemCode });
+      if (duplicates.length) return Response.json({ error: "An item with this code already exists" }, { status: 409 });
+      await base44.asServiceRole.entities.InventoryItem.create({ companyId: auth.companyId, itemCode, name, currentLocationId: locationId, minimumStock, quantity: 0, locationBalances: [{ locationId, quantity: 0 }], qrCode: `PC-ITEM:${auth.companyId}:${itemCode}` });
+      return Response.json({ ok: true });
+    }
+
     if (body.action === "createItem") {
       if (!canCreateItem) return Response.json({ error: "A station is required to create an item" }, { status: 403 });
       const name = String(body.name || "").trim(); const itemCode = String(body.itemCode || "").trim();
@@ -187,9 +198,9 @@ Deno.serve(async (req) => {
 
     if (body.action === "request") {
       const item = await getItem(body.itemId); const quantity = Number(body.quantity); const notes = String(body.notes || "").trim();
-      const stationId = auth.stationId || body.stationId;
-      if (!item || !stationId || !allStationIds.includes(stationId) || quantity < 1 || !notes) return Response.json({ error: "Item, quantity and request reason are required" }, { status: 400 });
-      await base44.asServiceRole.entities.MaterialRequest.create({ companyId: auth.companyId, requesterId: auth.userId, stationId, itemId: item.id, quantity, notes, status: "pending", supervisorId: null, reviewedBy: null, reviewedAt: null, issuedAt: null });
+      const stationId = String(body.stationId || auth.stationId || ""); const sourceStationId = String(body.sourceStationId || "");
+      if (!item || !ensureStation(stationId) || !allStationIds.includes(sourceStationId) || sourceStationId === stationId || balanceAt(item, sourceStationId) < quantity || quantity < 1 || !notes) return Response.json({ error: "Choose an available item from another station and enter a valid quantity and reason" }, { status: 400 });
+      await base44.asServiceRole.entities.MaterialRequest.create({ companyId: auth.companyId, requesterId: auth.userId || auth.name, stationId, sourceStationId, itemId: item.id, quantity, notes, status: "pending", supervisorId: null, reviewedBy: null, reviewedAt: null, issuedAt: null });
       return Response.json({ ok: true });
     }
 

@@ -1,12 +1,17 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 
-export default function MaterialRequestForm({ items, stationId, centralWarehouseId, onSubmit, ar }) {
+export default function MaterialRequestForm({ items, stations, stationId, onSubmit, ar }) {
+  const [sourceStationId, setSourceStationId] = useState("");
+  const availableItems = useMemo(() => items.filter((item) => Number(item.locationBalances?.find((balance) => balance.locationId === sourceStationId)?.quantity || 0) > 0), [items, sourceStationId]);
   const submit = async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); if (await onSubmit(Object.fromEntries(form))) event.currentTarget.reset(); };
-  return <form onSubmit={submit} className="grid gap-3 rounded-xl border border-border bg-card p-4 md:grid-cols-4">
+  const sources = stations.filter((station) => station.stationId !== stationId && items.some((item) => Number(item.locationBalances?.find((balance) => balance.locationId === station.stationId)?.quantity || 0) > 0));
+  return <form onSubmit={submit} className="grid gap-3 rounded-xl border border-border bg-card p-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className="md:col-span-2 xl:col-span-4"><h2 className="font-heading text-xl font-semibold">{ar ? "طلب من محطة أخرى" : "Request from another station"}</h2><p className="text-xs text-muted-foreground">{ar ? "تظهر فقط المحطات والأصناف التي يتوفر بها رصيد." : "Only stations and items with available stock are shown."}</p></div>
     <input type="hidden" name="stationId" value={stationId} />
-    <select name="itemId" required className="rounded-lg border px-3 py-2"><option value="">{ar ? "اختر قطعة الغيار" : "Choose an item"}</option>{items.map((item) => <option key={item.id} value={item.id}>{item.name} ({Number(item.locationBalances?.find((balance) => balance.locationId === centralWarehouseId)?.quantity || 0)})</option>)}</select>
+    <select name="sourceStationId" required value={sourceStationId} onChange={(event) => setSourceStationId(event.target.value)} className="rounded-lg border px-3 py-2"><option value="">{ar ? "اختر محطة المصدر" : "Choose source station"}</option>{sources.map((station) => <option key={station.stationId} value={station.stationId}>{station.name}</option>)}</select>
+    <select name="itemId" required disabled={!sourceStationId} className="rounded-lg border px-3 py-2"><option value="">{ar ? "اختر الصنف المتوفر" : "Choose available item"}</option>{availableItems.map((item) => <option key={item.id} value={item.id}>{item.name} ({Number(item.locationBalances.find((balance) => balance.locationId === sourceStationId)?.quantity || 0)})</option>)}</select>
     <input name="quantity" type="number" min="1" defaultValue="1" required className="rounded-lg border px-3 py-2" />
     <input name="notes" required placeholder={ar ? "سبب الطلب" : "Request reason"} className="rounded-lg border px-3 py-2" />
-    <button className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground">{ar ? "إرسال الطلب" : "Submit request"}</button>
+    <button disabled={!sources.length} className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50 md:col-span-2 xl:col-span-4">{sources.length ? (ar ? "إرسال الطلب" : "Submit request") : (ar ? "لا يوجد رصيد في محطات أخرى" : "No stock at other stations")}</button>
   </form>;
 }
