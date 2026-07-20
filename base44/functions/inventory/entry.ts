@@ -1,5 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
 
+// Inventory actions are authorized and scoped by the active company session.
 const stationRoles = ["station_manager", "inventory_keeper", "warehouse_manager"];
 const seniorRoles = ["owner", "director", "ops_manager"];
 
@@ -74,7 +75,7 @@ Deno.serve(async (req) => {
     const isStationOperator = stationRoles.includes(auth.role) && !!auth.stationId;
     const canPurchase = isStationOperator || isSenior;
     const canCreateItem = isStationOperator || isSenior;
-    const canArchive = isSenior || ["station_manager", "warehouse_manager"].includes(auth.role);
+    const canDelete = isSenior || ["station_manager", "warehouse_manager"].includes(auth.role);
     const canApproveProcurement = false;
     const canReceiveProcurement = false;
     const allStationIds = stations.map((station) => station.stationId);
@@ -109,7 +110,7 @@ Deno.serve(async (req) => {
       const scopedMovements = movements.filter((entry) => isSenior || visible.has(entry.fromLocationId) || visible.has(entry.toLocationId));
       const scopedStations = stations.filter((station) => isSenior || visible.has(station.stationId));
       const purchases = scopedMovements.filter((entry) => entry.movementType === "purchase");
-      return Response.json({ items: scopedItems, requestItems: activeItems, historyItems: items, movements: scopedMovements, purchases, procurementRequests: [], purchaseOrders: [], requests: scopedRequests, stations: scopedStations, locations: scopedStations, transferStations: stations, employees, canManage: isStationOperator, canPurchase, canCreateItem, canIssueToWork: isStationOperator, canRequest: isStationOperator || isSenior, canReviewRequests: isStationOperator, canArchive, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: isSenior, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null });
+      return Response.json({ items: scopedItems, requestItems: activeItems, historyItems: items, movements: scopedMovements, purchases, procurementRequests: [], purchaseOrders: [], requests: scopedRequests, stations: scopedStations, locations: scopedStations, transferStations: stations, employees, canManage: isStationOperator, canPurchase, canCreateItem, canIssueToWork: isStationOperator, canRequest: isStationOperator || isSenior, canReviewRequests: isStationOperator, canDelete, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: isSenior, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null });
     }
 
     if (["submitProcurement", "reviewProcurement", "createPurchaseOrder", "receivePurchaseOrder", "issueRequest"].includes(body.action)) return Response.json({ error: "This workflow is no longer available" }, { status: 410 });
@@ -174,15 +175,16 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true });
     }
 
-    if (body.action === "archiveItem") {
-      if (!canArchive) return Response.json({ error: "Management permission required" }, { status: 403 });
+    if (body.action === "deleteItem") {
+      if (!canDelete) return Response.json({ error: "Management permission required" }, { status: 403 });
       const item = await getItem(body.itemId);
       if (!item) return Response.json({ error: "Item not found" }, { status: 404 });
-      await base44.asServiceRole.entities.InventoryItem.update(item.id, {
-        archived: true,
-        archivedAt: new Date().toISOString(),
-        archivedBy: auth.userId || auth.name,
-      });
+      await Promise.all([
+        base44.asServiceRole.entities.StockMovement.deleteMany({ companyId: auth.companyId, itemId: item.id }),
+        base44.asServiceRole.entities.MaterialRequest.deleteMany({ companyId: auth.companyId, itemId: item.id }),
+        base44.asServiceRole.entities.InventoryUnit.deleteMany({ companyId: auth.companyId, itemId: item.id }),
+      ]);
+      await base44.asServiceRole.entities.InventoryItem.delete(item.id);
       return Response.json({ ok: true });
     }
 

@@ -21,7 +21,7 @@ import StationWarehousePicker from "@/components/inventory/StationWarehousePicke
 import InventoryExportButtons from "@/components/inventory/InventoryExportButtons";
 import { toast } from "@/components/ui/use-toast";
 
-const emptyData = { items: [], requestItems: [], historyItems: [], movements: [], purchases: [], requests: [], stations: [], locations: [], transferStations: [], employees: [], procurementRequests: [], purchaseOrders: [], canManage: false, canPurchase: false, canCreateItem: false, canIssueToWork: false, canRequest: false, canReviewRequests: false, canArchive: false, canApproveProcurement: false, canReceiveProcurement: false, canViewAllPurchases: false, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null };
+const emptyData = { items: [], requestItems: [], historyItems: [], movements: [], purchases: [], requests: [], stations: [], locations: [], transferStations: [], employees: [], procurementRequests: [], purchaseOrders: [], canManage: false, canPurchase: false, canCreateItem: false, canIssueToWork: false, canRequest: false, canReviewRequests: false, canDelete: false, canApproveProcurement: false, canReceiveProcurement: false, canViewAllPurchases: false, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null };
 
 export default function Inventory() {
   const { session, currentUser, data } = useAuth();
@@ -91,6 +91,6 @@ export default function Inventory() {
       {active === "consumption" && <WorkIssueTab items={state.items} stations={state.locations} employees={state.employees} stationId={activeStation} canIssue={state.canIssueToWork} movements={state.movements} onSubmit={(payload) => run("issueToWork", payload)} ar={ar} />}
       {active === "movements" && <MovementList movements={state.movements} items={state.historyItems} employees={state.employees} stations={state.transferStations} ar={ar} />}
     </>}
-    <ItemDetails item={selectedItem} stations={state.stations} canArchive={state.canArchive} onArchive={async (itemId) => { if (await run("archiveItem", { itemId })) setSelectedItem(null); }} onImagesChange={updateImages} onClose={() => setSelectedItem(null)} ar={ar} />
+    <ItemDetails item={selectedItem} stations={state.stations} canDelete={state.canDelete} onDelete={async (itemId) => { if (await run("deleteItem", { itemId })) setSelectedItem(null); }} onImagesChange={updateImages} onClose={() => setSelectedItem(null)} ar={ar} />
   </div>;
 }
