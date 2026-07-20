@@ -71,28 +71,33 @@ Deno.serve(async (req) => {
     // Employee record. The scheduled escalation sweep runs without a user session.
     let auth = null;
     if (action !== "runEscalationSweep") {
-      const platformUser = await base44.auth.me().catch(() => null);
-      if (platformUser && platformUser.role === "admin") {
-        auth = { admin: true, isManager: true, role: "owner", companyId: body.companyId || null, userId: body.userId || null, name: platformUser.full_name || "Admin" };
-      } else {
-        const { sessionToken, companyId } = body;
-        if (sessionToken && companyId) {
-          const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: sessionToken, companyId });
-          const s = sessions[0];
-          if (s && new Date(s.expiresAt).getTime() > Date.now()) {
-            if (s.role === "owner") {
-              auth = { isManager: true, role: "owner", companyId, userId: s.userId || null, name: "Owner" };
-            } else {
-              const emps = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: s.userId });
-              const emp = emps[0] || null;
-              auth = {
+      const { sessionToken, companyId } = body;
+      if (sessionToken && companyId) {
+        const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: sessionToken, companyId });
+        const s = sessions[0];
+        if (s && new Date(s.expiresAt).getTime() > Date.now()) {
+          const emps = s.userId
+            ? await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: s.userId })
+            : [];
+          const emp = emps[0] || null;
+          auth = s.role === "owner"
+            ? { isManager: true, role: "owner", companyId, userId: s.userId || null, name: emp?.name || "Owner" }
+            : {
                 isManager: MANAGER_ROLES.includes(emp?.role), role: emp?.role || "employee",
                 companyId, userId: s.userId, stationId: emp?.stationId || null,
                 managedStations: Array.isArray(emp?.managedStations) ? emp.managedStations : [],
                 name: emp?.name || "Employee",
               };
-            }
-          }
+        }
+      }
+      if (!auth) {
+        const platformUser = await base44.auth.me().catch(() => null);
+        if (platformUser && platformUser.role === "admin") {
+          const employees = body.companyId && body.userId
+            ? await base44.asServiceRole.entities.Employee.filter({ companyId: body.companyId, employeeId: body.userId })
+            : [];
+          const employee = employees[0] || null;
+          auth = { admin: true, isManager: true, role: employee?.role || "owner", companyId: body.companyId || null, userId: body.userId || null, name: employee?.name || platformUser.full_name || "Admin" };
         }
       }
       if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -757,6 +762,18 @@ Deno.serve(async (req) => {
       );
       const rows = await res.json();
       return Response.json({ notifications: rows });
+    }
+
+    if (action === "dismissNotification") {
+      const notifUserId = auth?.userId || body.userId;
+      const notificationId = String(body.notificationId || "");
+      if (!notificationId || !(await canActAs(notifUserId))) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const result = await fetch(
+        `${SUPABASE_URL}/rest/v1/notifications?id=eq.${encodeURIComponent(notificationId)}&user_id=eq.${encodeURIComponent(notifUserId)}`,
+        { method: "DELETE", headers }
+      );
+      if (!result.ok) return Response.json({ error: "Failed to dismiss notification" }, { status: 400 });
+      return Response.json({ ok: true });
     }
 
     if (action === "addComment") {

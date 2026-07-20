@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { addNotification, addPoints } from "@/lib/store";
+import { addNotification, addPoints, getCompanyToken } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { PRIORITY_POINTS } from "@/lib/rewards";
 import { handlersForLevel, hasHandlerAtLevel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
@@ -46,6 +46,12 @@ const hasTodayCheckIn = (attendance) => ["present", "late"].includes(attendance?
 export default function MyTasks() {
   const { t, dir, lang } = useI18n();
   const { data, currentUser, company, refresh } = useAuth();
+  const targetsCall = (payload) => base44.functions.invoke("supabaseTargets", {
+    ...payload,
+    companyId: company?.id,
+    userId: currentUser?.id,
+    sessionToken: company?.id ? getCompanyToken(company.id) : null,
+  });
   const [showCreate, setShowCreate] = useState(false);
   const [assignType, setAssignType] = useState("member");
   const [formStation, setFormStation] = useState("");
@@ -114,7 +120,7 @@ export default function MyTasks() {
       setTargetsLoading(true);
     }
     try {
-      const res = await base44.functions.invoke("supabaseTargets", {
+      const res = await targetsCall({
         action: "listTargets",
         userRole: currentUser.role,
         userId: currentUser.id,
@@ -153,7 +159,7 @@ export default function MyTasks() {
       try { setFolders(JSON.parse(cached)); } catch { /* ignore bad cache */ }
     }
     try {
-      const res = await base44.functions.invoke("supabaseTargets", { action: "listFolders" });
+      const res = await targetsCall({ action: "listFolders" });
       const list = res.data.folders || [];
       setFolders(list);
       sessionStorage.setItem("pc_folders", JSON.stringify(list));
@@ -185,7 +191,7 @@ export default function MyTasks() {
     }
     const sortOrder = folders.filter((f) => f.station_id === selectedStation).length;
     try {
-      const res = await base44.functions.invoke("supabaseTargets", { action: "createFolder", stationId: selectedStation, path, sortOrder });
+      const res = await targetsCall({ action: "createFolder", stationId: selectedStation, path, sortOrder });
       const created = res?.data?.folder;
       if (!created) return false;
       setFolders((prev) => [...prev, created]);
@@ -204,7 +210,7 @@ export default function MyTasks() {
     const parentPath = getParentPath(path);
     const sortOrder = folders.filter((f) => f.station_id === forStationId && getParentPath(f.path) === parentPath).length;
     try {
-      const res = await base44.functions.invoke("supabaseTargets", { action: "createFolder", stationId: forStationId, path, sortOrder });
+      const res = await targetsCall({ action: "createFolder", stationId: forStationId, path, sortOrder });
       const created = res?.data?.folder;
       if (created) setFolders((prev) => [...prev, created]);
     } catch {
@@ -215,7 +221,7 @@ export default function MyTasks() {
   const moveTaskToSection = async (tg, newSectionKey) => {
     const section = newSectionKey === NO_SECTION ? "" : newSectionKey;
     try {
-      const res = await base44.functions.invoke("supabaseTargets", {
+      const res = await targetsCall({
         action: "updateTarget",
         userRole: currentUser.role,
         targetId: tg.id,
@@ -236,7 +242,7 @@ export default function MyTasks() {
     try {
       await Promise.all(
         affectedTasks.map((tg) =>
-          base44.functions.invoke("supabaseTargets", {
+          targetsCall({
             action: "updateTarget",
             userRole: currentUser.role,
             targetId: tg.id,
@@ -244,7 +250,7 @@ export default function MyTasks() {
           })
         )
       );
-      await base44.functions.invoke("supabaseTargets", {
+      await targetsCall({
         action: "renameFolder",
         stationId: selectedStation,
         oldPath,
@@ -266,7 +272,7 @@ export default function MyTasks() {
     try {
       await Promise.all(
         affectedTasks.map((tg) =>
-          base44.functions.invoke("supabaseTargets", {
+          targetsCall({
             action: "updateTarget",
             userRole: currentUser.role,
             targetId: tg.id,
@@ -274,7 +280,7 @@ export default function MyTasks() {
           })
         )
       );
-      await base44.functions.invoke("supabaseTargets", {
+      await targetsCall({
         action: "deleteFolder",
         stationId: selectedStation,
         path: folderPath,
@@ -293,7 +299,7 @@ export default function MyTasks() {
       return match ? { ...f, sort_order: match.sortOrder } : f;
     }));
     try {
-      await base44.functions.invoke("supabaseTargets", { action: "reorderFolders", items });
+      await targetsCall({ action: "reorderFolders", items });
     } catch {
       // best-effort — order will re-sync on next fetch
     }
@@ -428,7 +434,7 @@ export default function MyTasks() {
     const fileUrls = taskFiles.length > 0 ? taskFiles.map((f) => ({ url: f.url, name: f.name, type: f.type })) : null;
 
     try {
-      const res = await base44.functions.invoke("supabaseTargets", {
+      const res = await targetsCall({
         action: "createTarget",
         userRole: currentUser.role,
         managerId: currentUser.id,
@@ -496,7 +502,7 @@ export default function MyTasks() {
     setLogAmount(1);
     setLogProofFiles([]);
     try {
-      const res = await base44.functions.invoke("supabaseTargets", {
+      const res = await targetsCall({
         action: "updateProgress",
         targetId,
         amount: amt,
@@ -536,7 +542,7 @@ export default function MyTasks() {
     const prevSnapshot = { ...tg };
     setTargets((prev) => prev.map((x) => (x.id === tg.id ? { ...x, status: approve ? "completed" : "active" } : x)));
     try {
-      const res = await base44.functions.invoke("supabaseTargets", {
+      const res = await targetsCall({
         action: "reviewCompletion",
         userRole: currentUser.role,
         targetId: tg.id,
@@ -593,7 +599,7 @@ export default function MyTasks() {
     setCommentFiles([]);
     setMarkIssue(false);
     try {
-      const res = await base44.functions.invoke("supabaseTargets", {
+      const res = await targetsCall({
         action: "addComment",
         targetId,
         userId: currentUser.id,
@@ -636,7 +642,7 @@ export default function MyTasks() {
     const handlers = handlersForLevel(nextLevel, targetScope, data);
     const notifyUserIds = handlers.map((handler) => handler.id);
     try {
-      const res = await base44.functions.invoke("supabaseTargets", {
+      const res = await targetsCall({
         action: "disputeRejection",
         targetId: tg.id,
         employeeId: currentUser.id,
@@ -655,7 +661,7 @@ export default function MyTasks() {
 
   const convertToRemote = async (tg) => {
     try {
-      const res = await base44.functions.invoke("supabaseTargets", { action: "convertToRemote", targetId: tg.id });
+      const res = await targetsCall({ action: "convertToRemote", targetId: tg.id });
       const updated = res?.data?.target;
       if (updated) setTargets((prev) => prev.map((item) => item.id === updated.id ? updated : item));
     } catch (err) {
@@ -666,7 +672,7 @@ export default function MyTasks() {
   const deleteTarget = async (targetId) => {
     const tg = targets.find((x) => x.id === targetId);
     try {
-      await base44.functions.invoke("supabaseTargets", { action: "deleteTarget", targetId });
+      await targetsCall({ action: "deleteTarget", targetId });
       setTargets((prev) => prev.filter((x) => x.id !== targetId));
       logAudit(company.id, "task_deleted", currentUser.name, `"${tg?.title || targetId}" (${tg?.status || "?"})`);
     } catch (err) {
@@ -678,7 +684,7 @@ export default function MyTasks() {
     e.preventDefault();
     const fd = new FormData(e.target);
     try {
-      const res = await base44.functions.invoke("supabaseTargets", {
+      const res = await targetsCall({
         action: "updateTarget",
         userRole: currentUser.role,
         targetId: editTarget.id,

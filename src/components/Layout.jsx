@@ -5,7 +5,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { RefreshCw } from "lucide-react";
-import { updateCompany, getCompanyData } from "@/lib/store";
+import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio,
@@ -77,12 +77,16 @@ export default function Layout({ children }) {
       if (notificationPollInFlightRef.current || document.visibilityState !== "visible" || navigator.onLine === false) return;
       notificationPollInFlightRef.current = true;
       try {
+        const dismissedKey = `powercare_notification_dismissed_${company.id}_${currentUser.id}`;
+        const dismissedIds = new Set(JSON.parse(localStorage.getItem(dismissedKey) || "[]"));
         const res = await base44.functions.invoke("supabaseTargets", {
           action: "listNotifications",
           userId: currentUser.id,
+          companyId: company.id,
+          sessionToken: getCompanyToken(company.id),
         });
         const remote = (res.data?.notifications || []).filter((notification) =>
-          shouldShowNotification(notification.message, data)
+          !dismissedIds.has(String(notification.id)) && shouldShowNotification(notification.message, data)
         );
         const current = getCompanyData(company.id);
         if (!current) return;
@@ -187,6 +191,20 @@ export default function Layout({ children }) {
     if (proactiveAlerts.some((alert) => alert.id === id)) {
       setProactiveAlerts((alerts) => alerts.filter((alert) => alert.id !== id));
       return;
+    }
+    if (String(id).startsWith("snf_")) {
+      const remoteId = String(id).slice(4);
+      const key = `powercare_notification_dismissed_${company.id}_${currentUser.id}`;
+      const dismissedIds = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
+      dismissedIds.add(remoteId);
+      localStorage.setItem(key, JSON.stringify([...dismissedIds]));
+      base44.functions.invoke("supabaseTargets", {
+        action: "dismissNotification",
+        notificationId: remoteId,
+        userId: currentUser.id,
+        companyId: company.id,
+        sessionToken: getCompanyToken(company.id),
+      }).catch(() => {});
     }
     updateCompany(company.id, (d) => {
       d.notifications = d.notifications.filter((n) => n.id !== id);
