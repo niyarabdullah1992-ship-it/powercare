@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
       const sourceBefore = balanceAt(item, sourceId); const destinationBefore = balanceAt(item, request.stationId);
       let next = adjustBalance(item, sourceId, -quantity); next = adjustBalance({ ...item, locationBalances: next }, request.stationId, quantity);
       await base44.asServiceRole.entities.InventoryItem.update(item.id, { locationBalances: next, currentLocationId: request.stationId });
-      await movement({ itemId: item.id, movementType: "transfer", quantity, fromLocationId: sourceId, toLocationId: request.stationId, employeeId: request.requesterId, requestId: request.id, sourceBalanceBefore: sourceBefore, sourceBalanceAfter: sourceBefore - quantity, destinationBalanceBefore: destinationBefore, destinationBalanceAfter: destinationBefore + quantity, unitPrice: Number(request.unitPrice || 0), totalCost: Number(request.totalCost || (quantity * Number(request.unitPrice || 0))) });
+      await movement({ itemId: item.id, movementType: "transfer", quantity, fromLocationId: sourceId, toLocationId: request.stationId, employeeId: request.requesterId, requestId: request.id, balanceBefore: sourceBefore, balanceAfter: sourceBefore - quantity, sourceBalanceBefore: sourceBefore, sourceBalanceAfter: sourceBefore - quantity, destinationBalanceBefore: destinationBefore, destinationBalanceAfter: destinationBefore + quantity, unitPrice: Number(request.unitPrice || 0), totalCost: Number(request.totalCost || (quantity * Number(request.unitPrice || 0))) });
       await base44.asServiceRole.entities.MaterialRequest.update(request.id, { status: "issued", reviewedBy: auth.userId || auth.name, reviewedAt, issuedAt: reviewedAt });
       return Response.json({ ok: true });
     }
