@@ -31,6 +31,7 @@ export default function Inventory() {
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedStation, setSelectedStation] = useState("");
+  const [selectedInventoryStations, setSelectedInventoryStations] = useState([]);
   const stationVersion = (data?.stations || []).map((station) => station.id).sort().join("|");
 
   const load = async () => {
@@ -71,19 +72,19 @@ export default function Inventory() {
   const stationIds = state.locations.map((station) => station.stationId || station.id);
   const allStationsSelected = selectedStation === "all" && state.locations.length > 1;
   const activeStation = allStationsSelected ? "all" : stationIds.includes(selectedStation) ? selectedStation : (state.locations[0]?.stationId || state.locations[0]?.id || currentUser.stationId || "");
-  const stationItems = allStationsSelected ? state.items : state.items
-    .filter((item) => (item.locationBalances || []).some((balance) => balance.locationId === activeStation) || (!(item.locationBalances || []).length && item.currentLocationId === activeStation))
-    .map((item) => ({
-      ...item,
-      quantity: (item.locationBalances || []).find((balance) => balance.locationId === activeStation)?.quantity ?? item.quantity,
-      currentLocationId: activeStation,
-    }));
+  const visibleInventoryStations = selectedInventoryStations.length ? selectedInventoryStations : stationIds;
+  const stationItems = state.items.flatMap((item) => {
+    const balances = (item.locationBalances || []).filter((balance) => visibleInventoryStations.includes(balance.locationId));
+    if (balances.length) return balances.map((balance) => ({ ...item, displayKey: `${item.id}-${balance.locationId}`, quantity: Number(balance.quantity) || 0, currentLocationId: balance.locationId }));
+    if (!(item.locationBalances || []).length && visibleInventoryStations.includes(item.currentLocationId)) return [{ ...item, displayKey: `${item.id}-${item.currentLocationId}` }];
+    return [];
+  });
 
   return <div className="space-y-6">
     <PageHeader title={ar ? "المخزون" : "Inventory"} description={ar ? "إدارة الأصناف والحركات والطلبات والمشتريات حسب صلاحياتك." : "Manage items, movements, requests and purchases based on your role."} icon={Warehouse} actions={<InventoryExportButtons items={state.items} stations={state.stations} ar={ar} />} />
     {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <>
       <InventoryWorkflow ar={ar} onNavigate={(key) => setActive(tabFromWorkflow[key])} />
-      <GlobalInventorySearch items={state.items} stations={state.stations} onOpen={(item, stationId) => setSelectedItem({ ...item, quantity: Number(item.locationBalances?.find((balance) => balance.locationId === stationId)?.quantity || 0), currentLocationId: stationId })} ar={ar} />
+      <GlobalInventorySearch items={state.items} stations={state.stations} stationIds={selectedInventoryStations} onStationIdsChange={setSelectedInventoryStations} onOpen={(item, stationId) => setSelectedItem({ ...item, quantity: Number(item.locationBalances?.find((balance) => balance.locationId === stationId)?.quantity || 0), currentLocationId: stationId })} ar={ar} />
       <InventoryTabs active={active} onChange={setActive} ar={ar} />
       {active === "overview" && <InventoryStats items={stationItems} requests={state.requests} movements={state.movements} ar={ar} />}
       {active === "purchases" && <div className="space-y-4">
