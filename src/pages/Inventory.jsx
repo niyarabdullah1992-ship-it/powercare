@@ -70,8 +70,9 @@ export default function Inventory() {
   if (!currentUser) return null;
   const tabFromWorkflow = { purchase: "purchases", items: "items", requests: "requests", consumption: "consumption" };
   const stationIds = state.locations.map((station) => station.stationId || station.id);
-  const activeStation = stationIds.includes(selectedStation) ? selectedStation : (state.locations[0]?.stationId || state.locations[0]?.id || currentUser.stationId || "");
-  const stationItems = state.items
+  const allStationsSelected = selectedStation === "all" && state.locations.length > 1;
+  const activeStation = allStationsSelected ? "all" : stationIds.includes(selectedStation) ? selectedStation : (state.locations[0]?.stationId || state.locations[0]?.id || currentUser.stationId || "");
+  const stationItems = allStationsSelected ? state.items : state.items
     .filter((item) => (item.locationBalances || []).some((balance) => balance.locationId === activeStation) || (!(item.locationBalances || []).length && item.currentLocationId === activeStation))
     .map((item) => ({
       ...item,
@@ -83,12 +84,12 @@ export default function Inventory() {
     <PageHeader title={ar ? "المخزون" : "Inventory"} description={ar ? "إدارة الأصناف والحركات والطلبات والمشتريات حسب صلاحياتك." : "Manage items, movements, requests and purchases based on your role."} icon={Warehouse} actions={<InventoryExportButtons items={state.items} stations={state.stations} ar={ar} />} />
     {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <>
       <GlobalInventorySearch items={state.items} stations={state.stations} onOpen={(item, stationId) => setSelectedItem({ ...item, quantity: Number(item.locationBalances?.find((balance) => balance.locationId === stationId)?.quantity || 0), currentLocationId: stationId })} ar={ar} />
-      <StationWarehousePicker stations={state.locations} value={activeStation} onChange={setSelectedStation} locked={state.locations.length <= 1} ar={ar} />
+      <StationWarehousePicker stations={state.locations} value={activeStation} onChange={setSelectedStation} locked={state.locations.length <= 1} allowAll={state.locations.length > 1} ar={ar} />
       <InventoryWorkflow ar={ar} onNavigate={(key) => setActive(tabFromWorkflow[key])} />
       <InventoryTabs active={active} onChange={setActive} ar={ar} />
       {active === "overview" && <InventoryStats items={stationItems} requests={state.requests} movements={state.movements} ar={ar} />}
       {active === "purchases" && <div className="space-y-4">
-        {state.canPurchase && <ItemForm stations={state.locations} defaultStationId={activeStation} onSubmit={(payload) => run("createItem", payload)} ar={ar} />}
+        {state.canPurchase && <ItemForm stations={state.locations} defaultStationId={allStationsSelected ? "" : activeStation} onSubmit={(payload) => run("createItem", payload)} ar={ar} />}
         <PurchasesTab purchases={state.purchases} items={state.historyItems} stations={state.transferStations} activeStation={activeStation} canViewAll={state.canViewAllPurchases} ar={ar} />
       </div>}
       {active === "items" && <ItemList items={stationItems} stations={state.stations} onSelect={setSelectedItem} ar={ar} />}
