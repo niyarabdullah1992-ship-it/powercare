@@ -18,6 +18,7 @@ import EmployeeAccessGuide from "@/components/employees/EmployeeAccessGuide";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import AuditLogPanel from "@/components/audit/AuditLogPanel";
 import StationCombobox from "@/components/stations/StationCombobox";
+import StationPicker from "@/components/hr/StationPicker";
 import { logAudit } from "@/lib/auditLog";
 import PageHeader from "@/components/PageHeader";
 import MobileSelect from "@/components/mobile/MobileSelect";
@@ -357,18 +358,7 @@ export default function Employees() {
           {form.role === "pgm" && (
             <div className="md:col-span-3 p-3 rounded-md border border-border bg-background space-y-2">
               <p className="text-xs text-muted-foreground font-body">{t("selectStation")}</p>
-              <div className="flex flex-wrap gap-2">
-                {data.stations.map((s) => (
-                  <label key={s.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border text-xs font-body cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={pgmStations.includes(s.id)}
-                      onChange={(e) => setPgmStations(e.target.checked ? [...pgmStations, s.id] : pgmStations.filter((id) => id !== s.id))}
-                    />
-                    {s.name}
-                  </label>
-                ))}
-              </div>
+              <StationPicker stations={data.stations} selected={pgmStations} onToggle={(id) => setPgmStations(pgmStations.includes(id) ? pgmStations.filter((item) => item !== id) : [...pgmStations, id])} t={t} />
             </div>
           )}
           <div className="md:col-span-3 flex gap-2">

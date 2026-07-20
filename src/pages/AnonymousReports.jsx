@@ -12,6 +12,7 @@ import FlowSwipeAction from "@/components/flow/FlowSwipeAction";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import EscalationSteps from "@/components/escalation/EscalationSteps";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
+import MobileSelect from "@/components/mobile/MobileSelect";
 
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
@@ -286,13 +287,7 @@ export default function AnonymousReports() {
             {assignedStations.length > 1 ? (
               <div>
                 <label className="block text-xs text-muted-foreground font-body mb-1">{t("station")}</label>
-                <select
-                  value={effectiveReportStationId}
-                  onChange={(e) => setReportStationId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-input text-sm font-body"
-                >
-                  {assignedStations.map((station) => <option key={station.id} value={station.id}>{station.name}</option>)}
-                </select>
+                <MobileSelect value={effectiveReportStationId} onChange={setReportStationId} searchable searchPlaceholder={t("search")} placeholder={t("selectStation")} className="w-full" options={assignedStations.map((station) => ({ value: station.id, label: station.location ? `${station.name} — ${station.location}` : station.name }))} />
               </div>
             ) : (
               <div className={`flex items-center gap-1.5 text-xs font-body ${effectiveReportStationId ? "text-muted-foreground" : "text-destructive"}`}>

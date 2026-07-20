@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { assignStationManager } from "@/lib/store";
 import { X, UserCog } from "lucide-react";
+import StationPicker from "@/components/hr/StationPicker";
 
 // Lets an owner/manager assign one employee as Station Manager for several stations at
 // once — no need to move between stations one by one from the Employees page.
@@ -51,17 +52,7 @@ export default function StationManagerAssignModal({ company, data, initialStatio
               {stationIds.length === data.stations.length ? t("deselectAllStations") : t("selectAllStations")}
             </button>
           </div>
-          <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto">
-            {data.stations.map((s) => (
-              <label
-                key={s.id}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-xs font-body cursor-pointer transition ${stationIds.includes(s.id) ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-              >
-                <input type="checkbox" className="hidden" checked={stationIds.includes(s.id)} onChange={() => toggleStation(s.id)} />
-                {s.name}
-              </label>
-            ))}
-          </div>
+          <StationPicker stations={data.stations} selected={stationIds} onToggle={toggleStation} t={t} />
         </div>
 
         <div className="flex gap-2 pt-1">

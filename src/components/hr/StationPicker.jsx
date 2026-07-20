@@ -5,7 +5,7 @@ import { Search } from "lucide-react";
 // need to be scoped to one or more stations, instead of a long wrapped pill row.
 export default function StationPicker({ stations, selected, onToggle, t }) {
   const [query, setQuery] = useState("");
-  const filtered = (stations || []).filter((s) => s.name.toLowerCase().includes(query.toLowerCase()));
+  const filtered = (stations || []).filter((station) => `${station.name || ""} ${station.location || ""}`.toLowerCase().includes(query.trim().toLowerCase()));
 
   return (
     <div className="space-y-1.5">

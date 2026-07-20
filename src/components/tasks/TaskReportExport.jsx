@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { exportExcelColored } from "@/lib/exportExcelColored";
 import { printReport } from "@/lib/printReport";
 import { FileSpreadsheet, FileText, CalendarRange } from "lucide-react";
+import MobileSelect from "@/components/mobile/MobileSelect";
 
 // تقرير زمني للمهام: شهر / ٣ أشهر / ٦ أشهر / سنة / عدد أيام / بين تاريخين — PDF وExcel.
 const PRESETS = [
@@ -154,21 +155,7 @@ export default function TaskReportExport({ targets, t, lang, dir, stationKeyOf, 
         <CalendarRange className="w-3.5 h-3.5" /> {L("تقرير المهام حسب الفترة", "Tasks report by period")}
       </p>
       {/* اختيار المحطة — تقرير مستقل لكل محطة أو تقرير شامل */}
-      <div className="flex flex-wrap gap-2">
-        {[
-          { key: "all", name: L("كل المحطات", "All stations") },
-          ...(data?.stations || []).map((s) => ({ key: s.id, name: s.name })),
-        ].map((s) => (
-          <button
-            key={s.key}
-            type="button"
-            onClick={() => setStationFilter(s.key)}
-            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${stationFilter === s.key ? "bg-accent text-accent-foreground border-accent" : "border-border hover:bg-muted"}`}
-          >
-            {s.name}
-          </button>
-        ))}
-      </div>
+      <MobileSelect value={stationFilter} onChange={setStationFilter} searchable searchPlaceholder={L("ابحث عن محطة...", "Search stations...")} placeholder={L("كل المحطات", "All stations")} className="w-full sm:w-72" options={[{ value: "all", label: L("كل المحطات", "All stations") }, ...(data?.stations || []).map((station) => ({ value: station.id, label: station.location ? `${station.name} — ${station.location}` : station.name }))]} />
 
       <div className="flex flex-wrap gap-2">
         {PRESETS.map(({ val }) => (

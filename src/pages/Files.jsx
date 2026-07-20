@@ -126,6 +126,8 @@ export default function Files() {
             value={stationFilter}
             onChange={(value) => { setStationFilter(value); setPath([]); }}
             placeholder={t("filesAllStations")}
+            searchable
+            searchPlaceholder={t("search")}
             options={isStationScoped
               ? [
                   ...(!currentUser?.stationId && myStations.length === 0 ? [{ value: "hq", label: t("hq") }] : []),

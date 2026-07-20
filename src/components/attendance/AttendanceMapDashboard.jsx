@@ -8,6 +8,7 @@ import { Loader2, MapPin } from "lucide-react";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import "leaflet/dist/leaflet.css";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
+import MobileSelect from "@/components/mobile/MobileSelect";
 
 const stationIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -81,16 +82,7 @@ export default function AttendanceMapDashboard({ employees, t }) {
           onChange={(e) => setDate(e.target.value)}
           className="px-3 py-2 rounded-md border border-input text-sm font-body bg-card"
         />
-        <select
-          value={stationFilter}
-          onChange={(e) => setStationFilter(e.target.value)}
-          className="px-3 py-2 rounded-md border border-input text-sm font-body bg-card"
-        >
-          <option value="all">{t("all")}</option>
-          {(data?.stations || []).map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
+        <MobileSelect value={stationFilter} onChange={setStationFilter} searchable searchPlaceholder={t("search")} placeholder={t("all")} className="min-w-52" options={[{ value: "all", label: t("all") }, ...(data?.stations || []).map((station) => ({ value: station.id, label: station.location ? `${station.name} — ${station.location}` : station.name }))]} />
         {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         <ComparisonExportButtons
           title={`${t("mapTab")} — ${date}`}

@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { Building2, ChevronDown, Check } from "lucide-react";
+import { Building2, ChevronDown, Check, Search } from "lucide-react";
 
 // Compact multi-select for station filtering — opens as a native-style overlay
 // panel (bottom sheet on phones, centered on larger screens) like MobileSelect.
 export default function StationFilterDropdown({ t, options, selected, onToggle, onSelectAll, onClearAll }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const visibleOptions = options.filter((option) => option.label.toLowerCase().includes(query.trim().toLowerCase()));
 
   const allSelected = options.length > 0 && options.every((o) => selected.includes(o.key));
   const label = allSelected ? t("all") : `${selected.length}/${options.length}`;
@@ -12,7 +14,7 @@ export default function StationFilterDropdown({ t, options, selected, onToggle, 
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => { setQuery(""); setOpen(true); }}
         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted"
       >
         <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
@@ -35,7 +37,9 @@ export default function StationFilterDropdown({ t, options, selected, onToggle, 
                 <button onClick={onClearAll} className="text-[11px] text-muted-foreground hover:underline">{t("cancel")}</button>
               </div>
             </div>
-            {options.map((o) => {
+            <label className="sticky top-[49px] z-10 flex items-center gap-2 border-b border-border bg-card px-4 py-3"><Search className="h-4 w-4 text-muted-foreground" /><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("search")} className="h-9 min-w-0 flex-1 rounded-md border border-input px-3 text-sm" /></label>
+            {!visibleOptions.length && <p className="px-4 py-6 text-center text-sm text-muted-foreground">{t("noResults")}</p>}
+            {visibleOptions.map((o) => {
               const isSelected = selected.includes(o.key);
               return (
                 <button
