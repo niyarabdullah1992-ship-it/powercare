@@ -4,9 +4,19 @@ import MobileSelect from "@/components/mobile/MobileSelect";
 export default function MaterialRequestForm({ items, stations, stationId, onSubmit, ar }) {
   const [sourceStationId, setSourceStationId] = useState("");
   const [destinationStationId, setDestinationStationId] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const ownerMode = !stationId;
   const availableItems = useMemo(() => items.filter((item) => Number(item.locationBalances?.find((balance) => balance.locationId === sourceStationId)?.quantity || 0) > 0), [items, sourceStationId]);
-  const submit = async (event) => { event.preventDefault(); const formElement = event.currentTarget; const form = new FormData(formElement); if (await onSubmit(Object.fromEntries(form))) { formElement.reset(); setSourceStationId(""); setDestinationStationId(""); } };
+  const submit = async (event) => {
+    event.preventDefault();
+    if (submitting) return;
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    setSubmitting(true);
+    const saved = await onSubmit(Object.fromEntries(form));
+    if (saved) { formElement.reset(); setSourceStationId(""); setDestinationStationId(""); }
+    setSubmitting(false);
+  };
   const sources = stations.filter((station) => ownerMode || station.stationId !== stationId);
   const destinations = stations.filter((station) => station.stationId !== sourceStationId);
   const chooseSource = (value) => { setSourceStationId(value); if (destinationStationId === value) setDestinationStationId(""); };
@@ -18,6 +28,6 @@ export default function MaterialRequestForm({ items, stations, stationId, onSubm
     <select name="itemId" required disabled={!sourceStationId} className="rounded-lg border px-3 py-2"><option value="">{ar ? "اختر الصنف المتوفر" : "Choose available item"}</option>{availableItems.map((item) => <option key={item.id} value={item.id}>{item.name} ({Number(item.locationBalances.find((balance) => balance.locationId === sourceStationId)?.quantity || 0)})</option>)}</select>
     <input name="quantity" type="number" min="1" defaultValue="1" required className="rounded-lg border px-3 py-2" />
     <input name="notes" required placeholder={ar ? "سبب الطلب" : "Request reason"} className="rounded-lg border px-3 py-2" />
-    <button disabled={!sources.length || !sourceStationId || (ownerMode && !destinationStationId) || !availableItems.length} className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50 md:col-span-2 xl:col-span-4">{!sources.length ? (ar ? "لا توجد محطة أخرى" : "No other station") : sourceStationId && !availableItems.length ? (ar ? "لا توجد أصناف متوفرة في المحطة" : "No available items at this station") : (ar ? "إرسال الطلب" : "Submit request")}</button>
+    <button disabled={submitting || !sources.length || !sourceStationId || (ownerMode && !destinationStationId) || !availableItems.length} className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50 md:col-span-2 xl:col-span-4">{submitting ? (ar ? "جارٍ الإرسال..." : "Submitting...") : !sources.length ? (ar ? "لا توجد محطة أخرى" : "No other station") : sourceStationId && !availableItems.length ? (ar ? "لا توجد أصناف متوفرة في المحطة" : "No available items at this station") : (ar ? "إرسال الطلب" : "Submit request")}</button>
   </form>;
 }
