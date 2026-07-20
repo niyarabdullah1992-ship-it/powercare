@@ -17,7 +17,6 @@ import PurchasesTab from "@/components/inventory/PurchasesTab";
 import WorkIssueTab from "@/components/inventory/WorkIssueTab";
 import InventoryTabs from "@/components/inventory/InventoryTabs";
 import InventoryWorkflow from "@/components/inventory/InventoryWorkflow";
-import StationWarehousePicker from "@/components/inventory/StationWarehousePicker";
 import InventoryExportButtons from "@/components/inventory/InventoryExportButtons";
 import { toast } from "@/components/ui/use-toast";
 
@@ -83,7 +82,6 @@ export default function Inventory() {
   return <div className="space-y-6">
     <PageHeader title={ar ? "المخزون" : "Inventory"} description={ar ? "إدارة الأصناف والحركات والطلبات والمشتريات حسب صلاحياتك." : "Manage items, movements, requests and purchases based on your role."} icon={Warehouse} actions={<InventoryExportButtons items={state.items} stations={state.stations} ar={ar} />} />
     {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <>
-      <StationWarehousePicker stations={state.locations} value={activeStation} onChange={setSelectedStation} locked={state.locations.length <= 1} allowAll={state.locations.length > 1} ar={ar} />
       <InventoryWorkflow ar={ar} onNavigate={(key) => setActive(tabFromWorkflow[key])} />
       <GlobalInventorySearch items={state.items} stations={state.stations} onOpen={(item, stationId) => setSelectedItem({ ...item, quantity: Number(item.locationBalances?.find((balance) => balance.locationId === stationId)?.quantity || 0), currentLocationId: stationId })} ar={ar} />
       <InventoryTabs active={active} onChange={setActive} ar={ar} />
