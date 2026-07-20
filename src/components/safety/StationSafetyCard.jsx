@@ -32,7 +32,7 @@ export default function StationSafetyCard({ station, rec, canEdit, canApprove, c
       <div className="flex w-full items-center justify-between gap-3 rounded-xl px-1">
         <button type="button" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} className="flex min-w-0 flex-1 items-center gap-2.5 text-start">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent"><Building2 className="h-4 w-4" /></span>
-          <span className="min-w-0"><span className="block text-[10px] text-muted-foreground">{ar ? "المحطة" : "Station"}</span><span className="block truncate text-sm font-semibold">{station.name}</span></span>
+          <span className="min-w-0"><span className="block text-[10px] text-muted-foreground">{ar ? "المحطة" : "Station"}</span><span className="block truncate text-sm font-semibold">{station.name}</span>{rec?.lastActionBy && <span className="block truncate text-[10px] text-accent">{ar ? "آخر إجراء" : "Last action"}: {rec.lastActionBy}</span>}</span>
         </button>
         <span className="flex shrink-0 items-center gap-2">
           <span className="rounded-full bg-accent/10 px-2 py-1 text-[10px] font-semibold text-accent">{checklistCompliance(rec?.checklistResults || {})}%</span>

@@ -10,6 +10,8 @@ import StationSafetyCard from "@/components/safety/StationSafetyCard";
 import SafetyReportExport from "@/components/safety/SafetyReportExport";
 import SafetyExplanation from "@/components/safety/SafetyExplanation";
 import SafetyDashboard from "@/components/safety/SafetyDashboard";
+import SafetyIncidentReportForm from "@/components/safety/SafetyIncidentReportForm";
+import { toast } from "@/components/ui/use-toast";
 import RecordSmartArchive from "@/components/RecordSmartArchive";
 
 // HSE management section: safety data is entered and approved per station here,
@@ -24,9 +26,11 @@ export default function Safety() {
   if (!data || !currentUser) return null;
 
   const stations = visibleStations(currentUser, data);
-  const canEdit = ["director", "ops_manager", "pgm", "station_manager"].includes(currentUser.role) || data.ownerId === currentUser.id;
-  const canCustomize = ["director", "ops_manager", "station_manager"].includes(currentUser.role) || data.ownerId === currentUser.id;
-  const canApprove = canApproveReports(currentUser) || data.ownerId === currentUser.id;
+  const isSafetyOfficer = currentUser.role === "safety_officer";
+  const canEdit = ["director", "ops_manager", "pgm", "station_manager"].includes(currentUser.role) || isSafetyOfficer || data.ownerId === currentUser.id;
+  const canCustomize = ["director", "ops_manager", "station_manager"].includes(currentUser.role) || isSafetyOfficer || data.ownerId === currentUser.id;
+  const canApprove = canApproveReports(currentUser) || isSafetyOfficer || data.ownerId === currentUser.id;
+  const reportStation = data.stations.find((station) => station.id === currentUser.stationId);
   const recFor = (sid) => (data.safety || []).find((s) => s.stationId === sid) || null;
 
   // Any data edit invalidates the previous approval — the report must reflect approved data only.
@@ -36,7 +40,7 @@ export default function Safety() {
     const extra = updates.hazards && updates.hazards.length > (rec?.hazards?.length || 0) && (updates.level || rec?.level || "green") === "green"
       ? { level: "amber" }
       : {};
-    updateSafetyRecord(company.id, stationId, { ...updates, ...extra, approvedBy: null, approvedAt: null });
+    updateSafetyRecord(company.id, stationId, { ...updates, ...extra, approvedBy: null, approvedAt: null }, currentUser.name);
   };
 
   // Approval is committed only after the store re-validates every dependency.
@@ -52,6 +56,8 @@ export default function Safety() {
       />
 
       <SafetyExplanation ar={ar} />
+
+      {!canEdit && reportStation && <SafetyIncidentReportForm station={reportStation} ar={ar} onSubmit={async (description) => { const saved = recordSafetyIncident(company.id, reportStation.id, description, currentUser.name); toast({ description: saved ? (ar ? "تم إرسال بلاغ السلامة." : "Safety report submitted.") : (ar ? "تم تسجيل البلاغ نفسه اليوم مسبقًا." : "This report was already submitted today."), variant: saved ? "default" : "destructive" }); return saved; }} />}
 
       {(canEdit || canApprove || data.ownerId === currentUser.id) && (
         <SafetyDashboard safety={data.safety || []} stations={stations} lang={lang} />
@@ -117,7 +123,7 @@ export default function Safety() {
                 lang={lang}
                 signerName={currentUser.name}
                 onUpdate={(updates) => handleUpdate(station.id, updates)}
-                onDisabledTabsChange={(disabledTabs) => updateSafetyRecord(company.id, station.id, { disabledTabs })}
+                onDisabledTabsChange={(disabledTabs) => updateSafetyRecord(company.id, station.id, { disabledTabs }, currentUser.name)}
                 onCloseHazard={(index) => closeSafetyHazard(company.id, station.id, index, currentUser.name)}
                 onApprove={() => handleApprove(station.id)}
                 onRevokeApproval={() => handleRevokeApproval(station.id)}

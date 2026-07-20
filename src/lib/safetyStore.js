@@ -5,7 +5,7 @@ const stationExists = (data, stationId) => (data?.stations || []).some((station)
 const dayKey = (value) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value));
 const normalize = (value) => String(value || "").trim().toLocaleLowerCase().replace(/\s+/g, " ");
 
-export function updateSafetyRecord(companyId, stationId, updates) {
+export function updateSafetyRecord(companyId, stationId, updates, actorName = "") {
   updateCompany(companyId, (data) => {
     if (!stationExists(data, stationId)) return;
     data.safety = data.safety || [];
@@ -26,6 +26,10 @@ export function updateSafetyRecord(companyId, stationId, updates) {
     if (next.lastInspection && new Date(next.lastInspection) > new Date()) delete next.lastInspection;
     if (next.level && !["green", "amber", "red"].includes(next.level)) delete next.level;
     Object.assign(rec, next);
+    if (actorName) {
+      rec.lastActionBy = actorName;
+      rec.lastActionAt = new Date().toISOString();
+    }
     if ("dailyHours" in next) delete rec.workHoursMonthly;
     if ("ltiEntries" in next) delete rec.ltiCount;
     if ("level" in next || "lastInspection" in next || "hazards" in next) {
@@ -45,6 +49,8 @@ export function closeSafetyHazard(companyId, stationId, hazardIndex, closedBy) {
     const [description] = rec.hazards.splice(hazardIndex, 1);
     rec.hazardLog = rec.hazardLog || [];
     rec.hazardLog.unshift({ id: uid("haz"), description, closedBy, closedAt: new Date().toISOString() });
+    rec.lastActionBy = closedBy;
+    rec.lastActionAt = new Date().toISOString();
     rec.approvedBy = null;
     rec.approvedAt = null;
   });
@@ -63,6 +69,8 @@ export function approveSafetyRecord(companyId, stationId, approvedBy) {
     const at = new Date().toISOString();
     rec.approvedBy = approvedBy;
     rec.approvedAt = at;
+    rec.lastActionBy = approvedBy;
+    rec.lastActionAt = at;
     rec.incidentClearedAt = at;
     rec.approvalLog = [{ by: approvedBy, at }, ...(rec.approvalLog || [])];
     rec.incidentLog = (rec.incidentLog || []).map((incident) => incident.status === "closed" ? incident : { ...incident, status: "closed", reviewedBy: approvedBy, reviewedAt: at });
@@ -87,6 +95,8 @@ export function revokeSafetyApproval(companyId, stationId, revokedBy) {
     const elapsed = Date.now() - approvedAt;
     if (!rec?.approvedBy || !Number.isFinite(approvedAt) || elapsed < 0 || elapsed > 24 * 60 * 60 * 1000) return;
     rec.approvalRevocationLog = [{ by: revokedBy, at: new Date().toISOString(), approvalAt: rec.approvedAt }, ...(rec.approvalRevocationLog || [])];
+    rec.lastActionBy = revokedBy;
+    rec.lastActionAt = new Date().toISOString();
     rec.approvedBy = null;
     rec.approvedAt = null;
     rec.approvalSnapshot = null;
@@ -113,6 +123,8 @@ export function recordSafetyIncident(companyId, stationId, description, actorNam
     rec.lastIncidentAt = new Date().toISOString();
     rec.incidentLog = rec.incidentLog || [];
     rec.incidentLog.unshift({ id: uid("inc"), description: text, at: rec.lastIncidentAt, by: actorName, status: "open" });
+    rec.lastActionBy = actorName;
+    rec.lastActionAt = rec.lastIncidentAt;
     rec.incidents = rec.incidentLog.length;
     if (rec.level !== "red") rec.level = "amber";
     rec.approvedBy = null;

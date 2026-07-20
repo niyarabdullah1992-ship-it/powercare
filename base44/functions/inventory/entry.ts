@@ -1,7 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
 
 // Inventory actions are authorized and scoped by the active company session.
-const stationRoles = ["station_manager", "inventory_keeper", "warehouse_manager"];
+const stationRoles = ["station_manager", "inventory_keeper"];
 const seniorRoles = ["owner", "director", "ops_manager", "pgm"];
 
 Deno.serve(async (req) => {
@@ -73,13 +73,14 @@ Deno.serve(async (req) => {
     const isWarehouse = false;
     const isSenior = seniorRoles.includes(auth.role);
     const isStationOperator = stationRoles.includes(auth.role) && !!auth.stationId;
+    const isEmployeeRequester = auth.role === "employee" && !!auth.stationId;
     const canPurchase = isStationOperator || isSenior;
     const canCreateItem = isStationOperator || isSenior;
-    const canDelete = isSenior || ["station_manager", "warehouse_manager"].includes(auth.role);
+    const canDelete = isSenior || auth.role === "station_manager";
     const canApproveProcurement = false;
     const canReceiveProcurement = false;
     const allStationIds = stations.map((station) => station.stationId);
-    const visibleIds = isSenior ? allStationIds : isStationOperator ? [auth.stationId] : [];
+    const visibleIds = isSenior ? allStationIds : (isStationOperator || isEmployeeRequester) ? [auth.stationId] : [];
     const visible = new Set(visibleIds);
     const ensureStation = (id) => isSenior ? allStationIds.includes(id) : isStationOperator && id === auth.stationId;
     const warehouseGuard = () => Response.json({ error: "This workflow is no longer available" }, { status: 410 });
@@ -141,11 +142,11 @@ Deno.serve(async (req) => {
       ]);
       const activeItems = items.filter((item) => item.archived !== true);
       const scopedItems = activeItems.filter((item) => isSenior || balances(item).some((entry) => visible.has(entry.locationId))).map((item) => isSenior ? item : ({ ...item, quantity: balanceAt(item, auth.stationId), currentLocationId: auth.stationId, locationBalances: balances(item).filter((entry) => visible.has(entry.locationId)) }));
-      const scopedRequests = requests.filter((request) => isSenior || visible.has(request.stationId) || visible.has(request.sourceStationId));
+      const scopedRequests = requests.filter((request) => isSenior || request.requesterId === auth.userId || visible.has(request.stationId) || (isStationOperator && visible.has(request.sourceStationId)));
       const scopedMovements = movements.filter((entry) => isSenior || visible.has(entry.fromLocationId) || visible.has(entry.toLocationId));
       const scopedStations = stations.filter((station) => isSenior || visible.has(station.stationId));
-      const purchases = scopedMovements.filter((entry) => entry.movementType === "purchase");
-      return Response.json({ items: scopedItems, requestItems: activeItems, historyItems: items, movements: scopedMovements, purchases, procurementRequests: [], purchaseOrders: [], requests: scopedRequests, stations: scopedStations, locations: scopedStations, transferStations: stations, employees, canManage: isStationOperator, canPurchase, canCreateItem, canIssueToWork: isStationOperator || isSenior, canIssueFromAnyStation: isSenior, canRequest: isStationOperator || isSenior, canReviewRequests: isStationOperator || isSenior, canReviewAllRequests: isSenior, canDelete, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: isSenior, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, canReverse: isSenior, centralWarehouseId: null });
+      const purchases = (isEmployeeRequester ? movements : scopedMovements).filter((entry) => entry.movementType === "purchase");
+      return Response.json({ items: scopedItems, requestItems: activeItems, historyItems: items, movements: scopedMovements, purchases, procurementRequests: [], purchaseOrders: [], requests: scopedRequests, stations: scopedStations, locations: scopedStations, transferStations: stations, employees, canManage: isStationOperator, canPurchase, canCreateItem, canIssueToWork: isStationOperator || isSenior, canIssueFromAnyStation: isSenior, canRequest: isStationOperator || isSenior || isEmployeeRequester, canReviewRequests: isStationOperator || isSenior, canReviewAllRequests: isSenior, canDelete, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: isSenior, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, canReverse: isSenior, centralWarehouseId: null });
     }
 
     if (["submitProcurement", "reviewProcurement", "createPurchaseOrder", "receivePurchaseOrder", "issueRequest"].includes(body.action)) return Response.json({ error: "This workflow is no longer available" }, { status: 410 });
@@ -300,7 +301,7 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "request") {
-      if (!isStationOperator && !isSenior) return Response.json({ error: "Station inventory permission required" }, { status: 403 });
+      if (!isStationOperator && !isSenior && !isEmployeeRequester) return Response.json({ error: "Material request permission required" }, { status: 403 });
       const item = await getItem(body.itemId); const quantity = Number(body.quantity); const notes = String(body.notes || "").trim();
       const stationId = isSenior ? String(body.stationId || "") : String(auth.stationId || ""); const sourceStationId = String(body.sourceStationId || "");
       if (!item || !allStationIds.includes(stationId) || !allStationIds.includes(sourceStationId) || sourceStationId === stationId || balanceAt(item, sourceStationId) < quantity || quantity < 1 || !notes) return Response.json({ error: "Choose different source and destination stations, an available item, valid quantity and reason" }, { status: 400 });

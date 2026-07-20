@@ -26,7 +26,7 @@ import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import EmployeeGlobalSearch from "@/components/employees/EmployeeGlobalSearch";
 import { matchesEmployeeSearch } from "@/lib/employeeSearch";
 
-const ROLES = ["employee", "inventory_keeper", "financial_officer", "station_manager", "pgm", "ops_manager", "director"];
+const ROLES = ["employee", "inventory_keeper", "safety_officer", "financial_officer", "station_manager", "pgm", "ops_manager", "director"];
 
 const TASK_STATUS_STYLES = {
   overdue: "border-red-300 bg-red-50 text-red-700",
