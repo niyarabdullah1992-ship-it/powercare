@@ -17,6 +17,10 @@
         "additionalProperties": true
       },
       "description": "The full array snapshot for this category."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
     }
   },
   "required": [

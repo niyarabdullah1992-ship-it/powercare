@@ -53,6 +53,10 @@
       "type": "boolean",
       "default": false,
       "description": "Marks the single station used as the company's central warehouse."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
     }
   },
   "required": [

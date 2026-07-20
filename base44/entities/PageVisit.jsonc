@@ -29,6 +29,10 @@
     "city": {
       "type": "string",
       "description": "Visitor city resolved from IP."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
     }
   },
   "required": [

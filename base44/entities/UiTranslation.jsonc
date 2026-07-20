@@ -10,6 +10,10 @@
       "type": "object",
       "additionalProperties": true,
       "description": "Map of UI string key -> translated value for this language."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
     }
   },
   "required": [

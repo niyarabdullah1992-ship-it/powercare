@@ -11,6 +11,10 @@
     "employeeId": {
       "type": "string",
       "description": "Private server-side link used only to let the sender follow their own anonymous report."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
     }
   },
   "required": [

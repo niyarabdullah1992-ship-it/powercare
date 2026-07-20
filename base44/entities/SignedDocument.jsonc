@@ -29,6 +29,10 @@
     "signedAt": {
       "type": "string",
       "description": "ISO timestamp of the signing moment."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
     }
   },
   "required": [

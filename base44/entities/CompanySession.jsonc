@@ -31,6 +31,10 @@
         "null"
       ],
       "description": "Latest website heartbeat used to identify users currently online."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
     }
   },
   "required": [

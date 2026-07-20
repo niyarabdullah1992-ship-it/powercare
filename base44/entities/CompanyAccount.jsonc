@@ -63,6 +63,10 @@
         "null"
       ],
       "description": "Monthly price (USD) for a manually-managed Custom plan, set by the platform owner."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
     }
   },
   "required": [

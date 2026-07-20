@@ -9,6 +9,10 @@
     "version": {
       "type": "number",
       "description": "Monotonically increasing counter bumped by the backend on every data write."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
     }
   },
   "required": [
