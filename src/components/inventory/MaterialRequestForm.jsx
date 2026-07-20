@@ -6,7 +6,7 @@ export default function MaterialRequestForm({ items, stations, stationId, onSubm
   const [destinationStationId, setDestinationStationId] = useState("");
   const ownerMode = !stationId;
   const availableItems = useMemo(() => items.filter((item) => Number(item.locationBalances?.find((balance) => balance.locationId === sourceStationId)?.quantity || 0) > 0), [items, sourceStationId]);
-  const submit = async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); if (await onSubmit(Object.fromEntries(form))) { event.currentTarget.reset(); setSourceStationId(""); setDestinationStationId(""); } };
+  const submit = async (event) => { event.preventDefault(); const formElement = event.currentTarget; const form = new FormData(formElement); if (await onSubmit(Object.fromEntries(form))) { formElement.reset(); setSourceStationId(""); setDestinationStationId(""); } };
   const sources = stations.filter((station) => ownerMode || station.stationId !== stationId);
   const destinations = stations.filter((station) => station.stationId !== sourceStationId);
   const chooseSource = (value) => { setSourceStationId(value); if (destinationStationId === value) setDestinationStationId(""); };
