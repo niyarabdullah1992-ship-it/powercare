@@ -7,7 +7,8 @@ import { inventoryCall } from "@/lib/inventoryApi";
 import PageHeader from "@/components/PageHeader";
 import InventoryStats from "@/components/inventory/InventoryStats";
 import ItemForm from "@/components/inventory/ItemForm";
-import MovementForm from "@/components/inventory/MovementForm";
+import MaterialRequestForm from "@/components/inventory/MaterialRequestForm";
+import RequestsList from "@/components/inventory/RequestsList";
 import ItemList from "@/components/inventory/ItemList";
 import ItemDetails from "@/components/inventory/ItemDetails";
 import GlobalInventorySearch from "@/components/inventory/GlobalInventorySearch";
@@ -20,7 +21,7 @@ import StationWarehousePicker from "@/components/inventory/StationWarehousePicke
 import InventoryExportButtons from "@/components/inventory/InventoryExportButtons";
 import { toast } from "@/components/ui/use-toast";
 
-const emptyData = { items: [], requestItems: [], movements: [], purchases: [], requests: [], stations: [], locations: [], transferStations: [], employees: [], procurementRequests: [], purchaseOrders: [], canManage: false, canPurchase: false, canCreateItem: false, canIssueToWork: false, canDelete: false, canApproveProcurement: false, canReceiveProcurement: false, canViewAllPurchases: false, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null };
+const emptyData = { items: [], requestItems: [], movements: [], purchases: [], requests: [], stations: [], locations: [], transferStations: [], employees: [], procurementRequests: [], purchaseOrders: [], canManage: false, canPurchase: false, canCreateItem: false, canIssueToWork: false, canRequest: false, canReviewRequests: false, canDelete: false, canApproveProcurement: false, canReceiveProcurement: false, canViewAllPurchases: false, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null };
 
 export default function Inventory() {
   const { session, currentUser, data } = useAuth();
@@ -62,7 +63,7 @@ export default function Inventory() {
   };
 
   if (!currentUser) return null;
-  const tabFromWorkflow = { purchase: "purchases", transfer: "transfers", workIssue: "transfers", movements: "movements" };
+  const tabFromWorkflow = { purchase: "purchases", items: "items", requests: "requests", consumption: "consumption" };
   const stationIds = state.locations.map((station) => station.stationId || station.id);
   const activeStation = stationIds.includes(selectedStation) ? selectedStation : (state.locations[0]?.stationId || state.locations[0]?.id || currentUser.stationId || "");
 
@@ -78,10 +79,11 @@ export default function Inventory() {
         <PurchasesTab purchases={state.purchases} items={state.requestItems} stations={state.transferStations} activeStation={activeStation} canViewAll={state.canViewAllPurchases} ar={ar} />
       </div>}
       {active === "items" && <div className="space-y-4"><GlobalInventorySearch items={state.items} stations={state.stations} onOpen={(item) => setSelectedItem(item)} ar={ar} /><ItemList items={state.items} stations={state.stations} onSelect={setSelectedItem} ar={ar} /></div>}
-      {active === "transfers" && <div className="space-y-4">
-        {state.canTransfer && <MovementForm items={state.items} stations={state.transferStations} defaultFrom={activeStation} onSubmit={(payload) => run("transfer", payload)} ar={ar} />}
-        {state.canIssueToWork && <WorkIssueTab items={state.items} stations={state.locations} employees={state.employees} defaultStationId={activeStation} movements={state.movements} onSubmit={(payload) => run("issueToWork", payload)} ar={ar} />}
+      {active === "requests" && <div className="space-y-4">
+        {state.canRequest && <MaterialRequestForm items={state.requestItems} stations={state.transferStations} stationId={activeStation} onSubmit={(payload) => run("request", payload)} ar={ar} />}
+        <RequestsList requests={state.requests} items={state.requestItems} employees={state.employees} stations={state.transferStations} canReview={state.canReviewRequests} reviewerStationId={activeStation} onReview={(requestId, decision) => run("reviewRequest", { requestId, decision })} ar={ar} />
       </div>}
+      {active === "consumption" && <WorkIssueTab items={state.items} stations={state.locations} employees={state.employees} stationId={activeStation} canIssue={state.canIssueToWork} movements={state.movements} onSubmit={(payload) => run("issueToWork", payload)} ar={ar} />}
       {active === "movements" && <MovementList movements={state.movements} items={state.requestItems} employees={state.employees} stations={state.transferStations} ar={ar} />}
     </>}
     <ItemDetails item={selectedItem} stations={state.stations} canDelete={state.canDelete} onDelete={async (itemId) => { if (await run("deleteItem", { itemId })) setSelectedItem(null); }} onImagesChange={updateImages} onClose={() => setSelectedItem(null)} ar={ar} />

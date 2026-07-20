@@ -1,6 +1,6 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
 
-const stationRoles = ["station_manager", "inventory_keeper"];
+const stationRoles = ["station_manager", "inventory_keeper", "warehouse_manager"];
 const seniorRoles = ["owner", "director", "ops_manager"];
 
 Deno.serve(async (req) => {
@@ -108,10 +108,10 @@ Deno.serve(async (req) => {
       const purchases = scopedMovements.filter((entry) => entry.movementType === "purchase");
       const scopedProcurementRequests = procurementRequests.filter((entry) => isSenior || visible.has(entry.stationId));
       const scopedPurchaseOrders = purchaseOrders.filter((entry) => isSenior || visible.has(entry.stationId));
-      return Response.json({ items: scopedItems, requestItems: isSenior ? items : scopedItems, movements: scopedMovements, purchases, procurementRequests: [], purchaseOrders: [], requests: [], stations: scopedStations, locations: scopedStations, transferStations: stations, employees, canManage: isStationOperator, canPurchase, canCreateItem, canIssueToWork: isStationOperator, canDelete: false, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: isSenior, canWarehouseManage: false, canTransfer: isStationOperator, canSetCentralWarehouse: false, centralWarehouseId: null });
+      return Response.json({ items: scopedItems, requestItems: items, movements: scopedMovements, purchases, procurementRequests: [], purchaseOrders: [], requests: scopedRequests, stations: scopedStations, locations: scopedStations, transferStations: stations, employees, canManage: isStationOperator, canPurchase, canCreateItem, canIssueToWork: isStationOperator, canRequest: isStationOperator, canReviewRequests: isStationOperator, canDelete: false, canApproveProcurement, canReceiveProcurement, canViewAllPurchases: isSenior, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, centralWarehouseId: null });
     }
 
-    if (["submitProcurement", "reviewProcurement", "createPurchaseOrder", "receivePurchaseOrder", "request", "reviewRequest", "issueRequest"].includes(body.action)) return Response.json({ error: "This workflow is no longer available" }, { status: 410 });
+    if (["submitProcurement", "reviewProcurement", "createPurchaseOrder", "receivePurchaseOrder", "issueRequest"].includes(body.action)) return Response.json({ error: "This workflow is no longer available" }, { status: 410 });
 
     if (body.action === "submitProcurement") {
       const stationId = String(body.stationId || auth.stationId || "");
@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
       if (before < quantity) return Response.json({ error: "Insufficient station stock" }, { status: 400 });
       const next = adjustBalance(item, stationId, -quantity);
       await base44.asServiceRole.entities.InventoryItem.update(item.id, { quantity: Math.max(0, Number(item.quantity || 0) - quantity), locationBalances: next, currentLocationId: stationId });
-      await movement({ itemId: item.id, movementType: "issue", quantity, fromLocationId: stationId, toLocationId: null, employeeId, requestId: null, balanceBefore: before, balanceAfter: before - quantity, sourceBalanceBefore: before, sourceBalanceAfter: before - quantity, destinationBalanceBefore: null, destinationBalanceAfter: null, workReference, workDate, notes });
+      await movement({ itemId: item.id, movementType: "issue", quantity, fromLocationId: stationId, toLocationId: null, employeeId, requestId: null, balanceBefore: before, balanceAfter: before - quantity, sourceBalanceBefore: before, sourceBalanceAfter: before - quantity, destinationBalanceBefore: null, destinationBalanceAfter: null, workReference, workDate, notes, imageUrls: Array.isArray(body.imageUrls) ? body.imageUrls.slice(0, 10) : [] });
       return Response.json({ ok: true });
     }
 
@@ -210,18 +210,30 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "request") {
+      if (!isStationOperator) return Response.json({ error: "Station manager or inventory keeper permission required" }, { status: 403 });
       const item = await getItem(body.itemId); const quantity = Number(body.quantity); const notes = String(body.notes || "").trim();
-      const stationId = String(body.stationId || auth.stationId || ""); const sourceStationId = String(body.sourceStationId || "");
-      if (!item || !allStationIds.includes(stationId) || !allStationIds.includes(sourceStationId) || sourceStationId === stationId || balanceAt(item, sourceStationId) < quantity || quantity < 1 || !notes) return Response.json({ error: "Choose an available item from another station and enter a valid quantity and reason" }, { status: 400 });
+      const stationId = String(auth.stationId || ""); const sourceStationId = String(body.sourceStationId || "");
+      if (!item || !allStationIds.includes(sourceStationId) || sourceStationId === stationId || balanceAt(item, sourceStationId) < quantity || quantity < 1 || !notes) return Response.json({ error: "Choose an available item from another station and enter a valid quantity and reason" }, { status: 400 });
       await base44.asServiceRole.entities.MaterialRequest.create({ companyId: auth.companyId, requesterId: auth.userId || auth.name, stationId, sourceStationId, itemId: item.id, quantity, notes, status: "pending", supervisorId: null, reviewedBy: null, reviewedAt: null, issuedAt: null });
       return Response.json({ ok: true });
     }
 
     if (body.action === "reviewRequest") {
-      const denied = warehouseGuard(); if (denied) return denied;
+      if (!isStationOperator) return Response.json({ error: "Station manager or inventory keeper permission required" }, { status: 403 });
       const rows = await base44.asServiceRole.entities.MaterialRequest.filter({ id: body.requestId, companyId: auth.companyId }); const request = rows[0];
-      if (!request || request.status !== "pending" || !allStationIds.includes(request.stationId) || !["approved", "rejected"].includes(body.decision)) return Response.json({ error: "Request cannot be reviewed" }, { status: 400 });
-      await base44.asServiceRole.entities.MaterialRequest.update(request.id, { status: body.decision, reviewedBy: auth.userId || auth.name, reviewedAt: new Date().toISOString() });
+      if (!request || request.status !== "pending" || request.sourceStationId !== auth.stationId || !["approved", "rejected"].includes(body.decision)) return Response.json({ error: "Request cannot be reviewed by this station" }, { status: 400 });
+      const reviewedAt = new Date().toISOString();
+      if (body.decision === "rejected") {
+        await base44.asServiceRole.entities.MaterialRequest.update(request.id, { status: "rejected", reviewedBy: auth.userId || auth.name, reviewedAt });
+        return Response.json({ ok: true });
+      }
+      const item = await getItem(request.itemId); const quantity = Number(request.quantity); const sourceId = request.sourceStationId;
+      if (!item || balanceAt(item, sourceId) < quantity) return Response.json({ error: "Insufficient stock at the supplying station" }, { status: 400 });
+      const sourceBefore = balanceAt(item, sourceId); const destinationBefore = balanceAt(item, request.stationId);
+      let next = adjustBalance(item, sourceId, -quantity); next = adjustBalance({ ...item, locationBalances: next }, request.stationId, quantity);
+      await base44.asServiceRole.entities.InventoryItem.update(item.id, { locationBalances: next, currentLocationId: request.stationId });
+      await movement({ itemId: item.id, movementType: "transfer", quantity, fromLocationId: sourceId, toLocationId: request.stationId, employeeId: request.requesterId, requestId: request.id, sourceBalanceBefore: sourceBefore, sourceBalanceAfter: sourceBefore - quantity, destinationBalanceBefore: destinationBefore, destinationBalanceAfter: destinationBefore + quantity });
+      await base44.asServiceRole.entities.MaterialRequest.update(request.id, { status: "issued", reviewedBy: auth.userId || auth.name, reviewedAt, issuedAt: reviewedAt });
       return Response.json({ ok: true });
     }
 
@@ -241,7 +253,7 @@ Deno.serve(async (req) => {
 
     if (["receive", "return", "transfer"].includes(body.action)) {
       const denied = warehouseGuard(); if (denied && body.action !== "transfer") return denied;
-      if (body.action === "transfer" && !isStationOperator) return Response.json({ error: "Transfer permission required" }, { status: 403 });
+      if (body.action === "transfer") return Response.json({ error: "Use the station request workflow for transfers" }, { status: 410 });
       const item = await getItem(body.itemId); const quantity = Number(body.quantity); const from = String(body.fromLocationId || ""); const to = String(body.toLocationId || "");
       if (!item || !allStationIds.includes(from) || !allStationIds.includes(to) || from === to || !Number.isFinite(quantity) || quantity <= 0) return Response.json({ error: "Valid item, stations and quantity are required" }, { status: 400 });
       if (from !== auth.stationId) return Response.json({ error: "You can only transfer stock from your station" }, { status: 403 });
