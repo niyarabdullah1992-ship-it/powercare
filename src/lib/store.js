@@ -4,6 +4,7 @@ import { MANAGER_PERMISSIONS, ASSISTANT_PERMISSIONS, groupLevelsByOrder } from "
 import { base44 } from "@/api/base44Client";
 import { sendEmailAlert } from "./emailAlerts";
 import { toRiyadhDateKey } from "./riyadhDate";
+import { reconcileStationReferences } from "./stationConsistency";
 
 const REGISTRY_KEY = "powercare_registry";
 const COMPANY_PREFIX = "powercare_company_";
@@ -292,7 +293,8 @@ export function getCompanyData(id) {
 export function cacheCloudData(companyId, updates) {
   const current = getCompanyData(companyId);
   if (!current) return;
-  localStorage.setItem(companyKey(companyId), JSON.stringify({ ...current, ...updates }));
+  const next = reconcileStationReferences({ ...current, ...updates });
+  localStorage.setItem(companyKey(companyId), JSON.stringify(next));
 }
 const lastLocalWriteAt = {};
 export function getLastLocalWriteAt(companyId) {
@@ -309,8 +311,8 @@ function scheduleCompanyPush(id, data) {
 }
 
 function saveCompanyData(id, data) {
+  reconcileStationReferences(data);
   data.employees = dedupeEmployees(data.employees);
-  data.stations = data.stations || [];
   data.personalAttendance = (data.personalAttendance || []).map((record) => {
     const { dayIndex: _legacyDayIndex, ...clean } = record;
     return { ...clean, dateKey: toRiyadhDateKey(record.dateKey || record.date || record.createdAt) };
