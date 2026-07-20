@@ -14,10 +14,19 @@ import { toast } from "@/components/ui/use-toast";
 const empty = { claims: [], stations: [], canManagerReview: false, canFinanceReview: false, canPickStations: false };
 
 export default function Expenses() {
-  const { session, currentUser } = useAuth(); const { lang } = useI18n(); const ar = lang === "ar";
+  const { session, currentUser, data } = useAuth(); const { lang } = useI18n(); const ar = lang === "ar";
   const [state, setState] = useState(empty); const [loading, setLoading] = useState(true);
-  const load = async () => { setLoading(true); try { setState(await expensesCall(session, "list")); } finally { setLoading(false); } };
-  useEffect(() => { load(); }, [session?.token]);
+  const canonicalStations = (data?.stations || []).map((station) => ({ ...station, stationId: station.id }));
+  const stationVersion = canonicalStations.map((station) => station.stationId).sort().join("|");
+  const load = async () => {
+    setLoading(true);
+    try {
+      const next = await expensesCall(session, "list", { stations: data?.stations || [] });
+      const allowedIds = new Set(next.stations.map((station) => station.stationId));
+      setState({ ...next, stations: canonicalStations.filter((station) => allowedIds.has(station.stationId)) });
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { load(); }, [session?.companyId, stationVersion]);
   const run = async (action, payload) => { try { await expensesCall(session, action, payload); await load(); toast({ description: ar ? "تم حفظ العملية." : "Expense updated." }); return true; } catch (error) { toast({ description: error?.response?.data?.error || error.message, variant: "destructive" }); return false; } };
   const submit = async ({ receipt, ...payload }) => { try { const { file_url } = await base44.integrations.Core.UploadFile({ file: receipt }); return await run("submit", { ...payload, receiptUrl: file_url, stationId: currentUser?.stationId }); } catch (error) { toast({ description: error.message, variant: "destructive" }); return false; } };
 
