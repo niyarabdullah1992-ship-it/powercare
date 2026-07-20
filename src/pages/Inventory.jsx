@@ -34,7 +34,12 @@ export default function Inventory() {
   const [selectedStation, setSelectedStation] = useState("");
   const stationVersion = (data?.stations || []).map((station) => station.id).sort().join("|");
 
-  const load = async () => { setLoading(true); try { setState(await inventoryCall(session, "list", { stations: data?.stations || [] })); } finally { setLoading(false); } };
+  const load = async () => {
+    setLoading(true);
+    try { setState(await inventoryCall(session, "list", { stations: data?.stations || [] })); }
+    catch (error) { toast({ description: error?.response?.data?.error || error.message, variant: "destructive" }); }
+    finally { setLoading(false); }
+  };
   useEffect(() => { load(); }, [session?.companyId, stationVersion]);
 
   const run = async (action, payload) => {
