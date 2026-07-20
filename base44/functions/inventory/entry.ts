@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
 
     if (body.action === "issueToWork") {
       if (!isStationOperator) return Response.json({ error: "Station inventory permission required" }, { status: 403 });
-      const itemId = String(body.itemId || ""); const stationId = String(body.fromLocationId || auth.stationId || "");
+      const itemId = String(body.itemId || ""); const stationId = String(auth.stationId || "");
       const quantity = Number(body.quantity); const employeeId = String(body.employeeId || "");
       const workReference = String(body.workReference || "").trim(); const workDate = String(body.workDate || ""); const notes = String(body.notes || "").trim();
       if (!itemId || !ensureStation(stationId) || !employeeId || !workReference || !/^\d{4}-\d{2}-\d{2}$/.test(workDate) || !Number.isFinite(quantity) || quantity <= 0) return Response.json({ error: "Valid item, station, quantity, recipient and work reference are required" }, { status: 400 });

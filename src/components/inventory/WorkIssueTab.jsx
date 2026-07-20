@@ -1,10 +1,7 @@
 import React from "react";
 import WorkIssueForm from "@/components/inventory/WorkIssueForm";
-import MovementList from "@/components/inventory/MovementList";
 
-export default function WorkIssueTab({ items, movements, employees, stations, stationId, canIssue, onSubmit, ar }) {
-  return <div className="space-y-4">
-    {canIssue && <WorkIssueForm items={items} employees={employees} stationId={stationId} onSubmit={onSubmit} ar={ar} />}
-    <MovementList movements={movements.filter((entry) => entry.movementType === "issue")} items={items} stations={stations} employees={employees} ar={ar} />
-  </div>;
+export default function WorkIssueTab({ items, employees, stationId, canIssue, onSubmit, ar }) {
+  if (!canIssue) return <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">{ar ? "الصرف للعمل متاح لمسؤولي المحطات فقط. يمكن مراجعة العمليات من سجل الحركات." : "Work issue is available to station operators only. Review operations in the movement log."}</p>;
+  return <WorkIssueForm items={items} employees={employees} stationId={stationId} onSubmit={onSubmit} ar={ar} />;
 }

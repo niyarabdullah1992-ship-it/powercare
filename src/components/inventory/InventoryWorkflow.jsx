@@ -6,7 +6,7 @@ export default function InventoryWorkflow({ onNavigate, ar }) {
     ["purchase", PackagePlus, ar ? "المشتريات / الإدخال" : "Purchase / Entry", ar ? "أدخل جميع بيانات الصنف والكمية والفاتورة" : "Enter all item, quantity and invoice details"],
     ["items", ArrowLeftRight, ar ? "الأصناف" : "Items", ar ? "راجع الأصناف المتاحة وأماكن وجودها" : "Review available items and their stations"],
     ["requests", History, ar ? "طلب من محطة" : "Station request", ar ? "اطلب صنفاً وتنتظر موافقة محطة المصدر" : "Request an item and await source approval"],
-    ["consumption", PackageMinus, ar ? "تسجيل الاستهلاك" : "Record consumption", ar ? "وثق الكمية والمهمة والمستلم كآخر حركة" : "Document quantity, task and recipient as the final movement"],
+    ["consumption", PackageMinus, ar ? "الصرف للعمل" : "Issue to work", ar ? "اصرف مباشرة من رصيد المحطة ووثّق المهمة والمستلم" : "Issue directly from station stock and document the task and recipient"],
   ];
   const gridDirection = ar ? "[direction:rtl]" : "[direction:ltr]";
   return <section className="rounded-2xl border border-border bg-card px-4 py-7 md:px-7 md:py-8">
