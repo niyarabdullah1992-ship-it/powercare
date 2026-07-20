@@ -10,7 +10,7 @@ import HRTiersEditor from "@/components/hr/HRTiersEditor";
 import HROrgChart from "@/components/hr/HROrgChart";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
 
-export default function HR() {
+export default function HRStructureManagement() {
   const { t, dir } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [selectedStation, setSelectedStation] = useState(null);
