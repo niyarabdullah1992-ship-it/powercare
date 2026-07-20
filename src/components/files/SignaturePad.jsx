@@ -51,14 +51,14 @@ export default function SignaturePad({ ar, signerName, verificationId, onPreview
     if (!inkRef.current) return;
     const composed = await makeSignatureStamp(canvasRef.current.toDataURL("image/png"), signerName, verificationId);
     setStamp(composed);
-    onPreview(composed);
+    onPreview?.(composed);
   };
   const clear = () => {
     const canvas = canvasRef.current;
     canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
     inkRef.current = false;
     setStamp("");
-    onPreview("");
+    onPreview?.("");
   };
 
   return (

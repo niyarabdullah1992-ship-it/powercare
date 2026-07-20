@@ -22,7 +22,7 @@ export default function TypedSignature({ ar, defaultName = "", verificationId, o
 
   useEffect(() => {
     let active = true;
-    setSamples({}); setStamp(""); onPreview("");
+    setSamples({}); setStamp(""); onPreview?.("");
     if (!name.trim()) return () => { active = false; };
     Promise.all(FONTS.map(async (font) => [font.id, await createTypedSignatureImage(name.trim(), font.family)]))
       .then((entries) => { if (active) setSamples(Object.fromEntries(entries)); });
@@ -34,7 +34,7 @@ export default function TypedSignature({ ar, defaultName = "", verificationId, o
     const rawSignature = samples[fontId];
     if (!rawSignature) return () => { active = false; };
     makeSignatureStamp(rawSignature, defaultName || name.trim(), verificationId)
-      .then((composed) => { if (active) { setStamp(composed); onPreview(composed); } });
+      .then((composed) => { if (active) { setStamp(composed); onPreview?.(composed); } });
     return () => { active = false; };
   }, [samples, fontId, defaultName, name, verificationId, onPreview]);
 
