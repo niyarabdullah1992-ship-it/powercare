@@ -675,6 +675,9 @@ Deno.serve(async (req) => {
       const { employees } = body;
       const incoming = (Array.isArray(employees) ? employees : []).map(({ id, ...rest }) => ({ ...rest, employeeId: id, companyId }));
       const current = await base44.asServiceRole.entities.Employee.filter({ companyId });
+      if (current.length > 0 && incoming.length === 0) {
+        return Response.json({ error: 'Safety guard: an empty sync cannot erase the employee roster' }, { status: 409 });
+      }
       const privilege = await getActorPrivilege();
       if (privilege === 'none') return Response.json({ error: 'Forbidden' }, { status: 403 });
       if (privilege === 'self') {
@@ -709,12 +712,15 @@ Deno.serve(async (req) => {
 
     if (action === 'syncStations') {
       const { stations } = body;
-      // Only the owner/director may add or remove station definitions. Other
-      // authorized managers may update existing station details within the UI.
+      // Only the owner/director may add or remove station definitions. Empty snapshots
+      // are rejected below so an unhydrated browser can never erase persisted stations.
       const context = await getActorContext();
       if (!context.senior) return Response.json({ ok: true, ignored: true });
       const incoming = (Array.isArray(stations) ? stations : []).map(({ id, isHQ: _legacyFlag, ...rest }) => ({ ...rest, stationId: id, companyId }));
       const current = await base44.asServiceRole.entities.Station.filter({ companyId });
+      if (current.length > 0 && incoming.length === 0) {
+        return Response.json({ error: 'Safety guard: an empty sync cannot erase all stations' }, { status: 409 });
+      }
       const canChangeStructure = auth.admin || auth.role === 'owner' || context.actor?.role === 'director';
       const incomingIds = new Set(incoming.map((station) => station.stationId));
       const structureChanged = incoming.length !== current.length || current.some((station) => !incomingIds.has(station.stationId));
