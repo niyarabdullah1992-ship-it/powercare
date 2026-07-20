@@ -73,7 +73,7 @@ export const GUIDE_PITCH = {
     "رؤية تنفيذية لحظية: درجة استقرار واحدة تختصر حال الشركة كلها، بأوزان مخاطر تُعايرها الشركة حسب طبيعة نشاطها.",
     "جاهزية فورية للسوق السعودي والخليجي: عربية كاملة باتجاه كتابة صحيح، و9 لغات، وتشغيل من المتصفح والجوال دون تركيب.",
     "أمان مؤسسي: عزل تام لبيانات كل شركة، وتحقق ثنائي إلزامي، وتشفير كلمات المرور، وسجل تدقيق كامل.",
-    "خطط اشتراك متدرجة (Starter / Professional / Enterprise) بفوترة شهرية أو سنوية وفترة تجريبية — تبدأ صغيرًا وتتوسع بلا حدود.",
+    "إتاحة جميع الخطط حاليًا دون رسوم لتمكين الشركات من تجربة المنصة بأقسامها المختلفة والتوسع وفق احتياجها التشغيلي.",
   ],
   pointsEn: [
     "Replace five separate systems — attendance, tasks, HR, internal communication and e-signing — with one platform, one subscription and fully connected data.",
@@ -81,7 +81,7 @@ export const GUIDE_PITCH = {
     "Real-time executive visibility: one stability score summarizing the whole company, with risk weights calibrated to your operation.",
     "Ready for the Saudi and Gulf market: full Arabic with correct RTL, 9 languages, running from browser and mobile with no installation.",
     "Enterprise-grade security: complete per-company data isolation, mandatory two-factor OTP, hashed passwords and a full audit log.",
-    "Tiered plans (Starter / Professional / Enterprise) with monthly or yearly billing and a trial period — start small, scale without limits.",
+    "All plans are currently available free of charge, allowing companies to experience the platform's full operational scope and scale as needed.",
   ],
   contactAr: "للتواصل وطلب عرض توضيحي",
   contactEn: "Contact & Request a Demo",
@@ -301,18 +301,72 @@ export const GUIDE_SECTIONS = [
     ],
   },
   {
+    image: IMG.stations,
+    titleAr: "المخزون اللامركزي وإدارة المواد",
+    titleEn: "Decentralized Inventory & Materials",
+    bodyAr: [
+      "يعتمد باور كير نموذج مخزون لامركزيًا يمنح كل محطة استقلالية تشغيلية كاملة: تسجل مشترياتها وأصنافها وكمياتها وأسعارها ومورديها وفواتيرها، وتتابع رصيد كل صنف في موقعه الحقيقي دون انتظار إدارة مركزية. وفي الوقت نفسه تحتفظ الإدارة العليا برؤية موحدة لكل الأرصدة والحركات والتكاليف عبر الشركة.",
+      "تتم عمليات نقل المواد من خلال طلب رسمي بين محطتين يوضح الكمية المتاحة وقيمة التحويل، ثم يراجعه مسؤول المحطة الموردة. كما يسجل النظام الصرف لأعمال محددة، وصور المواد، وسجل الحركات قبل وبعد كل عملية، ويتيح للإدارة العليا عكس الحركة الخاطئة مع سبب موثق وأثر محسوب على الرصيد.",
+      "تتوفر تقارير شاملة لكل محطة بصيغ PDF وExcel تشمل الأرصدة والمشتريات والاستهلاك والتحويلات، مع بحث مركزي باسم الصنف أو رمزه وإمكانية تصفية النتائج حسب محطة أو مجموعة محطات.",
+    ],
+    bodyEn: [
+      "PowerCare uses a decentralized inventory model that gives every station full operational autonomy: recording purchases, items, quantities, prices, suppliers and invoices while tracking each item's balance at its real location without waiting for a central office. Senior management simultaneously retains one consolidated view of all balances, movements and costs company-wide.",
+      "Material transfers follow a formal station-to-station request showing available quantity and transfer value, reviewed by the supplying station. The system records issues against specific work, material photos, balances before and after every movement, and allows senior management to reverse an incorrect movement with a documented reason and calculated stock impact.",
+      "Comprehensive station reports are available in PDF and Excel, covering balances, purchases, consumption and transfers, with global search by item name or code and filtering across one or multiple stations.",
+    ],
+  },
+  {
+    image: IMG.reports,
+    titleAr: "الرواتب والمصروفات المالية",
+    titleEn: "Payroll & Operational Expenses",
+    bodyAr: [
+      "يربط قسم الرواتب بيانات الموظف الوظيفية بسجل الحضور والإجازات والغياب ليمنح الإدارة أساسًا موحدًا للمراجعة الشهرية. يمكن إعداد قوالب الرواتب واستيراد البيانات ومراجعة كل موظف ومحطة، مع إبقاء البيانات المالية الحساسة ضمن نطاق الصلاحيات الممنوحة.",
+      "أما المصروفات التشغيلية فتُرفع من المحطة أو لمجموعة محطات مع نوع المصروف وقيمته وتاريخه ووصفه وإيصال الإثبات. تمر المطالبة بمراجعة المدير ثم المالية، وتظهر حالتها بوضوح من التقديم حتى الاعتماد أو الرفض، مع تقارير قابلة للتصفية والتصدير.",
+    ],
+    bodyEn: [
+      "Payroll connects employee records with attendance, leave and absence data to give management one consistent basis for monthly review. Salary templates can be prepared, data imported, and each employee or station reviewed while sensitive financial information remains within its authorized scope.",
+      "Operational expenses can be submitted for one or multiple stations with type, amount, date, description and receipt evidence. Claims pass through manager and finance review, with a clear status from submission to approval or rejection and filterable, exportable reports.",
+    ],
+  },
+  {
+    image: IMG.dashboard,
+    titleAr: "السلامة والصحة المهنية HSE",
+    titleEn: "Health, Safety & Environment (HSE)",
+    bodyAr: [
+      "يحوّل قسم السلامة متطلبات HSE إلى ممارسة يومية قابلة للقياس: تصاريح عمل، وتقييم مخاطر، وقوائم فحص، وساعات عمل آمنة، وحوادث وإصابات وتوقفات مسجلة لكل محطة. ويمكن تخصيص حقول التصاريح والتبويبات بما يناسب طبيعة نشاط الشركة.",
+      "تُجمع المؤشرات في لوحة سلامة ورسوم تحليلية وتقارير شهرية، وتغذي الحوادث والمخاطر مركز القيادة ودرجة استقرار الشركة. وبذلك لا تبقى السلامة ملفات منفصلة، بل تصبح عنصرًا مباشرًا في القرار التشغيلي والأداء المؤسسي.",
+    ],
+    bodyEn: [
+      "The safety module turns HSE requirements into measurable daily practice: permits to work, risk assessments, checklists, safe work hours, incidents, injuries and stoppages recorded per station. Permit fields and safety tabs can be customized to match the company's operating environment.",
+      "Indicators feed a safety dashboard, analytical charts and monthly reports, while incidents and hazards influence the Command Center and company stability score. Safety therefore becomes part of operational decision-making rather than a disconnected archive.",
+    ],
+  },
+  {
+    image: IMG.attendance,
+    titleAr: "الجداول والورديات والتقويم",
+    titleEn: "Schedules, Shifts & Calendar",
+    bodyAr: [
+      "ينظم باور كير ورديات كل محطة حسب أيام الأسبوع وأنواع الدوام التي تحددها الشركة، مع إسناد الموظفين للورديات وتخصيص أوقات البداية والنهاية. ترتبط الجداول مباشرة بالحضور والتنبيهات، فتُفسَّر حالات التأخر والغياب وفق الوردية الصحيحة بدل الاعتماد على وقت موحد للجميع.",
+      "كما يتيح التقويم تصدير الأحداث والمهام بصيغة ICS والمزامنة مع Google Calendar، بما يجمع الخطة التشغيلية والمواعيد الشخصية في رؤية زمنية واحدة قابلة للاستخدام من الويب والجوال.",
+    ],
+    bodyEn: [
+      "PowerCare organizes each station's shifts by weekday and company-defined shift types, assigning employees with customizable start and end times. Schedules connect directly to attendance and alerts, so lateness and absence are interpreted against the correct shift rather than one universal time.",
+      "The calendar also exports events and tasks in ICS format and synchronizes with Google Calendar, bringing operational plans and personal commitments into one time-based view across web and mobile.",
+    ],
+  },
+  {
     image: IMG.signing,
     titleAr: "الأمان وتعدد اللغات والاشتراكات",
     titleEn: "Security, Languages & Subscriptions",
     bodyAr: [
       "الأمان أساس المنصة: عزل كامل لبيانات كل شركة (Multi-Tenancy) بحيث يستحيل اطلاع شركة على بيانات أخرى، وتحقق ثنائي إلزامي برمز OTP يُرسل بالبريد عند كل تسجيل دخول (حتى للمالك)، وكلمات مرور مخزنة بتجزئة PBKDF2 لا تُحفظ نصًا أبدًا، وجلسات مشفرة بصلاحيات تُشتق من الخادم حصرًا، وسجل تدقيق كامل يوثق كل إجراء حساس: من فعل ماذا ومتى.",
       "تدعم المنصة 9 لغات كاملة مع تبديل فوري واتجاه كتابة تلقائي من اليمين لليسار للعربية في كل صفحة ومكوّن، ودخول عبر حساب Google إلى جانب البريد وكلمة المرور.",
-      "نظام الاشتراكات يقدم خططًا متدرجة للشركات (مجانية، وستارتر، واحترافية، ومؤسسات) بفوترة شهرية أو سنوية (السنوية بخصم شهرين)، وخطة فردية مجانية، مع بوابة دفع Stripe وفترة تجريبية، ولوحة خاصة لمالك المنصة يتابع منها المشتركين والإحصاءات والإيرادات.",
+      "تظهر خطط الشركات (المجانية، وستارتر، والاحترافية، والمؤسسات) حاليًا دون رسوم، إضافة إلى الخطة الفردية المجانية، مع لوحة خاصة لمالك المنصة لمتابعة المشتركين والإحصاءات وإدارة الخطط عند تفعيل نموذج الاشتراكات لاحقًا.",
     ],
     bodyEn: [
       "Security is foundational: complete multi-tenant isolation makes it impossible for one company to see another's data; mandatory two-step OTP email verification on every login (even for owners); passwords stored only as PBKDF2 hashes, never in plain text; encrypted sessions with server-derived permissions; and a full audit log documenting every sensitive action — who did what and when.",
       "The platform fully supports 9 languages with instant switching and automatic right-to-left layout for Arabic across every page and component, plus Google sign-in alongside email and password.",
-      "The subscription system offers tiered company plans (Free, Starter, Professional, Enterprise) billed monthly or yearly (yearly gets two months free) and a free Individual plan, with Stripe checkout, a trial period, and a platform-owner panel for tracking subscribers, statistics and revenue.",
+      "Company plans (Free, Starter, Professional and Enterprise) are currently displayed without charge, alongside the free Individual plan, with a platform-owner panel for tracking subscribers and statistics and managing plans when the subscription model is activated later.",
     ],
   },
 ];

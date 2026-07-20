@@ -1,14 +1,24 @@
-import React from "react";
-import { Download } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Download, Loader2 } from "lucide-react";
 import { GUIDE_AUTHOR, GUIDE_PROGRAM, GUIDE_SECTIONS, GUIDE_PHILOSOPHY, GUIDE_INTERCONNECTION, GUIDE_PITCH } from "@/lib/projectGuideContent";
+import { downloadElementPdf } from "@/lib/downloadElementPdf";
+import { Image } from "@/components/ui/image";
 import Logo from "@/components/Logo";
 
 // Bilingual (Arabic + English) illustrated guide covering every section of the
 // platform. Renders as a clean A4-style document; the button opens the
 // browser's print dialog where the user chooses "Save as PDF".
 export default function ProjectGuideDoc() {
+  const documentRef = useRef(null);
+  const [downloading, setDownloading] = useState(false);
   const todayAr = new Date().toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" });
   const todayEn = new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
+
+  const downloadPdf = async () => {
+    setDownloading(true);
+    await downloadElementPdf(documentRef.current, "PowerCare-Booklet-Niyar-Alraniawi.pdf");
+    setDownloading(false);
+  };
 
   return (
     <div dir="rtl" className="min-h-screen bg-neutral-200 print:bg-white py-8 print:py-0 font-body">
@@ -25,14 +35,16 @@ export default function ProjectGuideDoc() {
       {/* Download button */}
       <div className="no-print max-w-[210mm] mx-auto mb-4 px-4 flex justify-end">
         <button
-          onClick={() => window.print()}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-landing-olive text-white text-sm hover:opacity-90 shadow"
+          onClick={downloadPdf}
+          disabled={downloading}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-landing-olive text-white text-sm hover:opacity-90 shadow disabled:opacity-60"
         >
-          <Download className="w-4 h-4" /> تحميل الملف PDF — Download PDF
+          {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          {downloading ? "جارٍ إنشاء الملف — Creating PDF" : "تحميل الملف PDF — Download PDF"}
         </button>
       </div>
 
-      <div className="doc-sheet max-w-[210mm] mx-auto bg-white text-neutral-900 shadow-xl px-10 py-12 md:px-14 space-y-12">
+      <div ref={documentRef} className="doc-sheet max-w-[210mm] mx-auto bg-white text-neutral-900 shadow-xl px-10 py-12 md:px-14 space-y-12">
         {/* Cover */}
         <div className="text-center space-y-4 border-b-2 border-neutral-800 pb-10">
           <div className="flex justify-center"><Logo size={64} /></div>
@@ -89,10 +101,11 @@ export default function ProjectGuideDoc() {
               {i + 1}. {s.titleAr}
             </h2>
             <p className="text-sm font-semibold text-neutral-500" dir="ltr">{i + 1}. {s.titleEn}</p>
-            <img
+            <Image
               src={s.image}
               alt={s.titleEn}
-              className="w-full max-h-64 object-contain rounded-lg border border-neutral-200 bg-[#f7f1e6]"
+              fittingType="fit"
+              className="w-full h-64 rounded-lg border border-neutral-200 bg-[#f7f1e6]"
             />
             <div className="space-y-2.5">
               {s.bodyAr.map((p, j) => (
