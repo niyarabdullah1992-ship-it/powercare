@@ -82,6 +82,7 @@ export default function Inventory() {
   return <div className="space-y-6">
     <PageHeader title={ar ? "المخزون" : "Inventory"} description={ar ? "إدارة الأصناف والحركات والطلبات والمشتريات حسب صلاحياتك." : "Manage items, movements, requests and purchases based on your role."} icon={Warehouse} actions={<InventoryExportButtons items={state.items} stations={state.stations} ar={ar} />} />
     {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <>
+      <GlobalInventorySearch items={state.items} stations={state.stations} onOpen={(item, stationId) => setSelectedItem({ ...item, quantity: Number(item.locationBalances?.find((balance) => balance.locationId === stationId)?.quantity || 0), currentLocationId: stationId })} ar={ar} />
       <StationWarehousePicker stations={state.locations} value={activeStation} onChange={setSelectedStation} locked={state.locations.length <= 1} ar={ar} />
       <InventoryWorkflow ar={ar} onNavigate={(key) => setActive(tabFromWorkflow[key])} />
       <InventoryTabs active={active} onChange={setActive} ar={ar} />
@@ -90,7 +91,7 @@ export default function Inventory() {
         {state.canPurchase && <ItemForm stations={state.locations} defaultStationId={activeStation} onSubmit={(payload) => run("createItem", payload)} ar={ar} />}
         <PurchasesTab purchases={state.purchases} items={state.historyItems} stations={state.transferStations} activeStation={activeStation} canViewAll={state.canViewAllPurchases} ar={ar} />
       </div>}
-      {active === "items" && <div className="space-y-4"><GlobalInventorySearch items={stationItems} stations={state.stations} onOpen={(item) => setSelectedItem(item)} ar={ar} /><ItemList items={stationItems} stations={state.stations} onSelect={setSelectedItem} ar={ar} /></div>}
+      {active === "items" && <ItemList items={stationItems} stations={state.stations} onSelect={setSelectedItem} ar={ar} />}
       {active === "requests" && <div className="space-y-4">
         {state.canRequest && <MaterialRequestForm items={state.requestItems} stations={state.transferStations} stationId={state.canManage ? activeStation : ""} onSubmit={(payload) => run("request", payload)} ar={ar} />}
         <RequestsList requests={state.requests} items={state.historyItems} employees={state.employees} stations={state.transferStations} canReview={state.canReviewRequests} canReviewAll={state.canReviewAllRequests} reviewerStationId={activeStation} onReview={(requestId, decision) => run("reviewRequest", { requestId, decision })} ar={ar} />
