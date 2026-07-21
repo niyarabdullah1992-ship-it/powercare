@@ -140,7 +140,7 @@ export default function Layout({ children }) {
 
   const navItems = [
     { to: "/app", icon: LayoutDashboard, label: t("dashboard"), end: true },
-    { to: "/app/executive", icon: Gauge, label: lang === "ar" ? "اللوحة التنفيذية" : "Executive" },
+    { to: "/app/executive", icon: Gauge, label: t("executiveDashboard") },
     { to: "/app/daily-report", icon: FileText, label: t("reports") },
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks") },
     { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling") },
