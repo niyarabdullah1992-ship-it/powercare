@@ -1,18 +1,21 @@
 import React, { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ListTodo, MessageSquare, ClipboardCheck, FolderOpen, Warehouse, ReceiptText } from "lucide-react";
+import { LayoutDashboard, ListTodo, ClipboardCheck, Warehouse, ReceiptText, Users, FileText, Megaphone, ShieldQuestion } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { allowedNavFor } from "@/lib/navVisibility";
+import { mobilePathsFor } from "@/lib/quickNavigation";
 
 const TABS = [
   { to: "/app", icon: LayoutDashboard, key: "dashboard", end: true },
   { to: "/app/tasks", icon: ListTodo, key: "myTasks" },
-  { to: "/app/chat", icon: MessageSquare, key: "chat" },
   { to: "/app/attendance", icon: ClipboardCheck, key: "attendanceScheduling" },
-  { to: "/app/files", icon: FolderOpen, key: "files" },
   { to: "/app/inventory", icon: Warehouse, key: "inventory" },
   { to: "/app/expenses", icon: ReceiptText, key: "expenses" },
+  { to: "/app/employees", icon: Users, key: "employees" },
+  { to: "/app/daily-report", icon: FileText, key: "reports" },
+  { to: "/app/complaints", icon: Megaphone, key: "allComplaints" },
+  { to: "/app/safety", icon: ShieldQuestion, key: "safety" },
 ];
 
 const memKey = (to) => `powercare_tab_last_${to}`;
@@ -39,7 +42,8 @@ export default function BottomTabBar() {
 
   if (!currentUser) return null;
   const allowed = allowedNavFor(currentUser, data);
-  const tabs = TABS.filter((tab) => allowed.has(tab.to));
+  const rolePaths = mobilePathsFor(currentUser.role);
+  const tabs = rolePaths.map((path) => TABS.find((tab) => tab.to === path)).filter((tab) => tab && allowed.has(tab.to));
   if (tabs.length === 0) return null;
 
   const openTab = (tab) => {

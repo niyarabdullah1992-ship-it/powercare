@@ -8,7 +8,7 @@ import { RefreshCw } from "lucide-react";
 import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
-  LayoutDashboard, ListTodo, ShieldQuestion, Radio,
+  LayoutDashboard, ListTodo, ShieldQuestion, Radio, Search,
   Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Gauge, Banknote, Warehouse, ReceiptText,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
@@ -25,6 +25,10 @@ import { shouldShowNotification } from "@/lib/notificationFilters";
 import { routeForNotification } from "@/lib/notificationRoute";
 import SectionGuide from "@/components/SectionGuide";
 import CompanyNameEditor from "@/components/CompanyNameEditor";
+import MostVisitedNav from "@/components/navigation/MostVisitedNav";
+import QuickActionsFab from "@/components/navigation/QuickActionsFab";
+import GlobalSearch from "@/components/navigation/GlobalSearch";
+import { recordPageVisit } from "@/lib/quickNavigation";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -34,6 +38,7 @@ export default function Layout({ children }) {
   const [langOpen, setLangOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [proactiveAlerts, setProactiveAlerts] = useState([]);
   const langRef = useRef(null);
   const notifRef = useRef(null);
@@ -57,6 +62,19 @@ export default function Layout({ children }) {
     };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  useEffect(() => {
+    recordPageVisit(company?.id, currentUser?.id, location.pathname);
+  }, [company?.id, currentUser?.id, location.pathname]);
+
+  useEffect(() => {
+    const openSearch = (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setSearchOpen(true); }
+      if (event.key === "Escape") setSearchOpen(false);
+    };
+    window.addEventListener("keydown", openSearch);
+    return () => window.removeEventListener("keydown", openSearch);
   }, []);
 
   useEffect(() => {
@@ -238,6 +256,7 @@ export default function Layout({ children }) {
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-sm"><Logo size={30} /></span>
           <div className="min-w-0"><p className="truncate font-heading text-lg font-semibold text-white">{company.name || t("appName")}</p><p className="truncate text-[10px] uppercase tracking-widest text-white/45">PowerCare</p></div>
         </div>
+        <MostVisitedNav items={visibleNavItems} companyId={company.id} userId={currentUser.id} lang={lang} />
         <DragDropContext onDragEnd={onNavDragEnd}>
           <Droppable droppableId="sidebar-nav">
             {(provided) => (
@@ -307,6 +326,7 @@ export default function Layout({ children }) {
             </div>
 
             <div className="flex items-center gap-2 md:gap-3">
+              <button onClick={() => setSearchOpen(true)} aria-label={lang === "ar" ? "البحث العام" : "Global search"} className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-md hover:bg-muted md:px-3"><Search className="h-5 w-5" /><span className="hidden text-xs text-muted-foreground lg:inline">⌘K</span></button>
               <SyncStatusIndicator isSyncing={isSyncing} />
               <ThemeToggle />
               {/* Language */}
@@ -460,6 +480,8 @@ export default function Layout({ children }) {
         </main>
       </div>
 
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} items={visibleNavItems} data={data} currentUser={currentUser} lang={lang} />
+      <QuickActionsFab items={visibleNavItems} role={currentUser.role} lang={lang} />
       {/* Native-style bottom tab bar (mobile only) */}
       <BottomTabBar />
       <ProductFeedbackPrompt companyId={company.id} role={currentUser.role} />
