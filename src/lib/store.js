@@ -210,7 +210,21 @@ export function ensureLocalCompany(companyId) {
 export async function companyAccountExists(companyId) {
   try {
     const res = await invokeDirectory({ action: "accountExists", companyId });
-    return res?.data?.exists !== false;
+    const account = res?.data;
+    if (account?.exists !== false) {
+      const reg = getRegistry();
+      const company = reg.companies.find((item) => item.id === companyId);
+      if (company && account) {
+        const localData = getCompanyData(companyId);
+        if (localData) localStorage.setItem(companyKey(companyId), JSON.stringify({ ...localData, name: account.name || localData.name, plan: account.plan || localData.plan }));
+        company.name = account.name || company.name;
+        company.plan = account.plan || company.plan;
+        company.subscriptionStart = account.subscriptionStart ?? null;
+        company.subscriptionEnd = account.subscriptionEnd ?? null;
+        saveRegistry(reg);
+      }
+    }
+    return account?.exists !== false;
   } catch {
     return true;
   }

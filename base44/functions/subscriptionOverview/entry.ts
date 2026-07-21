@@ -52,6 +52,15 @@ Deno.serve(async (req) => {
           if (!validPlans.has(String(body.plan))) return Response.json({ error: 'Invalid plan' }, { status: 400 });
           const customPrice = body.plan === 'Custom' ? Math.max(0, Number(body.customPrice) || 0) : null;
           await base44.asServiceRole.entities.CompanyAccount.update(account.id, { plan: body.plan, customPrice });
+          const metaRows = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: account.companyId, category: 'companyMeta' });
+          if (metaRows[0]?.payload?.[0]) {
+            const payload = [...metaRows[0].payload];
+            payload[0] = { ...payload[0], plan: body.plan };
+            await base44.asServiceRole.entities.CompanyDataBlob.update(metaRows[0].id, { payload });
+          }
+          const signals = await base44.asServiceRole.entities.SyncSignal.filter({ companyId: account.companyId });
+          if (signals[0]) await base44.asServiceRole.entities.SyncSignal.update(signals[0].id, { version: Number(signals[0].version || 0) + 1 });
+          else await base44.asServiceRole.entities.SyncSignal.create({ companyId: account.companyId, version: 1 });
           if (account.plan !== body.plan || account.customPrice !== customPrice) await auditAction(account, 'subscription_plan_changed', `${account.plan || '—'}${account.customPrice != null ? ` ($${account.customPrice})` : ''}`, `${body.plan}${customPrice != null ? ` ($${customPrice})` : ''}`, body.reason);
         }
         if ((action === 'extend' || action === 'updateAccount') && body.subscriptionEnd !== undefined) {

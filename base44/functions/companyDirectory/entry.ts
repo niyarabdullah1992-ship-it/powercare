@@ -460,7 +460,7 @@ Deno.serve(async (req) => {
     if (action === 'accountExists') {
       const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
       const account = accounts[0];
-      return Response.json({ exists: !!account, frozen: account?.frozen === true, frozenAt: account?.frozenAt || null, frozenReason: account?.frozenReason || null });
+      return Response.json({ exists: !!account, name: account?.name || '', plan: account?.plan || '', subscriptionStart: account?.subscriptionStart || null, subscriptionEnd: account?.subscriptionEnd || null, frozen: account?.frozen === true, frozenAt: account?.frozenAt || null, frozenReason: account?.frozenReason || null });
     }
 
     /* ----- server-side authorization for all company-scoped actions ----- */

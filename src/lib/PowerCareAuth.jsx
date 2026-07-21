@@ -193,7 +193,10 @@ export function AuthProvider({ children }) {
   // so changes made on another device/browser show up here without needing a manual reload.
   useEffect(() => {
     const poll = () => {
-      if (document.visibilityState === "visible" && navigator.onLine !== false) refresh();
+      if (document.visibilityState === "visible" && navigator.onLine !== false) {
+        if (session?.companyId) companyAccountExists(session.companyId).finally(refresh);
+        else refresh();
+      }
     };
     const interval = setInterval(poll, 30000);
     return () => clearInterval(interval);
@@ -207,7 +210,7 @@ export function AuthProvider({ children }) {
     let unsubscribe = null;
     try {
       unsubscribe = base44.entities.SyncSignal.subscribe((event) => {
-        if (event?.data?.companyId === session.companyId) refresh();
+        if (event?.data?.companyId === session.companyId) companyAccountExists(session.companyId).finally(refresh);
       });
     } catch {
       // realtime unavailable — the 10s poll above remains the fallback
