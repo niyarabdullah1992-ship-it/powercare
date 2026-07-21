@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
+import { authPowerCareSession } from '../../shared/powerCareSession.ts';
 
 function toBase64Url(str) {
   const bytes = new TextEncoder().encode(str);
@@ -35,29 +36,7 @@ const isAllowedDocUrl = (value) => {
   }
 };
 
-async function authSession(base44, companyId, sessionToken) {
-  const user = await base44.auth.me().catch(() => null);
-  if (user && user.role === 'admin') return { admin: true, name: user.full_name || 'Admin', email: user.email || '' };
-  if (!companyId || !sessionToken) return null;
-  const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: sessionToken, companyId });
-  const session = sessions[0];
-  if (!session || new Date(session.expiresAt).getTime() <= Date.now()) return null;
-  if (session.userId) {
-    const employees = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: session.userId });
-    const employee = employees[0];
-    return employee ? { userId: employee.employeeId, name: employee.name, email: String(employee.email || '').toLowerCase(), role: employee.role, stationId: employee.stationId || null, hrLevelId: employee.hrLevelId || null } : null;
-  }
-  const [accounts, metaRows] = await Promise.all([
-    base44.asServiceRole.entities.CompanyAccount.filter({ companyId }),
-    base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: 'companyMeta' }),
-  ]);
-  const account = accounts[0];
-  if (!account) return null;
-  const ownerId = metaRows[0]?.payload?.[0]?.ownerId || null;
-  const owners = ownerId ? await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: ownerId }) : [];
-  const owner = owners[0];
-  return { owner: true, userId: ownerId, name: owner?.name || 'Owner', email: String(account.ownerEmail || '').toLowerCase(), role: 'owner', stationId: null };
-}
+const authSession = authPowerCareSession;
 
 const escapeHtml = (value) => String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const cleanLocation = (value) => value?.available === true && Number.isFinite(Number(value.lat)) && Number.isFinite(Number(value.lng)) ? { lat: Number(value.lat), lng: Number(value.lng), accuracy: Math.max(0, Number(value.accuracy) || 0) } : { available: false };
