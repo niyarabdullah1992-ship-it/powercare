@@ -25,7 +25,6 @@ import { shouldShowNotification } from "@/lib/notificationFilters";
 import { routeForNotification } from "@/lib/notificationRoute";
 import SectionGuide from "@/components/SectionGuide";
 import CompanyNameEditor from "@/components/CompanyNameEditor";
-import QuickActionsFab from "@/components/navigation/QuickActionsFab";
 import GlobalSearch from "@/components/navigation/GlobalSearch";
 
 export default function Layout({ children }) {
@@ -479,7 +478,6 @@ export default function Layout({ children }) {
       </div>
 
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} items={visibleNavItems} data={data} currentUser={currentUser} lang={lang} />
-      <QuickActionsFab items={visibleNavItems} role={currentUser.role} lang={lang} />
       {/* Native-style bottom tab bar (mobile only) */}
       <BottomTabBar />
       <ProductFeedbackPrompt companyId={company.id} role={currentUser.role} />
