@@ -11,6 +11,7 @@ import NewsBroadcast from "@/components/owner/NewsBroadcast";
 import SubscribersDashboard from "@/components/owner/SubscribersDashboard";
 import SaasAnalyticsDashboard from "@/components/owner/SaasAnalyticsDashboard";
 import PlatformRoadmap from "@/components/owner/PlatformRoadmap";
+import ProductFeedbackDashboard from "@/components/owner/ProductFeedbackDashboard";
 
 export default function OwnerPanel() {
   const { t, lang } = useI18n();
@@ -104,6 +105,7 @@ export default function OwnerPanel() {
             { key: "companies", ar: "إدارة الشركات", en: "Companies" },
             { key: "subscriptions", ar: "إدارة الاشتراكات", en: "Subscriptions" },
             { key: "roadmap", ar: "خارطة التطوير", en: "Roadmap" },
+            { key: "feedback", ar: "التقييمات والاقتراحات", en: "Feedback" },
           ].map((tb) => (
             <button
               key={tb.key}
@@ -120,6 +122,7 @@ export default function OwnerPanel() {
         {tab === "analytics" && <SaasAnalyticsDashboard lang={lang} />}
         {tab === "subscriptions" && <SubscribersDashboard ar={lang === "ar"} />}
         {tab === "roadmap" && <PlatformRoadmap ar={lang === "ar"} />}
+        {tab === "feedback" && <ProductFeedbackDashboard ar={lang === "ar"} companies={companies} />}
 
         {tab === "companies" && (<>
         <div className="bg-white rounded-2xl p-6 shadow-xl space-y-6">

@@ -271,6 +271,7 @@ export default function Layout({ children }) {
                   </Draggable>
                 ))}
                 {provided.placeholder}
+                <button onClick={() => window.dispatchEvent(new Event("powercare:open-feedback"))} className="mt-3 flex h-11 w-full items-center gap-3 rounded-xl border border-white/10 px-3 text-white/65 hover:bg-white/10 hover:text-white"><MessageSquare className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} /><span className="truncate text-sm font-medium">{lang === "ar" ? "التقييم والاقتراحات" : "Feedback & suggestions"}</span></button>
               </nav>
             )}
           </Droppable>
