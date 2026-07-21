@@ -115,6 +115,33 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    if (action === 'manualUpgrade') {
+      const account = body.accountId
+        ? await base44.asServiceRole.entities.CompanyAccount.get(String(body.accountId)).catch(() => null)
+        : null;
+      if (!account?.companyId || !account.ownerEmail) return Response.json({ error: 'Account not found' }, { status: 404 });
+      const language = MESSAGE_COPY[account.emailLanguage] ? account.emailLanguage : 'en';
+      const plan = String(account.plan || '').replace(/[\r\n]/g, ' ').slice(0, 40);
+      const companyName = String(account.name || '').replace(/[\r\n]/g, ' ').slice(0, 120);
+      const isArabic = language === 'ar';
+      const subject = isArabic ? `تهانينا بترقية حسابك إلى ${plan}` : `Congratulations on your upgrade to ${plan}`;
+      const messageText = isArabic
+        ? `مرحبًا،\n\nتهانينا! تمت ترقية حساب شركة ${companyName} بنجاح إلى باقة ${plan}. أصبحت مزايا الباقة الجديدة متاحة الآن داخل PowerCare.\n\n— فريق PowerCare`
+        : `Hello,\n\nCongratulations! ${companyName} has been successfully upgraded to the ${plan} plan. Your new plan features are now available in PowerCare.\n\n— The PowerCare Team`;
+      const metaRows = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: account.companyId, category: 'companyMeta' });
+      const ownerId = metaRows[0]?.payload?.[0]?.ownerId || null;
+      const employees = ownerId ? [] : await base44.asServiceRole.entities.Employee.filter({ companyId: account.companyId });
+      const recipientId = ownerId || employees.find((employee) => employee.role === 'director')?.employeeId || null;
+      if (recipientId) {
+        const notificationRows = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: account.companyId, category: 'notifications' });
+        const notification = { id: crypto.randomUUID(), userId: recipientId, text: subject, read: false, createdAt: new Date().toISOString() };
+        if (notificationRows[0]) await base44.asServiceRole.entities.CompanyDataBlob.update(notificationRows[0].id, { payload: [notification, ...(notificationRows[0].payload || [])] });
+        else await base44.asServiceRole.entities.CompanyDataBlob.create({ companyId: account.companyId, category: 'notifications', payload: [notification] });
+      }
+      await send(account.ownerEmail, subject, messageText, language);
+      return Response.json({ ok: true, emailSent: true, notificationCreated: !!recipientId });
+    }
+
     if (action === 'trialReminderSweep') {
       const accounts = await base44.asServiceRole.entities.CompanyAccount.list('-created_date', 1000);
       const now = Date.now();

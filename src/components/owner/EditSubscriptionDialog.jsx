@@ -14,7 +14,9 @@ export default function EditSubscriptionDialog({ open, onOpenChange, row, ar, on
     setSaving(true);
     setError("");
     try {
-      if (form.plan !== row.plan || (form.plan === "Custom" && Number(form.customPrice) !== Number(row.customPrice))) await base44.functions.invoke("subscriptionOverview", { action: "changePlan", accountId: row.accountId, plan: form.plan, customPrice: form.customPrice, reason: form.reason });
+      const planChanged = form.plan !== row.plan;
+      if (planChanged || (form.plan === "Custom" && Number(form.customPrice) !== Number(row.customPrice))) await base44.functions.invoke("subscriptionOverview", { action: "changePlan", accountId: row.accountId, plan: form.plan, customPrice: form.customPrice, reason: form.reason });
+      if (planChanged) await base44.functions.invoke("subscriberEmails", { action: "manualUpgrade", accountId: row.accountId });
       if (form.end !== dateValue(row.endsAt) || form.start !== dateValue(row.startedAt)) await base44.functions.invoke("subscriptionOverview", { action: "extend", accountId: row.accountId, subscriptionStart: form.start, subscriptionEnd: form.end, reason: form.reason });
       await onSaved(); onOpenChange(false);
     } catch (requestError) {
