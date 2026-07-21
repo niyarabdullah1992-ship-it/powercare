@@ -19,7 +19,7 @@ export default function CommandCenterHero({ companyName, riskScore, activeStatio
         </div>
         <div className="flex flex-wrap gap-3">
         <div className={`relative min-w-32 rounded-2xl border bg-white/5 p-4 ${riskScore < 40 ? "border-landing-gold/35" : "border-white/10"}`}>
-          {riskScore < 40 && <span className="absolute end-3 top-3 h-2 w-2 rounded-full bg-landing-gold"><span className="absolute inset-0 animate-ping rounded-full bg-landing-gold opacity-50" /></span>}
+          {riskScore < 40 && <span className="absolute left-1/2 top-3 h-2 w-2 -translate-x-1/2 rounded-full bg-landing-gold"><span className="absolute inset-0 animate-ping rounded-full bg-landing-gold opacity-50" /></span>}
           {breakdown && <StabilityInfoPopover breakdown={breakdown} riskScore={riskScore} ar={ar} companyId={companyId} canEditWeights={canEditWeights} />}
           <Activity className={`mb-3 h-4 w-4 text-landing-gold ${riskScore < 40 ? "animate-pulse" : ""}`} /><p className={`text-3xl font-heading ${riskScore < 40 ? "text-landing-gold-light" : ""}`}>{100 - riskScore}%</p><p className="text-xs text-white/50">{state}</p>
         </div>
