@@ -4,11 +4,11 @@
   "properties": {
     "employeeId": {
       "type": "string",
-      "description": "Stable client-side id used across the app (stations, tasks, HR, reports all reference this value)."
+      "description": "Stable client-side id used across the app."
     },
     "companyId": {
       "type": "string",
-      "description": "The PowerCare company (tenant) this employee belongs to."
+      "description": "The PowerCare company this employee belongs to."
     },
     "name": {
       "type": "string"
@@ -71,6 +71,30 @@
     },
     "profile": {
       "type": "object",
+      "properties": {
+        "gradeId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Reference to the company job grade."
+        },
+        "maxStations": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "Maximum stations; null means unlimited."
+        },
+        "position": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Employee-managed free-form position title."
+        }
+      },
       "additionalProperties": true
     },
     "certificates": {

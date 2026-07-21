@@ -9,6 +9,7 @@ import ClusterEditor from "@/components/hr/ClusterEditor";
 import HRTiersEditor from "@/components/hr/HRTiersEditor";
 import HROrgChart from "@/components/hr/HROrgChart";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
+import GradeEmployeeFilter from "@/components/hr/GradeEmployeeFilter";
 
 export default function HRStructureManagement() {
   const { t, dir } = useI18n();
@@ -53,6 +54,7 @@ export default function HRStructureManagement() {
       </div>
 
       <EscalationInfoBox t={t} />
+      <GradeEmployeeFilter data={data} currentUser={currentUser} ar={dir === "rtl"} />
 
       {canManage && (
         <div className="p-3.5 rounded-xl border border-accent/30 bg-accent/5">

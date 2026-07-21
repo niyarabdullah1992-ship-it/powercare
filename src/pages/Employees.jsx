@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { updateCompany, addNotification, updateEmployeeProfile, setAllowedEmailDomain, deleteEmployeeAccount } from "@/lib/store";
+import { updateCompany, setAllowedEmailDomain, deleteEmployeeAccount } from "@/lib/store";
 import { canManageEmployees, isCompanyOwner, canManageStations, visibleStations, visibleEmployees } from "@/lib/permissions";
 import { canAddEmployee } from "@/lib/planLimits";
 import { Link } from "react-router-dom";
-import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle, Mail, GripVertical, Users } from "lucide-react";
+import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle, Mail, GripVertical, Users, Settings2, MapPinned } from "lucide-react";
 import { badgeFor, nextBadge } from "@/lib/rewards";
 import { getRoleLabel } from "@/lib/roles";
 import { base44 } from "@/api/base44Client";
@@ -27,6 +27,10 @@ import EmployeeGlobalSearch from "@/components/employees/EmployeeGlobalSearch";
 import AddStationControl from "@/components/employees/AddStationControl";
 import UnifiedStationManager from "@/components/employees/UnifiedStationManager";
 import { matchesEmployeeSearch } from "@/lib/employeeSearch";
+import JobGradeManager from "@/components/employees/JobGradeManager";
+import GradeBadge from "@/components/employees/GradeBadge";
+import { employeeJobGrade, orderedJobGrades } from "@/lib/jobGrades";
+import { hasHRPermission } from "@/lib/permissions";
 
 const ROLES = ["employee", "inventory_keeper", "safety_officer", "financial_officer", "station_manager", "pgm", "ops_manager", "director"];
 
@@ -48,14 +52,14 @@ export default function Employees() {
   const { data, currentUser, company, switchUser } = useAuth();
   const [selectedStation, setSelectedStation] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", role: "employee", stationId: "" });
+  const [form, setForm] = useState({ name: "", email: "", role: "employee", stationId: "", gradeId: "", maxStations: "" });
   const [pgmStations, setPgmStations] = useState([]);
-  const [editingTitle, setEditingTitle] = useState(null);
-  const [titleInput, setTitleInput] = useState("");
+  const [showGrades, setShowGrades] = useState(false);
   const [editingName, setEditingName] = useState(null);
   const [nameInput, setNameInput] = useState("");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [gradeFilter, setGradeFilter] = useState("all");
   const [showTransfer, setShowTransfer] = useState(null);
   const [targets, setTargets] = useState([]);
   const [editingDomain, setEditingDomain] = useState(false);
@@ -91,6 +95,9 @@ export default function Employees() {
   if (!data || !currentUser) return null;
   const canManage = canManageEmployees(currentUser);
   const canTransfer = isCompanyOwner(currentUser, data);
+  const canManageGrades = canTransfer || currentUser.role === "director";
+  const canAssignGrades = canManageGrades || hasHRPermission(currentUser, data, "manage_employees");
+  const grades = orderedJobGrades(data);
   const canDeleteAccounts = canTransfer || !!currentUser.hrLevelId;
   const stations = visibleStations(currentUser, data);
   const defaultStationId = data.stations?.[0]?.id || null;
@@ -144,7 +151,9 @@ export default function Employees() {
                 </button>
               )}
               {currentUser.role === "director" && <RoleLabelsEditor company={company} />}
+              {canManageGrades && <button onClick={() => setShowGrades((value) => !value)} className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"><Settings2 className="h-3.5 w-3.5" />{lang === "ar" ? "إدارة المستويات الوظيفية" : "Manage Job Grades"}</button>}
             </div>
+            {showGrades && canManageGrades && <div className="mt-3"><JobGradeManager companyId={company.id} data={data} ar={lang === "ar"} /></div>}
             {canTransfer && <div className="mt-3"><AuditLogPanel companyId={company.id} /></div>}
             {currentUser.role === "director" && (
               <div className="mt-3 pt-3 border-t border-border">
@@ -240,6 +249,7 @@ export default function Employees() {
   let team = data.employees.filter((e) => (e.stationId || defaultStationId) === selectedStation || (["pgm", "station_manager"].includes(e.role) && (e.managedStations || []).includes(selectedStation)));
   if (search) team = team.filter((employee) => matchesEmployeeSearch(employee, search, data.stations, (role) => getRoleLabel(company, role, t)));
   if (roleFilter !== "all") team = team.filter((e) => e.role === roleFilter);
+  if (gradeFilter !== "all") team = team.filter((e) => e.profile?.gradeId === gradeFilter);
 
   const employeeLimitReached = !canAddEmployee(company, data);
 
@@ -261,6 +271,7 @@ export default function Employees() {
         stationId: selectedStation,
         anonymousId: "ANON-" + Math.abs(Math.random().toString(36).hashCode?.() || Math.floor(Math.random() * 1e8)).toString(16).toUpperCase().padStart(8, "0"),
         phone: "",
+        profile: { gradeId: form.gradeId || null, maxStations: form.maxStations === "" ? null : Number(form.maxStations) },
         createdAt: new Date().toISOString(),
       };
       if (form.role === "pgm") {
@@ -275,7 +286,7 @@ export default function Employees() {
       }
     });
     setShowAdd(false);
-    setForm({ name: "", email: "", role: "employee", stationId: "" });
+    setForm({ name: "", email: "", role: "employee", stationId: "", gradeId: "", maxStations: "" });
     setPgmStations([]);
   };
 
@@ -301,12 +312,6 @@ export default function Employees() {
       employee.role = role;
       if (!employee.stationId) employee.stationId = selectedStation;
     });
-  };
-
-  const saveTitle = (id) => {
-    updateEmployeeProfile(company.id, id, { position: titleInput.trim() || "" });
-    setEditingTitle(null);
-    setTitleInput("");
   };
 
   const saveEmployeeName = (id) => {
@@ -338,6 +343,7 @@ export default function Employees() {
           className="min-w-40"
           options={[{ value: "all", label: t("all") }, ...ROLES.map((role) => ({ value: role, label: getRoleLabel(company, role, t) }))]}
         />
+        <MobileSelect value={gradeFilter} onChange={setGradeFilter} placeholder={lang === "ar" ? "كل المستويات" : "All grades"} className="min-w-40" options={[{ value: "all", label: lang === "ar" ? "كل المستويات" : "All grades" }, ...grades.map((grade) => ({ value: grade.id, label: `${grade.gradeNumber} · ${grade.title}` }))]} />
         {canManage && (
           <button onClick={() => setShowAdd((o) => !o)} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">
             <Plus className="w-4 h-4" /> {t("addEmployee")}
@@ -366,6 +372,8 @@ export default function Employees() {
             placeholder={t("role")}
             options={allowedRoles.map((role) => ({ value: role, label: getRoleLabel(company, role, t) }))}
           />
+          {canAssignGrades && <MobileSelect value={form.gradeId} onChange={(gradeId) => setForm({ ...form, gradeId })} placeholder={lang === "ar" ? "المستوى الوظيفي" : "Job grade"} options={[{ value: "", label: "—" }, ...grades.map((grade) => ({ value: grade.id, label: `${grade.gradeNumber} · ${grade.title}` }))]} />}
+          {canAssignGrades && <input type="number" min="1" value={form.maxStations} onChange={(event) => setForm({ ...form, maxStations: event.target.value })} placeholder={lang === "ar" ? "الحد الأقصى للمحطات (∞)" : "Maximum stations (∞)"} className="rounded-md border border-input px-3 py-2 text-sm" />}
           {form.role === "pgm" && (
             <div className="md:col-span-3 p-3 rounded-md border border-border bg-background space-y-2">
               <p className="text-xs text-muted-foreground font-body">{t("selectStation")}</p>
@@ -399,35 +407,19 @@ export default function Employees() {
                       <button onClick={() => setEditingName(null)} className="p-1 text-muted-foreground"><X className="h-3.5 w-3.5" /></button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1">
-                      <EmployeeNameLink employeeId={e.id} employeeName={e.name} className="min-w-0 truncate font-heading font-semibold" />
-                      {canManage && <button onClick={() => { setEditingName(e.id); setNameInput(e.name); }} className="p-1 text-muted-foreground"><Pencil className="h-3 w-3" /></button>}
-                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                       <EmployeeNameLink employeeId={e.id} employeeName={e.name} className="min-w-0 truncate font-heading font-semibold" />
+                       <GradeBadge grade={employeeJobGrade(e, data)} />
+                       {canManage && <button onClick={() => { setEditingName(e.id); setNameInput(e.name); }} className="p-1 text-muted-foreground"><Pencil className="h-3 w-3" /></button>}
+                     </div>
                   )}
                   {e.email && <p className="text-xs text-muted-foreground font-body truncate">{e.email}</p>}
+                  <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground"><MapPinned className="h-3 w-3" />{station?.name || "—"} · {lang === "ar" ? "حد المحطات" : "Station limit"}: {e.profile?.maxStations || "∞"}</p>
 
                   <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                    {editingTitle === e.id ? (
-                      <div className="flex items-center gap-1">
-                        <input
-                          value={titleInput}
-                          onChange={(ev) => setTitleInput(ev.target.value)}
-                          placeholder={t("positionTitle")}
-                          className="w-32 px-1.5 py-0.5 rounded border border-input text-xs font-body"
-                        />
-                        <button onClick={() => saveTitle(e.id)} className="p-1 rounded hover:bg-muted text-accent"><Check className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => setEditingTitle(null)} className="p-1 rounded hover:bg-muted text-muted-foreground"><X className="w-3.5 h-3.5" /></button>
-                      </div>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-[11px] font-body font-medium">
-                        <Briefcase className="w-3 h-3" /> {e.profile?.position || e.customTitle || getRoleLabel(company, e.role, t)}
-                        {canManage && (
-                          <button onClick={() => { setEditingTitle(e.id); setTitleInput(e.profile?.position || e.customTitle || ""); }} className="hover:text-foreground">
-                            <Pencil className="w-3 h-3" />
-                          </button>
-                        )}
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-secondary-foreground">
+                      <Briefcase className="h-3 w-3" /> {e.profile?.position || e.customTitle || getRoleLabel(company, e.role, t)}
+                    </span>
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-body font-medium border ${TASK_STATUS_STYLES[status]}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${TASK_STATUS_DOT[status]}`} /> {t(status)}
                     </span>

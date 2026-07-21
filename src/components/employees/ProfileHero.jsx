@@ -5,8 +5,9 @@ import { updateEmployeeProfile } from "@/lib/store";
 import { Mail, Building2, Loader2, X, Images } from "lucide-react";
 import BannerGallery from "@/components/employees/BannerGallery";
 import PresenceDot from "@/components/employees/PresenceDot";
+import GradeBadge from "@/components/employees/GradeBadge";
 
-export default function ProfileHero({ employee, companyId, canEdit, roleLabel, stationName }) {
+export default function ProfileHero({ employee, companyId, canEdit, roleLabel, grade, stationName }) {
   const { t, lang } = useI18n();
   const [uploading, setUploading] = useState(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -59,9 +60,10 @@ export default function ProfileHero({ employee, companyId, canEdit, roleLabel, s
 
         <h1 className="mt-4 max-w-full truncate font-heading text-2xl font-semibold">{employee.name}</h1>
         <p className="mt-1 text-sm font-medium text-accent">{roleLabel}</p>
+        <GradeBadge grade={grade} className="mt-2" />
         <div className="mt-5 w-full space-y-3 border-t border-border pt-5 text-start text-xs text-muted-foreground">
           {employee.email && <span className="flex items-center gap-2 break-all"><Mail className="h-3.5 w-3.5 shrink-0 text-accent" /> {employee.email}</span>}
-          {stationName && <span className="flex items-center gap-2"><Building2 className="h-3.5 w-3.5 shrink-0 text-accent" /> {stationName}</span>}
+          {stationName && <span className="flex items-center gap-2"><Building2 className="h-3.5 w-3.5 shrink-0 text-accent" /> {stationName} · {lang === "ar" ? "حد المحطات" : "Station limit"}: {profile.maxStations || "∞"}</span>}
         </div>
       </div>
       {galleryOpen && (

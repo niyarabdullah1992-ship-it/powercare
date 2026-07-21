@@ -294,6 +294,7 @@ function emptyCompanyData(meta) {
     templates: [],
     targets: [],
     hrLevels: [],
+    jobGrades: [],
     hrClusters: [],
     schedules: [],
     stationChatGroups: [],
@@ -408,7 +409,7 @@ if (typeof window !== "undefined") {
    is additionally persisted to the CompanyDataBlob entity so it survives beyond this browser. */
 export const BLOB_CATEGORIES = [
   "tasks", "reports", "anonymousReports", "publicReports", "safety", "plans",
-  "schedules", "hrLevels", "hrClusters", "files", "notifications", "templates", "targets",
+  "schedules", "hrLevels", "jobGrades", "hrClusters", "files", "notifications", "templates", "targets",
   "personalPlaces", "personalAttendance", "plannerItems", "journalEntries", "payrollRuns",
 ];
 const lastSyncedBlobJSON = {};

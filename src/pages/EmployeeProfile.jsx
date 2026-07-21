@@ -15,6 +15,7 @@ import LoginAccessCard from "@/components/employees/LoginAccessCard";
 import AccountSettingsCard from "@/components/employees/AccountSettingsCard";
 import DeleteEmployeeAccountCard from "@/components/employees/DeleteEmployeeAccountCard";
 import ProfileCompletionCard from "@/components/employees/ProfileCompletionCard";
+import { employeeJobGrade, orderedJobGrades } from "@/lib/jobGrades";
 
 const TABS = [
   { key: "professionalInfo", icon: Briefcase },
@@ -56,11 +57,13 @@ export default function EmployeeProfile() {
   }
 
   const canManage = canManageEmployees(currentUser) || currentUser.role === "director" || currentUser.role === "ops_manager";
+  const canEditGrade = isCompanyOwner(currentUser, data) || currentUser.role === "director" || hasHRPermission(currentUser, data, "manage_employees");
   const canEditSalary = canAdjustPayroll(currentUser, data);
   const canApproveLeave = canManage || hasHRPermission(currentUser, data, "manage_leave");
   const canApproveCerts = canManage || hasHRPermission(currentUser, data, "manage_leave");
   const stationName = data.stations.find((s) => s.id === employee.stationId)?.name;
   const fallbackPosition = employee.customTitle || getRoleLabel(company, employee.role, t);
+  const grade = employeeJobGrade(employee, data);
 
   return (
     <div className="-m-4 min-h-[calc(100vh-4rem)] bg-background p-4 text-foreground md:-m-8 md:p-8">
@@ -86,7 +89,7 @@ export default function EmployeeProfile() {
             </div>
 
             <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-              {tab === "professionalInfo" && <ProfessionalInfoTab employee={employee} companyId={company.id} canEdit={canManage || isSelf} fallbackPosition={fallbackPosition} />}
+              {tab === "professionalInfo" && <ProfessionalInfoTab employee={employee} companyId={company.id} canEdit={canManage} isSelf={isSelf} canEditGrade={canEditGrade} grades={orderedJobGrades(data)} fallbackPosition={fallbackPosition} />}
               {tab === "certificates" && <CertificatesTab employee={employee} companyId={company.id} canEdit={isSelf || canManage} canApprove={canApproveCerts} currentUser={currentUser} />}
               {tab === "salary" && <SalaryTab employee={employee} companyId={company.id} canEdit={canEditSalary} />}
               {tab === "leave" && <LeaveTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canApprove={canApproveLeave} />}
@@ -100,6 +103,7 @@ export default function EmployeeProfile() {
               companyId={company.id}
               canEdit={isSelf || canManage}
               roleLabel={employee.profile?.position || fallbackPosition}
+              grade={grade}
               stationName={stationName}
             />
             <ProfileCompletionCard employee={employee} isSelf={isSelf} ar={dir === "rtl"} />

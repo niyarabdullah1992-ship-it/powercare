@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { updateEmployeeProfile } from "@/lib/store";
-import { Pencil, Check, Briefcase, Building2, CalendarDays, IdCard, MapPin, FileText, Heart, Flag, GraduationCap, PhoneCall, User, Landmark } from "lucide-react";
+import { Pencil, Check, Briefcase, Building2, CalendarDays, IdCard, MapPin, FileText, Heart, Flag, GraduationCap, PhoneCall, User, Landmark, Layers3, MapPinned } from "lucide-react";
+import MobileSelect from "@/components/mobile/MobileSelect";
 
 // Field groups: label = i18n key for original groups; ar/en = inline labels for
 // the HR data-collection group. This list also powers ProfileCompletionCard.
@@ -27,26 +28,31 @@ export const PROFILE_GROUPS = [
   ] },
 ];
 
-export default function ProfessionalInfoTab({ employee, companyId, canEdit, fallbackPosition }) {
+export default function ProfessionalInfoTab({ employee, companyId, canEdit, isSelf, canEditGrade, grades, fallbackPosition }) {
   const { t, lang } = useI18n();
   const ar = lang === "ar";
   const [editing, setEditing] = useState(false);
   const profile = employee.profile || {};
   const allFields = PROFILE_GROUPS.flatMap((g) => g.fields.map((f) => f.key));
-  const [form, setForm] = useState(() =>
-    allFields.reduce((acc, f) => ({ ...acc, [f]: profile[f] || (f === "position" ? fallbackPosition || "" : "") }), {})
-  );
+  const [form, setForm] = useState(() => ({
+    ...allFields.reduce((acc, f) => ({ ...acc, [f]: profile[f] || (f === "position" ? fallbackPosition || "" : "") }), {}),
+    gradeId: profile.gradeId || "", maxStations: profile.maxStations ?? "",
+  }));
 
   const labelOf = (item) => (item.label ? t(item.label) : ar ? item.ar : item.en);
 
   const save = () => {
-    updateEmployeeProfile(companyId, employee.id, form);
+    const payload = { ...form, maxStations: form.maxStations === "" ? null : Number(form.maxStations) };
+    if (!canEditGrade) { delete payload.gradeId; delete payload.maxStations; }
+    if (!isSelf) delete payload.position;
+    if (isSelf && !canEdit) allFields.filter((key) => key !== "position").forEach((key) => delete payload[key]);
+    updateEmployeeProfile(companyId, employee.id, payload);
     setEditing(false);
   };
 
   return (
     <div className="space-y-4">
-      {canEdit && (
+      {(canEdit || isSelf || canEditGrade) && (
         <div className="flex justify-end">
           {editing ? (
             <button onClick={save} className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
@@ -60,6 +66,14 @@ export default function ProfessionalInfoTab({ employee, companyId, canEdit, fall
         </div>
       )}
 
+      <div className="space-y-4 rounded-xl border border-border bg-card p-5">
+        <h3 className="font-heading text-sm font-semibold uppercase tracking-wide text-muted-foreground">{ar ? "المستوى ونطاق المحطات" : "Grade & Station Scope"}</h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div><label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground"><Layers3 className="h-3.5 w-3.5 text-accent" />{ar ? "المستوى الوظيفي" : "Job grade"}</label>{editing && canEditGrade ? <MobileSelect value={form.gradeId} onChange={(gradeId) => setForm({ ...form, gradeId })} options={[{ value: "", label: "—" }, ...grades.map((grade) => ({ value: grade.id, label: `${grade.gradeNumber} · ${grade.title}` }))]} /> : <p className="min-h-[42px] rounded-lg border border-border bg-background px-3 py-2 text-sm">{grades.find((grade) => grade.id === profile.gradeId) ? `${grades.find((grade) => grade.id === profile.gradeId).gradeNumber} · ${grades.find((grade) => grade.id === profile.gradeId).title}` : "—"}</p>}</div>
+          <div><label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground"><MapPinned className="h-3.5 w-3.5 text-accent" />{ar ? "الحد الأقصى للمحطات" : "Maximum stations"}</label>{editing && canEditGrade ? <input type="number" min="1" value={form.maxStations} onChange={(event) => setForm({ ...form, maxStations: event.target.value })} placeholder="∞" className="w-full rounded-md border border-input px-3 py-2 text-sm" /> : <p className="min-h-[42px] rounded-lg border border-border bg-background px-3 py-2 text-sm">{profile.maxStations || "∞"}</p>}</div>
+        </div>
+      </div>
+
       {PROFILE_GROUPS.map((group, gi) => (
         <div key={gi} className="space-y-4 rounded-xl border border-border bg-card p-5">
           <h3 className="font-heading font-semibold text-sm text-muted-foreground uppercase tracking-wide">{labelOf(group)}</h3>
@@ -71,7 +85,7 @@ export default function ProfessionalInfoTab({ employee, companyId, canEdit, fall
                   <label className="flex items-center gap-1.5 text-xs text-muted-foreground font-body mb-1.5">
                     <Icon className="w-3.5 h-3.5 text-accent" /> {group.label ? t(key) : labelOf(field)}
                   </label>
-                  {editing ? (
+                  {editing && ((key === "position" && isSelf) || (key !== "position" && canEdit)) ? (
                     area ? (
                       <textarea value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} rows={3} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
                     ) : (

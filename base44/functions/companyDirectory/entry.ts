@@ -699,6 +699,19 @@ Deno.serve(async (req) => {
       }
       const privilege = await getActorPrivilege();
       if (privilege === 'none') return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const context = await getActorContext();
+      const canManageGrades = auth.admin || auth.role === 'owner' || context.actor?.role === 'director' || context.permissions.has('manage_employees');
+      const currentByEmployeeId = new Map(current.map((record) => [record.employeeId, record]));
+      for (const record of incoming) {
+        const previous = currentByEmployeeId.get(record.employeeId);
+        if (!previous) continue;
+        const gradeChanged = record.profile?.gradeId !== previous.profile?.gradeId || record.profile?.maxStations !== previous.profile?.maxStations;
+        if (!gradeChanged) continue;
+        if (!canManageGrades) return Response.json({ error: 'Job grade changes require Owner, Director, or HR access' }, { status: 403 });
+        if (!context.senior && context.scope !== null && !context.scope.includes(previous.stationId)) {
+          return Response.json({ error: 'Employee is outside your HR station scope' }, { status: 403 });
+        }
+      }
       if (privilege === 'self') {
         // Anti-privilege-escalation: a regular employee may not add/remove
         // employees, change anyone's role/permissions/HR position, or touch
@@ -778,7 +791,7 @@ Deno.serve(async (req) => {
       const actorRole = context.actor?.role;
       let allowed = true;
       if (['companyMeta', 'files'].includes(category)) allowed = context.senior;
-      else if (['hrLevels', 'hrClusters'].includes(category)) allowed = context.senior && (!context.actor || context.actor.role === 'director');
+      else if (['hrLevels', 'hrClusters', 'jobGrades'].includes(category)) allowed = context.senior && (!context.actor || context.actor.role === 'director');
       else if (category === 'payrollRuns') allowed = context.senior || context.permissions.has('manage_payroll');
       else if (category === 'schedules') allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole) || context.permissions.has('manage_schedules');
       else if (category === 'safety') allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole);
