@@ -283,11 +283,16 @@ export default function Layout({ children }) {
                   </Draggable>
                 ))}
                 {provided.placeholder}
-                <button onClick={() => window.dispatchEvent(new Event("powercare:open-feedback"))} className="mt-3 flex h-11 w-full items-center gap-3 rounded-xl border border-white/10 px-3 text-white/65 hover:bg-white/10 hover:text-white"><MessageSquare className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} /><span className="truncate text-sm font-medium">{lang === "ar" ? "التقييم والاقتراحات" : "Feedback & suggestions"}</span></button>
               </nav>
             )}
           </Droppable>
         </DragDropContext>
+        <div className="shrink-0 border-t border-white/10 px-3 pt-3">
+          <button onClick={() => window.dispatchEvent(new Event("powercare:open-feedback"))} className="group flex h-12 w-full items-center gap-3 rounded-xl border border-landing-gold/30 bg-white/[0.06] px-3 text-white/75 shadow-sm transition hover:border-landing-gold/55 hover:bg-white/10 hover:text-white">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-landing-gold/15 text-landing-gold-light transition group-hover:bg-landing-gold/25"><MessageSquare className="h-[17px] w-[17px]" strokeWidth={1.8} /></span>
+            <span className="truncate text-sm font-medium">{lang === "ar" ? "التقييم والاقتراحات" : "Feedback & suggestions"}</span>
+          </button>
+        </div>
         <button
           onClick={() => navigate(`/app/employees/${currentUser.id}`)}
           title={t("viewProfile")}
