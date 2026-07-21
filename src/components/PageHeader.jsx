@@ -2,11 +2,11 @@ import React from "react";
 
 export default function PageHeader({ title, description, icon: Icon, actions }) {
   return (
-    <header className="flex flex-col gap-4 rounded-2xl border border-border/80 bg-card p-5 shadow-soft sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <header className="relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-accent/20 bg-card p-5 shadow-soft before:absolute before:inset-y-0 before:start-0 before:w-1 before:bg-accent sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div className="min-w-0">
         <div className="flex items-center gap-3">
           {Icon && (
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-accent/20 bg-accent/10 text-accent shadow-sm">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-accent/20 bg-secondary text-accent shadow-sm">
               <Icon className="h-5 w-5" strokeWidth={1.75} />
             </span>
           )}

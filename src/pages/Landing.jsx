@@ -90,15 +90,15 @@ export default function Landing() {
       <VideoIntro />
       <GoldDivider />
 
-      <div className="bg-gradient-to-b from-landing-gold-light via-landing-gold-deep to-landing-bg px-6 md:px-10 pt-16 pb-4">
+      <div className="bg-gradient-to-b from-card via-secondary to-landing-bg px-6 pb-4 pt-16 md:px-10">
         <div className="flex flex-col items-center">
           <Logo size={72} />
           <h2 className="hero-title text-primary text-5xl md:text-6xl mt-3 mb-10">{t("appName")}</h2>
         </div>
-        <div className="max-w-3xl mx-auto flex items-center justify-center gap-3 bg-black/15 rounded-full px-6 py-3 text-center text-sm font-body mb-14">
-          <Sparkles className="w-4 h-4 text-white/70 shrink-0" strokeWidth={1.75} />
-          <p><span className="text-white font-semibold">{t("benefitAnnounce")}</span>{" "}<span className="text-white/75">{t("benefitAnnounceText")}</span></p>
-          <Sparkles className="w-4 h-4 text-white/70 shrink-0" strokeWidth={1.75} />
+        <div className="mx-auto mb-14 flex max-w-3xl items-center justify-center gap-3 rounded-full border border-landing-gold/20 bg-card px-6 py-3 text-center text-sm font-body shadow-sm">
+          <Sparkles className="w-4 h-4 text-landing-gold shrink-0" strokeWidth={1.75} />
+          <p><span className="font-semibold text-primary">{t("benefitAnnounce")}</span>{" "}<span className="text-muted-foreground">{t("benefitAnnounceText")}</span></p>
+          <Sparkles className="w-4 h-4 text-landing-gold shrink-0" strokeWidth={1.75} />
         </div>
 
         <WhyPowerCare lang={lang} />
