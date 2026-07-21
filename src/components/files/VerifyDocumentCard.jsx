@@ -33,10 +33,9 @@ export default function VerifyDocumentCard({ ar, initialId = "" }) {
   };
 
   return (
-    <div className="p-5 rounded-xl border border-border bg-card space-y-3">
-      <h3 className="font-heading text-base font-semibold flex items-center gap-2">
-        <ShieldCheck className="w-4 h-4 text-accent" /> {ar ? "التحقق من حالة ملف موقّع" : "Verify a signed document"}
-      </h3>
+    <div className="mx-auto max-w-3xl space-y-6 rounded-3xl border border-accent/20 bg-card p-7 text-center shadow-soft sm:p-10">
+      <span className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-accent/25 bg-accent/10"><ShieldCheck className="h-10 w-10 text-accent" /></span>
+      <h3 className="font-heading text-3xl font-semibold sm:text-4xl">{ar ? "التحقق من مستند موقّع" : "Verify a signed document"}</h3>
       <p className="text-xs text-muted-foreground font-body">
         {ar
           ? "ارفع الملف الموقّع (PDF) وسنقارن بصمته الرقمية SHA-256 بسجل التوقيعات — أي تعديل على الملف بعد التوقيع سيُكشف فورًا."
@@ -48,12 +47,12 @@ export default function VerifyDocumentCard({ ar, initialId = "" }) {
           onChange={(e) => setVerId(e.target.value)}
           dir="ltr"
           placeholder={ar ? "رقم التحقق (اختياري) PWC-XXXX-XXXX-XXXX" : "Verification ID (optional) PWC-XXXX-XXXX-XXXX"}
-          className="flex-1 px-3 py-2 rounded-md border border-input bg-background text-sm font-body focus:outline-none focus:ring-2 focus:ring-ring"
+          className="min-h-[52px] flex-1 border-0 border-b-2 border-accent/50 bg-transparent px-2 py-3 text-center font-mono text-base tracking-wider focus:border-accent focus:outline-none focus:ring-0"
         />
         <button
           onClick={() => fileRef.current?.click()}
           disabled={checking}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-md bg-foreground text-background text-xs font-body disabled:opacity-40"
+          className="flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-[15px] font-bold text-primary-foreground shadow-lg disabled:opacity-40"
         >
           {checking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
           {checking ? (ar ? "جارٍ الفحص…" : "Checking…") : ar ? "رفع الملف للتحقق" : "Upload file to verify"}

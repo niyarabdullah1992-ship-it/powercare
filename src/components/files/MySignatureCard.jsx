@@ -69,7 +69,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
 
   return (
     <div className="space-y-5">
-    <div className="space-y-5 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary to-primary/80 p-5 text-primary-foreground shadow-xl md:p-7">
+    <div className="space-y-6 overflow-hidden rounded-3xl border border-accent/30 bg-gradient-to-br from-primary to-sidebar p-6 text-primary-foreground shadow-elevated md:p-8">
       <h3 className="flex items-center gap-2 font-heading text-xl font-semibold">
         <PenLine className="h-5 w-5 text-accent" /> {ar ? "توقيعي الشخصي" : "My personal signature"}
       </h3>
@@ -84,7 +84,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
             <img src={signatureUrl} alt="signature" className="h-20 max-w-full object-contain" />
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setEditing(true)} className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-border text-xs font-body hover:bg-muted whitespace-nowrap">
+            <button onClick={() => setEditing(true)} className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-primary-foreground/25 px-5 py-2 text-xs font-bold hover:bg-primary-foreground/10 whitespace-nowrap">
               <PenLine className="w-3.5 h-3.5" /> {ar ? "توقيع جديد" : "New signature"}
             </button>
             <button
@@ -95,7 +95,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
                 onSaved?.(cleared);
                 setEditing(true);
               }}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-border text-xs font-body text-destructive hover:bg-muted whitespace-nowrap"
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-destructive/50 px-5 py-2 text-xs font-bold text-red-300 hover:bg-destructive/15 whitespace-nowrap"
             >
               <Trash2 className="w-3.5 h-3.5" /> {ar ? "حذف" : "Delete"}
             </button>
