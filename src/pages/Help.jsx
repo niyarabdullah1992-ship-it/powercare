@@ -27,7 +27,7 @@ export default function Help() {
         </p>
       </div>
 
-      <Link to="/manual" className="flex items-center justify-between rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm font-semibold text-accent hover:bg-accent/10">
+      <Link to="/app/manual" className="flex items-center justify-between rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm font-semibold text-accent hover:bg-accent/10">
         <span className="flex items-center gap-2"><BookOpen className="h-4 w-4" />{ar ? "فتح الدليل التشغيلي الشامل وتنزيل PDF" : "Open the complete operations manual and PDF"}</span>
       </Link>
 

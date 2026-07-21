@@ -1,7 +1,7 @@
 // Single source of truth for which sections each role can see —
 // used by the sidebar/mobile nav and the dashboards' quick-access shortcuts.
 
-const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/inventory", "/app/expenses", "/app/signing", "/app/assistant", "/app/complaints", "/app/performance", "/app/help"];
+const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/inventory", "/app/expenses", "/app/signing", "/app/assistant", "/app/complaints", "/app/performance", "/app/manual"];
 const MANAGER_EXTRA = ["/app/employees", "/app/stations", "/app/safety"];
 const EXEC_EXTRA = ["/app/hr", "/app/executive", "/app/payroll"];
 

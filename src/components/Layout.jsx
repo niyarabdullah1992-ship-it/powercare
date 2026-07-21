@@ -157,7 +157,7 @@ export default function Layout({ children }) {
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll" },
     { to: "/app/performance", icon: Trophy, label: t("performance") },
     { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)" },
-    { to: "/app/help", icon: HelpCircle, label: t("userGuide") },
+    { to: "/app/manual", icon: HelpCircle, label: t("userGuide") },
   ];
 
   // Role-based visibility: each user only sees the sections their role needs.

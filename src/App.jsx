@@ -142,6 +142,7 @@ function AppRoutes() {
       <Route path="/app/signing" element={<RequireAuth><FileSigning /></RequireAuth>} />
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
       <Route path="/app/help" element={<RequireAuth><Help /></RequireAuth>} />
+      <Route path="/app/manual" element={<RequireAuth><SiteManual /></RequireAuth>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </Suspense>
