@@ -3,7 +3,7 @@ import { expensesCall } from "@/lib/expensesApi";
 import { inventoryCall } from "@/lib/inventoryApi";
 
 export default function useSmartOperationsAnalytics(session, data) {
-  const [remote, setRemote] = useState({ claims: [], items: [] });
+  const [remote, setRemote] = useState({ claims: [], items: [], movements: [] });
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     if (!session?.companyId) return;
@@ -17,6 +17,7 @@ export default function useSmartOperationsAnalytics(session, data) {
       setRemote({
         claims: expenses.status === "fulfilled" ? expenses.value?.claims || [] : [],
         items: inventory.status === "fulfilled" ? inventory.value?.items || [] : [],
+        movements: inventory.status === "fulfilled" ? inventory.value?.movements || [] : [],
       });
       setLoading(false);
     });

@@ -535,20 +535,20 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   .field-dashboard .tracking-widest-xl { letter-spacing: .14em; }
 }
 
-/* Holographic Layered Depth — unified analytical dashboard theme. */
+/* Warm holographic depth — aligned with PowerCare's luxury brown identity. */
 .luxury-analytics {
-  background: hsl(var(--holo-bg));
-  border: 1px solid hsl(var(--holo-cyan) / .2);
-  box-shadow: 0 24px 70px hsl(220 40% 2% / .35);
+  background: linear-gradient(145deg, hsl(var(--primary)), hsl(var(--sidebar-background)));
+  border: 1px solid hsl(var(--landing-gold) / .42);
+  box-shadow: 0 24px 70px hsl(var(--foreground) / .24), inset 0 1px hsl(var(--landing-gold-light) / .12);
 }
 .holo-kpi,
 .holo-chart {
-  border: 1px solid hsl(var(--holo-cyan) / .48);
-  background: hsl(var(--holo-panel));
-  box-shadow: 0 0 9px hsl(var(--holo-cyan) / .9), 0 0 26px hsl(var(--holo-cyan) / .45), inset 0 0 18px hsl(220 40% 2% / .35);
+  border: 1px solid hsl(var(--landing-gold) / .42);
+  background: hsl(var(--primary) / .72);
+  box-shadow: 0 0 12px hsl(var(--landing-gold) / .2), 0 18px 36px hsl(var(--foreground) / .2), inset 0 0 18px hsl(var(--landing-gold) / .08);
 }
 .holo-chart .recharts-surface { overflow: visible; }
-.holo-chart .recharts-tooltip-cursor { fill: hsl(var(--holo-cyan) / .08); }
+.holo-chart .recharts-tooltip-cursor { fill: hsl(var(--landing-gold) / .1); }
 .holo-float-card {
   will-change: transform;
   animation: holo-card-float 5s ease-in-out infinite;
@@ -583,7 +583,7 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   isolation: isolate;
   transform: perspective(1100px) rotateX(var(--holo-rx)) rotateY(var(--holo-ry));
   transition: transform 160ms ease, filter 220ms ease;
-  filter: drop-shadow(0 12px 24px hsl(var(--holo-green) / .14));
+  filter: drop-shadow(0 12px 24px hsl(var(--landing-gold) / .18));
 }
 .holographic-chart-frame::before {
   content: "";
@@ -592,18 +592,18 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   z-index: 2;
   pointer-events: none;
   border-radius: inherit;
-  background: radial-gradient(circle at var(--holo-x) var(--holo-y), hsl(var(--holo-green) / .22), transparent 34%);
+  background: radial-gradient(circle at var(--holo-x) var(--holo-y), hsl(var(--landing-gold-light) / .2), transparent 34%);
   mix-blend-mode: screen;
 }
-.holographic-chart-frame:hover { filter: drop-shadow(0 18px 34px hsl(var(--holo-green) / .34)); }
+.holographic-chart-frame:hover { filter: drop-shadow(0 18px 34px hsl(var(--landing-gold) / .36)); }
 .holographic-chart-float { animation: holographic-chart-float 4.8s ease-in-out infinite; }
 .holographic-chart-frame .recharts-line-curve,
-.holographic-chart-frame .recharts-bar-rectangle path { filter: drop-shadow(0 0 7px hsl(var(--holo-green) / .9)); }
+.holographic-chart-frame .recharts-bar-rectangle path { filter: drop-shadow(0 0 7px hsl(var(--landing-gold) / .72)); }
 .holographic-chart-frame .recharts-dot {
   transform-box: fill-box;
   transform-origin: center;
   animation: holo-data-pulse 2.2s ease-in-out infinite;
-  filter: drop-shadow(0 0 7px hsl(var(--holo-green) / .95));
+  filter: drop-shadow(0 0 7px hsl(var(--landing-gold-light) / .88));
 }
 @keyframes holographic-chart-float {
   0%, 100% { transform: translateY(0); }
