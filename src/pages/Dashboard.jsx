@@ -24,7 +24,6 @@ import { isOnLeaveToday } from "@/lib/leaveTypes";
 import useProactiveAlerts from "@/hooks/useProactiveAlerts";
 import OperationalAlerts from "@/components/dashboard/OperationalAlerts";
 import SigningStatusPanel from "@/components/dashboard/SigningStatusPanel";
-import SmartOperationsAnalytics from "@/components/dashboard/SmartOperationsAnalytics";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -206,7 +205,6 @@ export default function Dashboard() {
       <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
       <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
       <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
-      <SmartOperationsAnalytics session={session} data={data} lang={lang} />
       {["ops_manager", "director"].includes(currentUser.role) && <ExecutiveDashboard embedded />}
       {canEditBranding && (
         <div className="flex justify-end">
