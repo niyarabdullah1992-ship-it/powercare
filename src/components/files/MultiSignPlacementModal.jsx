@@ -64,11 +64,6 @@ export default function MultiSignPlacementModal({ docUrl, signers, initialSpots,
     const rect = wrapRef.current.getBoundingClientRect();
     const x = Math.min(96, Math.max(4, ((event.clientX - rect.left) / rect.width) * 100));
     const y = Math.min(96, Math.max(4, ((event.clientY - rect.top) / rect.height) * 100));
-    const rows = spots[active] || [];
-    if (fieldType === "signature") {
-      const existing = rows.find((field) => field.type === "signature");
-      if (existing) { const halfWidth = fieldWidth(existing) / 2; updateField(active, existing.id, { page, x: Math.min(100 - halfWidth, Math.max(halfWidth, x)), y }); setSelectedId(existing.id); return; }
-    }
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const field = { id, type: fieldType, label: fieldType === "text" ? (ar ? "اكتب النص هنا" : "Enter text") : "", page, x: Math.min(100 - (fieldType === "text" ? 13 : STAMP_WIDTH_PERCENT / 2), Math.max(fieldType === "text" ? 13 : STAMP_WIDTH_PERCENT / 2, x)), y, scale: 100 };
     setSpots((current) => ({ ...current, [active]: [...(current[active] || []), field] })); setSelectedId(id);
@@ -77,12 +72,12 @@ export default function MultiSignPlacementModal({ docUrl, signers, initialSpots,
 
   return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
     <div className="flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-border bg-card" onClick={(event) => event.stopPropagation()}>
-      <div className="flex items-center justify-between border-b border-border px-4 py-3"><p className="text-sm font-medium">{ar ? "ضع حقول التوقيع والنص على المستند" : "Place signature and text fields"}</p><button onClick={onClose} className="rounded-md p-1 hover:bg-muted"><X className="h-4 w-4" /></button></div>
+      <div className="flex items-center justify-between border-b border-border px-4 py-3"><p className="text-sm font-medium">{ar ? "انقر عدة مرات لإضافة كل مواضع التوقيع المطلوبة" : "Tap multiple times to add every required signature position"}</p><button onClick={onClose} className="rounded-md p-1 hover:bg-muted"><X className="h-4 w-4" /></button></div>
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2">
-        <button onClick={() => setFieldType("signature")} className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold ${fieldType === "signature" ? "border-accent bg-accent text-accent-foreground" : "border-border"}`}><PenLine className="h-4 w-4" />{ar ? "توقيع ✍️" : "Signature ✍️"}</button>
+        <button onClick={() => setFieldType("signature")} className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold ${fieldType === "signature" ? "border-accent bg-accent text-accent-foreground" : "border-border"}`}><PenLine className="h-4 w-4" />{ar ? "إضافة توقيع ✍️" : "Add signature ✍️"}</button>
         <button onClick={() => setFieldType("text")} className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold ${fieldType === "text" ? "border-blue-600 bg-blue-600 text-white" : "border-border"}`}><Type className="h-4 w-4" />{ar ? "نص 🔤" : "Text 🔤"}</button>
         <span className="mx-1 h-7 w-px bg-border" />
-        <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto no-scrollbar">{signers.map((signer, index) => <button key={signer.email || index} onClick={() => { setActive(index); setSelectedId(null); }} className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] ${active === index ? "text-white" : "border-border"}`} style={active === index ? { backgroundColor: COLORS[index % COLORS.length], borderColor: COLORS[index % COLORS.length] } : {}}>{signer.name}{(spots[index] || []).some((field) => field.type === "signature") && " ✓"}</button>)}</div>
+        <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto no-scrollbar">{signers.map((signer, index) => <button key={signer.email || index} onClick={() => { setActive(index); setSelectedId(null); }} className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] ${active === index ? "text-white" : "border-border"}`} style={active === index ? { backgroundColor: COLORS[index % COLORS.length], borderColor: COLORS[index % COLORS.length] } : {}}>{signer.name}{(spots[index] || []).filter((field) => field.type === "signature").length > 0 && ` (${(spots[index] || []).filter((field) => field.type === "signature").length}) ✓`}</button>)}</div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto bg-muted/50 p-4"><div ref={wrapRef} dir="ltr" onClick={placeField} className="relative mx-auto max-w-full cursor-crosshair bg-white shadow-md" style={{ touchAction: "pan-y", direction: "ltr" }}><canvas ref={canvasRef} dir="ltr" className="block w-full" />
         {loading && !loadError && <div className="absolute inset-0 flex items-center justify-center bg-white/70"><Loader2 className="h-5 w-5 animate-spin text-accent" /></div>}

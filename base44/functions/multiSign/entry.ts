@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
           role: String(s.role || '').slice(0, 80),
           stationId: String(s.stationId || '').slice(0, 64) || null,
           signatureUrl: isAllowedDocUrl(s.signatureUrl) ? String(s.signatureUrl).slice(0, 2000) : '',
-          // Creator-assigned fields: one signature plus optional text fields.
+          // Creator-assigned fields: one or more signatures plus optional text fields.
           spots: (Array.isArray(s.spots) && s.spots.length ? s.spots : s.spot ? [{ ...s.spot, type: 'signature' }] : [{ id: 'auto-signature', type: 'signature', page: 1, x: 75, y: 88, scale: 100 }]).slice(0, 30).map((field, fieldIndex) => ({
             id: String(field.id || `field-${fieldIndex}`).slice(0, 80),
             type: field.type === 'text' ? 'text' : 'signature',
