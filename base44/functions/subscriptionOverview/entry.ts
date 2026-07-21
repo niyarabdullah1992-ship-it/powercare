@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
         accountId: account?.id || null,
         companyName: account?.name || s.metadata?.companyName || '',
         email,
-        plan: priceInfo.plan || account?.plan || '—',
+        plan: account?.plan || priceInfo.plan || '—',
         billing: priceInfo.billing || '',
         status: s.status, // trialing | active | past_due | canceled | unpaid | incomplete
         cancelAtPeriodEnd: !!s.cancel_at_period_end,
