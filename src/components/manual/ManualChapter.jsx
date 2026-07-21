@@ -17,7 +17,7 @@ export default function ManualChapter({ chapter, labels, lang, exportMode }) {
   return (
     <section id={chapter.id} className="manual-chapter scroll-mt-24 rounded-2xl border border-accent/20 bg-card p-5 shadow-soft md:p-7">
       <div className="mb-5 flex items-center gap-4"><span className="flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-2 text-primary-foreground"><ChapterIcon className="h-5 w-5" /><b className="text-xs">{chapter.number}</b></span><h2 className="font-heading text-2xl font-semibold md:text-3xl">{chapter.name}</h2></div>
-      <ManualBrowserShot route={chapter.route} title={chapter.name} captureLabel={labels.screenshot} forceActive={exportMode} />
+      <ManualBrowserShot route={chapter.route} title={chapter.name} captureLabel={labels.screenshot} language={lang} forceActive={exportMode} />
       <p className="mt-5 rounded-xl border border-accent/20 bg-accent/5 p-4 text-sm leading-7 text-foreground/80">{chapter.purpose}</p>
       {screen && <div className="mt-5 rounded-xl border border-accent/20 bg-accent/5 p-4"><h3 className="text-xs font-bold uppercase tracking-wider text-accent">{labels.appearance}</h3><p className="mt-2 text-sm leading-7">{screen.appearance}</p></div>}
       <div className="mt-6"><h3 className="mb-4 text-sm font-bold text-accent">{labels.steps}</h3><ol className="space-y-3">{chapter.steps.map((step, index) => <li key={index} className="flex gap-3 rounded-xl border border-border bg-background/60 p-3 text-sm leading-7"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground">{index + 1}</span><span>{step}</span></li>)}</ol></div>

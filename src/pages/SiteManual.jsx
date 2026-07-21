@@ -41,7 +41,7 @@ const MANUAL_LANGUAGES = [
 const ROUTES = Object.fromEntries(MANUAL_SECTIONS);
 
 export default function SiteManual() {
-  const { lang } = useI18n();
+  const { lang, setLang } = useI18n();
   const { currentUser, data } = useAuth();
   const [manualLang, setManualLang] = useState(CONTENT[lang] ? lang : "en");
   const [exporting, setExporting] = useState(false);
@@ -50,6 +50,11 @@ export default function SiteManual() {
   useEffect(() => {
     if (CONTENT[lang]) setManualLang(lang);
   }, [lang]);
+
+  const changeManualLanguage = (nextLang) => {
+    setManualLang(nextLang);
+    setLang(nextLang);
+  };
 
   const content = CONTENT[manualLang];
   const labels = MANUAL_UI_LABELS[manualLang];
@@ -82,7 +87,7 @@ export default function SiteManual() {
     <div dir={["ar", "ur"].includes(manualLang) ? "rtl" : "ltr"} className="text-foreground print:bg-card">
       <style>{`@media print{@page{size:A4;margin:12mm}.no-print{display:none!important}.manual-chapter{break-inside:avoid;box-shadow:none!important}}`}</style>
       <div ref={manualRef} className="manual-shell mx-auto max-w-[1500px] space-y-6">
-        <ManualHeader meta={content.MANUAL_META} labels={labels} languages={MANUAL_LANGUAGES} activeLang={manualLang} onLanguage={setManualLang} onDownload={exportPdf} exporting={exporting} />
+        <ManualHeader meta={content.MANUAL_META} labels={labels} languages={MANUAL_LANGUAGES} activeLang={manualLang} onLanguage={changeManualLanguage} onDownload={exportPdf} exporting={exporting} />
         <div className="grid items-start gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
           <ManualToc chapters={chapters} labels={labels} />
           <main className="space-y-6">{chapters.map((chapter) => <ManualChapter key={chapter.id} chapter={chapter} labels={labels} lang={manualLang} exportMode={exporting} />)}</main>

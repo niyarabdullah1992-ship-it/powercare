@@ -3,11 +3,17 @@ import { Camera, Loader2 } from "lucide-react";
 
 const cache = new Map();
 
-export default function ManualBrowserShot({ route, title, captureLabel, forceActive = false }) {
+export default function ManualBrowserShot({ route, title, captureLabel, language, forceActive = false }) {
   const hostRef = useRef(null);
+  const cacheKey = `${language}:${route}`;
   const [active, setActive] = useState(false);
-  const [image, setImage] = useState(() => cache.get(route) || "");
+  const [image, setImage] = useState(() => cache.get(cacheKey) || "");
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setImage(cache.get(cacheKey) || "");
+    setFailed(false);
+  }, [cacheKey]);
 
   useEffect(() => {
     if (hostRef.current && (image || failed)) hostRef.current.dataset.captureReady = "true";
@@ -32,7 +38,7 @@ export default function ManualBrowserShot({ route, title, captureLabel, forceAct
       const { default: html2canvas } = await import("html2canvas");
       const canvas = await html2canvas(target, { scale: 0.75, useCORS: true, logging: false, backgroundColor: "#f5efe5" });
       const url = canvas.toDataURL("image/jpeg", 0.82);
-      cache.set(route, url);
+      cache.set(cacheKey, url);
       setImage(url);
     } catch {
       setFailed(true);
@@ -46,7 +52,7 @@ export default function ManualBrowserShot({ route, title, captureLabel, forceAct
         <span className="mx-auto flex items-center gap-2 text-[11px]"><Camera className="h-3.5 w-3.5" />{captureLabel}: {title}</span>
       </div>
       <div className="relative aspect-[16/9] overflow-hidden bg-muted">
-        {image ? <img src={image} alt={`${captureLabel}: ${title}`} className="h-full w-full object-cover object-top" /> : active ? <iframe title={title} src={route} onLoad={capture} className="h-full w-full border-0 pointer-events-none" /> : null}
+        {image ? <img src={image} alt={`${captureLabel}: ${title}`} className="h-full w-full object-cover object-top" /> : active ? <iframe key={cacheKey} title={title} src={route} onLoad={capture} className="h-full w-full border-0 pointer-events-none" /> : null}
         {!image && !failed && <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-muted/70"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}
         {failed && <iframe title={title} src={route} className="h-full w-full border-0 pointer-events-none" />}
       </div>
