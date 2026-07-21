@@ -5,7 +5,6 @@ import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'r
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider } from '@/lib/AuthContext';
 import ScrollToTop from './components/ScrollToTop';
-import CinematicTechOverlay from '@/components/CinematicTechOverlay';
 import { I18nProvider } from '@/lib/i18n';
 import { AuthProvider as PowerCareAuthProvider, useAuth as usePowerCareAuth } from '@/lib/PowerCareAuth';
 import Layout from '@/components/Layout';
@@ -157,7 +156,6 @@ function App() {
           <ScrollToTop />
           <I18nProvider>
             <PowerCareAuthProvider>
-              <CinematicTechOverlay />
               <AppRoutes />
             </PowerCareAuthProvider>
           </I18nProvider>
