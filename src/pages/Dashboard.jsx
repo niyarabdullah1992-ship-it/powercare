@@ -16,7 +16,6 @@ import StationManagerDashboard from "@/components/dashboard/StationManagerDashbo
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { queryClientInstance } from "@/lib/query-client";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
-import SmartDailySummary from "@/components/dashboard/SmartDailySummary";
 import CommandCenterHero from "@/components/dashboard/CommandCenterHero";
 import RiskForecastPanel from "@/components/dashboard/RiskForecastPanel";
 import DecisionQueue from "@/components/dashboard/DecisionQueue";
@@ -160,16 +159,6 @@ export default function Dashboard() {
     (recentIncidents * riskWeights.incidents) + (openHazards * riskWeights.hazards)
   ));
 
-  // Facts fed to the AI daily brief (generated once a day, cached locally).
-  const briefFacts = [
-    `attendance today: ${checkedInCount}/${teamEmployees.length} checked in (${attendanceRate}%)`,
-    `tasks: ${completed}/${tasks.length} completed`,
-    `pending daily reports awaiting review: ${pendingReports}`,
-    `task stoppage issues: ${stoppageCount}`,
-    `open anonymous complaints: ${anonOpenCount}`,
-    `safety (HSE): ${criticalStations} critical stations, ${openHazards} open hazards, ${recentIncidents} incidents in last 30 days`,
-  ];
-
   const pendingActionItems = [
     { key: "reports", icon: FileText, label: t("pendingReports"), count: pendingReports, to: "/app/daily-report" },
     { key: "stoppage", icon: AlertTriangle, label: t("stoppageIssues"), count: stoppageCount, to: "/app/performance" },
@@ -232,8 +221,7 @@ export default function Dashboard() {
         />
       )}
 
-      {/* AI command layer: daily intelligence, predictive risk and executable decisions */}
-      <SmartDailySummary companyId={company.id} lang={lang} t={t} facts={briefFacts} />
+      {/* Predictive risk and executable decisions */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <RiskForecastPanel absentCount={absentCount} delayedTasks={delayedTasks} stoppageCount={stoppageCount} criticalStations={criticalStations} openHazards={openHazards} recentIncidents={recentIncidents} lang={lang} />
         <DecisionQueue pendingReports={pendingReports} delayedTasks={delayedTasks} safetySignals={criticalStations + recentIncidents} lang={lang} />
