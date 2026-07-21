@@ -4,6 +4,10 @@ import { Sparkles, FileText, ExternalLink } from "lucide-react";
 
 export default function AssistantMessage({ message }) {
   const isUser = message.role === "user";
+  const displayText = isUser ? message.text : String(message.text || "").replace(
+    /(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?/g,
+    "$1 $2",
+  );
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div className={`max-w-[85%] rounded-xl px-4 py-3 text-sm font-body ${isUser ? "bg-foreground text-background" : "bg-card border border-border"}`} dir="auto">
@@ -16,7 +20,7 @@ export default function AssistantMessage({ message }) {
           <p className="whitespace-pre-wrap">{message.text}</p>
         ) : (
           <div className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0.5 [&_h3]:mt-2 [&_h3]:mb-1 [&_table]:text-xs">
-            <ReactMarkdown>{message.text}</ReactMarkdown>
+            <ReactMarkdown>{displayText}</ReactMarkdown>
           </div>
         )}
         {Array.isArray(message.docs) && message.docs.map((doc, i) => (
