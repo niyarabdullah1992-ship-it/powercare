@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Warehouse } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { inventoryCall } from "@/lib/inventoryApi";
-import PageHeader from "@/components/PageHeader";
 import InventoryStats from "@/components/inventory/InventoryStats";
 import InventoryDataFiles from "@/components/inventory/InventoryDataFiles";
 import ItemForm from "@/components/inventory/ItemForm";
@@ -18,7 +16,6 @@ import PurchasesTab from "@/components/inventory/PurchasesTab";
 import WorkIssueTab from "@/components/inventory/WorkIssueTab";
 import InventoryTabs from "@/components/inventory/InventoryTabs";
 import InventoryWorkflow from "@/components/inventory/InventoryWorkflow";
-import StationInventoryReportExport from "@/components/inventory/StationInventoryReportExport";
 import { toast } from "@/components/ui/use-toast";
 
 const emptyData = { items: [], requestItems: [], historyItems: [], movements: [], purchases: [], requests: [], stations: [], locations: [], transferStations: [], employees: [], procurementRequests: [], purchaseOrders: [], canManage: false, canPurchase: false, canCreateItem: false, canIssueToWork: false, canIssueFromAnyStation: false, canRequest: false, canReviewRequests: false, canReviewAllRequests: false, canDelete: false, canApproveProcurement: false, canReceiveProcurement: false, canViewAllPurchases: false, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, canReverse: false, centralWarehouseId: null };
@@ -92,7 +89,6 @@ export default function Inventory() {
   });
 
   return <div className="space-y-6">
-    <PageHeader title={ar ? "المخزون" : "Inventory"} description={ar ? "إدارة الأصناف والحركات والطلبات والمشتريات حسب صلاحياتك." : "Manage items, movements, requests and purchases based on your role."} icon={Warehouse} actions={<StationInventoryReportExport reportData={state} ar={ar} />} />
     {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <>
       <InventoryWorkflow ar={ar} onNavigate={(key) => setActive(tabFromWorkflow[key])} />
       <GlobalInventorySearch items={state.items} stations={state.stations} stationIds={selectedInventoryStations} onStationIdsChange={setSelectedInventoryStations} onOpen={(item, stationId) => setSelectedItem({ ...item, quantity: Number(item.locationBalances?.find((balance) => balance.locationId === stationId)?.quantity || 0), currentLocationId: stationId })} ar={ar} />
