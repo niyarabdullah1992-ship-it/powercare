@@ -197,20 +197,24 @@ svg.lucide:is(.lucide-check, .lucide-check-circle, .lucide-circle-check, .lucide
 }
 @keyframes tech-icon-float {
   0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 2px hsl(var(--icon-halo) / .18)); }
-  50% { transform: translateY(-3px); filter: drop-shadow(0 0 7px hsl(var(--icon-halo) / .48)); }
+  50% { transform: translateY(-5px); filter: drop-shadow(0 0 8px hsl(var(--icon-halo) / .52)); }
 }
-@keyframes tech-icon-rotate { to { transform: rotate(360deg); } }
+@keyframes tech-icon-rotate {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(180deg); }
+  100% { transform: translateY(0) rotate(360deg); }
+}
 @keyframes tech-icon-signal {
-  0%, 100% { transform: scale(.94); opacity: .72; }
-  50% { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 8px hsl(var(--icon-halo) / .6)); }
+  0%, 100% { transform: translateY(0) scale(.94); opacity: .72; }
+  50% { transform: translateY(-5px) scale(1.08); opacity: 1; filter: drop-shadow(0 0 8px hsl(var(--icon-halo) / .6)); }
 }
 @keyframes tech-icon-alert {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); filter: drop-shadow(0 0 8px hsl(var(--icon-halo) / .55)); }
+  50% { transform: translateY(-5px); filter: drop-shadow(0 0 8px hsl(var(--icon-halo) / .55)); }
 }
 @keyframes tech-icon-confirm {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); filter: drop-shadow(0 0 9px hsl(var(--icon-halo) / .6)); }
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-5px) scale(1.1); filter: drop-shadow(0 0 9px hsl(var(--icon-halo) / .6)); }
 }
 
 .tech-floating-icon {
@@ -253,6 +257,13 @@ svg.lucide { filter: drop-shadow(0 0 4px hsl(var(--icon-halo) / .2)); }
   border-color: hsl(var(--icon-gold) / .3);
   background-image: radial-gradient(circle at 50% 35%, hsl(var(--icon-gold) / .14), transparent 72%);
   box-shadow: 0 0 18px hsl(var(--icon-halo) / .09), inset 0 0 12px hsl(var(--icon-halo) / .06);
+}
+:is(.powercare-shell, .powercare-public) :is(span, div):is(.rounded-full, .rounded-lg, .rounded-xl, .rounded-2xl):has(> svg.lucide:only-child) {
+  position: relative;
+  z-index: 1;
+  border-radius: 999px;
+  box-shadow: 0 9px 18px hsl(var(--foreground) / .13), 0 0 20px hsl(var(--icon-halo) / .2);
+  animation: tech-badge-float 2.8s ease-in-out infinite;
 }
 
 /* Respect reduced-motion preferences across the public site and app. */
