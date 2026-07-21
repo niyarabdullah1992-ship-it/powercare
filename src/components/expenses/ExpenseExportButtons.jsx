@@ -7,14 +7,16 @@ const STATUSES = { submitted: ["Manager review", "مراجعة المدير"], m
 export default function ExpenseExportButtons({ claims, stations, ar, title }) {
   const stationNames = (claim) => (claim.stationIds?.length ? claim.stationIds : [claim.stationId]).map((id) => stations.find((station) => station.stationId === id)?.name || id).join(", ");
   const headers = ar
-    ? ["التاريخ", "مقدم الطلب", "نوع المصروف", "المحطة", "المبلغ", "الإجمالي", "العملة", "الحالة"]
-    : ["Date", "Requester", "Expense type", "Station", "Amount", "Total", "Currency", "Status"];
+    ? ["التاريخ", "مقدم الطلب", "نوع المصروف", "المحطة", "قبل الضريبة", "الضريبة", "بعد الضريبة", "الإجمالي", "العملة", "الحالة"]
+    : ["Date", "Requester", "Expense type", "Station", "Before tax", "Tax", "After tax", "Total", "Currency", "Status"];
   const rows = claims.map((claim) => [
     claim.expenseDate,
     claim.requesterName,
     claim.expenseType === "other" ? claim.customExpenseType : TYPES[claim.expenseType]?.[ar ? 1 : 0],
     stationNames(claim),
-    Number(claim.amount || 0),
+    Number(claim.beforeTaxAmount ?? claim.amount ?? 0),
+    Number(claim.taxAmount || 0),
+    Number(claim.afterTaxAmount ?? claim.amount ?? 0),
     Number(claim.totalAmount || claim.amount || 0),
     claim.currency,
     STATUSES[claim.status]?.[ar ? 1 : 0] || claim.status,

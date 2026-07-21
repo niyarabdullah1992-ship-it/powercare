@@ -43,6 +43,18 @@
     "customExpenseType": {
       "type": "string"
     },
+    "beforeTaxAmount": {
+      "type": "number",
+      "minimum": 0
+    },
+    "taxAmount": {
+      "type": "number",
+      "minimum": 0
+    },
+    "afterTaxAmount": {
+      "type": "number",
+      "minimum": 0.01
+    },
     "amount": {
       "type": "number",
       "minimum": 0.01

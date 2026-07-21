@@ -64,13 +64,14 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "submit") {
-      const amount = Number(body.amount); const canPickStations = isManager || isFinance;
+      const beforeTaxAmount = Number(body.beforeTaxAmount); const taxAmount = Number(body.taxAmount); const afterTaxAmount = Number(body.afterTaxAmount); const amount = afterTaxAmount; const canPickStations = isManager || isFinance;
       let stationIds = [auth.stationId].filter(Boolean); let stationScope = "single";
       if (canPickStations && body.stationScope === "all") { stationIds = visibleStationIds; stationScope = "all"; }
       if (canPickStations && body.stationScope === "selected") { stationIds = [...new Set(Array.isArray(body.stationIds) ? body.stationIds : [])].filter((id) => visibleStationIds.includes(id)); stationScope = "selected"; }
       const customExpenseType = String(body.customExpenseType || "").trim();
-      if (!auth.userId || !stationIds.length || !expenseTypes.includes(body.expenseType) || (body.expenseType === "other" && !customExpenseType) || amount <= 0 || !body.expenseDate || !body.receiptUrl) return Response.json({ error: "Invalid expense data" }, { status: 400 });
-      await base44.asServiceRole.entities.ExpenseClaim.create({ companyId: auth.companyId, requesterId: auth.userId, requesterName: auth.name, stationId: stationIds[0], stationIds, stationScope, expenseType: body.expenseType, customExpenseType, amount, totalAmount: amount * stationIds.length, currency: "SAR", expenseDate: body.expenseDate, description: String(body.description || ""), receiptUrl: String(body.receiptUrl), status: "submitted", managerReviewedBy: null, managerReviewedAt: null, financeReviewedBy: null, financeReviewedAt: null });
+      const totalsMatch = Math.abs((beforeTaxAmount + taxAmount) - afterTaxAmount) < 0.01;
+      if (!stationIds.length || !expenseTypes.includes(body.expenseType) || (body.expenseType === "other" && !customExpenseType) || beforeTaxAmount < 0 || taxAmount < 0 || amount <= 0 || !totalsMatch || !body.expenseDate || !body.receiptUrl) return Response.json({ error: "Invalid expense data" }, { status: 400 });
+      await base44.asServiceRole.entities.ExpenseClaim.create({ companyId: auth.companyId, requesterId: auth.userId || "owner", requesterName: auth.name, stationId: stationIds[0], stationIds, stationScope, expenseType: body.expenseType, customExpenseType, beforeTaxAmount, taxAmount, afterTaxAmount, amount, totalAmount: amount * stationIds.length, currency: "SAR", expenseDate: body.expenseDate, description: String(body.description || ""), receiptUrl: String(body.receiptUrl), status: "submitted", managerReviewedBy: null, managerReviewedAt: null, financeReviewedBy: null, financeReviewedAt: null });
       return Response.json({ ok: true });
     }
 
