@@ -353,6 +353,18 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 .tech-hud-reticle i { position:absolute; width:12px; height:12px; border-color:hsl(var(--landing-gold) / .75); }
 .tech-hud-reticle i:nth-child(1){top:-1px;left:-1px;border-top:2px solid;border-left:2px solid}.tech-hud-reticle i:nth-child(2){top:-1px;right:-1px;border-top:2px solid;border-right:2px solid}.tech-hud-reticle i:nth-child(3){bottom:-1px;left:-1px;border-bottom:2px solid;border-left:2px solid}.tech-hud-reticle i:nth-child(4){bottom:-1px;right:-1px;border-bottom:2px solid;border-right:2px solid}
 @keyframes tech-scan { from { transform:translateY(-100%); } to { transform:translateY(650%); } }
+.stability-wave {
+  opacity: .28;
+  transform-origin: center bottom;
+  animation: stability-pulse var(--stability-pulse-duration, 1.8s) ease-in-out infinite;
+}
+.stability-wave-track {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: stability-flow calc(var(--stability-pulse-duration, 1.8s) * 2.5) linear infinite;
+}
+@keyframes stability-flow { to { transform: translateX(-33.333%); } }
+@keyframes stability-pulse { 0%, 100% { opacity: .18; transform: scaleY(.82); } 50% { opacity: .48; transform: scaleY(1.12); } }
 @media (pointer: coarse) {
   .powercare-shell :is(button, [role="button"], input, select) { min-height:48px; }
   .powercare-shell a { min-height:44px; }

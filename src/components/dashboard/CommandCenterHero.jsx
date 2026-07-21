@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Activity, ArrowUpRight, BrainCircuit, Radio, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Link as RouterLink } from "react-router-dom";
 import StabilityInfoPopover from "@/components/dashboard/StabilityInfoPopover";
+import StabilityWave from "@/components/dashboard/StabilityWave";
 
 export default function CommandCenterHero({ companyName, riskScore, activeStations, breakdown, safety, lang, companyId, canEditWeights }) {
   const ar = lang === "ar";
@@ -19,10 +20,11 @@ export default function CommandCenterHero({ companyName, riskScore, activeStatio
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65">{ar ? "صورة تشغيلية موحدة تتوقع المخاطر، ترتب الأولويات، وتحول البيانات إلى قرارات قابلة للتنفيذ." : "One operational picture that predicts risk, prioritizes attention, and turns data into executable decisions."}</p>
         </div>
         <div className="flex flex-wrap gap-3">
-        <div className={`relative min-w-32 rounded-2xl border bg-white/5 p-4 ${riskScore < 40 ? "border-landing-gold/35" : "border-white/10"}`}>
-          <span className="absolute left-1/2 top-3 h-2 w-2 -translate-x-1/2 rounded-full bg-landing-gold"><span className="absolute inset-0 animate-ping rounded-full bg-landing-gold opacity-50" style={{ animationDuration: pulseDuration }} /></span>
+        <div className={`relative min-w-32 overflow-hidden rounded-2xl border bg-white/5 p-4 ${riskScore < 40 ? "border-landing-gold/35" : "border-white/10"}`}>
+          <StabilityWave pulseDuration={pulseDuration} />
+          <span className="absolute left-1/2 top-3 z-10 h-2 w-2 -translate-x-1/2 rounded-full bg-landing-gold"><span className="absolute inset-0 animate-ping rounded-full bg-landing-gold opacity-50" style={{ animationDuration: pulseDuration }} /></span>
           {breakdown && <StabilityInfoPopover breakdown={breakdown} riskScore={riskScore} ar={ar} companyId={companyId} canEditWeights={canEditWeights} />}
-          <Activity className="mb-3 h-4 w-4 animate-pulse text-landing-gold" style={{ animationDuration: pulseDuration }} /><p className={`text-3xl font-heading ${riskScore < 40 ? "text-landing-gold-light" : ""}`}>{100 - riskScore}%</p><p className="text-xs text-white/50">{state}</p>
+          <div className="relative z-10"><Activity className="mb-3 h-4 w-4 animate-pulse text-landing-gold" style={{ animationDuration: pulseDuration }} /><p className={`text-3xl font-heading ${riskScore < 40 ? "text-landing-gold-light" : ""}`}>{100 - riskScore}%</p><p className="text-xs text-white/50">{state}</p></div>
         </div>
           <div className="min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4"><BrainCircuit className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{activeStations}</p><p className="text-xs text-white/50">{ar ? "محطات مراقبة" : "Stations monitored"}</p></div>
           {safety && (
