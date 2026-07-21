@@ -333,14 +333,22 @@ Deno.serve(async (req) => {
         return Response.json({ ok: true });
       }
       const item = await getItem(request.itemId); const quantity = Number(request.quantity); const sourceId = request.sourceStationId;
-      if (!item || balanceAt(item, sourceId) < quantity) return Response.json({ error: "Insufficient stock at the supplying station" }, { status: 400 });
+      if (!item || !Number.isFinite(quantity) || quantity <= 0) return Response.json({ error: "A valid requested quantity is required" }, { status: 400 });
       const sourceBefore = balanceAt(item, sourceId); const destinationBefore = balanceAt(item, request.stationId);
+      if (sourceBefore < quantity) return Response.json({ error: "Insufficient stock at the supplying station" }, { status: 400 });
+      const sourceAfter = sourceBefore - quantity; const destinationAfter = destinationBefore + quantity;
       const traceAllocations = await allocateTraces(item, sourceId, quantity, request.stationId);
       let next = adjustBalance(item, sourceId, -quantity); next = adjustBalance({ ...item, locationBalances: next }, request.stationId, quantity);
-      await base44.asServiceRole.entities.InventoryItem.update(item.id, { locationBalances: next, currentLocationId: request.stationId });
-      await movement({ itemId: item.id, movementType: "transfer", quantity, fromLocationId: sourceId, toLocationId: request.stationId, employeeId: request.requesterId, requestId: request.id, balanceBefore: sourceBefore, balanceAfter: sourceBefore - quantity, sourceBalanceBefore: sourceBefore, sourceBalanceAfter: sourceBefore - quantity, destinationBalanceBefore: destinationBefore, destinationBalanceAfter: destinationBefore + quantity, unitPrice: Number(request.unitPrice || 0), totalCost: Number(request.totalCost || (quantity * Number(request.unitPrice || 0))), traceAllocations });
+      const currentLocationId = sourceAfter > 0 ? (item.currentLocationId || sourceId) : request.stationId;
+      await base44.asServiceRole.entities.InventoryItem.update(item.id, { locationBalances: next, currentLocationId });
+      const units = await base44.asServiceRole.entities.InventoryUnit.filter({ companyId: auth.companyId, itemId: item.id });
+      const unitChanges = [{ locationId: sourceId, quantity: sourceAfter }, { locationId: request.stationId, quantity: destinationAfter }];
+      const unitUpdates = unitChanges.filter((change) => units.some((unit) => unit.locationId === change.locationId)).map((change) => ({ id: units.find((unit) => unit.locationId === change.locationId).id, quantity: change.quantity }));
+      const unitCreates = unitChanges.filter((change) => !units.some((unit) => unit.locationId === change.locationId)).map((change) => ({ companyId: auth.companyId, itemId: item.id, ...change }));
+      await Promise.all([unitUpdates.length ? base44.asServiceRole.entities.InventoryUnit.bulkUpdate(unitUpdates) : null, unitCreates.length ? base44.asServiceRole.entities.InventoryUnit.bulkCreate(unitCreates) : null].filter(Boolean));
+      await movement({ itemId: item.id, movementType: "transfer", quantity, fromLocationId: sourceId, toLocationId: request.stationId, employeeId: request.requesterId, requestId: request.id, balanceBefore: sourceBefore, balanceAfter: sourceAfter, sourceBalanceBefore: sourceBefore, sourceBalanceAfter: sourceAfter, destinationBalanceBefore: destinationBefore, destinationBalanceAfter: destinationAfter, unitPrice: Number(request.unitPrice || 0), totalCost: Number(request.totalCost || (quantity * Number(request.unitPrice || 0))), traceAllocations });
       await base44.asServiceRole.entities.MaterialRequest.update(request.id, { status: "issued", reviewedBy: auth.userId || auth.name, reviewedAt, issuedAt: reviewedAt });
-      return Response.json({ ok: true });
+      return Response.json({ ok: true, transferredQuantity: quantity, sourceBalance: sourceAfter, destinationBalance: destinationAfter });
     }
 
     if (body.action === "issueRequest") {
