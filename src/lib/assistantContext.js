@@ -1,4 +1,4 @@
-import { visibleStations, canSeeAllStations } from "@/lib/permissions";
+import { visibleStations, canSeeAllStations, canAdjustPayroll } from "@/lib/permissions";
 
 // Builds a compact JSON snapshot of the company data the current user is allowed
 // to see — sent as context to the AI assistant so it can answer questions about
@@ -35,6 +35,7 @@ export function buildAssistantContext(data, currentUser) {
   const files = (data.files || []).filter((f) => !f.stationId || stationIds.has(f.stationId)).map((f) => ({ name: f.name, type: f.type, station: stationName(f.stationId), mimeType: f.mimeType, createdAt: f.createdAt }));
   const targets = (data.targets || []).filter((x) => !x.stationId || stationIds.has(x.stationId)).map((x) => ({ title: x.title, station: stationName(x.stationId), assignee: empName(x.assignedTo), target: x.totalTasks || x.task_target, completed: x.completed || x.completed_tasks, deadline: x.deadline || x.end_date, status: x.status }));
   const employeeDetails = (data.employees || []).filter((e) => visibleEmployeeIds.has(e.id) && (currentUser.role !== "employee" || e.id === currentUser.id)).map((e) => ({ employee: e.name, certificates: (e.certificates || []).map((c) => c.name || c.title).join(" | "), leaveRequests: (e.leaveRequests || []).map((r) => `${r.type}:${r.status}:${r.days || 0}`).join(" | ") }));
+  const payroll = (data.payrollRuns || []).slice(-12).map((run) => ({ period: run.period || run.month, status: run.status, items: (run.items || []).filter((item) => canAdjustPayroll(currentUser, data) || item.employeeId === currentUser.id).map((item) => ({ employee: empName(item.employeeId), netSalary: item.netSalary, paid: item.paid })) }));
 
   return {
     company: data.name,
@@ -50,6 +51,10 @@ export function buildAssistantContext(data, currentUser) {
     complaints,
     files,
     employeeDetails,
+    payroll,
+    notifications: (data.notifications || []).filter((entry) => entry.userId === currentUser.id).slice(0, 30).map(({ text, read, createdAt }) => ({ text, read, createdAt })),
+    planner: (data.plannerItems || []).filter((entry) => !entry.userId || entry.userId === currentUser.id).slice(-30),
+    journal: (data.journalEntries || []).filter((entry) => !entry.userId || entry.userId === currentUser.id).slice(-30),
     hrStructure: (data.hrLevels || []).map((h) => ({ name: h.name, role: h.role, scope: h.scope, order: h.order, active: h.active !== false })),
   };
 }

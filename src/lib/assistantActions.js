@@ -1,10 +1,13 @@
-import { addCompanyFile, getCompanyToken } from "@/lib/store";
+import { addCompanyFile, getCompanyToken, submitLeaveRequest } from "@/lib/store";
 import { buildAssistantContext } from "./assistantContext";
 import { printReport } from "@/lib/printReport";
 import { generateSignedReport } from "@/lib/signedReport";
 import { base44 } from "@/api/base44Client";
 import { exportExcelColored } from "@/lib/exportExcelColored";
 import { buildDocumentHtml, openDocumentHtml } from "@/lib/printDocument";
+import { enrichAssistantContext } from "@/lib/assistantLiveContext";
+import { inventoryCall } from "@/lib/inventoryApi";
+import { expensesCall } from "@/lib/expensesApi";
 
 // Turns markdown-ish document text ("## heading", "- bullet", paragraphs) into sections.
 function parseDocContent(md) {
@@ -44,8 +47,9 @@ function downloadCSV(filename, rows) {
 const norm = (s) => String(s || "").trim().toLowerCase();
 const matches = (a, b) => norm(a).includes(norm(b)) || norm(b).includes(norm(a));
 
-async function datasetRows(action, data, currentUser) {
+async function datasetRows(action, data, currentUser, company) {
   const ctx = buildAssistantContext(data, currentUser);
+  await enrichAssistantContext(ctx, { session: { companyId: company.id }, data });
   const dataset = norm(action.dataset);
   if (dataset === "attendance") {
     const ids = ctx.employees.map((e) => e.id);
@@ -68,6 +72,11 @@ async function datasetRows(action, data, currentUser) {
     leaves: ctx.employeeDetails.map((e) => ({ employee: e.employee, leaveRequests: e.leaveRequests })),
     certificates: ctx.employeeDetails.map((e) => ({ employee: e.employee, certificates: e.certificates })),
     performance: ctx.employees.map(({ id, name, station, points }) => ({ name, station, points })),
+    inventory: ctx.inventory,
+    inventory_movements: ctx.inventoryMovements,
+    material_requests: ctx.materialRequests,
+    expenses: ctx.expenses,
+    payroll: ctx.payroll.flatMap((run) => run.items.map((item) => ({ period: run.period, status: run.status, ...item }))),
   };
   return map[dataset];
 }
@@ -78,7 +87,7 @@ export async function executeAssistantAction(action, { data, company, currentUse
 
   if (action.type === "export_data") {
     const dataset = norm(action.dataset);
-    const rows = await datasetRows(action, data, currentUser);
+    const rows = await datasetRows(action, data, currentUser, company);
     const isBlankSchedule = dataset === "schedules" && (!rows || !rows.length);
     if ((!rows || !rows.length) && !isBlankSchedule) return { ok: false, message: t("aiNoData") };
 
@@ -149,7 +158,7 @@ export async function executeAssistantAction(action, { data, company, currentUse
   }
 
   if (action.type === "sign_report") {
-    const rows = await datasetRows(action, data, currentUser);
+    const rows = await datasetRows(action, data, currentUser, company);
     if (!rows || !rows.length) return { ok: false, message: t("aiNoData") };
     const { verificationId } = await generateSignedReport({
       title: action.reportTitle || action.dataset,
@@ -168,9 +177,9 @@ export async function executeAssistantAction(action, { data, company, currentUse
 
   if (action.type === "open_page") {
     const routes = {
-      dashboard: "/app", tasks: "/app/tasks", attendance: "/app/attendance",
+      dashboard: "/app", executive: "/app/executive", tasks: "/app/tasks", attendance: "/app/attendance",
       reports: "/app/daily-report", performance: "/app/performance", employees: "/app/employees",
-      stations: "/app/stations", hr: "/app/hr", complaints: "/app/complaints",
+      stations: "/app/stations", hr: "/app/hr", payroll: "/app/payroll", complaints: "/app/complaints",
       chat: "/app/chat", files: "/app/files", daily_report: "/app/daily-report",
       help: "/app/help", signing: "/app/signing", verify: "/verify",
       inventory: "/app/inventory", expenses: "/app/expenses", safety: "/app/safety",
@@ -179,6 +188,46 @@ export async function executeAssistantAction(action, { data, company, currentUse
     if (!path) return { ok: false, message: t("aiActionFailed") };
     window.open(path, "_blank");
     return { ok: true, message: t("aiOpeningPage") };
+  }
+
+  if (action.type === "create_inventory_item") {
+    const station = data.stations.find((entry) => matches(entry.name, action.station || ""));
+    if (!station || !action.title || !action.itemCode || !action.supplierName || Number(action.quantity) <= 0 || Number(action.totalCost) < 0) return { ok: false, message: t("aiNoData") };
+    await inventoryCall(sessionAuth, "createItem", { name: action.title, itemCode: action.itemCode, supplierName: action.supplierName, locationId: station.id, quantity: Number(action.quantity), totalCost: Number(action.totalCost), minimumStock: Number(action.minimumStock || 0), purchaseDate: new Date().toISOString().slice(0, 10) });
+    return { ok: true, message: document.documentElement.dir === "rtl" ? "تم تسجيل عملية الشراء في المخزون." : "Inventory purchase recorded." };
+  }
+
+  if (["request_inventory", "issue_inventory", "review_inventory_request"].includes(action.type)) {
+    const inventory = await inventoryCall(sessionAuth, "list", { stations: data.stations || [] });
+    if (action.type === "review_inventory_request") {
+      await inventoryCall(sessionAuth, "reviewRequest", { requestId: action.requestId, decision: action.decision });
+      return { ok: true, message: document.documentElement.dir === "rtl" ? "تمت مراجعة طلب المواد." : "Material request reviewed." };
+    }
+    const item = inventory.requestItems.find((entry) => matches(entry.name, action.title || "") || matches(entry.itemCode, action.title || ""));
+    if (!item) return { ok: false, message: t("aiNoData") };
+    if (action.type === "request_inventory") {
+      const source = data.stations.find((entry) => matches(entry.name, action.sourceStation || ""));
+      const destination = data.stations.find((entry) => matches(entry.name, action.destinationStation || ""));
+      if (!source || !destination) return { ok: false, message: t("aiNoData") };
+      await inventoryCall(sessionAuth, "request", { itemId: item.id, sourceStationId: source.id, stationId: destination.id, quantity: Number(action.quantity), notes: action.description });
+      return { ok: true, message: document.documentElement.dir === "rtl" ? "تم إرسال طلب المواد." : "Material request submitted." };
+    }
+    const station = data.stations.find((entry) => matches(entry.name, action.station || ""));
+    const employee = data.employees.find((entry) => matches(entry.name, action.assignee || ""));
+    if (!station || !employee) return { ok: false, message: t("aiNoData") };
+    await inventoryCall(sessionAuth, "issueToWork", { itemId: item.id, fromLocationId: station.id, employeeId: employee.id, quantity: Number(action.quantity), workReference: action.workReference, workDate: action.workDate, notes: action.description || "" });
+    return { ok: true, message: document.documentElement.dir === "rtl" ? "تم صرف الصنف للعمل." : "Inventory issued to work." };
+  }
+
+  if (action.type === "review_expense") {
+    const reviewAction = String(action.decision || "").startsWith("finance_") ? "financeReview" : "managerReview";
+    await expensesCall(sessionAuth, reviewAction, { claimId: action.claimId, decision: action.decision });
+    return { ok: true, message: document.documentElement.dir === "rtl" ? "تمت مراجعة المصروف." : "Expense reviewed." };
+  }
+
+  if (action.type === "submit_leave") {
+    submitLeaveRequest(company.id, currentUser.id, { type: action.title, startDate: action.startDate, endDate: action.endDate, reason: action.description || "", files: [] });
+    return { ok: true, message: document.documentElement.dir === "rtl" ? "تم إرسال طلب الإجازة." : "Leave request submitted." };
   }
 
   if (action.type === "create_task") {
