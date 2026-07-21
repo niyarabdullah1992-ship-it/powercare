@@ -55,12 +55,23 @@
       "type": "number",
       "minimum": 0.01
     },
+    "quantity": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0.01
+    },
     "itemCount": {
       "type": [
         "integer",
         "null"
       ],
-      "minimum": 1
+      "minimum": 1,
+      "description": "Legacy item count retained for existing expense records."
+    },
+    "invoiceNumber": {
+      "type": "string"
     },
     "amount": {
       "type": "number",
