@@ -17,8 +17,18 @@ import * as pt from "@/lib/siteManualContent.pt";
 import * as ru from "@/lib/siteManualContent.ru";
 import * as ja from "@/lib/siteManualContent.ja";
 import * as ko from "@/lib/siteManualContent.ko";
+import * as ur from "@/lib/siteManualContent.ur";
+import * as hi from "@/lib/siteManualContent.hi";
+import * as bn from "@/lib/siteManualContent.bn";
+import * as tr from "@/lib/siteManualContent.tr";
 
-const CONTENT = { en, ar, de, fr, es, pt, ru, ja, ko };
+const CONTENT = { en, ar, de, fr, es, pt, ru, ja, ko, ur, hi, bn, tr };
+const EXTRA_MANUAL_LANGUAGES = [
+  { code: "ur", label: "اردو", flag: "🇵🇰" },
+  { code: "hi", label: "हिन्दी", flag: "🇮🇳" },
+  { code: "bn", label: "বাংলা", flag: "🇧🇩" },
+  { code: "tr", label: "Türkçe", flag: "🇹🇷" },
+];
 const ROUTES = Object.fromEntries(MANUAL_SECTIONS);
 
 export default function SiteManual() {
@@ -29,6 +39,7 @@ export default function SiteManual() {
   const manualRef = useRef(null);
   const content = CONTENT[manualLang];
   const labels = MANUAL_UI_LABELS[manualLang];
+  const manualLanguages = [...languages, ...EXTRA_MANUAL_LANGUAGES.filter((item) => !languages.some((language) => language.code === item.code))];
   const allowed = useMemo(() => currentUser ? allowedNavFor(currentUser, data) : null, [currentUser, data]);
   const chapters = content.MANUAL_CHAPTERS.filter((chapter) => ROUTES[chapter.id] && (!allowed || allowed.has(ROUTES[chapter.id]))).map((chapter, index) => {
     const name = chapter.name || chapter.title.replace(/^\d+\.\s*/, "");
@@ -54,10 +65,10 @@ export default function SiteManual() {
   };
 
   return (
-    <div dir={manualLang === "ar" ? "rtl" : "ltr"} className="text-foreground print:bg-card">
+    <div dir={["ar", "ur"].includes(manualLang) ? "rtl" : "ltr"} className="text-foreground print:bg-card">
       <style>{`@media print{@page{size:A4;margin:12mm}.no-print{display:none!important}.manual-chapter{break-inside:avoid;box-shadow:none!important}}`}</style>
       <div ref={manualRef} className="manual-shell mx-auto max-w-[1500px] space-y-6">
-        <ManualHeader meta={content.MANUAL_META} labels={labels} languages={languages} activeLang={manualLang} onLanguage={setManualLang} onDownload={exportPdf} exporting={exporting} />
+        <ManualHeader meta={content.MANUAL_META} labels={labels} languages={manualLanguages} activeLang={manualLang} onLanguage={setManualLang} onDownload={exportPdf} exporting={exporting} />
         <div className="grid items-start gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
           <ManualToc chapters={chapters} labels={labels} />
           <main className="space-y-6">{chapters.map((chapter) => <ManualChapter key={chapter.id} chapter={chapter} labels={labels} lang={manualLang} exportMode={exporting} />)}</main>
