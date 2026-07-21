@@ -46,11 +46,9 @@ export default function Pricing() {
 
   const handleTrialSignup = async ({ companyName, ownerEmail, ownerPassword, authMethod }) => {
     setError("");
-    const trialStart = new Date();
-    const trialEnd = new Date(trialStart);
-    trialEnd.setMonth(trialEnd.getMonth() + 3);
+    const activationDate = new Date().toISOString().slice(0, 10);
     const company = pendingCompanyRef.current || createCompany(
-      { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: activePlan.id === "free" ? "Free" : (activePlan.id === "professional" ? "Professional" : activePlan.id === "enterprise" ? "Enterprise" : "Starter"), subscriptionStart: trialStart.toISOString().slice(0, 10), subscriptionEnd: trialEnd.toISOString().slice(0, 10) },
+      { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: activePlan.id === "free" ? "Free" : (activePlan.id === "professional" ? "Professional" : activePlan.id === "enterprise" ? "Enterprise" : "Starter"), subscriptionStart: activationDate, subscriptionEnd: null },
       { sync: false }
     );
     pendingCompanyRef.current = company;

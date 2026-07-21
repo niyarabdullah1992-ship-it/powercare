@@ -1,3 +1,5 @@
+import { ALL_PLANS_CURRENTLY_FREE } from "@/lib/pricingPolicy";
+
 // Plan limits — mirrors what each pricing tier advertises on the Pricing page.
 // null = unlimited.
 const PLAN_LIMITS = {
@@ -15,7 +17,7 @@ export function getPlanLimits(plan) {
 }
 
 function effectivePlan(company) {
-  if (!company?.subscriptionEnd) return company?.plan;
+  if (ALL_PLANS_CURRENTLY_FREE || !company?.subscriptionEnd) return company?.plan;
   const rawEnd = String(company.subscriptionEnd);
   const expiresAt = new Date(/^\d{4}-\d{2}-\d{2}$/.test(rawEnd) ? `${rawEnd}T23:59:59.999` : rawEnd).getTime();
   return Number.isFinite(expiresAt) && Date.now() > expiresAt ? "free" : company.plan;

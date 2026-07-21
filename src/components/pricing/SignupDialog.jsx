@@ -29,7 +29,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
         </button>
         <h3 className="font-heading text-xl text-[#3a2f22] mb-1">{plan.name || t(plan.nameKey)}</h3>
         <p className="text-sm text-[#3a2f22]/55 font-body mb-5">
-          {t("trialSignupDesc")}
+          {lang === "ar" ? "فعّل الباقة المختارة مجانًا الآن دون دفع أو تاريخ انتهاء." : "Activate the selected plan free now, with no payment or expiry date."}
         </p>
         {!googleEmail && (
           <>
@@ -73,7 +73,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
             disabled={submitting}
             className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {submitting ? t("pleaseWaitBtn") : t("startThreeMonthTrial")}
+            {submitting ? t("pleaseWaitBtn") : (lang === "ar" ? "تفعيل الباقة مجانًا" : "Activate plan free")}
           </button>
         </form>
         <button
