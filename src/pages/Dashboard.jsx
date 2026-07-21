@@ -4,7 +4,6 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canSeeAllStations, visibleEmployees, canApproveReports, canReplyAnon, isCompanyOwner } from "@/lib/permissions";
 import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
 import WelcomeHero from "@/components/dashboard/WelcomeHero";
-import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import { AlertTriangle, FileText, Bell, Megaphone, Palette } from "lucide-react";
 import DashboardStatCards from "@/components/dashboard/DashboardStatCards";
 import AttendanceTrendChart from "@/components/dashboard/AttendanceTrendChart";
@@ -214,7 +213,6 @@ export default function Dashboard() {
       <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
       <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
       <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
-      <OnboardingChecklist data={data} lang={lang} t={t} />
       {["ops_manager", "director"].includes(currentUser.role) && <ExecutiveDashboard embedded />}
       {canEditBranding && (
         <div className="flex justify-end">
