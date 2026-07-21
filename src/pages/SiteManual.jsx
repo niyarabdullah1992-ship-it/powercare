@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ManualHeader from "@/components/manual/ManualHeader";
 import ManualToc from "@/components/manual/ManualToc";
 import ManualChapter from "@/components/manual/ManualChapter";
@@ -46,6 +46,11 @@ export default function SiteManual() {
   const [manualLang, setManualLang] = useState(CONTENT[lang] ? lang : "en");
   const [exporting, setExporting] = useState(false);
   const manualRef = useRef(null);
+
+  useEffect(() => {
+    if (CONTENT[lang]) setManualLang(lang);
+  }, [lang]);
+
   const content = CONTENT[manualLang];
   const labels = MANUAL_UI_LABELS[manualLang];
 
