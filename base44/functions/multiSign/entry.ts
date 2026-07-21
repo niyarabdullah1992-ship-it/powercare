@@ -302,6 +302,29 @@ Deno.serve(async (req) => {
       return Response.json({ requests: mine });
     }
 
+    if (action === 'remind') {
+      const { companyId, sessionToken } = body;
+      const actor = await authSession(base44, companyId, sessionToken);
+      if (!actor) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      const rec = await Docs.get(String(body.requestId || '')).catch(() => null);
+      if (!rec || rec.companyId !== companyId) return Response.json({ error: 'Not found' }, { status: 404 });
+      const actorId = String(actor.userId || (actor.admin ? body.userId : '') || '');
+      const actorEmail = String(actor.email || '').toLowerCase();
+      if (rec.creatorId !== actorId && (!actorEmail || rec.creatorEmail !== actorEmail)) return Response.json({ error: 'Only the creator can send reminders' }, { status: 403 });
+      if (rec.status !== 'pending') return Response.json({ error: 'REQUEST_CLOSED' }, { status: 409 });
+      const signerEmail = String(body.signerEmail || '').toLowerCase().trim();
+      const signer = (rec.signers || []).find((item) => item.email === signerEmail && item.status === 'pending');
+      if (!signer) return Response.json({ error: 'Pending signer not found' }, { status: 404 });
+      const signerIndex = (rec.signers || []).findIndex((item) => item.token === signer.token);
+      const link = `${rec.appUrl || 'https://powercares.pro'}/sign?token=${rec.id}.${signer.token}`;
+      const ar = body.lang === 'ar';
+      const sent = await sendMail(base44, signer.email, ar ? `تذكير بالتوقيع: ${rec.fileName}` : `Signing reminder: ${rec.fileName}`, ar ? `مرحبًا ${signer.name}،\n\nتذكير بوجود المستند "${rec.fileName}" بانتظار توقيعك.\n${link}` : `Hello ${signer.name},\n\nThis is a reminder that "${rec.fileName}" is waiting for your signature.\n${link}`, signatureRequestEmail({ ar, signerName: signer.name, creatorName: rec.creatorName, fileName: rec.fileName, link, signerIndex, totalSigners: (rec.signers || []).length, expiresAt: rec.expiresAt }));
+      if (!sent) return Response.json({ error: 'Reminder email could not be delivered' }, { status: 502 });
+      const remindedAt = new Date().toISOString();
+      await Docs.update(rec.id, { lastActivityAt: remindedAt, auditTrail: [...(rec.auditTrail || []), { type: 'reminder_sent', at: remindedAt, actorId: actor.userId || null, actorName: actor.name, actorRole: actor.role || 'admin', targetName: signer.name, targetEmail: signer.email, location: { available: false } }] });
+      return Response.json({ ok: true, signerEmail: signer.email });
+    }
+
     if (action === 'delete') {
       const { companyId, sessionToken } = body;
       const actor = await authSession(base44, companyId, sessionToken);
