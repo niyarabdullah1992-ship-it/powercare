@@ -40,9 +40,6 @@ export default function Inventory() {
     finally { setLoading(false); }
   };
   useEffect(() => { load(); }, [session?.companyId, stationVersion]);
-  useEffect(() => {
-    window.dispatchEvent(new CustomEvent("powercare:section-analytics", { detail: { path: "/app/inventory", data: state } }));
-  }, [state]);
 
   const run = async (action, payload) => {
     try {

@@ -26,7 +26,6 @@ import { routeForNotification } from "@/lib/notificationRoute";
 import SectionGuide from "@/components/SectionGuide";
 import CompanyNameEditor from "@/components/CompanyNameEditor";
 import GlobalSearch from "@/components/navigation/GlobalSearch";
-import SectionAnalyticsPanel from "@/components/analytics/SectionAnalyticsPanel";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -38,7 +37,6 @@ export default function Layout({ children }) {
   const [userOpen, setUserOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [proactiveAlerts, setProactiveAlerts] = useState([]);
-  const [sectionAnalytics, setSectionAnalytics] = useState({});
   const langRef = useRef(null);
   const notifRef = useRef(null);
   const userRef = useRef(null);
@@ -70,12 +68,6 @@ export default function Layout({ children }) {
     };
     window.addEventListener("keydown", openSearch);
     return () => window.removeEventListener("keydown", openSearch);
-  }, []);
-
-  useEffect(() => {
-    const receiveAnalytics = (event) => setSectionAnalytics((current) => ({ ...current, [event.detail.path]: event.detail.data }));
-    window.addEventListener("powercare:section-analytics", receiveAnalytics);
-    return () => window.removeEventListener("powercare:section-analytics", receiveAnalytics);
   }, []);
 
   useEffect(() => {
@@ -478,7 +470,6 @@ export default function Layout({ children }) {
               transition={{ duration: 0.2, ease: "easeOut" }}
             >
               <SectionGuide lang={lang} t={t} />
-              <SectionAnalyticsPanel path={location.pathname} data={data} externalData={sectionAnalytics[location.pathname]} lang={lang} />
               {children}
             </motion.div>
           </AnimatePresence>
