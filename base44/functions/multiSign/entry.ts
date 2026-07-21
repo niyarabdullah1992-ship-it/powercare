@@ -62,7 +62,7 @@ async function authSession(base44, companyId, sessionToken) {
 const escapeHtml = (value) => String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const cleanLocation = (value) => value?.available === true && Number.isFinite(Number(value.lat)) && Number.isFinite(Number(value.lng)) ? { lat: Number(value.lat), lng: Number(value.lng), accuracy: Math.max(0, Number(value.accuracy) || 0) } : { available: false };
 
-function signatureRequestEmail({ ar, signerName, creatorName, fileName, link }) {
+function signatureRequestEmail({ ar, signerName, creatorName, fileName, link, signerIndex = 0, totalSigners = 1, expiresAt }) {
   const direction = ar ? 'rtl' : 'ltr';
   const align = ar ? 'right' : 'left';
   const title = ar ? 'طلب توقيع مستند' : 'Document signature request';
@@ -73,6 +73,11 @@ function signatureRequestEmail({ ar, signerName, creatorName, fileName, link }) 
   const button = ar ? 'مراجعة المستند والتوقيع' : 'Review and sign document';
   const note = ar ? 'هذا الرابط آمن ومخصص لك فقط. يرجى عدم مشاركته مع أي شخص آخر.' : 'This secure link is unique to you. Please do not share it with anyone else.';
   const footer = ar ? 'توقيع إلكتروني موثّق وآمن' : 'Secure, verified electronic signing';
+  const orderLabel = ar ? 'ترتيبك في مسار التوقيع' : 'Your place in the signing order';
+  const expiryLabel = ar ? 'صلاحية رابط التوقيع' : 'Signing link expires';
+  const expiryText = expiresAt ? new Date(expiresAt).toLocaleString(ar ? 'ar-SA' : 'en-GB', { timeZone: 'Asia/Riyadh' }) : '—';
+  const securityLabel = ar ? 'مراجعة آمنة قبل التوقيع' : 'Secure review before signing';
+  const securityText = ar ? 'ستراجع المستند وبيانات الطلب أولًا، ثم تنتقل إلى حقولك وتوقيعك المخصص.' : 'You will review the document and request details first, then continue to your assigned fields and signature.';
 
   return `<!doctype html>
 <html lang="${ar ? 'ar' : 'en'}" dir="${direction}">
@@ -119,6 +124,23 @@ function signatureRequestEmail({ ar, signerName, creatorName, fileName, link }) 
                     </td>
                   </tr>
                 </table>
+
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;background:#faf7f2;border:1px solid #e7ddce;border-radius:12px;">
+                  <tr>
+                    <td width="50%" style="padding:16px 18px;text-align:${align};border-${ar ? 'left' : 'right'}:1px solid #e7ddce;">
+                      <div style="margin-bottom:6px;color:#8b7d6c;font-size:11px;font-weight:bold;">${orderLabel}</div>
+                      <div style="color:#30271d;font-size:15px;font-weight:700;">${signerIndex + 1} / ${totalSigners}</div>
+                    </td>
+                    <td width="50%" style="padding:16px 18px;text-align:${align};">
+                      <div style="margin-bottom:6px;color:#8b7d6c;font-size:11px;font-weight:bold;">${expiryLabel}</div>
+                      <div style="color:#30271d;font-size:13px;font-weight:700;">${escapeHtml(expiryText)}</div>
+                    </td>
+                  </tr>
+                </table>
+                <div style="margin-top:14px;padding:16px 18px;background:#f3eadc;border-left:3px solid #bd8d4f;border-radius:10px;text-align:${align};">
+                  <div style="margin-bottom:5px;color:#30271d;font-size:13px;font-weight:700;">${securityLabel}</div>
+                  <div style="color:#6d6255;font-size:12px;line-height:1.7;">${securityText}</div>
+                </div>
 
                 <div style="padding:30px 0 24px;text-align:center;">
                   <a href="${escapeHtml(link)}" style="display:inline-block;background:#bd8d4f;color:#ffffff;text-decoration:none;padding:15px 28px;border-radius:10px;font-size:15px;font-weight:bold;line-height:1.2;box-shadow:0 5px 14px rgba(189,141,79,0.28);">${button}</a>
@@ -264,7 +286,7 @@ Deno.serve(async (req) => {
       const emailFailed = [];
       const first = signers[0];
       const firstLink = links[first.email];
-      const ok = await sendMail(base44, first.email, ar ? `طلب توقيع: ${rec.fileName}` : `Signature request: ${rec.fileName}`, ar ? `مرحبًا ${first.name}،\n\nحان دورك لتوقيع المستند "${rec.fileName}".\n${firstLink}` : `Hello ${first.name},\n\nIt is your turn to sign "${rec.fileName}".\n${firstLink}`, signatureRequestEmail({ ar, signerName: first.name, creatorName: rec.creatorName, fileName: rec.fileName, link: firstLink }));
+      const ok = await sendMail(base44, first.email, ar ? `طلب توقيع: ${rec.fileName}` : `Signature request: ${rec.fileName}`, ar ? `مرحبًا ${first.name}،\n\nحان دورك لتوقيع المستند "${rec.fileName}".\n${firstLink}` : `Hello ${first.name},\n\nIt is your turn to sign "${rec.fileName}".\n${firstLink}`, signatureRequestEmail({ ar, signerName: first.name, creatorName: rec.creatorName, fileName: rec.fileName, link: firstLink, signerIndex: 0, totalSigners: signers.length, expiresAt: rec.expiresAt }));
       if (!ok) emailFailed.push(first.email);
       return Response.json({ ok: true, requestId: rec.id, links, emailFailed });
     }
@@ -440,7 +462,7 @@ Deno.serve(async (req) => {
         const nextSigner = signers.find((item) => item.status === 'pending');
         const nextLink = `${rec.appUrl || 'https://powercares.pro'}/sign?token=${rec.id}.${nextSigner.token}`;
         const ar = body.lang === 'ar';
-        await sendMail(base44, nextSigner.email, ar ? `حان دورك للتوقيع: ${rec.fileName}` : `Your turn to sign: ${rec.fileName}`, ar ? `مرحبًا ${nextSigner.name}،\n\nاكتمل توقيع الطرف السابق وحان دورك الآن.\n${nextLink}` : `Hello ${nextSigner.name},\n\nThe previous signer has completed their step. It is now your turn.\n${nextLink}`, signatureRequestEmail({ ar, signerName: nextSigner.name, creatorName: rec.creatorName, fileName: rec.fileName, link: nextLink }));
+        await sendMail(base44, nextSigner.email, ar ? `حان دورك للتوقيع: ${rec.fileName}` : `Your turn to sign: ${rec.fileName}`, ar ? `مرحبًا ${nextSigner.name}،\n\nاكتمل توقيع الطرف السابق وحان دورك الآن.\n${nextLink}` : `Hello ${nextSigner.name},\n\nThe previous signer has completed their step. It is now your turn.\n${nextLink}`, signatureRequestEmail({ ar, signerName: nextSigner.name, creatorName: rec.creatorName, fileName: rec.fileName, link: nextLink, signerIndex: signers.findIndex((item) => item.token === nextSigner.token), totalSigners: signers.length, expiresAt: rec.expiresAt }));
       }
 
       if (completed && rec.creatorEmail) {
