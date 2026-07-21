@@ -3,14 +3,13 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { getCompanyToken } from "@/lib/store";
-import { BrainCircuit, PenLine, Send, Inbox, ShieldCheck } from "lucide-react";
+import { PenLine, Send, Inbox, ShieldCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import MySignatureCard from "@/components/files/MySignatureCard";
 import MultiSignCard from "@/components/files/MultiSignCard";
 import MultiSignInbox from "@/components/files/MultiSignInbox";
 import VerifyDocumentCard from "@/components/files/VerifyDocumentCard";
-import NiroDocumentReviewCard from "@/components/files/NiroDocumentReviewCard";
 import { canCreateSignatureRequests, visibleEmployees } from "@/lib/permissions";
 
 export default function FileSigning() {
@@ -37,7 +36,7 @@ export default function FileSigning() {
   const scopedEmployees = visibleEmployees(currentUser, data || { stations: [], employees: [] });
   const tabs = [
     { value: "signature", label: ar ? "توقيعي" : "My signature", icon: PenLine },
-    ...(canCreate ? [{ value: "send", label: ar ? "إرسال للتوقيع" : "Send for signing", icon: Send }, { value: "niro", label: ar ? "مراجعة Niro" : "Niro review", icon: BrainCircuit }] : []),
+    ...(canCreate ? [{ value: "send", label: ar ? "إرسال للتوقيع" : "Send for signing", icon: Send }] : []),
     { value: "inbox", label: ar ? "صندوق التوقيع" : "Signing inbox", icon: Inbox, count: pendingCount },
     { value: "verify", label: ar ? "التحقق من مستند" : "Verify document", icon: ShieldCheck },
   ];
@@ -57,7 +56,6 @@ export default function FileSigning() {
         </TabsList>
         <TabsContent value="signature" className="mt-5"><MySignatureCard companyId={company.id} currentUser={currentUser} ar={ar} /></TabsContent>
         {canCreate && <TabsContent value="send" className="mt-5"><MultiSignCard currentUser={currentUser} companyId={company.id} employees={scopedEmployees} ar={ar} onCreated={() => setMultiRefresh((n) => n + 1)} /></TabsContent>}
-        {canCreate && <TabsContent value="niro" className="mt-5"><NiroDocumentReviewCard companyId={company.id} ar={ar} /></TabsContent>}
         <TabsContent value="inbox" className="mt-5"><MultiSignInbox currentUser={currentUser} companyId={company.id} ar={ar} refreshKey={multiRefresh} onPendingChange={setPendingCount} /></TabsContent>
         <TabsContent value="verify" className="mt-5"><VerifyDocumentCard ar={ar} /></TabsContent>
       </Tabs>
