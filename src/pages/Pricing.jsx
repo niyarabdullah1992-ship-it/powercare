@@ -12,7 +12,7 @@ export default function Pricing() {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
   const { session, company } = usePowerCareAuth();
-  const renewal = new URLSearchParams(window.location.search).has("expired") && !!session && !!company;
+  const ownerUpgrade = session?.role === "owner" && !!company;
   const [activePlan, setActivePlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -70,21 +70,18 @@ export default function Pricing() {
     return true;
   };
 
-  const handleRenewal = async (plan) => {
+  const handleOwnerUpgrade = async (plan) => {
+    if (!ownerUpgrade) return;
     setActivePlan(plan);
-    if (plan.id === "free") {
-      await updateCompanyPlan(company.id, "Free", new Date().toISOString().slice(0, 10), null);
-      navigate("/app");
-      return;
-    }
-    if (window.self !== window.top) { setError(t("checkoutIframeError")); return; }
-    setLoading(true); setError("");
+    setLoading(true);
+    setError("");
     try {
-      const res = await base44.functions.invoke("stripeCheckout", { action: "createSession", plan: plan.id, billing, companyId: company.id, sessionToken: getCompanyToken(company.id), returnUrl: window.location.origin });
-      if (res.data?.url) window.location.href = res.data.url;
-      else setError(res.data?.error || t("checkoutGenericError"));
-    } catch { setError(t("checkoutGenericError")); }
-    finally { setLoading(false); }
+      const planName = plan.id === "professional" ? "Professional" : plan.id === "enterprise" ? "Enterprise" : plan.id === "starter" ? "Starter" : "Free";
+      await updateCompanyPlan(company.id, planName, new Date().toISOString().slice(0, 10), null);
+      navigate("/app");
+    } catch (error) {
+      setError(error?.message || (lang === "ar" ? "تعذرت ترقية الحساب. حاول مرة أخرى." : "Account upgrade failed. Please try again."));
+    } finally { setLoading(false); }
   };
 
   const handlePaidSignup = async ({ companyName, ownerEmail, authMethod }) => {
@@ -156,11 +153,11 @@ export default function Pricing() {
                 ))}
               </ul>
               <button
-                onClick={() => renewal ? handleRenewal(plan) : setActivePlan(plan)}
+                onClick={() => ownerUpgrade ? handleOwnerUpgrade(plan) : setActivePlan(plan)}
                 disabled={loading}
                 className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {loading && activePlan?.id === plan.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (lang === "ar" ? "ابدأ مجانًا" : "Start free")}
+                {loading && activePlan?.id === plan.id ? <Loader2 className="w-4 h-4 animate-spin" /> : ownerUpgrade ? (lang === "ar" ? `ترقية إلى ${t(plan.nameKey)}` : `Upgrade to ${t(plan.nameKey)}`) : (lang === "ar" ? "ابدأ مجانًا" : "Start free")}
               </button>
             </div>
           ))}
