@@ -4,11 +4,11 @@
   "properties": {
     "companyId": {
       "type": "string",
-      "description": "The company this action relates to (or 'platform' for platform-level actions)."
+      "description": "The company this action relates to (or platform)."
     },
     "action": {
       "type": "string",
-      "description": "Machine-readable action key, e.g. company_created, company_deleted, director_transferred, ownership_transferred."
+      "description": "Machine-readable action key."
     },
     "performedBy": {
       "type": "string",
@@ -17,6 +17,24 @@
     "details": {
       "type": "string",
       "description": "Human-readable description of what changed."
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "oldValue": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "newValue": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "required": [

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
 import { listCompanies, createCompany, deleteCompany, getCompanyData, setSession } from "@/lib/store";
-import { logAudit, fetchAllAuditLog } from "@/lib/auditLog";
+import { logAudit } from "@/lib/auditLog";
 import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn } from "lucide-react";
 import Logo from "@/components/Logo";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
@@ -12,6 +12,8 @@ import SubscribersDashboard from "@/components/owner/SubscribersDashboard";
 import SaasAnalyticsDashboard from "@/components/owner/SaasAnalyticsDashboard";
 import PlatformRoadmap from "@/components/owner/PlatformRoadmap";
 import ProductFeedbackDashboard from "@/components/owner/ProductFeedbackDashboard";
+import PlatformReportDashboard from "@/components/owner/PlatformReportDashboard";
+import AuditLogDashboard from "@/components/owner/AuditLogDashboard";
 
 export default function OwnerPanel() {
   const { t, lang } = useI18n();
@@ -19,7 +21,6 @@ export default function OwnerPanel() {
   const [user, setUser] = useState(undefined); // undefined = loading
   const [companies, setCompanies] = useState([]);
   const [form, setForm] = useState({ name: "", ownerEmail: "", ownerPassword: "", plan: "Starter", allowedEmailDomain: "" });
-  const [auditLogs, setAuditLogs] = useState([]);
   const [tab, setTab] = useState("analytics");
 
   useEffect(() => {
@@ -30,7 +31,6 @@ export default function OwnerPanel() {
   useEffect(() => {
     if (user?.role === "admin") {
       refresh();
-      fetchAllAuditLog().then(setAuditLogs);
     }
   }, [user]);
 
@@ -62,7 +62,6 @@ export default function OwnerPanel() {
     logAudit(company.id, "company_created", user.email, `${user.email} created company "${company.name}" (${company.plan}).`);
     setForm({ name: "", ownerEmail: "", ownerPassword: "", plan: "Starter", allowedEmailDomain: "" });
     refresh();
-    fetchAllAuditLog().then(setAuditLogs);
   };
 
   const handleDelete = (id) => {
@@ -70,7 +69,6 @@ export default function OwnerPanel() {
     deleteCompany(id);
     logAudit(id, "company_deleted", user.email, `${user.email} deleted company "${c?.name || id}".`);
     refresh();
-    fetchAllAuditLog().then(setAuditLogs);
   };
 
   const handleEnter = (id) => {
@@ -83,7 +81,7 @@ export default function OwnerPanel() {
 
   return (
     <div className="min-h-screen bg-landing-bg px-4 py-10 sm:px-6" dir={lang === "ar" ? "rtl" : "ltr"}>
-      <div className={`mx-auto space-y-6 ${tab === "companies" ? "max-w-2xl" : "max-w-6xl"}`}>
+      <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Logo size={28} />
@@ -99,18 +97,20 @@ export default function OwnerPanel() {
           </button>
         </div>
 
-        <div className="flex bg-white rounded-2xl p-1 shadow-sm">
+        <div className="flex overflow-x-auto rounded-2xl bg-white p-1 shadow-sm no-scrollbar">
           {[
-            { key: "analytics", ar: "تحليلات SaaS", en: "SaaS Analytics" },
-            { key: "companies", ar: "إدارة الشركات", en: "Companies" },
+            { key: "analytics", ar: "لوحة التحليلات", en: "Analytics" },
             { key: "subscriptions", ar: "إدارة الاشتراكات", en: "Subscriptions" },
+            { key: "report", ar: "تقرير المنصة", en: "Platform report" },
+            { key: "companies", ar: "الشركات", en: "Companies" },
+            { key: "feedback", ar: "التقييمات", en: "Feedback" },
+            { key: "audit", ar: "سجل التدقيق", en: "Audit log" },
             { key: "roadmap", ar: "خارطة التطوير", en: "Roadmap" },
-            { key: "feedback", ar: "التقييمات والاقتراحات", en: "Feedback" },
           ].map((tb) => (
             <button
               key={tb.key}
               onClick={() => setTab(tb.key)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-body font-semibold transition-colors ${
+              className={`min-w-max flex-1 px-4 py-2.5 rounded-xl text-sm font-body font-semibold transition-colors ${
                 tab === tb.key ? "bg-gradient-to-b from-landing-gold-light to-landing-gold text-white" : "text-[#3a2f22]/60 hover:text-[#3a2f22]"
               }`}
             >
@@ -121,8 +121,10 @@ export default function OwnerPanel() {
 
         {tab === "analytics" && <SaasAnalyticsDashboard lang={lang} />}
         {tab === "subscriptions" && <SubscribersDashboard ar={lang === "ar"} />}
+        {tab === "report" && <PlatformReportDashboard ar={lang === "ar"} />}
         {tab === "roadmap" && <PlatformRoadmap ar={lang === "ar"} />}
         {tab === "feedback" && <ProductFeedbackDashboard ar={lang === "ar"} companies={companies} />}
+        {tab === "audit" && <AuditLogDashboard ar={lang === "ar"} companies={companies} />}
 
         {tab === "companies" && (<>
         <div className="bg-white rounded-2xl p-6 shadow-xl space-y-6">
@@ -184,23 +186,7 @@ export default function OwnerPanel() {
 
         <NewsBroadcast />
 
-        <div className="bg-white rounded-2xl p-6 shadow-xl">
-          <h3 className="font-heading text-lg font-semibold mb-3 flex items-center gap-2 text-[#3a2f22]">
-            <ShieldAlert className="w-4 h-4" /> {lang === "ar" ? "سجل التدقيق (كل الشركات)" : "Audit Log (all companies)"}
-          </h3>
-          {auditLogs.length === 0 ? (
-            <p className="text-sm text-[#3a2f22]/40 font-body">{lang === "ar" ? "لا توجد عمليات مسجلة بعد." : "No actions logged yet."}</p>
-          ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {auditLogs.map((l) => (
-                <div key={l.id} className="text-xs font-body p-2.5 rounded-lg bg-landing-bg">
-                  <p className="text-[#3a2f22]">{l.details || l.action}</p>
-                  <p className="text-[#3a2f22]/40 mt-0.5">{l.performedBy} · {new Date(l.created_date).toLocaleString(lang === "ar" ? "ar" : "en")}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+
         </>)}
       </div>
     </div>

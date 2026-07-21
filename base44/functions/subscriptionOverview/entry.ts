@@ -25,26 +25,93 @@ Deno.serve(async (req) => {
     let body: Record<string, unknown> = {};
     try { body = await req.json(); } catch { /* empty body → overview */ }
 
-    if (body.action === 'cancelAtPeriodEnd') {
-      await stripe.subscriptions.update(String(body.subscriptionId), { cancel_at_period_end: true });
+    const action = String(body.action || '');
+    const auditAction = async (account, key, oldValue, newValue, reason = '') => {
+      await base44.asServiceRole.entities.AuditLog.create({
+        companyId: account?.companyId || 'platform', action: key, performedBy: user.email || user.full_name || 'Platform owner',
+        details: `${account?.name || 'Company'}: ${oldValue || '—'} → ${newValue || '—'}`,
+        reason: String(reason || '').slice(0, 1000) || null, oldValue: String(oldValue ?? ''), newValue: String(newValue ?? ''),
+      });
+    };
+    const getAccount = async () => body.accountId ? await base44.asServiceRole.entities.CompanyAccount.get(String(body.accountId)).catch(() => null) : null;
+
+    if (['freeze', 'unfreeze', 'extend', 'changePlan', 'updateAccount'].includes(action)) {
+      const account = await getAccount();
+      if (!account) return Response.json({ error: 'Company account not found' }, { status: 404 });
+      if (action === 'freeze') {
+        const reason = String(body.reason || '').trim();
+        if (!reason) return Response.json({ error: 'Freeze reason is required' }, { status: 400 });
+        await base44.asServiceRole.entities.CompanyAccount.update(account.id, { frozen: true, frozenAt: new Date().toISOString(), frozenReason: reason });
+        await auditAction(account, 'subscription_frozen', account.frozen ? 'frozen' : 'active', 'frozen', reason);
+      } else if (action === 'unfreeze') {
+        await base44.asServiceRole.entities.CompanyAccount.update(account.id, { frozen: false, frozenAt: null, frozenReason: null });
+        await auditAction(account, 'subscription_unfrozen', 'frozen', 'active', body.reason);
+      } else {
+        const validPlans = new Set(['Starter', 'Professional', 'Enterprise', 'Custom']);
+        if ((action === 'changePlan' || action === 'updateAccount') && body.plan !== undefined) {
+          if (!validPlans.has(String(body.plan))) return Response.json({ error: 'Invalid plan' }, { status: 400 });
+          const customPrice = body.plan === 'Custom' ? Math.max(0, Number(body.customPrice) || 0) : null;
+          await base44.asServiceRole.entities.CompanyAccount.update(account.id, { plan: body.plan, customPrice });
+          if (account.plan !== body.plan || account.customPrice !== customPrice) await auditAction(account, 'subscription_plan_changed', `${account.plan || '—'}${account.customPrice != null ? ` ($${account.customPrice})` : ''}`, `${body.plan}${customPrice != null ? ` ($${customPrice})` : ''}`, body.reason);
+        }
+        if ((action === 'extend' || action === 'updateAccount') && body.subscriptionEnd !== undefined) {
+          const nextEnd = body.subscriptionEnd || null;
+          await base44.asServiceRole.entities.CompanyAccount.update(account.id, { subscriptionStart: body.subscriptionStart || account.subscriptionStart || null, subscriptionEnd: nextEnd });
+          if (account.subscriptionEnd !== nextEnd) await auditAction(account, 'subscription_extended', account.subscriptionEnd || '—', nextEnd || '—', body.reason);
+        }
+      }
       return Response.json({ ok: true });
     }
-    if (body.action === 'reactivate') {
-      await stripe.subscriptions.update(String(body.subscriptionId), { cancel_at_period_end: false });
+
+    if (['cancelAtPeriodEnd', 'reactivate', 'cancelNow'].includes(action)) {
+      const account = await getAccount();
+      if (action === 'cancelAtPeriodEnd') {
+        await stripe.subscriptions.update(String(body.subscriptionId), { cancel_at_period_end: true });
+        await auditAction(account, 'subscription_cancel_scheduled', 'active', 'cancel at period end', body.reason);
+      } else if (action === 'reactivate') {
+        await stripe.subscriptions.update(String(body.subscriptionId), { cancel_at_period_end: false });
+        await auditAction(account, 'subscription_reactivated', 'cancel at period end', 'active', body.reason);
+      } else {
+        await stripe.subscriptions.cancel(String(body.subscriptionId));
+        await auditAction(account, 'subscription_canceled', 'active', 'canceled immediately', body.reason);
+      }
       return Response.json({ ok: true });
     }
-    if (body.action === 'cancelNow') {
-      await stripe.subscriptions.cancel(String(body.subscriptionId));
-      return Response.json({ ok: true });
-    }
-    if (body.action === 'updateAccount') {
-      const patch: Record<string, unknown> = {};
-      if (body.plan !== undefined) patch.plan = body.plan;
-      if (body.subscriptionStart !== undefined) patch.subscriptionStart = body.subscriptionStart || null;
-      if (body.subscriptionEnd !== undefined) patch.subscriptionEnd = body.subscriptionEnd || null;
-      if (body.customPrice !== undefined) patch.customPrice = body.customPrice === null || body.customPrice === '' ? null : Number(body.customPrice);
-      await base44.asServiceRole.entities.CompanyAccount.update(String(body.accountId), patch);
-      return Response.json({ ok: true });
+
+    if (action === 'platformReport') {
+      const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0);
+      const cutoff30 = Date.now() - 30 * 86400000;
+      const [accountRows, employees, blobs, sessions, signatures, inventory, movements, feedback] = await Promise.all([
+        base44.asServiceRole.entities.CompanyAccount.list('-created_date', 500),
+        base44.asServiceRole.entities.Employee.list('-created_date', 500),
+        base44.asServiceRole.entities.CompanyDataBlob.list('-updated_date', 500),
+        base44.asServiceRole.entities.CompanySession.list('-created_date', 500),
+        base44.asServiceRole.entities.SignatureRequest.list('-created_date', 500),
+        base44.asServiceRole.entities.InventoryItem.list('-created_date', 500),
+        base44.asServiceRole.entities.StockMovement.list('-created_date', 500),
+        base44.asServiceRole.entities.ProductFeedback.list('-created_date', 500),
+      ]);
+      const valueDate = (item) => new Date(item.completedAt || item.completed_date || item.updatedAt || item.updated_date || item.createdAt || item.created_date || 0).getTime();
+      const companies = accountRows.filter((account) => !(account.ownerEmail || '').endsWith('@powercare-demo.com')).map((account) => {
+        const companyBlobs = blobs.filter((blob) => blob.companyId === account.companyId);
+        const tasks = companyBlobs.find((blob) => blob.category === 'tasks')?.payload || [];
+        const attendance = companyBlobs.find((blob) => blob.category === 'personalAttendance')?.payload || [];
+        const present = attendance.filter((record) => record.checkIn || record.status === 'present' || record.status === 'checked_in' || record.status === 'completed').length;
+        const companyFeedback = feedback.filter((item) => item.companyId === account.companyId);
+        return {
+          companyId: account.companyId, companyName: account.name || account.ownerEmail, plan: account.plan || '—',
+          employees: employees.filter((item) => item.companyId === account.companyId).length,
+          completedTasks: tasks.filter((task) => ['done', 'completed', 'approved'].includes(String(task.status || '').toLowerCase()) && valueDate(task) >= monthStart.getTime()).length,
+          attendanceRate: attendance.length ? Math.round((present / attendance.length) * 100) : 0,
+          loginSessions: sessions.filter((item) => item.companyId === account.companyId && new Date(item.created_date || 0).getTime() >= cutoff30).length,
+          signedDocuments: signatures.filter((item) => item.companyId === account.companyId && item.status === 'completed').length,
+          inventoryItems: inventory.filter((item) => item.companyId === account.companyId && item.archived !== true).length,
+          stockMovements: movements.filter((item) => item.companyId === account.companyId).length,
+          feedbackCount: companyFeedback.length,
+          averageRating: companyFeedback.length ? Math.round(companyFeedback.reduce((sum, item) => sum + Number(item.rating || 0), 0) / companyFeedback.length * 10) / 10 : null,
+        };
+      });
+      return Response.json({ companies });
     }
 
     // Registered companies (to match subscriptions to company names).
@@ -93,6 +160,9 @@ Deno.serve(async (req) => {
         daysLeft: endTs ? Math.ceil((endTs - now) / 86400000) : null,
         amount: s.items?.data?.[0]?.price?.unit_amount != null ? s.items.data[0].price.unit_amount / 100 : null,
         currency: (s.items?.data?.[0]?.price?.currency || 'usd').toUpperCase(),
+        frozen: account?.frozen === true,
+        frozenAt: account?.frozenAt || null,
+        frozenReason: account?.frozenReason || null,
       };
     });
 
@@ -116,16 +186,21 @@ Deno.serve(async (req) => {
           daysLeft: endTs ? Math.ceil((endTs - now) / 86400000) : null,
           amount: a.customPrice ?? null,
           customPrice: a.customPrice ?? null,
+          frozen: a.frozen === true,
+          frozenAt: a.frozenAt || null,
+          frozenReason: a.frozenReason || null,
         };
       });
 
     const active = rows.filter((r) => r.status === 'active' || r.status === 'trialing');
     const summary = {
       totalCompanies: accounts.length,
-      activeSubscriptions: active.length,
+      activeSubscriptions: active.length + noSub.filter((r) => r.status === 'manual_active').length,
       trialing: rows.filter((r) => r.status === 'trialing').length,
       pastDue: rows.filter((r) => r.status === 'past_due' || r.status === 'unpaid').length,
       canceled: rows.filter((r) => r.status === 'canceled').length,
+      frozen: accounts.filter((account) => account.frozen === true).length,
+      expired: [...rows, ...noSub].filter((r) => r.endsAt && r.endsAt < now && !['active', 'trialing', 'manual_active'].includes(r.status)).length,
       endingSoon: active.filter((r) => r.daysLeft != null && r.daysLeft <= 14 && (r.cancelAtPeriodEnd || r.status === 'trialing')).length,
       byPlan: {
         Free: accounts.filter((a) => !a.plan || a.plan === 'Free').length,
@@ -139,7 +214,14 @@ Deno.serve(async (req) => {
     // Monthly recurring revenue from active/trialing subscriptions + manually-managed custom plans.
     const manualMrr = noSub.filter((r) => r.status === 'manual_active').reduce((sum, r) => sum + (r.customPrice || 0), 0);
     summary.mrr = Math.round((active.reduce((sum, r) => sum + (r.amount ? (r.billing === 'yearly' ? r.amount / 12 : r.amount) : 0), 0) + manualMrr) * 100) / 100;
+    summary.arr = Math.round(summary.mrr * 12 * 100) / 100;
     summary.manualActive = noSub.filter((r) => r.status === 'manual_active').length;
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const [todaySessions, latestFeedback] = await Promise.all([
+      base44.asServiceRole.entities.CompanySession.list('-lastSeenAt', 500),
+      base44.asServiceRole.entities.ProductFeedback.list('-created_date', 5),
+    ]);
+    summary.activeUsersToday = new Set(todaySessions.filter((session) => new Date(session.lastSeenAt || 0).getTime() >= todayStart.getTime()).map((session) => `${session.companyId}:${session.userId || 'owner'}`)).size;
 
     // Company signups per month (growth chart).
     const growthMap: Record<string, number> = {};
@@ -150,7 +232,7 @@ Deno.serve(async (req) => {
     const growth = Object.entries(growthMap).sort(([x], [y]) => x.localeCompare(y)).map(([month, count]) => ({ month, count }));
 
     rows.sort((a, b) => (a.daysLeft ?? 99999) - (b.daysLeft ?? 99999));
-    return Response.json({ summary, subscriptions: rows, companiesWithoutSubscription: noSub, growth });
+    return Response.json({ summary, subscriptions: rows, companiesWithoutSubscription: noSub, growth, latestFeedback });
   } catch (error) {
     console.error('subscriptionOverview error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

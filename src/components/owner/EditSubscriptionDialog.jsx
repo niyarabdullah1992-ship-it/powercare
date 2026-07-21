@@ -1,92 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 
-const toInput = (ts) => (ts ? new Date(ts).toISOString().slice(0, 10) : "");
-
+const dateValue = (value) => value ? new Date(value).toISOString().slice(0, 10) : "";
+const validPlan = (plan) => ["Starter", "Professional", "Enterprise", "Custom"].includes(plan) ? plan : "Starter";
 export default function EditSubscriptionDialog({ open, onOpenChange, row, ar, onSaved }) {
-  const [plan, setPlan] = useState(row.plan || "Free");
-  const [start, setStart] = useState(toInput(row.startedAt));
-  const [end, setEnd] = useState(toInput(row.endsAt));
-  const [customPrice, setCustomPrice] = useState(row.customPrice ?? "");
+  const [form, setForm] = useState({ plan: validPlan(row.plan), start: dateValue(row.startedAt), end: dateValue(row.endsAt), customPrice: row.customPrice ?? "", reason: "" });
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      setPlan(row.plan || "Free");
-      setStart(toInput(row.startedAt));
-      setEnd(toInput(row.endsAt));
-      setCustomPrice(row.customPrice ?? "");
-    }
-  }, [open, row]);
-
+  useEffect(() => { if (open) setForm({ plan: validPlan(row.plan), start: dateValue(row.startedAt), end: dateValue(row.endsAt), customPrice: row.customPrice ?? "", reason: "" }); }, [open, row]);
   const save = async () => {
     setSaving(true);
     try {
-      await base44.functions.invoke("subscriptionOverview", {
-        action: "updateAccount",
-        accountId: row.accountId,
-        plan,
-        subscriptionStart: start,
-        subscriptionEnd: end,
-        customPrice: plan === "Custom" && customPrice !== "" ? Number(customPrice) : null,
-      });
-      await onSaved();
-      onOpenChange(false);
-    } finally {
-      setSaving(false);
-    }
+      if (form.plan !== row.plan || (form.plan === "Custom" && Number(form.customPrice) !== Number(row.customPrice))) await base44.functions.invoke("subscriptionOverview", { action: "changePlan", accountId: row.accountId, plan: form.plan, customPrice: form.customPrice, reason: form.reason });
+      if (form.end !== dateValue(row.endsAt) || form.start !== dateValue(row.startedAt)) await base44.functions.invoke("subscriptionOverview", { action: "extend", accountId: row.accountId, subscriptionStart: form.start, subscriptionEnd: form.end, reason: form.reason });
+      await onSaved(); onOpenChange(false);
+    } finally { setSaving(false); }
   };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm" dir={ar ? "rtl" : "ltr"}>
-        <DialogHeader>
-          <DialogTitle className="font-heading text-[#3a2f22]">
-            {ar ? "تعديل الاشتراك" : "Edit Subscription"} — {row.companyName || row.email}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3 font-body">
-          <div>
-            <label className="block text-xs text-[#3a2f22]/55 mb-1">{ar ? "الباقة" : "Plan"}</label>
-            <select value={plan} onChange={(e) => setPlan(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-landing-bg text-[#3a2f22] text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold">
-              <option>Free</option>
-              <option>Starter</option>
-              <option>Professional</option>
-              <option>Enterprise</option>
-              <option value="Custom">{ar ? "مخصص (Custom)" : "Custom"}</option>
-            </select>
-          </div>
-          {plan === "Custom" && (
-            <div>
-              <label className="block text-xs text-[#3a2f22]/55 mb-1">{ar ? "السعر الشهري المخصص ($)" : "Custom monthly price ($)"}</label>
-              <input type="number" min="0" step="0.01" value={customPrice} onChange={(e) => setCustomPrice(e.target.value)}
-                placeholder={ar ? "مثال: 199" : "e.g. 199"}
-                className="w-full px-3 py-2 rounded-lg bg-landing-bg text-[#3a2f22] text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold" />
-              <p className="text-[11px] text-[#3a2f22]/40 mt-1">
-                {ar ? "الاشتراك المخصص تتحكم فيه يدويًا: حدّد السعر وتاريخ البداية والنهاية، ويُحتسب نشطًا حتى تاريخ النهاية." : "Custom plans are managed manually: set the price and start/end dates; it counts as active until the end date."}
-              </p>
-            </div>
-          )}
-          <div>
-            <label className="block text-xs text-[#3a2f22]/55 mb-1">{ar ? "تاريخ بداية الاشتراك" : "Subscription start date"}</label>
-            <input type="date" value={start} onChange={(e) => setStart(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-landing-bg text-[#3a2f22] text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold" />
-          </div>
-          <div>
-            <label className="block text-xs text-[#3a2f22]/55 mb-1">{ar ? "تاريخ نهاية الاشتراك" : "Subscription end date"}</label>
-            <input type="date" value={end} onChange={(e) => setEnd(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-landing-bg text-[#3a2f22] text-sm focus:outline-none focus:ring-2 focus:ring-landing-gold" />
-          </div>
-          <button onClick={save} disabled={saving}
-            className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold disabled:opacity-60 flex items-center justify-center gap-2">
-            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-            {ar ? "حفظ" : "Save"}
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+  const field = (key) => (event) => setForm((value) => ({ ...value, [key]: event.target.value }));
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-w-md" dir={ar ? "rtl" : "ltr"}><DialogHeader><DialogTitle>{ar ? "إدارة الاشتراك" : "Manage subscription"} — {row.companyName}</DialogTitle></DialogHeader><div className="space-y-3"><label className="block text-xs text-muted-foreground">{ar ? "الباقة" : "Plan"}<select value={form.plan} onChange={field("plan")} className="mt-1 w-full rounded-xl border border-border bg-card p-3 text-sm">{["Starter", "Professional", "Enterprise", "Custom"].map((plan) => <option key={plan}>{plan}</option>)}</select></label>{form.plan === "Custom" && <label className="block text-xs text-muted-foreground">{ar ? "السعر الشهري المخصص ($)" : "Custom monthly price ($)"}<input type="number" min="0" value={form.customPrice} onChange={field("customPrice")} className="mt-1 w-full rounded-xl border border-border bg-card p-3 text-sm" /></label>}<div className="grid grid-cols-2 gap-3"><label className="text-xs text-muted-foreground">{ar ? "البداية" : "Start"}<input type="date" value={form.start} onChange={field("start")} className="mt-1 w-full rounded-xl border border-border bg-card p-3 text-sm" /></label><label className="text-xs text-muted-foreground">{ar ? "النهاية / التمديد" : "End / extend"}<input type="date" value={form.end} onChange={field("end")} className="mt-1 w-full rounded-xl border border-border bg-card p-3 text-sm" /></label></div><label className="block text-xs text-muted-foreground">{ar ? "سبب التغيير" : "Reason for change"}<textarea value={form.reason} onChange={field("reason")} className="mt-1 min-h-20 w-full rounded-xl border border-border bg-card p-3 text-sm" /></label><button onClick={save} disabled={saving} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary p-3 text-sm font-semibold text-primary-foreground disabled:opacity-60">{saving && <Loader2 className="h-4 w-4 animate-spin" />}{ar ? "حفظ التغييرات" : "Save changes"}</button></div></DialogContent></Dialog>;
 }

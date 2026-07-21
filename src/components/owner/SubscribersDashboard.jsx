@@ -31,6 +31,7 @@ export default function SubscribersDashboard({ ar }) {
     if (statusFilter === "active" && !(r.status === "active" || r.status === "trialing" || r.status === "manual_active")) return false;
     if (statusFilter === "problem" && !(r.status === "past_due" || r.status === "unpaid" || r.status === "canceled")) return false;
     if (statusFilter === "none" && r.status !== "no_subscription") return false;
+    if (statusFilter === "frozen" && !r.frozen) return false;
     const q = search.trim().toLowerCase();
     if (q && !(r.companyName || "").toLowerCase().includes(q) && !(r.email || "").toLowerCase().includes(q)) return false;
     return true;
@@ -40,7 +41,7 @@ export default function SubscribersDashboard({ ar }) {
     { label: ar ? "اشتراكات نشطة" : "Active subscriptions", value: summary.activeSubscriptions },
     { label: ar ? "تجريبي" : "Trialing", value: summary.trialing },
     { label: ar ? "متأخر الدفع" : "Past due", value: summary.pastDue, warn: summary.pastDue > 0 },
-    { label: ar ? "ينتهي خلال 14 يوم" : "Ending within 14 days", value: summary.endingSoon, warn: summary.endingSoon > 0 },
+    { label: ar ? "الاشتراكات المجمّدة" : "Frozen subscriptions", value: summary.frozen || 0, warn: summary.frozen > 0 },
   ] : [];
 
   return (
@@ -86,6 +87,7 @@ export default function SubscribersDashboard({ ar }) {
                 { key: "all", ar: "الكل", en: "All" },
                 { key: "active", ar: "نشط", en: "Active" },
                 { key: "problem", ar: "متعثر/ملغى", en: "Issues" },
+                { key: "frozen", ar: "مجمّد", en: "Frozen" },
                 { key: "none", ar: "بدون اشتراك", en: "No sub" },
               ].map((f) => (
                 <button

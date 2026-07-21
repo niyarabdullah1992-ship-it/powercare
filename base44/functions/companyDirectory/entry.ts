@@ -449,7 +449,7 @@ Deno.serve(async (req) => {
       return Response.json({
         kind: 'employee', token,
         employee: { companyId: rec.companyId, employeeId: rec.employeeId },
-        company: { companyId: rec.companyId, name: acc.name || '', plan: acc.plan || '', allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '', emailLanguage: acc.emailLanguage || 'en', subscriptionStart: acc.subscriptionStart || null, subscriptionEnd: acc.subscriptionEnd || null },
+        company: { companyId: rec.companyId, name: acc.name || '', plan: acc.plan || '', allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '', emailLanguage: acc.emailLanguage || 'en', subscriptionStart: acc.subscriptionStart || null, subscriptionEnd: acc.subscriptionEnd || null, frozen: acc.frozen === true, frozenAt: acc.frozenAt || null, frozenReason: acc.frozenReason || null },
       });
     }
 
@@ -459,7 +459,8 @@ Deno.serve(async (req) => {
     // instead of rendering a blank app from a stale session.
     if (action === 'accountExists') {
       const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
-      return Response.json({ exists: accounts.length > 0 });
+      const account = accounts[0];
+      return Response.json({ exists: !!account, frozen: account?.frozen === true, frozenAt: account?.frozenAt || null, frozenReason: account?.frozenReason || null });
     }
 
     /* ----- server-side authorization for all company-scoped actions ----- */
