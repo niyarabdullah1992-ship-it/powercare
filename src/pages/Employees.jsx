@@ -24,6 +24,8 @@ import PageHeader from "@/components/PageHeader";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import EmployeeGlobalSearch from "@/components/employees/EmployeeGlobalSearch";
+import AddStationControl from "@/components/employees/AddStationControl";
+import UnifiedStationManager from "@/components/employees/UnifiedStationManager";
 import { matchesEmployeeSearch } from "@/lib/employeeSearch";
 
 const ROLES = ["employee", "inventory_keeper", "safety_officer", "financial_officer", "station_manager", "pgm", "ops_manager", "director"];
@@ -42,7 +44,7 @@ const TASK_STATUS_DOT = {
 };
 
 export default function Employees() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { data, currentUser, company, switchUser } = useAuth();
   const [selectedStation, setSelectedStation] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -50,6 +52,8 @@ export default function Employees() {
   const [pgmStations, setPgmStations] = useState([]);
   const [editingTitle, setEditingTitle] = useState(null);
   const [titleInput, setTitleInput] = useState("");
+  const [editingName, setEditingName] = useState(null);
+  const [nameInput, setNameInput] = useState("");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [showTransfer, setShowTransfer] = useState(null);
@@ -120,7 +124,8 @@ export default function Employees() {
   if (!selectedStation) {
     return (
       <div className="space-y-6">
-        <PageHeader title={t("employees")} description={`${visibleEmployees(currentUser, data).length} ${t("employees").toLowerCase()}`} icon={Users} />
+        <PageHeader title={`${t("employees")} · ${t("stations")}`} description={`${visibleEmployees(currentUser, data).length} ${t("employees").toLowerCase()} · ${stations.length} ${t("stations").toLowerCase()}`} icon={Users} />
+        <AddStationControl company={company} data={data} canManage={canReorderStations} t={t} />
 
         <RolesGuide company={company} />
         <EmployeeGlobalSearch employees={visibleEmployees(currentUser, data)} stations={stations} company={company} t={t} />
@@ -204,7 +209,8 @@ export default function Employees() {
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm text-muted-foreground font-body">{team.length} {t("team").toLowerCase()}</p>
+                            <p className="text-sm text-muted-foreground font-body">{s.location || t("location")} · {s.type || t("customType")}</p>
+                            <p className="text-sm text-muted-foreground font-body">{team.length} {t("team").toLowerCase()} · {s.status}</p>
                             <div className="flex flex-wrap gap-1.5">
                               {ROLES.filter((r) => counts[r] > 0).map((r) => (
                                 <span key={r} className="px-2 py-0.5 rounded-full bg-muted text-[10px] font-body text-muted-foreground">
@@ -303,16 +309,20 @@ export default function Employees() {
     setTitleInput("");
   };
 
+  const saveEmployeeName = (id) => {
+    const value = nameInput.trim();
+    if (value) updateCompany(company.id, (draft) => { const employee = draft.employees.find((item) => item.id === id); if (employee) employee.name = value; });
+    setEditingName(null);
+    setNameInput("");
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <button onClick={() => setSelectedStation(null)} className="p-2 rounded-md hover:bg-muted">
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <div>
-          <h1 className="flex items-center gap-2 font-heading text-3xl font-semibold">{station?.name}</h1>
-          <p className="text-muted-foreground font-body text-sm">{t("team")}</p>
-        </div>
+        <UnifiedStationManager station={station} team={team} data={data} company={company} currentUser={currentUser} canManage={canReorderStations} t={t} lang={lang} />
       </div>
 
       {/* Filters */}
@@ -382,12 +392,17 @@ export default function Employees() {
                   <span className="absolute -bottom-1 -end-1 text-base leading-none w-5 h-5 flex items-center justify-center rounded-full bg-card border border-border" title={t(badgeFor(e.points || 0).key)}>{badgeFor(e.points || 0).icon}</span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  {editingTitle === e.id ? (
+                  {editingName === e.id ? (
                     <div className="flex items-center gap-1">
-                      <EmployeeNameLink employeeId={e.id} employeeName={e.name} className="block font-heading font-semibold truncate" />
+                      <input autoFocus value={nameInput} onChange={(event) => setNameInput(event.target.value)} className="min-w-0 rounded border border-input px-2 py-1 text-sm" />
+                      <button onClick={() => saveEmployeeName(e.id)} className="p-1 text-accent"><Check className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => setEditingName(null)} className="p-1 text-muted-foreground"><X className="h-3.5 w-3.5" /></button>
                     </div>
                   ) : (
-                    <p className="font-heading font-semibold truncate">{e.name}</p>
+                    <div className="flex items-center gap-1">
+                      <EmployeeNameLink employeeId={e.id} employeeName={e.name} className="min-w-0 truncate font-heading font-semibold" />
+                      {canManage && <button onClick={() => { setEditingName(e.id); setNameInput(e.name); }} className="p-1 text-muted-foreground"><Pencil className="h-3 w-3" /></button>}
+                    </div>
                   )}
                   {e.email && <p className="text-xs text-muted-foreground font-body truncate">{e.email}</p>}
 

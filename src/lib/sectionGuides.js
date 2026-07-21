@@ -54,12 +54,8 @@ const GUIDES = {
     en: ["File a complaint, suggestion or risk report — choose anonymous to fully protect your identity.", "Track management replies on this page.", "Not convinced? Escalate one level up the chain."],
   },
   "/app/employees": {
-    ar: ["أضف موظفًا بزر «إضافة موظف» وحدد درجته الوظيفية ومحطته.", "افتح ملف الموظف لتحديد كلمة مرور الدخول له من قسم «بيانات الدخول».", "اقرأ دليل «كيف تعمل الدرجات والصلاحيات» أسفل الصفحة لفهم الأدوار."],
-    en: ["Add an employee and set their grade and station.", "Open their profile to set a login password under Login Access.", "See the roles guide at the bottom to understand permissions."],
-  },
-  "/app/stations": {
-    ar: ["أضف محطة جديدة مع موقعها — اكتب اسم المدينة في البحث وستنتقل الخريطة إليها ثم اضغط النقطة الدقيقة.", "اسحب المحطات لإعادة ترتيبها، واضغط على محطة لعرض تحليلاتها.", "حدد نطاق المسافة المسموح لتسجيل الحضور حول كل محطة."],
-    en: ["Add a station with its location — search a city name, the map flies there, then tap the exact spot.", "Drag stations to reorder; tap one for its analytics.", "Set the allowed check-in radius around each station."],
+    ar: ["هذا القسم يجمع المحطات والموظفين؛ افتح محطة لإدارة بياناتها وفريقها في مكان واحد.", "أضف محطة وحدد موقعها ونطاق الحضور، ثم أضف الموظفين أو انقلهم إليها.", "يمكن تعديل اسم المحطة واسم الموظف مباشرة، مع بقاء التحليلات والمصروفات وإعدادات الموقع داخل المحطة."],
+    en: ["This section combines stations and employees; open a station to manage its details and team together.", "Add a station and set its location and attendance radius, then add or move employees into it.", "Rename stations and employees directly while retaining analytics, expenses and location settings."],
   },
   "/app/hr": {
     ar: ["ابنِ هرم الموارد البشرية: أضف مناصب وحدد نطاق كل منصب (محطة/مجموعة/شركة).", "أنشئ مجموعات (Clusters) لمشرفين يغطون عدة محطات.", "هذا الهرم هو نفسه سلسلة التصعيد للشكاوى والاعتراضات في كل التطبيق."],
