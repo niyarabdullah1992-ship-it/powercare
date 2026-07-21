@@ -181,7 +181,7 @@
 svg.lucide:not(.animate-spin) {
   filter: drop-shadow(0 0 4px hsl(var(--icon-halo) / .24));
   transform-origin: center;
-  animation: tech-icon-breathe 3.6s ease-in-out infinite;
+  animation: tech-icon-float 3.6s ease-in-out infinite;
 }
 svg.lucide:is(.lucide-cog, .lucide-settings):not(.animate-spin) {
   animation: tech-icon-rotate 8s linear infinite;
@@ -195,9 +195,9 @@ svg.lucide:is(.lucide-alert-triangle, .lucide-circle-alert, .lucide-bell):not(.a
 svg.lucide:is(.lucide-check, .lucide-check-circle, .lucide-circle-check, .lucide-shield-check):not(.animate-spin) {
   animation: tech-icon-confirm 2.8s ease-in-out infinite;
 }
-@keyframes tech-icon-breathe {
-  0%, 100% { filter: drop-shadow(0 0 2px hsl(var(--icon-halo) / .18)); }
-  50% { filter: drop-shadow(0 0 7px hsl(var(--icon-halo) / .48)); }
+@keyframes tech-icon-float {
+  0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 2px hsl(var(--icon-halo) / .18)); }
+  50% { transform: translateY(-3px); filter: drop-shadow(0 0 7px hsl(var(--icon-halo) / .48)); }
 }
 @keyframes tech-icon-rotate { to { transform: rotate(360deg); } }
 @keyframes tech-icon-signal {
