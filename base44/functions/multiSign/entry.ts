@@ -19,7 +19,7 @@ function toBase64Url(str) {
 //   in the verification registry and the creator is notified.
 
 const rid = () => crypto.randomUUID().replace(/-/g, '');
-const trustedDocumentHosts = new Set(['media.base44.com']);
+const trustedDocumentHosts = new Set(['media.base44.com', 'base44.app']);
 const isAllowedDocUrl = (value) => {
   try {
     const raw = String(value || '');
