@@ -27,6 +27,9 @@ export default function Expenses() {
     } finally { setLoading(false); }
   };
   useEffect(() => { load(); }, [session?.companyId, stationVersion]);
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("powercare:section-analytics", { detail: { path: "/app/expenses", data: state } }));
+  }, [state]);
   const run = async (action, payload) => { try { await expensesCall(session, action, payload); await load(); toast({ description: ar ? "تم حفظ العملية." : "Expense updated." }); return true; } catch (error) { toast({ description: error?.response?.data?.error || error.message, variant: "destructive" }); return false; } };
   const submit = async ({ receipt, ...payload }) => { try { const { file_url } = await base44.integrations.Core.UploadFile({ file: receipt }); return await run("submit", { ...payload, receiptUrl: file_url, stationId: currentUser?.stationId }); } catch (error) { toast({ description: error.message, variant: "destructive" }); return false; } };
 
