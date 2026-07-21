@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
-import { ShieldCheck, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, Download } from "lucide-react";
+import { ShieldCheck, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, BookOpen } from "lucide-react";
 import Logo from "@/components/Logo";
 import VideoIntro from "@/components/landing/VideoIntro";
 import StatsBand from "@/components/landing/StatsBand";
@@ -114,8 +114,8 @@ export default function Landing() {
             <h3 className="font-heading text-2xl text-[#3a2f22] mb-3">{t("appName")}</h3>
             <p className="text-sm text-[#3a2f22]/55 font-body leading-relaxed">{t("footerDescription")}</p>
             <Link to="/manual" className="mt-4 inline-flex items-center gap-2 rounded-full border border-landing-gold/40 px-4 py-2 text-sm font-body font-semibold text-landing-gold transition-colors hover:bg-landing-gold hover:text-white">
-              <Download className="h-3.5 w-3.5" />
-              {lang === "ar" ? "الدليل التشغيلي الشامل" : "Complete Operations Manual"}
+              <BookOpen className="h-3.5 w-3.5" />
+              {lang === "ar" ? "كتيب المستخدم" : "User Handbook"}
             </Link>
             <div className="flex items-center gap-4 mt-5 text-[#3a2f22]/60">
               <Facebook className="w-4 h-4" strokeWidth={1.75} />
