@@ -547,6 +547,31 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 }
 .holo-chart .recharts-surface { overflow: visible; }
 .holo-chart .recharts-tooltip-cursor { fill: hsl(var(--holo-cyan) / .08); }
+.holo-float-card {
+  will-change: transform;
+  animation: holo-card-float 5s ease-in-out infinite;
+}
+.holo-kpi:nth-child(2),
+.holo-chart:nth-child(2) { animation-delay: -1.65s; }
+.holo-kpi:nth-child(3) { animation-delay: -3.3s; }
+.holo-chart .recharts-bar-rectangle path,
+.holo-chart .recharts-area-curve {
+  filter: drop-shadow(0 0 7px hsl(var(--holo-green) / .85));
+}
+.holo-chart .recharts-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: holo-data-pulse 2.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px hsl(var(--holo-green) / .95));
+}
+@keyframes holo-card-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes holo-data-pulse {
+  0%, 100% { transform: scale(.9); opacity: .82; }
+  50% { transform: scale(1.22); opacity: 1; }
+}
 @media (max-width: 767px) {
   .luxury-analytics { padding-inline: 1rem; }
   .holo-kpi { min-height: 6rem; }
