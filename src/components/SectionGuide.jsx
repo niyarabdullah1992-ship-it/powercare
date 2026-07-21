@@ -13,8 +13,8 @@ export default function SectionGuide({ lang }) {
   if (!steps) return null;
 
   return <>
-    <button onClick={() => setOpen(true)} aria-label={ar ? "فتح دليل القسم" : "Open section guide"} className="fixed bottom-24 end-4 z-50 flex h-12 items-center gap-2 rounded-full border border-accent/30 bg-accent px-4 text-sm font-medium text-accent-foreground shadow-elevated md:bottom-6 md:end-6">
-      <BookOpen className="h-5 w-5" /><span className="hidden sm:inline">{ar ? "دليل القسم" : "Section guide"}</span>
+    <button onClick={() => setOpen(true)} aria-label={ar ? "فتح دليل القسم" : "Open section guide"} title={ar ? "دليل القسم" : "Section guide"} className="fixed bottom-24 end-4 z-50 flex h-10 w-10 items-center justify-center rounded-full border border-accent/30 bg-card text-accent shadow-soft hover:bg-accent hover:text-accent-foreground md:bottom-6 md:end-6">
+      <BookOpen className="h-4 w-4" />
     </button>
     {open && <div className="fixed inset-0 z-[70] bg-foreground/35" onClick={() => setOpen(false)}>
       <aside dir={ar ? "rtl" : "ltr"} className="absolute inset-y-0 end-0 flex w-full max-w-sm flex-col border-s border-border bg-card shadow-elevated" onClick={(event) => event.stopPropagation()}>
