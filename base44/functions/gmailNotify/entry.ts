@@ -58,8 +58,15 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { companyId, sessionToken, to, subject, text, details, cta } = body;
-    if (!companyId || !to || !subject || !text) {
+    const { companyId, sessionToken } = body;
+    const isProductFeedback = body.kind === 'product_feedback';
+    let to = String(body.to || '');
+    let subject = String(body.subject || '');
+    let text = String(body.text || '');
+    let details = body.details;
+    let cta = body.cta;
+    let feedbackRecord = null;
+    if (!companyId || (!isProductFeedback && (!to || !subject || !text))) {
       return Response.json({ error: 'Missing fields' }, { status: 400 });
     }
 
@@ -74,10 +81,31 @@ Deno.serve(async (req) => {
       }
     }
 
-    // The shared company mailbox may only send to employees registered in this company.
-    const employees = await base44.asServiceRole.entities.Employee.filter({ companyId });
-    const recipient = employees.find((employee) => String(employee.email || '').toLowerCase() === String(to).toLowerCase());
-    if (!recipient) return Response.json({ error: 'Recipient must be a company employee' }, { status: 403 });
+    if (isProductFeedback) {
+      const rating = Number(body.rating);
+      const message = String(body.message || '').trim().slice(0, 1000);
+      const page = String(body.page || '').slice(0, 300);
+      const role = String(body.role || '').slice(0, 80);
+      if (!Number.isInteger(rating) || rating < 1 || rating > 5 || !message) {
+        return Response.json({ error: 'A rating and suggestion are required' }, { status: 400 });
+      }
+      feedbackRecord = await base44.asServiceRole.entities.ProductFeedback.create({ companyId, role, rating, message, page });
+      to = 'niyar@powercares.pro';
+      subject = `PowerCare feedback — ${rating}/5`;
+      text = message;
+      details = [
+        { label: 'Rating', value: `${rating}/5` },
+        { label: 'Company', value: String(companyId) },
+        { label: 'Role', value: role || 'User' },
+        { label: 'Page', value: page || '—' },
+      ];
+      cta = null;
+    } else {
+      // The shared company mailbox may only send to employees registered in this company.
+      const employees = await base44.asServiceRole.entities.Employee.filter({ companyId });
+      const recipient = employees.find((employee) => String(employee.email || '').toLowerCase() === String(to).toLowerCase());
+      if (!recipient) return Response.json({ error: 'Recipient must be a company employee' }, { status: 403 });
+    }
 
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
     const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${accessToken}` } });
@@ -99,7 +127,7 @@ Deno.serve(async (req) => {
       console.error('Gmail send failed:', JSON.stringify(data));
       return Response.json({ error: data?.error?.message || 'Send failed' }, { status: res.status });
     }
-    return Response.json({ ok: true, id: data.id });
+    return Response.json({ ok: true, id: data.id, feedbackId: feedbackRecord?.id || null });
   } catch (error) {
     console.error('gmailNotify error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

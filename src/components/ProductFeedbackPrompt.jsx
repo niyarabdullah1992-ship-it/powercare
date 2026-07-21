@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { CheckCircle2, MessageSquare, Send, Star, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
+import { getCompanyToken } from "@/lib/store";
 
 export default function ProductFeedbackPrompt({ companyId, role }) {
   const { lang } = useI18n();
@@ -23,7 +24,7 @@ export default function ProductFeedbackPrompt({ companyId, role }) {
     if (!rating || !message.trim() || saving) return;
     setSaving(true); setError("");
     try {
-      await base44.entities.ProductFeedback.create({ companyId, role, rating, message: message.trim(), page: window.location.pathname });
+      await base44.functions.invoke("gmailNotify", { kind: "product_feedback", companyId, sessionToken: getCompanyToken(companyId), role, rating, message: message.trim(), page: window.location.pathname });
       setSent(true); setRating(0); setMessage("");
     } catch { setError(ar ? "تعذّر إرسال التقييم؛ حاول مرة أخرى." : "Couldn't send feedback; try again."); }
     finally { setSaving(false); }
