@@ -45,6 +45,10 @@ const GUIDES = {
     ar: ["أنشئ الأصناف واختر التتبع بالكميات أو برقم تسلسلي لكل قطعة.", "يطلب الموظف المادة أولًا، ثم يعتمد المشرف الطلب قبل الصرف.", "عند الصرف اختر الطلب المعتمد وامسح QR بالكاميرا؛ تُسجل الحركة تلقائيًا.", "استخدم سجل الحركة للاستلام والإرجاع والتحويل بين المحطات ومراقبة الحد الأدنى."],
     en: ["Create items and choose quantity or per-unit serial tracking.", "Employees request material first; supervisors approve before issue.", "For issue, select the approved request and scan its QR code; movement is recorded automatically.", "Use movements for receipts, returns and station transfers, and monitor minimum stock."],
   },
+  "/app/expenses": {
+    ar: ["أدخل نوع المصروف وبيانات الفاتورة قبل الضريبة والضريبة والكمية عند الحاجة.", "ارفع الإيصال كصورة أو PDF، ثم اختر المحطة أو المحطات المرتبطة بالمصروف.", "يراجع مدير النطاق الطلب أولًا، وبعد اعتماده تنتقل المطالبة للمراجعة المالية النهائية.", "تابع الحالة من سجل المصروفات واستخدم التصدير لإعداد التقرير."],
+    en: ["Enter the expense type, pre-tax invoice amount, tax and quantity when applicable.", "Upload the receipt as an image or PDF, then choose the related station or stations.", "The scope manager reviews first; approved claims then move to final finance review.", "Track status in the expense ledger and use export to prepare reports."],
+  },
   "/app/signing": {
     ar: ["احفظ توقيعك مرة واحدة (كتابة أو رسمًا) — يحصل على رقم تحقق مشفّر فريد.", "من «وقّع وأرسل» ارفع مستندًا وحدد مكان التوقيع وأرسله بالبريد لأي شخص.", "لتواقيع عدة أطراف استخدم «طلب تواقيع متعددة» — كل طرف يوقّع من رابط خاص به.", "تحقق من صحة أي مستند موقّع برقم التحقق من بطاقة «التحقق من مستند»."],
     en: ["Save your signature once (typed or drawn) — it gets a unique encrypted ID.", "Use Sign & Send: upload a document, place your signature, email it to anyone.", "For multiple parties use Multi-Sign — each signer gets their own link.", "Verify any signed document with its verification ID."],
@@ -82,13 +86,21 @@ const GUIDES = {
     en: ["Choose a station, then use overview, KPIs, risks, checklists and work permits.", "Record incidents, risks and corrective actions with dates and owners.", "Complete inspections and close open risks before safe approval; use archive and export for review."],
   },
   "/app/help": {
-    ar: ["تجد هنا شرحًا مرتبًا لجميع أقسام المنصة حسب تسلسل العمل.", "افتح الدليل التشغيلي الشامل للمزيد من التفاصيل أو للطباعة والحفظ PDF.", "يظهر أيضًا شريط شرح مختصر أعلى كل صفحة ويمكن فتحه عند الحاجة."],
-    en: ["Find an organized explanation of every platform section here.", "Open the complete operations manual for more detail or PDF printing.", "A short contextual guide is also available at the top of each page."],
+    ar: ["تجد هنا شرحًا مرتبًا لجميع أقسام المنصة حسب تسلسل العمل.", "افتح الدليل التشغيلي الشامل للمزيد من التفاصيل أو للطباعة والحفظ PDF.", "استخدم زر «دليل القسم» الجانبي في أي صفحة لفتح إرشاداتها المختصرة."],
+    en: ["Find an organized explanation of every platform section here.", "Open the complete operations manual for more detail or PDF printing.", "Use the side Section Guide button on any page for concise contextual instructions."],
+  },
+  "/app/manual": {
+    ar: ["اختر الفصل المطلوب من فهرس الدليل للوصول مباشرة إلى شرحه.", "استخدم البحث للعثور على وظيفة أو إجراء محدد داخل المنصة.", "يمكنك طباعة الدليل أو حفظه PDF للرجوع إليه دون اتصال."],
+    en: ["Choose a chapter from the manual contents to open its explanation.", "Use search to find a specific platform feature or procedure.", "Print the manual or save it as PDF for offline reference."],
   },
 };
 
 export function getGuide(pathname, lang) {
-  const route = pathname.startsWith("/app/employees/") ? "/app/employees" : pathname;
+  const route = pathname.startsWith("/app/employees/")
+    ? "/app/employees"
+    : pathname.startsWith("/app/stations/") && pathname.endsWith("/expenses")
+      ? "/app/expenses"
+      : pathname;
   const guide = GUIDES[route];
   if (!guide) return null;
   return lang === "ar" ? guide.ar : guide.en;
