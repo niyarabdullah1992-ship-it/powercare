@@ -54,7 +54,7 @@ export default function HRStructureManagement() {
       </div>
 
       <EscalationInfoBox t={t} />
-      <GradeEmployeeFilter data={data} currentUser={currentUser} ar={dir === "rtl"} />
+      <GradeEmployeeFilter data={data} currentUser={currentUser} />
 
       {canManage && (
         <div className="p-3.5 rounded-xl border border-accent/30 bg-accent/5">

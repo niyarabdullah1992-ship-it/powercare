@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { updateCompany } from "@/lib/store";
-import { SYSTEM_ROLES } from "@/lib/roles";
+import { SYSTEM_ROLES, getDefaultRoleLabel } from "@/lib/roles";
 import { Pencil, Check, X } from "lucide-react";
 
 export default function RoleLabelsEditor({ company }) {
@@ -28,15 +28,18 @@ export default function RoleLabelsEditor({ company }) {
 
   return (
     <div className="p-4 rounded-xl border border-border bg-card space-y-3">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("editRoleLabels")}</p>
+      <div>
+        <p className="text-sm font-medium">{t("editRoleLabels")}</p>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">{t("roleLabelsDescription")}</p>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {SYSTEM_ROLES.map((r) => (
           <div key={r}>
-            <label className="text-xs text-muted-foreground font-body block mb-1">{t(r)}</label>
+            <label className="text-xs text-muted-foreground font-body block mb-1">{getDefaultRoleLabel(r, t)}</label>
             <input
               value={labels[r]}
               onChange={(e) => setLabels({ ...labels, [r]: e.target.value })}
-              placeholder={t(r)}
+              placeholder={getDefaultRoleLabel(r, t)}
               className="w-full px-3 py-2 rounded-md border border-input text-sm font-body"
             />
           </div>

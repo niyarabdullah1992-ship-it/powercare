@@ -151,9 +151,9 @@ export default function Employees() {
                 </button>
               )}
               {currentUser.role === "director" && <RoleLabelsEditor company={company} />}
-              {canManageGrades && <button onClick={() => setShowGrades((value) => !value)} className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"><Settings2 className="h-3.5 w-3.5" />{lang === "ar" ? "إدارة المستويات الوظيفية" : "Manage Job Grades"}</button>}
+              {canManageGrades && <button onClick={() => setShowGrades((value) => !value)} className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"><Settings2 className="h-3.5 w-3.5" />{t("jobGradesManage")}</button>}
             </div>
-            {showGrades && canManageGrades && <div className="mt-3"><JobGradeManager companyId={company.id} data={data} ar={lang === "ar"} /></div>}
+            {showGrades && canManageGrades && <div className="mt-3"><JobGradeManager companyId={company.id} data={data} /></div>}
             {canTransfer && <div className="mt-3"><AuditLogPanel companyId={company.id} /></div>}
             {currentUser.role === "director" && (
               <div className="mt-3 pt-3 border-t border-border">
@@ -343,7 +343,7 @@ export default function Employees() {
           className="min-w-40"
           options={[{ value: "all", label: t("all") }, ...ROLES.map((role) => ({ value: role, label: getRoleLabel(company, role, t) }))]}
         />
-        <MobileSelect value={gradeFilter} onChange={setGradeFilter} placeholder={lang === "ar" ? "كل المستويات" : "All grades"} className="min-w-40" options={[{ value: "all", label: lang === "ar" ? "كل المستويات" : "All grades" }, ...grades.map((grade) => ({ value: grade.id, label: `${grade.gradeNumber} · ${grade.title}` }))]} />
+        <MobileSelect value={gradeFilter} onChange={setGradeFilter} placeholder={t("allGrades")} className="min-w-40" options={[{ value: "all", label: t("allGrades") }, ...grades.map((grade) => ({ value: grade.id, label: `${grade.gradeNumber} · ${grade.title}` }))]} />
         {canManage && (
           <button onClick={() => setShowAdd((o) => !o)} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">
             <Plus className="w-4 h-4" /> {t("addEmployee")}
@@ -372,8 +372,8 @@ export default function Employees() {
             placeholder={t("role")}
             options={allowedRoles.map((role) => ({ value: role, label: getRoleLabel(company, role, t) }))}
           />
-          {canAssignGrades && <MobileSelect value={form.gradeId} onChange={(gradeId) => setForm({ ...form, gradeId })} placeholder={lang === "ar" ? "المستوى الوظيفي" : "Job grade"} options={[{ value: "", label: "—" }, ...grades.map((grade) => ({ value: grade.id, label: `${grade.gradeNumber} · ${grade.title}` }))]} />}
-          {canAssignGrades && <input type="number" min="1" value={form.maxStations} onChange={(event) => setForm({ ...form, maxStations: event.target.value })} placeholder={lang === "ar" ? "الحد الأقصى للمحطات (∞)" : "Maximum stations (∞)"} className="rounded-md border border-input px-3 py-2 text-sm" />}
+          {canAssignGrades && <MobileSelect value={form.gradeId} onChange={(gradeId) => setForm({ ...form, gradeId })} placeholder={t("jobGrade")} options={[{ value: "", label: "—" }, ...grades.map((grade) => ({ value: grade.id, label: `${grade.gradeNumber} · ${grade.title}` }))]} />}
+          {canAssignGrades && <input type="number" min="1" value={form.maxStations} onChange={(event) => setForm({ ...form, maxStations: event.target.value })} placeholder={`${t("maxStations")} (∞)`} className="rounded-md border border-input px-3 py-2 text-sm" />}
           {form.role === "pgm" && (
             <div className="md:col-span-3 p-3 rounded-md border border-border bg-background space-y-2">
               <p className="text-xs text-muted-foreground font-body">{t("selectStation")}</p>
@@ -414,7 +414,7 @@ export default function Employees() {
                      </div>
                   )}
                   {e.email && <p className="text-xs text-muted-foreground font-body truncate">{e.email}</p>}
-                  <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground"><MapPinned className="h-3 w-3" />{station?.name || "—"} · {lang === "ar" ? "حد المحطات" : "Station limit"}: {e.profile?.maxStations || "∞"}</p>
+                  <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground"><MapPinned className="h-3 w-3" />{station?.name || "—"} · {t("stationLimit")}: {e.profile?.maxStations || "∞"}</p>
 
                   <div className="flex flex-wrap items-center gap-1.5 mt-2">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-secondary-foreground">
