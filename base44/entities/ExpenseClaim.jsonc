@@ -55,6 +55,13 @@
       "type": "number",
       "minimum": 0.01
     },
+    "itemCount": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
     "amount": {
       "type": "number",
       "minimum": 0.01
