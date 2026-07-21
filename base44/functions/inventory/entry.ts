@@ -97,7 +97,16 @@ Deno.serve(async (req) => {
       else { const value = next[index].quantity + delta; if (value < 0) throw new Error("Insufficient stock"); next[index].quantity = value; }
       return next;
     };
-    const movement = async (data) => await base44.asServiceRole.entities.StockMovement.create({ companyId: auth.companyId, performedBy: auth.userId || auth.name, notes: "", ...data });
+    const nextMovementNumber = async () => {
+      const year = new Intl.DateTimeFormat("en", { timeZone: "Asia/Riyadh", year: "numeric" }).format(new Date());
+      const recent = await base44.asServiceRole.entities.StockMovement.filter({ companyId: auth.companyId }, "-created_date", 500);
+      const highest = recent.reduce((max, entry) => {
+        const match = String(entry.movementNumber || "").match(new RegExp(`^MOV-${year}-(\\d{6})$`));
+        return match ? Math.max(max, Number(match[1])) : max;
+      }, 0);
+      return `MOV-${year}-${String(highest + 1).padStart(6, "0")}`;
+    };
+    const movement = async (data) => await base44.asServiceRole.entities.StockMovement.create({ companyId: auth.companyId, movementNumber: await nextMovementNumber(), performedBy: auth.userId || auth.name, notes: "", ...data });
     const allocateTraces = async (item, stationId, requestedQuantity, destinationId = null) => {
       const history = await base44.asServiceRole.entities.StockMovement.filter({ companyId: auth.companyId, itemId: item.id }, "created_date", 500);
       const traceStock = new Map();

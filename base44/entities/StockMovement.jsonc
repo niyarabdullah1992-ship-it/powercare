@@ -5,6 +5,10 @@
     "companyId": {
       "type": "string"
     },
+    "movementNumber": {
+      "type": "string",
+      "description": "Human-readable company movement number, for example MOV-2026-000001."
+    },
     "itemId": {
       "type": "string"
     },

@@ -4,6 +4,7 @@ import ImageGallery from "@/components/inventory/ImageGallery";
 import MovementBalancePanel from "@/components/inventory/MovementBalancePanel";
 import MovementTracePath from "@/components/inventory/MovementTracePath";
 import { useI18n } from "@/lib/i18n";
+import { movementNumber } from "@/lib/movementNumber";
 
 export default function MovementCard({ entry, itemName, stationName, personName, canReverse, onReverse, ar }) {
   const { t } = useI18n();
@@ -24,7 +25,7 @@ export default function MovementCard({ entry, itemName, stationName, personName,
 
   return <article id={`movement-${entry.id}`} className={`overflow-hidden rounded-xl border border-border bg-card shadow-soft ${reversed ? "opacity-60" : ""}`}>
     <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-4">
-      <div className="flex items-start gap-3"><span className="rounded-xl bg-accent/10 p-2 text-accent"><Icon className="h-5 w-5" /></span><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{itemName(entry.itemId)}</h3>{reversed && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{ar ? "مُعكَس" : "Reversed"}</span>}{reversal && <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent">{ar ? "تراجع" : "Reversal"}</span>}</div><p className="text-sm text-muted-foreground">{label} · {status}</p>{reversal && entry.reversalMovementId && <button type="button" onClick={() => document.getElementById(`movement-${entry.reversalMovementId}`)?.scrollIntoView({ behavior: "smooth", block: "center" })} className="mt-1 text-xs text-accent underline">{ar ? "عرض الحركة الأصلية" : "View original movement"}</button>}</div></div>
+      <div className="flex items-start gap-3"><span className="rounded-xl bg-accent/10 p-2 text-accent"><Icon className="h-5 w-5" /></span><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{itemName(entry.itemId)}</h3>{reversed && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{ar ? "مُعكَس" : "Reversed"}</span>}{reversal && <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent">{ar ? "تراجع" : "Reversal"}</span>}</div><p className="text-sm text-muted-foreground">{label} · {status}</p><p className="mt-1 font-mono text-xs font-semibold text-accent" dir="ltr">{movementNumber(entry)}</p>{reversal && entry.reversalMovementId && <button type="button" onClick={() => document.getElementById(`movement-${entry.reversalMovementId}`)?.scrollIntoView({ behavior: "smooth", block: "center" })} className="mt-1 text-xs text-accent underline">{ar ? "عرض الحركة الأصلية" : "View original movement"}</button>}</div></div>
       <div className="text-end"><span className="rounded-full bg-accent/10 px-3 py-1 text-sm font-semibold text-accent">{entry.quantity} {ar ? "وحدة" : "units"}</span><p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{new Date(entry.created_date).toLocaleString(ar ? "ar-SA" : "en")}</p></div>
     </div>
     <div className={`grid items-stretch gap-3 p-4 ${purchase ? "md:grid-cols-1" : "md:grid-cols-[1fr_auto_1fr]"}`}>
