@@ -177,6 +177,61 @@
   }
 }
 
+/* Cinematic technical symbols — a unified luminous layer across the platform. */
+.cinematic-tech-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  overflow: hidden;
+  pointer-events: none;
+  color: hsl(var(--icon-gold));
+  opacity: .34;
+  mix-blend-mode: multiply;
+}
+.dark .cinematic-tech-overlay { mix-blend-mode: screen; opacity: .3; }
+.tech-cinema-symbol {
+  position: absolute;
+  display: grid;
+  width: 5.5rem;
+  height: 5.5rem;
+  place-items: center;
+  border: 1px solid hsl(var(--icon-gold) / .42);
+  border-radius: 999px;
+  background: radial-gradient(circle, hsl(var(--icon-gold) / .14), transparent 66%);
+  box-shadow: 0 0 22px hsl(var(--icon-halo) / .18), inset 0 0 18px hsl(var(--icon-halo) / .1);
+  animation: tech-symbol-float 6s ease-in-out infinite;
+}
+.tech-cinema-symbol > svg { width: 2.35rem; height: 2.35rem; filter: drop-shadow(0 0 8px hsl(var(--icon-halo) / .55)); }
+.tech-cinema-orbit { position: absolute; inset: -.6rem; border: 1px dashed hsl(var(--icon-gold) / .3); border-radius: inherit; animation: tech-symbol-orbit 13s linear infinite; }
+.tech-cinema-orbit::after { content: ""; position: absolute; top: 48%; inset-inline-end: -.2rem; width: .42rem; height: .42rem; border-radius: 999px; background: hsl(var(--icon-gold)); box-shadow: 0 0 9px hsl(var(--icon-halo)); }
+.tech-symbol-check { top: 12%; inset-inline-start: 2.5%; }
+.tech-symbol-gear { top: 19%; inset-inline-end: 3%; animation-delay: -1.5s; }
+.tech-symbol-shield { bottom: 23%; inset-inline-start: 3.5%; animation-delay: -3s; }
+.tech-symbol-alert { bottom: 10%; inset-inline-end: 4%; animation-delay: -4.5s; }
+.tech-symbol-pulse { top: 52%; inset-inline-end: 12%; width: 4.5rem; height: 4.5rem; animation-delay: -2s; }
+.tech-cinema-scan { position: absolute; inset-inline: 8%; top: -5rem; height: 2px; color: hsl(var(--icon-gold)); background: linear-gradient(90deg, transparent, currentColor, transparent); box-shadow: 0 0 18px currentColor; animation: tech-cinema-sweep 9s linear infinite; }
+.tech-cinema-scan svg { position: absolute; inset-inline-end: 15%; top: -1rem; width: 2rem; height: 2rem; }
+.tech-cinema-line { position: absolute; width: 18rem; height: 7rem; border-color: hsl(var(--icon-gold) / .32); }
+.tech-cinema-line-a { top: 31%; inset-inline-start: -3rem; border-top: 1px solid; border-inline-end: 1px solid; transform: skewX(-28deg); }
+.tech-cinema-line-b { bottom: 29%; inset-inline-end: -3rem; border-bottom: 1px solid; border-inline-start: 1px solid; transform: skewX(28deg); }
+@keyframes tech-symbol-orbit { to { transform: rotate(360deg); } }
+@keyframes tech-symbol-float { 0%,100% { transform: translateY(0) scale(.96); opacity: .62; } 50% { transform: translateY(-10px) scale(1.04); opacity: 1; } }
+@keyframes tech-cinema-sweep { from { transform: translateY(-5rem); opacity: 0; } 12%,88% { opacity: .75; } to { transform: translateY(calc(100vh + 10rem)); opacity: 0; } }
+@media (max-width: 767px) {
+  .cinematic-tech-overlay { opacity: .2; }
+  .tech-symbol-gear, .tech-symbol-shield, .tech-symbol-pulse, .tech-cinema-line { display: none; }
+  .tech-cinema-symbol { width: 4rem; height: 4rem; }
+  .tech-cinema-symbol > svg { width: 1.7rem; height: 1.7rem; }
+}
+
+/* Give every interface icon the warm luminous engineering finish from the reference. */
+svg.lucide { filter: drop-shadow(0 0 4px hsl(var(--icon-halo) / .2)); }
+:is(.powercare-shell, .powercare-public) :is(.rounded-full, .rounded-xl, .rounded-2xl):has(> svg.lucide) {
+  border-color: hsl(var(--icon-gold) / .3);
+  background-image: radial-gradient(circle at 50% 35%, hsl(var(--icon-gold) / .14), transparent 72%);
+  box-shadow: 0 0 18px hsl(var(--icon-halo) / .09), inset 0 0 12px hsl(var(--icon-halo) / .06);
+}
+
 /* Respect reduced-motion preferences across the public site and app. */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
