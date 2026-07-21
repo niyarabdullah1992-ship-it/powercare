@@ -45,7 +45,7 @@ async function authSession(base44, companyId, sessionToken) {
   if (session.userId) {
     const employees = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: session.userId });
     const employee = employees[0];
-    return employee ? { userId: employee.employeeId, name: employee.name, email: String(employee.email || '').toLowerCase() } : null;
+    return employee ? { userId: employee.employeeId, name: employee.name, email: String(employee.email || '').toLowerCase(), role: employee.role, stationId: employee.stationId || null, hrLevelId: employee.hrLevelId || null } : null;
   }
   const [accounts, metaRows] = await Promise.all([
     base44.asServiceRole.entities.CompanyAccount.filter({ companyId }),
@@ -56,10 +56,11 @@ async function authSession(base44, companyId, sessionToken) {
   const ownerId = metaRows[0]?.payload?.[0]?.ownerId || null;
   const owners = ownerId ? await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: ownerId }) : [];
   const owner = owners[0];
-  return { owner: true, userId: ownerId, name: owner?.name || 'Owner', email: String(account.ownerEmail || '').toLowerCase() };
+  return { owner: true, userId: ownerId, name: owner?.name || 'Owner', email: String(account.ownerEmail || '').toLowerCase(), role: 'owner', stationId: null };
 }
 
 const escapeHtml = (value) => String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+const cleanLocation = (value) => value?.available === true && Number.isFinite(Number(value.lat)) && Number.isFinite(Number(value.lng)) ? { lat: Number(value.lat), lng: Number(value.lng), accuracy: Math.max(0, Number(value.accuracy) || 0) } : { available: false };
 
 function signatureRequestEmail({ ar, signerName, creatorName, fileName, link }) {
   const direction = ar ? 'rtl' : 'ltr';
@@ -192,6 +193,8 @@ Deno.serve(async (req) => {
       const { companyId, sessionToken } = body;
       const actor = await authSession(base44, companyId, sessionToken);
       if (!actor) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      const creatorRoles = new Set(['owner', 'director', 'ops_manager', 'pgm', 'station_manager']);
+      if (!actor.admin && !creatorRoles.has(actor.role) && !actor.hrLevelId) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const signersIn = Array.isArray(body.signers) ? body.signers.slice(0, 100) : [];
       const signers = signersIn
         .map((s) => ({
@@ -200,8 +203,13 @@ Deno.serve(async (req) => {
           email: String(s.email || '').toLowerCase().trim().slice(0, 160),
           status: 'pending',
           signedAt: null,
+          rejectedAt: null,
+          employeeId: String(s.employeeId || '').slice(0, 64) || null,
+          role: String(s.role || '').slice(0, 80),
+          stationId: String(s.stationId || '').slice(0, 64) || null,
+          signatureUrl: isAllowedDocUrl(s.signatureUrl) ? String(s.signatureUrl).slice(0, 2000) : '',
           // Creator-assigned fields: one signature plus optional text fields.
-          spots: (Array.isArray(s.spots) ? s.spots : s.spot ? [{ ...s.spot, type: 'signature' }] : []).slice(0, 30).map((field, fieldIndex) => ({
+          spots: (Array.isArray(s.spots) && s.spots.length ? s.spots : s.spot ? [{ ...s.spot, type: 'signature' }] : [{ id: 'auto-signature', type: 'signature', page: 1, x: 75, y: 88, scale: 100 }]).slice(0, 30).map((field, fieldIndex) => ({
             id: String(field.id || `field-${fieldIndex}`).slice(0, 80),
             type: field.type === 'text' ? 'text' : 'signature',
             label: String(field.label || '').slice(0, 60),
@@ -229,8 +237,15 @@ Deno.serve(async (req) => {
         verificationId: String(body.verificationId || '').slice(0, 40),
         finalHash: null,
         status: 'pending',
+        signingMode: 'sequential',
+        currentSignerIndex: 0,
+        stationId: actor.stationId || null,
+        appUrl: 'https://powercares.pro',
         expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
+        lastActivityAt: new Date().toISOString(),
+        rejectionReason: null,
         signers,
+        auditTrail: [{ type: 'created', at: new Date().toISOString(), actorId: actor.userId || null, actorName: actor.name, actorRole: actor.role || 'admin', location: { available: false } }],
       });
       // Email each signer their personal signing link. The link host is never
       // trusted from the client — only known app domains are allowed, otherwise
@@ -245,24 +260,12 @@ Deno.serve(async (req) => {
       };
       const appUrl = resolveAppUrl(body.appUrl);
       const ar = body.lang === 'ar';
-      const links = {};
+      const links = Object.fromEntries(signers.map((s) => [s.email, `${appUrl}/sign?token=${rec.id}.${s.token}`]));
       const emailFailed = [];
-      for (const s of signers) {
-        const link = `${appUrl}/sign?token=${rec.id}.${s.token}`;
-        links[s.email] = link;
-        if (appUrl) {
-          const ok = await sendMail(
-            base44,
-            s.email,
-            ar ? `طلب توقيع: ${rec.fileName}` : `Signature request: ${rec.fileName}`,
-            ar
-              ? `مرحبًا ${s.name}،\n\nطلب منك ${rec.creatorName} التوقيع على المستند "${rec.fileName}".\n\nللتوقيع افتح الرابط التالي:\n${link}\n\n— PowerCare`
-              : `Hello ${s.name},\n\n${rec.creatorName} asked you to sign the document "${rec.fileName}".\n\nOpen this link to sign:\n${link}\n\n— PowerCare`,
-            signatureRequestEmail({ ar, signerName: s.name, creatorName: rec.creatorName, fileName: rec.fileName, link })
-          );
-          if (!ok) emailFailed.push(s.email);
-        }
-      }
+      const first = signers[0];
+      const firstLink = links[first.email];
+      const ok = await sendMail(base44, first.email, ar ? `طلب توقيع: ${rec.fileName}` : `Signature request: ${rec.fileName}`, ar ? `مرحبًا ${first.name}،\n\nحان دورك لتوقيع المستند "${rec.fileName}".\n${firstLink}` : `Hello ${first.name},\n\nIt is your turn to sign "${rec.fileName}".\n${firstLink}`, signatureRequestEmail({ ar, signerName: first.name, creatorName: rec.creatorName, fileName: rec.fileName, link: firstLink }));
+      if (!ok) emailFailed.push(first.email);
       return Response.json({ ok: true, requestId: rec.id, links, emailFailed });
     }
 
@@ -283,11 +286,16 @@ Deno.serve(async (req) => {
             creatorName: r.creatorName,
             status: r.status,
             createdAt: r.created_date,
+            lastActivityAt: r.lastActivityAt || r.updated_date,
             docUrl: r.docUrl,
+            stationId: r.stationId || null,
+            currentSignerIndex: r.currentSignerIndex || 0,
+            rejectionReason: r.rejectionReason || null,
+            auditTrail: r.auditTrail || [],
             isCreator: r.creatorId === userId || (!!email && r.creatorEmail === email),
             myStatus: mySigner ? mySigner.status : null,
             myToken: mySigner ? `${r.id}.${mySigner.token}` : null,
-            signers: (r.signers || []).map((s) => ({ name: s.name, email: s.email, status: s.status, signedAt: s.signedAt })),
+            signers: (r.signers || []).map((s) => ({ name: s.name, email: s.email, role: s.role || '', stationId: s.stationId || null, status: s.status, signedAt: s.signedAt, rejectedAt: s.rejectedAt || null })),
           };
         });
       return Response.json({ requests: mine });
@@ -337,13 +345,41 @@ Deno.serve(async (req) => {
         expiresAt: rec.expiresAt,
         verificationId: rec.verificationId,
         finalHash: rec.finalHash || null,
-        signer: { name: signer.name, email: signer.email, status: signer.status, spot: signer.spot || null, spots: signer.spots || (signer.spot ? [{ ...signer.spot, id: 'signature', type: 'signature', label: '' }] : []) },
+        signer: { name: signer.name, email: signer.email, status: signer.status, employeeId: signer.employeeId || null, role: signer.role || '', stationId: signer.stationId || null, signatureUrl: signer.signatureUrl || '', spot: signer.spot || null, spots: signer.spots || (signer.spot ? [{ ...signer.spot, id: 'signature', type: 'signature', label: '' }] : []) },
+        rejectionReason: rec.rejectionReason || null,
         signedCount: (rec.signers || []).filter((s) => s.status === 'signed').length,
         totalCount: (rec.signers || []).length,
-        canSign: signer.status === 'signed' || pending[0]?.token === signer.token,
+        canSign: rec.status === 'pending' && (signer.status === 'signed' || pending[0]?.token === signer.token),
         isLast: signer.status === 'pending' && pending.length === 1,
         signerNames: (rec.signers || []).map((s) => s.name).join(', '),
       });
+    }
+
+    if (action === 'reject') {
+      const found = await resolveToken(body.token);
+      if (!found) return Response.json({ error: 'Invalid or expired signing link' }, { status: 404 });
+      const { rec, signer, expired } = found;
+      if (expired) return Response.json({ error: 'Invalid or expired signing link' }, { status: 404 });
+      const pending = (rec.signers || []).filter((item) => item.status === 'pending');
+      if (rec.status !== 'pending' || signer.status !== 'pending') return Response.json({ error: 'REQUEST_CLOSED' }, { status: 409 });
+      if (pending[0]?.token !== signer.token) return Response.json({ error: 'WAIT_FOR_TURN' }, { status: 409 });
+      const reason = String(body.reason || '').trim().slice(0, 1000);
+      if (!reason) return Response.json({ error: 'Rejection reason is required' }, { status: 400 });
+      const rejectedAt = new Date().toISOString();
+      const location = cleanLocation(body.location);
+      const signers = (rec.signers || []).map((item) => item.token === signer.token ? { ...item, status: 'rejected', rejectedAt, rejectionReason: reason, location } : item);
+      await Docs.update(rec.id, {
+        signers,
+        status: 'rejected',
+        rejectionReason: reason,
+        lastActivityAt: rejectedAt,
+        auditTrail: [...(rec.auditTrail || []), { type: 'rejected', at: rejectedAt, actorId: signer.employeeId || null, actorName: signer.name, actorRole: signer.role || 'signer', location, reason }],
+      });
+      if (rec.creatorEmail) {
+        const ar = body.lang === 'ar';
+        await sendMail(base44, rec.creatorEmail, ar ? `رُفض المستند: ${rec.fileName}` : `Document rejected: ${rec.fileName}`, ar ? `رفض ${signer.name} المستند.\n\nالسبب: ${reason}` : `${signer.name} rejected the document.\n\nReason: ${reason}`);
+      }
+      return Response.json({ ok: true, reason });
     }
 
     if (action === 'submitSignature') {
@@ -356,7 +392,7 @@ Deno.serve(async (req) => {
       if (pending[0]?.token !== signer.token) return Response.json({ error: 'WAIT_FOR_TURN' }, { status: 409 });
       const completingNow = pending.length === 1;
       const fileHash = String(body.fileHash || '').toLowerCase().slice(0, 64);
-      if (completingNow && !/^[0-9a-f]{64}$/.test(fileHash)) return Response.json({ error: 'Final file fingerprint is required' }, { status: 400 });
+      if (!/^[0-9a-f]{64}$/.test(fileHash)) return Response.json({ error: 'Signed version fingerprint is required' }, { status: 400 });
       const newDocUrl = String(body.newDocUrl || '').slice(0, 2000);
       if (!isAllowedDocUrl(newDocUrl)) return Response.json({ error: 'A valid signed document URL is required' }, { status: 400 });
       const submittedValues = body.textValues && typeof body.textValues === 'object' ? body.textValues : {};
@@ -364,8 +400,10 @@ Deno.serve(async (req) => {
       const fieldValues = Object.fromEntries(textFields.map((field) => [field.id, String(submittedValues[field.id] || '').trim().slice(0, 1000)]));
       if (textFields.some((field) => !fieldValues[field.id])) return Response.json({ error: 'All text fields are required' }, { status: 400 });
 
+      const signedAt = new Date().toISOString();
+      const location = cleanLocation(body.location);
       const signers = (rec.signers || []).map((s) =>
-        s.token === signer.token ? { ...s, status: 'signed', signedAt: new Date().toISOString(), fieldValues } : s
+        s.token === signer.token ? { ...s, status: 'signed', signedAt, fieldValues, documentHash: fileHash, location } : s
       );
       const completed = signers.every((s) => s.status === 'signed');
       let registryRecord = null;
@@ -389,10 +427,20 @@ Deno.serve(async (req) => {
           docUrl: newDocUrl,
           status: completed ? 'completed' : 'pending',
           finalHash: completed ? fileHash : rec.finalHash,
-        });
+          currentSignerIndex: completed ? signers.length : signers.findIndex((item) => item.status === 'pending'),
+          lastActivityAt: signedAt,
+          auditTrail: [...(rec.auditTrail || []), { type: 'signed', at: signedAt, actorId: signer.employeeId || null, actorName: signer.name, actorRole: signer.role || 'signer', location, documentHash: fileHash }],
+          });
       } catch (error) {
         if (registryRecord) await base44.asServiceRole.entities.SignedDocument.delete(registryRecord.id).catch(() => {});
         throw error;
+      }
+
+      if (!completed) {
+        const nextSigner = signers.find((item) => item.status === 'pending');
+        const nextLink = `${rec.appUrl || 'https://powercares.pro'}/sign?token=${rec.id}.${nextSigner.token}`;
+        const ar = body.lang === 'ar';
+        await sendMail(base44, nextSigner.email, ar ? `حان دورك للتوقيع: ${rec.fileName}` : `Your turn to sign: ${rec.fileName}`, ar ? `مرحبًا ${nextSigner.name}،\n\nاكتمل توقيع الطرف السابق وحان دورك الآن.\n${nextLink}` : `Hello ${nextSigner.name},\n\nThe previous signer has completed their step. It is now your turn.\n${nextLink}`, signatureRequestEmail({ ar, signerName: nextSigner.name, creatorName: rec.creatorName, fileName: rec.fileName, link: nextLink }));
       }
 
       if (completed && rec.creatorEmail) {

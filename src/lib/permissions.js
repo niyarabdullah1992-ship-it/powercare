@@ -64,6 +64,13 @@ export function canCreateTasks(user) {
   return ["director", "ops_manager", "pgm", "station_manager"].includes(user.role);
 }
 
+export function canCreateSignatureRequests(user, data) {
+  if (!user) return false;
+  return user.id === data?.ownerId
+    || ["director", "ops_manager", "pgm", "station_manager"].includes(user.role)
+    || hasHRPermission(user, data, "manage_employees");
+}
+
 // Can the user transfer director role / ownership?
 export function canTransferOwnership(user) {
   return user.role === "director";

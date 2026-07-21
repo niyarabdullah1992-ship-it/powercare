@@ -26,6 +26,7 @@ import { isActiveAttendance, isScheduledToday } from "@/lib/attendance";
 import { isOnLeaveToday } from "@/lib/leaveTypes";
 import useProactiveAlerts from "@/hooks/useProactiveAlerts";
 import OperationalAlerts from "@/components/dashboard/OperationalAlerts";
+import SigningStatusPanel from "@/components/dashboard/SigningStatusPanel";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -106,6 +107,7 @@ export default function Dashboard() {
       <div className="field-dashboard space-y-5">
         {welcomeHero}
         <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
+        <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
         <EmployeeDashboard user={currentUser} company={company} data={data} />
       </div>
     </PullToRefresh>
@@ -118,6 +120,7 @@ export default function Dashboard() {
         <div className="ops-command-dashboard space-y-6">
           {welcomeHero}
           <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
+          <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
           <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
         </div>
       </PullToRefresh>
@@ -210,6 +213,7 @@ export default function Dashboard() {
     <div className="ops-command-dashboard space-y-6">
       <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
       <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
+      <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
       <OnboardingChecklist data={data} lang={lang} t={t} />
       {canEditBranding && (
         <div className="flex justify-end">

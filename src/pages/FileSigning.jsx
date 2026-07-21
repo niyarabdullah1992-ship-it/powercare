@@ -10,6 +10,7 @@ import MySignatureCard from "@/components/files/MySignatureCard";
 import MultiSignCard from "@/components/files/MultiSignCard";
 import MultiSignInbox from "@/components/files/MultiSignInbox";
 import VerifyDocumentCard from "@/components/files/VerifyDocumentCard";
+import { canCreateSignatureRequests, visibleEmployees } from "@/lib/permissions";
 
 export default function FileSigning() {
   const { lang } = useI18n();
@@ -31,9 +32,11 @@ export default function FileSigning() {
 
   if (!currentUser || !company) return null;
 
+  const canCreate = canCreateSignatureRequests(currentUser, data);
+  const scopedEmployees = visibleEmployees(currentUser, data || { stations: [], employees: [] });
   const tabs = [
     { value: "signature", label: ar ? "توقيعي" : "My signature", icon: PenLine },
-    { value: "send", label: ar ? "إرسال للتوقيع" : "Send for signing", icon: Send },
+    ...(canCreate ? [{ value: "send", label: ar ? "إرسال للتوقيع" : "Send for signing", icon: Send }] : []),
     { value: "inbox", label: ar ? "صندوق التوقيع" : "Signing inbox", icon: Inbox, count: pendingCount },
     { value: "verify", label: ar ? "التحقق من مستند" : "Verify document", icon: ShieldCheck },
   ];
@@ -49,7 +52,7 @@ export default function FileSigning() {
           {tabs.map(({ value, label, icon: Icon, count }) => <TabsTrigger key={value} value={value} className="min-w-max gap-2 rounded-lg px-4 py-2.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"><Icon className="h-4 w-4" />{label}{count > 0 && <Badge className="h-5 min-w-5 justify-center rounded-full bg-accent px-1.5 text-accent-foreground">{count}</Badge>}</TabsTrigger>)}
         </TabsList>
         <TabsContent value="signature" className="mt-5"><MySignatureCard companyId={company.id} currentUser={currentUser} ar={ar} /></TabsContent>
-        <TabsContent value="send" className="mt-5"><MultiSignCard currentUser={currentUser} companyId={company.id} employees={data?.employees || []} ar={ar} onCreated={() => setMultiRefresh((n) => n + 1)} /></TabsContent>
+        {canCreate && <TabsContent value="send" className="mt-5"><MultiSignCard currentUser={currentUser} companyId={company.id} employees={scopedEmployees} ar={ar} onCreated={() => setMultiRefresh((n) => n + 1)} /></TabsContent>}
         <TabsContent value="inbox" className="mt-5"><MultiSignInbox currentUser={currentUser} companyId={company.id} ar={ar} refreshKey={multiRefresh} onPendingChange={setPendingCount} /></TabsContent>
         <TabsContent value="verify" className="mt-5"><VerifyDocumentCard ar={ar} /></TabsContent>
       </Tabs>

@@ -5,6 +5,15 @@ import { loadBadgeQr } from "@/lib/verificationBadge";
 import { sha256HexOfBuffer } from "@/lib/fileHash";
 import { clampStampScale } from "@/lib/signatureStampGeometry";
 
+const captureLocation = () => new Promise((resolve) => {
+  if (!navigator.geolocation) return resolve({ available: false });
+  navigator.geolocation.getCurrentPosition(
+    ({ coords }) => resolve({ available: true, lat: coords.latitude, lng: coords.longitude, accuracy: coords.accuracy }),
+    () => resolve({ available: false }),
+    { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
+  );
+});
+
 export default function usePublicSigning() {
   const token = new URLSearchParams(window.location.search).get("token") || "";
   const ar = (navigator.language || "").startsWith("ar");
@@ -42,6 +51,7 @@ export default function usePublicSigning() {
     if (textFields.some((field) => !String(textValues[field.id] || "").trim())) { setError(ar ? "يرجى تعبئة جميع حقول النص قبل الإرسال." : "Complete every text field before submitting."); return; }
     setError(""); setSigning(true);
     try {
+      const locationPromise = captureLocation();
       setStage(ar ? "جارٍ تجهيز أحدث نسخة…" : "Fetching the latest version…");
       const fresh = (await base44.functions.invoke("multiSign", { action: "getByToken", token })).data;
       if (fresh.expiresAt && new Date(fresh.expiresAt).getTime() <= Date.now()) throw new Error(ar ? "انتهت صلاحية طلب التوقيع." : "This signature request has expired.");
@@ -58,13 +68,24 @@ export default function usePublicSigning() {
       const signatureField = fields.find((field) => field.type === "signature") || fresh.signer.spot;
       const stamped = await stampOnPdf(fresh.docUrl, stamp, fresh.signedCount, badge, signatureField, (signatureField?.scale || 100) / 100, true, fields, textValues);
       setStage(ar ? "جارٍ حفظ الحقول والتوقيع…" : "Saving fields and signature…");
-      const fileHash = fresh.isLast ? await sha256HexOfBuffer(stamped.bytes) : "";
-      const response = await base44.functions.invoke("multiSign", { action: "submitSignature", token, newDocUrl: stamped.url, fileHash, textValues, lang: ar ? "ar" : "en" });
+      const fileHash = await sha256HexOfBuffer(stamped.bytes);
+      const location = await locationPromise;
+      const response = await base44.functions.invoke("multiSign", { action: "submitSignature", token, newDocUrl: stamped.url, fileHash, textValues, location, lang: ar ? "ar" : "en" });
       setDone({ completed: response.data.completed, docUrl: stamped.url, finalHash: response.data.finalHash || fileHash });
     } catch (err) {
       setError((ar ? "تعذّر التوقيع — " : "Couldn't sign — ") + (err?.response?.data?.error || err.message));
     } finally { setSigning(false); setStage(""); }
   };
 
-  return { ar, info, failure, loading, signing, stage, done, error, mode, setMode, sigSize, setSigSize, chosenSpot, setChosenSpot, stampPreview, setStampPreview, textValues, setTextValue, sign, reload: load };
+  const reject = async (reason) => {
+    setError(""); setSigning(true);
+    try {
+      const location = await captureLocation();
+      const response = await base44.functions.invoke("multiSign", { action: "reject", token, reason, location, lang: ar ? "ar" : "en" });
+      setDone({ rejected: true, reason: response.data.reason });
+    } catch (err) { setError((ar ? "تعذّر الرفض — " : "Couldn't reject — ") + (err?.response?.data?.error || err.message)); }
+    finally { setSigning(false); }
+  };
+
+  return { ar, info, failure, loading, signing, stage, done, error, mode, setMode, sigSize, setSigSize, chosenSpot, setChosenSpot, stampPreview, setStampPreview, textValues, setTextValue, sign, reject, reload: load };
 }
