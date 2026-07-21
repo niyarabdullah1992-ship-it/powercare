@@ -17,12 +17,8 @@ import * as pt from "@/lib/siteManualContent.pt";
 import * as ru from "@/lib/siteManualContent.ru";
 import * as ja from "@/lib/siteManualContent.ja";
 import * as ko from "@/lib/siteManualContent.ko";
-import * as ur from "@/lib/siteManualContent.ur";
-import * as hi from "@/lib/siteManualContent.hi";
-import * as bn from "@/lib/siteManualContent.bn";
-import * as tr from "@/lib/siteManualContent.tr";
 
-const CONTENT = { en, ar, de, fr, es, pt, ru, ja, ko, ur, hi, bn, tr };
+const CONTENT = { en, ar, de, fr, es, pt, ru, ja, ko };
 const MANUAL_LANGUAGES = [
   { code: "en", label: "English", flag: "🇬🇧" },
   { code: "ar", label: "العربية", flag: "🇸🇦" },
@@ -33,10 +29,6 @@ const MANUAL_LANGUAGES = [
   { code: "ru", label: "Русский", flag: "🇷🇺" },
   { code: "ja", label: "日本語", flag: "🇯🇵" },
   { code: "ko", label: "한국어", flag: "🇰🇷" },
-  { code: "ur", label: "اردو", flag: "🇵🇰" },
-  { code: "hi", label: "हिन्दी", flag: "🇮🇳" },
-  { code: "bn", label: "বাংলা", flag: "🇧🇩" },
-  { code: "tr", label: "Türkçe", flag: "🇹🇷" },
 ];
 const ROUTES = Object.fromEntries(MANUAL_SECTIONS);
 
