@@ -138,7 +138,11 @@ export default function Employees() {
         <EmployeeGlobalSearch employees={visibleEmployees(currentUser, data)} stations={stations} company={company} t={t} />
 
         {(canTransfer || currentUser.role === "director") && (
-          <div className="p-4 rounded-xl border border-border bg-card">
+          <details className="rounded-xl border border-border bg-card">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium hover:bg-muted/50">
+              <Settings2 className="h-4 w-4 text-accent" />{t("settings")}
+            </summary>
+            <div className="space-y-3 border-t border-border p-4">
             <div className="flex flex-wrap gap-2">
               {currentUser.role === "director" && (
                 <button onClick={() => setShowTransfer("director")} className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
@@ -182,7 +186,8 @@ export default function Employees() {
                 <p className="text-[11px] text-muted-foreground font-body mt-1">{t("allowedEmailDomainNote")}</p>
               </div>
             )}
-          </div>
+            </div>
+          </details>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -431,35 +436,22 @@ export default function Employees() {
 
             <EmployeePerformance targets={targets.filter((tg) => tg.assignment_type === "member" && tg.employee_id === e.id)} />
 
-            <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border flex-wrap">
-              {canTransfer && e.id !== currentUser.id && <div className="w-48"><MobileSelect value={e.role} onChange={(role) => changeEmployeeRole(e.id, role)} placeholder={t("role")} className="h-7 px-2 py-1 text-xs" options={ROLES.map((role) => ({ value: role, label: getRoleLabel(company, role, t) }))} /></div>}
-              {canManage && e.role !== "pgm" && (
-                <div className="w-40">
-                  <StationCombobox
-                    t={t}
-                    value={e.stationId || defaultStationId}
-                    onChange={(val) => moveEmployee(e.id, val)}
-                    placeholder={t("moveStation")}
-                    className="h-7 px-2 py-1 text-xs"
-                    options={data.stations.map((s) => ({ value: s.id, label: s.name }))}
-                  />
-                </div>
-              )}
-              <Link to={`/app/employees/${e.id}`} className="flex items-center gap-1.5 text-xs text-accent font-body hover:underline">
-                <UserCircle className="w-3.5 h-3.5" /> {t("viewProfile")}
+            <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
+              <Link to={`/app/employees/${e.id}`} className="flex items-center gap-1.5 text-xs text-accent hover:underline">
+                <UserCircle className="h-3.5 w-3.5" />{t("viewProfile")}
               </Link>
-              {canTransfer && e.id !== currentUser.id && (
-                <button onClick={() => switchUser(e.id)} className="text-xs text-accent font-body hover:underline">{t("switchUser")}</button>
-              )}
-              {canDeleteAccounts && e.id !== currentUser.id && e.id !== data.ownerId && (
-                <ConfirmDeleteDialog
-                  onConfirm={() => removeEmployee(e.id)}
-                  trigger={
-                    <button className="p-1.5 text-destructive hover:bg-muted rounded-md">
-                      <Trash2 className="w-4 h-4" strokeWidth={1.75} />
-                    </button>
-                  }
-                />
+              {(canManage || canTransfer || canDeleteAccounts) && (
+                <details className="relative">
+                  <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted">
+                    <Settings2 className="h-3.5 w-3.5" />{t("settings")}
+                  </summary>
+                  <div className="absolute bottom-full end-0 z-20 mb-2 w-64 space-y-2 rounded-xl border border-border bg-card p-3 shadow-elevated">
+                    {canTransfer && e.id !== currentUser.id && <MobileSelect value={e.role} onChange={(role) => changeEmployeeRole(e.id, role)} placeholder={t("role")} className="w-full text-xs" options={ROLES.map((role) => ({ value: role, label: getRoleLabel(company, role, t) }))} />}
+                    {canManage && e.role !== "pgm" && <StationCombobox t={t} value={e.stationId || defaultStationId} onChange={(val) => moveEmployee(e.id, val)} placeholder={t("moveStation")} className="w-full text-xs" options={data.stations.map((s) => ({ value: s.id, label: s.name }))} />}
+                    {canTransfer && e.id !== currentUser.id && <button onClick={() => switchUser(e.id)} className="w-full rounded-md px-2 py-1.5 text-start text-xs text-accent hover:bg-muted">{t("switchUser")}</button>}
+                    {canDeleteAccounts && e.id !== currentUser.id && e.id !== data.ownerId && <ConfirmDeleteDialog onConfirm={() => removeEmployee(e.id)} trigger={<button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-destructive hover:bg-muted"><Trash2 className="h-3.5 w-3.5" />{t("delete")}</button>} />}
+                  </div>
+                </details>
               )}
             </div>
           </div>
