@@ -11,6 +11,7 @@ import RequestsList from "@/components/inventory/RequestsList";
 import ItemList from "@/components/inventory/ItemList";
 import ItemDetails from "@/components/inventory/ItemDetails";
 import GlobalInventorySearch from "@/components/inventory/GlobalInventorySearch";
+import InventoryItemScanner from "@/components/inventory/InventoryItemScanner";
 import MovementList from "@/components/inventory/MovementList";
 import PurchasesTab from "@/components/inventory/PurchasesTab";
 import WorkIssueTab from "@/components/inventory/WorkIssueTab";
@@ -91,6 +92,7 @@ export default function Inventory() {
   return <div className="space-y-6">
     {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <>
       <InventoryWorkflow ar={ar} onNavigate={(key) => setActive(tabFromWorkflow[key])} />
+      <InventoryItemScanner items={state.items} stationIds={selectedInventoryStations} onOpen={setSelectedItem} ar={ar} />
       <GlobalInventorySearch items={state.items} stations={state.stations} stationIds={selectedInventoryStations} onStationIdsChange={setSelectedInventoryStations} onOpen={(item, stationId) => setSelectedItem({ ...item, quantity: Number(item.locationBalances?.find((balance) => balance.locationId === stationId)?.quantity || 0), currentLocationId: stationId })} ar={ar} />
       <InventoryTabs active={active} onChange={setActive} ar={ar} />
       {active === "overview" && <div className="space-y-4"><InventoryStats items={stationItems} requests={state.requests} movements={state.movements} ar={ar} /><InventoryDataFiles movements={state.movements} items={state.historyItems} stations={state.transferStations} employees={state.employees} ar={ar} /></div>}
