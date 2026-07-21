@@ -17,7 +17,7 @@ import { queryClientInstance } from "@/lib/query-client";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import CommandCenterHero from "@/components/dashboard/CommandCenterHero";
 import RiskForecastPanel from "@/components/dashboard/RiskForecastPanel";
-import DecisionQueue from "@/components/dashboard/DecisionQueue";
+import NiroPredictiveCenter from "@/components/dashboard/NiroPredictiveCenter";
 import { getRiskWeights } from "@/lib/riskWeights";
 import { isActiveAttendance, isScheduledToday } from "@/lib/attendance";
 import { isOnLeaveToday } from "@/lib/leaveTypes";
@@ -227,7 +227,12 @@ export default function Dashboard() {
       {/* Predictive risk and executable decisions */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <RiskForecastPanel absentCount={absentCount} delayedTasks={delayedTasks} stoppageCount={stoppageCount} criticalStations={criticalStations} openHazards={openHazards} recentIncidents={recentIncidents} lang={lang} />
-        <DecisionQueue pendingReports={pendingReports} delayedTasks={delayedTasks} safetySignals={criticalStations + recentIncidents} lang={lang} />
+        <NiroPredictiveCenter
+          data={data}
+          metrics={{ absentCount, delayedTasks, pendingReports, anonOpenCount, safetySignals: criticalStations + recentIncidents + openHazards }}
+          alerts={proactiveAlerts}
+          lang={lang}
+        />
       </div>
 
       {/* Numbered stat cards (WorkForce style) */}
