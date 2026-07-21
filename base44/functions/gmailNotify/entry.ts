@@ -60,7 +60,8 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { companyId, sessionToken } = body;
     const isProductFeedback = body.kind === 'product_feedback';
-    let to = String(body.to || '');
+    const isAssistantEmail = body.kind === 'assistant_email';
+    let to = String(body.to || '').trim();
     let subject = String(body.subject || '');
     let text = String(body.text || '');
     let details = body.details;
@@ -72,12 +73,18 @@ Deno.serve(async (req) => {
 
     // Authorization: platform admin OR a valid company session token issued at login.
     const user = await base44.auth.me().catch(() => null);
-    if (!user || user.role !== 'admin') {
+    let senderRole = user?.role === 'admin' ? 'admin' : null;
+    if (!senderRole) {
       if (!companyId || !sessionToken) return Response.json({ error: 'Unauthorized' }, { status: 401 });
       const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: sessionToken, companyId });
       const s = sessions[0];
       if (!s || new Date(s.expiresAt).getTime() < Date.now()) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      if (s.role === 'owner') senderRole = 'owner';
+      else if (s.userId) {
+        const employees = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId: s.userId });
+        senderRole = employees[0]?.role || null;
       }
     }
 
@@ -100,8 +107,14 @@ Deno.serve(async (req) => {
         { label: 'Page', value: page || '—' },
       ];
       cta = null;
+    } else if (isAssistantEmail) {
+      const allowedRoles = ['admin', 'owner', 'director', 'ops_manager', 'pgm', 'station_manager'];
+      if (!allowedRoles.includes(senderRole || '')) return Response.json({ error: 'Email sending permission required' }, { status: 403 });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to) || subject.length > 200 || text.length > 10000) {
+        return Response.json({ error: 'Valid recipient, subject and message are required' }, { status: 400 });
+      }
     } else {
-      // The shared company mailbox may only send to employees registered in this company.
+      // Existing automated alerts remain restricted to registered company employees.
       const employees = await base44.asServiceRole.entities.Employee.filter({ companyId });
       const recipient = employees.find((employee) => String(employee.email || '').toLowerCase() === String(to).toLowerCase());
       if (!recipient) return Response.json({ error: 'Recipient must be a company employee' }, { status: 403 });

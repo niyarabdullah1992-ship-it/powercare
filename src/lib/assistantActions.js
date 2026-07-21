@@ -308,5 +308,15 @@ export async function executeAssistantAction(action, { data, company, currentUse
     return { ok: true, message: document.documentElement.dir === "rtl" ? `تم إرسال الرسالة إلى ${station.name}.` : `Message sent to ${station.name}.` };
   }
 
+  if (action.type === "send_email") {
+    if (!canWrite) return { ok: false, message: t("aiNoPermission") };
+    const to = String(action.to || "").trim();
+    const subject = String(action.subject || "").trim();
+    const message = String(action.message || "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to) || !subject || !message) return { ok: false, message: t("aiNoData") };
+    await base44.functions.invoke("gmailNotify", { ...sessionAuth, kind: "assistant_email", to, subject, text: message });
+    return { ok: true, message: document.documentElement.dir === "rtl" ? `تم إرسال البريد إلى ${to}.` : `Email sent to ${to}.` };
+  }
+
   return { ok: false, message: t("aiActionFailed") };
 }

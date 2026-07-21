@@ -114,6 +114,7 @@ AVAILABLE ACTIONS (include them in "actions" when the user asks you to do someth
 - {"type":"log_progress","taskTitle":"<existing task title>","amount":1} — logs completed units on one of the user's OWN active tasks. Note: reaching 100% requires uploading proof in the Tasks page.
 - {"type":"report_task_issue","taskTitle":"<existing task title>","description":"<clear issue details>"} — records a stoppage/problem on a task and alerts its responsible manager.
 - {"type":"send_station_message","station":"<station name>","message":"<message text>"} — sends a real message to a station chat visible to the current user.
+- {"type":"send_email","to":"<exact email address>","subject":"<email subject>","message":"<complete email body>"} — sends a real email from PowerCare's connected Gmail account to ANY valid email address (manager roles only). Use only after an explicit send command. Require the exact recipient address, subject and complete message; if any is missing, ask one short clarifying question and return no action. Never infer or invent an email address, and never send a proactive suggestion automatically.
 - {"type":"create_inventory_item","title":"<item name>","itemCode":"<code>","station":"<station name>","quantity":1,"supplierName":"<supplier>","totalCost":0,"minimumStock":0} — records a real station purchase/new inventory item when every required detail is supplied.
 - {"type":"request_inventory","title":"<item name or code>","sourceStation":"<source>","destinationStation":"<destination>","quantity":1,"description":"<reason>"} — submits a real material request between stations.
 - {"type":"issue_inventory","title":"<item name or code>","station":"<source station>","assignee":"<employee>","quantity":1,"workReference":"<task/project>","workDate":"YYYY-MM-DD","description":"<notes>"} — issues stock to real work.
@@ -171,6 +172,8 @@ Answer the last user question.`,
                   title: { type: "string" },
                   description: { type: "string" },
                   message: { type: "string" },
+                  to: { type: "string" },
+                  subject: { type: "string" },
                   station: { type: "string" },
                   assignee: { type: "string" },
                   steps: { type: "string" },
