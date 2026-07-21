@@ -17,11 +17,13 @@ export default function StationExpenses() {
   const station = data?.stations?.find((item) => item.id === stationId);
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
+  const stationVersion = (data?.stations || []).map((item) => item.id).sort().join("|");
   useEffect(() => {
-    expensesCall(session, "list").then((result) => {
+    setLoading(true);
+    expensesCall(session, "list", { stations: data?.stations || [] }).then((result) => {
       setClaims(result.claims.filter((claim) => (claim.stationIds?.length ? claim.stationIds : [claim.stationId]).includes(stationId)));
     }).finally(() => setLoading(false));
-  }, [session?.token, stationId]);
+  }, [session?.token, stationId, stationVersion]);
   if (!station) return <div className="rounded-xl border border-dashed border-border p-10 text-center text-muted-foreground">{ar ? "المحطة غير موجودة." : "Station not found."}</div>;
   const stations = data.stations.map((item) => ({ ...item, stationId: item.id }));
   return <div className="space-y-6">

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { ReceiptText } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { expensesCall } from "@/lib/expensesApi";
@@ -28,7 +27,7 @@ export default function Expenses() {
   };
   useEffect(() => { load(); }, [session?.companyId, stationVersion]);
   const run = async (action, payload) => { try { await expensesCall(session, action, payload); await load(); toast({ description: ar ? "تم حفظ العملية." : "Expense updated." }); return true; } catch (error) { toast({ description: error?.response?.data?.error || error.message, variant: "destructive" }); return false; } };
-  const submit = async ({ receipt, ...payload }) => { try { const { file_url } = await base44.integrations.Core.UploadFile({ file: receipt }); return await run("submit", { ...payload, receiptUrl: file_url, stationId: currentUser?.stationId }); } catch (error) { toast({ description: error.message, variant: "destructive" }); return false; } };
+  const submit = async (payload) => run("submit", { ...payload, stationId: currentUser?.stationId });
 
   return <div className="space-y-6">
     <PageHeader title={ar ? "إدارة المصروفات" : "Expense Management"} description={ar ? "رفع الإيصالات واعتماد المصروفات ومراجعتها ماليًا." : "Submit receipts, approve expenses and complete finance review."} icon={ReceiptText} actions={<ExpenseExportButtons claims={state.claims} stations={state.stations} ar={ar} />} />
