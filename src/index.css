@@ -57,6 +57,10 @@
     --icon-gold: 27 46% 38%;
     --icon-gold-soft: 32 40% 68%;
     --icon-halo: 27 46% 38%;
+    --holo-bg: 220 25% 6%;
+    --holo-panel: 219 33% 8%;
+    --holo-cyan: 184 100% 45%;
+    --holo-green: 128 91% 55%;
   }
 
   .dark {
@@ -100,6 +104,10 @@
     --icon-gold: 35 61% 58%;
     --icon-gold-soft: 37 52% 72%;
     --icon-halo: 35 61% 58%;
+    --holo-bg: 220 25% 6%;
+    --holo-panel: 219 33% 8%;
+    --holo-cyan: 184 100% 45%;
+    --holo-green: 128 91% 55%;
   }
 }
 
@@ -525,23 +533,21 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   .field-dashboard .tracking-widest-xl { letter-spacing: .14em; }
 }
 
-/* Unified luxury theme for analytical dashboards across every section. */
+/* Holographic Layered Depth — unified analytical dashboard theme. */
 .luxury-analytics {
-  position: relative;
-  isolation: isolate;
-  background: radial-gradient(circle at 90% 0%, hsl(var(--landing-gold) / .22), transparent 22rem), linear-gradient(145deg, hsl(var(--landing-olive)), hsl(var(--sidebar-background)));
-  box-shadow: 0 20px 55px hsl(var(--foreground) / .16), inset 0 1px hsl(0 0% 100% / .08);
+  background: hsl(var(--holo-bg));
+  border: 1px solid hsl(var(--holo-cyan) / .2);
+  box-shadow: 0 24px 70px hsl(220 40% 2% / .35);
 }
-.luxury-analytics::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  opacity: .12;
-  background-image: linear-gradient(hsl(var(--landing-gold) / .35) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--landing-gold) / .35) 1px, transparent 1px);
-  background-size: 32px 32px;
-  mask-image: linear-gradient(to bottom, black, transparent 80%);
+.holo-kpi,
+.holo-chart {
+  border: 1px solid hsl(var(--holo-cyan) / .48);
+  background: hsl(var(--holo-panel));
+  box-shadow: 0 0 9px hsl(var(--holo-cyan) / .9), 0 0 26px hsl(var(--holo-cyan) / .45), inset 0 0 18px hsl(220 40% 2% / .35);
 }
-.analytics-kpi { box-shadow: inset 0 1px hsl(0 0% 100% / .08), 0 8px 24px hsl(0 0% 0% / .12); }
-.analytics-chart .recharts-surface { overflow: visible; }
-.analytics-chart .recharts-tooltip-cursor { fill: hsl(var(--landing-gold) / .08); }
+.holo-chart .recharts-surface { overflow: visible; }
+.holo-chart .recharts-tooltip-cursor { fill: hsl(var(--holo-cyan) / .08); }
+@media (max-width: 767px) {
+  .luxury-analytics { padding-inline: 1rem; }
+  .holo-kpi { min-height: 6rem; }
+}
