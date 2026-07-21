@@ -3,7 +3,7 @@
 
 const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/inventory", "/app/expenses", "/app/signing", "/app/assistant", "/app/complaints", "/app/performance", "/app/manual"];
 const MANAGER_EXTRA = ["/app/employees", "/app/stations", "/app/safety"];
-const EXEC_EXTRA = ["/app/hr", "/app/executive", "/app/payroll"];
+const EXEC_EXTRA = ["/app/hr", "/app/payroll"];
 
 export function allowedNavFor(user, data) {
   if (!user) return new Set(BASE);

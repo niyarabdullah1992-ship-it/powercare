@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio, Search,
-  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Gauge, Banknote, Warehouse, ReceiptText,
+  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -139,7 +139,6 @@ export default function Layout({ children }) {
 
   const navItems = [
     { to: "/app", icon: LayoutDashboard, label: t("dashboard"), end: true },
-    { to: "/app/executive", icon: Gauge, label: t("executiveDashboard") },
     { to: "/app/daily-report", icon: FileText, label: t("reports") },
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks") },
     { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling") },

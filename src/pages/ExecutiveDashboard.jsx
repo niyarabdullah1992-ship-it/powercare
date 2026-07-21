@@ -7,7 +7,7 @@ import ExecStationTable from "@/components/executive/ExecStationTable";
 
 // Executive Dashboard — one screen for top management: all stations on a live map,
 // company-wide KPIs, and a per-station health table.
-export default function ExecutiveDashboard() {
+export default function ExecutiveDashboard({ embedded = false }) {
   const { lang } = useI18n();
   const { data } = useAuth();
   const ar = lang === "ar";
@@ -54,17 +54,26 @@ export default function ExecutiveDashboard() {
   }, [data]);
 
   return (
-    <div className="ops-command-dashboard space-y-5">
-      <header className="ops-command-header">
-        <p className="ops-eyebrow">PowerCare / {ar ? "القيادة التنفيذية" : "Executive Command"}</p>
-        <h1 className="mt-2 font-heading text-3xl font-semibold md:text-4xl">{ar ? "اللوحة التنفيذية" : "Executive Dashboard"}</h1>
-        <p className="mt-2 max-w-2xl text-sm font-body text-white/60">
-          {ar ? "نظرة شاملة لحظية على جميع المحطات والفرق ومؤشرات الأداء" : "A live, company-wide view of every station, team and KPI"}
-        </p>
-      </header>
+    <section className="ops-command-dashboard space-y-5">
+      {embedded ? (
+        <header className="relative overflow-hidden rounded-2xl border border-accent/25 bg-card p-5 shadow-soft before:absolute before:inset-y-0 before:start-0 before:w-1 before:bg-accent">
+          <p className="ops-eyebrow text-accent">PowerCare / {ar ? "القيادة التنفيذية" : "Executive Command"}</p>
+          <div className="mt-2 flex items-center gap-3">
+            <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-40" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent" /></span>
+            <h2 className="font-heading text-2xl font-semibold md:text-3xl">{ar ? "الرؤية التنفيذية الموحدة" : "Unified Executive View"}</h2>
+          </div>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{ar ? "قراءة استراتيجية مباشرة لأداء الشركة والمحطات والفرق." : "A live strategic reading of company, station and team performance."}</p>
+        </header>
+      ) : (
+        <header className="ops-command-header">
+          <p className="ops-eyebrow">PowerCare / {ar ? "القيادة التنفيذية" : "Executive Command"}</p>
+          <h1 className="mt-2 font-heading text-3xl font-semibold md:text-4xl">{ar ? "اللوحة التنفيذية" : "Executive Dashboard"}</h1>
+          <p className="mt-2 max-w-2xl text-sm font-body text-white/60">{ar ? "نظرة شاملة لحظية على جميع المحطات والفرق ومؤشرات الأداء" : "A live, company-wide view of every station, team and KPI"}</p>
+        </header>
+      )}
       <ExecKpiCards stats={stats} lang={lang} />
       <ExecStationsMap stations={data?.stations || []} safety={data?.safety || []} lang={lang} />
       <ExecStationTable rows={stationRows} lang={lang} />
-    </div>
+    </section>
   );
 }

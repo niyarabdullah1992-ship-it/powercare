@@ -8,8 +8,8 @@ import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import { AlertTriangle, FileText, Bell, Megaphone, Palette } from "lucide-react";
 import DashboardStatCards from "@/components/dashboard/DashboardStatCards";
 import AttendanceTrendChart from "@/components/dashboard/AttendanceTrendChart";
-import StationsMapCard from "@/components/dashboard/StationsMapCard";
 import PendingActionsPanel from "@/components/dashboard/PendingActionsPanel";
+import ExecutiveDashboard from "@/pages/ExecutiveDashboard";
 import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
 import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
@@ -215,6 +215,7 @@ export default function Dashboard() {
       <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
       <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
       <OnboardingChecklist data={data} lang={lang} t={t} />
+      {["ops_manager", "director"].includes(currentUser.role) && <ExecutiveDashboard embedded />}
       {canEditBranding && (
         <div className="flex justify-end">
           <button onClick={() => setShowBranding((value) => !value)} className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-body hover:bg-muted">
@@ -256,7 +257,6 @@ export default function Dashboard() {
           <AttendanceTrendChart data={chartData} t={t} />
         </div>
         <div className="space-y-4">
-          <StationsMapCard stations={stations} t={t} />
           <PendingActionsPanel items={pendingActionItems} t={t} />
         </div>
       </div>

@@ -27,7 +27,6 @@ const OwnerPanel = lazy(() => import('./pages/OwnerPanel'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const PricingSuccess = lazy(() => import('./pages/PricingSuccess'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const ExecutiveDashboard = lazy(() => import('./pages/ExecutiveDashboard'));
 const MyTasks = lazy(() => import('./pages/MyTasks'));
 const StationChat = lazy(() => import('./pages/StationChat'));
 const Complaints = lazy(() => import('./pages/Complaints'));
@@ -121,7 +120,7 @@ function AppRoutes() {
         <Route path="/owner-panel" element={<OwnerPanel />} />
       </Route>
       <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
-      <Route path="/app/executive" element={<RequireAuth><ExecutiveDashboard /></RequireAuth>} />
+      <Route path="/app/executive" element={<Navigate to="/app" replace />} />
       <Route path="/app/tasks" element={<RequireAuth><MyTasks /></RequireAuth>} />
       <Route path="/app/chat" element={<RequireAuth><StationChat /></RequireAuth>} />
 
