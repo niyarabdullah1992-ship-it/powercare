@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument } from "pdf-lib";
 import { base44 } from "@/api/base44Client";
 import { loadBadgeQr, makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
 import { STAMP_FALLBACK_SPOT, STAMP_WIDTH_PERCENT, clampStampScale } from "@/lib/signatureStampGeometry";
@@ -10,18 +10,13 @@ export async function makeSignatureStamp(_sigDataUrl, name, verificationId = "")
   return makeVerificationBadgeCanvas(verificationId, name, qr).toDataURL("image/png");
 }
 
-// Stamps one signer's composed stamp onto the PDF. When `spot` is provided
-// ({ page, x, y } — creator-assigned position, in % from the page's top-left),
-// the signature is stamped ONLY there; otherwise it falls back to the shared
-// slot rows along the bottom of the last page. When `badge` is provided (last
-// signer), the verification badge is stamped at the top-right of the last
-// page too. Uploads and returns { url, bytes }.
-export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot, sizeScale = 1, uploadResult = true, fields = null, textValues = {}) {
+// Stamps the signer's composed stamp only in the creator-assigned fields.
+// No certificate or extra page is appended to the original document.
+export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, _badge, spot, sizeScale = 1, uploadResult = true, fields = null, textValues = {}) {
   const scale = clampStampScale((Number(sizeScale) || 1) * 100) / 100;
   const pdfBytes = await fetch(docUrl).then((r) => r.arrayBuffer());
   const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
   const pages = pdf.getPages();
-  const lastPage = pages[pages.length - 1];
 
   const stampBytes = await fetch(stampDataUrl).then((r) => r.arrayBuffer());
   const stampImg = await pdf.embedPng(stampBytes);
@@ -39,24 +34,6 @@ export async function stampOnPdf(docUrl, stampDataUrl, slotIndex, badge, spot, s
     const drawX = Math.min(width - sw, Math.max(0, cx - sw / 2));
     const drawY = Math.min(height - sh, Math.max(0, cy - sh / 2));
     page.drawImage(stampImg, { x: drawX, y: drawY, width: sw, height: sh });
-  }
-
-  if (badge) {
-    const { width, height } = lastPage.getSize();
-    const verificationPage = pdf.addPage([width, height]);
-    const font = await pdf.embedFont(StandardFonts.Helvetica);
-    const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-    verificationPage.drawRectangle({ x: 28, y: 28, width: width - 56, height: height - 56, borderWidth: 1, borderColor: rgb(0.86, 0.79, 0.68), color: rgb(0.99, 0.98, 0.96) });
-    verificationPage.drawText("POWERCARE DIGITAL SIGNATURE", { x: 52, y: height - 88, size: 11, font: bold, color: rgb(0.61, 0.43, 0.2) });
-    verificationPage.drawText("Verification certificate", { x: 52, y: height - 132, size: 25, font: bold, color: rgb(0.19, 0.15, 0.11) });
-    verificationPage.drawText("This page confirms the encrypted identity and integrity of the signed document.", { x: 52, y: height - 158, size: 10, font, color: rgb(0.45, 0.4, 0.34) });
-    const badgeCanvas = makeVerificationBadgeCanvas(badge.sigId, badge.name, badge.qr);
-    const badgeBlob = await new Promise((resolve) => badgeCanvas.toBlob(resolve, "image/png"));
-    const badgeImg = await pdf.embedPng(await badgeBlob.arrayBuffer());
-    const bw = Math.min(490, width - 104);
-    const bh = bw * (badgeCanvas.height / badgeCanvas.width);
-    verificationPage.drawImage(badgeImg, { x: (width - bw) / 2, y: height / 2 - bh / 2, width: bw, height: bh });
-    verificationPage.drawText("Verify this file at powercares.pro/verify", { x: 52, y: 62, size: 10, font, color: rgb(0.45, 0.4, 0.34) });
   }
 
   const out = await pdf.save();

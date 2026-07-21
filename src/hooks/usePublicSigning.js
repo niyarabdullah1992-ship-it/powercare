@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { makeSignatureStamp, stampOnPdf } from "@/lib/multiSignStamp";
-import { loadBadgeQr } from "@/lib/verificationBadge";
 import { sha256HexOfBuffer } from "@/lib/fileHash";
 import { clampStampScale } from "@/lib/signatureStampGeometry";
 
@@ -59,14 +58,9 @@ export default function usePublicSigning() {
       if (!fresh.canSign) throw new Error(ar ? "يجب اكتمال توقيع الطرف السابق أولًا." : "The previous signer must finish first.");
       setStage(ar ? "جارٍ ختم توقيعك على المستند…" : "Stamping your signature…");
       const stamp = isComposedStamp ? sigDataUrl : await makeSignatureStamp(sigDataUrl, fresh.signer.name, fresh.verificationId);
-      let badge = null;
-      if (fresh.isLast && fresh.verificationId) {
-        const qr = await loadBadgeQr(fresh.verificationId).catch(() => null);
-        badge = { sigId: fresh.verificationId, name: fresh.signerNames.slice(0, 60), qr };
-      }
       const fields = fresh.signer.spots || (fresh.signer.spot ? [{ ...fresh.signer.spot, id: "signature", type: "signature" }] : []);
       const signatureField = fields.find((field) => field.type === "signature") || fresh.signer.spot;
-      const stamped = await stampOnPdf(fresh.docUrl, stamp, fresh.signedCount, badge, signatureField, (signatureField?.scale || 100) / 100, true, fields, textValues);
+      const stamped = await stampOnPdf(fresh.docUrl, stamp, fresh.signedCount, null, signatureField, (signatureField?.scale || 100) / 100, true, fields, textValues);
       setStage(ar ? "جارٍ حفظ الحقول والتوقيع…" : "Saving fields and signature…");
       const fileHash = await sha256HexOfBuffer(stamped.bytes);
       const location = await locationPromise;
