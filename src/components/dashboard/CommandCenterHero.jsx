@@ -7,6 +7,7 @@ import StabilityInfoPopover from "@/components/dashboard/StabilityInfoPopover";
 export default function CommandCenterHero({ companyName, riskScore, activeStations, breakdown, safety, lang, companyId, canEditWeights }) {
   const ar = lang === "ar";
   const state = riskScore >= 70 ? (ar ? "يحتاج تدخلاً" : "Intervention needed") : riskScore >= 40 ? (ar ? "تحت المراقبة" : "Under observation") : (ar ? "مستقر" : "Stable");
+  const pulseDuration = `${Math.max(0.45, 1.8 - riskScore * 0.0135).toFixed(2)}s`;
   return (
     <section className="relative overflow-hidden rounded-3xl bg-landing-olive p-6 text-white shadow-xl md:p-8">
       <div className="absolute -end-16 -top-20 h-64 w-64 rounded-full bg-landing-gold/20 blur-3xl" />
@@ -19,9 +20,9 @@ export default function CommandCenterHero({ companyName, riskScore, activeStatio
         </div>
         <div className="flex flex-wrap gap-3">
         <div className={`relative min-w-32 rounded-2xl border bg-white/5 p-4 ${riskScore < 40 ? "border-landing-gold/35" : "border-white/10"}`}>
-          {riskScore < 40 && <span className="absolute left-1/2 top-3 h-2 w-2 -translate-x-1/2 rounded-full bg-landing-gold"><span className="absolute inset-0 animate-ping rounded-full bg-landing-gold opacity-50" /></span>}
+          <span className="absolute left-1/2 top-3 h-2 w-2 -translate-x-1/2 rounded-full bg-landing-gold"><span className="absolute inset-0 animate-ping rounded-full bg-landing-gold opacity-50" style={{ animationDuration: pulseDuration }} /></span>
           {breakdown && <StabilityInfoPopover breakdown={breakdown} riskScore={riskScore} ar={ar} companyId={companyId} canEditWeights={canEditWeights} />}
-          <Activity className={`mb-3 h-4 w-4 text-landing-gold ${riskScore < 40 ? "animate-pulse" : ""}`} /><p className={`text-3xl font-heading ${riskScore < 40 ? "text-landing-gold-light" : ""}`}>{100 - riskScore}%</p><p className="text-xs text-white/50">{state}</p>
+          <Activity className="mb-3 h-4 w-4 animate-pulse text-landing-gold" style={{ animationDuration: pulseDuration }} /><p className={`text-3xl font-heading ${riskScore < 40 ? "text-landing-gold-light" : ""}`}>{100 - riskScore}%</p><p className="text-xs text-white/50">{state}</p>
         </div>
           <div className="min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4"><BrainCircuit className="mb-3 h-4 w-4 text-landing-gold" /><p className="text-3xl font-heading">{activeStations}</p><p className="text-xs text-white/50">{ar ? "محطات مراقبة" : "Stations monitored"}</p></div>
           {safety && (
