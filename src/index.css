@@ -213,6 +213,40 @@ svg.lucide:is(.lucide-check, .lucide-check-circle, .lucide-circle-check, .lucide
   50% { transform: scale(1.1); filter: drop-shadow(0 0 9px hsl(var(--icon-halo) / .6)); }
 }
 
+.tech-floating-icon {
+  position: relative;
+  z-index: 1;
+  border: 1px solid hsl(var(--icon-gold) / .42);
+  border-radius: 999px;
+  background: radial-gradient(circle, hsl(var(--icon-gold) / .16), hsl(var(--card)) 68%);
+  box-shadow: 0 9px 18px hsl(var(--foreground) / .14), 0 0 18px hsl(var(--icon-halo) / .2), inset 0 0 10px hsl(var(--icon-halo) / .08);
+  animation: tech-badge-float 2.8s ease-in-out infinite;
+}
+.tech-floating-icon::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 1px dashed hsl(var(--icon-gold) / .38);
+  border-radius: inherit;
+  animation: tech-badge-orbit 9s linear infinite;
+}
+.tech-floating-icon::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  inset-inline-end: -7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: hsl(var(--icon-gold));
+  box-shadow: 0 0 7px hsl(var(--icon-halo));
+}
+@keyframes tech-badge-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); box-shadow: 0 15px 24px hsl(var(--foreground) / .18), 0 0 24px hsl(var(--icon-halo) / .32); }
+}
+@keyframes tech-badge-orbit { to { transform: rotate(360deg); } }
+
 /* Give every interface icon the warm luminous engineering finish from the reference. */
 svg.lucide { filter: drop-shadow(0 0 4px hsl(var(--icon-halo) / .2)); }
 :is(.powercare-shell, .powercare-public) :is(.rounded-full, .rounded-xl, .rounded-2xl):has(> svg.lucide) {

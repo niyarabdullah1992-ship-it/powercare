@@ -16,7 +16,7 @@ export default function ExecKpiCards({ stats, lang }) {
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
       {cards.map((c) => (
         <div key={c.label} className="ops-kpi-card rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${c.alert ? "bg-destructive/10 text-destructive" : "bg-accent/10 text-accent"}`}>
+          <span className={`tech-floating-icon flex h-10 w-10 items-center justify-center ${c.alert ? "text-destructive" : "text-accent"}`}>
             <c.icon className="h-4 w-4" strokeWidth={1.75} />
           </span>
           <p className="mt-3 font-heading text-2xl font-semibold leading-none">{c.value}</p>
