@@ -6,7 +6,6 @@ import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
 import WelcomeHero from "@/components/dashboard/WelcomeHero";
 import { AlertTriangle, FileText, Bell, Megaphone, Palette } from "lucide-react";
 import DashboardStatCards from "@/components/dashboard/DashboardStatCards";
-import AttendanceTrendChart from "@/components/dashboard/AttendanceTrendChart";
 import PendingActionsPanel from "@/components/dashboard/PendingActionsPanel";
 import ExecutiveDashboard from "@/pages/ExecutiveDashboard";
 import { formatDate } from "@/lib/dateFormat";
@@ -246,8 +245,7 @@ export default function Dashboard() {
       {/* Main analytics grid: big trend chart + map & pending actions column */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <AttendanceTrendChart data={chartData} t={t} />
-        </div>
+            </div>
         <div className="space-y-4">
           <PendingActionsPanel items={pendingActionItems} t={t} />
         </div>
