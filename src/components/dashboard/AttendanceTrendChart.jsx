@@ -18,7 +18,7 @@ export default function AttendanceTrendChart({ data, t }) {
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--landing-gold) / .18)" vertical={false} />
           <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
-          <Tooltip contentStyle={{ background: "hsl(var(--holo-panel))", color: "white", borderRadius: 10, fontSize: 12, border: "1px solid hsl(var(--holo-green))" }} />
+          <Tooltip contentStyle={{ background: "hsl(var(--primary))", color: "white", borderRadius: 10, fontSize: 12, border: "1px solid hsl(var(--landing-gold))" }} />
           <Line
             type="natural"
             dataKey="completed"

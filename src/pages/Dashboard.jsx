@@ -33,6 +33,7 @@ export default function Dashboard() {
   const [stoppageCount, setStoppageCount] = useState(0);
   const [showBranding, setShowBranding] = useState(false);
   const [attendanceRows, setAttendanceRows] = useState([]);
+  const [targetRows, setTargetRows] = useState([]);
   const { alerts: proactiveAlerts, loading: proactiveLoading } = useProactiveAlerts(data, currentUser, session);
 
   const loadStoppage = async () => {
@@ -46,6 +47,7 @@ export default function Dashboard() {
         managedStations: currentUser.managedStations || [],
       });
       const list = res?.data?.targets || [];
+      setTargetRows(list);
       let count = 0;
       for (const tg of list) {
         for (const c of Array.isArray(tg.comments) ? tg.comments : []) {
@@ -55,6 +57,7 @@ export default function Dashboard() {
       setStoppageCount(count);
     } catch {
       setStoppageCount(0);
+      setTargetRows([]);
     }
   };
 
@@ -127,7 +130,8 @@ export default function Dashboard() {
   }
 
   // Manager dashboard
-  const tasks = data.tasks.filter((tk) => stationIds.has(tk.stationId));
+  const sourceTasks = targetRows.length ? targetRows : data.tasks;
+  const tasks = sourceTasks.filter((task) => stationIds.has(task.stationId || task.station_id || task.assignment_id));
   const reports = data.reports.filter((r) => stationIds.has(r.stationId));
   const anon = data.anonymousReports;
   const pendingReports = reports.filter((r) => r.status === "pending").length;
@@ -142,7 +146,7 @@ export default function Dashboard() {
   const absentCount = Math.max(0, scheduledEmployees.length - checkedInCount);
   const now = Date.now();
   const delayedTasks = tasks.filter((task) => {
-    const deadline = task.dueDate || task.endDate;
+    const deadline = task.dueDate || task.endDate || task.end_date;
     return task.status !== "completed" && deadline && new Date(deadline).getTime() <= now + 3 * 86400000;
   }).length;
   // Safety (HSE) risk — critical stations, open hazards and incidents in the last 30 days.
@@ -179,18 +183,18 @@ export default function Dashboard() {
   }
   const chartData = monthBuckets.map(({ key, label }) => {
     const monthlyTasks = tasks.filter((task) => {
-      const date = new Date(task.createdAt);
-      return `${date.getFullYear()}-${date.getMonth()}` === key;
+      const date = new Date(task.createdAt || task.created_at || task.startDate || task.start_date);
+      return !Number.isNaN(date.getTime()) && `${date.getFullYear()}-${date.getMonth()}` === key;
     });
     return {
       month: label,
-      completed: monthlyTasks.filter((task) => task.status === "completed").length,
-      pending: monthlyTasks.filter((task) => task.status !== "completed").length,
+      completed: monthlyTasks.reduce((sum, task) => sum + Number(task.completed_tasks ?? (task.status === "completed" ? 1 : 0)), 0),
+      pending: monthlyTasks.reduce((sum, task) => sum + Math.max(0, Number(task.task_target ?? 1) - Number(task.completed_tasks ?? (task.status === "completed" ? 1 : 0))), 0),
     };
   });
 
   const recent = [
-    ...tasks.map((tk) => ({ type: "task", text: `${tk.title} — ${t(tk.status)}`, at: tk.createdAt })),
+    ...tasks.map((tk) => ({ type: "task", text: `${tk.title} — ${t(tk.status)}`, at: tk.createdAt || tk.created_at })),
     ...reports.map((r) => ({ type: "report", text: `${r.title} — ${t(r.status)}`, at: r.createdAt })),
     ...anon.map((a) => ({ type: "anon", text: `${t(a.type)} (${t(a.priority)}) — ${t(a.status)}`, at: a.createdAt })),
   ]
