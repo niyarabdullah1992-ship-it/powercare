@@ -9,8 +9,11 @@ import { buildStationInventoryReport } from "@/lib/stationInventoryReport";
 export default function StationInventoryReportExport({ reportData, ar }) {
   const { data, company } = useAuth();
   const stations = reportData.stations || [];
-  const [stationId, setStationId] = useState(stations[0]?.stationId || stations[0]?.id || "");
-  const options = stations.map((station) => ({ value: station.stationId || station.id, label: station.name }));
+  const [stationId, setStationId] = useState("all");
+  const options = [
+    { value: "all", label: ar ? "جميع المحطات" : "All stations" },
+    ...stations.map((station) => ({ value: station.stationId || station.id, label: station.name })),
+  ];
   const branding = data?.reportBranding || {};
   const color = branding.color || "#b07d3f";
   const report = () => buildStationInventoryReport({ stationId, stations, items: reportData.items, historyItems: reportData.historyItems, movements: reportData.movements, requests: reportData.requests, employees: reportData.employees, ar });
@@ -24,7 +27,7 @@ export default function StationInventoryReportExport({ reportData, ar }) {
   };
   return <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
     <MobileSelect options={options} value={stationId} onChange={setStationId} placeholder={ar ? "اختر المحطة" : "Select station"} searchable className="min-w-44" />
-    <button disabled={!stationId} onClick={exportExcel} className="flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs hover:bg-muted disabled:opacity-40"><FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />{ar ? "Excel شامل" : "Full Excel"}</button>
-    <button disabled={!stationId} onClick={exportPdf} className="flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs hover:bg-muted disabled:opacity-40"><Printer className="h-3.5 w-3.5" />{ar ? "PDF شامل" : "Full PDF"}</button>
+    <button disabled={!stations.length} onClick={exportExcel} className="flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs hover:bg-muted disabled:opacity-40"><FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />{ar ? "Excel شامل" : "Full Excel"}</button>
+    <button disabled={!stations.length} onClick={exportPdf} className="flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs hover:bg-muted disabled:opacity-40"><Printer className="h-3.5 w-3.5" />{ar ? "PDF شامل" : "Full PDF"}</button>
   </div>;
 }
