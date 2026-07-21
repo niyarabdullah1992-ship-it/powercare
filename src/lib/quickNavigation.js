@@ -1,20 +1,3 @@
-export const visitKey = (companyId, userId) => `powercare_visits_${companyId}_${userId}`;
-
-export function recordPageVisit(companyId, userId, pathname) {
-  if (!companyId || !userId || !pathname.startsWith("/app")) return;
-  const key = visitKey(companyId, userId);
-  let visits = {};
-  try { visits = JSON.parse(localStorage.getItem(key) || "{}"); } catch { visits = {}; }
-  visits[pathname] = (visits[pathname] || 0) + 1;
-  localStorage.setItem(key, JSON.stringify(visits));
-}
-
-export function mostVisited(items, companyId, userId, limit = 4) {
-  let visits = {};
-  try { visits = JSON.parse(localStorage.getItem(visitKey(companyId, userId)) || "{}"); } catch { visits = {}; }
-  return [...items].sort((a, b) => (visits[b.to] || 0) - (visits[a.to] || 0)).filter((item) => visits[item.to]).slice(0, limit);
-}
-
 export function quickPathsFor(role) {
   if (role === "employee") return ["/app/attendance", "/app/tasks", "/app/daily-report", "/app/complaints"];
   if (["director", "ops_manager", "pgm"].includes(role)) return ["/app", "/app/employees", "/app/daily-report", "/app/tasks"];

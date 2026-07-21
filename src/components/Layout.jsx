@@ -25,10 +25,8 @@ import { shouldShowNotification } from "@/lib/notificationFilters";
 import { routeForNotification } from "@/lib/notificationRoute";
 import SectionGuide from "@/components/SectionGuide";
 import CompanyNameEditor from "@/components/CompanyNameEditor";
-import MostVisitedNav from "@/components/navigation/MostVisitedNav";
 import QuickActionsFab from "@/components/navigation/QuickActionsFab";
 import GlobalSearch from "@/components/navigation/GlobalSearch";
-import { recordPageVisit } from "@/lib/quickNavigation";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -63,10 +61,6 @@ export default function Layout({ children }) {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
-
-  useEffect(() => {
-    recordPageVisit(company?.id, currentUser?.id, location.pathname);
-  }, [company?.id, currentUser?.id, location.pathname]);
 
   useEffect(() => {
     const openSearch = (event) => {
@@ -256,7 +250,6 @@ export default function Layout({ children }) {
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-sm"><Logo size={30} /></span>
           <div className="min-w-0"><p className="truncate font-heading text-lg font-semibold text-white">{company.name || t("appName")}</p><p className="truncate text-[10px] uppercase tracking-widest text-white/45">PowerCare</p></div>
         </div>
-        <MostVisitedNav items={visibleNavItems} companyId={company.id} userId={currentUser.id} lang={lang} />
         <DragDropContext onDragEnd={onNavDragEnd}>
           <Droppable droppableId="sidebar-nav">
             {(provided) => (
