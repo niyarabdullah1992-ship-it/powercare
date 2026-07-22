@@ -478,17 +478,12 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 .powercare-shell .tech-floating-icon,
 :is(.powercare-shell, .powercare-public) :is(span, div):is(.rounded-full, .rounded-lg, .rounded-xl, .rounded-2xl):has(> svg.lucide:only-child) { animation: none; }
 
-/* Keep the cinematic video section entirely within its brown and gold palette. */
-.video-intro-brown {
-  --icon-gold: var(--video-gold);
-  --icon-gold-soft: var(--video-gold);
-  --icon-halo: var(--video-gold);
+/* Video section icon contrast within the corporate blue palette. */
+.powercare-public .video-intro-blue button > svg.lucide {
+  color: hsl(var(--primary));
 }
-.powercare-public .video-intro-brown button > svg.lucide {
-  color: hsl(var(--video-brown-deep));
-}
-.powercare-public .video-intro-brown span > svg.lucide {
-  color: hsl(var(--video-gold));
+.powercare-public .video-intro-blue span > svg.lucide {
+  color: hsl(var(--primary-foreground));
 }
 
 /* Corporate management template — scoped to the authenticated platform. */
