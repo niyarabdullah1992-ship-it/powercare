@@ -256,7 +256,7 @@ export default function Layout({ children }) {
       <aside className={`hidden md:flex flex-col w-[248px] ${sidebarSide} top-0 h-screen sticky bg-primary pt-safe z-40 shadow-elevated`}>
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-sm"><Logo size={30} /></span>
-          <div className="min-w-0"><p className="truncate font-heading text-lg font-semibold text-white">{company.name || t("appName")}</p><p className="truncate text-[10px] uppercase tracking-widest text-white/45">{lang === "ar" ? "إدارة الشركات" : "Corporate Management"}</p></div>
+          <div className="min-w-0"><p className="truncate font-heading text-lg font-semibold text-white">{company.name || t("appName")}</p></div>
         </div>
         <DragDropContext onDragEnd={onNavDragEnd}>
           <Droppable droppableId="sidebar-nav">
