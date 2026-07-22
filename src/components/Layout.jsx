@@ -345,7 +345,7 @@ export default function Layout({ children }) {
         type="button"
         onClick={() => setSidebarCollapsed((value) => !value)}
         title={sidebarCollapsed ? (lang === "ar" ? "إظهار القائمة" : "Show navigation") : (lang === "ar" ? "إخفاء القائمة" : "Hide navigation")}
-        className={`fixed top-6 z-50 hidden h-8 w-8 items-center justify-center rounded-full border border-landing-gold/40 bg-primary text-landing-gold-light shadow-lg transition-[left,right] duration-200 hover:bg-sidebar-accent md:flex ${dir === "rtl" ? (sidebarCollapsed ? "right-3" : "right-[256px]") : (sidebarCollapsed ? "left-3" : "left-[256px]")}`}
+        className={`fixed top-[76px] z-50 hidden h-8 w-8 items-center justify-center rounded-full border border-landing-gold/40 bg-primary text-landing-gold-light shadow-lg transition-[left,right] duration-200 hover:bg-sidebar-accent md:flex ${dir === "rtl" ? (sidebarCollapsed ? "right-3" : "right-[256px]") : (sidebarCollapsed ? "left-3" : "left-[256px]")}`}
         aria-label={sidebarCollapsed ? (lang === "ar" ? "إظهار القائمة" : "Show navigation") : (lang === "ar" ? "إخفاء القائمة" : "Hide navigation")}
       >
         {sidebarCollapsed ? (dir === "rtl" ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />) : (dir === "rtl" ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />)}
