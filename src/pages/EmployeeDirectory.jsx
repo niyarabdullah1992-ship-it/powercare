@@ -8,7 +8,7 @@ import { orderedJobGrades } from "@/lib/jobGrades";
 import useDirectoryTargets from "@/hooks/useDirectoryTargets";
 import PageHeader from "@/components/PageHeader";
 import DirectoryFilters from "@/components/directory/DirectoryFilters";
-import StationDirectorySection from "@/components/directory/StationDirectorySection";
+import EmployeeHierarchyTree from "@/components/directory/EmployeeHierarchyTree";
 
 export default function EmployeeDirectory() {
   const { data, currentUser, company } = useAuth();
@@ -33,5 +33,6 @@ export default function EmployeeDirectory() {
   const stationOptions = [{ value: "all", label: ar ? "كل المحطات" : "All stations" }, ...stations.map((item) => ({ value: item.id, label: item.name }))];
   const filtersActive = !!search.trim() || role !== "all" || grade !== "all" || station !== "all";
   const sections = shownStations.map((item) => ({ station: item, employees: filtered.filter((employee) => belongsTo(employee, item.id)) })).filter((section) => !filtersActive || section.employees.length);
-  return <div className="space-y-6"><PageHeader title={ar ? "دليل الموظفين" : "Employee Directory"} description={ar ? "عرض موحّد لجميع المحطات والموظفين ضمن نطاق صلاحياتك" : "A unified view of every station and employee in your access scope"} icon={ContactRound} /><DirectoryFilters search={search} onSearch={setSearch} role={role} onRole={setRole} grade={grade} onGrade={setGrade} station={station} onStation={setStation} roles={roleOptions} grades={gradeOptions} stations={stationOptions} ar={ar} /><div className="space-y-6 rounded-xl bg-muted p-3 md:p-5">{sections.map((section) => <StationDirectorySection key={section.station.id} station={section.station} employees={section.employees} statusFor={statusFor} cardProps={{ data, company, t, ar }} ar={ar} />)}{!sections.length && <p className="py-16 text-center text-sm text-muted-foreground">{ar ? "لا توجد نتائج مطابقة." : "No matching employees."}</p>}</div></div>;
+  const owner = employees.find((employee) => employee.role === "director") || currentUser;
+  return <div className="space-y-6"><PageHeader title={ar ? "دليل الموظفين" : "Employee Directory"} description={ar ? "مخطط هرمي يبدأ بالمالك ثم المحطات والموظفين ضمن نطاق صلاحياتك" : "A hierarchy from the company owner to stations and their employees"} icon={ContactRound} /><DirectoryFilters search={search} onSearch={setSearch} role={role} onRole={setRole} grade={grade} onGrade={setGrade} station={station} onStation={setStation} roles={roleOptions} grades={gradeOptions} stations={stationOptions} ar={ar} />{sections.length ? <EmployeeHierarchyTree sections={sections} owner={owner} company={company} t={t} ar={ar} statusFor={statusFor} /> : <div className="rounded-xl bg-muted py-16 text-center text-sm text-muted-foreground">{ar ? "لا توجد نتائج مطابقة." : "No matching employees."}</div>}</div>;
 }
