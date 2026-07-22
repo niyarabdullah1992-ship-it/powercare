@@ -52,9 +52,10 @@
     "signingMode": {
       "type": "string",
       "enum": [
-        "sequential"
+        "sequential",
+        "parallel"
       ],
-      "default": "sequential"
+      "default": "parallel"
     },
     "currentSignerIndex": {
       "type": "number",
@@ -79,7 +80,7 @@
         "type": "object",
         "additionalProperties": true
       },
-      "description": "Ordered signing parties, HR identity snapshots, fields, and statuses."
+      "description": "Independent signing parties, HR identity snapshots, fields, and statuses."
     },
     "auditTrail": {
       "type": "array",

@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
         verificationId: String(body.verificationId || '').slice(0, 40),
         finalHash: null,
         status: 'pending',
-        signingMode: 'sequential',
+        signingMode: 'parallel',
         currentSignerIndex: 0,
         stationId: actor.stationId || null,
         appUrl: 'https://powercares.pro',
@@ -265,9 +265,9 @@ Deno.serve(async (req) => {
       const links = Object.fromEntries(signers.map((s) => [s.email, `${appUrl}/sign?token=${rec.id}.${s.token}`]));
       const deliveryResults = await Promise.all(signers.map(async (signer, signerIndex) => {
         const link = links[signer.email];
-        const turnText = signerIndex === 0
-          ? (ar ? `حان دورك لتوقيع المستند "${rec.fileName}".` : `It is your turn to sign "${rec.fileName}".`)
-          : (ar ? `أنت الموقّع رقم ${signerIndex + 1} على المستند "${rec.fileName}"، وسيصلك تنبيه آخر عند حلول دورك.` : `You are signer ${signerIndex + 1} for "${rec.fileName}". You will receive another notice when it is your turn.`);
+        const turnText = ar
+          ? `يمكنك مراجعة المستند "${rec.fileName}" وتوقيعه الآن بشكل مستقل عن بقية الموقّعين.`
+          : `You can review and sign "${rec.fileName}" now, independently of the other signers.`;
         const ok = await sendMail(base44, signer.email, ar ? `طلب توقيع: ${rec.fileName}` : `Signature request: ${rec.fileName}`, ar ? `مرحبًا ${signer.name}،\n\n${turnText}\n${link}` : `Hello ${signer.name},\n\n${turnText}\n${link}`, signatureRequestEmail({ ar, signerName: signer.name, creatorName: rec.creatorName, fileName: rec.fileName, link, signerIndex, totalSigners: signers.length, expiresAt: rec.expiresAt }));
         return { email: signer.email, ok };
       }));
@@ -378,7 +378,7 @@ Deno.serve(async (req) => {
         rejectionReason: rec.rejectionReason || null,
         signedCount: (rec.signers || []).filter((s) => s.status === 'signed').length,
         totalCount: (rec.signers || []).length,
-        canSign: rec.status === 'pending' && (signer.status === 'signed' || pending[0]?.token === signer.token),
+        canSign: rec.status === 'pending' && (signer.status === 'pending' || signer.status === 'signed'),
         isLast: signer.status === 'pending' && pending.length === 1,
         signerNames: (rec.signers || []).map((s) => s.name).join(', '),
       });
@@ -389,9 +389,7 @@ Deno.serve(async (req) => {
       if (!found) return Response.json({ error: 'Invalid or expired signing link' }, { status: 404 });
       const { rec, signer, expired } = found;
       if (expired) return Response.json({ error: 'Invalid or expired signing link' }, { status: 404 });
-      const pending = (rec.signers || []).filter((item) => item.status === 'pending');
       if (rec.status !== 'pending' || signer.status !== 'pending') return Response.json({ error: 'REQUEST_CLOSED' }, { status: 409 });
-      if (pending[0]?.token !== signer.token) return Response.json({ error: 'WAIT_FOR_TURN' }, { status: 409 });
       const reason = String(body.reason || '').trim().slice(0, 1000);
       if (!reason) return Response.json({ error: 'Rejection reason is required' }, { status: 400 });
       const rejectedAt = new Date().toISOString();
@@ -418,8 +416,6 @@ Deno.serve(async (req) => {
       if (expired) return Response.json({ error: 'Invalid or expired signing link' }, { status: 404 });
       if (rec.status !== 'pending' || signer.status === 'signed') return Response.json({ error: 'ALREADY_SIGNED' }, { status: 409 });
       const pending = (rec.signers || []).filter((item) => item.status === 'pending');
-      if (pending[0]?.token !== signer.token) return Response.json({ error: 'WAIT_FOR_TURN' }, { status: 409 });
-      const completingNow = pending.length === 1;
       const fileHash = String(body.fileHash || '').toLowerCase().slice(0, 64);
       if (!/^[0-9a-f]{64}$/.test(fileHash)) return Response.json({ error: 'Signed version fingerprint is required' }, { status: 400 });
       const newDocUrl = String(body.newDocUrl || '').slice(0, 2000);
@@ -456,20 +452,13 @@ Deno.serve(async (req) => {
           docUrl: newDocUrl,
           status: completed ? 'completed' : 'pending',
           finalHash: completed ? fileHash : rec.finalHash,
-          currentSignerIndex: completed ? signers.length : signers.findIndex((item) => item.status === 'pending'),
+          currentSignerIndex: signers.filter((item) => item.status === 'signed').length,
           lastActivityAt: signedAt,
           auditTrail: [...(rec.auditTrail || []), { type: 'signed', at: signedAt, actorId: signer.employeeId || null, actorName: signer.name, actorRole: signer.role || 'signer', location, documentHash: fileHash }],
           });
       } catch (error) {
         if (registryRecord) await base44.asServiceRole.entities.SignedDocument.delete(registryRecord.id).catch(() => {});
         throw error;
-      }
-
-      if (!completed) {
-        const nextSigner = signers.find((item) => item.status === 'pending');
-        const nextLink = `${rec.appUrl || 'https://powercares.pro'}/sign?token=${rec.id}.${nextSigner.token}`;
-        const ar = body.lang === 'ar';
-        await sendMail(base44, nextSigner.email, ar ? `حان دورك للتوقيع: ${rec.fileName}` : `Your turn to sign: ${rec.fileName}`, ar ? `مرحبًا ${nextSigner.name}،\n\nاكتمل توقيع الطرف السابق وحان دورك الآن.\n${nextLink}` : `Hello ${nextSigner.name},\n\nThe previous signer has completed their step. It is now your turn.\n${nextLink}`, signatureRequestEmail({ ar, signerName: nextSigner.name, creatorName: rec.creatorName, fileName: rec.fileName, link: nextLink, signerIndex: signers.findIndex((item) => item.token === nextSigner.token), totalSigners: signers.length, expiresAt: rec.expiresAt }));
       }
 
       if (completed && rec.creatorEmail) {
