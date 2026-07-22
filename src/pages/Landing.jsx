@@ -74,7 +74,7 @@ export default function Landing() {
 
           <div dir="ltr" className="grid items-center gap-8 lg:grid-cols-[1.35fr,0.75fr] lg:gap-12">
             <div className="relative flex min-h-[260px] items-center justify-center sm:min-h-[340px]">
-              <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/71b4f1346_generated_image.png" alt={lang === "ar" ? "لوحة تحكم PowerCare" : "PowerCare dashboard"} originWidth={1536} originHeight={1024} fittingType="fit" className="h-full max-h-[360px] w-full" />
+              <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/6fc1a76fc_generated_image.png" alt={lang === "ar" ? "موظف مبتسم يعمل على منصة PowerCare" : "Smiling professional working with PowerCare"} originWidth={1536} originHeight={1024} fittingType="fit" className="h-full max-h-[360px] w-full" />
             </div>
 
             <div dir={lang === "ar" ? "rtl" : "ltr"} className="rounded-2xl border border-white/15 bg-card/95 p-6 shadow-2xl sm:p-7">
