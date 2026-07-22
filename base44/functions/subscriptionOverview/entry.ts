@@ -75,8 +75,9 @@ Deno.serve(async (req) => {
         const validPlans = new Set(['Starter', 'Professional', 'Enterprise', 'Custom']);
         if ((action === 'changePlan' || action === 'updateAccount') && body.plan !== undefined) {
           if (!validPlans.has(String(body.plan))) return Response.json({ error: 'Invalid plan' }, { status: 400 });
-          const customPrice = body.plan === 'Custom' ? Math.max(0, Number(body.customPrice) || 0) : null;
-          await base44.asServiceRole.entities.CompanyAccount.update(account.id, { plan: body.plan, customPrice });
+          const freePlan = body.freePlan === true;
+          const customPrice = body.plan === 'Custom' && !freePlan ? Math.max(0, Number(body.customPrice) || 0) : null;
+          await base44.asServiceRole.entities.CompanyAccount.update(account.id, { plan: body.plan, customPrice, subscriptionExempt: freePlan, exemptReason: freePlan ? 'Plan made free by platform owner' : null, exemptedAt: freePlan ? new Date().toISOString() : null });
           const metaRows = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: account.companyId, category: 'companyMeta' });
           if (metaRows[0]?.payload?.[0]) {
             const payload = [...metaRows[0].payload];
@@ -86,7 +87,7 @@ Deno.serve(async (req) => {
           const signals = await base44.asServiceRole.entities.SyncSignal.filter({ companyId: account.companyId });
           if (signals[0]) await base44.asServiceRole.entities.SyncSignal.update(signals[0].id, { version: Number(signals[0].version || 0) + 1 });
           else await base44.asServiceRole.entities.SyncSignal.create({ companyId: account.companyId, version: 1 });
-          if (account.plan !== body.plan || account.customPrice !== customPrice) await auditAction(account, 'subscription_plan_changed', `${account.plan || '—'}${account.customPrice != null ? ` ($${account.customPrice})` : ''}`, `${body.plan}${customPrice != null ? ` ($${customPrice})` : ''}`, body.reason);
+          if (account.plan !== body.plan || account.customPrice !== customPrice || account.subscriptionExempt !== freePlan) await auditAction(account, 'subscription_plan_changed', `${account.plan || '—'}${account.subscriptionExempt ? ' (free)' : account.customPrice != null ? ` ($${account.customPrice})` : ''}`, `${body.plan}${freePlan ? ' (free)' : customPrice != null ? ` ($${customPrice})` : ''}`, body.reason);
         }
         if ((action === 'extend' || action === 'updateAccount') && body.subscriptionEnd !== undefined) {
           const nextEnd = body.subscriptionEnd || null;
