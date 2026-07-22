@@ -1,3 +1,5 @@
+import { prepareManualPdfNode } from "@/lib/manualPdfSnapshot";
+
 const pageWidth = 210;
 const pageHeight = 297;
 
@@ -30,16 +32,9 @@ export async function downloadManualPdf(root, fileName) {
   const nodes = [root.querySelector("header"), root.querySelector(".manual-toc-export"), ...root.querySelectorAll(".manual-chapter")].filter(Boolean);
   let firstPage = true;
   for (const source of nodes) {
-    let node = source;
-    let temporary = false;
-    if (!source.offsetWidth) {
-      node = source.cloneNode(true);
-      Object.assign(node.style, { display: "block", position: "fixed", inset: "0 auto auto -10000px", width: "800px" });
-      document.body.appendChild(node);
-      temporary = true;
-    }
-    const canvas = await html2canvas(node, { scale: 1.15, useCORS: true, backgroundColor: "#ffffff", logging: false, ignoreElements: (element) => element.classList?.contains("no-print") });
-    if (temporary) node.remove();
+    const { node, cleanup } = await prepareManualPdfNode(source, html2canvas);
+    const canvas = await html2canvas(node, { scale: 1.15, useCORS: true, backgroundColor: "#ffffff", logging: false, windowWidth: node.scrollWidth, windowHeight: node.scrollHeight, ignoreElements: (element) => element.classList?.contains("no-print") });
+    cleanup();
     firstPage = addCanvasPages(pdf, canvas, firstPage);
   }
   pdf.save(fileName);
