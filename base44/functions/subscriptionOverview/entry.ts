@@ -2,6 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import Stripe from 'npm:stripe@17.4.0';
 
 // Maps Stripe price ids back to plan names (must mirror stripeCheckout).
+const MANUAL_PLAN_MONTHLY_PRICE = { Starter: 49, Professional: 149, Enterprise: 249 };
+
 const PRICE_TO_PLAN = {
   'price_1Tro3sAz7ujPvPWo7k0AlkdX': { plan: 'Starter', billing: 'monthly' },
   'price_1Tro3sAz7ujPvPWoIBbqHn9U': { plan: 'Professional', billing: 'monthly' },
@@ -35,7 +37,7 @@ Deno.serve(async (req) => {
     };
     const getAccount = async () => body.accountId ? await base44.asServiceRole.entities.CompanyAccount.get(String(body.accountId)).catch(() => null) : null;
 
-    if (['freeze', 'unfreeze', 'extend', 'changePlan', 'updateAccount'].includes(action)) {
+    if (['freeze', 'unfreeze', 'extend', 'changePlan', 'updateAccount', 'activate', 'deactivate', 'addDays', 'exempt', 'removeExemption'].includes(action)) {
       const account = await getAccount();
       if (!account) return Response.json({ error: 'Company account not found' }, { status: 404 });
       if (action === 'freeze') {
@@ -46,6 +48,29 @@ Deno.serve(async (req) => {
       } else if (action === 'unfreeze') {
         await base44.asServiceRole.entities.CompanyAccount.update(account.id, { frozen: false, frozenAt: null, frozenReason: null });
         await auditAction(account, 'subscription_unfrozen', 'frozen', 'active', body.reason);
+      } else if (action === 'activate') {
+        const start = new Date();
+        const end = new Date(Math.max(Date.now(), Date.parse(account.subscriptionEnd || '') || 0) + 30 * 86400000);
+        await base44.asServiceRole.entities.CompanyAccount.update(account.id, { plan: !account.plan || account.plan === 'Free' ? 'Starter' : account.plan, subscriptionStart: start.toISOString().slice(0, 10), subscriptionEnd: end.toISOString().slice(0, 10), subscriptionExempt: false, exemptReason: null, exemptedAt: null, frozen: false, frozenAt: null, frozenReason: null });
+        await auditAction(account, 'subscription_activated', account.subscriptionEnd || 'inactive', end.toISOString().slice(0, 10), body.reason);
+      } else if (action === 'deactivate') {
+        const end = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        await base44.asServiceRole.entities.CompanyAccount.update(account.id, { subscriptionEnd: end, subscriptionExempt: false, exemptReason: null, exemptedAt: null });
+        await auditAction(account, 'subscription_deactivated', account.subscriptionEnd || 'active', end, body.reason);
+      } else if (action === 'addDays') {
+        const days = Math.min(3650, Math.max(1, Number(body.days) || 0));
+        const base = Math.max(Date.now(), Date.parse(account.subscriptionEnd || '') || 0);
+        const end = new Date(base + days * 86400000).toISOString().slice(0, 10);
+        await base44.asServiceRole.entities.CompanyAccount.update(account.id, { subscriptionStart: account.subscriptionStart || new Date().toISOString().slice(0, 10), subscriptionEnd: end, frozen: false, frozenAt: null, frozenReason: null });
+        await auditAction(account, 'subscription_days_added', account.subscriptionEnd || '—', end, `${days} days`);
+      } else if (action === 'exempt') {
+        const reason = String(body.reason || '').trim();
+        if (!reason) return Response.json({ error: 'Exemption reason is required' }, { status: 400 });
+        await base44.asServiceRole.entities.CompanyAccount.update(account.id, { subscriptionExempt: true, exemptReason: reason, exemptedAt: new Date().toISOString(), frozen: false, frozenAt: null, frozenReason: null });
+        await auditAction(account, 'subscription_exempted', 'billable', 'exempt', reason);
+      } else if (action === 'removeExemption') {
+        await base44.asServiceRole.entities.CompanyAccount.update(account.id, { subscriptionExempt: false, exemptReason: null, exemptedAt: null });
+        await auditAction(account, 'subscription_exemption_removed', 'exempt', 'billable', body.reason);
       } else {
         const validPlans = new Set(['Starter', 'Professional', 'Enterprise', 'Custom']);
         if ((action === 'changePlan' || action === 'updateAccount') && body.plan !== undefined) {
@@ -155,6 +180,8 @@ Deno.serve(async (req) => {
       const email = (typeof s.customer === 'object' ? s.customer?.email : '') || '';
       const account = byEmail[email.toLowerCase()];
       const endTs = (s.trial_end && s.status === 'trialing' ? s.trial_end : s.current_period_end) * 1000;
+      const accountEndTs = account?.subscriptionEnd ? Date.parse(account.subscriptionEnd) : null;
+      const manualActive = !!accountEndTs && accountEndTs > now && ['canceled', 'unpaid', 'past_due'].includes(s.status);
       return {
         id: s.id,
         accountId: account?.id || null,
@@ -162,13 +189,15 @@ Deno.serve(async (req) => {
         email,
         plan: account?.plan || priceInfo.plan || '—',
         billing: priceInfo.billing || '',
-        status: s.status, // trialing | active | past_due | canceled | unpaid | incomplete
+        status: account?.subscriptionExempt ? 'exempt' : (manualActive ? 'manual_active' : s.status),
         cancelAtPeriodEnd: !!s.cancel_at_period_end,
-        startedAt: s.start_date ? s.start_date * 1000 : null,
-        endsAt: endTs || null,
-        daysLeft: endTs ? Math.ceil((endTs - now) / 86400000) : null,
-        amount: s.items?.data?.[0]?.price?.unit_amount != null ? s.items.data[0].price.unit_amount / 100 : null,
+        startedAt: account?.subscriptionStart ? Date.parse(account.subscriptionStart) : (s.start_date ? s.start_date * 1000 : null),
+        endsAt: account?.subscriptionExempt ? null : (account?.subscriptionEnd ? Date.parse(account.subscriptionEnd) : (endTs || null)),
+        daysLeft: account?.subscriptionExempt ? null : (account?.subscriptionEnd ? Math.ceil((Date.parse(account.subscriptionEnd) - now) / 86400000) : (endTs ? Math.ceil((endTs - now) / 86400000) : null)),
+        amount: account?.subscriptionExempt ? 0 : (s.items?.data?.[0]?.price?.unit_amount != null ? s.items.data[0].price.unit_amount / 100 : null),
         currency: (s.items?.data?.[0]?.price?.currency || 'usd').toUpperCase(),
+        exempt: account?.subscriptionExempt === true,
+        exemptReason: account?.exemptReason || null,
         frozen: account?.frozen === true,
         frozenAt: account?.frozenAt || null,
         frozenReason: account?.frozenReason || null,
@@ -183,25 +212,27 @@ Deno.serve(async (req) => {
         const startTs = a.subscriptionStart ? Date.parse(a.subscriptionStart) : null;
         const endTs = a.subscriptionEnd ? Date.parse(a.subscriptionEnd) : null;
         // A manually-managed subscription (e.g. Custom plan) with a future end date counts as active.
-        const manualActive = !!endTs && endTs > now && (a.plan || 'Free') !== 'Free';
+        const manualActive = a.subscriptionExempt === true || (!!endTs && endTs > now && (a.plan || 'Free') !== 'Free');
         return {
           accountId: a.id,
           companyName: a.name || '',
           email: a.ownerEmail,
           plan: a.plan || 'Free',
-          status: manualActive ? 'manual_active' : 'no_subscription',
+          status: a.subscriptionExempt ? 'exempt' : (manualActive ? 'manual_active' : 'no_subscription'),
           startedAt: startTs,
-          endsAt: endTs,
-          daysLeft: endTs ? Math.ceil((endTs - now) / 86400000) : null,
-          amount: a.customPrice ?? null,
-          customPrice: a.customPrice ?? null,
+          endsAt: a.subscriptionExempt ? null : endTs,
+          daysLeft: a.subscriptionExempt ? null : (endTs ? Math.ceil((endTs - now) / 86400000) : null),
+          amount: a.subscriptionExempt ? 0 : (a.customPrice ?? MANUAL_PLAN_MONTHLY_PRICE[a.plan] ?? null),
+          customPrice: a.subscriptionExempt ? 0 : (a.customPrice ?? null),
+          exempt: a.subscriptionExempt === true,
+          exemptReason: a.exemptReason || null,
           frozen: a.frozen === true,
           frozenAt: a.frozenAt || null,
           frozenReason: a.frozenReason || null,
         };
       });
 
-    const active = rows.filter((r) => r.status === 'active' || r.status === 'trialing');
+    const active = rows.filter((r) => ['active', 'trialing', 'manual_active'].includes(r.status));
     const summary = {
       totalCompanies: accounts.length,
       activeSubscriptions: active.length + noSub.filter((r) => r.status === 'manual_active').length,
@@ -221,7 +252,7 @@ Deno.serve(async (req) => {
     };
 
     // Monthly recurring revenue from active/trialing subscriptions + manually-managed custom plans.
-    const manualMrr = noSub.filter((r) => r.status === 'manual_active').reduce((sum, r) => sum + (r.customPrice || 0), 0);
+    const manualMrr = noSub.filter((r) => r.status === 'manual_active').reduce((sum, r) => sum + (r.amount || 0), 0);
     summary.mrr = Math.round((active.reduce((sum, r) => sum + (r.amount ? (r.billing === 'yearly' ? r.amount / 12 : r.amount) : 0), 0) + manualMrr) * 100) / 100;
     summary.arr = Math.round(summary.mrr * 12 * 100) / 100;
     summary.manualActive = noSub.filter((r) => r.status === 'manual_active').length;

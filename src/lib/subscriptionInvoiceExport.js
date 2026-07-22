@@ -17,10 +17,17 @@ export const subscriptionInvoiceRow = (row, ar) => {
 
 const headers = (ar) => ar ? ["رقم الفاتورة", "الشركة", "البريد الإلكتروني", "الباقة", "الدورة", "تاريخ الإصدار", "العملة", "قبل الضريبة", "الضريبة 15%", "الإجمالي"] : ["Invoice number", "Company", "Email", "Plan", "Cycle", "Issue date", "Currency", "Before VAT", "VAT 15%", "Total"];
 
+const rowsWithTotal = (rows, ar) => {
+  const detailRows = rows.map((row) => subscriptionInvoiceRow(row, ar));
+  const totals = subscriptionTotals(rows.reduce((sum, row) => sum + Number(row.amount ?? row.customPrice ?? 0), 0));
+  const money = (value) => formatSubscriptionMoney(value, "USD", ar);
+  return [...detailRows, [ar ? "الإجمالي" : "TOTAL", "", "", "", "", "", "USD", money(totals.subtotal), money(totals.vat), money(totals.total)]];
+};
+
 export function exportSubscriptionInvoicesExcel(rows, ar, filename = "subscription_invoices") {
-  exportExcelColored({ filename, title: ar ? "فواتير الاشتراكات" : "Subscription invoices", headers: headers(ar), rows: rows.map((row) => subscriptionInvoiceRow(row, ar)), dir: ar ? "rtl" : "ltr", theme: "executiveGold" });
+  exportExcelColored({ filename, title: ar ? "فواتير الاشتراكات" : "Subscription invoices", headers: headers(ar), rows: rowsWithTotal(rows, ar), dir: ar ? "rtl" : "ltr", theme: "executiveGold" });
 }
 
 export function printSubscriptionInvoices(rows, ar, title) {
-  printReport({ title: title || (ar ? "فواتير الاشتراكات" : "Subscription invoices"), companyName: "PowerCare", periodLabel: new Date().toLocaleDateString(ar ? "ar-SA" : "en-GB"), dir: ar ? "rtl" : "ltr", sections: [{ heading: ar ? "تفاصيل الفاتورة" : "Invoice details", headers: headers(ar), rows: rows.map((row) => subscriptionInvoiceRow(row, ar)) }], theme: "executiveGold" });
+  printReport({ title: title || (ar ? "فواتير الاشتراكات" : "Subscription invoices"), companyName: "PowerCare", periodLabel: new Date().toLocaleDateString(ar ? "ar-SA" : "en-GB"), dir: ar ? "rtl" : "ltr", sections: [{ heading: ar ? "تفاصيل الفاتورة" : "Invoice details", headers: headers(ar), rows: rowsWithTotal(rows, ar) }], theme: "executiveGold" });
 }

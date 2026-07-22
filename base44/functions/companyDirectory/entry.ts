@@ -449,7 +449,7 @@ Deno.serve(async (req) => {
       return Response.json({
         kind: 'employee', token,
         employee: { companyId: rec.companyId, employeeId: rec.employeeId },
-        company: { companyId: rec.companyId, name: acc.name || '', plan: acc.plan || '', allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '', emailLanguage: acc.emailLanguage || 'en', subscriptionStart: acc.subscriptionStart || null, subscriptionEnd: acc.subscriptionEnd || null, frozen: acc.frozen === true, frozenAt: acc.frozenAt || null, frozenReason: acc.frozenReason || null },
+        company: { companyId: rec.companyId, name: acc.name || '', plan: acc.plan || '', allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '', emailLanguage: acc.emailLanguage || 'en', subscriptionStart: acc.subscriptionStart || null, subscriptionEnd: acc.subscriptionEnd || null, subscriptionExempt: acc.subscriptionExempt === true, frozen: acc.frozen === true, frozenAt: acc.frozenAt || null, frozenReason: acc.frozenReason || null },
       });
     }
 
@@ -460,7 +460,7 @@ Deno.serve(async (req) => {
     if (action === 'accountExists') {
       const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
       const account = accounts[0];
-      return Response.json({ exists: !!account, name: account?.name || '', plan: account?.plan || '', subscriptionStart: account?.subscriptionStart || null, subscriptionEnd: account?.subscriptionEnd || null, frozen: account?.frozen === true, frozenAt: account?.frozenAt || null, frozenReason: account?.frozenReason || null });
+      return Response.json({ exists: !!account, name: account?.name || '', plan: account?.plan || '', subscriptionStart: account?.subscriptionStart || null, subscriptionEnd: account?.subscriptionEnd || null, subscriptionExempt: account?.subscriptionExempt === true, frozen: account?.frozen === true, frozenAt: account?.frozenAt || null, frozenReason: account?.frozenReason || null });
     }
 
     /* ----- server-side authorization for all company-scoped actions ----- */

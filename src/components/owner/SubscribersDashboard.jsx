@@ -5,6 +5,7 @@ import SubscriberRow from "@/components/owner/SubscriberRow";
 import SubscriberAnalytics from "@/components/owner/SubscriberAnalytics";
 import SubscriptionRevenueSummary from "@/components/owner/SubscriptionRevenueSummary";
 import SubscriptionBulkExport from "@/components/owner/SubscriptionBulkExport";
+import { subscriptionTotals, formatSubscriptionMoney } from "@/lib/subscriptionTax";
 
 export default function SubscribersDashboard({ ar }) {
   const [data, setData] = useState(null);
@@ -38,6 +39,7 @@ export default function SubscribersDashboard({ ar }) {
     if (q && !(r.companyName || "").toLowerCase().includes(q) && !(r.email || "").toLowerCase().includes(q)) return false;
     return true;
   });
+  const tableTotals = subscriptionTotals(rows.reduce((sum, row) => sum + Number(row.amount ?? row.customPrice ?? 0), 0));
   const stats = summary ? [
     { label: ar ? "الشركات المسجلة" : "Registered companies", value: summary.totalCompanies },
     { label: ar ? "اشتراكات نشطة" : "Active subscriptions", value: summary.activeSubscriptions },
@@ -129,7 +131,8 @@ export default function SubscribersDashboard({ ar }) {
                   <SubscriberRow key={r.id || r.accountId || i} row={r} ar={ar} onChanged={load} />
                 ))}
               </tbody>
-            </table>
+              <tfoot><tr className="border-t-2 border-landing-gold/40 bg-secondary"><td colSpan={8} className="px-4 py-4"><div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-xs"><span>{ar ? "قبل الضريبة" : "Before VAT"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.subtotal, "USD", ar)}</strong></span><span>{ar ? "الضريبة 15%" : "VAT 15%"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.vat, "USD", ar)}</strong></span><span className="text-sm text-landing-gold-deep">{ar ? "الإجمالي شامل الضريبة" : "Total including VAT"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.total, "USD", ar)}</strong></span></div></td></tr></tfoot>
+              </table>
           </div>
         </>
       )}

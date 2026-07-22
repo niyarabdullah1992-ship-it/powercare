@@ -64,6 +64,23 @@
       ],
       "description": "Monthly price (USD) for a manually-managed Custom plan."
     },
+    "subscriptionExempt": {
+      "type": "boolean",
+      "default": false,
+      "description": "Waives subscription charges while keeping company access active."
+    },
+    "exemptReason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "exemptedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "frozen": {
       "type": "boolean",
       "default": false,
