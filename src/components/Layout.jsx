@@ -45,7 +45,7 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     if (!company) return;
-    const saved = localStorage.getItem(`powercare_corporate_nav_v1_${company.id}`);
+    const saved = localStorage.getItem(`powercare_fiori_nav_v1_${company.id}`);
     if (saved) {
       try { setNavOrder(JSON.parse(saved)); } catch { setNavOrder([]); }
     }
@@ -138,34 +138,33 @@ export default function Layout({ children }) {
   if (!currentUser || !data) return children;
 
   const navItems = [
-    { to: "/app", icon: LayoutDashboard, label: t("dashboard"), end: true, category: "management" },
-    { to: "/app/assistant", icon: Sparkles, label: t("aiAssistant"), category: "management" },
-    { to: "/app/daily-report", icon: FileText, label: t("reports"), category: "operations" },
+    { to: "/app", icon: LayoutDashboard, label: t("dashboard"), end: true, category: "overview" },
+    { to: "/app/assistant", icon: Sparkles, label: t("aiAssistant"), category: "overview" },
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks"), category: "operations" },
+    { to: "/app/daily-report", icon: FileText, label: t("reports"), category: "operations" },
     { to: "/app/inventory", icon: Warehouse, label: t("inventory"), category: "operations" },
-    { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling"), category: "workforce" },
-    { to: "/app/employees", icon: Users, label: `${t("employees")} · ${t("stations")}`, category: "workforce" },
-    { to: "/app/hr", icon: UserCog, label: t("hr"), category: "workforce" },
-    { to: "/app/performance", icon: Trophy, label: t("performance"), category: "workforce" },
-    { to: "/app/expenses", icon: ReceiptText, label: t("expenses"), category: "finance" },
+    { to: "/app/employees", icon: Users, label: `${t("employees")} · ${t("stations")}`, category: "humanCapital" },
+    { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling"), category: "humanCapital" },
+    { to: "/app/hr", icon: UserCog, label: t("hr"), category: "humanCapital" },
+    { to: "/app/performance", icon: Trophy, label: t("performance"), category: "humanCapital" },
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "finance" },
-    { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)", category: "governance" },
-    { to: "/app/complaints", icon: Megaphone, label: t("allComplaints"), category: "governance" },
+    { to: "/app/expenses", icon: ReceiptText, label: t("expenses"), category: "finance" },
+    { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)", category: "compliance" },
+    { to: "/app/complaints", icon: Megaphone, label: t("allComplaints"), category: "compliance" },
     { to: "/app/files", icon: FolderOpen, label: t("files"), category: "documents" },
     { to: "/app/signing", icon: PenLine, label: t("fileSigning"), category: "documents" },
-    { to: "/app/chat", icon: MessageSquare, label: t("chat"), category: "communication" },
-    { to: "/app/manual", icon: HelpCircle, label: t("userGuide"), category: "support" },
+    { to: "/app/chat", icon: MessageSquare, label: t("chat"), category: "services" },
+    { to: "/app/manual", icon: HelpCircle, label: t("userGuide"), category: "services" },
   ];
 
   const navGroupLabels = {
-    management: lang === "ar" ? "الإدارة" : "Management",
-    operations: lang === "ar" ? "العمليات" : "Operations",
-    workforce: lang === "ar" ? "القوى العاملة" : "Workforce",
-    finance: lang === "ar" ? "المالية" : "Finance",
-    governance: lang === "ar" ? "الحوكمة" : "Governance",
-    documents: lang === "ar" ? "المستندات" : "Documents",
-    communication: lang === "ar" ? "التواصل" : "Communication",
-    support: lang === "ar" ? "الدعم" : "Support",
+    overview: lang === "ar" ? "نظرة عامة" : "Overview",
+    operations: lang === "ar" ? "إدارة العمليات" : "Operations Management",
+    humanCapital: lang === "ar" ? "رأس المال البشري" : "Human Capital",
+    finance: lang === "ar" ? "الإدارة المالية" : "Financial Management",
+    compliance: lang === "ar" ? "السلامة والامتثال" : "Safety & Compliance",
+    documents: lang === "ar" ? "إدارة المستندات" : "Document Management",
+    services: lang === "ar" ? "خدمات الأعمال" : "Business Services",
   };
 
   // Role-based visibility: each user only sees the sections their role needs.
@@ -185,7 +184,7 @@ export default function Layout({ children }) {
     items.splice(result.destination.index, 0, moved);
     const newOrder = items.map((i) => i.to);
     setNavOrder(newOrder);
-    if (company) localStorage.setItem(`powercare_corporate_nav_v1_${company.id}`, JSON.stringify(newOrder));
+    if (company) localStorage.setItem(`powercare_fiori_nav_v1_${company.id}`, JSON.stringify(newOrder));
   };
 
   const myNotifs = [
@@ -253,10 +252,13 @@ export default function Layout({ children }) {
   return (
     <div className="powercare-shell min-h-screen bg-background flex" dir={dir}>
       {/* Desktop navigation */}
-      <aside className={`hidden md:flex flex-col w-[248px] ${sidebarSide} top-0 h-screen sticky bg-primary pt-safe z-40 shadow-elevated`}>
-        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-sm"><Logo size={30} /></span>
-          <div className="min-w-0"><p className="truncate font-heading text-lg font-semibold text-white">{company.name || t("appName")}</p></div>
+      <aside className={`hidden md:flex flex-col w-[264px] ${sidebarSide} top-0 h-screen sticky bg-card pt-safe z-40 shadow-sm`}>
+        <div className="flex items-center gap-3 border-b border-primary/20 bg-primary px-5 py-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-card shadow-sm"><Logo size={28} /></span>
+          <div className="min-w-0">
+            <p className="truncate font-heading text-base font-semibold text-primary-foreground">{company.name || t("appName")}</p>
+            <p className="truncate text-[10px] uppercase tracking-[0.14em] text-primary-foreground/65">{lang === "ar" ? "منظومة إدارة الأعمال" : "Business Management Suite"}</p>
+          </div>
         </div>
         <DragDropContext onDragEnd={onNavDragEnd}>
           <Droppable droppableId="sidebar-nav">
@@ -272,7 +274,7 @@ export default function Layout({ children }) {
                         className={`group relative w-full ${dragSnapshot.isDragging ? "opacity-90" : ""}`}
                       >
                         {(index === 0 || orderedNavItems[index - 1]?.category !== item.category) && (
-                          <p className="px-3 pb-1 pt-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/35">{navGroupLabels[item.category]}</p>
+                          <p className="px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{navGroupLabels[item.category]}</p>
                         )}
                         <NavLink
                           to={item.to}
@@ -282,8 +284,8 @@ export default function Layout({ children }) {
                           className={({ isActive }) =>
                             `flex h-11 w-full items-center gap-3 rounded-xl px-3 transition-all ${
                               isActive
-                                ? "bg-landing-gold text-white shadow-lg shadow-black/20"
-                                : "text-white/55 hover:bg-white/10 hover:text-white"
+                                ? "bg-secondary text-primary shadow-sm ring-1 ring-primary/15"
+                                : "text-foreground/70 hover:bg-muted hover:text-primary"
                             }`
                           }
                         >
@@ -299,16 +301,16 @@ export default function Layout({ children }) {
             )}
           </Droppable>
         </DragDropContext>
-        <div className="shrink-0 border-t border-white/10 px-3 pt-3">
-          <button onClick={() => window.dispatchEvent(new Event("powercare:open-feedback"))} className="group flex h-12 w-full items-center gap-3 rounded-xl border border-landing-gold/30 bg-white/[0.06] px-3 text-white/75 shadow-sm transition hover:border-landing-gold/55 hover:bg-white/10 hover:text-white">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-landing-gold/15 text-landing-gold-light transition group-hover:bg-landing-gold/25"><MessageSquare className="h-[17px] w-[17px]" strokeWidth={1.8} /></span>
+        <div className="shrink-0 border-t border-border px-3 pt-3">
+          <button onClick={() => window.dispatchEvent(new Event("powercare:open-feedback"))} className="group flex h-12 w-full items-center gap-3 rounded-lg border border-border bg-secondary/60 px-3 text-foreground/75 shadow-sm transition hover:border-primary/30 hover:bg-secondary hover:text-primary">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition group-hover:bg-primary/15"><MessageSquare className="h-[17px] w-[17px]" strokeWidth={1.8} /></span>
             <span className="truncate text-sm font-medium">{lang === "ar" ? "التقييم والاقتراحات" : "Feedback & suggestions"}</span>
           </button>
         </div>
         <button
           onClick={() => navigate(`/app/employees/${currentUser.id}`)}
           title={t("viewProfile")}
-          className="mx-auto mb-5 mt-2 flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-landing-gold text-sm font-medium text-white ring-2 ring-white/20 transition hover:ring-landing-gold-light"
+          className="mx-auto mb-5 mt-2 flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-sm font-medium text-primary-foreground ring-2 ring-primary/15 transition hover:ring-primary/30"
         >
           {currentUser.profile?.avatarUrl ? (
             <img src={currentUser.profile.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
@@ -472,7 +474,7 @@ export default function Layout({ children }) {
 
         </header>
 
-        <main className="flex-1 p-4 pb-28 md:p-8 lg:p-10">
+        <main className="flex-1 p-4 pb-28 md:p-7 lg:p-8">
           {/* Native-style page transition between routes */}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div

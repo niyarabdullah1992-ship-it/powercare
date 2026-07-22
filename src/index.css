@@ -404,8 +404,8 @@ svg.lucide {
 }
 
 .powercare-shell > aside svg.lucide {
-  color: hsl(var(--icon-gold-soft));
-  filter: drop-shadow(0 0 4px hsl(var(--icon-halo) / .16));
+  color: hsl(var(--primary));
+  filter: none;
 }
 
 .powercare-shell > aside a:hover svg.lucide,
@@ -511,20 +511,23 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   --sidebar-foreground: 220 30% 96%;
 }
 
-/* PowerCare corporate — touch-first spatial interface */
+/* PowerCare Fiori-style enterprise shell — clean white surfaces and SAP-inspired blue hierarchy. */
 .powercare-shell {
   position: relative;
   isolation: isolate;
-  background: linear-gradient(180deg, hsl(var(--secondary) / .55), transparent 22rem), hsl(var(--background));
+  background: hsl(var(--background));
 }
-.powercare-shell > aside { background: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--sidebar-background))); border-inline-end: 1px solid hsl(var(--accent) / .4); }
-.powercare-shell > aside a { color: hsl(var(--sidebar-foreground) / .72); }
-.powercare-shell > aside a:hover { color: hsl(var(--sidebar-foreground)); background: hsl(var(--accent) / .08); }
-.powercare-shell > aside a[aria-current="page"] { color: hsl(var(--sidebar-accent-foreground)); background: hsl(var(--accent) / .12); border-inline-start: 3px solid hsl(var(--accent)); box-shadow: inset 0 1px hsl(var(--sidebar-foreground) / .08), 0 5px 18px hsl(30 30% 5% / .18); }
-.powercare-shell > aside a[aria-current="page"] svg { color: hsl(var(--accent)); }
-.powercare-shell > div > header { border-color: hsl(var(--accent) / .3); box-shadow: 0 10px 40px hsl(var(--foreground) / .09), inset 0 -1px hsl(var(--accent) / .14); }
+.powercare-shell > aside { background: hsl(var(--card)); border-inline-end: 1px solid hsl(var(--border)); }
+.powercare-shell > aside a { color: hsl(var(--foreground) / .72); }
+.powercare-shell > aside a:hover { color: hsl(var(--primary)); background: hsl(var(--secondary)); }
+.powercare-shell > aside a[aria-current="page"] { color: hsl(var(--primary)); background: hsl(var(--secondary)); border-inline-start: 3px solid hsl(var(--primary)); box-shadow: inset 0 0 0 1px hsl(var(--primary) / .08); }
+.powercare-shell > aside a[aria-current="page"] svg { color: hsl(var(--primary)); }
+.powercare-shell > div > header { border-color: hsl(var(--border)); box-shadow: 0 2px 8px hsl(var(--foreground) / .08); }
 .powercare-shell main :is(button, a, input, select, textarea) { touch-action: manipulation; }
-.powercare-shell main :is(.rounded-xl, .rounded-2xl) { box-shadow: 0 1px 0 hsl(var(--card-foreground) / .04) inset, 0 4px 16px hsl(var(--foreground) / .06); transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease; }
+.powercare-shell main :is(.rounded-xl, .rounded-2xl) { border-radius: .5rem; box-shadow: 0 1px 0 hsl(var(--card-foreground) / .04) inset, 0 2px 8px hsl(var(--foreground) / .06); transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease; }
+.powercare-shell main table thead { background: hsl(var(--secondary) / .72); color: hsl(var(--primary)); }
+.powercare-shell main table th { font-size: .75rem; font-weight: 600; letter-spacing: .02em; }
+.powercare-shell main table tbody tr:hover { background: hsl(var(--secondary) / .38); }
 .powercare-shell main :is(a.rounded-xl, a.rounded-2xl, button.rounded-xl, button.rounded-2xl):hover { transform: translateY(-1px); box-shadow: 0 1px 0 hsl(var(--card-foreground) / .05) inset, 0 8px 22px hsl(var(--foreground) / .1); }
 .powercare-shell button:active, .powercare-shell [role="button"]:active { transform: scale(.97); }
 .tech-bottom-nav { border-color: hsl(var(--accent) / .42); background: hsl(var(--card) / .96); box-shadow: 0 -10px 32px hsl(var(--foreground) / .14), inset 0 1px hsl(var(--accent) / .12); touch-action: pan-y; }
@@ -551,7 +554,7 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   .powercare-shell a { min-height:44px; }
 }
 
-/* Dashboard templates — warm command center for management, touch-first field view for staff. */
+/* Dashboard templates — structured enterprise workspaces with Fiori-style density. */
 .ops-command-dashboard {
   position: relative;
   isolation: isolate;
@@ -562,12 +565,10 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   inset: -1rem;
   z-index: -1;
   pointer-events: none;
-  background-image: linear-gradient(hsl(var(--accent) / .055) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--accent) / .055) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: linear-gradient(to bottom, black, transparent 72%);
+  background: linear-gradient(180deg, hsl(var(--secondary) / .55), transparent 18rem);
 }
 .ops-command-dashboard :is(.rounded-2xl, .rounded-3xl) {
-  border-radius: .75rem;
+  border-radius: .5rem;
 }
 .ops-command-dashboard :is(.bg-card, section) {
   border-color: hsl(var(--accent) / .22);
