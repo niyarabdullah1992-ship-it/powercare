@@ -72,9 +72,9 @@ export default function Landing() {
             <p className="mx-auto mt-4 max-w-3xl text-base font-medium leading-relaxed text-foreground md:text-lg">{t("heroSubtitle")}</p>
           </div>
 
-          <div dir="ltr" className="grid items-stretch gap-4 lg:h-[430px] lg:grid-cols-[2fr,1fr]">
+          <div dir="ltr" className="grid items-stretch gap-4 lg:h-[520px] lg:grid-cols-[2fr,1fr]">
             <div className="relative min-h-[300px] overflow-hidden rounded-2xl border border-landing-gold/25 bg-secondary shadow-elevated lg:h-full lg:min-h-0 lg:rounded-se-[8rem]">
-              <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/8eedf94df_generated_image.png" alt={lang === "ar" ? "فريق عمل متنوع يتعاون في مكتب حديث يعكس هوية PowerCare" : "A diverse professional team collaborating in a modern PowerCare office"} originWidth={1536} originHeight={1024} fittingType="fill" focalPointX={0.5} focalPointY={0.46} className="absolute inset-0 h-full w-full" />
+              <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/cfc4c89b6_1.jpg" alt={lang === "ar" ? "فريق قيادي متنوع يتعاون ضمن بيئة مؤسسية حديثة" : "A diverse leadership team collaborating in a modern corporate workplace"} originWidth={1024} originHeight={575} fittingType="fit" className="absolute inset-0 h-full w-full bg-primary" />
             </div>
 
             <div dir={lang === "ar" ? "rtl" : "ltr"} className="flex h-full flex-col justify-center rounded-2xl border border-landing-gold/25 bg-card p-5 shadow-soft">
