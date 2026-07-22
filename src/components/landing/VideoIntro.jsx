@@ -62,28 +62,40 @@ export default function VideoIntro() {
 
   return (
     <section className="bg-landing-bg px-4 py-16 sm:px-6 md:px-8 md:py-24">
-      <div className="video-intro-blue mx-auto grid max-w-[1200px] overflow-hidden rounded-2xl border border-accent/30 bg-primary text-primary-foreground shadow-elevated lg:grid-cols-[0.82fr,1.18fr]">
-        <div className="flex flex-col justify-center px-7 py-12 sm:px-10 md:px-14 lg:py-16">
-          <p className="text-xs font-semibold uppercase tracking-widest-xl text-landing-gold-light">PowerCare</p>
-          <h2 className="mt-4 font-heading text-4xl font-semibold leading-[1.02] tracking-[-0.04em] text-primary-foreground sm:text-5xl md:text-6xl">{t("videoHeading")}</h2>
-          <p className="mt-7 max-w-xl text-base leading-7 text-primary-foreground/75 md:text-lg md:leading-8">{t("videoText")}</p>
-          <button type="button" onClick={togglePlay} className="mt-8 inline-flex w-fit items-center gap-3 rounded-full border border-primary-foreground/50 bg-primary-foreground px-6 py-3 text-base font-semibold text-primary hover:bg-secondary">
-            <Volume2 className="h-5 w-5" strokeWidth={1.75} />
-            {t("narrationCta")}
-          </button>
-        </div>
+      <div className="video-intro-blue mx-auto grid max-w-[1200px] overflow-hidden border border-accent/35 bg-card shadow-elevated lg:grid-cols-[52px_minmax(0,1fr)]">
+        <div className="hidden bg-primary lg:block" />
 
-        <div className="group relative min-h-[360px] overflow-hidden bg-sidebar sm:min-h-[440px] lg:min-h-[560px]">
-          <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/4016f736a_generated_image.png" alt="Corporate management team reviewing company operations" originWidth={1536} originHeight={1024} fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full opacity-80" />
-          <div className="absolute inset-0">
-            <SeamlessVideoPlaylist ref={playerRef} urls={VIDEO_URLS} playing={playing} onClick={togglePlay} onPlaylistEnd={handlePlaylistEnd} />
+        <div className="min-w-0">
+          <div className="grid border-b border-accent/50 lg:grid-cols-[0.62fr_54px_1.38fr]">
+            <div className="hidden min-h-[390px] bg-card lg:block" />
+
+            <div className="order-2 flex min-h-14 items-center justify-between border-y border-accent/45 bg-primary px-5 text-primary-foreground lg:order-none lg:min-h-[390px] lg:flex-col lg:border-y-0 lg:border-x lg:px-0 lg:py-4">
+              <span className="font-heading text-lg tracking-wide lg:vertical-text">PowerCare</span>
+              <button type="button" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} className="flex h-10 w-10 items-center justify-center border-t border-accent/45 text-landing-gold-light lg:h-14 lg:w-full">
+                {playing ? <Pause className="h-5 w-5" strokeWidth={1.5} /> : <Play className="h-5 w-5" strokeWidth={1.5} />}
+              </button>
+            </div>
+
+            <div className="group relative order-1 aspect-video overflow-hidden bg-card p-3 lg:order-none lg:aspect-auto lg:min-h-[390px]">
+              <div className="absolute inset-3 overflow-hidden border border-accent/55">
+                <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/4016f736a_generated_image.png" alt="Corporate management team reviewing company operations" originWidth={1536} originHeight={1024} fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full" />
+                <div className={`absolute inset-0 transition-opacity ${playing ? "opacity-100" : "opacity-0"}`}>
+                  <SeamlessVideoPlaylist ref={playerRef} urls={VIDEO_URLS} playing={playing} onClick={togglePlay} onPlaylistEnd={handlePlaylistEnd} />
+                </div>
+                <div className="pointer-events-none absolute inset-0 bg-primary/5" />
+                <button onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} className={`absolute inset-0 flex items-center justify-center transition-opacity ${playing ? "opacity-0 group-hover:opacity-100" : "opacity-100"}`}>
+                  <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/70 text-landing-gold-light shadow-xl backdrop-blur-sm">
+                    {playing ? <Pause className="h-7 w-7" /> : <Play className="ms-1 h-7 w-7" />}
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="pointer-events-none absolute inset-0 bg-primary/20" />
-          <button onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} className={`absolute inset-0 flex items-center justify-center transition-opacity ${playing ? "opacity-0 group-hover:opacity-100" : "opacity-100"}`}>
-            <span className="flex h-16 w-16 items-center justify-center rounded-full border border-primary-foreground/50 bg-primary/85 text-primary-foreground shadow-xl backdrop-blur-sm">
-              {playing ? <Pause className="h-7 w-7" /> : <Play className="ms-1 h-7 w-7" />}
-            </span>
-          </button>
+
+          <div dir={lang === "ar" ? "rtl" : "ltr"} className="border-s border-accent/50 px-7 py-8 sm:px-10 lg:px-11 lg:py-7">
+            <h2 className="font-heading text-4xl font-semibold leading-none tracking-[-0.04em] text-primary sm:text-5xl">{t("videoHeading")}</h2>
+            <p className="mt-3 max-w-5xl text-sm leading-6 text-foreground md:text-base md:leading-6">{t("videoText")}</p>
+          </div>
         </div>
         <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" onEnded={resetPlayback} />
       </div>

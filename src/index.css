@@ -478,12 +478,10 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 .powercare-shell .tech-floating-icon,
 :is(.powercare-shell, .powercare-public) :is(span, div):is(.rounded-full, .rounded-lg, .rounded-xl, .rounded-2xl):has(> svg.lucide:only-child) { animation: none; }
 
-/* Video section icon contrast within the corporate blue palette. */
-.powercare-public .video-intro-blue button > svg.lucide {
-  color: hsl(var(--primary));
-}
+/* Video section icons inherit the executive magazine's navy and gold controls. */
+.powercare-public .video-intro-blue button > svg.lucide,
 .powercare-public .video-intro-blue span > svg.lucide {
-  color: hsl(var(--primary-foreground));
+  color: inherit;
 }
 
 /* Warm executive identity — scoped to the authenticated platform. */
