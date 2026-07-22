@@ -66,8 +66,8 @@ export default function Landing() {
 
       <section className="relative overflow-hidden px-4 pb-6 pt-9 sm:px-6 md:px-8 md:pt-10">
         <div className="relative mx-auto max-w-[1380px]">
-          <div className="relative min-h-[260px] overflow-hidden rounded-2xl border border-landing-gold/30 bg-primary shadow-elevated sm:min-h-[380px] md:min-h-[480px] lg:min-h-[560px] lg:rounded-se-[9rem]">
-            <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/8bd9a684e_1.jpg" alt={lang === "ar" ? "فريق قيادي متنوع يتعاون ضمن بيئة مؤسسية حديثة" : "A diverse leadership team collaborating in a modern corporate workplace"} originWidth={1024} originHeight={575} fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full" />
+          <div className="relative mx-auto aspect-[1024/575] w-full max-w-[1024px] overflow-hidden rounded-2xl border border-landing-gold/30 bg-primary shadow-elevated lg:rounded-se-[7rem]">
+            <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/8bd9a684e_1.jpg" alt={lang === "ar" ? "فريق قيادي متنوع يتعاون ضمن بيئة مؤسسية حديثة" : "A diverse leadership team collaborating in a modern corporate workplace"} originWidth={1024} originHeight={575} fittingType="fit" quality={100} className="absolute inset-0 h-full w-full" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-primary/25 to-transparent" />
           </div>
 
