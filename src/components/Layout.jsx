@@ -321,18 +321,26 @@ export default function Layout({ children }) {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="sticky top-0 z-40 border-b border-border/80 bg-card/90 pt-safe shadow-sm backdrop-blur-xl">
-          <div className="flex h-16 items-center justify-between px-4 md:h-[68px] md:px-8">
+        <header className="sticky top-0 z-40 overflow-visible border-b border-border bg-card/95 pt-safe shadow-sm backdrop-blur-xl">
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" />
+          <div className="flex h-16 items-center justify-between px-4 md:h-[76px] md:px-8">
             {/* Mobile nav (scrollable pills) */}
             <div className="md:hidden flex min-w-0 items-center gap-2">
               <BackButton />
-              <Logo size={32} className="shrink-0" />
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-card p-1 shadow-sm"><Logo size={32} className="h-full w-full" /></span>
               <CompanyNameEditor company={company} data={data} currentUser={currentUser} lang={lang} compact />
             </div>
 
-            <div className="hidden min-w-0 md:block">
-              <CompanyNameEditor company={company} data={data} currentUser={currentUser} lang={lang} />
-              <p className="mt-1 truncate text-[11px] text-muted-foreground">{t("welcome")}, {currentUser.name}</p>
+            <div className="hidden min-w-0 items-center gap-4 md:flex">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-border bg-card p-1.5 shadow-sm">
+                <Logo size={38} className="h-full w-full" />
+              </span>
+              <span className="h-9 w-px shrink-0 bg-border" />
+              <div className="min-w-0">
+                <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-accent">PowerCare</p>
+                <CompanyNameEditor company={company} data={data} currentUser={currentUser} lang={lang} />
+                <p className="mt-1 truncate text-[11px] text-muted-foreground">{t("welcome")}, {currentUser.name}</p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2 md:gap-3">
