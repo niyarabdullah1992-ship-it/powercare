@@ -14,18 +14,21 @@ const modules = [
 
 export default function PlatformServices({ lang }) {
   const ar = lang === "ar";
-  return <section dir={ar ? "rtl" : "ltr"} className="border-t border-border bg-landing-bg px-4 py-14 sm:px-6 md:px-8 md:py-16">
-    <div className="mx-auto max-w-[1380px]">
-      <div className="mb-9 max-w-2xl">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-accent">{ar ? "منظومة PowerCare" : "PowerCare Ecosystem"}</p>
-        <h2 className="font-heading text-4xl font-semibold tracking-[-0.03em] text-foreground md:text-5xl">{ar ? "وحدات تعمل بتناغم واحد" : "One platform. Every operation."}</h2>
-        <p className="mt-4 text-sm leading-relaxed text-muted-foreground md:text-base">{ar ? "أدوات مترابطة تمنح شركتك رؤية موحدة وتحكماً أدق في كل مستوى." : "Connected modules give your company unified visibility and precise control at every level."}</p>
+  return <section dir={ar ? "rtl" : "ltr"} className="border-y border-border bg-secondary/55 px-4 py-16 sm:px-6 md:px-8 md:py-24">
+    <div className="mx-auto grid max-w-[1380px] overflow-hidden rounded-2xl border border-border bg-card shadow-elevated lg:grid-cols-[0.82fr,1.8fr]">
+      <div className="relative flex min-h-[360px] flex-col justify-between overflow-hidden bg-landing-cinema p-8 text-white md:p-12">
+        <div className="absolute -end-20 -top-20 h-64 w-64 rounded-full border border-white/10" />
+        <div className="absolute -end-8 -top-8 h-40 w-40 rounded-full border border-accent/40" />
+        <div className="relative">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-landing-gold-light">{ar ? "منظومة PowerCare" : "PowerCare Ecosystem"}</p>
+          <h2 className="mt-6 max-w-md font-heading text-4xl font-semibold leading-[1.08] tracking-[-0.04em] md:text-5xl">{ar ? "وحدات تعمل بتناغم واحد" : "One platform. Every operation."}</h2>
+        </div>
+        <p className="relative mt-16 max-w-sm border-s-2 border-accent ps-5 text-sm leading-7 text-white/65">{ar ? "أدوات مترابطة تمنح شركتك رؤية موحدة وتحكماً أدق في كل مستوى." : "Connected modules give your company unified visibility and precise control at every level."}</p>
       </div>
-      <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
-        {modules.map(({ icon: Icon, en, ar: titleAr, enText, arText }, index) => <article key={en} className="group min-h-56 bg-card p-6 transition-colors hover:bg-secondary">
-          <div className="flex items-start justify-between"><span className="flex h-11 w-11 items-center justify-center rounded-md border border-border bg-secondary text-accent"><Icon className="h-5 w-5" strokeWidth={1.5} /></span><span className="font-mono text-[10px] text-muted-foreground">{String(index + 1).padStart(2, "0")}</span></div>
-          <h3 className="mt-8 font-heading text-xl font-medium text-foreground">{ar ? titleAr : en}</h3>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{ar ? arText : enText}</p>
+      <div className="grid sm:grid-cols-2">
+        {modules.map(({ icon: Icon, en, ar: titleAr, enText, arText }, index) => <article key={en} className="group relative flex min-h-44 gap-5 border-b border-border p-6 transition-colors last:border-b-0 hover:bg-secondary/70 sm:p-7 sm:odd:border-e sm:[&:nth-last-child(-n+2)]:border-b-0">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border bg-background text-accent transition-colors group-hover:border-accent group-hover:bg-accent group-hover:text-accent-foreground"><Icon className="h-5 w-5" strokeWidth={1.5} /></span>
+          <div className="min-w-0"><span className="font-mono text-[9px] tracking-[0.18em] text-muted-foreground">MODULE {String(index + 1).padStart(2, "0")}</span><h3 className="mt-2 font-heading text-lg font-semibold text-foreground">{ar ? titleAr : en}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{ar ? arText : enText}</p></div>
         </article>)}
       </div>
     </div>
