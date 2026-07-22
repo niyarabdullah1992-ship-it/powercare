@@ -64,10 +64,10 @@ export default function Landing() {
       </header>
 
       <section className="relative overflow-hidden px-4 pb-16 pt-12 sm:px-6 md:px-10 md:pb-20 md:pt-16">
-        <Image src={PATTERN_IMG} alt="" originWidth={1536} originHeight={1024} fittingType="fill" className="absolute inset-0 h-full w-full opacity-90" />
+        <Image src={PATTERN_IMG} alt="" originWidth={1536} originHeight={1024} fittingType="fill" className="absolute inset-0 h-full w-full opacity-20" />
         <div className="relative mx-auto max-w-6xl">
           <div dir={lang === "ar" ? "rtl" : "ltr"} className="mb-8 max-w-2xl text-start md:ms-auto">
-            <p className="mb-3 font-mono text-xs uppercase tracking-[0.22em] text-accent">Enterprise operations platform</p>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-accent">Enterprise company management</p>
             <h1 className="font-heading text-5xl font-semibold leading-none text-white sm:text-6xl md:text-7xl">{t("appName")}</h1>
             <p className="mt-4 text-base leading-relaxed text-white/65 md:text-lg">{t("heroSubtitle")}</p>
           </div>
