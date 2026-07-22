@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { BarChart3, Users, Eye, CalendarDays, MapPin } from "lucide-react";
+import { BarChart3, Users, Eye, CalendarDays, MapPin, Clock3 } from "lucide-react";
+import VisitorDurationPanel from "@/components/owner/VisitorDurationPanel";
 
 // Owner-only visitor analytics card shown in the Owner Panel.
 export default function VisitorStatsCard({ lang }) {
@@ -21,6 +22,7 @@ export default function VisitorStatsCard({ lang }) {
         { label: ar ? "زوار اليوم (فريد)" : "Unique today", value: stats.todayUnique, icon: Users },
         { label: ar ? "إجمالي الزيارات" : "Total visits", value: stats.totalVisits, icon: BarChart3 },
         { label: ar ? "إجمالي الزوار" : "Total unique", value: stats.totalUnique, icon: Users },
+        { label: ar ? "متوسط زيارة اليوم" : "Today's average", value: `${Math.round((stats.todayAverageVisitSeconds || 0) / 60)} ${ar ? "د" : "min"}`, icon: Clock3 },
       ]
     : [];
 
@@ -38,7 +40,7 @@ export default function VisitorStatsCard({ lang }) {
         <p className="text-sm text-[#3a2f22]/40 font-body">…</p>
       ) : (
         <div className="space-y-5">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {tiles.map((tl) => (
               <div key={tl.label} className="p-3 rounded-lg bg-landing-bg text-center">
                 <tl.icon className="w-4 h-4 mx-auto text-landing-gold mb-1" />
@@ -84,13 +86,14 @@ export default function VisitorStatsCard({ lang }) {
                       {l.country}{l.city ? ` — ${l.city}` : ""}
                     </p>
                     <p className="text-xs text-[#3a2f22]/50 font-body shrink-0 ms-3">
-                      {l.visits} {ar ? "زيارة" : "visits"} · {l.unique} {ar ? "زائر" : "unique"}
+                      {l.visits} {ar ? "زيارة" : "visits"} · {l.unique} {ar ? "زائر" : "unique"} · {Math.round((l.averageDurationSeconds || 0) / 60)} {ar ? "د" : "min"}
                     </p>
                   </div>
                 ))}
               </div>
             )}
           </div>
+          <VisitorDurationPanel stats={stats} ar={ar} />
         </div>
       )}
     </div>

@@ -21,11 +21,16 @@ Deno.serve(async (req) => {
       let country = '';
       let city = '';
       try {
-        const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim();
-        // Only a syntactically valid IPv4/IPv6 value is ever placed in the URL —
-        // blocks path traversal / query injection via a spoofed header.
+        const countryCode = req.headers.get('x-vercel-ip-country') || req.headers.get('cf-ipcountry') || req.headers.get('x-country-code') || '';
+        const headerCity = req.headers.get('x-vercel-ip-city') || req.headers.get('x-city') || '';
+        if (countryCode && countryCode !== 'XX') {
+          try { country = new Intl.DisplayNames(['en'], { type: 'region' }).of(countryCode.toUpperCase()) || countryCode; } catch { country = countryCode; }
+          city = decodeURIComponent(headerCity).slice(0, 80);
+        }
+        const ip = (req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for') || '').split(',')[0].trim();
+        // Only a syntactically valid IPv4/IPv6 value is ever placed in the URL.
         const isValidIp = /^(\d{1,3}(\.\d{1,3}){3}|[0-9a-fA-F:]+)$/.test(ip);
-        if (ip && isValidIp) {
+        if (!country && ip && isValidIp) {
           const geoRes = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}`, { signal: AbortSignal.timeout(3000) });
           const geo = await geoRes.json();
           if (geo && geo.success) {
@@ -35,7 +40,7 @@ Deno.serve(async (req) => {
         }
       } catch (_e) { /* geo lookup is optional */ }
 
-      await base44.asServiceRole.entities.PageVisit.create({
+      const created = await base44.asServiceRole.entities.PageVisit.create({
         visitorId,
         path: String(body.path || '/').slice(0, 200),
         referrer: String(body.referrer || '').slice(0, 200),
@@ -43,7 +48,20 @@ Deno.serve(async (req) => {
         day: today,
         country,
         city,
+        durationSeconds: 0,
+        lastSeenAt: new Date().toISOString(),
       });
+      return Response.json({ ok: true, visitId: created.id });
+    }
+
+    if (action === 'duration') {
+      const visitId = String(body.visitId || '');
+      const visitorId = String(body.visitorId || '').slice(0, 64);
+      if (!visitId || !visitorId) return Response.json({ error: 'Visit identity required' }, { status: 400 });
+      const visit = await base44.asServiceRole.entities.PageVisit.get(visitId).catch(() => null);
+      if (!visit || visit.visitorId !== visitorId) return Response.json({ error: 'Visit not found' }, { status: 404 });
+      const durationSeconds = Math.min(86400, Math.max(Number(visit.durationSeconds) || 0, Math.floor(Number(body.durationSeconds) || 0)));
+      await base44.asServiceRole.entities.PageVisit.update(visit.id, { durationSeconds, lastSeenAt: new Date().toISOString() });
       return Response.json({ ok: true });
     }
 
@@ -71,7 +89,8 @@ Deno.serve(async (req) => {
       for (let i = 6; i >= 0; i--) {
         const d = dayOf(new Date(Date.now() - i * 86400000));
         const dayVisits = all.filter((v) => v.day === d);
-        days.push({ day: d, visits: dayVisits.length, unique: uniq(dayVisits) });
+        const durationTotal = dayVisits.reduce((sum, visit) => sum + Number(visit.durationSeconds || 0), 0);
+        days.push({ day: d, visits: dayVisits.length, unique: uniq(dayVisits), averageDurationSeconds: dayVisits.length ? Math.round(durationTotal / dayVisits.length) : 0 });
       }
 
       // Top visitor locations (by unique visitors, then visits)
@@ -79,22 +98,28 @@ Deno.serve(async (req) => {
       for (const v of all) {
         const key = v.country ? `${v.country}|${v.city || ''}` : null;
         if (!key) continue;
-        if (!locMap[key]) locMap[key] = { country: v.country, city: v.city || '', visits: 0, visitors: new Set() };
+        if (!locMap[key]) locMap[key] = { country: v.country, city: v.city || '', visits: 0, duration: 0, visitors: new Set() };
         locMap[key].visits++;
+        locMap[key].duration += Number(v.durationSeconds || 0);
         locMap[key].visitors.add(v.visitorId);
       }
       const locations = Object.values(locMap)
-        .map((l) => ({ country: l.country, city: l.city, visits: l.visits, unique: l.visitors.size }))
+        .map((l) => ({ country: l.country, city: l.city, visits: l.visits, unique: l.visitors.size, averageDurationSeconds: l.visits ? Math.round(l.duration / l.visits) : 0 }))
         .sort((a, b) => b.visits - a.visits)
         .slice(0, 15);
 
+      const totalDuration = all.reduce((sum, visit) => sum + Number(visit.durationSeconds || 0), 0);
+      const todayDuration = todayVisits.reduce((sum, visit) => sum + Number(visit.durationSeconds || 0), 0);
       return Response.json({
         todayVisits: todayVisits.length,
         todayUnique: uniq(todayVisits),
         totalVisits: all.length,
         totalUnique: uniq(all),
+        averageVisitSeconds: all.length ? Math.round(totalDuration / all.length) : 0,
+        todayAverageVisitSeconds: todayVisits.length ? Math.round(todayDuration / todayVisits.length) : 0,
         days,
         locations,
+        recentVisits: all.slice(0, 20).map((visit) => ({ id: visit.id, createdAt: visit.created_date, country: visit.country || '', city: visit.city || '', device: visit.device || '', durationSeconds: Number(visit.durationSeconds || 0) })),
       });
     }
 

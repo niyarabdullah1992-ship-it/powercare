@@ -30,6 +30,19 @@
       "type": "string",
       "description": "Visitor city resolved from IP."
     },
+    "durationSeconds": {
+      "type": "number",
+      "minimum": 0,
+      "default": 0,
+      "description": "Elapsed visit duration reported by the browser."
+    },
+    "lastSeenAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Latest visit heartbeat timestamp."
+    },
     "description": {
       "type": "string",
       "maxLength": 1000
