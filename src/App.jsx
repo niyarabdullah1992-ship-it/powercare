@@ -10,6 +10,7 @@ import { AuthProvider as PowerCareAuthProvider, useAuth as usePowerCareAuth } fr
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import TrialExpiryGate from '@/components/TrialExpiryGate';
+import AppErrorBoundary from '@/components/AppErrorBoundary';
 
 import { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -155,7 +156,7 @@ function App() {
           <ScrollToTop />
           <I18nProvider>
             <PowerCareAuthProvider>
-              <AppRoutes />
+              <AppErrorBoundary><AppRoutes /></AppErrorBoundary>
             </PowerCareAuthProvider>
           </I18nProvider>
         </Router>

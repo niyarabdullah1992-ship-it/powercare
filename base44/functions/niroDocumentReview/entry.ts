@@ -9,8 +9,9 @@ const sha256 = async (bytes) => [...new Uint8Array(await crypto.subtle.digest('S
 
 Deno.serve(async (req) => {
   let review = null;
+  let base44 = null;
   try {
-    const base44 = createClientFromRequest(req);
+    base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
     if (body.action !== 'review') return Response.json({ error: 'Unknown action' }, { status: 400 });
     const companyId = String(body.companyId || '').slice(0, 64);
@@ -66,6 +67,13 @@ Deno.serve(async (req) => {
     return Response.json({ ok: true, sealed: true, reviewId: review.id, report: { ...report, complete: true }, sealedUrl: uploaded.file_url, verificationId: sealId, fileHash, auditTrail });
   } catch (error) {
     console.error('niroDocumentReview error:', error);
+    if (base44 && review?.id) {
+      await base44.asServiceRole.entities.NiroDocumentReview.update(review.id, {
+        status: 'error',
+        report: { complete: false, error: String(error.message || 'Document review failed') },
+        auditTrail: [...(review.auditTrail || []), { type: 'niro_analysis_failed', at: new Date().toISOString(), actorName: 'Niro', error: String(error.message || 'Document review failed').slice(0, 500) }],
+      }).catch(() => null);
+    }
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

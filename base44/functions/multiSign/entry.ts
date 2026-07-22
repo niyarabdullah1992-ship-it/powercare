@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
 import { authPowerCareSession } from '../../shared/powerCareSession.ts';
+import { fetchWithRetry } from '../../shared/fetchRetry.ts';
 
 function toBase64Url(str) {
   const bytes = new TextEncoder().encode(str);
@@ -159,7 +160,7 @@ async function sendMail(base44, to, subject, bodyText, bodyHtml = '') {
     msg.setSubject(subject);
     msg.addMessage({ contentType: 'text/plain', data: bodyText });
     if (bodyHtml) msg.addMessage({ contentType: 'text/html', data: bodyHtml });
-    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+    const res = await fetchWithRetry('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ raw: toBase64Url(msg.asRaw()) }),

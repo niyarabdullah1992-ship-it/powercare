@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
+import { fetchWithRetry } from '../../shared/fetchRetry.ts';
 
 // Sends an email from the company's connected Gmail account.
 // Authorized for the platform builder or any valid PowerCare company session.
@@ -130,7 +131,7 @@ Deno.serve(async (req) => {
     msg.setSubject(subject);
     msg.addMessage({ contentType: 'text/html', data: emailHtml(subject, text, details, cta) });
 
-    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+    const res = await fetchWithRetry('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ raw: toBase64Url(msg.asRaw()) }),

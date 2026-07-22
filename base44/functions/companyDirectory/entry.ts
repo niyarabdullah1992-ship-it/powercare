@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
+import { fetchWithRetry } from '../../shared/fetchRetry.ts';
 
 // System emails (OTP codes, welcome messages) go out through the app's connected
 // Gmail account, because the built-in email service refuses recipients who are
@@ -65,7 +66,7 @@ async function sendSystemEmail(base44, { to, subject, body, html }) {
     } else {
       msg.addMessage({ contentType: 'text/plain', data: body });
     }
-    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+    const res = await fetchWithRetry('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ raw: toBase64Url(msg.asRaw()) }),
@@ -123,6 +124,8 @@ async function verifyPassword(password, stored) {
 const OTP_TTL_MS = 10 * 60 * 1000;
 async function createLoginOtp(base44, { kind, companyId, employeeId, email }) {
   const oldCodes = await base44.asServiceRole.entities.LoginOtp.filter({ email });
+  const lastIssuedAt = oldCodes.reduce((latest, item) => Math.max(latest, Date.parse(item.created_date || '') || 0), 0);
+  if (lastIssuedAt && Date.now() - lastIssuedAt < 60000) throw new Error('OTP_RATE_LIMIT');
   for (const old of oldCodes) await base44.asServiceRole.entities.LoginOtp.delete(old.id);
   const random = new Uint32Array(1);
   crypto.getRandomValues(random);
@@ -884,6 +887,7 @@ Deno.serve(async (req) => {
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    const status = error.message === 'OTP_RATE_LIMIT' ? 429 : 500;
+    return Response.json({ error: error.message }, { status });
   }
 });

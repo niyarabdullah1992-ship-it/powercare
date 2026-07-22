@@ -367,6 +367,8 @@ function pushCompanyDataToCloud(id, data) {
 
 /* ----------------------------- sync retry loop ----------------------------- */
 const pendingResync = new Set();
+const retryAttempts = {};
+const retryTimers = {};
 const syncHealth = { lastSyncedAt: null };
 export function getSyncStatus() {
   return {
@@ -375,12 +377,26 @@ export function getSyncStatus() {
     lastSyncedAt: syncHealth.lastSyncedAt,
   };
 }
-function markSynced() {
+function markSynced(companyId) {
   syncHealth.lastSyncedAt = Date.now();
+  pendingResync.delete(companyId);
+  retryAttempts[companyId] = 0;
+  clearTimeout(retryTimers[companyId]);
+  delete retryTimers[companyId];
   notify();
 }
 function scheduleResync(companyId) {
   pendingResync.add(companyId);
+  if (!retryTimers[companyId] && (retryAttempts[companyId] || 0) < 6) {
+    const attempt = retryAttempts[companyId] || 0;
+    const delay = Math.min(30000, 1000 * (2 ** attempt));
+    retryTimers[companyId] = setTimeout(() => {
+      delete retryTimers[companyId];
+      retryAttempts[companyId] = attempt + 1;
+      const data = getCompanyData(companyId);
+      if (data) pushCompanyDataToCloud(companyId, data);
+    }, delay);
+  }
   notify();
 }
 function flushResync() {
@@ -388,13 +404,15 @@ function flushResync() {
   if (!ids.length) return;
   pendingResync.clear();
   ids.forEach((id) => {
+    clearTimeout(retryTimers[id]);
+    delete retryTimers[id];
+    retryAttempts[id] = 0;
     const data = getCompanyData(id);
     if (data) pushCompanyDataToCloud(id, data);
   });
   notify();
 }
 if (typeof window !== "undefined") {
-  setInterval(flushResync, 8000);
   // Push pending changes the moment connectivity returns, and before the tab hides —
   // so edits made moments before closing/switching tabs still reach the cloud.
   window.addEventListener("online", flushResync);
@@ -420,7 +438,7 @@ async function syncBlobToEntity(companyId, category, payload) {
   lastSyncedBlobJSON[key] = json;
   try {
     await invokeDirectory({ action: "syncBlob", companyId, category, payload: payload || [] });
-    markSynced();
+    markSynced(companyId);
   } catch {
     // failed cloud write — clear the dedupe marker and let the retry loop re-push it
     lastSyncedBlobJSON[key] = undefined;
@@ -473,7 +491,7 @@ async function syncEmployeesToEntity(companyId, employees) {
   lastSyncedEmployeesJSON[companyId] = json;
   try {
     await invokeDirectory({ action: "syncEmployees", companyId, employees: employees || [] });
-    markSynced();
+    markSynced(companyId);
   } catch {
     // failed cloud write — clear the dedupe marker and let the retry loop re-push it
     lastSyncedEmployeesJSON[companyId] = undefined;
@@ -492,7 +510,7 @@ async function syncStationsToEntity(companyId, stations) {
   lastSyncedStationsJSON[companyId] = json;
   try {
     await invokeDirectory({ action: "syncStations", companyId, stations: stations || [] });
-    markSynced();
+    markSynced(companyId);
   } catch {
     // failed cloud write — clear the dedupe marker and let the retry loop re-push it
     lastSyncedStationsJSON[companyId] = undefined;
@@ -616,7 +634,8 @@ export async function startLogin(email, password, preferKind) {
     if (res?.data?.wrongKind) return { wrongKind: true };
     if (res?.data?.token && res.data.kind === "owner") return { company: finishOwnerLogin(res.data) };
     if (res?.data?.otpRequired) return { otpRequired: true, pendingId: res.data.pendingId, accounts: res.data.accounts || [] };
-  } catch {
+  } catch (error) {
+    if (error?.response?.data?.error === "OTP_RATE_LIMIT") throw new Error("انتظر دقيقة قبل طلب رمز جديد · Please wait one minute before requesting another code");
     // network/backend issue — try employee login, then the local fallback below
   }
   // Employee logins are company staff — never applicable on the Individual tab.
@@ -624,7 +643,8 @@ export async function startLogin(email, password, preferKind) {
     try {
       const res = await invokeDirectory({ action: "employeeLogin", email, password });
       if (res?.data?.otpRequired) return { otpRequired: true, pendingId: res.data.pendingId };
-    } catch {
+    } catch (error) {
+      if (error?.response?.data?.error === "OTP_RATE_LIMIT") throw new Error("انتظر دقيقة قبل طلب رمز جديد · Please wait one minute before requesting another code");
       // ignore — fall through to local fallback
     }
   }
@@ -695,8 +715,8 @@ export async function googleCompanyLogin(preferKind, accountKey) {
     const res = await invokeDirectory({ action: "googleOwnerLogin", preferKind: preferKind || null, accountKey: accountKey || null });
     if (res?.data?.selectionRequired || res?.data?.otpRequired) return res.data;
     return null;
-  } catch {
-    return null;
+  } catch (error) {
+    throw new Error(error?.response?.data?.error || error?.message || "Google login failed");
   }
 }
 
