@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
-import { ShieldCheck, Globe, ChevronDown, Check, Clock, TrendingUp, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, BookOpen } from "lucide-react";
+import { ShieldCheck, Globe, ChevronDown, Check, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, BookOpen } from "lucide-react";
 import Logo from "@/components/Logo";
-import { Image } from "@/components/ui/image";
+import LandingHero from "@/components/landing/LandingHero";
 import VideoIntro from "@/components/landing/VideoIntro";
 import StatsBand from "@/components/landing/StatsBand";
 import { trackVisit } from "@/lib/trackVisit";
 import WhyPowerCare from "@/components/landing/WhyPowerCare";
-import PowerCareLoginPanel from "@/components/auth/PowerCareLoginPanel";
 import IpCertificateBadge from "@/components/landing/IpCertificateBadge";
 import PlatformServices from "@/components/landing/PlatformServices";
 
@@ -64,34 +63,7 @@ export default function Landing() {
         </div>
       </header>
 
-      <section className="relative overflow-hidden px-4 pb-6 pt-9 sm:px-6 md:px-8 md:pt-10">
-        <div className="relative mx-auto max-w-[1380px]">
-          <div className="relative mx-auto aspect-[1024/575] w-full max-w-[1024px] overflow-hidden rounded-2xl border border-landing-gold/30 bg-primary shadow-elevated lg:rounded-se-[7rem]">
-            <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/738c0a20a_generated_image.png" alt={lang === "ar" ? "فريق قيادي متنوع يتعاون ضمن بيئة مؤسسية حديثة" : "A diverse leadership team collaborating in a modern corporate workplace"} originWidth={1536} originHeight={864} fittingType="fit" quality={100} className="absolute inset-0 h-full w-full" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-primary/25 to-transparent" />
-          </div>
-
-          <div dir={lang === "ar" ? "rtl" : "ltr"} className="mt-5 grid items-stretch gap-4 lg:grid-cols-[1.35fr,0.65fr]">
-            <div className="flex flex-col justify-center rounded-2xl border border-landing-gold/25 bg-card px-6 py-8 text-center shadow-soft sm:px-10 lg:text-start">
-              <p className="text-sm font-medium text-accent">{t("heroEyebrow")}</p>
-              <h1 className="mt-2 font-heading text-5xl font-semibold leading-none tracking-[-0.04em] text-foreground sm:text-6xl md:text-7xl">PowerCare</h1>
-              <p className="mt-4 max-w-3xl text-base font-medium leading-relaxed text-muted-foreground md:text-lg">{t("heroSubtitle")}</p>
-            </div>
-
-            <div className="flex flex-col justify-center rounded-2xl border border-landing-gold/25 bg-card p-5 shadow-soft">
-              <div className="flex justify-center"><Logo size={34} /></div>
-              <h2 className="mt-2 text-center font-heading text-lg font-medium text-foreground">{lang === "ar" ? "اختر نوع تسجيل الدخول الخاص بك" : "Choose your login type"}</h2>
-              <div className="mt-3"><PowerCareLoginPanel showTypeSelector returnPath="/" /></div>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <FeatureBullet icon={Clock} title={t("feature1")} />
-            <FeatureBullet icon={TrendingUp} title={t("feature2")} />
-            <FeatureBullet icon={ShieldCheck} title={t("feature3")} />
-          </div>
-        </div>
-      </section>
+      <LandingHero lang={lang} t={t} />
 
       <StatsBand lang={lang} />
       <PlatformServices lang={lang} />
@@ -142,15 +114,6 @@ export default function Landing() {
         </div>
         <IpCertificateBadge lang={lang} />
       </footer>
-    </div>
-  );
-}
-
-function FeatureBullet({ icon: Icon, title }) {
-  return (
-    <div className="flex min-h-14 items-center justify-center gap-3 rounded-lg border border-border bg-card px-4 py-2.5 text-foreground">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-secondary text-accent"><Icon className="h-4 w-4" strokeWidth={1.75} /></span>
-      <p className="text-center text-xs font-medium leading-relaxed">{title}</p>
     </div>
   );
 }
