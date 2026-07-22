@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Play, Pause, BriefcaseBusiness } from "lucide-react";
+import { UserCog } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import SeamlessVideoPlaylist from "@/components/landing/SeamlessVideoPlaylist";
 import { Image } from "@/components/ui/image";
@@ -61,29 +61,21 @@ export default function VideoIntro() {
   };
 
   return (
-    <section className="bg-landing-bg px-4 py-16 sm:px-6 md:px-8 md:py-24">
-      <div className="mx-auto max-w-[1080px] bg-foreground/[0.08] px-6 py-12 sm:px-10 md:px-20 md:py-20">
-        <div className="flex items-center gap-4">
-          <h2 className="font-heading text-4xl font-medium leading-none tracking-[-0.04em] text-foreground sm:text-5xl md:text-6xl">{t("videoHeading")}</h2>
-          <BriefcaseBusiness className="hidden h-12 w-12 shrink-0 text-muted-foreground sm:block" strokeWidth={1} />
+    <section className="bg-card px-4 py-16 sm:px-6 md:px-8 md:py-24">
+      <div className="mx-auto grid max-w-[1120px] items-center gap-10 overflow-hidden rounded-2xl bg-executive-panel px-7 py-12 sm:px-12 md:grid-cols-[1.03fr,0.97fr] md:gap-12 md:px-14 md:py-16">
+        <div className="text-start">
+          <h2 className="max-w-lg font-heading text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-executive-ink sm:text-6xl">{t("videoHeading")}</h2>
+          <p className="mt-7 max-w-xl text-lg leading-8 text-executive-ink/90 md:text-xl md:leading-9">{t("videoText")}</p>
+          <button type="button" onClick={togglePlay} className="mt-8 inline-flex items-center gap-3 rounded-md bg-executive-teal px-7 py-3.5 text-xl font-semibold text-card hover:bg-executive-teal/90">
+            <UserCog className="h-6 w-6" strokeWidth={1.75} />
+            {t("narrationCta")}
+          </button>
         </div>
 
-        <div className="mt-10 grid items-center gap-10 md:grid-cols-[1.08fr,0.92fr] md:gap-8">
-          <div className="text-start">
-            <p className="max-w-xl text-base leading-7 text-foreground/80 md:text-lg md:leading-8">{t("videoText")}</p>
-            <button type="button" onClick={togglePlay} className="mt-7 inline-flex items-center rounded-full border border-foreground/25 px-5 py-2 text-lg font-medium text-foreground underline decoration-1 underline-offset-4 hover:bg-foreground hover:text-background">
-              {t("narrationCta")}
-            </button>
-          </div>
-
-          <div className="group relative h-56 overflow-hidden rounded-3xl bg-muted md:h-60">
-            <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/4016f736a_generated_image.png" alt="Corporate management team reviewing company operations" originWidth={1536} originHeight={1024} fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full grayscale" />
-            <div className="absolute inset-0 grayscale opacity-70">
-              <SeamlessVideoPlaylist ref={playerRef} urls={VIDEO_URLS} playing={playing} onClick={togglePlay} onPlaylistEnd={handlePlaylistEnd} />
-            </div>
-            <button onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} className={`absolute inset-0 flex items-center justify-center transition-opacity ${playing ? "opacity-0 group-hover:opacity-100" : "opacity-100"}`}>
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-card/90 text-foreground shadow-lg">{playing ? <Pause className="h-6 w-6" /> : <Play className="ms-1 h-6 w-6" />}</span>
-            </button>
+        <div className="group relative min-h-[430px] overflow-hidden rounded-lg border border-executive-line bg-card shadow-soft md:min-h-[520px]">
+          <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/1be1b15d3_generated_image.png" alt="Executive human resources management dashboard" fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full" />
+          <div className={`absolute inset-0 bg-executive-ink transition-opacity duration-300 ${playing ? "opacity-100" : "pointer-events-none opacity-0"}`}>
+            <SeamlessVideoPlaylist ref={playerRef} urls={VIDEO_URLS} playing={playing} onClick={togglePlay} onPlaylistEnd={handlePlaylistEnd} />
           </div>
         </div>
         <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" onEnded={resetPlayback} />

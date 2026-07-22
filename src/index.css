@@ -50,6 +50,10 @@
     --landing-gold-light: 215 92% 72%;
     --landing-gold-deep: 225 70% 36%;
     --landing-cinema: 225 63% 31%;
+    --executive-teal: 180 100% 27%;
+    --executive-panel: 197 45% 94%;
+    --executive-ink: 200 18% 12%;
+    --executive-line: 190 20% 73%;
     --sign-bg: 220 33% 98%;
     --sign-surface: 0 0% 100%;
     --sign-ink: 222 47% 13%;
@@ -98,6 +102,10 @@
     --sidebar-border: 225 25% 23%;
     --sidebar-ring: 216 88% 62%;
     --landing-cinema: 225 56% 16%;
+    --executive-teal: 180 76% 42%;
+    --executive-panel: 198 26% 16%;
+    --executive-ink: 195 25% 95%;
+    --executive-line: 190 16% 32%;
     --sign-bg: 225 38% 9%;
     --sign-surface: 225 34% 13%;
     --sign-ink: 220 30% 96%;
