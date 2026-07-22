@@ -64,9 +64,7 @@ export default function VideoIntro() {
         <div className="hidden bg-primary lg:block" />
 
         <div className="min-w-0">
-          <div className="grid border-b border-accent/50 lg:grid-cols-[0.62fr_54px_1.38fr]">
-            <div className="hidden min-h-[390px] bg-card lg:block" />
-
+          <div className="grid border-b border-accent/50 lg:grid-cols-[54px_minmax(0,1fr)]">
             <div className="order-2 flex min-h-14 items-center justify-between border-y border-accent/45 bg-primary px-5 text-primary-foreground lg:order-none lg:min-h-[390px] lg:flex-col lg:border-y-0 lg:border-x lg:px-0 lg:py-4">
               <span className="font-heading text-lg tracking-wide lg:vertical-text">PowerCare</span>
               <button type="button" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} className="flex h-10 w-10 items-center justify-center border-t border-accent/45 text-landing-gold-light lg:h-14 lg:w-full">
@@ -74,7 +72,7 @@ export default function VideoIntro() {
               </button>
             </div>
 
-            <div className="group relative order-1 aspect-video overflow-hidden bg-card p-3 lg:order-none lg:aspect-auto lg:min-h-[390px]">
+            <div className="group relative order-1 aspect-video overflow-hidden bg-card p-3 lg:order-none lg:aspect-auto lg:min-h-[460px]">
               <div className="absolute inset-3 overflow-hidden border border-accent/55">
                 <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/e03e45e6f_generated_image.png" alt="Executive leadership team reviewing PowerCare operations" originWidth={1536} originHeight={864} fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full" />
                 <div className={`absolute inset-0 transition-opacity ${playing ? "opacity-100" : "opacity-0"}`}>
