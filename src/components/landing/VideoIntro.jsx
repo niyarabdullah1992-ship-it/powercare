@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Play, Pause, Layers3 } from "lucide-react";
+import { Play, Pause, BriefcaseBusiness } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import SeamlessVideoPlaylist from "@/components/landing/SeamlessVideoPlaylist";
 import { Image } from "@/components/ui/image";
@@ -65,7 +65,7 @@ export default function VideoIntro() {
       <div className="mx-auto max-w-[1080px] bg-foreground/[0.08] px-6 py-12 sm:px-10 md:px-20 md:py-20">
         <div className="flex items-center gap-4">
           <h2 className="font-heading text-4xl font-medium leading-none tracking-[-0.04em] text-foreground sm:text-5xl md:text-6xl">{t("videoHeading")}</h2>
-          <Layers3 className="hidden h-12 w-12 shrink-0 text-muted-foreground sm:block" strokeWidth={1} />
+          <BriefcaseBusiness className="hidden h-12 w-12 shrink-0 text-muted-foreground sm:block" strokeWidth={1} />
         </div>
 
         <div className="mt-10 grid items-center gap-10 md:grid-cols-[1.08fr,0.92fr] md:gap-8">
@@ -77,7 +77,7 @@ export default function VideoIntro() {
           </div>
 
           <div className="group relative h-56 overflow-hidden rounded-3xl bg-muted md:h-60">
-            <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/57a2a9745_generated_image.png" alt="Monochrome architectural structure" originWidth={1536} originHeight={1024} fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full grayscale" />
+            <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/4016f736a_generated_image.png" alt="Corporate management team reviewing company operations" originWidth={1536} originHeight={1024} fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full grayscale" />
             <div className="absolute inset-0 grayscale opacity-70">
               <SeamlessVideoPlaylist ref={playerRef} urls={VIDEO_URLS} playing={playing} onClick={togglePlay} onPlaylistEnd={handlePlaylistEnd} />
             </div>
