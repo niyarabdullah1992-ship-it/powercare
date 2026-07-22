@@ -10,8 +10,8 @@ module.exports = {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		boxShadow: {
-  			soft: '0 10px 35px hsl(var(--foreground) / 0.07)',
-  			elevated: '0 18px 55px hsl(var(--foreground) / 0.11)'
+  			soft: '0 12px 34px hsl(var(--foreground) / 0.08)',
+  			elevated: '0 22px 60px hsl(var(--foreground) / 0.14)'
   		},
   		colors: {
   			background: 'hsl(var(--background))',

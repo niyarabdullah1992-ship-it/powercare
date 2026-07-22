@@ -282,7 +282,7 @@ export default function Layout({ children }) {
                           className={({ isActive }) =>
                             `flex h-11 w-full items-center gap-3 rounded-xl px-3 transition-all ${
                               isActive
-                                ? "bg-landing-gold text-white shadow-lg shadow-black/20"
+                                ? "bg-landing-gold text-primary shadow-lg shadow-black/20"
                                 : "text-white/55 hover:bg-white/10 hover:text-white"
                             }`
                           }
@@ -308,7 +308,7 @@ export default function Layout({ children }) {
         <button
           onClick={() => navigate(`/app/employees/${currentUser.id}`)}
           title={t("viewProfile")}
-          className="mx-auto mb-5 mt-2 flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-landing-gold text-sm font-medium text-white ring-2 ring-white/20 transition hover:ring-landing-gold-light"
+          className="mx-auto mb-5 mt-2 flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-landing-gold text-sm font-semibold text-primary ring-2 ring-white/20 transition hover:ring-landing-gold-light"
         >
           {currentUser.profile?.avatarUrl ? (
             <img src={currentUser.profile.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />

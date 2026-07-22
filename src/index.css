@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,50 +6,50 @@
 
 @layer base {
   :root {
-    --background: 220 33% 98%;
-    --foreground: 222 47% 13%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 13%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 13%;
-    --primary: 225 63% 38%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 38% 94%;
-    --secondary-foreground: 225 63% 30%;
-    --muted: 220 28% 95%;
-    --muted-foreground: 219 18% 43%;
-    --accent: 218 78% 52%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 68% 46%;
+    --background: 40 30% 97%;
+    --foreground: 211 44% 16%;
+    --card: 42 33% 99%;
+    --card-foreground: 211 44% 16%;
+    --popover: 42 33% 99%;
+    --popover-foreground: 211 44% 16%;
+    --primary: 211 46% 18%;
+    --primary-foreground: 42 38% 96%;
+    --secondary: 38 27% 92%;
+    --secondary-foreground: 211 44% 18%;
+    --muted: 40 22% 94%;
+    --muted-foreground: 211 13% 42%;
+    --accent: 38 43% 56%;
+    --accent-foreground: 211 46% 15%;
+    --destructive: 0 62% 44%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 24% 87%;
-    --input: 220 24% 84%;
-    --ring: 225 63% 38%;
-    --chart-1: 225 63% 38%;
-    --chart-2: 218 78% 52%;
-    --chart-3: 211 67% 48%;
-    --chart-4: 156 48% 39%;
-    --chart-5: 204 78% 48%;
-    --radius: .75rem;
-    --font-heading: 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
+    --border: 37 20% 82%;
+    --input: 37 20% 78%;
+    --ring: 38 43% 56%;
+    --chart-1: 211 46% 18%;
+    --chart-2: 38 43% 56%;
+    --chart-3: 184 28% 36%;
+    --chart-4: 28 35% 48%;
+    --chart-5: 211 25% 46%;
+    --radius: 1rem;
+    --font-heading: 'Cormorant Garamond', 'Noto Kufi Arabic', ui-serif, Georgia, serif;
     --font-body: 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
     --font-display: 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    --sidebar-background: 225 62% 25%;
-    --sidebar-foreground: 220 35% 97%;
-    --sidebar-primary: 218 78% 52%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 50% 34%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 225 36% 38%;
-    --sidebar-ring: 218 78% 52%;
-    --landing-bg: 220 33% 98%;
-    --landing-olive: 225 63% 38%;
-    --landing-olive-card: 0 0% 100%;
-    --landing-gold: 218 78% 52%;
-    --landing-gold-light: 215 92% 72%;
-    --landing-gold-deep: 225 70% 36%;
-    --landing-cinema: 225 63% 31%;
+    --sidebar-background: 211 50% 12%;
+    --sidebar-foreground: 42 38% 96%;
+    --sidebar-primary: 38 43% 56%;
+    --sidebar-primary-foreground: 211 46% 15%;
+    --sidebar-accent: 211 35% 23%;
+    --sidebar-accent-foreground: 42 38% 96%;
+    --sidebar-border: 38 24% 34%;
+    --sidebar-ring: 38 43% 56%;
+    --landing-bg: 40 30% 97%;
+    --landing-olive: 211 46% 18%;
+    --landing-olive-card: 42 33% 99%;
+    --landing-gold: 38 43% 56%;
+    --landing-gold-light: 39 52% 72%;
+    --landing-gold-deep: 30 39% 37%;
+    --landing-cinema: 211 50% 14%;
     --executive-teal: 180 100% 27%;
     --executive-panel: 197 45% 94%;
     --executive-ink: 200 18% 12%;
@@ -73,39 +73,39 @@
   }
 
   .dark {
-    --background: 225 38% 9%;
-    --foreground: 220 30% 96%;
-    --card: 225 34% 13%;
-    --card-foreground: 220 30% 96%;
-    --popover: 225 34% 13%;
-    --popover-foreground: 220 30% 96%;
-    --primary: 218 74% 67%;
-    --primary-foreground: 225 48% 10%;
-    --secondary: 225 26% 19%;
-    --secondary-foreground: 220 30% 94%;
-    --muted: 225 24% 17%;
-    --muted-foreground: 218 16% 69%;
-    --accent: 216 88% 62%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 62% 50%;
+    --background: 211 48% 8%;
+    --foreground: 40 30% 94%;
+    --card: 211 40% 12%;
+    --card-foreground: 40 30% 94%;
+    --popover: 211 40% 12%;
+    --popover-foreground: 40 30% 94%;
+    --primary: 211 34% 24%;
+    --primary-foreground: 40 30% 96%;
+    --secondary: 211 28% 17%;
+    --secondary-foreground: 40 26% 92%;
+    --muted: 211 24% 15%;
+    --muted-foreground: 38 16% 68%;
+    --accent: 38 48% 64%;
+    --accent-foreground: 211 50% 10%;
+    --destructive: 0 58% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 224 23% 25%;
-    --input: 224 23% 25%;
-    --ring: 216 88% 62%;
-    --chart-1: 218 74% 67%;
-    --chart-2: 216 88% 62%;
-    --chart-3: 197 72% 57%;
-    --chart-4: 156 48% 52%;
-    --chart-5: 204 82% 62%;
-    --sidebar-background: 225 49% 8%;
-    --sidebar-foreground: 220 30% 96%;
-    --sidebar-primary: 216 88% 62%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 225 31% 18%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 225 25% 23%;
-    --sidebar-ring: 216 88% 62%;
-    --landing-cinema: 225 56% 16%;
+    --border: 211 20% 25%;
+    --input: 211 20% 27%;
+    --ring: 38 48% 64%;
+    --chart-1: 38 48% 64%;
+    --chart-2: 184 31% 55%;
+    --chart-3: 211 35% 62%;
+    --chart-4: 28 43% 62%;
+    --chart-5: 40 24% 74%;
+    --sidebar-background: 211 52% 7%;
+    --sidebar-foreground: 40 30% 94%;
+    --sidebar-primary: 38 48% 64%;
+    --sidebar-primary-foreground: 211 50% 10%;
+    --sidebar-accent: 211 31% 18%;
+    --sidebar-accent-foreground: 40 30% 96%;
+    --sidebar-border: 38 18% 27%;
+    --sidebar-ring: 38 48% 64%;
+    --landing-cinema: 211 52% 9%;
     --executive-teal: 180 76% 42%;
     --executive-panel: 198 26% 16%;
     --executive-ink: 195 25% 95%;
@@ -164,11 +164,11 @@
   }
 
   .font-display {
-    font-family: 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Cormorant Garamond', 'Noto Kufi Arabic', ui-serif, Georgia, serif;
   }
 
   .hero-title {
-    font-family: 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Cormorant Garamond', 'Noto Kufi Arabic', ui-serif, Georgia, serif;
     line-height: 1.05;
     letter-spacing: -0.03em;
     font-weight: 700;
@@ -442,33 +442,33 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   filter: drop-shadow(0 1px 1px hsl(var(--foreground) / .08));
 }
 
-/* Architectural monochrome marketing theme — warm white, charcoal and restrained cobalt. */
+/* Warm executive identity — ivory, deep navy and restrained gold. */
 .powercare-public {
-  --background: 60 14% 98%;
-  --foreground: 240 5% 10%;
-  --card: 0 0% 100%;
-  --card-foreground: 240 5% 10%;
-  --primary: 240 5% 10%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 220 22% 96%;
-  --secondary-foreground: 240 5% 10%;
-  --muted: 220 16% 96%;
-  --muted-foreground: 220 9% 42%;
-  --accent: 220 54% 42%;
-  --accent-foreground: 0 0% 100%;
-  --border: 220 14% 84%;
-  --input: 220 14% 82%;
-  --ring: 220 54% 42%;
-  --landing-bg: 60 14% 98%;
-  --landing-olive: 240 5% 10%;
-  --landing-olive-card: 0 0% 100%;
-  --landing-gold: 220 54% 42%;
-  --landing-gold-light: 218 69% 75%;
-  --landing-gold-deep: 220 61% 31%;
-  --landing-cinema: 240 5% 10%;
-  --icon-gold: 220 54% 42%;
-  --icon-gold-soft: 218 69% 75%;
-  --icon-halo: 220 54% 42%;
+  --background: 40 30% 97%;
+  --foreground: 211 44% 16%;
+  --card: 42 33% 99%;
+  --card-foreground: 211 44% 16%;
+  --primary: 211 46% 18%;
+  --primary-foreground: 42 38% 96%;
+  --secondary: 38 27% 92%;
+  --secondary-foreground: 211 44% 18%;
+  --muted: 40 22% 94%;
+  --muted-foreground: 211 13% 42%;
+  --accent: 38 43% 56%;
+  --accent-foreground: 211 46% 15%;
+  --border: 37 20% 82%;
+  --input: 37 20% 78%;
+  --ring: 38 43% 56%;
+  --landing-bg: 40 30% 97%;
+  --landing-olive: 211 46% 18%;
+  --landing-olive-card: 42 33% 99%;
+  --landing-gold: 38 43% 56%;
+  --landing-gold-light: 39 52% 72%;
+  --landing-gold-deep: 30 39% 37%;
+  --landing-cinema: 211 50% 14%;
+  --icon-gold: 38 43% 56%;
+  --icon-gold-soft: 39 52% 72%;
+  --icon-halo: 38 43% 56%;
 }
 .powercare-public svg.lucide:not(.animate-spin),
 .powercare-shell svg.lucide:not(.animate-spin) { animation: none; }
@@ -486,53 +486,53 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   color: hsl(var(--primary-foreground));
 }
 
-/* Corporate management template — scoped to the authenticated platform. */
+/* Warm executive identity — scoped to the authenticated platform. */
 .powercare-shell {
-  --background: 220 33% 98%;
-  --foreground: 222 47% 13%;
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 13%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 13%;
-  --primary: 225 63% 38%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 220 38% 94%;
-  --secondary-foreground: 225 63% 30%;
-  --muted: 220 28% 95%;
-  --muted-foreground: 219 18% 43%;
-  --accent: 218 78% 52%;
-  --accent-foreground: 0 0% 100%;
-  --border: 220 24% 87%;
-  --input: 220 24% 84%;
-  --ring: 225 63% 38%;
-  --sidebar-background: 225 62% 25%;
-  --sidebar-foreground: 220 35% 97%;
-  --sidebar-accent: 225 50% 34%;
-  --sidebar-accent-foreground: 0 0% 100%;
-  --icon-gold: 218 78% 52%;
-  --icon-gold-soft: 215 92% 72%;
-  --icon-halo: 218 78% 52%;
+  --background: 40 30% 97%;
+  --foreground: 211 44% 16%;
+  --card: 42 33% 99%;
+  --card-foreground: 211 44% 16%;
+  --popover: 42 33% 99%;
+  --popover-foreground: 211 44% 16%;
+  --primary: 211 46% 18%;
+  --primary-foreground: 42 38% 96%;
+  --secondary: 38 27% 92%;
+  --secondary-foreground: 211 44% 18%;
+  --muted: 40 22% 94%;
+  --muted-foreground: 211 13% 42%;
+  --accent: 38 43% 56%;
+  --accent-foreground: 211 46% 15%;
+  --border: 37 20% 82%;
+  --input: 37 20% 78%;
+  --ring: 38 43% 56%;
+  --sidebar-background: 211 50% 12%;
+  --sidebar-foreground: 42 38% 96%;
+  --sidebar-accent: 211 35% 23%;
+  --sidebar-accent-foreground: 42 38% 96%;
+  --icon-gold: 38 43% 56%;
+  --icon-gold-soft: 39 52% 72%;
+  --icon-halo: 38 43% 56%;
 }
 .dark .powercare-shell {
-  --background: 225 38% 9%;
-  --foreground: 220 30% 96%;
-  --card: 225 34% 13%;
-  --card-foreground: 220 30% 96%;
-  --popover: 225 34% 13%;
-  --popover-foreground: 220 30% 96%;
-  --primary: 218 74% 67%;
-  --primary-foreground: 225 48% 10%;
-  --secondary: 225 26% 19%;
-  --secondary-foreground: 220 30% 94%;
-  --muted: 225 24% 17%;
-  --muted-foreground: 218 16% 69%;
-  --accent: 216 88% 62%;
-  --accent-foreground: 0 0% 100%;
-  --border: 224 23% 25%;
-  --input: 224 23% 25%;
-  --ring: 216 88% 62%;
-  --sidebar-background: 225 49% 8%;
-  --sidebar-foreground: 220 30% 96%;
+  --background: 211 48% 8%;
+  --foreground: 40 30% 94%;
+  --card: 211 40% 12%;
+  --card-foreground: 40 30% 94%;
+  --popover: 211 40% 12%;
+  --popover-foreground: 40 30% 94%;
+  --primary: 211 34% 24%;
+  --primary-foreground: 40 30% 96%;
+  --secondary: 211 28% 17%;
+  --secondary-foreground: 40 26% 92%;
+  --muted: 211 24% 15%;
+  --muted-foreground: 38 16% 68%;
+  --accent: 38 48% 64%;
+  --accent-foreground: 211 50% 10%;
+  --border: 211 20% 25%;
+  --input: 211 20% 27%;
+  --ring: 38 48% 64%;
+  --sidebar-background: 211 52% 7%;
+  --sidebar-foreground: 40 30% 94%;
 }
 
 /* PowerCare corporate — touch-first spatial interface */
