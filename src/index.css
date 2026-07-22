@@ -18,7 +18,7 @@
     --secondary-foreground: 225 63% 30%;
     --muted: 220 28% 95%;
     --muted-foreground: 219 18% 43%;
-    --accent: 24 91% 56%;
+    --accent: 218 78% 52%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 68% 46%;
     --destructive-foreground: 0 0% 100%;
@@ -26,10 +26,10 @@
     --input: 220 24% 84%;
     --ring: 225 63% 38%;
     --chart-1: 225 63% 38%;
-    --chart-2: 24 91% 56%;
+    --chart-2: 218 78% 52%;
     --chart-3: 211 67% 48%;
     --chart-4: 156 48% 39%;
-    --chart-5: 43 88% 52%;
+    --chart-5: 204 78% 48%;
     --radius: .75rem;
     --font-heading: 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
     --font-body: 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
@@ -37,31 +37,31 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --sidebar-background: 225 62% 25%;
     --sidebar-foreground: 220 35% 97%;
-    --sidebar-primary: 24 91% 56%;
+    --sidebar-primary: 218 78% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 225 50% 34%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 225 36% 38%;
-    --sidebar-ring: 24 91% 56%;
+    --sidebar-ring: 218 78% 52%;
     --landing-bg: 220 33% 98%;
     --landing-olive: 225 63% 38%;
     --landing-olive-card: 0 0% 100%;
-    --landing-gold: 24 91% 56%;
-    --landing-gold-light: 25 100% 72%;
-    --landing-gold-deep: 20 88% 45%;
+    --landing-gold: 218 78% 52%;
+    --landing-gold-light: 215 92% 72%;
+    --landing-gold-deep: 225 70% 36%;
     --landing-cinema: 225 63% 31%;
     --sign-bg: 220 33% 98%;
     --sign-surface: 0 0% 100%;
     --sign-ink: 222 47% 13%;
-    --sign-gold: 24 91% 56%;
-    --icon-gold: 24 91% 56%;
-    --icon-gold-soft: 25 100% 72%;
-    --icon-halo: 24 91% 56%;
+    --sign-gold: 218 78% 52%;
+    --icon-gold: 218 78% 52%;
+    --icon-gold-soft: 215 92% 72%;
+    --icon-halo: 218 78% 52%;
     --holo-bg: 225 63% 20%;
     --holo-panel: 225 56% 26%;
     --holo-cyan: 211 80% 70%;
-    --holo-green: 24 91% 56%;
-    --holo-green-soft: 25 100% 72%;
+    --holo-green: 218 78% 52%;
+    --holo-green-soft: 215 92% 72%;
   }
 
   .dark {
@@ -77,39 +77,39 @@
     --secondary-foreground: 220 30% 94%;
     --muted: 225 24% 17%;
     --muted-foreground: 218 16% 69%;
-    --accent: 24 91% 58%;
+    --accent: 216 88% 62%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
     --border: 224 23% 25%;
     --input: 224 23% 25%;
-    --ring: 24 91% 58%;
+    --ring: 216 88% 62%;
     --chart-1: 218 74% 67%;
-    --chart-2: 24 91% 58%;
+    --chart-2: 216 88% 62%;
     --chart-3: 197 72% 57%;
     --chart-4: 156 48% 52%;
-    --chart-5: 43 88% 60%;
+    --chart-5: 204 82% 62%;
     --sidebar-background: 225 49% 8%;
     --sidebar-foreground: 220 30% 96%;
-    --sidebar-primary: 24 91% 58%;
+    --sidebar-primary: 216 88% 62%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 225 31% 18%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 225 25% 23%;
-    --sidebar-ring: 24 91% 58%;
+    --sidebar-ring: 216 88% 62%;
     --landing-cinema: 225 56% 16%;
     --sign-bg: 225 38% 9%;
     --sign-surface: 225 34% 13%;
     --sign-ink: 220 30% 96%;
-    --sign-gold: 24 91% 58%;
-    --icon-gold: 24 91% 58%;
-    --icon-gold-soft: 25 100% 72%;
-    --icon-halo: 24 91% 58%;
+    --sign-gold: 216 88% 62%;
+    --icon-gold: 216 88% 62%;
+    --icon-gold-soft: 215 92% 72%;
+    --icon-halo: 216 88% 62%;
     --holo-bg: 225 49% 8%;
     --holo-panel: 225 34% 13%;
     --holo-cyan: 218 74% 67%;
-    --holo-green: 24 91% 58%;
-    --holo-green-soft: 25 100% 72%;
+    --holo-green: 216 88% 62%;
+    --holo-green-soft: 215 92% 72%;
   }
 }
 
@@ -438,7 +438,7 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   --secondary-foreground: 225 63% 30%;
   --muted: 220 28% 95%;
   --muted-foreground: 219 18% 43%;
-  --accent: 24 91% 56%;
+  --accent: 218 78% 52%;
   --accent-foreground: 0 0% 100%;
   --border: 220 24% 87%;
   --input: 220 24% 84%;
@@ -446,13 +446,13 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   --landing-bg: 220 33% 98%;
   --landing-olive: 225 63% 38%;
   --landing-olive-card: 0 0% 100%;
-  --landing-gold: 24 91% 56%;
-  --landing-gold-light: 25 100% 72%;
-  --landing-gold-deep: 20 88% 45%;
+  --landing-gold: 218 78% 52%;
+  --landing-gold-light: 215 92% 72%;
+  --landing-gold-deep: 225 70% 36%;
   --landing-cinema: 225 63% 31%;
-  --icon-gold: 24 91% 56%;
-  --icon-gold-soft: 25 100% 72%;
-  --icon-halo: 24 91% 56%;
+  --icon-gold: 218 78% 52%;
+  --icon-gold-soft: 215 92% 72%;
+  --icon-halo: 218 78% 52%;
 }
 .powercare-public svg.lucide:not(.animate-spin),
 .powercare-shell svg.lucide:not(.animate-spin) { animation: none; }
@@ -476,7 +476,7 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   --secondary-foreground: 225 63% 30%;
   --muted: 220 28% 95%;
   --muted-foreground: 219 18% 43%;
-  --accent: 24 91% 56%;
+  --accent: 218 78% 52%;
   --accent-foreground: 0 0% 100%;
   --border: 220 24% 87%;
   --input: 220 24% 84%;
@@ -485,9 +485,9 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   --sidebar-foreground: 220 35% 97%;
   --sidebar-accent: 225 50% 34%;
   --sidebar-accent-foreground: 0 0% 100%;
-  --icon-gold: 24 91% 56%;
-  --icon-gold-soft: 25 100% 72%;
-  --icon-halo: 24 91% 56%;
+  --icon-gold: 218 78% 52%;
+  --icon-gold-soft: 215 92% 72%;
+  --icon-halo: 218 78% 52%;
 }
 .dark .powercare-shell {
   --background: 225 38% 9%;
@@ -502,11 +502,11 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   --secondary-foreground: 220 30% 94%;
   --muted: 225 24% 17%;
   --muted-foreground: 218 16% 69%;
-  --accent: 24 91% 58%;
+  --accent: 216 88% 62%;
   --accent-foreground: 0 0% 100%;
   --border: 224 23% 25%;
   --input: 224 23% 25%;
-  --ring: 24 91% 58%;
+  --ring: 216 88% 62%;
   --sidebar-background: 225 49% 8%;
   --sidebar-foreground: 220 30% 96%;
 }
