@@ -53,6 +53,28 @@ async function datasetRows(action, data, currentUser, company) {
   const ctx = buildAssistantContext(data, currentUser);
   await enrichAssistantContext(ctx, { session: { companyId: company.id }, data });
   const dataset = norm(action.dataset);
+  if (dataset === "tasks" || dataset === "targets") {
+    const res = await base44.functions.invoke("supabaseTargets", {
+      action: "listTargets",
+      companyId: company.id,
+      sessionToken: getCompanyToken(company.id),
+    });
+    let tasks = (res?.data?.targets || []).map((item) => ({
+      title: item.title,
+      status: item.status,
+      progress: item.completed_tasks || 0,
+      target: item.task_target,
+      station: data.stations.find((station) => station.id === item.station_id)?.name || "—",
+      assignee: data.employees.find((employee) => employee.id === (item.assignment_id || item.employee_id))?.name || "—",
+      deadline: item.end_date,
+      priority: item.priority,
+    }));
+    const filter = norm(action.filter);
+    if (filter === "incomplete") tasks = tasks.filter((item) => !["completed", "done"].includes(norm(item.status)));
+    if (filter === "completed") tasks = tasks.filter((item) => ["completed", "done"].includes(norm(item.status)));
+    if (filter === "active" || filter === "overdue") tasks = tasks.filter((item) => norm(item.status) === filter);
+    return tasks;
+  }
   if (dataset === "attendance") {
     const ids = ctx.employees.map((e) => e.id);
     if (!ids.length) return [];
