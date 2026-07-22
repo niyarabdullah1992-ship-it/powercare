@@ -76,7 +76,7 @@ export default function VideoIntro() {
 
             <div className="group relative order-1 aspect-video overflow-hidden bg-card p-3 lg:order-none lg:aspect-auto lg:min-h-[390px]">
               <div className="absolute inset-3 overflow-hidden border border-accent/55">
-                <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/e03e45e6f_generated_image.png" alt="Executive leadership team reviewing PowerCare operations" originWidth={1536} originHeight={864} fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full" />
+                <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/41c3e14ec_generated_image.png" alt="Leading Together executive leadership team" originWidth={1536} originHeight={864} fittingType="fill" focalPointX={0.5} focalPointY={0.5} quality={100} className="absolute inset-0 h-full w-full" />
                 <div className={`absolute inset-0 transition-opacity ${playing ? "opacity-100" : "opacity-0"}`}>
                   <SeamlessVideoPlaylist ref={playerRef} urls={VIDEO_URLS} playing={playing} onClick={togglePlay} onPlaylistEnd={handlePlaylistEnd} />
                 </div>
