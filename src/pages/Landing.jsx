@@ -72,8 +72,8 @@ export default function Landing() {
           </div>
 
           <div dir="ltr" className="grid items-stretch gap-4 lg:h-[430px] lg:grid-cols-[2fr,1fr]">
-            <div className="relative min-h-[300px] overflow-hidden rounded-lg border border-border lg:h-full lg:min-h-0">
-              <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/806c6d115_generated_image.png" alt={lang === "ar" ? "موظف مبتسم في مكتب حديث يعكس هوية PowerCare" : "Smiling professional in a modern office representing PowerCare"} originWidth={1536} originHeight={1024} fittingType="fill" focalPointX={0.46} focalPointY={0.5} className="absolute inset-0 h-full w-full" />
+            <div className="relative min-h-[300px] overflow-hidden rounded-lg border border-border bg-secondary lg:h-full lg:min-h-0">
+              <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/806c6d115_generated_image.png" alt={lang === "ar" ? "موظف مبتسم في مكتب حديث يعكس هوية PowerCare" : "Smiling professional in a modern office representing PowerCare"} originWidth={1536} originHeight={1024} fittingType="fit" className="absolute inset-0 h-full w-full" />
             </div>
 
             <div dir={lang === "ar" ? "rtl" : "ltr"} className="flex h-full flex-col justify-center rounded-lg border border-border bg-card p-4">
