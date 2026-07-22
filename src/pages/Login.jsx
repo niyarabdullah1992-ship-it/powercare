@@ -17,11 +17,11 @@ export default function Login() {
         <span className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
           <span>
             {ar ? "ليس لديك حساب؟ " : "Don't have an account? "}
-            <Link to="/register" className="font-medium text-primary hover:underline">
+            <Link to="/register" className="font-medium text-accent hover:underline">
               {ar ? "إنشاء حساب" : "Create one"}
             </Link>
           </span>
-          <Link to="/" className="font-medium text-primary hover:underline">
+          <Link to="/" className="font-medium text-accent hover:underline">
             {ar ? "العودة إلى الصفحة الرئيسية" : "Back to home"}
           </Link>
         </span>

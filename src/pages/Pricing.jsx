@@ -114,37 +114,37 @@ export default function Pricing() {
   };
 
   return (
-    <div className="min-h-screen bg-landing-bg px-6 py-12">
+    <div className="powercare-public min-h-screen bg-landing-cinema px-6 py-12 text-white">
       <div className="max-w-6xl mx-auto">
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-1.5 text-sm font-body text-[#3a2f22]/60 hover:text-[#3a2f22] mb-4"
+          className="mb-4 flex items-center gap-1.5 text-sm text-white/55 hover:text-white"
         >
           <ArrowLeft className="w-4 h-4 rtl:rotate-180" /> {t("backBtn")}
         </button>
         <div className="flex items-center gap-2 justify-center mb-3">
           <Logo size={32} />
         </div>
-        <h1 className="hero-title text-landing-gold text-5xl md:text-6xl text-center mb-3">{t("pricingHeading")}</h1>
-        <p className="text-center text-[#3a2f22]/55 font-body mb-12">{t("pricingSubheading")}</p>
+        <h1 className="mb-3 text-center font-heading text-5xl font-semibold text-white md:text-6xl">{t("pricingHeading")}</h1>
+        <p className="mb-12 text-center text-white/55">{t("pricingSubheading")}</p>
 
         {error && <p className="text-center text-sm text-red-500 font-body mb-6">{error}</p>}
 
-        <div className="mx-auto mb-10 w-fit rounded-full border border-landing-gold/25 bg-white px-5 py-2 text-sm font-semibold text-landing-gold shadow-sm">
+        <div className="mx-auto mb-10 w-fit rounded-full border border-accent/35 bg-accent/10 px-5 py-2 text-sm font-semibold text-accent shadow-sm">
           {lang === "ar" ? "جميع الخطط مجانية في الوقت الراهن" : "All plans are currently free"}
         </div>
 
         <div className="grid md:grid-cols-4 gap-6">
           {PLANS.map((plan) => (
-            <div key={plan.id} className="bg-white rounded-2xl p-6 shadow-sm flex flex-col">
-              <h3 className="font-heading text-2xl text-[#3a2f22] mb-1">{t(plan.nameKey)}</h3>
-              <p className="font-heading text-3xl text-landing-gold mb-1">
+            <div key={plan.id} className="flex flex-col rounded-2xl border border-accent/20 bg-card p-6 text-card-foreground shadow-xl shadow-accent/5">
+              <h3 className="mb-1 font-heading text-2xl text-primary">{t(plan.nameKey)}</h3>
+              <p className="mb-1 font-heading text-3xl text-accent">
                 {lang === "ar" ? "مجاني حاليًا" : "Free for now"}
               </p>
               <p className="text-xs text-landing-gold font-body font-medium mb-4">{lang === "ar" ? "متاحة مجانًا في الوقت الراهن" : "Available free for the time being"}</p>
               <ul className="space-y-2 mb-6 flex-1">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-[#3a2f22]/70 font-body">
+                  <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
                     <Check className="w-4 h-4 text-landing-gold shrink-0 mt-0.5" strokeWidth={2} />
                     {f}
                   </li>
@@ -153,7 +153,7 @@ export default function Pricing() {
               <button
                 onClick={() => ownerUpgrade ? handleOwnerUpgrade(plan) : setActivePlan(plan)}
                 disabled={loading}
-                className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-2.5 text-sm font-semibold text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
               >
                 {loading && activePlan?.id === plan.id ? <Loader2 className="w-4 h-4 animate-spin" /> : ownerUpgrade ? (lang === "ar" ? `ترقية إلى ${t(plan.nameKey)}` : `Upgrade to ${t(plan.nameKey)}`) : (lang === "ar" ? "ابدأ مجانًا" : "Start free")}
               </button>

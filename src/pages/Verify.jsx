@@ -26,7 +26,7 @@ export default function Verify() {
   }, [id]);
 
   return (
-    <div className="min-h-screen bg-background px-4 py-10">
+    <div className="powercare-public min-h-screen bg-landing-cinema px-4 py-10 text-white">
       <div className="max-w-xl mx-auto space-y-5">
         <div className="flex items-center gap-3">
           <Logo size={40} />
@@ -48,15 +48,15 @@ export default function Verify() {
 
         {/* Signature details from the QR's verification ID */}
         {!loading && id && info?.found && (
-          <div className="p-5 rounded-xl border-2 border-[#b07d3f]/60 bg-[#faf6ef] flex items-center gap-4">
-            <Fingerprint className="w-10 h-10 text-[#b07d3f] shrink-0" />
+          <div className="flex items-center gap-4 rounded-xl border-2 border-accent/50 bg-card p-5 text-card-foreground">
+            <Fingerprint className="h-10 w-10 shrink-0 text-accent" />
             <div className="min-w-0">
-              <p className="text-xs text-[#8a7d6a] font-body">Encrypted verification ID</p>
-              <p className="font-mono font-semibold text-lg text-[#2b2418]" dir="ltr">{info.verificationId}</p>
-              <p className="text-sm font-semibold text-[#2b2418] font-body">
+              <p className="text-xs text-muted-foreground">Encrypted verification ID</p>
+              <p className="font-mono text-lg font-semibold text-primary" dir="ltr">{info.verificationId}</p>
+              <p className="text-sm font-semibold text-primary">
                 {info.signerName} — {info.signedAt ? new Date(info.signedAt).toLocaleDateString("en-GB") : ""}
               </p>
-              {info.fileName && <p className="text-xs text-[#8a7d6a] font-body truncate">{info.fileName}</p>}
+              {info.fileName && <p className="truncate text-xs text-muted-foreground">{info.fileName}</p>}
             </div>
           </div>
         )}

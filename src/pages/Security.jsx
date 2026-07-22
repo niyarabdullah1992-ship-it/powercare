@@ -71,11 +71,11 @@ export default function Security() {
   ];
 
   return (
-    <div className="min-h-screen bg-landing-bg font-body text-primary">
-      <div className="sticky top-0 z-50 flex items-center justify-between border-b border-landing-gold/15 bg-landing-bg/90 px-4 py-3 backdrop-blur-xl sm:px-6 md:px-10">
+    <div className="powercare-public min-h-screen bg-landing-cinema font-body text-white">
+      <div className="sticky top-0 z-50 flex items-center justify-between border-b border-accent/20 bg-landing-cinema/90 px-4 py-3 backdrop-blur-xl sm:px-6 md:px-10">
         <Link to="/" className="flex items-center gap-2">
           <Logo size={30} />
-          <span className="font-heading text-lg font-semibold text-primary">PowerCare</span>
+          <span className="font-heading text-lg font-semibold text-white">PowerCare</span>
         </Link>
         <Link to="/" className="flex items-center gap-1.5 text-sm font-body font-semibold text-landing-gold hover:underline">
           <ArrowLeft className={`h-4 w-4 ${ar ? "rotate-180" : ""}`} strokeWidth={1.75} />
@@ -85,13 +85,13 @@ export default function Security() {
 
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 md:px-10 md:py-20">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-landing-gold shadow-sm">
+          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-accent/35 bg-accent/10 text-accent shadow-lg shadow-accent/10">
             <ShieldCheck className="h-8 w-8" strokeWidth={1.5} />
           </span>
-          <h1 className="hero-title mt-6 text-4xl text-landing-gold sm:text-5xl md:text-6xl">
+          <h1 className="mt-6 font-heading text-4xl font-semibold text-white sm:text-5xl md:text-6xl">
             {ar ? "الأمان والامتثال" : "Security & Compliance"}
           </h1>
-          <p className="mt-5 text-base font-body leading-relaxed text-[#3a2f22]/65">
+          <p className="mt-5 text-base leading-relaxed text-white/60">
             {ar
               ? "الأمان ليس ميزة إضافية في PowerCare — إنه الأساس. كل طبقة من المنصة مبنية لحماية بيانات شركتك وموظفيك."
               : "Security isn't an add-on in PowerCare — it's the foundation. Every layer of the platform is built to protect your company and your people."}
@@ -104,11 +104,11 @@ export default function Security() {
           ))}
         </div>
 
-        <div className="mx-auto mt-14 max-w-2xl rounded-2xl border border-landing-gold/20 bg-white p-8 text-center shadow-sm">
-          <h2 className="font-heading text-2xl text-[#3a2f22]">
+        <div className="mx-auto mt-14 max-w-2xl rounded-2xl border border-accent/20 bg-card p-8 text-center text-card-foreground shadow-xl shadow-accent/5">
+          <h2 className="font-heading text-2xl text-primary">
             {ar ? "جاهزون لأسئلة فريق الأمن لديكم" : "Ready for your security team's questions"}
           </h2>
-          <p className="mt-2 text-sm font-body text-[#3a2f22]/60">
+          <p className="mt-2 text-sm text-muted-foreground">
             {ar
               ? "تواصل معنا للحصول على تفاصيل تقنية إضافية أو عرض مباشر لآليات الحماية."
               : "Contact us for deeper technical details or a live walkthrough of our protection mechanisms."}

@@ -44,39 +44,37 @@ export default function About() {
   const c = CONTENT[lang === "ar" ? "ar" : "en"];
 
   return (
-    <div className="min-h-screen bg-landing-bg font-body text-[#3a2f22]" dir={dir}>
-      <div className="flex items-center justify-between px-6 md:px-10 py-4 border-b border-landing-gold/15">
+    <div className="powercare-public min-h-screen bg-landing-cinema font-body text-white" dir={dir}>
+      <div className="flex items-center justify-between border-b border-accent/20 px-6 py-4 md:px-10">
         <div className="flex items-center gap-2">
           <Logo size={30} />
           <span className="font-heading font-semibold text-lg">PowerCare</span>
         </div>
-        <Link to="/" className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-landing-gold/25 bg-white text-sm hover:bg-white/70 transition-colors">
+        <Link to="/" className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10">
           <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} strokeWidth={1.75} /> {c.back}
         </Link>
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-14 md:py-20">
-        <h1 className="hero-title text-landing-gold text-5xl md:text-7xl mb-6">{c.title}</h1>
-        <p className="text-base md:text-lg text-[#3a2f22]/70 leading-relaxed max-w-3xl">{c.intro}</p>
+        <h1 className="mb-6 font-heading text-5xl font-semibold text-white md:text-7xl">{c.title}</h1>
+        <p className="max-w-3xl text-base leading-relaxed text-white/60 md:text-lg">{c.intro}</p>
 
-        <div className="mt-12 bg-white rounded-2xl p-8 shadow-sm">
-          <h2 className="font-heading text-2xl mb-3">{c.missionTitle}</h2>
-          <p className="text-sm md:text-base text-[#3a2f22]/60 leading-relaxed">{c.mission}</p>
+        <div className="mt-12 rounded-2xl border border-accent/25 bg-card p-8 text-card-foreground shadow-xl shadow-accent/10">
+          <h2 className="mb-3 font-heading text-2xl">{c.missionTitle}</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground md:text-base">{c.mission}</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 mt-10">
           {c.features.map((f) => (
-            <div key={f.title} className="bg-white rounded-2xl p-6 shadow-sm">
-              <span className="w-11 h-11 rounded-xl bg-landing-bg flex items-center justify-center mb-4 text-landing-gold">
-                <f.icon className="w-5 h-5" strokeWidth={1.5} />
-              </span>
-              <h3 className="font-heading text-xl mb-2">{f.title}</h3>
-              <p className="text-sm text-[#3a2f22]/55 leading-relaxed">{f.text}</p>
+            <div key={f.title} className="rounded-2xl border border-accent/20 bg-card p-6 text-card-foreground shadow-sm">
+              <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent"><f.icon className="h-5 w-5" strokeWidth={1.5} /></span>
+              <h3 className="mb-2 font-heading text-xl">{f.title}</h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">{f.text}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-12 bg-gradient-to-b from-landing-gold-light to-landing-gold rounded-2xl p-8 text-white">
+        <div className="mt-12 rounded-2xl bg-accent p-8 text-accent-foreground shadow-lg shadow-accent/20">
           <h2 className="font-heading text-2xl mb-4">{c.contactTitle}</h2>
           <ul className="space-y-2.5 text-sm">
             <li className="flex items-center gap-2"><Phone className="w-4 h-4" /> <span dir="ltr">0595414472</span></li>

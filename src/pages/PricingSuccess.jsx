@@ -68,8 +68,8 @@ export default function PricingSuccess() {
   };
 
   return (
-    <div className="min-h-screen bg-landing-bg flex items-center justify-center px-6">
-      <div className="bg-white rounded-2xl p-8 shadow-xl max-w-sm w-full text-center space-y-4">
+    <div className="powercare-public flex min-h-screen items-center justify-center bg-landing-cinema px-6">
+      <div className="w-full max-w-sm space-y-4 rounded-2xl border border-accent/25 bg-card p-8 text-center shadow-2xl shadow-accent/10">
         <div className="flex justify-center"><Logo size={40} /></div>
 
         {status === "verifying" && (
@@ -96,7 +96,7 @@ export default function PricingSuccess() {
                 />
               )}
               {setupError && <p className="text-xs text-red-500 font-body">{setupError}</p>}
-              <button disabled={submitting} type="submit" className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">
+              <button disabled={submitting} type="submit" className="w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-accent-foreground hover:bg-accent/90 disabled:opacity-50">
                 {submitting ? t("pleaseWaitBtn") : t("finishSetupBtn")}
               </button>
             </form>

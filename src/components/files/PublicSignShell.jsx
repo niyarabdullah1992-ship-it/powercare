@@ -4,8 +4,8 @@ import Logo from "@/components/Logo";
 
 export default function PublicSignShell({ ar, children }) {
   return (
-    <div className="min-h-screen bg-background text-foreground" dir={ar ? "rtl" : "ltr"}>
-      <header className="bg-primary text-primary-foreground">
+    <div className="powercare-public min-h-screen bg-landing-cinema text-white" dir={ar ? "rtl" : "ltr"}>
+      <header className="border-b border-accent/20 bg-landing-cinema text-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-foreground/10 ring-1 ring-primary-foreground/15"><Logo size={34} /></span>
@@ -18,7 +18,7 @@ export default function PublicSignShell({ ar, children }) {
         </div>
       </header>
       <main className="mx-auto -mt-8 w-full max-w-7xl px-4 pb-10 sm:px-6 lg:-mt-10 lg:px-8">{children}</main>
-      <footer className="border-t border-border px-4 py-6"><p className="flex items-center justify-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-accent" />{ar ? "توقيع إلكتروني موثّق وآمن بواسطة PowerCare" : "Secure, verified electronic signing by PowerCare"}</p></footer>
+      <footer className="border-t border-accent/20 px-4 py-6"><p className="flex items-center justify-center gap-2 text-xs text-white/50"><ShieldCheck className="h-4 w-4 text-accent" />{ar ? "توقيع إلكتروني موثّق وآمن بواسطة PowerCare" : "Secure, verified electronic signing by PowerCare"}</p></footer>
     </div>
   );
 }
