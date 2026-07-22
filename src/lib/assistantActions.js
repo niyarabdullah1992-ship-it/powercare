@@ -1,4 +1,6 @@
-import { addCompanyFile, getCompanyToken, submitLeaveRequest } from "@/lib/store";
+import { addCompanyFile, getCompanyToken, submitLeaveRequest, setLeaveRequestStatus } from "@/lib/store";
+import { recordSafetyIncident } from "@/lib/safetyStore";
+import { canManageEmployees, hasHRPermission } from "@/lib/permissions";
 import { buildAssistantContext } from "./assistantContext";
 import { printReport } from "@/lib/printReport";
 import { generateSignedReport } from "@/lib/signedReport";
@@ -228,6 +230,23 @@ export async function executeAssistantAction(action, { data, company, currentUse
   if (action.type === "submit_leave") {
     submitLeaveRequest(company.id, currentUser.id, { type: action.title, startDate: action.startDate, endDate: action.endDate, reason: action.description || "", files: [] });
     return { ok: true, message: document.documentElement.dir === "rtl" ? "تم إرسال طلب الإجازة." : "Leave request submitted." };
+  }
+
+  if (action.type === "review_leave") {
+    const allowed = canManageEmployees(currentUser) || hasHRPermission(currentUser, data, "manage_leave") || hasHRPermission(currentUser, data, "manage_employees");
+    const employee = action.employee || action.employeeId ? data.employees.find((entry) => (action.employee && matches(entry.name, action.employee)) || entry.id === action.employeeId) : null;
+    const request = employee?.leaveRequests?.find((entry) => entry.id === action.requestId && entry.status === "pending");
+    if (!allowed) return { ok: false, message: t("aiNoPermission") };
+    if (!employee || !request || !["approved", "rejected"].includes(action.decision)) return { ok: false, message: t("aiNoData") };
+    setLeaveRequestStatus(company.id, employee.id, action.requestId, action.decision, currentUser.name);
+    return { ok: true, message: document.documentElement.dir === "rtl" ? "تمت مراجعة طلب الإجازة." : "Leave request reviewed." };
+  }
+
+  if (action.type === "log_safety_incident") {
+    const station = action.station ? data.stations.find((entry) => matches(entry.name, action.station)) : null;
+    if (!station || !String(action.description || "").trim()) return { ok: false, message: t("aiNoData") };
+    const saved = recordSafetyIncident(company.id, station.id, action.description, currentUser.name);
+    return { ok: saved, message: saved ? (document.documentElement.dir === "rtl" ? "تم تسجيل حادث السلامة." : "Safety incident recorded.") : t("aiActionFailed") };
   }
 
   if (action.type === "create_task") {

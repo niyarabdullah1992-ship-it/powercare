@@ -8,6 +8,7 @@ import { getCompanyToken } from "@/lib/store";
 import AssistantMessage from "@/components/assistant/AssistantMessage";
 import SuggestedQuestions from "@/components/assistant/SuggestedQuestions";
 import VoiceControl from "@/components/assistant/VoiceControl";
+import AutomationApprovalCard from "@/components/assistant/AutomationApprovalCard";
 import { Sparkles, Send, Loader2 } from "lucide-react";
 import speak from "@/components/assistant/speak";
 
@@ -17,6 +18,8 @@ export default function Assistant() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState(() => new URLSearchParams(window.location.search).get("prompt") || "");
   const [loading, setLoading] = useState(false);
+  const [pendingActions, setPendingActions] = useState([]);
+  const [approvalLoading, setApprovalLoading] = useState(false);
   const bottomRef = useRef(null);
   const loadedConversationRef = useRef("");
   const conversationKey = company?.id && currentUser?.id
@@ -47,7 +50,7 @@ export default function Assistant() {
 
   const ask = async (question, fromVoice = false) => {
     const q = question.trim();
-    if (!q || loading) return;
+    if (!q || loading || pendingActions.length) return;
     setInput("");
     const nextMessages = [...messages, { role: "user", text: q }];
     setMessages(nextMessages);
@@ -106,7 +109,7 @@ export default function Assistant() {
       const history = nextMessages.slice(-8).map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`).join("\n");
       const res = await base44.integrations.Core.InvokeLLM({
         prompt: `You are "Niro" (Arabic: نيرو) — PowerCare's smart operations assistant for power/water station management. PowerCare was founded by Niyar Abdullah (نيار عبدالله), a man. His nickname is Niro (نيرو), and you were named Niro in his honor. When asked about your name, identity, the platform founder, or why you are called Niro, explain this origin clearly and respectfully without inventing additional biographical details.
-You answer questions from "${currentUser.name}" (role: ${currentUser.role}) about their company's operations. You execute supported actions immediately when the request is clear, always within the user's server-validated permissions.
+You answer questions from "${currentUser.name}" (role: ${currentUser.role}) about their company's operations. You prepare supported actions when the request is clear, always within the user's validated permissions. Every action is shown to the user for explicit approval before the app executes it.
 
 AVAILABLE ACTIONS (include them in "actions" when the user asks you to do something):
 - {"type":"export_data","dataset":"employees"|"tasks"|"targets"|"reports"|"stations"|"safety"|"plans"|"schedules"|"complaints"|"files"|"hr"|"leaves"|"certificates"|"performance"|"attendance"|"inventory"|"inventory_movements"|"material_requests"|"expenses"|"payroll","format":"excel"|"pdf","reportTitle":"<title in the user's language>"} — exports any permitted site dataset WITHOUT a signature. "excel" downloads an Excel-compatible file; "pdf" opens a brand-styled printable report. Use ONLY when the user does NOT mention signing.
@@ -119,8 +122,10 @@ AVAILABLE ACTIONS (include them in "actions" when the user asks you to do someth
 - {"type":"request_inventory","title":"<item name or code>","sourceStation":"<source>","destinationStation":"<destination>","quantity":1,"description":"<reason>"} — submits a real material request between stations.
 - {"type":"issue_inventory","title":"<item name or code>","station":"<source station>","assignee":"<employee>","quantity":1,"workReference":"<task/project>","workDate":"YYYY-MM-DD","description":"<notes>"} — issues stock to real work.
 - {"type":"review_inventory_request","requestId":"<request id>","decision":"approved"|"rejected"} — reviews a material request only after an explicit approve/reject command.
-- {"type":"review_expense","claimId":"<expense id>","decision":"manager_approved"|"manager_rejected"|"finance_approved"|"finance_rejected"} — reviews an expense only after an explicit command.
-- {"type":"submit_leave","title":"<leave type>","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","description":"<reason>"} — submits the current user's leave request.
+- {"type":"review_expense","claimId":"<expense id>","decision":"manager_approved"|"manager_rejected"|"finance_approved"|"finance_rejected"} — proposes reviewing a pending expense.
+- {"type":"log_safety_incident","station":"<station name>","description":"<incident details>"} — proposes recording a real safety incident at a station.
+- {"type":"submit_leave","title":"<leave type>","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","description":"<reason>"} — proposes submitting the current user's leave request.
+- {"type":"review_leave","employee":"<employee name>","requestId":"<leave request id>","decision":"approved"|"rejected"} — proposes reviewing a pending leave request when the current user has HR authority.
 - {"type":"sign_report","dataset":"employees"|"tasks"|"targets"|"reports"|"stations"|"safety"|"plans"|"schedules"|"complaints"|"files"|"hr"|"leaves"|"certificates"|"performance"|"attendance"|"inventory"|"inventory_movements"|"material_requests"|"expenses"|"payroll","reportTitle":"<title in the user's language>"} — generates the report, stamps the user's SIGNATURE + verified badge (encrypted verification ID + QR code + SHA-256 fingerprint registered in the verification registry) INSIDE the file and downloads the signed PDF automatically.
   CRITICAL: if the user's request contains ANY signing word — sign / توقيع / وقّع / وقع / اعتماد / اعتمد / ختم — you MUST use sign_report (NOT export_data), even though the request also mentions تقرير/PDF. Never combine sign_report with export_data for the same request.
 - {"type":"create_document","docTitle":"<document title>","subtitle":"<optional subtitle>","docContent":"<THE FULL DOCUMENT TEXT: put '## ' before every section heading, '- ' before each bullet item, and \\n between paragraphs. Write the complete, rich content here — never leave it empty or summarized>"} — WRITES A COMPLETE PROFESSIONAL DOCUMENT about ANY idea/topic the user wants (proposal, policy, contract draft, project description, plan, letter, article, official declaration…) and opens it as an elegant print-ready A4 page the user can download as PDF. YOU write the actual full content: rich, well-structured, in the user's language, with as many sections as the topic deserves (usually 4–8), ordered and formatted exactly as the user requests. Use this whenever the user asks you to create/write/prepare a file or document about an idea — it is NOT tied to company datasets.
@@ -132,7 +137,7 @@ DOCUMENT SIGNING & VERIFICATION (you know this feature well):
 - Explain signing and verification questions without opening any page. Include open_page only when the user explicitly asks to open or navigate to that page.
 
 Rules:
-- When the user asks you to DO something covered by an action and all required details are present, include it in "actions" for immediate execution and describe the intended result briefly in "answer". Never claim success before the returned execution result is appended.
+- When the user asks you to DO something covered by an action and all required details are present, include it in "actions" as a proposal awaiting approval and describe the intended result briefly in "answer". Never claim it was executed until the approval result is appended.
 - If an action request is missing a required detail that cannot be safely inferred (such as which station, employee, task, dataset, or file format), ask exactly one short clarifying question in "answer" and return no actions. Never guess and execute the wrong action.
 - IMPORTANT: "tasks" and "targets" in COMPANY DATA are the REAL tasks from the Tasks section (قسم المهام). When the user asks about their tasks/مهام, answer from BOTH lists — a task assigned to the user's name means the user HAS tasks. Never say there are no tasks while either list contains an entry for them.
 - TODAY'S DATE is ${new Date().toISOString().slice(0, 10)}. Tasks are ONGOING RANGES (startDate → deadline), not single-day items. "مهام اليوم" / "today's tasks" = every task whose status is "active" or "overdue" (today falls inside its range). NEVER answer "no tasks today" or "لم يتم العثور على بيانات مطابقة" while active/overdue tasks exist — list them instead, with progress (completed/target) and deadline.
@@ -146,7 +151,7 @@ Rules:
 - DECISION LOGIC: reason before answering and rank work by this strict order: (1) immediate safety, compliance or service-continuity risk, (2) overdue work and deadlines, (3) blockers and dependencies preventing other work, (4) operational or financial impact, (5) quick wins and routine improvements. Within the same level, prioritize the item affecting more people/stations, then the oldest item.
 - For planning, summaries and "what should we do" questions, clearly provide: the highest priority, why it matters, the recommended next action, responsible role/person when known, target time/date, and any dependency. Separate "urgent now", "next", and "later" when multiple priorities exist. Never mark everything urgent.
 - Compare related data across sections when useful—for example tasks with attendance and schedules, inventory with work demand and purchases, safety with station activity, and expenses with operational output—while respecting the user's data scope. Distinguish facts from assumptions and say when evidence is insufficient.
-- Suggestions are advisory only. NEVER include an execution action merely because you suggested it; execute only when the user explicitly asks you to perform that action. For approvals, financial actions, stock issues and reversals, clearly ask for confirmation before execution unless the user's latest message already gives an explicit command.
+- Suggestions are advisory. When company data clearly supports a specific corrective action and every required identifier is available, you MAY include it in "actions" as a proposed automation. The app will always require explicit user approval before execution. Never invent missing identifiers or details.
 - ALWAYS answer in the same language as the user's question (Arabic questions get Arabic answers).
 - Be concise and practical. Use short bullet points, bold key numbers/names. Use markdown in "answer".
 - When asked for a summary, group by station and call out problems (stopped tasks, pending reports, red safety levels, low performance).
@@ -176,6 +181,7 @@ Answer the last user question.`,
                   subject: { type: "string" },
                   station: { type: "string" },
                   assignee: { type: "string" },
+                  employee: { type: "string" },
                   steps: { type: "string" },
                   section: { type: "string" },
                   taskTarget: { type: "number" },
@@ -231,31 +237,46 @@ Answer the last user question.`,
       // model alone to pick the right action.
       const wantsSign = /توقيع|توقيعي|وق[ّ]?ع|اعتماد|اعتمد|ختم|sign/i.test(q);
       const wantsNavigation = /افتح|اذهب|انتقل|ودني|خذني|روح|open|go to|navigate|take me|öffne|gehe|ouvre|aller à|abre|ve a|abrir|ir para|открой|перейди|開いて|移動して|열어|이동해/i.test(q);
-      const docs = [];
-      const actions = res?.actions || [];
-      const actionTools = actions.length ? await import("@/lib/assistantActions") : null;
-      for (const rawAction of actions) {
-        if (rawAction.type === "open_page" && !wantsNavigation) continue;
-        const action = wantsSign && rawAction.type === "export_data"
-          ? { ...rawAction, type: "sign_report" }
-          : rawAction;
-        let result;
-        try {
-          result = await actionTools.executeAssistantAction(action, { data, company, currentUser, t });
-        } catch (err) {
-          console.error("Assistant action failed:", action?.type, err);
-          result = { ok: false, message: t("aiActionFailed") };
-        }
-        text += `\n\n${result.ok ? "✅" : "⚠️"} ${result.message}`;
-        if (result.doc) docs.push(result.doc);
+      const actions = (res?.actions || [])
+        .filter((action) => action.type !== "open_page" || wantsNavigation)
+        .map((action) => wantsSign && action.type === "export_data" ? { ...action, type: "sign_report" } : action);
+      if (actions.length) {
+        setPendingActions(actions);
+        text += lang === "ar" ? "\n\n**تم تجهيز الإجراء للمراجعة، ولن يُنفذ قبل موافقتك.**" : "\n\n**The action is ready for review and will not run until you approve it.**";
       }
-      setMessages((prev) => [...prev, { role: "assistant", text, ...(docs.length ? { docs } : {}) }]);
+      setMessages((prev) => [...prev, { role: "assistant", text }]);
       if (fromVoice) speak(text, lang);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", text: t("aiError") }]);
       if (fromVoice) speak(t("aiError"), lang);
     }
     setLoading(false);
+  };
+
+  const approvePending = async () => {
+    if (!pendingActions.length || approvalLoading) return;
+    setApprovalLoading(true);
+    const actionTools = await import("@/lib/assistantActions");
+    const docs = [];
+    const results = [];
+    for (const action of pendingActions) {
+      try {
+        const result = await actionTools.executeAssistantAction(action, { data, company, currentUser, t });
+        results.push(`${result.ok ? "✅" : "⚠️"} ${result.message}`);
+        if (result.doc) docs.push(result.doc);
+      } catch (error) {
+        console.error("Approved automation failed:", action?.type, error);
+        results.push(`⚠️ ${t("aiActionFailed")}`);
+      }
+    }
+    setMessages((prev) => [...prev, { role: "assistant", text: results.join("\n\n"), ...(docs.length ? { docs } : {}) }]);
+    setPendingActions([]);
+    setApprovalLoading(false);
+  };
+
+  const rejectPending = () => {
+    setPendingActions([]);
+    setMessages((prev) => [...prev, { role: "assistant", text: lang === "ar" ? "تم رفض الإجراء المقترح ولم يتم تنفيذ أي تغيير." : "The proposed action was rejected and no changes were made." }]);
   };
 
   return (
@@ -281,6 +302,7 @@ Answer the last user question.`,
         {messages.map((m, i) => (
           <AssistantMessage key={i} message={m} />
         ))}
+        <AutomationApprovalCard actions={pendingActions} loading={approvalLoading} ar={lang === "ar"} onApprove={approvePending} onReject={rejectPending} />
         {loading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground font-body px-2">
             <Loader2 className="w-4 h-4 animate-spin text-accent" /> {t("aiThinking")}
@@ -302,7 +324,7 @@ Answer the last user question.`,
         />
         <button
           type="submit"
-          disabled={loading || !input.trim()}
+          disabled={loading || pendingActions.length > 0 || !input.trim()}
           className="p-2.5 rounded-md bg-foreground text-background hover:bg-accent disabled:opacity-50"
           aria-label={t("send")}
         >
