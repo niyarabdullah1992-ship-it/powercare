@@ -40,7 +40,6 @@ const Safety = lazy(() => import('./pages/Safety'));
 const DailyReport = lazy(() => import('./pages/DailyReport'));
 const Attendance = lazy(() => import('./pages/Attendance'));
 const Files = lazy(() => import('./pages/Files'));
-const Templates = lazy(() => import('./pages/Templates'));
 const FileSigning = lazy(() => import('./pages/FileSigning'));
 const About = lazy(() => import('./pages/About'));
 const Help = lazy(() => import('./pages/Help'));
@@ -137,7 +136,6 @@ function AppRoutes() {
       <Route path="/app/daily-report" element={<RequireAuth><DailyReport /></RequireAuth>} />
       <Route path="/app/attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/files" element={<RequireAuth><Files /></RequireAuth>} />
-      <Route path="/app/templates" element={<RequireAuth><Templates /></RequireAuth>} />
       <Route path="/app/inventory" element={<RequireAuth><Inventory /></RequireAuth>} />
       <Route path="/app/expenses" element={<RequireAuth><Expenses /></RequireAuth>} />
       <Route path="/app/stations/:stationId/expenses" element={<RequireAuth><StationExpenses /></RequireAuth>} />

@@ -426,7 +426,56 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   filter: drop-shadow(0 1px 1px hsl(var(--foreground) / .08));
 }
 
-/* PowerCare 2090 — touch-first spatial interface */
+/* Corporate management template — scoped to the authenticated platform. */
+.powercare-shell {
+  --background: 216 28% 96%;
+  --foreground: 222 34% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 34% 15%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 34% 15%;
+  --primary: 220 43% 22%;
+  --primary-foreground: 210 35% 98%;
+  --secondary: 214 27% 91%;
+  --secondary-foreground: 220 38% 20%;
+  --muted: 215 24% 93%;
+  --muted-foreground: 218 14% 43%;
+  --accent: 199 58% 38%;
+  --accent-foreground: 0 0% 100%;
+  --border: 214 22% 80%;
+  --input: 214 22% 80%;
+  --ring: 199 58% 38%;
+  --sidebar-background: 222 48% 14%;
+  --sidebar-foreground: 210 28% 96%;
+  --sidebar-accent: 218 34% 23%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --icon-gold: 199 58% 48%;
+  --icon-gold-soft: 198 42% 67%;
+  --icon-halo: 199 58% 48%;
+}
+.dark .powercare-shell {
+  --background: 222 34% 8%;
+  --foreground: 214 24% 94%;
+  --card: 221 30% 11%;
+  --card-foreground: 214 24% 94%;
+  --popover: 221 30% 11%;
+  --popover-foreground: 214 24% 94%;
+  --primary: 203 48% 72%;
+  --primary-foreground: 222 44% 10%;
+  --secondary: 220 24% 17%;
+  --secondary-foreground: 214 24% 92%;
+  --muted: 220 22% 16%;
+  --muted-foreground: 215 15% 68%;
+  --accent: 198 55% 55%;
+  --accent-foreground: 222 44% 10%;
+  --border: 218 20% 24%;
+  --input: 218 20% 24%;
+  --ring: 198 55% 55%;
+  --sidebar-background: 224 46% 7%;
+  --sidebar-foreground: 214 24% 94%;
+}
+
+/* PowerCare corporate — touch-first spatial interface */
 .powercare-shell {
   position: relative;
   isolation: isolate;

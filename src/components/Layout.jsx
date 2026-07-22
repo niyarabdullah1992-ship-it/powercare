@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio, Search,
-  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, LayoutTemplate,
+  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -45,7 +45,7 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     if (!company) return;
-    const saved = localStorage.getItem(`powercare_nav_order_${company.id}`);
+    const saved = localStorage.getItem(`powercare_corporate_nav_v1_${company.id}`);
     if (saved) {
       try { setNavOrder(JSON.parse(saved)); } catch { setNavOrder([]); }
     }
@@ -138,25 +138,35 @@ export default function Layout({ children }) {
   if (!currentUser || !data) return children;
 
   const navItems = [
-    { to: "/app", icon: LayoutDashboard, label: t("dashboard"), end: true },
-    { to: "/app/daily-report", icon: FileText, label: t("reports") },
-    { to: "/app/tasks", icon: ListTodo, label: t("myTasks") },
-    { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling") },
-    { to: "/app/chat", icon: MessageSquare, label: t("chat") },
-    { to: "/app/files", icon: FolderOpen, label: t("files") },
-    { to: "/app/templates", icon: LayoutTemplate, label: t("templates") },
-    { to: "/app/inventory", icon: Warehouse, label: t("inventory") },
-    { to: "/app/expenses", icon: ReceiptText, label: t("expenses") },
-    { to: "/app/signing", icon: PenLine, label: t("fileSigning") },
-    { to: "/app/assistant", icon: Sparkles, label: t("aiAssistant") },
-    { to: "/app/complaints", icon: Megaphone, label: t("allComplaints") },
-    { to: "/app/employees", icon: Users, label: `${t("employees")} · ${t("stations")}` },
-    { to: "/app/hr", icon: UserCog, label: t("hr") },
-    { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll" },
-    { to: "/app/performance", icon: Trophy, label: t("performance") },
-    { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)" },
-    { to: "/app/manual", icon: HelpCircle, label: t("userGuide") },
+    { to: "/app", icon: LayoutDashboard, label: t("dashboard"), end: true, category: "management" },
+    { to: "/app/assistant", icon: Sparkles, label: t("aiAssistant"), category: "management" },
+    { to: "/app/daily-report", icon: FileText, label: t("reports"), category: "operations" },
+    { to: "/app/tasks", icon: ListTodo, label: t("myTasks"), category: "operations" },
+    { to: "/app/inventory", icon: Warehouse, label: t("inventory"), category: "operations" },
+    { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling"), category: "workforce" },
+    { to: "/app/employees", icon: Users, label: `${t("employees")} · ${t("stations")}`, category: "workforce" },
+    { to: "/app/hr", icon: UserCog, label: t("hr"), category: "workforce" },
+    { to: "/app/performance", icon: Trophy, label: t("performance"), category: "workforce" },
+    { to: "/app/expenses", icon: ReceiptText, label: t("expenses"), category: "finance" },
+    { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "finance" },
+    { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)", category: "governance" },
+    { to: "/app/complaints", icon: Megaphone, label: t("allComplaints"), category: "governance" },
+    { to: "/app/files", icon: FolderOpen, label: t("files"), category: "documents" },
+    { to: "/app/signing", icon: PenLine, label: t("fileSigning"), category: "documents" },
+    { to: "/app/chat", icon: MessageSquare, label: t("chat"), category: "communication" },
+    { to: "/app/manual", icon: HelpCircle, label: t("userGuide"), category: "support" },
   ];
+
+  const navGroupLabels = {
+    management: lang === "ar" ? "الإدارة" : "Management",
+    operations: lang === "ar" ? "العمليات" : "Operations",
+    workforce: lang === "ar" ? "القوى العاملة" : "Workforce",
+    finance: lang === "ar" ? "المالية" : "Finance",
+    governance: lang === "ar" ? "الحوكمة" : "Governance",
+    documents: lang === "ar" ? "المستندات" : "Documents",
+    communication: lang === "ar" ? "التواصل" : "Communication",
+    support: lang === "ar" ? "الدعم" : "Support",
+  };
 
   // Role-based visibility: each user only sees the sections their role needs.
   const allowedNav = allowedNavFor(currentUser, data);
@@ -175,7 +185,7 @@ export default function Layout({ children }) {
     items.splice(result.destination.index, 0, moved);
     const newOrder = items.map((i) => i.to);
     setNavOrder(newOrder);
-    if (company) localStorage.setItem(`powercare_nav_order_${company.id}`, JSON.stringify(newOrder));
+    if (company) localStorage.setItem(`powercare_corporate_nav_v1_${company.id}`, JSON.stringify(newOrder));
   };
 
   const myNotifs = [
@@ -246,7 +256,7 @@ export default function Layout({ children }) {
       <aside className={`hidden md:flex flex-col w-[248px] ${sidebarSide} top-0 h-screen sticky bg-primary pt-safe z-40 shadow-elevated`}>
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-sm"><Logo size={30} /></span>
-          <div className="min-w-0"><p className="truncate font-heading text-lg font-semibold text-white">{company.name || t("appName")}</p><p className="truncate text-[10px] uppercase tracking-widest text-white/45">PowerCare</p></div>
+          <div className="min-w-0"><p className="truncate font-heading text-lg font-semibold text-white">{company.name || t("appName")}</p><p className="truncate text-[10px] uppercase tracking-widest text-white/45">{lang === "ar" ? "إدارة الشركات" : "Corporate Management"}</p></div>
         </div>
         <DragDropContext onDragEnd={onNavDragEnd}>
           <Droppable droppableId="sidebar-nav">
@@ -261,6 +271,9 @@ export default function Layout({ children }) {
                         {...dragProvided.dragHandleProps}
                         className={`group relative w-full ${dragSnapshot.isDragging ? "opacity-90" : ""}`}
                       >
+                        {(index === 0 || orderedNavItems[index - 1]?.category !== item.category) && (
+                          <p className="px-3 pb-1 pt-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/35">{navGroupLabels[item.category]}</p>
+                        )}
                         <NavLink
                           to={item.to}
                           end={item.end}
