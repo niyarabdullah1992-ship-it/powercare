@@ -61,38 +61,23 @@ export default function VideoIntro() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-landing-cinema px-6 py-20 md:px-10">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-32 start-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-landing-gold/20 blur-[120px]" />
-        <div className="absolute bottom-0 end-0 h-[400px] w-[400px] rounded-full bg-landing-gold-deep/20 blur-[100px]" />
-      </div>
-
-      <div className="relative mx-auto max-w-5xl text-center">
-        <div className="mb-6 flex justify-center">
-          <div className="relative">
-            <div className="absolute inset-0 scale-150 rounded-full bg-landing-gold/30 blur-xl" />
-            <div className="relative rounded-full border border-landing-gold/30 bg-card/5 p-4"><Logo size={48} /></div>
-          </div>
-        </div>
-
-        <h2 className="hero-title mb-4 bg-gradient-to-b from-landing-gold-light to-landing-gold bg-clip-text text-4xl text-transparent md:text-5xl">{t("videoHeading")}</h2>
-        <p className="mx-auto mb-12 max-w-2xl font-body leading-relaxed text-landing-bg/50">{t("videoText")}</p>
-
-        <div className="group relative mb-8 overflow-hidden rounded-2xl border border-landing-gold/20 shadow-2xl">
-          <SeamlessVideoPlaylist ref={playerRef} urls={VIDEO_URLS} playing={playing} onClick={togglePlay} onPlaylistEnd={handlePlaylistEnd} />
-          <button onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} className={`absolute inset-0 flex items-center justify-center transition-opacity ${playing ? "opacity-0 group-hover:opacity-100" : "opacity-100"}`}>
-            <span className="flex h-20 w-20 items-center justify-center rounded-full bg-landing-gold/90 text-landing-bg shadow-2xl transition-transform hover:scale-105">
-              {playing ? <Pause className="h-8 w-8" /> : <Play className="ms-1 h-8 w-8" />}
-            </span>
+    <section className="relative overflow-hidden bg-landing-cinema px-6 py-16 md:px-10 md:py-20">
+      <div className="relative mx-auto grid max-w-6xl items-center gap-10 rounded-2xl border border-accent/70 bg-white/[0.03] p-5 shadow-xl shadow-accent/10 md:grid-cols-[0.85fr,1.15fr] md:p-8">
+        <div className="text-start">
+          <div className="mb-5"><Logo size={44} /></div>
+          <h2 className="font-heading text-3xl font-semibold text-white md:text-4xl">{t("videoHeading")}</h2>
+          <p className="mt-4 leading-relaxed text-white/55">{t("videoText")}</p>
+          <button type="button" onClick={togglePlay} className="mt-7 inline-flex items-center gap-3 rounded-lg border border-accent/40 bg-accent/10 px-5 py-3 text-sm font-semibold text-accent hover:bg-accent/20">
+            {playing ? <Pause className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}{t("narrationCta")}
           </button>
         </div>
-
+        <div className="group relative overflow-hidden rounded-xl border border-white/10 bg-black shadow-2xl">
+          <SeamlessVideoPlaylist ref={playerRef} urls={VIDEO_URLS} playing={playing} onClick={togglePlay} onPlaylistEnd={handlePlaylistEnd} />
+          <button onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} className={`absolute inset-0 flex items-center justify-center transition-opacity ${playing ? "opacity-0 group-hover:opacity-100" : "opacity-100"}`}>
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/85 text-primary shadow-2xl">{playing ? <Pause className="h-7 w-7" /> : <Play className="ms-1 h-7 w-7" />}</span>
+          </button>
+        </div>
         <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" onEnded={resetPlayback} />
-
-        <button type="button" onClick={togglePlay} className="inline-flex cursor-pointer items-center gap-3 rounded-full border border-landing-gold/30 bg-card/5 px-6 py-3 font-body text-sm text-landing-gold-light transition-colors hover:bg-landing-gold/20">
-          {playing ? <Pause className="h-4 w-4 opacity-60" /> : <Volume2 className="h-4 w-4 opacity-60" />}
-          {t("narrationCta")}
-        </button>
       </div>
     </section>
   );

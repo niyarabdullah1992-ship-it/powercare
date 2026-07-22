@@ -11,16 +11,14 @@ const STATS = [
 export default function StatsBand() {
   const { t } = useI18n();
   return (
-    <section className="bg-[#2b2118] px-6 py-16 md:px-10 md:py-20">
+    <section className="border-y border-accent/20 bg-landing-cinema px-6 py-14 md:px-10 md:py-16">
       <div className="mx-auto max-w-6xl">
-        <p className="mb-10 text-center text-xs font-body uppercase tracking-widest-xl text-landing-gold-light">
-          {t("statsHeading")}
-        </p>
+        <p className="mb-9 text-center text-xs font-semibold uppercase tracking-widest-xl text-accent">{t("statsHeading")}</p>
         <div className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-4">
           {STATS.map((s) => (
             <div key={s.value} className="text-center">
-              <p className="font-heading text-4xl font-semibold text-landing-gold-light md:text-6xl">{s.value}</p>
-              <p className="mt-2 text-sm font-body leading-relaxed text-white/60">{t(s.key)}</p>
+              <p className="font-heading text-4xl font-semibold text-white md:text-5xl">{s.value}</p>
+              <p className="mt-2 text-sm leading-relaxed text-white/55">{t(s.key)}</p>
             </div>
           ))}
         </div>

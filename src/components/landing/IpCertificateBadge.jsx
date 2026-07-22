@@ -12,9 +12,9 @@ export default function IpCertificateBadge({ lang }) {
   ];
   return <Dialog>
     <DialogTrigger asChild>
-      <button type="button" className="mx-auto mt-10 flex max-w-xl items-center gap-3 rounded-2xl border border-landing-gold/35 bg-card/75 px-4 py-3 text-start text-sm text-primary shadow-sm hover:bg-card">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-landing-gold/10 text-landing-gold"><ShieldCheck className="h-5 w-5" /></span>
-        <span><strong className="block font-semibold">PowerCare</strong><span className="text-xs text-primary/65">{copy.badge}</span></span>
+      <button type="button" className="mx-auto mt-10 flex max-w-xl items-center gap-3 rounded-xl border border-accent/35 bg-white/5 px-4 py-3 text-start text-sm text-white shadow-sm hover:bg-white/10">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent"><ShieldCheck className="h-5 w-5" /></span>
+        <span><strong className="block font-semibold">PowerCare</strong><span className="text-xs text-white/55">{copy.badge}</span></span>
       </button>
     </DialogTrigger>
     <DialogContent dir={lang === "ar" ? "rtl" : "ltr"} className="max-h-[90vh] overflow-y-auto border-landing-gold/30 bg-landing-bg sm:max-w-xl">

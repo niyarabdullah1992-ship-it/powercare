@@ -11,18 +11,13 @@ export default function WhyPowerCare({ lang }) {
     { icon: ShieldCheck, value: "99.9%", label: ar ? "موثوقية التشغيل" : "Uptime reliability" },
   ];
   return (
-    <div className="max-w-6xl mx-auto mb-14">
-      <h2 className="hero-title text-center text-4xl md:text-5xl text-primary mb-8">
-        {ar ? "لماذا PowerCare؟" : "Why PowerCare?"}
-      </h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="mx-auto mb-10 max-w-6xl">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {stats.map((s, i) => (
-          <div key={i} className="bg-landing-olive-card rounded-2xl p-5 text-center shadow-sm">
-            <span className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-landing-bg text-landing-gold">
-              <s.icon className="h-5 w-5" strokeWidth={1.5} />
-            </span>
-            <p className="hero-title text-3xl text-[#3a2f22]" dir="ltr">{s.value}</p>
-            <p className="mt-1 text-xs font-body text-[#3a2f22]/70">{s.label}</p>
+          <div key={i} className="rounded-xl bg-accent p-5 text-center text-accent-foreground shadow-lg shadow-accent/15">
+            <span className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/20"><s.icon className="h-5 w-5" strokeWidth={1.5} /></span>
+            <p className="font-heading text-3xl font-semibold" dir="ltr">{s.value}</p>
+            <p className="mt-1 text-xs opacity-80">{s.label}</p>
           </div>
         ))}
       </div>

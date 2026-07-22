@@ -426,6 +426,36 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   filter: drop-shadow(0 1px 1px hsl(var(--foreground) / .08));
 }
 
+/* Dark enterprise marketing template — scoped to the public site. */
+.powercare-public {
+  --background: 198 72% 94%;
+  --foreground: 217 46% 14%;
+  --card: 210 35% 98%;
+  --card-foreground: 217 46% 14%;
+  --primary: 218 65% 12%;
+  --primary-foreground: 190 100% 92%;
+  --secondary: 197 58% 89%;
+  --secondary-foreground: 218 65% 12%;
+  --muted: 199 34% 90%;
+  --muted-foreground: 215 20% 42%;
+  --accent: 187 86% 49%;
+  --accent-foreground: 218 65% 10%;
+  --border: 201 30% 72%;
+  --input: 210 22% 74%;
+  --ring: 187 86% 49%;
+  --landing-bg: 197 71% 93%;
+  --landing-olive: 218 65% 12%;
+  --landing-olive-card: 210 35% 98%;
+  --landing-gold: 187 86% 49%;
+  --landing-gold-light: 187 82% 74%;
+  --landing-gold-deep: 194 83% 36%;
+  --landing-cinema: 218 65% 8%;
+  --icon-gold: 187 86% 49%;
+  --icon-gold-soft: 187 60% 68%;
+  --icon-halo: 187 86% 49%;
+}
+.powercare-public svg.lucide:not(.animate-spin) { animation: none; }
+
 /* Corporate management template — scoped to the authenticated platform. */
 .powercare-shell {
   --background: 216 28% 96%;
