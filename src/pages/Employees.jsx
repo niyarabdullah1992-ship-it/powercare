@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { updateCompany, setAllowedEmailDomain, deleteEmployeeAccount } from "@/lib/store";
+import { updateCompany, deleteEmployeeAccount } from "@/lib/store";
 import { canManageEmployees, isCompanyOwner, canManageStations, visibleStations, visibleEmployees } from "@/lib/permissions";
 import { canAddEmployee } from "@/lib/planLimits";
 import { Link } from "react-router-dom";
-import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle, Mail, GripVertical, Users, Settings2, MapPinned } from "lucide-react";
+import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle, GripVertical, Users, Settings2, MapPinned } from "lucide-react";
 import { badgeFor, nextBadge } from "@/lib/rewards";
 import { getRoleLabel } from "@/lib/roles";
 import { base44 } from "@/api/base44Client";
@@ -31,6 +31,7 @@ import JobGradeManager from "@/components/employees/JobGradeManager";
 import GradeBadge from "@/components/employees/GradeBadge";
 import { employeeJobGrade, orderedJobGrades } from "@/lib/jobGrades";
 import { hasHRPermission } from "@/lib/permissions";
+import AllowedEmailList from "@/components/employees/AllowedEmailList";
 
 const ROLES = ["employee", "inventory_keeper", "safety_officer", "financial_officer", "station_manager", "pgm", "ops_manager", "director"];
 
@@ -62,8 +63,6 @@ export default function Employees() {
   const [gradeFilter, setGradeFilter] = useState("all");
   const [showTransfer, setShowTransfer] = useState(null);
   const [targets, setTargets] = useState([]);
-  const [editingDomain, setEditingDomain] = useState(false);
-  const [domainInput, setDomainInput] = useState("");
   const [emailError, setEmailError] = useState("");
 
   useEffect(() => {
@@ -103,11 +102,6 @@ export default function Employees() {
   const defaultStationId = data.stations?.[0]?.id || null;
   // Station managers can only add employees / station managers to their own station
   const allowedRoles = currentUser.role === "station_manager" ? ["employee", "inventory_keeper", "station_manager"] : ROLES;
-
-  const saveDomain = () => {
-    setAllowedEmailDomain(company.id, domainInput);
-    setEditingDomain(false);
-  };
 
   // Drag-and-drop reordering of the station cards (reorders the underlying station list).
   const canReorderStations = canManageStations(currentUser, data);
@@ -159,33 +153,7 @@ export default function Employees() {
             </div>
             {showGrades && canManageGrades && <div className="mt-3"><JobGradeManager companyId={company.id} data={data} /></div>}
             {canTransfer && <div className="mt-3"><AuditLogPanel companyId={company.id} /></div>}
-            {currentUser.role === "director" && (
-              <div className="mt-3 pt-3 border-t border-border">
-                {editingDomain ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <input
-                      autoFocus
-                      value={domainInput}
-                      onChange={(e) => setDomainInput(e.target.value)}
-                      placeholder="@acwa.com"
-                      className="px-2.5 py-1.5 rounded-md border border-input text-xs font-body"
-                    />
-                    <button onClick={saveDomain} className="p-1.5 rounded-md hover:bg-accent/10 text-accent"><Check className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => setEditingDomain(false)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><X className="w-3.5 h-3.5" /></button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => { setEditingDomain(true); setDomainInput(company.allowedEmailDomain || ""); }}
-                    className="flex items-center gap-2 text-xs font-body text-muted-foreground hover:text-foreground"
-                  >
-                    <Mail className="w-3.5 h-3.5" />
-                    {t("allowedEmailDomain")}: {company.allowedEmailDomain ? <span className="text-foreground">{company.allowedEmailDomain}</span> : t("all")}
-                    <Pencil className="w-3 h-3" />
-                  </button>
-                )}
-                <p className="text-[11px] text-muted-foreground font-body mt-1">{t("allowedEmailDomainNote")}</p>
-              </div>
-            )}
+            {canTransfer && <AllowedEmailList companyId={company.id} emails={data.settings?.allowedEmails || []} lang={lang} />}
             </div>
           </details>
         )}
@@ -262,16 +230,17 @@ export default function Employees() {
     e.preventDefault();
     if (employeeLimitReached) return;
     setEmailError("");
-    const domain = (company.allowedEmailDomain || "").trim().toLowerCase();
-    if (domain && !form.email.toLowerCase().endsWith(domain)) {
-      setEmailError(t("invalidEmailDomain"));
+    const normalizedEmail = form.email.trim().toLowerCase();
+    const allowedEmails = (data.settings?.allowedEmails || []).map((email) => String(email).trim().toLowerCase());
+    if (allowedEmails.length && !allowedEmails.includes(normalizedEmail)) {
+      setEmailError(lang === "ar" ? "هذا البريد غير موجود في قائمة الإيميلات المسموح بها." : "This email is not in the allowed email list.");
       return;
     }
     updateCompany(company.id, (d) => {
       const emp = {
         id: "emp_" + Math.random().toString(36).slice(2, 9),
         name: form.name,
-        email: form.email,
+        email: normalizedEmail,
         role: form.role,
         stationId: selectedStation,
         anonymousId: "ANON-" + Math.abs(Math.random().toString(36).hashCode?.() || Math.floor(Math.random() * 1e8)).toString(16).toUpperCase().padStart(8, "0"),
