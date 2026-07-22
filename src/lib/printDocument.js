@@ -1,3 +1,5 @@
+import { POWERCARE_LOGO_URL } from "@/lib/brand";
+
 // Builds an elegant, print-ready (A4) HTML document from AI-generated content.
 // Used by Niro's "create_document" action — supports headings, paragraphs,
 // bullet lists, in Arabic (RTL) or English (LTR).
@@ -51,7 +53,8 @@ export function buildDocumentHtml({ title, subtitle, sections = [], dir = "ltr",
   <div class="toolbar"><button onclick="window.print()">${ar ? "تحميل PDF / طباعة" : "Download PDF / Print"}</button></div>
   <div class="page">
     <header class="head">
-      ${logoUrl ? `<img src="${esc(logoUrl)}" alt="" />` : ""}
+      <img src="${POWERCARE_LOGO_URL}" alt="PowerCare" />
+      ${logoUrl ? `<img src="${esc(logoUrl)}" alt="${esc(companyName)}" />` : ""}
       ${companyName ? `<div class="brand">${esc(companyName)}</div>` : ""}
       <h1>${esc(title)}</h1>
       ${subtitle ? `<div class="subtitle">${esc(subtitle)}</div>` : ""}

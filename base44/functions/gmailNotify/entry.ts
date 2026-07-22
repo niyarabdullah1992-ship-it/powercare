@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
 import { fetchWithRetry } from '../../shared/fetchRetry.ts';
+import { POWERCARE_LOGO_URL } from '../../shared/brand.ts';
 
 // Sends an email from the company's connected Gmail account.
 // Authorized for the platform builder or any valid PowerCare company session.
@@ -12,7 +13,6 @@ function toBase64Url(str) {
 }
 
 // Branded HTML wrapper — gold header, clean card, bilingual-friendly.
-const EMAIL_LOGO = 'https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/df3e1cbab_generated_image.png';
 function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -51,7 +51,7 @@ function emailHtml(title, text, details, cta) {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5efe4;padding:32px 12px;"><tr><td align="center">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #eadfc9;">
       <tr><td style="background:linear-gradient(180deg,#d8b578,#b8863e);padding:26px;text-align:center;">
-        <img src="${EMAIL_LOGO}" width="52" height="52" alt="PowerCare" style="display:block;margin:0 auto 8px;" />
+        <img src="${POWERCARE_LOGO_URL}" width="72" height="72" alt="PowerCare" style="display:block;margin:0 auto 8px;" />
         <div style="font-size:20px;font-weight:700;color:#ffffff;font-family:Georgia,serif;letter-spacing:1px;">PowerCare</div>
       </td></tr>
       <tr><td style="padding:30px 30px 10px;">

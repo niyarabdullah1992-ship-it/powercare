@@ -1,4 +1,5 @@
 import { PDF_THEME } from "@/lib/pdfTheme";
+import { POWERCARE_LOGO_URL } from "@/lib/brand";
 
 // Opens a print-ready, brand-styled report in a new window and triggers the
 // browser's print dialog (user can save as PDF). Full RTL/Arabic support since
@@ -61,6 +62,7 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   .empty { font-size: 12px; color: ${PDF_THEME.muted}; padding: 10px 0; }
   .foot { margin-top: 30px; padding-top: 10px; border-top: 1px solid ${PDF_THEME.line}; font-size: 9px; color: ${PDF_THEME.muted}; display: flex; justify-content: space-between; }
   .head img { width: 58px; height: 58px; object-fit: contain; }
+  .company-logo { margin-inline-start: auto; }
   .executive-gold { color: #2d2117; }
   .executive-gold .top-rule { height: 9px; background: linear-gradient(90deg, #21150d 0 68%, #b8873a 68% 86%, #ddb96d 86% 100%); }
   .executive-gold .head { padding: 8px 4px 22px; border-bottom: 2px solid #b8873a; }
@@ -84,13 +86,14 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   <div class="top-rule"></div>
   <div class="head">
     <div class="identity">
-      ${logoUrl ? `<img src="${logoUrl}" alt="${esc(companyName)}" />` : `<div class="monogram">PC</div>`}
+      <img src="${POWERCARE_LOGO_URL}" alt="PowerCare" />
       <div>
         <p class="document-label">PowerCare • Official Report</p>
         <h1>${esc(title)}</h1>
         <p class="meta">${esc(companyName)}${periodLabel ? " — " + esc(periodLabel) : ""}</p>
       </div>
     </div>
+    ${logoUrl ? `<img class="company-logo" src="${logoUrl}" alt="${esc(companyName)}" />` : ""}
   </div>
   ${statsHtml}
   ${sectionsHtml}

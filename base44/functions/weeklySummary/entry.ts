@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
+import { POWERCARE_LOGO_URL } from '../../shared/brand.ts';
 
 // Weekly owner digest — called by the "Weekly Owner Summary" scheduled workflow.
 // For every company account: gathers tasks (Supabase targets), complaints and daily
@@ -11,7 +12,6 @@ function toBase64Url(str) {
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-const EMAIL_LOGO = 'https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/df3e1cbab_generated_image.png';
 function escapeHtml(value) {
   return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -39,7 +39,7 @@ function weeklySummaryHtml(companyName, stats, language = 'en') {
   return `<!DOCTYPE html><html lang="${language}" dir="${c.dir}"><body style="margin:0;padding:0;background:#f5efe4;font-family:Arial,Tahoma,sans-serif;direction:${c.dir};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5efe4;padding:32px 12px;"><tr><td align="center">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid #eadfc9;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(76,55,28,.08);">
-      <tr><td style="padding:28px;text-align:center;background:linear-gradient(180deg,#d8b578,#b8863e);"><img src="${EMAIL_LOGO}" width="54" height="54" alt="PowerCare" style="display:block;margin:0 auto 9px;" /><div style="font-family:Georgia,serif;font-size:22px;font-weight:700;letter-spacing:1px;color:#ffffff;">PowerCare</div><div style="margin-top:7px;font-size:13px;color:#fff8ec;">${c.header}</div></td></tr>
+      <tr><td style="padding:28px;text-align:center;background:linear-gradient(180deg,#d8b578,#b8863e);"><img src="${POWERCARE_LOGO_URL}" width="74" height="74" alt="PowerCare" style="display:block;margin:0 auto 9px;" /><div style="font-family:Georgia,serif;font-size:22px;font-weight:700;letter-spacing:1px;color:#ffffff;">PowerCare</div><div style="margin-top:7px;font-size:13px;color:#fff8ec;">${c.header}</div></td></tr>
       <tr><td style="padding:28px 28px 12px;text-align:${align};"><h1 style="margin:0 0 8px;font-size:21px;color:#3a2f22;">${c.hello}</h1><p style="margin:0 0 22px;font-size:14px;line-height:1.8;color:#75644d;">${c.intro} <strong style="color:#3a2f22;">${escapeHtml(companyName)}</strong> ${c.period}</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${metric(c.employees, stats.employees)}${metric(c.stations, stats.stations)}${metric(c.completed, stats.completedThisWeek)}</tr></table>
         <h2 style="margin:24px 0 10px;font-size:15px;color:#3a2f22;">${c.tasks}</h2><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eadfc9;border-radius:12px;background:#fffdf9;overflow:hidden;">${detailRow(c.newTasks, stats.newThisWeek)}${detailRow(c.active, stats.active)}${detailRow(c.review, stats.pendingReview)}${detailRow(c.overdue, stats.overdue, true)}</table>

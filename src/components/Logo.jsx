@@ -1,15 +1,16 @@
 import React from "react";
-
-const LOGO_URL = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/b75eb58e7_9a8843bf0_generated_image.png";
+import { Image } from "@/components/ui/image";
+import { POWERCARE_LOGO_URL } from "@/lib/brand";
 
 export default function Logo({ size = 36, className = "" }) {
   return (
-    <img
-      src={LOGO_URL}
+    <Image
+      src={POWERCARE_LOGO_URL}
       alt="PowerCare"
-      width={size}
-      height={size}
-      className={`object-contain ${className}`}
+      originWidth={1024}
+      originHeight={1024}
+      fittingType="fit"
+      className={className}
       style={{ width: size, height: size }}
     />
   );

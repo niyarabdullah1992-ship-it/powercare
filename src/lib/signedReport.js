@@ -4,6 +4,7 @@ import { makeVerificationBadgeCanvas, generateVerificationId, loadBadgeQr } from
 import { imageBlobToPdf } from "@/lib/signPdf";
 import { sha256HexOfBuffer } from "@/lib/fileHash";
 import { PDF_THEME } from "@/lib/pdfTheme";
+import { POWERCARE_LOGO_URL } from "@/lib/brand";
 
 // Draws the report DIRECTLY on canvas (title + table + signature + verification
 // badge) — fully deterministic, full Arabic/RTL support, no HTML rendering step
@@ -50,13 +51,6 @@ function drawReportCanvas({ title, companyName, dir, headers, rows }) {
   const xTitle = rtl ? W - 120 : 120;
 
   // PowerCare identity and report header
-  ctx.strokeStyle = PDF_THEME.gold;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(rtl ? W - 100 : 48, 40, 52, 52);
-  ctx.fillStyle = PDF_THEME.gold;
-  ctx.font = "700 17px Georgia, serif";
-  ctx.textAlign = "center";
-  ctx.fillText("PC", rtl ? W - 74 : 74, 73);
   ctx.textAlign = rtl ? "right" : "left";
   ctx.fillStyle = PDF_THEME.gold;
   ctx.font = "700 13px Tahoma, Arial, sans-serif";
@@ -115,7 +109,11 @@ export async function generateSignedReport({ title, companyName, dir, headers, r
 
   // Add the company logo to the report header without replacing PowerCare's verification identity.
   const sigId = generateVerificationId();
-  const [qr, sigImg, logoImg] = await Promise.all([loadBadgeQr(sigId), loadImage(signatureUrl), loadImage(logoUrl)]);
+  const [qr, sigImg, logoImg, platformLogo] = await Promise.all([loadBadgeQr(sigId), loadImage(signatureUrl), loadImage(logoUrl), loadImage(POWERCARE_LOGO_URL)]);
+  if (platformLogo) {
+    const x = dir === "rtl" ? canvas.width - 112 : 48;
+    ctx.drawImage(platformLogo, x, 28, 72, 72);
+  }
   if (logoImg) {
     const maxW = 96;
     const maxH = 72;
