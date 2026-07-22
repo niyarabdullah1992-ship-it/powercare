@@ -263,11 +263,15 @@ Deno.serve(async (req) => {
       const appUrl = resolveAppUrl(body.appUrl);
       const ar = body.lang === 'ar';
       const links = Object.fromEntries(signers.map((s) => [s.email, `${appUrl}/sign?token=${rec.id}.${s.token}`]));
-      const emailFailed = [];
-      const first = signers[0];
-      const firstLink = links[first.email];
-      const ok = await sendMail(base44, first.email, ar ? `طلب توقيع: ${rec.fileName}` : `Signature request: ${rec.fileName}`, ar ? `مرحبًا ${first.name}،\n\nحان دورك لتوقيع المستند "${rec.fileName}".\n${firstLink}` : `Hello ${first.name},\n\nIt is your turn to sign "${rec.fileName}".\n${firstLink}`, signatureRequestEmail({ ar, signerName: first.name, creatorName: rec.creatorName, fileName: rec.fileName, link: firstLink, signerIndex: 0, totalSigners: signers.length, expiresAt: rec.expiresAt }));
-      if (!ok) emailFailed.push(first.email);
+      const deliveryResults = await Promise.all(signers.map(async (signer, signerIndex) => {
+        const link = links[signer.email];
+        const turnText = signerIndex === 0
+          ? (ar ? `حان دورك لتوقيع المستند "${rec.fileName}".` : `It is your turn to sign "${rec.fileName}".`)
+          : (ar ? `أنت الموقّع رقم ${signerIndex + 1} على المستند "${rec.fileName}"، وسيصلك تنبيه آخر عند حلول دورك.` : `You are signer ${signerIndex + 1} for "${rec.fileName}". You will receive another notice when it is your turn.`);
+        const ok = await sendMail(base44, signer.email, ar ? `طلب توقيع: ${rec.fileName}` : `Signature request: ${rec.fileName}`, ar ? `مرحبًا ${signer.name}،\n\n${turnText}\n${link}` : `Hello ${signer.name},\n\n${turnText}\n${link}`, signatureRequestEmail({ ar, signerName: signer.name, creatorName: rec.creatorName, fileName: rec.fileName, link, signerIndex, totalSigners: signers.length, expiresAt: rec.expiresAt }));
+        return { email: signer.email, ok };
+      }));
+      const emailFailed = deliveryResults.filter((result) => !result.ok).map((result) => result.email);
       return Response.json({ ok: true, requestId: rec.id, links, emailFailed });
     }
 
