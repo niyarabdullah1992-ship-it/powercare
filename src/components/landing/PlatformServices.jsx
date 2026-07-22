@@ -15,20 +15,20 @@ const modules = [
 export default function PlatformServices({ lang }) {
   const ar = lang === "ar";
   return <section dir={ar ? "rtl" : "ltr"} className="border-y border-border bg-secondary/55 px-4 py-16 sm:px-6 md:px-8 md:py-24">
-    <div className="mx-auto max-w-[1180px] overflow-hidden rounded-xl border border-border bg-card shadow-elevated">
-      <div className="relative grid overflow-hidden bg-landing-cinema p-7 text-white md:grid-cols-[1.15fr,0.85fr] md:items-end md:gap-10 md:p-9">
+    <div className="mx-auto max-w-[960px] overflow-hidden rounded-xl border border-border bg-card shadow-elevated">
+      <div className="relative grid overflow-hidden bg-landing-cinema p-6 text-white md:grid-cols-[1.15fr,0.85fr] md:items-end md:gap-7 md:p-7">
         <div className="absolute -end-20 -top-20 h-64 w-64 rounded-full border border-white/10" />
         <div className="absolute -end-8 -top-8 h-40 w-40 rounded-full border border-accent/40" />
         <div className="relative">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-landing-gold-light">{ar ? "منظومة PowerCare" : "PowerCare Ecosystem"}</p>
-          <h2 className="mt-4 max-w-xl font-heading text-3xl font-semibold leading-[1.08] tracking-[-0.04em] md:text-4xl">{ar ? "وحدات تعمل بتناغم واحد" : "One platform. Every operation."}</h2>
+          <h2 className="mt-3 max-w-xl font-heading text-3xl font-semibold leading-[1.08] tracking-[-0.04em]">{ar ? "وحدات تعمل بتناغم واحد" : "One platform. Every operation."}</h2>
         </div>
         <p className="relative mt-8 max-w-sm border-s-2 border-accent ps-5 text-sm leading-6 text-white/65 md:mt-0">{ar ? "أدوات مترابطة تمنح شركتك رؤية موحدة وتحكماً أدق في كل مستوى." : "Connected modules give your company unified visibility and precise control at every level."}</p>
       </div>
-      <div className="grid sm:grid-cols-2 xl:grid-cols-4">
-        {modules.map(({ icon: Icon, en, ar: titleAr, enText, arText }, index) => <article key={en} className="group relative flex min-h-40 gap-4 border-b border-border p-5 transition-colors hover:bg-secondary/70 sm:p-6 sm:odd:border-e sm:[&:nth-last-child(-n+2)]:border-b-0 xl:min-h-48 xl:border-b-0 xl:border-e xl:last:border-e-0">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border bg-background text-accent transition-colors group-hover:border-accent group-hover:bg-accent group-hover:text-accent-foreground"><Icon className="h-5 w-5" strokeWidth={1.5} /></span>
-          <div className="min-w-0"><span className="font-mono text-[9px] tracking-[0.18em] text-muted-foreground">MODULE {String(index + 1).padStart(2, "0")}</span><h3 className="mt-2 font-heading text-lg font-semibold text-foreground">{ar ? titleAr : en}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{ar ? arText : enText}</p></div>
+      <div className="grid sm:grid-cols-2 md:grid-cols-4">
+        {modules.map(({ icon: Icon, en, ar: titleAr, enText, arText }, index) => <article key={en} className="group relative min-h-[164px] border-b border-border p-4 transition-colors hover:bg-secondary/70 sm:odd:border-e sm:[&:nth-last-child(-n+2)]:border-b-0 md:min-h-[178px] md:border-b-0 md:border-e md:[&:nth-child(-n+4)]:border-b md:[&:nth-child(4n)]:border-e-0">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-background text-accent transition-colors group-hover:border-accent group-hover:bg-accent group-hover:text-accent-foreground"><Icon className="h-4 w-4" strokeWidth={1.5} /></span>
+          <div className="mt-3 min-w-0"><span className="font-mono text-[9px] tracking-[0.18em] text-muted-foreground">MODULE {String(index + 1).padStart(2, "0")}</span><h3 className="mt-2 font-heading text-lg font-semibold text-foreground">{ar ? titleAr : en}</h3><p className="mt-1.5 text-xs leading-5 text-muted-foreground">{ar ? arText : enText}</p></div>
         </article>)}
       </div>
     </div>
