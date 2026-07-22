@@ -198,6 +198,7 @@ Deno.serve(async (req) => {
         amount: account?.subscriptionExempt ? 0 : (s.items?.data?.[0]?.price?.unit_amount != null ? s.items.data[0].price.unit_amount / 100 : null),
         currency: (s.items?.data?.[0]?.price?.currency || 'usd').toUpperCase(),
         exempt: account?.subscriptionExempt === true,
+        isFree: account?.subscriptionExempt === true || s.items?.data?.[0]?.price?.unit_amount === 0,
         exemptReason: account?.exemptReason || null,
         frozen: account?.frozen === true,
         frozenAt: account?.frozenAt || null,
@@ -223,9 +224,10 @@ Deno.serve(async (req) => {
           startedAt: startTs,
           endsAt: a.subscriptionExempt ? null : endTs,
           daysLeft: a.subscriptionExempt ? null : (endTs ? Math.ceil((endTs - now) / 86400000) : null),
-          amount: a.subscriptionExempt ? 0 : (a.customPrice ?? MANUAL_PLAN_MONTHLY_PRICE[a.plan] ?? null),
+          amount: a.subscriptionExempt ? 0 : Math.max(0, Number(a.customPrice) || 0),
           customPrice: a.subscriptionExempt ? 0 : (a.customPrice ?? null),
           exempt: a.subscriptionExempt === true,
+          isFree: a.subscriptionExempt === true || !(Number(a.customPrice) > 0),
           exemptReason: a.exemptReason || null,
           frozen: a.frozen === true,
           frozenAt: a.frozenAt || null,
@@ -253,7 +255,7 @@ Deno.serve(async (req) => {
     };
 
     // Monthly recurring revenue from active/trialing subscriptions + manually-managed custom plans.
-    const manualMrr = noSub.filter((r) => r.status === 'manual_active').reduce((sum, r) => sum + (r.amount || 0), 0);
+    const manualMrr = noSub.filter((r) => r.status === 'manual_active' && !r.isFree).reduce((sum, r) => sum + (r.amount || 0), 0);
     summary.mrr = Math.round((active.reduce((sum, r) => sum + (r.amount ? (r.billing === 'yearly' ? r.amount / 12 : r.amount) : 0), 0) + manualMrr) * 100) / 100;
     summary.arr = Math.round(summary.mrr * 12 * 100) / 100;
     summary.manualActive = noSub.filter((r) => r.status === 'manual_active').length;

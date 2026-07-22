@@ -5,7 +5,7 @@ import SubscriberRow from "@/components/owner/SubscriberRow";
 import SubscriberAnalytics from "@/components/owner/SubscriberAnalytics";
 import SubscriptionRevenueSummary from "@/components/owner/SubscriptionRevenueSummary";
 import SubscriptionBulkExport from "@/components/owner/SubscriptionBulkExport";
-import { subscriptionTotals, formatSubscriptionMoney } from "@/lib/subscriptionTax";
+import { subscriptionTotals, subscriptionBillableAmount, formatSubscriptionMoney } from "@/lib/subscriptionTax";
 
 export default function SubscribersDashboard({ ar }) {
   const [data, setData] = useState(null);
@@ -39,7 +39,7 @@ export default function SubscribersDashboard({ ar }) {
     if (q && !(r.companyName || "").toLowerCase().includes(q) && !(r.email || "").toLowerCase().includes(q)) return false;
     return true;
   });
-  const tableTotals = subscriptionTotals(rows.reduce((sum, row) => sum + Number(row.amount ?? row.customPrice ?? 0), 0));
+  const tableTotals = subscriptionTotals(rows.reduce((sum, row) => sum + subscriptionBillableAmount(row), 0));
   const stats = summary ? [
     { label: ar ? "الشركات المسجلة" : "Registered companies", value: summary.totalCompanies },
     { label: ar ? "اشتراكات نشطة" : "Active subscriptions", value: summary.activeSubscriptions },

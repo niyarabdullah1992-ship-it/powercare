@@ -1,6 +1,6 @@
 import { exportExcelColored } from "@/lib/exportExcelColored";
 import { printReport } from "@/lib/printReport";
-import { subscriptionTotals, formatSubscriptionMoney } from "@/lib/subscriptionTax";
+import { subscriptionTotals, subscriptionBillableAmount, formatSubscriptionMoney } from "@/lib/subscriptionTax";
 
 export const subscriptionInvoiceNumber = (row) => {
   const source = String(row.id || row.accountId || row.email || "invoice").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
@@ -10,7 +10,7 @@ export const subscriptionInvoiceNumber = (row) => {
 
 export const subscriptionInvoiceRow = (row, ar) => {
   const currency = row.currency || "USD";
-  const totals = subscriptionTotals(row.amount ?? row.customPrice);
+  const totals = subscriptionTotals(subscriptionBillableAmount(row));
   const money = (value) => formatSubscriptionMoney(value, currency, ar);
   return [subscriptionInvoiceNumber(row), row.companyName || "—", row.email || "—", row.plan || "—", row.billing === "yearly" ? (ar ? "سنوي" : "Yearly") : (ar ? "شهري" : "Monthly"), new Date(row.startedAt || Date.now()).toLocaleDateString(ar ? "ar-SA" : "en-GB"), currency, money(totals.subtotal), money(totals.vat), money(totals.total)];
 };
@@ -19,7 +19,7 @@ const headers = (ar) => ar ? ["رقم الفاتورة", "الشركة", "الب
 
 const rowsWithTotal = (rows, ar) => {
   const detailRows = rows.map((row) => subscriptionInvoiceRow(row, ar));
-  const totals = subscriptionTotals(rows.reduce((sum, row) => sum + Number(row.amount ?? row.customPrice ?? 0), 0));
+  const totals = subscriptionTotals(rows.reduce((sum, row) => sum + subscriptionBillableAmount(row), 0));
   const money = (value) => formatSubscriptionMoney(value, "USD", ar);
   return [...detailRows, [ar ? "الإجمالي" : "TOTAL", "", "", "", "", "", "USD", money(totals.subtotal), money(totals.vat), money(totals.total)]];
 };

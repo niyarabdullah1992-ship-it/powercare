@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { FileSpreadsheet, FileText, ReceiptText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { subscriptionTotals, formatSubscriptionMoney } from "@/lib/subscriptionTax";
+import { subscriptionTotals, subscriptionBillableAmount, formatSubscriptionMoney } from "@/lib/subscriptionTax";
 import { exportSubscriptionInvoicesExcel, printSubscriptionInvoices, subscriptionInvoiceNumber } from "@/lib/subscriptionInvoiceExport";
 
 export default function SubscriptionInvoice({ row, ar }) {
   const [open, setOpen] = useState(false);
   const amount = row.amount ?? row.customPrice;
-  if (amount == null) return <span className="text-muted-foreground">—</span>;
+  if (amount == null && !row.exempt && !row.isFree && row.plan !== "Free") return <span className="text-muted-foreground">—</span>;
   const currency = row.currency || "USD";
-  const totals = subscriptionTotals(amount);
+  const totals = subscriptionTotals(subscriptionBillableAmount(row));
   const invoiceNumber = subscriptionInvoiceNumber(row);
   const issueDate = new Date(row.startedAt || Date.now()).toLocaleDateString(ar ? "ar-SA" : "en-GB");
   const money = (value) => formatSubscriptionMoney(value, currency, ar);

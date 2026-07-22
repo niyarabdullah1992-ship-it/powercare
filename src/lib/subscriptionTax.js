@@ -6,6 +6,11 @@ export function subscriptionTotals(amount) {
   return { subtotal, vat, total: Math.round((subtotal + vat) * 100) / 100 };
 }
 
+export function subscriptionBillableAmount(row) {
+  if (!row || row.exempt === true || row.isFree === true || row.plan === "Free") return 0;
+  return Math.max(0, Number(row.amount ?? row.customPrice) || 0);
+}
+
 export function formatSubscriptionMoney(amount, currency = "USD", ar = false) {
   return new Intl.NumberFormat(ar ? "ar-SA" : "en-US", {
     style: "currency",
