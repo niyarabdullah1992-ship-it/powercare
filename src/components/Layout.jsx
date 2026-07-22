@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio, Search,
-  Users, Bell, LogOut, Globe, ChevronDown, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText,
+  Users, Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -42,6 +42,11 @@ export default function Layout({ children }) {
   const userRef = useRef(null);
   const notificationPollInFlightRef = useRef(false);
   const [navOrder, setNavOrder] = useState([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("powercare_sidebar_collapsed") === "true");
+
+  useEffect(() => {
+    localStorage.setItem("powercare_sidebar_collapsed", String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     if (!company) return;
@@ -253,19 +258,22 @@ export default function Layout({ children }) {
   return (
     <div className="powercare-shell min-h-screen bg-background flex" dir={dir}>
       {/* Desktop navigation */}
-      <aside className={`corporate-sidebar hidden md:flex flex-col w-[268px] ${sidebarSide} top-0 h-screen sticky bg-primary pt-safe z-40 shadow-elevated`}>
-        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+      <aside className={`corporate-sidebar hidden md:flex flex-col ${sidebarCollapsed ? "w-[76px]" : "w-[268px]"} ${sidebarSide} top-0 h-screen sticky bg-primary pt-safe z-40 shadow-elevated transition-[width] duration-200`}>
+        <div className={`relative flex items-center border-b border-white/10 py-4 ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-5"}`}>
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-landing-gold/30 bg-white/95 shadow-sm"><Logo size={31} /></span>
-          <div className="min-w-0">
+          {!sidebarCollapsed && <div className="min-w-0 pe-5">
             <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-landing-gold-light">PowerCare</p>
             <p className="mt-0.5 truncate font-heading text-lg font-semibold text-white">{company.name || t("appName")}</p>
             <p className="truncate text-[9px] uppercase tracking-[0.12em] text-white/35">{lang === "ar" ? "منصة العمليات المؤسسية" : "Enterprise Operations"}</p>
-          </div>
+          </div>}
+          <button type="button" onClick={() => setSidebarCollapsed((value) => !value)} title={sidebarCollapsed ? (lang === "ar" ? "إظهار القائمة" : "Show navigation") : (lang === "ar" ? "إخفاء القائمة" : "Hide navigation")} className={`absolute top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-landing-gold/35 bg-primary text-landing-gold-light shadow-md hover:bg-sidebar-accent ${dir === "rtl" ? "-left-3" : "-right-3"}`}>
+            {sidebarCollapsed ? (dir === "rtl" ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />) : (dir === "rtl" ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />)}
+          </button>
         </div>
         <DragDropContext onDragEnd={onNavDragEnd}>
           <Droppable droppableId="sidebar-nav">
             {(provided) => (
-              <nav ref={provided.innerRef} {...provided.droppableProps} className="flex-1 w-full px-4 py-3 flex flex-col gap-0.5 overflow-y-auto no-scrollbar no-select">
+              <nav ref={provided.innerRef} {...provided.droppableProps} className={`flex-1 w-full py-3 flex flex-col gap-0.5 overflow-y-auto no-scrollbar no-select ${sidebarCollapsed ? "px-2" : "px-4"}`}>
                 {orderedNavItems.map((item, index) => (
                   <Draggable key={item.to} draggableId={item.to} index={index}>
                     {(dragProvided, dragSnapshot) => (
@@ -275,7 +283,7 @@ export default function Layout({ children }) {
                         {...dragProvided.dragHandleProps}
                         className={`group relative w-full ${dragSnapshot.isDragging ? "opacity-90" : ""}`}
                       >
-                        {(index === 0 || orderedNavItems[index - 1]?.category !== item.category) && (
+                        {!sidebarCollapsed && (index === 0 || orderedNavItems[index - 1]?.category !== item.category) && (
                           <div className="flex items-center gap-2 px-2 pb-1.5 pt-4">
                             <p className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/38">{navGroupLabels[item.category]}</p>
                             <span className="h-px flex-1 bg-gradient-to-r from-landing-gold/30 to-transparent" />
@@ -287,7 +295,7 @@ export default function Layout({ children }) {
                           title={item.label}
                           onClick={() => { if (item.to === "/app/employees") window.dispatchEvent(new Event("powercare:show-employee-hierarchy")); }}
                           className={({ isActive }) =>
-                            `flex h-10 w-full items-center gap-3 rounded-md border-s-2 px-3 transition-all ${
+                            `flex h-10 w-full items-center rounded-md border-s-2 transition-all ${sidebarCollapsed ? "justify-center px-1" : "gap-3 px-3"} ${
                               isActive
                                 ? "border-landing-gold bg-white/10 text-white shadow-sm"
                                 : "border-transparent text-white/58 hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
@@ -297,7 +305,7 @@ export default function Layout({ children }) {
                           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/[0.04] text-landing-gold-light group-hover:bg-white/[0.08]">
                             <item.icon className="h-4 w-4" strokeWidth={1.7} />
                           </span>
-                          <span className="truncate text-[13px] font-medium tracking-[0.01em]">{item.label}</span>
+                          {!sidebarCollapsed && <span className="truncate text-[13px] font-medium tracking-[0.01em]">{item.label}</span>}
                         </NavLink>
                       </div>
                     )}
@@ -308,16 +316,16 @@ export default function Layout({ children }) {
             )}
           </Droppable>
         </DragDropContext>
-        <div className="shrink-0 border-t border-white/10 px-4 pt-3">
+        <div className={`shrink-0 border-t border-white/10 pt-3 ${sidebarCollapsed ? "px-2" : "px-4"}`}>
           <button onClick={() => window.dispatchEvent(new Event("powercare:open-feedback"))} className="group flex h-10 w-full items-center gap-3 rounded-md border border-white/10 bg-white/[0.035] px-3 text-white/60 transition hover:border-landing-gold/40 hover:bg-white/[0.07] hover:text-white">
             <MessageSquare className="h-4 w-4 shrink-0 text-landing-gold-light" strokeWidth={1.7} />
-            <span className="truncate text-xs font-medium">{lang === "ar" ? "التقييم والاقتراحات" : "Feedback & suggestions"}</span>
+            {!sidebarCollapsed && <span className="truncate text-xs font-medium">{lang === "ar" ? "التقييم والاقتراحات" : "Feedback & suggestions"}</span>}
           </button>
         </div>
         <button
           onClick={() => navigate(`/app/employees/${currentUser.id}`)}
           title={t("viewProfile")}
-          className="mx-4 mb-4 mt-2 flex shrink-0 items-center gap-3 rounded-md border border-landing-gold/25 bg-white/[0.05] p-2.5 text-start transition hover:border-landing-gold/50 hover:bg-white/[0.08]"
+          className={`mb-4 mt-2 flex shrink-0 items-center rounded-md border border-landing-gold/25 bg-white/[0.05] p-2.5 text-start transition hover:border-landing-gold/50 hover:bg-white/[0.08] ${sidebarCollapsed ? "mx-2 justify-center" : "mx-4 gap-3"}`}
         >
           <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-landing-gold text-xs font-semibold text-primary ring-1 ring-white/20">
             {currentUser.profile?.avatarUrl ? (
@@ -326,11 +334,13 @@ export default function Layout({ children }) {
               currentUser.name.charAt(0)
             )}
           </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-xs font-semibold text-white">{currentUser.name}</span>
-            <span className="mt-0.5 block truncate text-[9px] uppercase tracking-wider text-white/40">{t("viewProfile")}</span>
-          </span>
-          <UserCircle className="h-4 w-4 shrink-0 text-landing-gold-light" />
+          {!sidebarCollapsed && <>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-semibold text-white">{currentUser.name}</span>
+              <span className="mt-0.5 block truncate text-[9px] uppercase tracking-wider text-white/40">{t("viewProfile")}</span>
+            </span>
+            <UserCircle className="h-4 w-4 shrink-0 text-landing-gold-light" />
+          </>}
         </button>
       </aside>
 
