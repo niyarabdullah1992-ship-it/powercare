@@ -9,6 +9,19 @@ import { getCompanyToken } from "@/lib/store";
 
 const SIGNER_COLORS = ["bg-amber-600", "bg-sky-700", "bg-emerald-700", "bg-violet-700", "bg-rose-700", "bg-teal-700"];
 
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+const uploadFileWithRetry = async (file) => {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      return await base44.integrations.Core.UploadFile({ file });
+    } catch (error) {
+      const rateLimited = error?.response?.status === 429 || error?.status === 429 || String(error?.message || "").includes("429");
+      if (!rateLimited || attempt === 5) throw error;
+      await wait(Math.min(30000, 1000 * (2 ** attempt)));
+    }
+  }
+};
+
 const signingBaseUrl = () => {
   try { if (appParams.appBaseUrl) return String(appParams.appBaseUrl).replace(/\/+$/, ""); } catch { /* use current origin */ }
   return window.location.origin;
@@ -33,11 +46,18 @@ export default function MultiSignCard({ currentUser, companyId, employees, ar, o
 
   const upload = async (event) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || uploading) return;
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) { setError(ar ? "اختر ملف PDF صالحًا." : "Choose a valid PDF file."); return; }
     setUploading(true); setError(""); setResult(null);
-    try { const { file_url } = await base44.integrations.Core.UploadFile({ file }); setDoc({ name: file.name, url: file_url }); setSpots({}); setStep(2); }
-    finally { setUploading(false); event.target.value = ""; }
+    try {
+      const { file_url } = await uploadFileWithRetry(file);
+      setDoc({ name: file.name, url: file_url }); setSpots({}); setStep(2);
+    } catch (uploadError) {
+      const rateLimited = uploadError?.response?.status === 429 || uploadError?.status === 429 || String(uploadError?.message || "").includes("429");
+      setError(rateLimited
+        ? (ar ? "خدمة الرفع مشغولة حاليًا. انتظر دقيقة ثم حاول مرة أخرى." : "Upload service is busy. Please wait a minute and try again.")
+        : (ar ? "تعذّر رفع المستند. حاول مرة أخرى." : "The document couldn't be uploaded. Please try again."));
+    } finally { setUploading(false); event.target.value = ""; }
   };
 
   const isCurrentUser = (signer) => signer.email.trim().toLowerCase() === String(currentUser.email || "").trim().toLowerCase();
