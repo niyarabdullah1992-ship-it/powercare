@@ -6,6 +6,10 @@ import { Image } from "@/components/ui/image";
 
 const VIDEO_URLS = [
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/b97771131_Executive_Video.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/5e65c5959_Workforce_Scene.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/865833689_Operations_Scene.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/2ba05263e_Safety_Scene.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/fb96dad3b_Analytics_Scene.mp4",
 ];
 
 const NARRATION_URLS = {
