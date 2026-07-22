@@ -16,6 +16,18 @@ const EMAIL_LOGO = 'https://media.base44.com/images/public/6a4f617bd7360a0ae9581
 function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+const isAllowedCtaUrl = (value) => {
+  try {
+    const raw = String(value || '');
+    if (!raw || raw.length > 2000) return false;
+    const url = new URL(raw);
+    const host = url.hostname.toLowerCase();
+    const trustedHost = host === 'powercares.pro' || host.endsWith('.powercares.pro') || host === 'base44.app' || host.endsWith('.base44.app') || host === 'media.base44.com';
+    return url.protocol === 'https:' && trustedHost && (url.port === '' || url.port === '443') && url.username === '' && url.password === '';
+  } catch {
+    return false;
+  }
+};
 function emailHtml(title, text, details, cta) {
   const paragraphs = escapeHtml(text).split(/\n{2,}/)
     .map((p) => `<p style="margin:0 0 12px;font-size:14px;line-height:1.8;color:#4a3d2c;" dir="auto">${p.replace(/\n/g, '<br/>')}</p>`)
@@ -114,6 +126,10 @@ Deno.serve(async (req) => {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to) || subject.length > 200 || text.length > 10000) {
         return Response.json({ error: 'Valid recipient, subject and message are required' }, { status: 400 });
       }
+      const employees = await base44.asServiceRole.entities.Employee.filter({ companyId });
+      const recipient = employees.find((employee) => String(employee.email || '').trim().toLowerCase() === to.toLowerCase());
+      if (!recipient) return Response.json({ error: 'Recipient must be a company employee' }, { status: 403 });
+      if (cta?.url && !isAllowedCtaUrl(cta.url)) return Response.json({ error: 'Call-to-action URL is not allowed' }, { status: 400 });
     } else {
       // Existing automated alerts remain restricted to registered company employees.
       const employees = await base44.asServiceRole.entities.Employee.filter({ companyId });
