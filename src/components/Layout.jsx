@@ -43,6 +43,11 @@ export default function Layout({ children }) {
   const notificationPollInFlightRef = useRef(false);
   const [navOrder, setNavOrder] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("powercare_sidebar_collapsed") === "true");
+  const [sidebarTogglePosition, setSidebarTogglePosition] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("powercare_sidebar_toggle_position")) || null; }
+    catch { return null; }
+  });
+  const sidebarToggleDragRef = useRef({ dragging: false, moved: false, offsetX: 0, offsetY: 0 });
 
   useEffect(() => {
     localStorage.setItem("powercare_sidebar_collapsed", String(sidebarCollapsed));
@@ -255,6 +260,47 @@ export default function Layout({ children }) {
 
   const sidebarSide = dir === "rtl" ? "right-0" : "left-0";
 
+  const startSidebarToggleDrag = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    sidebarToggleDragRef.current = {
+      dragging: true,
+      moved: false,
+      startX: event.clientX,
+      startY: event.clientY,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+      position: sidebarTogglePosition,
+    };
+  };
+
+  const moveSidebarToggle = (event) => {
+    const drag = sidebarToggleDragRef.current;
+    if (!drag.dragging) return;
+    if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < 4) return;
+    const position = {
+      x: Math.min(Math.max(8, event.clientX - drag.offsetX), window.innerWidth - 40),
+      y: Math.min(Math.max(8, event.clientY - drag.offsetY), window.innerHeight - 40),
+    };
+    drag.moved = true;
+    drag.position = position;
+    setSidebarTogglePosition(position);
+  };
+
+  const endSidebarToggleDrag = () => {
+    const drag = sidebarToggleDragRef.current;
+    drag.dragging = false;
+    if (drag.position) localStorage.setItem("powercare_sidebar_toggle_position", JSON.stringify(drag.position));
+  };
+
+  const handleSidebarToggleClick = () => {
+    if (sidebarToggleDragRef.current.moved) {
+      sidebarToggleDragRef.current.moved = false;
+      return;
+    }
+    setSidebarCollapsed((value) => !value);
+  };
+
   return (
     <div className="powercare-shell min-h-screen bg-background flex" dir={dir}>
       {/* Desktop navigation */}
@@ -343,9 +389,14 @@ export default function Layout({ children }) {
       </aside>
       <button
         type="button"
-        onClick={() => setSidebarCollapsed((value) => !value)}
-        title={sidebarCollapsed ? (lang === "ar" ? "إظهار القائمة" : "Show navigation") : (lang === "ar" ? "إخفاء القائمة" : "Hide navigation")}
-        className={`fixed top-[76px] z-50 hidden h-8 w-8 items-center justify-center rounded-full border border-landing-gold/40 bg-primary text-landing-gold-light shadow-lg transition-[left,right] duration-200 hover:bg-sidebar-accent md:flex ${dir === "rtl" ? (sidebarCollapsed ? "right-3" : "right-[256px]") : (sidebarCollapsed ? "left-3" : "left-[256px]")}`}
+        onPointerDown={startSidebarToggleDrag}
+        onPointerMove={moveSidebarToggle}
+        onPointerUp={endSidebarToggleDrag}
+        onPointerCancel={endSidebarToggleDrag}
+        onClick={handleSidebarToggleClick}
+        title={sidebarCollapsed ? (lang === "ar" ? "إظهار القائمة — قابل للسحب" : "Show navigation — drag to move") : (lang === "ar" ? "إخفاء القائمة — قابل للسحب" : "Hide navigation — drag to move")}
+        style={sidebarTogglePosition ? { left: sidebarTogglePosition.x, top: sidebarTogglePosition.y } : undefined}
+        className={`fixed z-50 hidden h-8 w-8 touch-none cursor-move items-center justify-center rounded-full border border-landing-gold/40 bg-primary text-landing-gold-light shadow-lg hover:bg-sidebar-accent md:flex ${sidebarTogglePosition ? "" : `top-[76px] ${dir === "rtl" ? (sidebarCollapsed ? "right-3" : "right-[256px]") : (sidebarCollapsed ? "left-3" : "left-[256px]")}`}`}
         aria-label={sidebarCollapsed ? (lang === "ar" ? "إظهار القائمة" : "Show navigation") : (lang === "ar" ? "إخفاء القائمة" : "Hide navigation")}
       >
         {sidebarCollapsed ? (dir === "rtl" ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />) : (dir === "rtl" ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />)}
