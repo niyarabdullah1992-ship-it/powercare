@@ -66,18 +66,19 @@ export default function Landing() {
 
       <section className="relative overflow-hidden px-4 pb-6 pt-9 sm:px-6 md:px-8 md:pt-10">
         <div className="relative mx-auto max-w-[1380px]">
-          <div dir={lang === "ar" ? "rtl" : "ltr"} className="mx-auto mb-6 max-w-4xl text-center">
-            <p className="mb-2 text-sm font-medium text-foreground">{lang === "ar" ? "إدارة شركات إنتربرايز" : "Enterprise company management"}</p>
-            <h1 className="font-heading text-5xl font-semibold leading-none tracking-[-0.04em] text-foreground sm:text-6xl md:text-7xl">PowerCare</h1>
-            <p className="mx-auto mt-4 max-w-3xl text-base font-medium leading-relaxed text-foreground md:text-lg">{t("heroSubtitle")}</p>
+          <div className="relative min-h-[260px] overflow-hidden rounded-2xl border border-landing-gold/30 bg-primary shadow-elevated sm:min-h-[380px] md:min-h-[480px] lg:min-h-[560px] lg:rounded-se-[9rem]">
+            <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/8bd9a684e_1.jpg" alt={lang === "ar" ? "فريق قيادي متنوع يتعاون ضمن بيئة مؤسسية حديثة" : "A diverse leadership team collaborating in a modern corporate workplace"} originWidth={1024} originHeight={575} fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-primary/25 to-transparent" />
           </div>
 
-          <div dir="ltr" className="grid items-stretch gap-4 lg:h-[520px] lg:grid-cols-[2fr,1fr]">
-            <div className="relative min-h-[300px] overflow-hidden rounded-2xl border border-landing-gold/25 bg-secondary shadow-elevated lg:h-full lg:min-h-0 lg:rounded-se-[8rem]">
-              <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/cfc4c89b6_1.jpg" alt={lang === "ar" ? "فريق قيادي متنوع يتعاون ضمن بيئة مؤسسية حديثة" : "A diverse leadership team collaborating in a modern corporate workplace"} originWidth={1024} originHeight={575} fittingType="fit" className="absolute inset-0 h-full w-full bg-primary" />
+          <div dir={lang === "ar" ? "rtl" : "ltr"} className="mt-5 grid items-stretch gap-4 lg:grid-cols-[1.35fr,0.65fr]">
+            <div className="flex flex-col justify-center rounded-2xl border border-landing-gold/25 bg-card px-6 py-8 text-center shadow-soft sm:px-10 lg:text-start">
+              <p className="text-sm font-medium text-accent">{lang === "ar" ? "إدارة شركات إنتربرايز" : "Enterprise company management"}</p>
+              <h1 className="mt-2 font-heading text-5xl font-semibold leading-none tracking-[-0.04em] text-foreground sm:text-6xl md:text-7xl">PowerCare</h1>
+              <p className="mt-4 max-w-3xl text-base font-medium leading-relaxed text-muted-foreground md:text-lg">{t("heroSubtitle")}</p>
             </div>
 
-            <div dir={lang === "ar" ? "rtl" : "ltr"} className="flex h-full flex-col justify-center rounded-2xl border border-landing-gold/25 bg-card p-5 shadow-soft">
+            <div className="flex flex-col justify-center rounded-2xl border border-landing-gold/25 bg-card p-5 shadow-soft">
               <div className="flex justify-center"><Logo size={34} /></div>
               <h2 className="mt-2 text-center font-heading text-lg font-medium text-foreground">{lang === "ar" ? "اختر نوع تسجيل الدخول الخاص بك" : "Choose your login type"}</h2>
               <div className="mt-3"><PowerCareLoginPanel showTypeSelector returnPath="/" /></div>
