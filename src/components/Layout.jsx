@@ -264,6 +264,7 @@ export default function Layout({ children }) {
                           to={item.to}
                           end={item.end}
                           title={item.label}
+                          onClick={() => { if (item.to === "/app/employees") window.dispatchEvent(new Event("powercare:show-employee-hierarchy")); }}
                           className={({ isActive }) =>
                             `flex h-11 w-full items-center gap-3 rounded-xl px-3 transition-all ${
                               isActive

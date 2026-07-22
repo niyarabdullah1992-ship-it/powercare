@@ -83,6 +83,12 @@ export default function Employees() {
     if (selectedStation && !visibleStations(currentUser, data).some((station) => station.id === selectedStation)) setSelectedStation(null);
   }, [data?.stations, currentUser, selectedStation]);
 
+  useEffect(() => {
+    const showHierarchy = () => setSelectedStation(null);
+    window.addEventListener("powercare:show-employee-hierarchy", showHierarchy);
+    return () => window.removeEventListener("powercare:show-employee-hierarchy", showHierarchy);
+  }, []);
+
   const taskStatusFor = (empId) => {
     const mine = targets.filter((tg) => tg.assignment_type === "member" && tg.employee_id === empId);
     if (mine.some((tg) => tg.status === "overdue")) return "overdue";
