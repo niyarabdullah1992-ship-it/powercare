@@ -61,17 +61,17 @@ export default function VideoIntro() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-landing-cinema px-6 py-16 md:px-10 md:py-20">
-      <div className="relative mx-auto grid max-w-6xl items-center gap-10 rounded-2xl border border-accent/70 bg-white/[0.03] p-5 shadow-xl shadow-accent/10 md:grid-cols-[0.85fr,1.15fr] md:p-8">
+    <section className="relative overflow-hidden bg-landing-bg px-4 py-0 sm:px-6 md:px-8">
+      <div className="relative mx-auto grid max-w-[1380px] items-center gap-8 rounded-lg border border-foreground/10 bg-landing-cinema p-6 md:grid-cols-[0.9fr,1.1fr] md:p-8">
         <div className="text-start">
           <div className="mb-5"><Logo size={44} /></div>
           <h2 className="font-heading text-3xl font-semibold text-white md:text-4xl">{t("videoHeading")}</h2>
           <p className="mt-4 leading-relaxed text-white/55">{t("videoText")}</p>
-          <button type="button" onClick={togglePlay} className="mt-7 inline-flex items-center gap-3 rounded-lg border border-accent/40 bg-accent/10 px-5 py-3 text-sm font-semibold text-accent hover:bg-accent/20">
+          <button type="button" onClick={togglePlay} className="mt-7 inline-flex items-center gap-3 rounded-md bg-accent px-5 py-3 text-xs font-semibold text-accent-foreground hover:bg-accent/90">
             {playing ? <Pause className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}{t("narrationCta")}
           </button>
         </div>
-        <div className="group relative overflow-hidden rounded-xl border border-white/10 bg-black shadow-2xl">
+        <div className="group relative h-64 overflow-hidden rounded-lg border border-white/10 bg-black">
           <SeamlessVideoPlaylist ref={playerRef} urls={VIDEO_URLS} playing={playing} onClick={togglePlay} onPlaylistEnd={handlePlaylistEnd} />
           <button onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} className={`absolute inset-0 flex items-center justify-center transition-opacity ${playing ? "opacity-0 group-hover:opacity-100" : "opacity-100"}`}>
             <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/85 text-primary shadow-2xl">{playing ? <Pause className="h-7 w-7" /> : <Play className="ms-1 h-7 w-7" />}</span>

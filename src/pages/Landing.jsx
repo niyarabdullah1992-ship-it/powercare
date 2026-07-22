@@ -31,19 +31,19 @@ export default function Landing() {
   }, [langOpen]);
 
   return (
-    <div className="powercare-public min-h-screen bg-landing-cinema font-body text-foreground">
-      <header className="sticky top-0 z-50 border-b border-accent/20 bg-landing-cinema/95 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 md:px-10">
-          <div className="flex items-center gap-2.5">
-            <Logo size={30} />
-            <span className="font-heading text-lg font-semibold text-white">{t("appName")}</span>
+    <div className="powercare-public min-h-screen bg-landing-bg font-body text-foreground">
+      <header className="sticky top-0 z-50 border-b border-border bg-landing-bg/95 backdrop-blur-xl">
+        <div className="mx-auto flex h-14 max-w-[1440px] flex-row-reverse items-center justify-between px-4 sm:px-6 md:px-8">
+          <div className="flex items-center gap-2">
+            <Logo size={26} />
+            <span className="font-heading text-base font-semibold text-foreground">PowerCare</span>
           </div>
           <div className="flex items-center gap-2">
-            <Link to="/pricing" className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground shadow-sm hover:bg-accent/90">
+            <Link to="/pricing" className="rounded-md bg-accent px-4 py-2 text-xs font-semibold text-accent-foreground hover:bg-accent/90">
               {t("viewPlans")}
             </Link>
             <div className="relative">
-              <button onClick={(e) => { e.stopPropagation(); setLangOpen((v) => !v); }} className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10">
+              <button onClick={(e) => { e.stopPropagation(); setLangOpen((v) => !v); }} className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs text-foreground hover:bg-muted">
                 <Globe className="h-4 w-4" strokeWidth={1.75} />
                 <span className="hidden sm:inline">{currentLang?.flag} {currentLang?.label}</span>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${langOpen ? "rotate-180" : ""}`} strokeWidth={1.75} />
@@ -63,28 +63,27 @@ export default function Landing() {
         </div>
       </header>
 
-      <section className="relative overflow-hidden px-4 pb-16 pt-12 sm:px-6 md:px-10 md:pb-20 md:pt-16">
-        <Image src={PATTERN_IMG} alt="" originWidth={1536} originHeight={1024} fittingType="fill" className="absolute inset-0 h-full w-full opacity-20" />
-        <div className="relative mx-auto max-w-6xl">
-          <div dir={lang === "ar" ? "rtl" : "ltr"} className="mb-8 max-w-2xl text-start md:ms-auto">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-accent">Enterprise company management</p>
-            <h1 className="font-heading text-5xl font-semibold leading-none text-white sm:text-6xl md:text-7xl">{t("appName")}</h1>
-            <p className="mt-4 text-base leading-relaxed text-white/65 md:text-lg">{t("heroSubtitle")}</p>
+      <section className="relative overflow-hidden px-4 pb-6 pt-9 sm:px-6 md:px-8 md:pt-10">
+        <div className="relative mx-auto max-w-[1380px]">
+          <div dir={lang === "ar" ? "rtl" : "ltr"} className="mx-auto mb-6 max-w-4xl text-center">
+            <p className="mb-2 text-sm font-medium text-foreground">{lang === "ar" ? "إدارة شركات إنتربرايز" : "Enterprise company management"}</p>
+            <h1 className="font-heading text-5xl font-semibold leading-none tracking-[-0.04em] text-foreground sm:text-6xl md:text-7xl">PowerCare</h1>
+            <p className="mx-auto mt-4 max-w-3xl text-base font-medium leading-relaxed text-foreground md:text-lg">{t("heroSubtitle")}</p>
           </div>
 
-          <div dir="ltr" className="grid items-center gap-8 lg:grid-cols-[1.35fr,0.75fr] lg:gap-12">
-            <div className="relative flex min-h-[260px] items-center justify-center sm:min-h-[340px]">
-              <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/6fc1a76fc_generated_image.png" alt={lang === "ar" ? "موظف مبتسم يعمل على منصة PowerCare" : "Smiling professional working with PowerCare"} originWidth={1536} originHeight={1024} fittingType="fit" className="h-full max-h-[360px] w-full" />
+          <div dir="ltr" className="grid items-stretch gap-4 lg:h-[430px] lg:grid-cols-[2fr,1fr]">
+            <div className="relative min-h-[300px] overflow-hidden rounded-lg border border-border lg:h-full lg:min-h-0">
+              <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/6fc1a76fc_generated_image.png" alt={lang === "ar" ? "موظف مبتسم يعمل على منصة PowerCare" : "Smiling professional working with PowerCare"} originWidth={1536} originHeight={1024} fittingType="fill" focalPointX={0.48} focalPointY={0.5} className="absolute inset-0 h-full w-full" />
             </div>
 
-            <div dir={lang === "ar" ? "rtl" : "ltr"} className="rounded-2xl border border-white/15 bg-card/95 p-6 shadow-2xl sm:p-7">
-              <div className="flex justify-center"><Logo size={44} /></div>
-              <h2 className="mt-4 text-center font-heading text-2xl font-semibold text-foreground">{lang === "ar" ? "اختر نوع تسجيل الدخول الخاص بك" : "Choose your login type"}</h2>
-              <div className="mt-6"><PowerCareLoginPanel showTypeSelector returnPath="/" /></div>
+            <div dir={lang === "ar" ? "rtl" : "ltr"} className="flex h-full flex-col justify-center rounded-lg border border-border bg-card p-4">
+              <div className="flex justify-center"><Logo size={34} /></div>
+              <h2 className="mt-2 text-center font-heading text-lg font-medium text-foreground">{lang === "ar" ? "اختر نوع تسجيل الدخول الخاص بك" : "Choose your login type"}</h2>
+              <div className="mt-3"><PowerCareLoginPanel showTypeSelector returnPath="/" /></div>
             </div>
           </div>
 
-          <div className="mt-8 grid gap-3 md:grid-cols-3">
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
             <FeatureBullet icon={Clock} title={t("feature1")} />
             <FeatureBullet icon={TrendingUp} title={t("feature2")} />
             <FeatureBullet icon={ShieldCheck} title={t("feature3")} />
@@ -95,21 +94,21 @@ export default function Landing() {
       <StatsBand lang={lang} />
       <VideoIntro />
 
-      <section className="bg-landing-bg px-4 py-16 sm:px-6 md:px-10 md:py-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-10 flex flex-col items-center text-center">
-            <Logo size={56} />
-            <h2 className="mt-4 font-heading text-4xl font-semibold text-primary md:text-5xl">{lang === "ar" ? "لماذا PowerCare؟" : "Why PowerCare?"}</h2>
+      <section className="border-t border-border bg-landing-bg px-4 py-14 sm:px-6 md:px-8 md:py-16">
+        <div className="mx-auto max-w-[1380px]">
+          <div className="mb-8 flex flex-col items-center text-center">
+            <Logo size={36} />
+            <h2 className="mt-4 font-heading text-4xl font-semibold tracking-[-0.03em] text-foreground md:text-5xl">{lang === "ar" ? "لماذا PowerCare؟" : "Why PowerCare?"}</h2>
           </div>
 
           <WhyPowerCare lang={lang} />
 
-          <div className="mx-auto mb-10 flex max-w-3xl items-center justify-center gap-3 rounded-full border border-accent/25 bg-card px-6 py-3 text-center text-sm shadow-sm">
+          <div className="mx-auto mb-7 flex max-w-3xl items-center justify-center gap-3 rounded-full border border-border bg-card px-6 py-3 text-center text-xs">
             <Sparkles className="h-4 w-4 shrink-0 text-accent" strokeWidth={1.75} />
             <p><span className="font-semibold text-primary">{t("benefitAnnounce")}</span>{" "}<span className="text-muted-foreground">{t("benefitAnnounceText")}</span></p>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3">
             <BenefitCard icon={MapPin} title={t("benefit1Title")} text={t("benefit1Text")} />
             <BenefitCard icon={Lock} title={t("benefit2Title")} text={t("benefit2Text")} />
             <BenefitCard icon={Factory} title={t("benefit3Title")} text={t("benefit3Text")} />
@@ -117,8 +116,8 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-accent/20 bg-landing-cinema px-6 py-12 md:px-10">
-        <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-3">
+      <footer className="border-t border-foreground/10 bg-landing-cinema px-6 py-8 md:px-8">
+        <div className="mx-auto grid max-w-6xl gap-7 md:grid-cols-3">
           <div>
             <h3 className="font-heading text-2xl text-white">{t("appName")}</h3>
             <p className="mt-3 text-sm leading-relaxed text-white/50">{t("footerDescription")}</p>
@@ -146,18 +145,18 @@ export default function Landing() {
 
 function FeatureBullet({ icon: Icon, title }) {
   return (
-    <div className="flex min-h-20 items-center gap-3 rounded-xl border border-accent/75 bg-landing-cinema/80 px-5 py-4 text-white shadow-lg shadow-accent/15">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent"><Icon className="h-4 w-4" strokeWidth={1.75} /></span>
-      <p className="text-sm leading-relaxed text-white/85">{title}</p>
+    <div className="flex min-h-14 items-center justify-center gap-3 rounded-lg border border-border bg-card px-4 py-2.5 text-foreground">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-secondary text-accent"><Icon className="h-4 w-4" strokeWidth={1.75} /></span>
+      <p className="text-center text-xs font-medium leading-relaxed">{title}</p>
     </div>
   );
 }
 
 function BenefitCard({ icon: Icon, title, text }) {
   return (
-    <div className="rounded-xl border border-primary/15 bg-card p-6 shadow-sm">
-      <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent"><Icon className="h-5 w-5" strokeWidth={1.5} /></span>
-      <h3 className="font-heading text-xl font-semibold text-primary">{title}</h3>
+    <div className="rounded-lg border border-border bg-card p-6">
+      <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-md bg-secondary text-accent"><Icon className="h-5 w-5" strokeWidth={1.5} /></span>
+      <h3 className="font-heading text-lg font-medium text-foreground">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</p>
     </div>
   );

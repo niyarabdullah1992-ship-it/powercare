@@ -12,7 +12,7 @@ export default function IpCertificateBadge({ lang }) {
   ];
   return <Dialog>
     <DialogTrigger asChild>
-      <button type="button" className="mx-auto mt-10 flex max-w-xl items-center gap-3 rounded-xl border border-accent/35 bg-white/5 px-4 py-3 text-start text-sm text-white shadow-sm hover:bg-white/10">
+      <button type="button" className="mx-auto mt-8 flex max-w-xl items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-start text-sm text-white hover:bg-white/10">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent"><ShieldCheck className="h-5 w-5" /></span>
         <span><strong className="block font-semibold">PowerCare</strong><span className="text-xs text-white/55">{copy.badge}</span></span>
       </button>

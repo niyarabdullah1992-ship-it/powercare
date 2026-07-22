@@ -11,11 +11,11 @@ export default function WhyPowerCare({ lang }) {
     { icon: ShieldCheck, value: "99.9%", label: ar ? "موثوقية التشغيل" : "Uptime reliability" },
   ];
   return (
-    <div className="mx-auto mb-10 max-w-6xl">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+    <div className="mx-auto mb-7 max-w-[1380px]">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {stats.map((s, i) => (
-          <div key={i} className="rounded-xl bg-accent p-5 text-center text-accent-foreground shadow-lg shadow-accent/15">
-            <span className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/20"><s.icon className="h-5 w-5" strokeWidth={1.5} /></span>
+          <div key={i} className="rounded-lg bg-accent p-5 text-center text-accent-foreground">
+            <span className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-md bg-white/15"><s.icon className="h-4 w-4" strokeWidth={1.5} /></span>
             <p className="font-heading text-3xl font-semibold" dir="ltr">{s.value}</p>
             <p className="mt-1 text-xs opacity-80">{s.label}</p>
           </div>
