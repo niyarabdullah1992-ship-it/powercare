@@ -21,6 +21,11 @@ function addCanvasPages(pdf, canvas, firstPage) {
 
 export async function downloadManualPdf(root, fileName) {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
+  const screenshotImages = [...root.querySelectorAll(".manual-screen-shot img")];
+  await Promise.all(screenshotImages.map(async (image) => {
+    if (!image.complete) await new Promise((resolve) => { image.addEventListener("load", resolve, { once: true }); image.addEventListener("error", resolve, { once: true }); });
+    if (image.decode) await image.decode().catch(() => undefined);
+  }));
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const nodes = [root.querySelector("header"), root.querySelector(".manual-toc-export"), ...root.querySelectorAll(".manual-chapter")].filter(Boolean);
   let firstPage = true;

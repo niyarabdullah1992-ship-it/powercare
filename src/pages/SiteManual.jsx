@@ -67,7 +67,7 @@ export default function SiteManual() {
       await new Promise((resolve) => {
         const wait = () => {
           const shots = [...document.querySelectorAll(".manual-screen-shot")];
-          if ((shots.length && shots.every((shot) => shot.dataset.captureReady)) || Date.now() - started > 15000) resolve();
+          if ((shots.length && shots.every((shot) => shot.dataset.captureReady)) || Date.now() - started > 45000) resolve();
           else setTimeout(wait, 250);
         };
         setTimeout(wait, 250);

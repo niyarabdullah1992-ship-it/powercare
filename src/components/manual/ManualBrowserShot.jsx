@@ -9,15 +9,20 @@ export default function ManualBrowserShot({ route, title, captureLabel, language
   const [active, setActive] = useState(false);
   const [image, setImage] = useState(() => cache.get(cacheKey) || "");
   const [failed, setFailed] = useState(false);
+  const [captureReady, setCaptureReady] = useState(false);
 
   useEffect(() => {
     setImage(cache.get(cacheKey) || "");
     setFailed(false);
+    setCaptureReady(false);
+    hostRef.current?.removeAttribute("data-capture-ready");
   }, [cacheKey]);
 
   useEffect(() => {
-    if (hostRef.current && (image || failed)) hostRef.current.dataset.captureReady = "true";
-  }, [image, failed]);
+    if (!hostRef.current) return;
+    if (captureReady || failed) hostRef.current.dataset.captureReady = "true";
+    else hostRef.current.removeAttribute("data-capture-ready");
+  }, [captureReady, failed]);
 
   useEffect(() => {
     if (forceActive) { setActive(true); return; }
@@ -30,9 +35,10 @@ export default function ManualBrowserShot({ route, title, captureLabel, language
 
   const capture = async (event) => {
     if (image) return;
+    const frame = event.currentTarget;
     try {
       await new Promise((resolve) => setTimeout(resolve, 1200));
-      const frameDoc = event.currentTarget.contentDocument;
+      const frameDoc = frame.contentDocument;
       const target = frameDoc?.querySelector("main") || frameDoc?.body;
       if (!target) throw new Error("screen unavailable");
       const { default: html2canvas } = await import("html2canvas");
@@ -52,7 +58,7 @@ export default function ManualBrowserShot({ route, title, captureLabel, language
         <span className="mx-auto flex items-center gap-2 text-[11px]"><Camera className="h-3.5 w-3.5" />{captureLabel}: {title}</span>
       </div>
       <div className="relative aspect-[16/9] overflow-hidden bg-muted">
-        {image ? <img src={image} alt={`${captureLabel}: ${title}`} className="h-full w-full object-cover object-top" /> : active ? <iframe key={cacheKey} title={title} src={route} onLoad={capture} className="h-full w-full border-0 pointer-events-none" /> : null}
+        {image ? <img src={image} alt={`${captureLabel}: ${title}`} onLoad={() => setCaptureReady(true)} className="h-full w-full object-cover object-top" /> : active ? <iframe key={cacheKey} title={title} src={route} onLoad={capture} className="h-full w-full border-0 pointer-events-none" /> : null}
         {!image && !failed && <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-muted/70"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}
         {failed && <iframe title={title} src={route} className="h-full w-full border-0 pointer-events-none" />}
       </div>
