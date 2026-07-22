@@ -54,7 +54,10 @@ export default function SiteManual() {
   const allowed = useMemo(() => currentUser ? allowedNavFor(currentUser, data) : null, [currentUser, data]);
   const chapters = content.MANUAL_CHAPTERS.filter((chapter) => ROUTES[chapter.id] && (!allowed || allowed.has(ROUTES[chapter.id]))).map((chapter, index) => {
     const name = chapter.name || chapter.title.replace(/^\d+\.\s*/, "");
-    return { ...chapter, route: ROUTES[chapter.id], number: index + 1, name, title: `${index + 1}. ${name}` };
+    const actions = chapter.actions?.length ? chapter.actions : chapter.steps.map((step, stepIndex) => ({
+      title: step.split(/[.:؛،]/)[0], steps: [step], note: stepIndex === 0 ? chapter.roles?.[0] : "",
+    }));
+    return { ...chapter, actions, route: ROUTES[chapter.id], number: index + 1, name, title: `${index + 1}. ${name}` };
   });
 
   const exportPdf = async () => {
