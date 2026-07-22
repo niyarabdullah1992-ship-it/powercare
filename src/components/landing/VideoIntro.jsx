@@ -62,7 +62,7 @@ export default function VideoIntro() {
 
   return (
     <section className="bg-landing-bg px-4 py-16 sm:px-6 md:px-8 md:py-24">
-      <div className="mx-auto grid max-w-[1200px] overflow-hidden rounded-2xl border border-video-gold/30 bg-video-brown text-video-cream shadow-elevated lg:grid-cols-[0.82fr,1.18fr]">
+      <div className="video-intro-brown mx-auto grid max-w-[1200px] overflow-hidden rounded-2xl border border-video-gold/30 bg-video-brown text-video-cream shadow-elevated lg:grid-cols-[0.82fr,1.18fr]">
         <div className="flex flex-col justify-center px-7 py-12 sm:px-10 md:px-14 lg:py-16">
           <p className="text-xs font-semibold uppercase tracking-widest-xl text-video-gold">PowerCare</p>
           <h2 className="mt-4 font-heading text-4xl font-semibold leading-[1.02] tracking-[-0.04em] text-video-cream sm:text-5xl md:text-6xl">{t("videoHeading")}</h2>
