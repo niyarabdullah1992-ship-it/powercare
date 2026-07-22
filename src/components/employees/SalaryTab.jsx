@@ -4,6 +4,7 @@ import { updateEmployeeProfile } from "@/lib/store";
 import { syncEmployeeSalaryToPayroll } from "@/lib/payroll";
 import { base44 } from "@/api/base44Client";
 import { Pencil, Check, FileText, Loader2, Upload } from "lucide-react";
+import { normalizeLocalizedNumber } from "@/lib/localizedNumber";
 
 export default function SalaryTab({ employee, companyId, canEdit }) {
   const { t, lang } = useI18n();
@@ -19,8 +20,8 @@ export default function SalaryTab({ employee, companyId, canEdit }) {
   });
 
   const save = () => {
-    const baseSalary = Number(form.baseSalary);
-    const allowances = Number(form.allowances || 0);
+    const baseSalary = Number(normalizeLocalizedNumber(form.baseSalary));
+    const allowances = Number(normalizeLocalizedNumber(form.allowances || 0));
     const currency = String(form.currency || "").trim().toUpperCase();
     if (!Number.isFinite(baseSalary) || baseSalary <= 0 || !Number.isFinite(allowances) || allowances < 0 || !/^[A-Z]{3}$/.test(currency)) {
       setError(lang === "ar" ? "أدخل راتبًا أساسيًا موجبًا وبدلات غير سالبة ورمز عملة من 3 أحرف." : "Enter a positive base salary, non-negative allowances, and a 3-letter currency code.");
@@ -69,7 +70,7 @@ export default function SalaryTab({ employee, companyId, canEdit }) {
               <div key={key}>
                 <label className="block text-xs text-muted-foreground font-body mb-1">{t(label)}</label>
                 {editing ? (
-                  <input type={key === "currency" ? "text" : "number"} min={key === "baseSalary" ? "0.01" : "0"} value={form[key]} onChange={(e) => { setForm({ ...form, [key]: e.target.value }); setError(""); }} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+                  <input type="text" inputMode={key === "currency" ? "text" : "decimal"} value={form[key]} onChange={(e) => { setForm({ ...form, [key]: key === "currency" ? e.target.value : normalizeLocalizedNumber(e.target.value) }); setError(""); }} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
                 ) : (
                   <p className="text-sm font-body">{profile[key] || "—"}</p>
                 )}

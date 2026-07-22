@@ -3,16 +3,17 @@ import { Link } from "react-router-dom";
 import { FileText, CheckCircle2, Circle, LockKeyhole } from "lucide-react";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import { netOf } from "@/lib/payroll";
+import { normalizeLocalizedNumber } from "@/lib/localizedNumber";
 
 export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid, onPayslip }) {
   const num = (v) => Number(v) || 0;
   const cell = (field, editable = true) => (
     <input
-      type="number"
-      min="0"
+      type="text"
+      inputMode="decimal"
       value={item[field] ?? 0}
       disabled={!editable || item.paid}
-      onChange={(e) => onChange(field, Number(e.target.value) || 0)}
+      onChange={(e) => onChange(field, Number(normalizeLocalizedNumber(e.target.value)) || 0)}
       aria-invalid={field === "base" && num(item.base) <= 0}
       title={field === "base" ? (ar ? "يُعدَّل من الملف الشخصي للموظف" : "Edit from the employee profile") : undefined}
       className={`h-8 w-full max-w-24 rounded-md border bg-background px-2 text-center text-sm font-body disabled:opacity-60 ${field === "base" && num(item.base) <= 0 ? "border-destructive/60" : "border-input"}`}
