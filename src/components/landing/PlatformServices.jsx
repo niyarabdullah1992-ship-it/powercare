@@ -14,8 +14,8 @@ const modules = [
 
 export default function PlatformServices({ lang }) {
   const ar = lang === "ar";
-  return <section dir={ar ? "rtl" : "ltr"} className="border-y border-border bg-secondary/55 px-4 py-16 sm:px-6 md:px-8 md:py-24">
-    <div className="mx-auto max-w-[1200px] overflow-hidden rounded-xl border border-border bg-card shadow-elevated">
+  return <section dir={ar ? "rtl" : "ltr"} className="border-y border-border bg-secondary/55 py-16 md:py-24">
+    <div className="w-full overflow-hidden border-y border-border bg-card shadow-elevated">
       <div className="relative grid overflow-hidden bg-landing-cinema p-6 text-white md:grid-cols-[1.15fr,0.85fr] md:items-end md:gap-7 md:p-7">
         <div className="absolute -end-20 -top-20 h-64 w-64 rounded-full border border-white/10" />
         <div className="absolute -end-8 -top-8 h-40 w-40 rounded-full border border-accent/40" />
