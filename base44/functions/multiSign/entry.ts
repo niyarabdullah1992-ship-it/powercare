@@ -378,7 +378,7 @@ Deno.serve(async (req) => {
         rejectionReason: rec.rejectionReason || null,
         signedCount: (rec.signers || []).filter((s) => s.status === 'signed').length,
         totalCount: (rec.signers || []).length,
-        canSign: rec.status === 'pending' && (signer.status === 'pending' || signer.status === 'signed'),
+        canSign: signer.status === 'signed' || (signer.status === 'pending' && (rec.status === 'pending' || (rec.status === 'rejected' && pending.length > 0))),
         isLast: signer.status === 'pending' && pending.length === 1,
         signerNames: (rec.signers || []).map((s) => s.name).join(', '),
       });
@@ -389,15 +389,18 @@ Deno.serve(async (req) => {
       if (!found) return Response.json({ error: 'Invalid or expired signing link' }, { status: 404 });
       const { rec, signer, expired } = found;
       if (expired) return Response.json({ error: 'Invalid or expired signing link' }, { status: 404 });
-      if (rec.status !== 'pending' || signer.status !== 'pending') return Response.json({ error: 'REQUEST_CLOSED' }, { status: 409 });
+      const pendingBeforeRejection = (rec.signers || []).filter((item) => item.status === 'pending');
+      const requestAcceptsResponses = rec.status === 'pending' || (rec.status === 'rejected' && pendingBeforeRejection.length > 0);
+      if (!requestAcceptsResponses || signer.status !== 'pending') return Response.json({ error: 'REQUEST_CLOSED' }, { status: 409 });
       const reason = String(body.reason || '').trim().slice(0, 1000);
       if (!reason) return Response.json({ error: 'Rejection reason is required' }, { status: 400 });
       const rejectedAt = new Date().toISOString();
       const location = cleanLocation(body.location);
       const signers = (rec.signers || []).map((item) => item.token === signer.token ? { ...item, status: 'rejected', rejectedAt, rejectionReason: reason, location } : item);
+      const hasPendingSigners = signers.some((item) => item.status === 'pending');
       await Docs.update(rec.id, {
         signers,
-        status: 'rejected',
+        status: hasPendingSigners ? 'pending' : 'rejected',
         rejectionReason: reason,
         lastActivityAt: rejectedAt,
         auditTrail: [...(rec.auditTrail || []), { type: 'rejected', at: rejectedAt, actorId: signer.employeeId || null, actorName: signer.name, actorRole: signer.role || 'signer', location, reason }],
@@ -414,8 +417,9 @@ Deno.serve(async (req) => {
       if (!found) return Response.json({ error: 'Invalid or expired signing link' }, { status: 404 });
       const { rec, signer, expired } = found;
       if (expired) return Response.json({ error: 'Invalid or expired signing link' }, { status: 404 });
-      if (rec.status !== 'pending' || signer.status === 'signed') return Response.json({ error: 'ALREADY_SIGNED' }, { status: 409 });
       const pending = (rec.signers || []).filter((item) => item.status === 'pending');
+      const requestAcceptsSignatures = rec.status === 'pending' || (rec.status === 'rejected' && pending.length > 0);
+      if (!requestAcceptsSignatures || signer.status !== 'pending') return Response.json({ error: 'ALREADY_SIGNED' }, { status: 409 });
       const fileHash = String(body.fileHash || '').toLowerCase().slice(0, 64);
       if (!/^[0-9a-f]{64}$/.test(fileHash)) return Response.json({ error: 'Signed version fingerprint is required' }, { status: 400 });
       const newDocUrl = String(body.newDocUrl || '').slice(0, 2000);
@@ -431,6 +435,8 @@ Deno.serve(async (req) => {
         s.token === signer.token ? { ...s, status: 'signed', signedAt, fieldValues, documentHash: fileHash, location } : s
       );
       const completed = signers.every((s) => s.status === 'signed');
+      const settled = signers.every((s) => s.status !== 'pending');
+      const hasRejection = signers.some((s) => s.status === 'rejected');
       let registryRecord = null;
       if (completed) {
         const Registry = base44.asServiceRole.entities.SignedDocument;
@@ -450,7 +456,7 @@ Deno.serve(async (req) => {
         await Docs.update(rec.id, {
           signers,
           docUrl: newDocUrl,
-          status: completed ? 'completed' : 'pending',
+          status: completed ? 'completed' : settled && hasRejection ? 'rejected' : 'pending',
           finalHash: completed ? fileHash : rec.finalHash,
           currentSignerIndex: signers.filter((item) => item.status === 'signed').length,
           lastActivityAt: signedAt,
