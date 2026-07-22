@@ -258,7 +258,7 @@ export default function Layout({ children }) {
   return (
     <div className="powercare-shell min-h-screen bg-background flex" dir={dir}>
       {/* Desktop navigation */}
-      <aside className={`corporate-sidebar hidden md:flex flex-col ${sidebarCollapsed ? "w-[76px]" : "w-[268px]"} ${sidebarSide} top-0 h-screen sticky bg-primary pt-safe z-40 shadow-elevated transition-[width] duration-200`}>
+      <aside className={`corporate-sidebar hidden md:flex flex-col ${sidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-[268px] opacity-100"} ${sidebarSide} top-0 h-screen sticky overflow-hidden bg-primary pt-safe z-40 shadow-elevated transition-[width,opacity] duration-200`}>
         <div className={`relative flex items-center border-b border-white/10 py-4 ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-5"}`}>
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-landing-gold/30 bg-white/95 shadow-sm"><Logo size={31} /></span>
           {!sidebarCollapsed && <div className="min-w-0 pe-5">
@@ -266,9 +266,7 @@ export default function Layout({ children }) {
             <p className="mt-0.5 truncate font-heading text-lg font-semibold text-white">{company.name || t("appName")}</p>
             <p className="truncate text-[9px] uppercase tracking-[0.12em] text-white/35">{lang === "ar" ? "منصة العمليات المؤسسية" : "Enterprise Operations"}</p>
           </div>}
-          <button type="button" onClick={() => setSidebarCollapsed((value) => !value)} title={sidebarCollapsed ? (lang === "ar" ? "إظهار القائمة" : "Show navigation") : (lang === "ar" ? "إخفاء القائمة" : "Hide navigation")} className={`absolute top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-landing-gold/35 bg-primary text-landing-gold-light shadow-md hover:bg-sidebar-accent ${dir === "rtl" ? "-left-3" : "-right-3"}`}>
-            {sidebarCollapsed ? (dir === "rtl" ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />) : (dir === "rtl" ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />)}
-          </button>
+
         </div>
         <DragDropContext onDragEnd={onNavDragEnd}>
           <Droppable droppableId="sidebar-nav">
@@ -343,6 +341,15 @@ export default function Layout({ children }) {
           </>}
         </button>
       </aside>
+      <button
+        type="button"
+        onClick={() => setSidebarCollapsed((value) => !value)}
+        title={sidebarCollapsed ? (lang === "ar" ? "إظهار القائمة" : "Show navigation") : (lang === "ar" ? "إخفاء القائمة" : "Hide navigation")}
+        className={`fixed top-6 z-50 hidden h-8 w-8 items-center justify-center rounded-full border border-landing-gold/40 bg-primary text-landing-gold-light shadow-lg transition-[left,right] duration-200 hover:bg-sidebar-accent md:flex ${dir === "rtl" ? (sidebarCollapsed ? "right-3" : "right-[256px]") : (sidebarCollapsed ? "left-3" : "left-[256px]")}`}
+        aria-label={sidebarCollapsed ? (lang === "ar" ? "إظهار القائمة" : "Show navigation") : (lang === "ar" ? "إخفاء القائمة" : "Hide navigation")}
+      >
+        {sidebarCollapsed ? (dir === "rtl" ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />) : (dir === "rtl" ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />)}
+      </button>
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
