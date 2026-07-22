@@ -6,7 +6,7 @@ import { updateCompany, deleteEmployeeAccount } from "@/lib/store";
 import { canManageEmployees, isCompanyOwner, canManageStations, visibleStations, visibleEmployees } from "@/lib/permissions";
 import { canAddEmployee } from "@/lib/planLimits";
 import { Link } from "react-router-dom";
-import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle, GripVertical, Users, Settings2, MapPinned } from "lucide-react";
+import { Plus, Trash2, Search, ArrowLeft, AlertTriangle, KeyRound, UserCog, Pencil, Check, X, Briefcase, UserCircle, GripVertical, Users, Settings2, MapPinned, ContactRound } from "lucide-react";
 import { badgeFor, nextBadge } from "@/lib/rewards";
 import { getRoleLabel } from "@/lib/roles";
 import { base44 } from "@/api/base44Client";
@@ -126,6 +126,7 @@ export default function Employees() {
     return (
       <div className="space-y-6">
         <PageHeader title={`${t("employees")} · ${t("stations")}`} description={`${visibleEmployees(currentUser, data).length} ${t("employees").toLowerCase()} · ${stations.length} ${t("stations").toLowerCase()}`} icon={Users} />
+        <Link to="/app/directory" className="inline-flex min-h-11 items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-semibold text-background hover:bg-accent"><ContactRound className="h-4 w-4" />{lang === "ar" ? "دليل الموظفين" : "Employee Directory"}</Link>
         <AddStationControl company={company} data={data} canManage={canReorderStations} t={t} />
 
         <RolesGuide company={company} />
