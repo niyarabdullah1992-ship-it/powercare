@@ -31,7 +31,7 @@ import GradeBadge from "@/components/employees/GradeBadge";
 import { employeeJobGrade, orderedJobGrades } from "@/lib/jobGrades";
 import { hasHRPermission } from "@/lib/permissions";
 import AllowedEmailList from "@/components/employees/AllowedEmailList";
-import EmployeeHierarchyTree from "@/components/directory/EmployeeHierarchyTree";
+import HRFullHierarchyMap from "@/components/hr/HRFullHierarchyMap";
 
 const ROLES = ["employee", "inventory_keeper", "safety_officer", "financial_officer", "station_manager", "pgm", "ops_manager", "director"];
 
@@ -130,8 +130,6 @@ export default function Employees() {
   // Drill-down: show the company hierarchy first.
   if (!selectedStation) {
     const hierarchyEmployees = visibleEmployees(currentUser, data);
-    const hierarchySections = stations.map((station) => ({ station, employees: hierarchyEmployees.filter((employee) => (employee.stationId || defaultStationId) === station.id || (["pgm", "station_manager"].includes(employee.role) && (employee.managedStations || []).includes(station.id))) }));
-    const owner = data.employees.find((employee) => employee.id === data.ownerId) || data.employees.find((employee) => employee.role === "director") || currentUser;
     return (
       <div className="space-y-6">
         <PageHeader title={`${t("employees")} · ${t("stations")}`} description={`${hierarchyEmployees.length} ${t("employees").toLowerCase()} · ${stations.length} ${t("stations").toLowerCase()}`} icon={Users} />
@@ -167,7 +165,7 @@ export default function Employees() {
           </details>
         )}
 
-        <EmployeeHierarchyTree sections={hierarchySections} owner={owner} company={company} t={t} ar={lang === "ar"} statusFor={taskStatusFor} onSelectStation={setSelectedStation} canReorder={canReorderStations} onStationDragEnd={handleStationDragEnd} />
+        <HRFullHierarchyMap data={data} company={company} currentUser={currentUser} stations={stations} employees={hierarchyEmployees} t={t} lang={lang} statusFor={taskStatusFor} onSelectStation={setSelectedStation} canReorder={canReorderStations} onStationDragEnd={handleStationDragEnd} />
 
         {showTransfer && <TransferModal type={showTransfer} onClose={() => setShowTransfer(null)} />}
       </div>
