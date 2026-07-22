@@ -73,7 +73,7 @@ export default function Landing() {
 
           <div dir={lang === "ar" ? "rtl" : "ltr"} className="mt-5 grid items-stretch gap-4 lg:grid-cols-[1.35fr,0.65fr]">
             <div className="flex flex-col justify-center rounded-2xl border border-landing-gold/25 bg-card px-6 py-8 text-center shadow-soft sm:px-10 lg:text-start">
-              <p className="text-sm font-medium text-accent">{lang === "ar" ? "إدارة شركات إنتربرايز" : "Enterprise company management"}</p>
+              <p className="text-sm font-medium text-accent">{t("heroEyebrow")}</p>
               <h1 className="mt-2 font-heading text-5xl font-semibold leading-none tracking-[-0.04em] text-foreground sm:text-6xl md:text-7xl">PowerCare</h1>
               <p className="mt-4 max-w-3xl text-base font-medium leading-relaxed text-muted-foreground md:text-lg">{t("heroSubtitle")}</p>
             </div>

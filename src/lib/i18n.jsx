@@ -449,6 +449,7 @@ const dict = {
     searchArchive: "Search the archive…", noArchivedTasks: "No archived tasks yet — completed and overdue tasks are filed here automatically.",
     annualGoals: "Annual Goals", halfYearLabel: "Half-Year", quarterLabel: "Quarter",
     scopeYearly: "Yearly", scopeHalf: "6 months", scopeQuarter: "3 months", scopeMonthly: "Monthly",
+    heroEyebrow: "Enterprise company management",
     heroSubtitle: "One platform for attendance, tasks and digital signing — with GPS precision and AI that plans your day.",
     continueWithGoogle: "Continue with Google", orDivider: "or", forgotPasswordLink: "Forgot password?",
     downloadPresentation: "Download PowerCare presentation",
@@ -912,6 +913,7 @@ const dict = {
     searchArchive: "ابحث في الأرشيف…", noArchivedTasks: "لا توجد مهام مؤرشفة بعد — تُنقل المهام المكتملة والمتأخرة إلى هنا تلقائيًا.",
     annualGoals: "أهداف السنة", halfYearLabel: "نصف سنة", quarterLabel: "الربع",
     scopeYearly: "سنوي", scopeHalf: "6 أشهر", scopeQuarter: "3 أشهر", scopeMonthly: "شهري",
+    heroEyebrow: "إدارة شركات متكاملة",
     heroSubtitle: "منصة واحدة لإدارة الحضور والمهام والتوقيع الرقمي — بدقة الموقع الجغرافي وذكاء اصطناعي يخطط يومك.",
     continueWithGoogle: "الدخول باستخدام Google", orDivider: "أو", forgotPasswordLink: "نسيت كلمة المرور؟",
     downloadPresentation: "تنزيل ملف عرض PowerCare",
@@ -1023,6 +1025,8 @@ const dict = {
     backBtn: "Zurück",
     noAccountYet: "Noch kein Konto?",
     videoHeading: "PowerCare in Aktion", videoText: "PowerCare ist eine integrierte Plattform für Unternehmensmanagement. Sie vereint Mitarbeiter, Anwesenheit, Zeitpläne, Aufgaben, Personalwesen, Gehaltsabrechnung, Sicherheit, Dokumente und operative Berichte in einem sicheren Arbeitsbereich. Führungskräfte erhalten klare Übersicht, Teams koordinieren ihre tägliche Arbeit und Unternehmensdaten werden zu fundierten Entscheidungen.", narrationCta: "Unsere Geschichte anhören",
+    heroEyebrow: "Integriertes Unternehmensmanagement",
+    heroSubtitle: "Eine Plattform für Anwesenheit, Aufgaben und digitale Signaturen — mit präzisem GPS und KI, die Ihren Tag plant.",
   },
   fr: {
     dir: "ltr", appName: "PowerCare", tagline: "Intelligence opérationnelle pour équipes multi-sites",
@@ -1117,6 +1121,8 @@ const dict = {
     backBtn: "Retour",
     noAccountYet: "Pas encore de compte ?",
     videoHeading: "PowerCare en action", videoText: "PowerCare est une plateforme intégrée de gestion d'entreprise qui réunit les employés, les présences, les plannings, les tâches, les RH, la paie, la sécurité, les documents et les rapports opérationnels dans un espace sécurisé. Elle offre aux dirigeants une vision claire, coordonne le travail quotidien et transforme les données en décisions pertinentes.", narrationCta: "Écouter notre histoire",
+    heroEyebrow: "Gestion d’entreprise intégrée",
+    heroSubtitle: "Une plateforme pour les présences, les tâches et la signature numérique — avec la précision GPS et une IA qui planifie votre journée.",
   },
   es: {
     dir: "ltr", appName: "PowerCare", tagline: "Inteligencia operativa para equipos multiestación",
@@ -1211,6 +1217,8 @@ const dict = {
     backBtn: "Volver",
     noAccountYet: "¿No tienes cuenta?",
     videoHeading: "PowerCare en acción", videoText: "PowerCare es una plataforma integrada de gestión empresarial que reúne empleados, asistencia, horarios, tareas, recursos humanos, nómina, seguridad, documentos e informes operativos en un espacio seguro. Ofrece a los líderes una visión clara, ayuda a los equipos a coordinar el trabajo diario y convierte los datos de la empresa en decisiones oportunas.", narrationCta: "Escucha nuestra historia",
+    heroEyebrow: "Gestión empresarial integrada",
+    heroSubtitle: "Una plataforma para asistencia, tareas y firma digital — con precisión GPS e IA que planifica tu día.",
   },
   pt: {
     dir: "ltr", appName: "PowerCare", tagline: "Inteligência operacional para equipes multiestação",
@@ -1305,6 +1313,8 @@ const dict = {
     backBtn: "Voltar",
     noAccountYet: "Não tem uma conta?",
     videoHeading: "PowerCare em ação", videoText: "A PowerCare é uma plataforma integrada de gestão empresarial que reúne funcionários, presença, horários, tarefas, RH, folha de pagamento, segurança, documentos e relatórios operacionais em um espaço seguro. Ela oferece aos líderes uma visão clara, ajuda as equipes a coordenar o trabalho diário e transforma dados da empresa em decisões oportunas.", narrationCta: "Ouça nossa história",
+    heroEyebrow: "Gestão empresarial integrada",
+    heroSubtitle: "Uma plataforma para presença, tarefas e assinatura digital — com precisão GPS e IA que planeja o seu dia.",
   },
   ru: {
     dir: "ltr", appName: "PowerCare", tagline: "Операционная аналитика для команд на нескольких станциях",
@@ -1399,6 +1409,8 @@ const dict = {
     backBtn: "Назад",
     noAccountYet: "Нет аккаунта?",
     videoHeading: "PowerCare в действии", videoText: "PowerCare — интегрированная платформа управления компанией, объединяющая сотрудников, посещаемость, графики, задачи, HR, расчёт зарплаты, безопасность, документы и операционную отчётность в защищённом рабочем пространстве. Она даёт руководителям ясный обзор, помогает командам координировать работу и превращает данные компании в своевременные решения.", narrationCta: "Слушать нашу историю",
+    heroEyebrow: "Комплексное управление компанией",
+    heroSubtitle: "Единая платформа для учёта посещаемости, задач и цифровой подписи — с точным GPS и ИИ, который планирует ваш день.",
   },
   ja: {
     dir: "ltr", appName: "PowerCare", tagline: "複数拠点チーム向けの運用インテリジェンス",
@@ -1498,6 +1510,8 @@ const dict = {
     backBtn: "戻る",
     noAccountYet: "アカウントをお持ちでないですか？",
     videoHeading: "PowerCareの実際の姿", videoText: "PowerCareは、従業員、出勤、スケジュール、タスク、人事、給与、安全、文書、業務レポートを安全なワークスペースに統合する企業管理プラットフォームです。経営者に明確な全体像を提供し、日々の業務連携を支え、企業データを迅速で的確な意思決定につなげます。", narrationCta: "私たちの物語を聞く",
+    heroEyebrow: "統合型企業管理",
+    heroSubtitle: "出勤管理、タスク、デジタル署名を一つのプラットフォームで — 高精度GPSと一日の計画を支えるAIを搭載。",
   },
   ko: {
     dir: "ltr", appName: "PowerCare", tagline: "다중 현장 팀을 위한 운영 인텔리전스",
@@ -1592,6 +1606,8 @@ const dict = {
     backBtn: "뒤로",
     noAccountYet: "계정이 없으신가요?",
     videoHeading: "PowerCare 소개 영상", videoText: "PowerCare는 직원, 출퇴근, 일정, 업무, 인사, 급여, 안전, 문서 및 운영 보고를 하나의 안전한 업무 공간에 통합하는 기업 관리 플랫폼입니다. 경영진에게 명확한 현황을 제공하고, 팀의 일상 업무 조율을 지원하며, 기업 데이터를 신속하고 정확한 의사결정으로 전환합니다.", narrationCta: "우리의 이야기 듣기",
+    heroEyebrow: "통합 기업 관리",
+    heroSubtitle: "출퇴근, 업무, 디지털 서명을 하나의 플랫폼에서 — 정밀한 GPS와 하루를 계획하는 AI를 제공합니다.",
     attendanceScheduling: "출퇴근 및 일정", chat: "채팅", files: "파일", fileSigning: "파일 서명", aiAssistant: "AI 도우미", allComplaints: "민원 및 신고", hr: "인사 관리", tasksReport: "작업 보고서", userGuide: "사용 안내서", viewProfile: "프로필 보기",
     companyFiles: "회사 파일", filesNote: "회사의 문서 보관함입니다. 폴더와 하위 폴더를 만들고 어디서든 파일을 업로드할 수 있습니다.", newFolder: "새 폴더", folderName: "폴더 이름", uploadFileBtn: "파일 업로드", uploading: "업로드 중…", filesAllStations: "모든 현장", foldersLabel: "폴더", emptyFolderNote: "이 폴더는 비어 있습니다. 폴더를 만들거나 파일을 업로드하세요.", itemsUnit: "개 항목", uploadedBy: "업로더", downloadFile: "다운로드",
     syncPendingTitle: "클라우드 업로드를 기다리는 변경 사항", syncPending: "동기화 대기 중", syncing: "동기화 중...", syncSavedTitle: "모든 데이터가 클라우드에 저장되었습니다", synced: "동기화됨", toggleTheme: "테마 전환",
