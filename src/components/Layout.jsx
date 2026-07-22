@@ -253,15 +253,19 @@ export default function Layout({ children }) {
   return (
     <div className="powercare-shell min-h-screen bg-background flex" dir={dir}>
       {/* Desktop navigation */}
-      <aside className={`hidden md:flex flex-col w-[248px] ${sidebarSide} top-0 h-screen sticky bg-primary pt-safe z-40 shadow-elevated`}>
-        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-sm"><Logo size={30} /></span>
-          <div className="min-w-0"><p className="truncate font-heading text-lg font-semibold text-white">{company.name || t("appName")}</p></div>
+      <aside className={`corporate-sidebar hidden md:flex flex-col w-[268px] ${sidebarSide} top-0 h-screen sticky bg-primary pt-safe z-40 shadow-elevated`}>
+        <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-landing-gold/30 bg-white/95 shadow-sm"><Logo size={31} /></span>
+          <div className="min-w-0">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-landing-gold-light">PowerCare</p>
+            <p className="mt-0.5 truncate font-heading text-lg font-semibold text-white">{company.name || t("appName")}</p>
+            <p className="truncate text-[9px] uppercase tracking-[0.12em] text-white/35">{lang === "ar" ? "منصة العمليات المؤسسية" : "Enterprise Operations"}</p>
+          </div>
         </div>
         <DragDropContext onDragEnd={onNavDragEnd}>
           <Droppable droppableId="sidebar-nav">
             {(provided) => (
-              <nav ref={provided.innerRef} {...provided.droppableProps} className="flex-1 w-full px-3 py-4 flex flex-col gap-1.5 overflow-y-auto no-scrollbar no-select">
+              <nav ref={provided.innerRef} {...provided.droppableProps} className="flex-1 w-full px-4 py-3 flex flex-col gap-0.5 overflow-y-auto no-scrollbar no-select">
                 {orderedNavItems.map((item, index) => (
                   <Draggable key={item.to} draggableId={item.to} index={index}>
                     {(dragProvided, dragSnapshot) => (
@@ -272,7 +276,10 @@ export default function Layout({ children }) {
                         className={`group relative w-full ${dragSnapshot.isDragging ? "opacity-90" : ""}`}
                       >
                         {(index === 0 || orderedNavItems[index - 1]?.category !== item.category) && (
-                          <p className="px-3 pb-1 pt-3 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/35">{navGroupLabels[item.category]}</p>
+                          <div className="flex items-center gap-2 px-2 pb-1.5 pt-4">
+                            <p className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/38">{navGroupLabels[item.category]}</p>
+                            <span className="h-px flex-1 bg-gradient-to-r from-landing-gold/30 to-transparent" />
+                          </div>
                         )}
                         <NavLink
                           to={item.to}
@@ -280,15 +287,17 @@ export default function Layout({ children }) {
                           title={item.label}
                           onClick={() => { if (item.to === "/app/employees") window.dispatchEvent(new Event("powercare:show-employee-hierarchy")); }}
                           className={({ isActive }) =>
-                            `flex h-11 w-full items-center gap-3 rounded-xl px-3 transition-all ${
+                            `flex h-10 w-full items-center gap-3 rounded-md border-s-2 px-3 transition-all ${
                               isActive
-                                ? "bg-landing-gold text-primary shadow-lg shadow-black/20"
-                                : "text-white/55 hover:bg-white/10 hover:text-white"
+                                ? "border-landing-gold bg-white/10 text-white shadow-sm"
+                                : "border-transparent text-white/58 hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
                             }`
                           }
                         >
-                          <item.icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
-                          <span className="truncate text-sm font-medium">{item.label}</span>
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/[0.04] text-landing-gold-light group-hover:bg-white/[0.08]">
+                            <item.icon className="h-4 w-4" strokeWidth={1.7} />
+                          </span>
+                          <span className="truncate text-[13px] font-medium tracking-[0.01em]">{item.label}</span>
                         </NavLink>
                       </div>
                     )}
@@ -299,22 +308,29 @@ export default function Layout({ children }) {
             )}
           </Droppable>
         </DragDropContext>
-        <div className="shrink-0 border-t border-white/10 px-3 pt-3">
-          <button onClick={() => window.dispatchEvent(new Event("powercare:open-feedback"))} className="group flex h-12 w-full items-center gap-3 rounded-xl border border-landing-gold/30 bg-white/[0.06] px-3 text-white/75 shadow-sm transition hover:border-landing-gold/55 hover:bg-white/10 hover:text-white">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-landing-gold/15 text-landing-gold-light transition group-hover:bg-landing-gold/25"><MessageSquare className="h-[17px] w-[17px]" strokeWidth={1.8} /></span>
-            <span className="truncate text-sm font-medium">{lang === "ar" ? "التقييم والاقتراحات" : "Feedback & suggestions"}</span>
+        <div className="shrink-0 border-t border-white/10 px-4 pt-3">
+          <button onClick={() => window.dispatchEvent(new Event("powercare:open-feedback"))} className="group flex h-10 w-full items-center gap-3 rounded-md border border-white/10 bg-white/[0.035] px-3 text-white/60 transition hover:border-landing-gold/40 hover:bg-white/[0.07] hover:text-white">
+            <MessageSquare className="h-4 w-4 shrink-0 text-landing-gold-light" strokeWidth={1.7} />
+            <span className="truncate text-xs font-medium">{lang === "ar" ? "التقييم والاقتراحات" : "Feedback & suggestions"}</span>
           </button>
         </div>
         <button
           onClick={() => navigate(`/app/employees/${currentUser.id}`)}
           title={t("viewProfile")}
-          className="mx-auto mb-5 mt-2 flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-landing-gold text-sm font-semibold text-primary ring-2 ring-white/20 transition hover:ring-landing-gold-light"
+          className="mx-4 mb-4 mt-2 flex shrink-0 items-center gap-3 rounded-md border border-landing-gold/25 bg-white/[0.05] p-2.5 text-start transition hover:border-landing-gold/50 hover:bg-white/[0.08]"
         >
-          {currentUser.profile?.avatarUrl ? (
-            <img src={currentUser.profile.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
-          ) : (
-            currentUser.name.charAt(0)
-          )}
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-landing-gold text-xs font-semibold text-primary ring-1 ring-white/20">
+            {currentUser.profile?.avatarUrl ? (
+              <img src={currentUser.profile.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+            ) : (
+              currentUser.name.charAt(0)
+            )}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-xs font-semibold text-white">{currentUser.name}</span>
+            <span className="mt-0.5 block truncate text-[9px] uppercase tracking-wider text-white/40">{t("viewProfile")}</span>
+          </span>
+          <UserCircle className="h-4 w-4 shrink-0 text-landing-gold-light" />
         </button>
       </aside>
 
