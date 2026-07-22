@@ -4,6 +4,7 @@ import { RefreshCw, Loader2, Search } from "lucide-react";
 import SubscriberRow from "@/components/owner/SubscriberRow";
 import SubscriberAnalytics from "@/components/owner/SubscriberAnalytics";
 import SubscriptionRevenueSummary from "@/components/owner/SubscriptionRevenueSummary";
+import SubscriptionBulkExport from "@/components/owner/SubscriptionBulkExport";
 
 export default function SubscribersDashboard({ ar }) {
   const [data, setData] = useState(null);
@@ -72,6 +73,7 @@ export default function SubscribersDashboard({ ar }) {
           </div>
 
           <SubscriptionRevenueSummary amount={summary.mrr} ar={ar} />
+          <div className="flex justify-end"><SubscriptionBulkExport rows={allRows} ar={ar} /></div>
           <SubscriberAnalytics data={data} ar={ar} />
 
           <div className="flex flex-col sm:flex-row gap-2">
