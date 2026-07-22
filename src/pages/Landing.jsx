@@ -10,6 +10,7 @@ import { trackVisit } from "@/lib/trackVisit";
 import WhyPowerCare from "@/components/landing/WhyPowerCare";
 import PowerCareLoginPanel from "@/components/auth/PowerCareLoginPanel";
 import IpCertificateBadge from "@/components/landing/IpCertificateBadge";
+import PlatformServices from "@/components/landing/PlatformServices";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/613ed91a1_generated_image.png";
 
@@ -92,6 +93,7 @@ export default function Landing() {
       </section>
 
       <StatsBand lang={lang} />
+      <PlatformServices lang={lang} />
       <VideoIntro />
 
       <section className="border-t border-border bg-landing-bg px-4 py-14 sm:px-6 md:px-8 md:py-16">
