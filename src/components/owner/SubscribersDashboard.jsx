@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { RefreshCw, Loader2, Search } from "lucide-react";
 import SubscriberRow from "@/components/owner/SubscriberRow";
 import SubscriberAnalytics from "@/components/owner/SubscriberAnalytics";
+import SubscriptionRevenueSummary from "@/components/owner/SubscriptionRevenueSummary";
 
 export default function SubscribersDashboard({ ar }) {
   const [data, setData] = useState(null);
@@ -70,6 +71,7 @@ export default function SubscribersDashboard({ ar }) {
             ))}
           </div>
 
+          <SubscriptionRevenueSummary amount={summary.mrr} ar={ar} />
           <SubscriberAnalytics data={data} ar={ar} />
 
           <div className="flex flex-col sm:flex-row gap-2">
@@ -113,12 +115,13 @@ export default function SubscribersDashboard({ ar }) {
                   <th className="px-4 py-3 text-start">{ar ? "بداية الاشتراك" : "Start"}</th>
                   <th className="px-4 py-3 text-start">{ar ? "نهاية الاشتراك" : "End"}</th>
                   <th className="px-4 py-3 text-start">{ar ? "المتبقي" : "Left"}</th>
+                  <th className="px-4 py-3 text-start">{ar ? "الفاتورة" : "Invoice"}</th>
                   <th className="px-4 py-3 text-start">{ar ? "إجراءات" : "Actions"}</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 && (
-                  <tr><td colSpan={7} className="px-4 py-6 text-center text-[#3a2f22]/40">{ar ? "لا يوجد مشتركون بعد." : "No subscribers yet."}</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-6 text-center text-[#3a2f22]/40">{ar ? "لا يوجد مشتركون بعد." : "No subscribers yet."}</td></tr>
                 )}
                 {rows.map((r, i) => (
                   <SubscriberRow key={r.id || r.accountId || i} row={r} ar={ar} onChanged={load} />
