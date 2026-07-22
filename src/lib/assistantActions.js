@@ -161,13 +161,13 @@ export async function executeAssistantAction(action, { data, company, currentUse
 
   if (action.type === "sign_report") {
     const rows = await datasetRows(action, data, currentUser, company);
-    if (!rows || !rows.length) return { ok: false, message: t("aiNoData") };
+    const hasRows = Array.isArray(rows) && rows.length > 0;
     const { verificationId } = await generateSignedReport({
       title: action.reportTitle || action.dataset,
       companyName: data.name || "",
       dir: document.documentElement.dir,
-      headers: Object.keys(rows[0]),
-      rows: rows.map((r) => Object.values(r)),
+      headers: hasRows ? Object.keys(rows[0]) : [document.documentElement.dir === "rtl" ? "لا توجد بيانات حالية" : "No current data"],
+      rows: hasRows ? rows.map((r) => Object.values(r)) : [],
       signerName: currentUser?.profile?.signatureName || currentUser.name,
       signatureUrl: currentUser?.profile?.signatureUrl || "",
       signerId: currentUser.id,
