@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { UserCog } from "lucide-react";
+import { Play, Pause, Volume2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import SeamlessVideoPlaylist from "@/components/landing/SeamlessVideoPlaylist";
 import { Image } from "@/components/ui/image";
@@ -61,22 +61,29 @@ export default function VideoIntro() {
   };
 
   return (
-    <section className="bg-card px-4 py-16 sm:px-6 md:px-8 md:py-24">
-      <div className="mx-auto grid max-w-[1120px] items-center gap-10 overflow-hidden rounded-2xl bg-executive-panel px-7 py-12 sm:px-12 md:grid-cols-[1.03fr,0.97fr] md:gap-12 md:px-14 md:py-16">
-        <div className="text-start">
-          <h2 className="max-w-lg font-heading text-5xl font-semibold leading-[0.98] tracking-[-0.045em] text-executive-ink sm:text-6xl">{t("videoHeading")}</h2>
-          <p className="mt-7 max-w-xl text-lg leading-8 text-executive-ink/90 md:text-xl md:leading-9">{t("videoText")}</p>
-          <button type="button" onClick={togglePlay} className="mt-8 inline-flex items-center gap-3 rounded-md bg-executive-teal px-7 py-3.5 text-xl font-semibold text-card hover:bg-executive-teal/90">
-            <UserCog className="h-6 w-6" strokeWidth={1.75} />
+    <section className="bg-landing-bg px-4 py-16 sm:px-6 md:px-8 md:py-24">
+      <div className="mx-auto grid max-w-[1200px] overflow-hidden rounded-2xl border border-video-gold/30 bg-video-brown text-video-cream shadow-elevated lg:grid-cols-[0.82fr,1.18fr]">
+        <div className="flex flex-col justify-center px-7 py-12 sm:px-10 md:px-14 lg:py-16">
+          <p className="text-xs font-semibold uppercase tracking-widest-xl text-video-gold">PowerCare</p>
+          <h2 className="mt-4 font-heading text-4xl font-semibold leading-[1.02] tracking-[-0.04em] text-video-cream sm:text-5xl md:text-6xl">{t("videoHeading")}</h2>
+          <p className="mt-7 max-w-xl text-base leading-7 text-video-cream/75 md:text-lg md:leading-8">{t("videoText")}</p>
+          <button type="button" onClick={togglePlay} className="mt-8 inline-flex w-fit items-center gap-3 rounded-full border border-video-gold/60 bg-video-gold px-6 py-3 text-base font-semibold text-video-brown-deep hover:bg-video-cream">
+            <Volume2 className="h-5 w-5" strokeWidth={1.75} />
             {t("narrationCta")}
           </button>
         </div>
 
-        <div className="group relative min-h-[430px] overflow-hidden rounded-lg border border-executive-line bg-card shadow-soft md:min-h-[520px]">
-          <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/1be1b15d3_generated_image.png" alt="Executive human resources management dashboard" fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full" />
-          <div className={`absolute inset-0 bg-executive-ink transition-opacity duration-300 ${playing ? "opacity-100" : "pointer-events-none opacity-0"}`}>
+        <div className="group relative min-h-[360px] overflow-hidden bg-video-brown-deep sm:min-h-[440px] lg:min-h-[560px]">
+          <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/4016f736a_generated_image.png" alt="Corporate management team reviewing company operations" originWidth={1536} originHeight={1024} fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full opacity-80" />
+          <div className="absolute inset-0">
             <SeamlessVideoPlaylist ref={playerRef} urls={VIDEO_URLS} playing={playing} onClick={togglePlay} onPlaylistEnd={handlePlaylistEnd} />
           </div>
+          <div className="pointer-events-none absolute inset-0 bg-video-brown-deep/20" />
+          <button onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} className={`absolute inset-0 flex items-center justify-center transition-opacity ${playing ? "opacity-0 group-hover:opacity-100" : "opacity-100"}`}>
+            <span className="flex h-16 w-16 items-center justify-center rounded-full border border-video-gold/50 bg-video-brown/85 text-video-gold shadow-xl backdrop-blur-sm">
+              {playing ? <Pause className="h-7 w-7" /> : <Play className="ms-1 h-7 w-7" />}
+            </span>
+          </button>
         </div>
         <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" onEnded={resetPlayback} />
       </div>
