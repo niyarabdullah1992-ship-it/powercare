@@ -6,25 +6,25 @@ import { TrendingUp, Users } from "lucide-react";
 function DashboardStatCards({ attendanceRate, completed, total, activeMembers, totalMembers, t }) {
   return (
     <div className="ops-kpi-grid grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <div className="ops-kpi-card rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="ops-kpi-card rounded-2xl border border-border bg-card p-4 shadow-sm">
         <p className="text-xs font-body font-semibold text-foreground/80 mb-3">1. {t("attendanceRateLabel")}</p>
         <div className="flex items-center gap-3">
-          <p className="hero-title text-4xl">{attendanceRate}%</p>
+          <p className="hero-title text-3xl">{attendanceRate}%</p>
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-accent/15 text-accent">
             <TrendingUp className="h-4 w-4" strokeWidth={1.75} />
           </span>
         </div>
       </div>
-      <div className="ops-kpi-card rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="ops-kpi-card rounded-2xl border border-border bg-card p-4 shadow-sm">
         <p className="text-xs font-body font-semibold text-foreground/80 mb-3">2. {t("completedTasks")}</p>
-        <p className="hero-title text-4xl">
+        <p className="hero-title text-3xl">
           {completed} <span className="text-muted-foreground/50 text-2xl">/ {total}</span>
         </p>
       </div>
-      <div className="ops-kpi-card rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="ops-kpi-card rounded-2xl border border-border bg-card p-4 shadow-sm">
         <p className="text-xs font-body font-semibold text-foreground/80 mb-3">3. {t("employees")}</p>
         <div className="flex items-center gap-3">
-          <p className="hero-title text-4xl">{totalMembers}</p>
+          <p className="hero-title text-3xl">{totalMembers}</p>
           <span className="rounded-full bg-accent/15 px-2.5 py-1 text-xs font-body font-semibold text-accent">
             {activeMembers} {t("activeEmployees")}
           </span>

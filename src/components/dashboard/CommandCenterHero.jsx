@@ -10,13 +10,13 @@ export default function CommandCenterHero({ companyName, riskScore, activeStatio
   const state = riskScore >= 70 ? (ar ? "يحتاج تدخلاً" : "Intervention needed") : riskScore >= 40 ? (ar ? "تحت المراقبة" : "Under observation") : (ar ? "مستقر" : "Stable");
   const pulseDuration = `${Math.max(0.45, 1.8 - riskScore * 0.0135).toFixed(2)}s`;
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-primary p-6 text-primary-foreground shadow-xl md:p-8">
+    <section className="relative overflow-hidden rounded-3xl bg-primary p-4 text-primary-foreground shadow-xl md:p-5">
       <div className="absolute -end-16 -top-20 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
-      <div className="relative grid gap-7 lg:grid-cols-[1fr,auto] lg:items-end">
+      <div className="relative grid gap-4 lg:grid-cols-[1fr,auto] lg:items-end">
         <div>
           <div className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-accent"><Radio className="h-4 w-4 animate-pulse" /> PowerCare Intelligence Live</div>
           <p className="text-sm text-white/55">{companyName}</p>
-          <h1 className="mt-2 font-heading text-4xl font-semibold md:text-6xl">{ar ? "مركز القيادة الذكي" : "Intelligent Command Center"}</h1>
+          <h1 className="mt-1 font-heading text-3xl font-semibold md:text-4xl">{ar ? "مركز القيادة الذكي" : "Intelligent Command Center"}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65">{ar ? "صورة تشغيلية موحدة تتوقع المخاطر، ترتب الأولويات، وتحول البيانات إلى قرارات قابلة للتنفيذ." : "One operational picture that predicts risk, prioritizes attention, and turns data into executable decisions."}</p>
         </div>
         <div className="flex flex-wrap gap-3">

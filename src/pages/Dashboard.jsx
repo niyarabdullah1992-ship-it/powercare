@@ -117,7 +117,7 @@ export default function Dashboard() {
   if (currentUser.role === "station_manager" || currentUser.role === "pgm") {
     return (
       <PullToRefresh onRefresh={handleRefresh}>
-        <div className="ops-command-dashboard space-y-6">
+        <div className="ops-command-dashboard space-y-4">
           {welcomeHero}
           <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
           <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
@@ -201,7 +201,7 @@ export default function Dashboard() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-    <div className="ops-command-dashboard space-y-6">
+    <div className="ops-command-dashboard space-y-4">
       <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
       <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
       <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
@@ -225,7 +225,7 @@ export default function Dashboard() {
       )}
 
       {/* Predictive risk and executable decisions */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <RiskForecastPanel absentCount={absentCount} delayedTasks={delayedTasks} stoppageCount={stoppageCount} criticalStations={criticalStations} openHazards={openHazards} recentIncidents={recentIncidents} lang={lang} />
         <NiroPredictiveCenter
           data={data}
@@ -257,7 +257,7 @@ export default function Dashboard() {
       <TeamStatusPanel employees={teamEmployees} companyId={company.id} t={t} lang={lang} />
 
       {/* Recent activity */}
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
         <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{formatDate(new Date(), lang, { month: "short" })}</p>
         <h3 className="hero-title text-2xl mb-4">{t("recentActivity")}</h3>
         <div className="divide-y divide-border">
