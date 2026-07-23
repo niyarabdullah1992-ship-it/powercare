@@ -1,8 +1,23 @@
 import { updateCompany } from "@/lib/store";
+import { sortComplaintChainByTree } from "@/lib/escalation";
 import { rankFromScore, scorePermissions } from "@/lib/smartPositions";
 
 export const orgTreeNodes = (data) => Array.isArray(data?.orgTree) ? data.orgTree : [];
 export const nodeAccess = (data, refId) => data?.smartPositions?.find((item) => item.employeeId === refId)?.permissions || {};
+
+export function toggleComplaintEscalationMember(companyId, employeeId) {
+  updateCompany(companyId, (data) => {
+    const current = data.complaintEscalationChain || [];
+    const adding = !current.includes(employeeId);
+    const next = adding ? [...current, employeeId] : current.filter((id) => id !== employeeId);
+    data.complaintEscalationChain = sortComplaintChainByTree(next, data);
+    if (adding) {
+      const position = (data.smartPositions || []).find((item) => item.employeeId === employeeId);
+      if (position) position.permissions = { ...(position.permissions || {}), complaints: "manage" };
+    }
+    [...(data.anonymousReports || []), ...(data.publicReports || [])].filter((report) => report.status === "open").forEach((report) => { report.escalationLevel = Math.min(report.escalationLevel || 0, Math.max(0, data.complaintEscalationChain.length - 1)); });
+  });
+}
 
 const renumber = (nodes, parentId) => nodes.filter((node) => (node.parentId || null) === (parentId || null)).sort((a, b) => a.order - b.order).forEach((node, index) => { node.order = index; });
 

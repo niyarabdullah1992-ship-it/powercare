@@ -1,12 +1,14 @@
 import React from "react";
 import { Building2, GripVertical, ShieldCheck, UserRound } from "lucide-react";
+import ComplaintEscalationBadge from "@/components/hr/ComplaintEscalationBadge";
 import OrgTreeDropZones from "@/components/hr/OrgTreeDropZones";
 import useOrgNodeDrag from "@/hooks/useOrgNodeDrag";
 
-export default function FlexOrgCard({ node, label, canManage, dragging, onDragStart, onDragEnd, onDrop, onEdit, ar }) {
+export default function FlexOrgCard({ node, label, canManage, dragging, complaintLevel, onToggleEscalation, onDragStart, onDragEnd, onDrop, onEdit, ar }) {
   const station = node.type === "station";
   const touchDrag = useOrgNodeDrag(node.id, canManage, onDragStart, onDragEnd, onDrop);
   return <div className="relative mx-auto w-56" onDragEnter={(event) => event.preventDefault()}>
+    {!station && <ComplaintEscalationBadge level={complaintLevel} canManage={canManage} ar={ar} onToggle={onToggleEscalation} />}
     <button type="button" draggable={canManage} {...touchDrag.handlers} onDragStart={(event) => { event.dataTransfer.effectAllowed = "move"; onDragStart(node.id); }} onDragEnd={onDragEnd} onClick={(event) => { if (touchDrag.suppressClick()) event.preventDefault(); else onEdit(node); }} className={`w-full rounded-lg border p-3 text-start transition ${station ? "border-accent/50 bg-primary text-primary-foreground shadow-md" : "border-border bg-card shadow-sm hover:border-accent/60"}`}>
       <span className="flex items-center gap-2.5">
         {canManage && <GripVertical className={`h-4 w-4 shrink-0 ${station ? "text-primary-foreground/55" : "text-muted-foreground"}`} />}
