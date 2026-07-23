@@ -26,12 +26,12 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   ctx.closePath();
   ctx.fillStyle = "#13283d";
   ctx.fill();
-  ctx.strokeStyle = "#d4af55";
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#e3a13a";
+  ctx.lineWidth = 2.5;
   ctx.stroke();
   ctx.beginPath();
-  ctx.roundRect(7, 7, W - 14, H - 14, 10);
-  ctx.strokeStyle = "#d4af5580";
+  ctx.roundRect(8, 8, W - 16, H - 16, 9);
+  ctx.strokeStyle = "#e3a13a99";
   ctx.lineWidth = 1;
   ctx.stroke();
 
@@ -47,8 +47,8 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   });
   ctx.restore();
 
-  // Symmetrical heritage fingerprint in layered executive gold.
-  drawHeritageFingerprint(ctx, 43, H / 2, signerName ? 72 : 62);
+  // Symmetrical heritage fingerprint inset safely from both frame lines.
+  drawHeritageFingerprint(ctx, 50, H / 2, signerName ? 62 : 54);
 
   // QR code box on the right side of the card
   const q = H - 20;
