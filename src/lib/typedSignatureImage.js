@@ -33,3 +33,24 @@ export async function createTypedSignatureImage(text, fontFamily) {
   trimmed.getContext("2d").drawImage(canvas, left, top, right - left + 1, bottom - top + 1, padding, padding, right - left + 1, bottom - top + 1);
   return trimmed.toDataURL("image/png");
 }
+
+export async function createTypedSignatureWithDate(name, date, fontFamily) {
+  const [nameUrl, dateUrl] = await Promise.all([
+    createTypedSignatureImage(name, fontFamily),
+    createTypedSignatureImage(` — ${date}`, "Arial"),
+  ]);
+  const loadImage = (url) => new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.src = url;
+  });
+  const [nameImage, dateImage] = await Promise.all([loadImage(nameUrl), loadImage(dateUrl)]);
+  const gap = 8;
+  const canvas = document.createElement("canvas");
+  canvas.width = nameImage.width + dateImage.width + gap;
+  canvas.height = Math.max(nameImage.height, dateImage.height);
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(nameImage, 0, canvas.height - nameImage.height);
+  ctx.drawImage(dateImage, nameImage.width + gap, canvas.height - dateImage.height);
+  return canvas.toDataURL("image/png");
+}

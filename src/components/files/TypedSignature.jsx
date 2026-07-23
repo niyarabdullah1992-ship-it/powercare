@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { makeSignatureStamp } from "@/lib/multiSignStamp";
-import { createTypedSignatureImage } from "@/lib/typedSignatureImage";
+import { createTypedSignatureImage, createTypedSignatureWithDate } from "@/lib/typedSignatureImage";
 
 // DocuSign-style typed signature: write your name, pick a script font,
 // and it's rendered to a PNG exactly like a drawn signature.
@@ -46,7 +46,7 @@ export default function TypedSignature({ ar, defaultName = "", verificationId, o
     const font = FONTS.find((item) => item.id === fontId);
     if (!samples[fontId] || !font || !name.trim()) return () => { active = false; };
     const date = new Date().toLocaleDateString("en-GB");
-    createTypedSignatureImage(`${name.trim()}  —  ${date}`, font.family)
+    createTypedSignatureWithDate(name.trim(), date, font.family)
       .then((rawSignature) => {
         if (!active) return null;
         setDatedSignature(rawSignature);
