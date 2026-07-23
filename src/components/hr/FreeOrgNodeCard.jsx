@@ -1,8 +1,9 @@
 import React from "react";
 import { Building2, GripVertical, ShieldCheck, UserRound } from "lucide-react";
 import ComplaintEscalationBadge from "@/components/hr/ComplaintEscalationBadge";
+import OrgTreeDropZones from "@/components/hr/OrgTreeDropZones";
 
-export default function FreeOrgNodeCard({ node, label, canManage, complaintLevel, ar, active, dragHandlers, suppressClick, onEdit, onToggleEscalation }) {
+export default function FreeOrgNodeCard({ node, label, canManage, complaintLevel, ar, active, activeDragId, dragHandlers, suppressClick, onEdit, onToggleEscalation, onHierarchyDrop }) {
   const station = node.type === "station";
   return <div className={`relative w-56 ${active ? "z-20" : "z-10"}`} dir={ar ? "rtl" : "ltr"}>
     {!station && <ComplaintEscalationBadge level={complaintLevel} canManage={canManage} ar={ar} onToggle={onToggleEscalation} />}
@@ -13,5 +14,6 @@ export default function FreeOrgNodeCard({ node, label, canManage, complaintLevel
         <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{label}</span><span className={`mt-0.5 flex items-center gap-1 truncate text-[10px] ${station ? "text-primary-foreground/65" : "text-muted-foreground"}`}>{!station && <ShieldCheck className="h-3 w-3" />}{node.title || (ar ? "بدون مسمى" : "Untitled")}</span></span>
       </span>
     </button>
+    <OrgTreeDropZones active={activeDragId && activeDragId !== node.id} targetId={node.id} onDrop={(mode) => onHierarchyDrop(activeDragId, node.id, mode)} ar={ar} />
   </div>;
 }

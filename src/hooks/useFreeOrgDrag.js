@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 
-export default function useFreeOrgDrag(zoom, onMove) {
+export default function useFreeOrgDrag(zoom, onMove, onHierarchyDrop) {
   const drag = useRef(null);
   const blockClick = useRef(false);
   const [live, setLive] = useState({});
@@ -23,9 +23,14 @@ export default function useFreeOrgDrag(zoom, onMove) {
       setLive((current) => ({ ...current, [nodeId]: nextPosition }));
       event.preventDefault();
     },
-    onPointerUp: () => {
+    onPointerUp: (event) => {
       if (drag.current?.nodeId !== nodeId) return;
-      if (drag.current.moved) { onMove(nodeId, drag.current.position); blockClick.current = true; setTimeout(() => { blockClick.current = false; }, 0); }
+      if (drag.current.moved) {
+        const zone = document.elementsFromPoint(event.clientX, event.clientY).find((element) => element.hasAttribute("data-org-drop"));
+        const snapped = zone ? onHierarchyDrop(nodeId, zone.dataset.targetId, zone.dataset.dropMode) : null;
+        if (snapped) setLive((current) => ({ ...current, [nodeId]: snapped })); else onMove(nodeId, drag.current.position);
+        blockClick.current = true; setTimeout(() => { blockClick.current = false; }, 0);
+      }
       drag.current = null; setActiveId(null);
     },
     onPointerCancel: () => { drag.current = null; setActiveId(null); },

@@ -13,7 +13,7 @@ export default function orgVisualLayout(nodes) {
   });
   const positions = {};
   levels.forEach((level, depth) => level.forEach((node, index) => {
-    positions[node.id] = { x: 40 + index * 280, y: 40 + depth * 160 };
+    positions[node.id] = { x: 320 + index * 280, y: 200 + depth * 160 };
   }));
   return positions;
 }
