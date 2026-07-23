@@ -4,7 +4,22 @@
 import { groupLevelsByOrder, levelName } from "./hrLevels";
 
 const escalationGroups = (data) => groupLevelsByOrder(data?.hrLevels || []).filter((group) => group.manager?.active !== false);
-const manualChain = (data) => (data?.complaintEscalationChain || []).map((id) => {
+
+export function sortComplaintChainByTree(ids, data) {
+  const nodes = data?.orgTree || [];
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const employeeNode = new Map(nodes.filter((node) => node.type === "employee").map((node) => [node.refId, node]));
+  const depth = (employeeId) => {
+    let node = employeeNode.get(employeeId);
+    let value = 0;
+    const visited = new Set();
+    while (node?.parentId && !visited.has(node.id)) { visited.add(node.id); node = byId.get(node.parentId); value += 1; }
+    return value;
+  };
+  return [...ids].sort((a, b) => depth(b) - depth(a) || ids.indexOf(a) - ids.indexOf(b));
+}
+
+const manualChain = (data) => sortComplaintChainByTree(data?.complaintEscalationChain || [], data).map((id) => {
   const node = data.orgTree?.find((item) => item.type === "employee" && item.refId === id);
   const access = data.smartPositions?.find((item) => item.employeeId === id);
   return node && access?.permissions?.complaints === "manage" ? data.employees?.find((employee) => employee.id === id) : null;
