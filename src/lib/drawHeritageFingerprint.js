@@ -1,7 +1,7 @@
 export default function drawHeritageFingerprint(ctx, cx, cy, size) {
-  const orange = "#e3a13a";
-  const ridgeOutline = "#0b2034";
-  const orangeGlow = "#e3a13a";
+  const silver = "#dce6ee";
+  const ridgeOutline = "#29445f";
+  const glassGlow = "#a9c7df";
   const paths = [
     [[-.48,-.27],[-.35,-.49],[0,-.56],[.35,-.49],[.48,-.27]],
     [[-.53,.02],[-.49,-.31],[-.26,-.5],[0,-.53],[.29,-.45],[.47,-.18],[.51,.12]],
@@ -35,14 +35,11 @@ export default function drawHeritageFingerprint(ctx, cx, cy, size) {
   ctx.save();
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.shadowColor = orangeGlow;
-  ctx.shadowBlur = size * .018;
-  paths.forEach((path) => trace(path, ridgeOutline, size * .064));
+  ctx.shadowColor = glassGlow;
+  ctx.shadowBlur = size * .025;
+  paths.forEach((path) => trace(path, ridgeOutline, size * .06));
   ctx.shadowBlur = 0;
-  paths.forEach((path, index) => {
-    const patterns = [[], [size * .14, size * .05], [0, size * .09]];
-    trace(path, orange, size * .027, patterns[index % patterns.length]);
-  });
+  paths.forEach((path) => trace(path, silver, size * .026));
   ctx.setLineDash([]);
   ctx.restore();
 }
