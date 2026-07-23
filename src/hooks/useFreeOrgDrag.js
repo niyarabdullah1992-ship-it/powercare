@@ -18,8 +18,9 @@ export default function useFreeOrgDrag(zoom, onMove) {
       const dy = (event.clientY - drag.current.startY) / zoom;
       if (Math.hypot(dx, dy) > 3) drag.current.moved = true;
       if (!drag.current.moved) return;
-      drag.current.position = { x: Math.max(0, drag.current.x + dx), y: Math.max(0, drag.current.y + dy) };
-      setLive((current) => ({ ...current, [nodeId]: drag.current.position }));
+      const nextPosition = { x: Math.max(0, drag.current.x + dx), y: Math.max(0, drag.current.y + dy) };
+      drag.current.position = nextPosition;
+      setLive((current) => ({ ...current, [nodeId]: nextPosition }));
       event.preventDefault();
     },
     onPointerUp: () => {
