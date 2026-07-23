@@ -3,12 +3,12 @@ import { useRef } from "react";
 const clamp = (value) => Math.max(0.1, Math.min(1.5, value));
 const distance = (points) => Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
 
-export default function useOrgTreeViewport(viewportRef, zoom, setZoom) {
+export default function useOrgTreeViewport(viewportRef, zoom, setZoom, offset, setOffset) {
   const pointers = useRef(new Map());
   const gesture = useRef(null);
   const begin = () => {
     const points = [...pointers.current.values()];
-    if (points.length === 1) gesture.current = { type: "pan", ...points[0], left: viewportRef.current.scrollLeft, top: viewportRef.current.scrollTop };
+    if (points.length === 1) gesture.current = { type: "pan", ...points[0], offset };
     if (points.length === 2) gesture.current = { type: "pinch", distance: distance(points), zoom };
   };
   const onPointerDown = (event) => {
@@ -23,8 +23,10 @@ export default function useOrgTreeViewport(viewportRef, zoom, setZoom) {
     const points = [...pointers.current.values()];
     if (points.length === 2 && gesture.current?.type === "pinch") setZoom(clamp(gesture.current.zoom * distance(points) / gesture.current.distance));
     if (points.length === 1 && gesture.current?.type === "pan") {
-      viewportRef.current.scrollLeft = gesture.current.left - (points[0].x - gesture.current.x);
-      viewportRef.current.scrollTop = gesture.current.top - (points[0].y - gesture.current.y);
+      setOffset({
+        x: gesture.current.offset.x + points[0].x - gesture.current.x,
+        y: gesture.current.offset.y + points[0].y - gesture.current.y,
+      });
     }
   };
   const onPointerEnd = (event) => { pointers.current.delete(event.pointerId); begin(); };
