@@ -10,8 +10,19 @@ const FONTS = [
   { id: "dancing", label: "Dancing Script", family: "'Dancing Script'" },
   { id: "caveat", label: "Caveat", family: "'Caveat'" },
   { id: "pacifico", label: "Pacifico", family: "'Pacifico'" },
+  { id: "allura", label: "Allura", family: "'Allura'" },
+  { id: "alexbrush", label: "Alex Brush", family: "'Alex Brush'" },
+  { id: "sacramento", label: "Sacramento", family: "'Sacramento'" },
+  { id: "parisienne", label: "Parisienne", family: "'Parisienne'" },
+  { id: "satisfy", label: "Satisfy", family: "'Satisfy'" },
+  { id: "tangerine", label: "Tangerine", family: "'Tangerine'" },
+  { id: "marck", label: "Marck Script", family: "'Marck Script'" },
   { id: "ruqaa", label: "رقعة", family: "'Aref Ruqaa'" },
   { id: "kufi", label: "كوفي", family: "'Reem Kufi'" },
+  { id: "amiri", label: "أميري", family: "'Amiri'" },
+  { id: "rakkas", label: "ركّاس", family: "'Rakkas'" },
+  { id: "nastaliq", label: "نستعليق", family: "'Noto Nastaliq Urdu'" },
+  { id: "lateef", label: "لطيف", family: "'Lateef'" },
 ];
 
 export default function TypedSignature({ ar, defaultName = "", verificationId, onPreview, onSave, saving }) {
