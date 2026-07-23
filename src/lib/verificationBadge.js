@@ -52,10 +52,10 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.strokeStyle = "#C7AD7638";
     ctx.beginPath(); ctx.moveTo(tx, 61); ctx.lineTo(470, 61); ctx.stroke();
 
-    const maxWidth = 338, maxHeight = 58;
+    const maxWidth = 300, maxHeight = 42;
     const ratio = Math.min(maxWidth / signatureImg.width, maxHeight / signatureImg.height);
     const width = signatureImg.width * ratio, height = signatureImg.height * ratio;
-    ctx.drawImage(signatureImg, tx, H / 2 - height / 2, width, height);
+    ctx.drawImage(signatureImg, tx, 64, width, height);
   } else if (signatureImg) {
     ctx.strokeStyle = "#C7AD7638";
     ctx.beginPath();
