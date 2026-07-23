@@ -55,7 +55,9 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     const maxWidth = 300, maxHeight = 42;
     const ratio = Math.min(maxWidth / signatureImg.width, maxHeight / signatureImg.height);
     const width = signatureImg.width * ratio, height = signatureImg.height * ratio;
-    ctx.drawImage(signatureImg, tx, 64, width, height);
+    const signatureX = 112 + (380 - width) / 2;
+    const signatureY = 72 + (46 - height) / 2;
+    ctx.drawImage(signatureImg, signatureX, signatureY, width, height);
   } else if (signatureImg) {
     ctx.strokeStyle = "#C7AD7638";
     ctx.beginPath();
