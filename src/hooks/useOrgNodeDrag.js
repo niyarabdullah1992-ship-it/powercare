@@ -6,27 +6,45 @@ export default function useOrgNodeDrag(nodeId, enabled, onStart, onEnd, onDrop) 
   const blockClick = useRef(false);
   const start = useRef(null);
   const clear = () => { clearTimeout(timer.current); timer.current = null; };
+  const activate = () => {
+    if (!start.current || active.current) return;
+    active.current = true;
+    start.current.target.setPointerCapture(start.current.pointerId);
+    onStart(nodeId);
+  };
   const onPointerDown = (event) => {
-    if (!enabled || event.pointerType === "mouse") return;
-    start.current = { x: event.clientX, y: event.clientY };
-    timer.current = setTimeout(() => { active.current = true; event.currentTarget.setPointerCapture(event.pointerId); onStart(nodeId); }, 280);
+    if (!enabled || event.button > 0) return;
+    start.current = { x: event.clientX, y: event.clientY, pointerId: event.pointerId, pointerType: event.pointerType, target: event.currentTarget };
+    if (event.pointerType !== "mouse") timer.current = setTimeout(activate, 280);
     event.stopPropagation();
   };
   const onPointerMove = (event) => {
-    if (!start.current) return;
+    if (!start.current || start.current.pointerId !== event.pointerId) return;
     const moved = Math.hypot(event.clientX - start.current.x, event.clientY - start.current.y);
-    if (!active.current && moved > 8) clear();
-    if (active.current) event.preventDefault();
+    if (!active.current && start.current.pointerType === "mouse" && moved > 4) activate();
+    if (!active.current && start.current.pointerType !== "mouse" && moved > 8) clear();
+    if (active.current) { event.preventDefault(); event.stopPropagation(); }
   };
-  const onPointerUp = (event) => {
-    clear(); start.current = null;
-    if (!active.current) return;
-    const zone = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-org-drop]");
-    if (zone) onDrop(zone.dataset.targetId, zone.dataset.dropMode);
-    blockClick.current = true;
-    setTimeout(() => { blockClick.current = false; }, 0);
-    active.current = false; onEnd(); event.preventDefault();
+  const finish = (event, cancelled = false) => {
+    clear();
+    if (active.current && !cancelled) {
+      const zone = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-org-drop]");
+      if (zone) onDrop(zone.dataset.targetId, zone.dataset.dropMode);
+      blockClick.current = true;
+      setTimeout(() => { blockClick.current = false; }, 0);
+      event.preventDefault();
+    }
+    if (active.current) onEnd();
+    active.current = false;
+    start.current = null;
   };
-  const onPointerCancel = () => { clear(); start.current = null; if (active.current) onEnd(); active.current = false; };
-  return { handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel }, suppressClick: () => active.current || blockClick.current };
+  return {
+    handlers: {
+      onPointerDown,
+      onPointerMove,
+      onPointerUp: (event) => finish(event),
+      onPointerCancel: (event) => finish(event, true),
+    },
+    suppressClick: () => active.current || blockClick.current,
+  };
 }
