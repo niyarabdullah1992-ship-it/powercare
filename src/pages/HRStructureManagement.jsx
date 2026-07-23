@@ -10,6 +10,7 @@ import HROrgChart from "@/components/hr/HROrgChart";
 import HRFullHierarchyMap from "@/components/hr/HRFullHierarchyMap";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
 import GradeEmployeeFilter from "@/components/hr/GradeEmployeeFilter";
+import SmartHierarchyBuilder from "@/components/hr/SmartHierarchyBuilder";
 
 export default function HRStructureManagement() {
   const { t, dir, lang } = useI18n();
@@ -52,6 +53,8 @@ export default function HRStructureManagement() {
         <h1 className="font-heading text-3xl font-semibold">{t("hr")}</h1>
         <p className="text-muted-foreground font-body text-sm mt-1">{t("hrPageNote")}</p>
       </div>
+
+      <SmartHierarchyBuilder data={data} company={company} canManage={canManage} lang={lang} />
 
       <EscalationInfoBox t={t} />
       <GradeEmployeeFilter data={data} currentUser={currentUser} />

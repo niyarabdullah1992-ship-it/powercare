@@ -13,8 +13,8 @@ const SCOPES = ["station", "cluster", "company"];
 // click or freely type a custom title instead; these are just a starting point.
 const SUGGESTED_TITLES = {
   station: {
-    manager: { en: ["Station Manager", "Station Supervisor", "Station HR Officer"], ar: ["مدير المحطة", "مشرف المحطة", "مسؤول الموارد البشرية بالمحطة"] },
-    assistant: { en: ["Assistant Station Manager", "Deputy Supervisor"], ar: ["مساعد مدير المحطة", "نائب المشرف"] },
+    manager: { en: ["Station HR Manager", "Station HR Supervisor", "Station HR Officer"], ar: ["مدير الموارد البشرية بالمحطة", "مشرف الموارد البشرية بالمحطة", "مسؤول الموارد البشرية بالمحطة"] },
+    assistant: { en: ["Station HR Assistant", "Deputy HR Supervisor"], ar: ["مساعد الموارد البشرية بالمحطة", "نائب مشرف الموارد البشرية"] },
   },
   cluster: {
     manager: { en: ["Cluster Manager", "Regional Manager"], ar: ["مدير المجموعة", "المدير الإقليمي"] },
