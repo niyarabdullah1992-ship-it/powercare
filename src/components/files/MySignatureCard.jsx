@@ -38,14 +38,14 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
 
-  const saveSignature = async (dataUrl, typedName, isRawSignature = false) => {
+  const saveSignature = async (dataUrl, typedName, signatureStyle = "composed") => {
     setSaving(true);
     setError("");
     try {
       const sigId = await generateSignatureId(currentUser.id);
       const signerName = typeof typedName === "string" ? typedName : currentUser.name;
-      const finalDataUrl = isRawSignature
-        ? await makeSignatureStamp(dataUrl, signerName, sigId)
+      const finalDataUrl = signatureStyle !== "composed"
+        ? await makeSignatureStamp(dataUrl, signerName, sigId, signatureStyle)
         : dataUrl;
       const blob = dataUrlToBlob(finalDataUrl);
       const file = new File([blob], "signature.png", { type: "image/png" });

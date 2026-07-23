@@ -44,12 +44,12 @@ export default function TypedSignature({ ar, defaultName = "", verificationId, o
     let active = true;
     const rawSignature = samples[fontId];
     if (!rawSignature) return () => { active = false; };
-    makeSignatureStamp(rawSignature, defaultName || name.trim(), verificationId)
+    makeSignatureStamp(rawSignature, name.trim(), verificationId, "typed")
       .then((composed) => { if (active) { setStamp(composed); onPreview?.(composed); } });
     return () => { active = false; };
   }, [samples, fontId, defaultName, name, verificationId, onPreview]);
 
-  const save = () => onSave(stamp, true);
+  const save = () => onSave(samples[fontId], name.trim(), "typed");
 
   return (
     <div className="space-y-5">

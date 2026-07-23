@@ -5,7 +5,7 @@ import { STAMP_FALLBACK_SPOT, STAMP_WIDTH_PERCENT, clampStampScale } from "@/lib
 import { drawTextField } from "@/lib/signPdf";
 
 // Builds the one canonical stamp image used by the web preview and the PDF.
-export async function makeSignatureStamp(sigDataUrl, name, verificationId = "") {
+export async function makeSignatureStamp(sigDataUrl, name, verificationId = "", variant = "unique") {
   const qr = verificationId ? await loadBadgeQr(verificationId) : null;
   const signatureImage = sigDataUrl ? await new Promise((resolve) => {
     const image = new Image();
@@ -13,7 +13,7 @@ export async function makeSignatureStamp(sigDataUrl, name, verificationId = "") 
     image.onerror = () => resolve(null);
     image.src = sigDataUrl;
   }) : null;
-  return makeVerificationBadgeCanvas(verificationId, name, qr, signatureImage).toDataURL("image/png");
+  return makeVerificationBadgeCanvas(verificationId, name, qr, signatureImage, variant).toDataURL("image/png");
 }
 
 // Stamps the signer's composed stamp only in the creator-assigned fields.
