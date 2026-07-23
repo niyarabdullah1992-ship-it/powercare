@@ -62,13 +62,13 @@ function signatureRequestEmail({ ar, signerName, creatorName, fileName, link, si
 
   return `<!doctype html>
 <html lang="${ar ? 'ar' : 'en'}" dir="${direction}">
-  <body style="margin:0;padding:0;background:#f6f1e8;color:#30271d;font-family:Arial,'Helvetica Neue',sans-serif;">
-    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f6f1e8;">
+  <body style="margin:0;padding:0;background:#f7f4ed;color:#13283d;font-family:Arial,'Helvetica Neue',sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f7f4ed;">
       <tr>
         <td align="center" style="padding:36px 16px;">
-          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background:#ffffff;border:1px solid #e7ddce;border-radius:16px;overflow:hidden;box-shadow:0 8px 28px rgba(48,39,29,0.08);">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background:#ffffff;border:1px solid #d9cfbb;border-radius:16px;overflow:hidden;box-shadow:0 8px 28px rgba(48,39,29,0.08);">
             <tr>
-              <td style="padding:28px 32px;background:#30271d;text-align:${align};">
+              <td style="padding:28px 32px;background:#13283d;text-align:${align};">
                 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                   <tr>
                     <td style="vertical-align:middle;text-align:${align};">
@@ -76,61 +76,61 @@ function signatureRequestEmail({ ar, signerName, creatorName, fileName, link, si
                     </td>
                   </tr>
                 </table>
-                <h1 style="margin:22px 0 0;color:#f6f1e8;font-size:26px;line-height:1.35;font-weight:700;">${title}</h1>
+                <h1 style="margin:22px 0 0;color:#f7f4ed;font-size:26px;line-height:1.35;font-weight:700;">${title}</h1>
               </td>
             </tr>
             <tr>
               <td style="padding:32px;text-align:${align};">
-                <h2 style="margin:0 0 10px;color:#30271d;font-size:21px;line-height:1.5;font-weight:700;">${escapeHtml(greeting)}</h2>
-                <p style="margin:0 0 26px;color:#6d6255;font-size:15px;line-height:1.8;">${intro}</p>
+                <h2 style="margin:0 0 10px;color:#13283d;font-size:21px;line-height:1.5;font-weight:700;">${escapeHtml(greeting)}</h2>
+                <p style="margin:0 0 26px;color:#52606d;font-size:15px;line-height:1.8;">${intro}</p>
 
-                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:14px;background:#faf7f2;border:1px solid #e7ddce;border-radius:12px;">
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:14px;background:#fbf9f4;border:1px solid #d9cfbb;border-radius:12px;">
                   <tr>
                     <td style="padding:16px 18px;text-align:${align};">
-                      <div style="margin-bottom:6px;color:#8b7d6c;font-size:11px;font-weight:bold;letter-spacing:0.5px;">${senderLabel}</div>
-                      <div style="color:#30271d;font-size:16px;font-weight:700;">${escapeHtml(creatorName)}</div>
+                      <div style="margin-bottom:6px;color:#77818b;font-size:11px;font-weight:bold;letter-spacing:0.5px;">${senderLabel}</div>
+                      <div style="color:#13283d;font-size:16px;font-weight:700;">${escapeHtml(creatorName)}</div>
                     </td>
                   </tr>
                 </table>
 
-                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;border:1px solid #e7ddce;border-radius:12px;">
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;border:1px solid #d9cfbb;border-radius:12px;">
                   <tr>
                     <td width="62" style="padding:18px 0 18px 18px;text-align:center;vertical-align:middle;">
-                      <div style="display:inline-block;width:42px;height:42px;line-height:42px;background:#f6f1e8;border:1px solid #e7ddce;border-radius:10px;color:#bd8d4f;font-size:11px;font-weight:bold;text-align:center;">PDF</div>
+                      <div style="display:inline-block;width:42px;height:42px;line-height:42px;background:#f7f4ed;border:1px solid #d9cfbb;border-radius:10px;color:#c7ad76;font-size:11px;font-weight:bold;text-align:center;">PDF</div>
                     </td>
                     <td style="padding:18px;text-align:${align};vertical-align:middle;">
-                      <div style="margin-bottom:6px;color:#8b7d6c;font-size:11px;font-weight:bold;letter-spacing:0.5px;">${documentLabel}</div>
-                      <div style="color:#30271d;font-size:15px;font-weight:700;line-height:1.5;word-break:break-word;">${escapeHtml(fileName)}</div>
+                      <div style="margin-bottom:6px;color:#77818b;font-size:11px;font-weight:bold;letter-spacing:0.5px;">${documentLabel}</div>
+                      <div style="color:#13283d;font-size:15px;font-weight:700;line-height:1.5;word-break:break-word;">${escapeHtml(fileName)}</div>
                     </td>
                   </tr>
                 </table>
 
-                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;background:#faf7f2;border:1px solid #e7ddce;border-radius:12px;">
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;background:#fbf9f4;border:1px solid #d9cfbb;border-radius:12px;">
                   <tr>
-                    <td width="50%" style="padding:16px 18px;text-align:${align};border-${ar ? 'left' : 'right'}:1px solid #e7ddce;">
-                      <div style="margin-bottom:6px;color:#8b7d6c;font-size:11px;font-weight:bold;">${orderLabel}</div>
-                      <div style="color:#30271d;font-size:15px;font-weight:700;">${signerIndex + 1} / ${totalSigners}</div>
+                    <td width="50%" style="padding:16px 18px;text-align:${align};border-${ar ? 'left' : 'right'}:1px solid #d9cfbb;">
+                      <div style="margin-bottom:6px;color:#77818b;font-size:11px;font-weight:bold;">${orderLabel}</div>
+                      <div style="color:#13283d;font-size:15px;font-weight:700;">${signerIndex + 1} / ${totalSigners}</div>
                     </td>
                     <td width="50%" style="padding:16px 18px;text-align:${align};">
-                      <div style="margin-bottom:6px;color:#8b7d6c;font-size:11px;font-weight:bold;">${expiryLabel}</div>
-                      <div style="color:#30271d;font-size:13px;font-weight:700;">${escapeHtml(expiryText)}</div>
+                      <div style="margin-bottom:6px;color:#77818b;font-size:11px;font-weight:bold;">${expiryLabel}</div>
+                      <div style="color:#13283d;font-size:13px;font-weight:700;">${escapeHtml(expiryText)}</div>
                     </td>
                   </tr>
                 </table>
-                <div style="margin-top:14px;padding:16px 18px;background:#f3eadc;border-left:3px solid #bd8d4f;border-radius:10px;text-align:${align};">
-                  <div style="margin-bottom:5px;color:#30271d;font-size:13px;font-weight:700;">${securityLabel}</div>
-                  <div style="color:#6d6255;font-size:12px;line-height:1.7;">${securityText}</div>
+                <div style="margin-top:14px;padding:16px 18px;background:#f1eadb;border-left:3px solid #c7ad76;border-radius:10px;text-align:${align};">
+                  <div style="margin-bottom:5px;color:#13283d;font-size:13px;font-weight:700;">${securityLabel}</div>
+                  <div style="color:#52606d;font-size:12px;line-height:1.7;">${securityText}</div>
                 </div>
 
                 <div style="padding:30px 0 24px;text-align:center;">
-                  <a href="${escapeHtml(link)}" style="display:inline-block;background:#bd8d4f;color:#ffffff;text-decoration:none;padding:15px 28px;border-radius:10px;font-size:15px;font-weight:bold;line-height:1.2;box-shadow:0 5px 14px rgba(189,141,79,0.28);">${button}</a>
+                  <a href="${escapeHtml(link)}" style="display:inline-block;background:#c7ad76;color:#ffffff;text-decoration:none;padding:15px 28px;border-radius:10px;font-size:15px;font-weight:bold;line-height:1.2;box-shadow:0 5px 14px rgba(189,141,79,0.28);">${button}</a>
                 </div>
-                <p style="margin:0;padding-top:18px;border-top:1px solid #eee5d8;color:#938778;font-size:12px;line-height:1.8;text-align:center;">${note}</p>
+                <p style="margin:0;padding-top:18px;border-top:1px solid #e6dece;color:#938778;font-size:12px;line-height:1.8;text-align:center;">${note}</p>
               </td>
             </tr>
             <tr>
-              <td style="padding:18px 28px;background:#faf7f2;border-top:1px solid #e7ddce;color:#9b9082;font-size:11px;line-height:1.6;text-align:center;">
-                <strong style="color:#6d6255;">PowerCare</strong> · ${footer}
+              <td style="padding:18px 28px;background:#fbf9f4;border-top:1px solid #d9cfbb;color:#9b9082;font-size:11px;line-height:1.6;text-align:center;">
+                <strong style="color:#52606d;">PowerCare</strong> · ${footer}
               </td>
             </tr>
           </table>
