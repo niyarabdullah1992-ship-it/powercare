@@ -95,8 +95,8 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
       </p>
       {!editing && signatureUrl ? (
         <div className="space-y-3">
-          <div className="w-full bg-white rounded-lg border border-border p-2 flex items-center justify-center">
-            <img src={signatureUrl} alt="signature" className="h-20 max-w-full object-contain" />
+          <div className={`w-full bg-white rounded-lg border border-border p-2 flex items-center justify-center ${signatureVariant === "unique" ? "aspect-[3/1] max-w-2xl" : ""}`}>
+            <img src={signatureUrl} alt="signature" className={signatureVariant === "unique" ? "h-full w-full object-contain" : "h-20 max-w-full object-contain"} />
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setEditing(true)} className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-primary-foreground/25 px-5 py-2 text-xs font-bold hover:bg-primary-foreground/10 whitespace-nowrap">
