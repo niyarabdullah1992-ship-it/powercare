@@ -62,11 +62,22 @@ export function moveOrgNode(companyId, nodeId, targetId, mode) {
     let cursor = target;
     while (cursor?.parentId) { if (cursor.parentId === moving.id) return; cursor = nodes.find((node) => node.id === cursor.parentId); }
     const oldParent = moving.parentId || null;
-    const newParent = mode === "child" ? target.id : target.parentId || null;
+    if (mode === "above") {
+      const targetParent = target.parentId || null;
+      moving.parentId = targetParent;
+      moving.order = target.order;
+      target.parentId = moving.id;
+      target.order = nodes.filter((node) => node.id !== target.id && node.parentId === moving.id).length;
+      renumber(nodes, oldParent);
+      renumber(nodes, targetParent);
+      renumber(nodes, moving.id);
+      return;
+    }
+    const newParent = mode === "below" ? target.id : target.parentId || null;
     moving.parentId = newParent;
     const siblings = nodes.filter((node) => node.id !== moving.id && (node.parentId || null) === newParent).sort((a, b) => a.order - b.order);
     const targetIndex = siblings.findIndex((node) => node.id === target.id);
-    moving.order = mode === "child" ? siblings.length : Math.max(0, targetIndex + (mode === "after" ? 1 : 0));
+    moving.order = mode === "below" ? siblings.length : Math.max(0, targetIndex + (mode === "right" ? 1 : 0));
     siblings.splice(moving.order, 0, moving);
     siblings.forEach((node, index) => { node.order = index; });
     renumber(nodes, oldParent);
