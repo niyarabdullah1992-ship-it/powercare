@@ -15,32 +15,53 @@ export function createRandomSignature(seed) {
   canvas.width = 720;
   canvas.height = 220;
   const ctx = canvas.getContext("2d");
-  ctx.strokeStyle = "#B9975E";
+  const ink = "#B9975E";
+  ctx.strokeStyle = ink;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+  ctx.lineWidth = 3.2 + random() * 2.2;
 
-  const strokes = 3 + Math.floor(random() * 4);
-  for (let stroke = 0; stroke < strokes; stroke += 1) {
-    let x = 35 + random() * 80;
-    let y = 72 + random() * 90;
+  const baseline = 128 + random() * 25;
+  const initialWidth = 105 + random() * 80;
+  const initialTop = 25 + random() * 42;
+  const slant = 18 + random() * 30;
+  ctx.beginPath();
+  ctx.moveTo(45 + random() * 24, baseline + 8);
+  ctx.bezierCurveTo(28, initialTop + 28, 118, initialTop - 15, initialWidth, initialTop + 28);
+  ctx.bezierCurveTo(initialWidth + 42, initialTop + 62, initialWidth - 24, baseline + 72, 82, baseline + 22);
+  ctx.bezierCurveTo(122, baseline - 18, initialWidth + slant, baseline - 38, initialWidth + 34, baseline - 7);
+
+  let x = initialWidth + 34;
+  let y = baseline - 7;
+  const letters = 5 + Math.floor(random() * 6);
+  for (let index = 0; index < letters; index += 1) {
+    const width = 32 + random() * 33;
+    const height = 20 + random() * 34;
+    const dip = 7 + random() * 17;
+    ctx.bezierCurveTo(x + width * .18, y - height, x + width * .46, y - height, x + width * .58, y - dip);
+    ctx.bezierCurveTo(x + width * .72, y + dip, x + width * .88, y + dip, x + width, y - random() * 15);
+    x += width;
+    y = baseline - random() * 13;
+  }
+  ctx.bezierCurveTo(x + 45, y + 18, x + 95, y - 32, Math.min(675, x + 130), baseline - 27);
+  ctx.stroke();
+
+  if (random() > .35) {
     ctx.beginPath();
-    ctx.moveTo(x, y);
-    const points = 8 + Math.floor(random() * 10);
-    for (let point = 0; point < points; point += 1) {
-      const nextX = x + 22 + random() * 45;
-      const nextY = 42 + random() * 130;
-      ctx.quadraticCurveTo(x + random() * 34, y + (random() - .5) * 95, nextX, nextY);
-      x = nextX;
-      y = nextY;
-    }
-    ctx.lineWidth = 3 + random() * 4;
+    const underlineY = baseline + 39 + random() * 22;
+    ctx.moveTo(72 + random() * 70, underlineY);
+    ctx.bezierCurveTo(260, underlineY - 34, 470, underlineY + 18, 650 - random() * 35, underlineY - 20);
+    ctx.lineWidth = 2.2 + random() * 2.3;
     ctx.stroke();
   }
 
-  ctx.beginPath();
-  ctx.moveTo(55, 176 + random() * 10);
-  ctx.bezierCurveTo(230, 145 + random() * 35, 480, 205 - random() * 25, 670, 158 + random() * 22);
-  ctx.lineWidth = 2.5 + random() * 2.5;
-  ctx.stroke();
+  if (random() > .56) {
+    ctx.beginPath();
+    const loopX = 175 + random() * 240;
+    ctx.moveTo(loopX, baseline - 5);
+    ctx.bezierCurveTo(loopX - 45, baseline - 88, loopX + 55, baseline - 105, loopX + 42, baseline - 18);
+    ctx.stroke();
+  }
+
   return canvas.toDataURL("image/png");
 }
