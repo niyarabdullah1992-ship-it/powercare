@@ -1,3 +1,5 @@
+import drawHeritageFingerprint from "@/lib/drawHeritageFingerprint";
+
 // Draws the "Encrypted verification ID" badge (fingerprint icon + framed ID +
 // signer name & date + QR code) onto a canvas — so it can be stamped into PDFs
 // and images. Canvas text supports Arabic names.
@@ -28,29 +30,8 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Fingerprint icon — concentric broken arcs in gold
-  const cx = 42, cy = H / 2;
-  ctx.strokeStyle = "#b07d3f";
-  ctx.lineWidth = 2.4;
-  ctx.lineCap = "round";
-  const arcs = [
-    [7, 0.75, 2.05],
-    [12, 0.9, 1.9],
-    [12, 2.3, 3.1],
-    [17, 1.05, 1.75],
-    [17, 2.1, 3.35],
-    [22, 1.15, 1.65],
-    [22, 1.95, 3.5],
-  ];
-  for (const [rad, a1, a2] of arcs) {
-    ctx.beginPath();
-    ctx.arc(cx, cy, rad, a1 * Math.PI, a2 * Math.PI);
-    ctx.stroke();
-  }
-  ctx.beginPath();
-  ctx.arc(cx, cy, 2.2, 0, 2 * Math.PI);
-  ctx.fillStyle = "#b07d3f";
-  ctx.fill();
+  // Symmetrical heritage fingerprint in layered executive gold.
+  drawHeritageFingerprint(ctx, 43, H / 2, signerName ? 72 : 62);
 
   // QR code box on the right side of the card
   const q = H - 20;
