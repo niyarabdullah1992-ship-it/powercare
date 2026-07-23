@@ -62,7 +62,22 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   ctx.lineWidth = 1;
   ctx.strokeRect(qx + 4, qy + 4, q - 8, q - 8);
   if (qrImg) {
-    ctx.drawImage(qrImg, qx + 3, qy + 3, q - 6, q - 6);
+    const qrSize = q - 6;
+    const qrCanvas = document.createElement("canvas");
+    qrCanvas.width = qrSize;
+    qrCanvas.height = qrSize;
+    const qrCtx = qrCanvas.getContext("2d", { willReadFrequently: true });
+    qrCtx.drawImage(qrImg, 0, 0, qrSize, qrSize);
+    const pixels = qrCtx.getImageData(0, 0, qrSize, qrSize);
+    for (let i = 0; i < pixels.data.length; i += 4) {
+      if (pixels.data[i] < 150 && pixels.data[i + 1] < 150 && pixels.data[i + 2] < 150) {
+        pixels.data[i] = 212;
+        pixels.data[i + 1] = 175;
+        pixels.data[i + 2] = 85;
+      }
+    }
+    qrCtx.putImageData(pixels, 0, 0);
+    ctx.drawImage(qrCanvas, qx + 3, qy + 3);
   } else {
     ctx.fillStyle = "#b08d47";
     ctx.font = "600 12px sans-serif";
