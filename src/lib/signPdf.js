@@ -66,8 +66,8 @@ export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot, qrImg
     const fieldScale = Math.min(2, Math.max(0.5, Number(field.scale || sc * 100) / 100));
     const bw = width * (STAMP_WIDTH_PERCENT / 100) * fieldScale;
     const bh = bw * badge.ratio;
-    const bx = Math.min(Math.max((width * Number(field.x)) / 100 - bw / 2, 8), width - bw - 8);
-    const by = Math.min(Math.max(height - (height * Number(field.y)) / 100 - bh / 2, 8), height - bh - 8);
+    const bx = Math.min(Math.max((width * Number(field.x)) / 100 - bw / 2, 0), width - bw);
+    const by = Math.min(Math.max(height - (height * Number(field.y)) / 100 - bh / 2, 0), height - bh);
     page.drawImage(badgeImg, { x: bx, y: by, width: bw, height: bh });
   }
   const out = await pdf.save();

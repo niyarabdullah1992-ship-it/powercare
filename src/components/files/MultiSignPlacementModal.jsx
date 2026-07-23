@@ -8,6 +8,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLi
 const COLORS = ["#b45309", "#0369a1", "#15803d", "#7c3aed", "#be123c", "#0f766e", "#a16207", "#4338ca"];
 const normalize = (value = {}) => Object.fromEntries(Object.entries(value).map(([key, item]) => [key, Array.isArray(item) ? item : item ? [{ ...item, id: `legacy-${key}`, type: "signature", label: "" }] : []]));
 const fieldWidth = (field) => (field.type === "text" ? 26 : STAMP_WIDTH_PERCENT) * ((field.scale || 100) / 100);
+const fieldHalfHeight = (field, rect) => field.type === "signature" ? fieldWidth(field) * (rect.width / rect.height) * (STAMP_CANVAS_HEIGHT / STAMP_CANVAS_WIDTH) / 2 : 3;
 const scaleBounds = (field) => field?.type === "signature" ? [STAMP_MIN_SCALE, STAMP_MAX_SCALE] : [50, 200];
 const clampScale = (field, value) => { const [min, max] = scaleBounds(field); return Math.min(max, Math.max(min, Math.round(value))); };
 
@@ -39,8 +40,8 @@ export default function MultiSignPlacementModal({ docUrl, signers, initialSpots,
   const startDrag = (event, signerIndex, field) => {
     if (event.target.closest("button") || event.target.dataset.resize) return;
     event.stopPropagation(); event.preventDefault(); setActive(signerIndex); setSelectedId(field.id);
-    const rect = wrapRef.current.getBoundingClientRect(); const startX = event.clientX; const startY = event.clientY; const originX = field.x; const originY = field.y; const halfWidth = fieldWidth(field) / 2;
-    const move = (moveEvent) => updateField(signerIndex, field.id, { x: Math.min(100 - halfWidth, Math.max(halfWidth, originX + ((moveEvent.clientX - startX) / rect.width) * 100)), y: Math.min(97, Math.max(3, originY + ((moveEvent.clientY - startY) / rect.height) * 100)) });
+    const rect = wrapRef.current.getBoundingClientRect(); const startX = event.clientX; const startY = event.clientY; const originX = field.x; const originY = field.y; const halfWidth = fieldWidth(field) / 2; const halfHeight = fieldHalfHeight(field, rect);
+    const move = (moveEvent) => updateField(signerIndex, field.id, { x: Math.min(100 - halfWidth, Math.max(halfWidth, originX + ((moveEvent.clientX - startX) / rect.width) * 100)), y: Math.min(100 - halfHeight, Math.max(halfHeight, originY + ((moveEvent.clientY - startY) / rect.height) * 100)) });
     const end = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", end); };
     window.addEventListener("pointermove", move); window.addEventListener("pointerup", end);
   };
@@ -66,7 +67,10 @@ export default function MultiSignPlacementModal({ docUrl, signers, initialSpots,
     const x = Math.min(96, Math.max(4, ((event.clientX - rect.left) / rect.width) * 100));
     const y = Math.min(96, Math.max(4, ((event.clientY - rect.top) / rect.height) * 100));
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const field = { id, type: fieldType, label: fieldType === "text" ? (ar ? "اكتب النص هنا" : "Enter text") : "", page, x: Math.min(100 - (fieldType === "text" ? 13 : STAMP_WIDTH_PERCENT / 2), Math.max(fieldType === "text" ? 13 : STAMP_WIDTH_PERCENT / 2, x)), y, scale: 100 };
+    const draft = { type: fieldType, scale: 100 };
+    const halfWidth = fieldType === "text" ? 13 : STAMP_WIDTH_PERCENT / 2;
+    const halfHeight = fieldHalfHeight(draft, rect);
+    const field = { id, type: fieldType, label: fieldType === "text" ? (ar ? "اكتب النص هنا" : "Enter text") : "", page, x: Math.min(100 - halfWidth, Math.max(halfWidth, x)), y: Math.min(100 - halfHeight, Math.max(halfHeight, y)), scale: 100 };
     setSpots((current) => ({ ...current, [active]: [...(current[active] || []), field] })); setSelectedId(id);
   };
   const allPlaced = signers.every((_, index) => (spots[index] || []).some((field) => field.type === "signature"));

@@ -40,19 +40,21 @@ export default function SelfSignDocumentCard({ signatureUrl, signatureRawUrl, si
     if (!signatureField) { setError(ar ? "ضع حقل التوقيع على المستند أولًا." : "Place the signature field on the document first."); return; }
     if (textFields.some((field) => !String(textValues[field.id] || "").trim())) { setError(ar ? "عبّئ جميع حقول النص أولًا." : "Complete all text fields first."); return; }
     const sourceUrl = URL.createObjectURL(file);
-    setSigning(true); setError("");
+    const signingVerificationId = generateVerificationId();
+    setVerificationId(signingVerificationId);
+    setSigning(true); setError(""); setSuccess("");
     try {
       const signerName = currentUser?.profile?.signatureName || currentUser?.name || "";
-      const qr = await loadBadgeQr(verificationId);
-      const { bytes } = await signPdfFile(sourceUrl, signatureRawUrl || null, signerName, verificationId, signatureField, qr, (signatureField.scale || 100) / 100, false, fields, textValues, signatureVariant);
+      const qr = await loadBadgeQr(signingVerificationId);
+      const { bytes } = await signPdfFile(sourceUrl, signatureRawUrl || null, signerName, signingVerificationId, signatureField, qr, (signatureField.scale || 100) / 100, false, fields, textValues, signatureVariant);
       const fileHash = await sha256HexOfBuffer(bytes);
-      await base44.functions.invoke("signedDocs", { action: "register", verificationId, fileHash, signerName, signerId: currentUser.id, companyId, sessionToken: getCompanyToken(companyId), fileName: file.name });
+      await base44.functions.invoke("signedDocs", { action: "register", verificationId: signingVerificationId, fileHash, signerName, signerId: currentUser.id, companyId, sessionToken: getCompanyToken(companyId), fileName: file.name });
       const outputName = `${file.name.replace(/\.pdf$/i, "")}-signed.pdf`;
       const downloadUrl = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
       const link = Object.assign(document.createElement("a"), { href: downloadUrl, download: outputName });
       document.body.appendChild(link); link.click(); link.remove();
       setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
-      setSuccess(`${outputName} — ${verificationId}`);
+      setSuccess(`${outputName} — ${signingVerificationId}`);
     } catch (err) {
       setError((ar ? "تعذّر توقيع المستند الموثّق — " : "Couldn't verify and sign the document — ") + (err?.message || ""));
     } finally { URL.revokeObjectURL(sourceUrl); setSigning(false); }
