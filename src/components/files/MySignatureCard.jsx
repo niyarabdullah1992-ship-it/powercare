@@ -5,7 +5,6 @@ import { updateEmployeeProfile } from "@/lib/store";
 import { makeSignatureStamp } from "@/lib/multiSignStamp";
 import SignaturePad from "./SignaturePad";
 import TypedSignature from "./TypedSignature";
-import RandomSignaturePicker from "./RandomSignaturePicker";
 import SelfSignDocumentCard from "./SelfSignDocumentCard";
 
 // DocuSign-style unique signature ID: a non-reversible SHA-256 hash of the
@@ -35,7 +34,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   const signatureVariant = localSignature?.signatureVariant ?? currentUser?.profile?.signatureVariant ?? "unique";
   const signatureId = localSignature?.signatureId ?? currentUser?.profile?.signatureId ?? "";
   const [editing, setEditing] = useState(!signatureUrl);
-  const [mode, setMode] = useState("draw"); // "type" | "draw" | "random"
+  const [mode, setMode] = useState("draw"); // "type" | "draw"
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
@@ -155,17 +154,9 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
             >
               <PenLine className="w-3.5 h-3.5" /> {ar ? "رسم التوقيع" : "Draw"}
             </button>
-            <button
-              onClick={() => setMode("random")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "random" ? "bg-accent text-accent-foreground border-accent" : "border-primary-foreground/20 hover:bg-primary-foreground/10"}`}
-            >
-              <Fingerprint className="w-3.5 h-3.5" /> {ar ? "توقيع فريد" : "Unique signature"}
-            </button>
           </div>
           {mode === "type" ? (
             <TypedSignature ar={ar} defaultName={currentUser?.name || ""} onSave={saveSignature} saving={saving} />
-          ) : mode === "random" ? (
-            <RandomSignaturePicker ar={ar} signerName={currentUser?.name || ""} onSave={saveSignature} saving={saving} />
           ) : (
             <SignaturePad ar={ar} onSave={saveSignature} saving={saving} />
           )}
