@@ -31,9 +31,21 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   ctx.stroke();
   ctx.beginPath();
   ctx.roundRect(7, 7, W - 14, H - 14, 10);
-  ctx.strokeStyle = "#d4af5566";
+  ctx.strokeStyle = "#d4af5580";
   ctx.lineWidth = 1;
   ctx.stroke();
+
+  // Quiet white waves add depth without competing with verification data.
+  ctx.save();
+  ctx.strokeStyle = "#ffffff14";
+  ctx.lineWidth = 1.2;
+  [48, 66, 84].forEach((y, index) => {
+    ctx.beginPath();
+    ctx.moveTo(102, y);
+    ctx.bezierCurveTo(190, y - 18 - index * 2, 310, y + 18, 438, y - 4);
+    ctx.stroke();
+  });
+  ctx.restore();
 
   // Symmetrical heritage fingerprint in layered executive gold.
   drawHeritageFingerprint(ctx, 43, H / 2, signerName ? 72 : 62);
@@ -44,8 +56,11 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(qx, qy, q, q);
   ctx.strokeStyle = "#d4af55";
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 2;
   ctx.strokeRect(qx, qy, q, q);
+  ctx.strokeStyle = "#d4af5570";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(qx + 4, qy + 4, q - 8, q - 8);
   if (qrImg) {
     ctx.drawImage(qrImg, qx + 3, qy + 3, q - 6, q - 6);
   } else {
@@ -56,20 +71,26 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
     ctx.textAlign = "left";
   }
 
-  // Texts
-  const tx = 82;
-  ctx.fillStyle = "#d7bd7a";
-  ctx.font = "13px sans-serif";
+  // Texts — aligned on a dedicated column with clear space from the fingerprint.
+  const tx = 116;
   ctx.textAlign = "left";
-  ctx.fillText("Encrypted verification ID", tx, signerName ? 34 : 36);
-  ctx.fillStyle = "#b07d3f";
-  ctx.font = "600 21px 'Courier New', monospace";
-  ctx.fillText(sigId || "", tx, signerName ? 62 : 66);
+  ctx.fillStyle = "#f4eee2";
+  ctx.font = "500 13px sans-serif";
+  ctx.fillText("Encrypted verification ID", tx, signerName ? 30 : 32);
+  ctx.strokeStyle = "#d4af55";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(tx, signerName ? 40 : 42);
+  ctx.lineTo(tx + 96, signerName ? 40 : 42);
+  ctx.stroke();
+  ctx.fillStyle = "#d4af55";
+  ctx.font = "600 19px 'Courier New', monospace";
+  ctx.fillText(sigId || "", tx, signerName ? 65 : 70);
   if (signerName) {
-    ctx.fillStyle = "#b07d3f";
+    ctx.fillStyle = "#e3a13a";
     ctx.font = "600 17px sans-serif";
     ctx.direction = "ltr";
-    ctx.fillText(`${signerName} — ${new Date().toLocaleDateString("en-GB")}`, tx, 98);
+    ctx.fillText(`${signerName}  —  ${new Date().toLocaleDateString("en-GB")}`, tx, 101);
   }
   return canvas;
 }
