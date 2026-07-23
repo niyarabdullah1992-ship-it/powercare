@@ -276,6 +276,18 @@ Deno.serve(async (req) => {
       return Response.json({ otpRequired: true, pendingId, email, accountKey: selected.accountKey });
     }
 
+    // Company registration always starts with ownership verification by email.
+    if (action === 'startSignupOtp') {
+      const email = String(body.email || '').trim().toLowerCase();
+      if (!email) return Response.json({ error: 'Missing email' }, { status: 400 });
+      const existing = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email });
+      const newIsIndividual = String(body.plan || '').toLowerCase() === 'individual';
+      const sameKind = existing.some((account) => (String(account.plan || '').toLowerCase() === 'individual') === newIsIndividual);
+      if (sameKind) return Response.json({ error: 'email_exists' }, { status: 409 });
+      const pendingId = await createLoginOtp(base44, { kind: 'signup', companyId: 'pending-signup', email });
+      return Response.json({ otpRequired: true, pendingId });
+    }
+
     // Cross-device login lookup — doesn't need a companyId yet, since the caller is
     // trying to discover which company an email/password combination belongs to.
     if (action === 'findAccountByEmail') {
@@ -488,8 +500,21 @@ Deno.serve(async (req) => {
       // user choose), but not two accounts of the same kind.
       if (!existing.length) {
         const email = String(ownerEmail || '').trim().toLowerCase();
-        const dupes = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email });
         const newIsIndividual = String(plan || '').toLowerCase() === 'individual';
+        let signupOtp = null;
+        if (!newIsIndividual) {
+          const otpRows = body.signupPendingId ? await base44.asServiceRole.entities.LoginOtp.filter({ pendingId: body.signupPendingId }) : [];
+          signupOtp = otpRows[0];
+          if (!signupOtp || signupOtp.kind !== 'signup' || signupOtp.email !== email || new Date(signupOtp.expiresAt).getTime() < Date.now() || (signupOtp.attempts || 0) >= 5) {
+            return Response.json({ error: 'signup_otp_required' }, { status: 401 });
+          }
+          const otpHash = await sha256Hex(signupOtp.pendingId + '::' + String(body.signupOtpCode || '').trim());
+          if (otpHash !== signupOtp.codeHash) {
+            await base44.asServiceRole.entities.LoginOtp.update(signupOtp.id, { attempts: (signupOtp.attempts || 0) + 1 });
+            return Response.json({ error: 'invalid_code' }, { status: 401 });
+          }
+        }
+        const dupes = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email });
         const sameKind = dupes.some((d) => (String(d.plan || '').toLowerCase() === 'individual') === newIsIndividual);
         if (sameKind) return Response.json({ error: 'email_exists' }, { status: 409 });
       }
@@ -508,7 +533,8 @@ Deno.serve(async (req) => {
           await base44.asServiceRole.entities.CompanyAccount.delete(duplicate.id).catch(() => null);
         }
         if (keeper) await base44.asServiceRole.entities.CompanyAccount.update(keeper.id, fields);
-        // Brand-new signup — issue the creator an owner session immediately.
+        if (signupOtp) await base44.asServiceRole.entities.LoginOtp.delete(signupOtp.id);
+        // Brand-new signup — issue the creator an owner session only after OTP verification.
         token = await makeSession(base44, companyId, null, 'owner');
       }
       return Response.json({ ok: true, token });

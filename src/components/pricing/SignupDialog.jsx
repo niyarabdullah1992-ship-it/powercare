@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import GoogleIcon from "@/components/GoogleIcon";
+import SignupOtpStep from "@/components/pricing/SignupOtpStep";
 
 export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, googleEmail, error }) {
   const { t, lang } = useI18n();
@@ -11,13 +12,23 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
   const [ownerEmail, setOwnerEmail] = useState(googleEmail || "");
   const [ownerPassword, setOwnerPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [pendingId, setPendingId] = useState("");
+  const [otpCode, setOtpCode] = useState("");
 
   const isTrial = true;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    await onSubmit({ companyName, ownerEmail, ownerPassword, authMethod: googleEmail ? "google" : "password" });
+    const result = await onSubmit({ companyName, ownerEmail, ownerPassword, authMethod: googleEmail ? "google" : "password", pendingId, otpCode });
+    if (result?.otpRequired) setPendingId(result.pendingId);
+    setSubmitting(false);
+  };
+
+  const resendOtp = async () => {
+    setSubmitting(true);
+    const result = await onSubmit({ companyName, ownerEmail, ownerPassword, authMethod: googleEmail ? "google" : "password" });
+    if (result?.otpRequired) { setPendingId(result.pendingId); setOtpCode(""); }
     setSubmitting(false);
   };
 
@@ -39,7 +50,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
             <div className="mb-3 flex items-center gap-3 text-xs text-[#3a2f22]/40"><span className="h-px flex-1 bg-landing-gold/20" />{lang === "ar" ? "أو" : "or"}<span className="h-px flex-1 bg-landing-gold/20" /></div>
           </>
         )}
-        <form onSubmit={handleSubmit} className="space-y-3">
+        {pendingId ? <SignupOtpStep email={ownerEmail} code={otpCode} setCode={setOtpCode} loading={submitting} error={error} onVerify={handleSubmit} onResend={resendOtp} ar={lang === "ar"} /> : <form onSubmit={handleSubmit} className="space-y-3">
           <input
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
@@ -75,8 +86,8 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
           >
             {submitting ? t("pleaseWaitBtn") : (lang === "ar" ? "تفعيل الباقة مجانًا" : "Activate plan free")}
           </button>
-        </form>
-        <button
+        </form>}
+        {!pendingId && <button
           type="button"
           onClick={() => navigate("/")}
           className="mt-4 w-full text-center text-sm font-body text-[#3a2f22]/60 hover:text-[#3a2f22]"
@@ -85,7 +96,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
           <span className="font-semibold text-landing-gold underline underline-offset-4">
             {lang === "ar" ? "تسجيل الدخول" : "Sign in"}
           </span>
-        </button>
+        </button>}
       </div>
     </div>
   );

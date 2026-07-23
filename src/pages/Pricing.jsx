@@ -44,21 +44,32 @@ export default function Pricing() {
     base44.auth.loginWithProvider("sso", "/pricing?google_signup=1");
   };
 
-  const handleTrialSignup = async ({ companyName, ownerEmail, ownerPassword, authMethod }) => {
+  const handleTrialSignup = async ({ companyName, ownerEmail, ownerPassword, authMethod, pendingId, otpCode }) => {
     setError("");
+    if (!pendingId) {
+      try {
+        const response = await base44.functions.invoke("companyDirectory", { action: "startSignupOtp", email: ownerEmail, plan: activePlan.id });
+        return response.data;
+      } catch (error) {
+        setError(error?.response?.data?.error === "email_exists" ? (lang === "ar" ? "هذا البريد مسجل مسبقًا." : "This email is already registered.") : (lang === "ar" ? "تعذر إرسال رمز التحقق." : "Could not send the verification code."));
+        return false;
+      }
+    }
     const activationDate = new Date().toISOString().slice(0, 10);
     const company = pendingCompanyRef.current || createCompany(
       { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: activePlan.id === "free" ? "Free" : (activePlan.id === "professional" ? "Professional" : activePlan.id === "enterprise" ? "Enterprise" : "Starter"), subscriptionStart: activationDate, subscriptionEnd: null },
       { sync: false }
     );
     pendingCompanyRef.current = company;
-    const saved = await syncCompanyAccount(company);
+    const saved = await syncCompanyAccount(company, { pendingId, code: otpCode });
     if (saved !== true) {
       pendingCompanyRef.current = null;
       deleteCompany(company.id);
       setError(saved === "email_exists"
         ? (lang === "ar" ? "لديك حساب من نفس النوع مسجّل بهذا البريد — يرجى تسجيل الدخول بدلًا من إنشاء حساب جديد." : "This email already has an account of this type — please sign in instead of creating a new one.")
-        : (lang === "ar" ? "تعذر حفظ حساب الشركة. يرجى المحاولة مرة أخرى." : "The company account could not be saved. Please try again."));
+        : ["invalid_code", "invalid_or_expired", "signup_otp_required"].includes(saved)
+          ? (lang === "ar" ? "رمز التحقق غير صحيح أو منتهي الصلاحية." : "The verification code is invalid or expired.")
+          : (lang === "ar" ? "تعذر حفظ حساب الشركة. يرجى المحاولة مرة أخرى." : "The company account could not be saved. Please try again."));
       return false;
     }
     pendingCompanyRef.current = null;

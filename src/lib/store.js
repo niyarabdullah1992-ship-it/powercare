@@ -152,7 +152,7 @@ export function createCompany({ name, ownerEmail, ownerPassword, plan = "Starter
 
 // Persists login credentials/metadata for a company so employees can log in from any
 // device/browser, not just the one that created the company.
-async function syncAccountToEntity(company) {
+async function syncAccountToEntity(company, signupVerification = null) {
   try {
     const res = await invokeDirectory({
       action: "syncAccount",
@@ -164,19 +164,23 @@ async function syncAccountToEntity(company) {
       allowedEmailDomain: company.allowedEmailDomain || "",
       subscriptionStart: company.subscriptionStart || null,
       subscriptionEnd: company.subscriptionEnd || null,
+      signupPendingId: signupVerification?.pendingId || null,
+      signupOtpCode: signupVerification?.code || null,
     });
     // Brand-new signups get an owner session token back — keep it for future calls.
     if (res?.data?.token) setCompanyToken(company.id, res.data.token);
     if (res?.data?.error === 'email_exists') return 'email_exists';
     return !!res?.data?.ok;
   } catch (err) {
-    if (err?.response?.data?.error === 'email_exists') return 'email_exists';
+    const code = err?.response?.data?.error;
+    if (code === 'email_exists') return 'email_exists';
+    if (['invalid_code', 'invalid_or_expired', 'signup_otp_required'].includes(code)) return code;
     return false;
   }
 }
 
-export async function syncCompanyAccount(company) {
-  return syncAccountToEntity(company);
+export async function syncCompanyAccount(company, signupVerification = null) {
+  return syncAccountToEntity(company, signupVerification);
 }
 
 export async function updateCompanyPlan(companyId, plan, subscriptionStart = null, subscriptionEnd = null) {
