@@ -1,8 +1,8 @@
 export default function drawHeritageFingerprint(ctx, cx, cy, size) {
   const cubeSize = size * .082;
-  const cyan = { top: "#00F5FF", left: "#00A8C0", right: "#00758C" };
-  const navy = { top: "#214B78", left: "#15375F", right: "#0B294D" };
-  const outline = "#061A36";
+  const lightOrange = { top: "#FFD36A", left: "#F5A623", right: "#D97800" };
+  const deepOrange = { top: "#FF9F1A", left: "#E87900", right: "#A94700" };
+  const outline = "#5A2800";
   const paths = [
     [[-.48,-.27],[-.35,-.49],[0,-.56],[.35,-.49],[.48,-.27]],
     [[-.53,.02],[-.49,-.31],[-.26,-.5],[0,-.53],[.29,-.45],[.47,-.18],[.51,.12]],
@@ -40,7 +40,7 @@ export default function drawHeritageFingerprint(ctx, cx, cy, size) {
       const steps = Math.max(1, Math.ceil(distance / (cubeSize * .88)));
       for (let step = i ? 1 : 0; step <= steps; step += 1) {
         const t = step / steps;
-        const palette = (Math.floor(sequence / 3) + pathIndex) % 3 === 0 ? cyan : navy;
+        const palette = (Math.floor(sequence / 3) + pathIndex) % 3 === 0 ? lightOrange : deepOrange;
         drawCube(cx + (ax + (bx - ax) * t) * size, cy + (ay + (by - ay) * t) * size, palette);
         sequence += 1;
       }
