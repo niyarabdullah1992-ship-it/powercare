@@ -31,8 +31,17 @@ export function saveSmartPosition(companyId, employeeId, title, permissions, tit
   const score = scorePermissions(permissions);
   updateCompany(companyId, (data) => {
     data.smartPositions = data.smartPositions || [];
-    const record = { employeeId, title, titleManual, permissions, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() };
     const index = data.smartPositions.findIndex((item) => item.employeeId === employeeId);
+    const previous = index >= 0 ? data.smartPositions[index] : null;
+    const record = { employeeId, title, titleManual, permissions, score, rank: rankFromScore(score), manualOrder: previous?.manualOrder, updatedAt: new Date().toISOString() };
     if (index >= 0) data.smartPositions[index] = record; else data.smartPositions.push(record);
+  });
+}
+
+export function reorderSmartRank(companyId, rank, employeeIds) {
+  updateCompany(companyId, (data) => {
+    (data.smartPositions || []).forEach((position) => {
+      if (position.rank === rank) position.manualOrder = employeeIds.indexOf(position.employeeId);
+    });
   });
 }
