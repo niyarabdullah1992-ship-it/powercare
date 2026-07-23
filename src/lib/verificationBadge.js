@@ -6,9 +6,9 @@ import drawHeritageFingerprint from "@/lib/drawHeritageFingerprint";
 // The QR encodes the verification ID; the file's SHA-256 hash is registered in
 // the platform's verification registry, so a badge copied onto another file
 // will always fail verification (hash mismatch).
-export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
+export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureImg = null) {
   const scale = 2;
-  const W = 560, H = signerName ? 128 : 96;
+  const W = 560, H = signatureImg ? 170 : signerName ? 128 : 96;
   const canvas = document.createElement("canvas");
   canvas.width = W * scale;
   canvas.height = H * scale;
@@ -48,11 +48,18 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   ctx.restore();
 
   // Symmetrical heritage fingerprint inset safely from both frame lines.
-  drawHeritageFingerprint(ctx, 50, H / 2, signerName ? 62 : 54);
+  drawHeritageFingerprint(ctx, 50, H / 2, signatureImg ? 66 : signerName ? 62 : 54);
+
+  if (signatureImg) {
+    const maxWidth = 300, maxHeight = 62;
+    const ratio = Math.min(maxWidth / signatureImg.width, maxHeight / signatureImg.height);
+    const width = signatureImg.width * ratio, height = signatureImg.height * ratio;
+    ctx.drawImage(signatureImg, 116 + (maxWidth - width) / 2, 14 + (maxHeight - height) / 2, width, height);
+  }
 
   // QR code box on the right side of the card
-  const q = H - 20;
-  const qx = W - q - 12, qy = 10;
+  const q = signatureImg ? 108 : H - 20;
+  const qx = W - q - 12, qy = signatureImg ? 31 : 10;
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(qx, qy, q, q);
   ctx.strokeStyle = "#B9975E";
@@ -91,21 +98,21 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   ctx.textAlign = "left";
   ctx.fillStyle = "#f4eee2";
   ctx.font = "500 13px sans-serif";
-  ctx.fillText("Encrypted verification ID", tx, signerName ? 30 : 32);
+  ctx.fillText("Encrypted verification ID", tx, signatureImg ? 94 : signerName ? 30 : 32);
   ctx.strokeStyle = "#B9975E";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(tx, signerName ? 40 : 42);
-  ctx.lineTo(tx + 96, signerName ? 40 : 42);
+  ctx.moveTo(tx, signatureImg ? 104 : signerName ? 40 : 42);
+  ctx.lineTo(tx + 96, signatureImg ? 104 : signerName ? 40 : 42);
   ctx.stroke();
   ctx.fillStyle = "#B9975E";
   ctx.font = "600 19px 'Courier New', monospace";
-  ctx.fillText(sigId || "", tx, signerName ? 65 : 70);
+  ctx.fillText(sigId || "", tx, signatureImg ? 127 : signerName ? 65 : 70);
   if (signerName) {
     ctx.fillStyle = "#C7AD76";
     ctx.font = "600 17px sans-serif";
     ctx.direction = "ltr";
-    ctx.fillText(`${signerName}  —  ${new Date().toLocaleDateString("en-GB")}`, tx, 101);
+    ctx.fillText(`${signerName}  —  ${new Date().toLocaleDateString("en-GB")}`, tx, signatureImg ? 154 : 101);
   }
   return canvas;
 }
