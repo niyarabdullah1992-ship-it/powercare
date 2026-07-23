@@ -4,8 +4,8 @@
 
 const NAMES = {
   1: {
-    manager: { en: "Site HR Manager", ar: "مدير المحطة", de: "Standort-HR-Manager", fr: "Responsable RH de site", es: "Gerente de RH del sitio", pt: "Gerente de RH do site", ru: "HR-менеджер площадки", ja: "拠点HRマネージャー", ko: "현장 HR 매니저" },
-    assistant: { en: "Site HR Assistant", ar: "مساعد مدير المحطة", de: "Standort-HR-Assistent", fr: "Assistant RH de site", es: "Asistente de RH del sitio", pt: "Assistente de RH do site", ru: "Ассистент HR площадки", ja: "拠点HRアシスタント", ko: "현장 HR 어시스턴트" },
+    manager: { en: "Site HR Manager", ar: "مدير الموارد البشرية بالمحطة", de: "Standort-HR-Manager", fr: "Responsable RH de site", es: "Gerente de RH del sitio", pt: "Gerente de RH do site", ru: "HR-менеджер площадки", ja: "拠点HRマネージャー", ko: "현장 HR 매니저" },
+    assistant: { en: "Site HR Assistant", ar: "مساعد الموارد البشرية بالمحطة", de: "Standort-HR-Assistent", fr: "Assistant RH de site", es: "Asistente de RH del sitio", pt: "Assistente de RH do site", ru: "Ассистент HR площадки", ja: "拠点HRアシスタント", ko: "현장 HR 어시스턴트" },
   },
   2: {
     manager: { en: "Cluster HR Manager", ar: "مدير المحطات", de: "Cluster-HR-Manager", fr: "Responsable RH de cluster", es: "Gerente de RH de clúster", pt: "Gerente de RH de cluster", ru: "Менеджер HR кластера", ja: "クラスターHRマネージャー", ko: "클러스터 HR 매니저" },
