@@ -24,7 +24,6 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
   const [permissions, setPermissions] = useState(initial ? nodeAccess(data, initial.refId) : {});
   const [suggesting, setSuggesting] = useState(false);
   const nodes = data.orgTree || [];
-  const hasPermission = type !== "employee" || Object.values(permissions).some(Boolean);
   const suggest = async () => {
     const employeeName = initial ? data.employees.find((employee) => employee.id === refId)?.name : form.name;
     if (!employeeName || type !== "employee") return;
@@ -37,7 +36,6 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
   };
   const submit = (event) => {
     event.preventDefault();
-    if (!hasPermission) return;
     if (initial) {
       const order = parentId === initial.parentId ? initial.order : nodes.filter((node) => (node.parentId || null) === parentId).length;
       saveOrgNode(companyId, { ...initial, title: title.trim(), parentId, order }, permissions);
@@ -57,5 +55,5 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
     <OrgParentPicker nodes={nodes} employees={data.employees || []} stations={data.stations || []} currentId={initial?.id} value={parentId} onChange={setParentId} ar={ar} />
     {type === "station" && <button type="button" onClick={() => setShowMap(true)} className="flex w-full items-center justify-center gap-2 rounded-md border border-accent/40 bg-accent/5 px-4 py-2 text-sm font-semibold text-accent"><MapPin className="h-4 w-4" />{mapLocation.lat != null ? (ar ? "تعديل الموقع على الخريطة" : "Edit location on map") : (ar ? "تحديد الموقع على الخريطة" : "Set location on map")}</button>}
     {type === "employee" && <button type="button" onClick={suggest} disabled={!(initial ? refId : form.name.trim()) || suggesting} className="flex w-full items-center justify-center gap-2 rounded-md border border-accent/40 bg-accent/5 px-4 py-2 text-sm font-semibold text-accent disabled:opacity-40">{suggesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{ar ? "اقتراح مسمى بالذكاء الاصطناعي" : "Suggest title with AI"}</button>}
-    <div className="flex gap-2">{initial && <button type="button" onClick={() => { if (confirm(ar ? "حذف العقدة من الشجرة؟" : "Remove this node from the tree?")) { deleteOrgNode(companyId, initial.id); onClose(); } }} className="flex items-center gap-2 rounded-md border border-destructive/40 px-4 py-2 text-sm text-destructive"><Trash2 className="h-4 w-4" />{ar ? "حذف" : "Delete"}</button>}<button type="submit" disabled={!hasPermission || (initial ? !title.trim() : !form.name.trim() || (type === "employee" && (!form.email.trim() || !title.trim())))} className="flex-1 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground disabled:opacity-40">{ar ? "حفظ" : "Save"}</button></div></form>{showMap && <StationLocationEditor t={t} station={{ name: station?.name || form.name || (ar ? "محطة جديدة" : "New station"), ...mapLocation }} onSave={(location) => { setMapLocation(location); setShowMap(false); }} onCancel={() => setShowMap(false)} />}</div>;
+    <div className="flex gap-2">{initial && <button type="button" onClick={() => { if (confirm(ar ? "حذف العقدة من الشجرة؟" : "Remove this node from the tree?")) { deleteOrgNode(companyId, initial.id); onClose(); } }} className="flex items-center gap-2 rounded-md border border-destructive/40 px-4 py-2 text-sm text-destructive"><Trash2 className="h-4 w-4" />{ar ? "حذف" : "Delete"}</button>}<button type="submit" disabled={initial ? !title.trim() : !form.name.trim() || (type === "employee" && (!form.email.trim() || !title.trim()))} className="flex-1 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground disabled:opacity-40">{ar ? "حفظ" : "Save"}</button></div></form>{showMap && <StationLocationEditor t={t} station={{ name: station?.name || form.name || (ar ? "محطة جديدة" : "New station"), ...mapLocation }} onSave={(location) => { setMapLocation(location); setShowMap(false); }} onCancel={() => setShowMap(false)} />}</div>;
 }
