@@ -26,12 +26,12 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   ctx.closePath();
   ctx.fillStyle = "#13283d";
   ctx.fill();
-  ctx.strokeStyle = "#e3a13a";
+  ctx.strokeStyle = "#C7AD76";
   ctx.lineWidth = 2.5;
   ctx.stroke();
   ctx.beginPath();
   ctx.roundRect(8, 8, W - 16, H - 16, 9);
-  ctx.strokeStyle = "#e3a13a99";
+  ctx.strokeStyle = "#C7AD7699";
   ctx.lineWidth = 1;
   ctx.stroke();
 
@@ -55,10 +55,10 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   const qx = W - q - 12, qy = 10;
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(qx, qy, q, q);
-  ctx.strokeStyle = "#d4af55";
+  ctx.strokeStyle = "#B9975E";
   ctx.lineWidth = 2;
   ctx.strokeRect(qx, qy, q, q);
-  ctx.strokeStyle = "#d4af5570";
+  ctx.strokeStyle = "#B9975E70";
   ctx.lineWidth = 1;
   ctx.strokeRect(qx + 4, qy + 4, q - 8, q - 8);
   if (qrImg) {
@@ -71,15 +71,15 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
     const pixels = qrCtx.getImageData(0, 0, qrSize, qrSize);
     for (let i = 0; i < pixels.data.length; i += 4) {
       if (pixels.data[i] < 150 && pixels.data[i + 1] < 150 && pixels.data[i + 2] < 150) {
-        pixels.data[i] = 212;
-        pixels.data[i + 1] = 175;
-        pixels.data[i + 2] = 85;
+        pixels.data[i] = 185;
+        pixels.data[i + 1] = 151;
+        pixels.data[i + 2] = 94;
       }
     }
     qrCtx.putImageData(pixels, 0, 0);
     ctx.drawImage(qrCanvas, qx + 3, qy + 3);
   } else {
-    ctx.fillStyle = "#b08d47";
+    ctx.fillStyle = "#9E7C47";
     ctx.font = "600 12px sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("QR", qx + q / 2, qy + q / 2 + 4);
@@ -92,17 +92,17 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   ctx.fillStyle = "#f4eee2";
   ctx.font = "500 13px sans-serif";
   ctx.fillText("Encrypted verification ID", tx, signerName ? 30 : 32);
-  ctx.strokeStyle = "#d4af55";
+  ctx.strokeStyle = "#B9975E";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(tx, signerName ? 40 : 42);
   ctx.lineTo(tx + 96, signerName ? 40 : 42);
   ctx.stroke();
-  ctx.fillStyle = "#d4af55";
+  ctx.fillStyle = "#B9975E";
   ctx.font = "600 19px 'Courier New', monospace";
   ctx.fillText(sigId || "", tx, signerName ? 65 : 70);
   if (signerName) {
-    ctx.fillStyle = "#e3a13a";
+    ctx.fillStyle = "#C7AD76";
     ctx.font = "600 17px sans-serif";
     ctx.direction = "ltr";
     ctx.fillText(`${signerName}  —  ${new Date().toLocaleDateString("en-GB")}`, tx, 101);
