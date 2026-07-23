@@ -1,23 +1,7 @@
 import React from "react";
 
-function blockedIds(nodes, currentId) {
-  const blocked = new Set(currentId ? [currentId] : []);
-  let changed = true;
-  while (changed) {
-    changed = false;
-    nodes.forEach((node) => {
-      if (blocked.has(node.parentId) && !blocked.has(node.id)) {
-        blocked.add(node.id);
-        changed = true;
-      }
-    });
-  }
-  return blocked;
-}
-
 export default function OrgParentPicker({ nodes, employees, stations, currentId, value, onChange, ar }) {
-  const blocked = blockedIds(nodes, currentId);
-  const options = nodes.filter((node) => !blocked.has(node.id));
+  const options = nodes.filter((node) => node.id !== currentId);
   const labelFor = (node) => node.type === "station"
     ? stations.find((item) => item.id === node.refId)?.name
     : employees.find((item) => item.id === node.refId)?.name;

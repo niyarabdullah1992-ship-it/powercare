@@ -37,6 +37,19 @@ export function saveOrgNode(companyId, node, permissions = {}) {
   updateCompany(companyId, (data) => {
     data.orgTree = data.orgTree || [];
     const index = data.orgTree.findIndex((item) => item.id === node.id);
+    const current = data.orgTree[index];
+    const requestedParent = data.orgTree.find((item) => item.id === node.parentId);
+    let cursor = requestedParent;
+    while (current && cursor?.parentId) {
+      if (cursor.parentId === current.id) {
+        const previousParent = requestedParent.parentId || null;
+        requestedParent.parentId = current.parentId || null;
+        requestedParent.order = current.order;
+        renumber(data.orgTree, previousParent);
+        break;
+      }
+      cursor = data.orgTree.find((item) => item.id === cursor.parentId);
+    }
     if (index >= 0) data.orgTree[index] = node; else data.orgTree.push(node);
     renumber(data.orgTree, node.parentId);
     if (node.type === "employee") {
@@ -88,9 +101,21 @@ export function moveOrgNode(companyId, nodeId, targetId, mode) {
     const moving = nodes.find((node) => node.id === nodeId);
     const target = nodes.find((node) => node.id === targetId);
     if (!moving || !target || moving.id === target.id) return;
-    let cursor = target;
-    while (cursor?.parentId) { if (cursor.parentId === moving.id) return; cursor = nodes.find((node) => node.id === cursor.parentId); }
     const oldParent = moving.parentId || null;
+    let cursor = target;
+    let targetIsDescendant = false;
+    while (cursor?.parentId) {
+      if (cursor.parentId === moving.id) { targetIsDescendant = true; break; }
+      cursor = nodes.find((node) => node.id === cursor.parentId);
+    }
+    if (targetIsDescendant) {
+      if (mode !== "below" && mode !== "inside") return;
+      const targetOldParent = target.parentId || null;
+      target.parentId = oldParent;
+      target.order = moving.order;
+      renumber(nodes, targetOldParent);
+      renumber(nodes, oldParent);
+    }
     if (mode === "above") {
       const targetParent = target.parentId || null;
       moving.parentId = targetParent;
