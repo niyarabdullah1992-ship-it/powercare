@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { PenLine, Trash2, Keyboard, Fingerprint, Copy, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { updateEmployeeProfile } from "@/lib/store";
+import { makeSignatureStamp } from "@/lib/multiSignStamp";
 import SignaturePad from "./SignaturePad";
 import TypedSignature from "./TypedSignature";
 import RandomSignaturePicker from "./RandomSignaturePicker";
@@ -37,18 +38,22 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
 
-  const saveSignature = async (dataUrl, typedName) => {
+  const saveSignature = async (dataUrl, typedName, isRawSignature = false) => {
     setSaving(true);
     setError("");
     try {
-      const blob = dataUrlToBlob(dataUrl);
+      const sigId = await generateSignatureId(currentUser.id);
+      const signerName = typeof typedName === "string" ? typedName : currentUser.name;
+      const finalDataUrl = isRawSignature
+        ? await makeSignatureStamp(dataUrl, signerName, sigId)
+        : dataUrl;
+      const blob = dataUrlToBlob(finalDataUrl);
       const file = new File([blob], "signature.png", { type: "image/png" });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const sigId = await generateSignatureId(currentUser.id);
       const savedProfile = {
         signatureUrl: file_url,
         signatureId: sigId,
-        signatureName: typedName || currentUser.name,
+        signatureName: signerName,
         signatureUpdatedAt: new Date().toISOString(),
       };
       updateEmployeeProfile(companyId, currentUser.id, savedProfile);

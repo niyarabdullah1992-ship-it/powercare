@@ -8,22 +8,16 @@ import drawHeritageFingerprint from "@/lib/drawHeritageFingerprint";
 // will always fail verification (hash mismatch).
 export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureImg = null) {
   const scale = 2;
-  const W = 560, H = signatureImg ? 170 : signerName ? 128 : 96;
+  const W = signatureImg ? 640 : 560;
+  const H = signatureImg ? 210 : signerName ? 128 : 96;
   const canvas = document.createElement("canvas");
   canvas.width = W * scale;
   canvas.height = H * scale;
   const ctx = canvas.getContext("2d");
   ctx.scale(scale, scale);
 
-  // Rounded card
-  const r = 14;
   ctx.beginPath();
-  ctx.moveTo(r, 1);
-  ctx.arcTo(W - 1, 1, W - 1, H - 1, r);
-  ctx.arcTo(W - 1, H - 1, 1, H - 1, r);
-  ctx.arcTo(1, H - 1, 1, 1, r);
-  ctx.arcTo(1, 1, W - 1, 1, r);
-  ctx.closePath();
+  ctx.roundRect(1, 1, W - 2, H - 2, 15);
   ctx.fillStyle = "#13283d";
   ctx.fill();
   ctx.strokeStyle = "#C7AD76";
@@ -31,45 +25,65 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
   ctx.stroke();
   ctx.beginPath();
   ctx.roundRect(8, 8, W - 16, H - 16, 9);
-  ctx.strokeStyle = "#C7AD7699";
+  ctx.strokeStyle = "#C7AD7680";
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  // Quiet white waves add depth without competing with verification data.
-  ctx.save();
-  ctx.strokeStyle = "#ffffff14";
-  ctx.lineWidth = 1.2;
-  [48, 66, 84].forEach((y, index) => {
-    ctx.beginPath();
-    ctx.moveTo(102, y);
-    ctx.bezierCurveTo(190, y - 18 - index * 2, 310, y + 18, 438, y - 4);
-    ctx.stroke();
-  });
-  ctx.restore();
-
-  // Symmetrical heritage fingerprint inset safely from both frame lines.
-  drawHeritageFingerprint(ctx, 50, H / 2, signatureImg ? 66 : signerName ? 62 : 54);
-
   if (signatureImg) {
-    const maxWidth = 300, maxHeight = 50;
+    ctx.strokeStyle = "#C7AD7638";
+    ctx.beginPath();
+    ctx.moveTo(112, 18); ctx.lineTo(112, H - 18);
+    ctx.moveTo(492, 18); ctx.lineTo(492, H - 18);
+    ctx.stroke();
+    drawHeritageFingerprint(ctx, 58, H / 2, 76);
+
+    const tx = 132;
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#F4EEE2";
+    ctx.font = "500 12px sans-serif";
+    ctx.fillText("ENCRYPTED VERIFICATION ID", tx, 29);
+    ctx.strokeStyle = "#C7AD7660";
+    ctx.beginPath(); ctx.moveTo(tx, 39); ctx.lineTo(470, 39); ctx.stroke();
+
+    const maxWidth = 338, maxHeight = 76;
     const ratio = Math.min(maxWidth / signatureImg.width, maxHeight / signatureImg.height);
     const width = signatureImg.width * ratio, height = signatureImg.height * ratio;
-    ctx.drawImage(signatureImg, 116 + (maxWidth - width) / 2, 43 + (maxHeight - height) / 2, width, height);
+    ctx.drawImage(signatureImg, tx + (maxWidth - width) / 2, 48 + (maxHeight - height) / 2, width, height);
+
+    ctx.fillStyle = "#C7AD76";
+    ctx.font = "600 15px 'Courier New', monospace";
+    ctx.fillText(sigId || "PENDING", tx, 143);
+    ctx.strokeStyle = "#C7AD7638";
+    ctx.beginPath(); ctx.moveTo(tx, 157); ctx.lineTo(470, 157); ctx.stroke();
+    ctx.font = "600 16px sans-serif";
+    ctx.fillText(`${signerName || ""}  —  ${new Date().toLocaleDateString("en-GB")}`, tx, 183);
+  } else {
+    drawHeritageFingerprint(ctx, 50, H / 2, signerName ? 62 : 54);
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#F4EEE2";
+    ctx.font = "500 13px sans-serif";
+    ctx.fillText("Encrypted verification ID", 116, signerName ? 30 : 32);
+    ctx.fillStyle = "#C7AD76";
+    ctx.font = "600 19px 'Courier New', monospace";
+    ctx.fillText(sigId || "", 116, signerName ? 65 : 70);
+    if (signerName) {
+      ctx.font = "600 17px sans-serif";
+      ctx.fillText(`${signerName}  —  ${new Date().toLocaleDateString("en-GB")}`, 116, 101);
+    }
   }
 
-  // QR code box on the right side of the card
-  const q = signatureImg ? 108 : H - 20;
-  const qx = W - q - 12, qy = signatureImg ? 31 : 10;
-  ctx.fillStyle = "#ffffff";
+  const q = signatureImg ? 116 : H - 20;
+  const qx = W - q - 16, qy = signatureImg ? 47 : 10;
+  ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(qx, qy, q, q);
-  ctx.strokeStyle = "#B9975E";
+  ctx.strokeStyle = "#C7AD76";
   ctx.lineWidth = 2;
   ctx.strokeRect(qx, qy, q, q);
-  ctx.strokeStyle = "#B9975E70";
+  ctx.strokeStyle = "#C7AD7660";
   ctx.lineWidth = 1;
-  ctx.strokeRect(qx + 4, qy + 4, q - 8, q - 8);
+  ctx.strokeRect(qx + 5, qy + 5, q - 10, q - 10);
   if (qrImg) {
-    const qrSize = q - 6;
+    const qrSize = q - 8;
     const qrCanvas = document.createElement("canvas");
     qrCanvas.width = qrSize;
     qrCanvas.height = qrSize;
@@ -78,41 +92,16 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     const pixels = qrCtx.getImageData(0, 0, qrSize, qrSize);
     for (let i = 0; i < pixels.data.length; i += 4) {
       if (pixels.data[i] < 150 && pixels.data[i + 1] < 150 && pixels.data[i + 2] < 150) {
-        pixels.data[i] = 185;
-        pixels.data[i + 1] = 151;
-        pixels.data[i + 2] = 94;
+        pixels.data[i] = 185; pixels.data[i + 1] = 151; pixels.data[i + 2] = 94;
       }
     }
     qrCtx.putImageData(pixels, 0, 0);
-    ctx.drawImage(qrCanvas, qx + 3, qy + 3);
+    ctx.drawImage(qrCanvas, qx + 4, qy + 4);
   } else {
     ctx.fillStyle = "#9E7C47";
     ctx.font = "600 12px sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("QR", qx + q / 2, qy + q / 2 + 4);
-    ctx.textAlign = "left";
-  }
-
-  // Texts — aligned on a dedicated column with clear space from the fingerprint.
-  const tx = 116;
-  ctx.textAlign = "left";
-  ctx.fillStyle = "#f4eee2";
-  ctx.font = "500 13px sans-serif";
-  ctx.fillText("Encrypted verification ID", tx, signatureImg ? 28 : signerName ? 30 : 32);
-  ctx.strokeStyle = "#B9975E";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(tx, signatureImg ? 38 : signerName ? 40 : 42);
-  ctx.lineTo(tx + 96, signatureImg ? 38 : signerName ? 40 : 42);
-  ctx.stroke();
-  ctx.fillStyle = "#B9975E";
-  ctx.font = "600 19px 'Courier New', monospace";
-  ctx.fillText(sigId || "", tx, signatureImg ? 119 : signerName ? 65 : 70);
-  if (signerName) {
-    ctx.fillStyle = "#C7AD76";
-    ctx.font = "600 17px sans-serif";
-    ctx.direction = "ltr";
-    ctx.fillText(`${signerName}  —  ${new Date().toLocaleDateString("en-GB")}`, tx, signatureImg ? 154 : 101);
   }
   return canvas;
 }
