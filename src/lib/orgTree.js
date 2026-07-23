@@ -7,9 +7,14 @@ export const nodeAccess = (data, refId) => data?.smartPositions?.find((item) => 
 const renumber = (nodes, parentId) => nodes.filter((node) => (node.parentId || null) === (parentId || null)).sort((a, b) => a.order - b.order).forEach((node, index) => { node.order = index; });
 
 export function initializeOrgTree(companyId, data) {
-  if (Array.isArray(data?.orgTree)) return;
+  const existing = Array.isArray(data?.orgTree)
+    ? data.orgTree
+    : (data.smartPositions || []).map((position, order) => ({ id: `org_${position.employeeId}`, type: "employee", refId: position.employeeId, title: position.title || "", parentId: null, order }));
+  const stationIds = new Set(existing.filter((node) => node.type === "station").map((node) => node.refId));
+  const missingStations = (data.stations || []).filter((station) => !stationIds.has(station.id));
+  if (Array.isArray(data?.orgTree) && !missingStations.length) return;
   updateCompany(companyId, (draft) => {
-    draft.orgTree = (draft.smartPositions || []).map((position, order) => ({ id: `org_${position.employeeId}`, type: "employee", refId: position.employeeId, title: position.title || "", parentId: null, order }));
+    draft.orgTree = [...existing, ...missingStations.map((station, index) => ({ id: `org_station_${station.id}`, type: "station", refId: station.id, title: station.location || "", parentId: null, order: existing.length + index }))];
   });
 }
 
