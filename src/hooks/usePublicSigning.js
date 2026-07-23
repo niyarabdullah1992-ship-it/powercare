@@ -45,7 +45,8 @@ export default function usePublicSigning() {
 
   const setTextValue = (fieldId, value) => setTextValues((current) => ({ ...current, [fieldId]: value }));
 
-  const sign = async (sigDataUrl, isComposedStamp = false) => {
+  const sign = async (sigDataUrl, composedOrName = false, signatureStyle = "unique") => {
+    const isComposedStamp = composedOrName === true;
     const textFields = (info?.signer?.spots || []).filter((field) => field.type === "text");
     if (textFields.some((field) => !String(textValues[field.id] || "").trim())) { setError(ar ? "يرجى تعبئة جميع حقول النص قبل الإرسال." : "Complete every text field before submitting."); return; }
     setError(""); setSigning(true);
@@ -56,7 +57,7 @@ export default function usePublicSigning() {
       if (fresh.expiresAt && new Date(fresh.expiresAt).getTime() <= Date.now()) throw new Error(ar ? "انتهت صلاحية طلب التوقيع." : "This signature request has expired.");
       if (fresh.signer.status === "signed") throw new Error(ar ? "وقّعت هذا المستند مسبقًا." : "You already signed this document.");
       setStage(ar ? "جارٍ ختم توقيعك على المستند…" : "Stamping your signature…");
-      const stamp = isComposedStamp ? sigDataUrl : await makeSignatureStamp(sigDataUrl, fresh.signer.name, fresh.verificationId);
+      const stamp = isComposedStamp ? sigDataUrl : await makeSignatureStamp(sigDataUrl, fresh.signer.name, fresh.verificationId, signatureStyle);
       const fields = fresh.signer.spots || (fresh.signer.spot ? [{ ...fresh.signer.spot, id: "signature", type: "signature" }] : []);
       const signatureField = fields.find((field) => field.type === "signature") || fresh.signer.spot;
       const stamped = await stampOnPdf(fresh.docUrl, stamp, fresh.signedCount, null, signatureField, (signatureField?.scale || 100) / 100, true, fields, textValues);

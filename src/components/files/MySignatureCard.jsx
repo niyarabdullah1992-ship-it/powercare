@@ -31,6 +31,8 @@ function dataUrlToBlob(dataUrl) {
 export default function MySignatureCard({ companyId, currentUser, ar, onSaved }) {
   const [localSignature, setLocalSignature] = useState(null);
   const signatureUrl = localSignature?.signatureUrl ?? currentUser?.profile?.signatureUrl ?? "";
+  const signatureRawUrl = localSignature?.signatureRawUrl ?? currentUser?.profile?.signatureRawUrl ?? "";
+  const signatureVariant = localSignature?.signatureVariant ?? currentUser?.profile?.signatureVariant ?? "unique";
   const signatureId = localSignature?.signatureId ?? currentUser?.profile?.signatureId ?? "";
   const [editing, setEditing] = useState(!signatureUrl);
   const [mode, setMode] = useState("draw"); // "type" | "draw" | "random"
@@ -47,11 +49,18 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
       const finalDataUrl = signatureStyle !== "composed"
         ? await makeSignatureStamp(dataUrl, signerName, sigId, signatureStyle)
         : dataUrl;
-      const blob = dataUrlToBlob(finalDataUrl);
-      const file = new File([blob], "signature.png", { type: "image/png" });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const finalFile = new File([dataUrlToBlob(finalDataUrl)], "signature.png", { type: "image/png" });
+      const rawFile = signatureStyle !== "composed"
+        ? new File([dataUrlToBlob(dataUrl)], "signature-original.png", { type: "image/png" })
+        : null;
+      const [finalUpload, rawUpload] = await Promise.all([
+        base44.integrations.Core.UploadFile({ file: finalFile }),
+        rawFile ? base44.integrations.Core.UploadFile({ file: rawFile }) : Promise.resolve(null),
+      ]);
       const savedProfile = {
-        signatureUrl: file_url,
+        signatureUrl: finalUpload.file_url,
+        signatureRawUrl: rawUpload?.file_url || "",
+        signatureVariant: signatureStyle,
         signatureId: sigId,
         signatureName: signerName,
         signatureUpdatedAt: new Date().toISOString(),
@@ -95,7 +104,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
             </button>
             <button
               onClick={() => {
-                const cleared = { signatureUrl: "", signatureId: "" };
+                const cleared = { signatureUrl: "", signatureRawUrl: "", signatureVariant: "", signatureId: "" };
                 updateEmployeeProfile(companyId, currentUser.id, cleared);
                 setLocalSignature(cleared);
                 onSaved?.(cleared);
@@ -152,7 +161,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
         </div>
       )}
     </div>
-    {signatureUrl && !editing && <SelfSignDocumentCard signatureUrl={signatureUrl} currentUser={currentUser} companyId={companyId} ar={ar} />}
+    {signatureUrl && !editing && <SelfSignDocumentCard signatureUrl={signatureUrl} signatureRawUrl={signatureRawUrl} signatureVariant={signatureVariant} currentUser={currentUser} companyId={companyId} ar={ar} />}
     </div>
   );
 }

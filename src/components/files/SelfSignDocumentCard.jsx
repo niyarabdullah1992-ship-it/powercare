@@ -7,7 +7,7 @@ import { generateVerificationId, loadBadgeQr } from "@/lib/verificationBadge";
 import { sha256HexOfBuffer } from "@/lib/fileHash";
 import MultiSignPlacementModal from "@/components/files/MultiSignPlacementModal";
 
-export default function SelfSignDocumentCard({ signatureUrl, currentUser, companyId, ar }) {
+export default function SelfSignDocumentCard({ signatureUrl, signatureRawUrl, signatureVariant, currentUser, companyId, ar }) {
   const inputRef = useRef(null);
   const [file, setFile] = useState(null);
   const [signing, setSigning] = useState(false);
@@ -44,7 +44,7 @@ export default function SelfSignDocumentCard({ signatureUrl, currentUser, compan
     try {
       const signerName = currentUser?.profile?.signatureName || currentUser?.name || "";
       const qr = await loadBadgeQr(verificationId);
-      const { bytes } = await signPdfFile(sourceUrl, signatureUrl, signerName, verificationId, signatureField, qr, (signatureField.scale || 100) / 100, false, fields, textValues);
+      const { bytes } = await signPdfFile(sourceUrl, signatureRawUrl || null, signerName, verificationId, signatureField, qr, (signatureField.scale || 100) / 100, false, fields, textValues, signatureVariant);
       const fileHash = await sha256HexOfBuffer(bytes);
       await base44.functions.invoke("signedDocs", { action: "register", verificationId, fileHash, signerName, signerId: currentUser.id, companyId, sessionToken: getCompanyToken(companyId), fileName: file.name });
       const outputName = `${file.name.replace(/\.pdf$/i, "")}-signed.pdf`;
