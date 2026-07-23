@@ -40,7 +40,7 @@ export function createOrgRecord(companyId, record, permissions = {}) {
     const order = data.orgTree.filter((node) => !node.parentId).length;
     if (record.type === "station") {
       const id = `st_${Math.random().toString(36).slice(2, 9)}`;
-      data.stations.push({ id, name: record.name.trim(), location: record.location.trim(), type: record.stationType.trim(), status: "active", managerId: null, createdAt: new Date().toISOString() });
+      data.stations.push({ id, name: record.name.trim(), location: record.location.trim(), type: record.stationType.trim(), status: "active", managerId: null, lat: record.lat ?? null, lng: record.lng ?? null, radiusMeters: record.radiusMeters ?? 200, createdAt: new Date().toISOString() });
       data.orgTree.push({ id: `org_station_${id}`, type: "station", refId: id, title: record.stationType.trim() || record.location.trim(), parentId: null, order });
       return;
     }
@@ -50,6 +50,13 @@ export function createOrgRecord(companyId, record, permissions = {}) {
     const score = scorePermissions(permissions);
     data.smartPositions = data.smartPositions || [];
     data.smartPositions.push({ employeeId: id, title: record.title, titleManual: true, permissions, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() });
+  });
+}
+
+export function saveOrgStationLocation(companyId, stationId, location) {
+  updateCompany(companyId, (data) => {
+    const station = (data.stations || []).find((item) => item.id === stationId);
+    if (station) Object.assign(station, location);
   });
 }
 
