@@ -11,7 +11,7 @@ import HRFullHierarchyMap from "@/components/hr/HRFullHierarchyMap";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
 import GradeEmployeeFilter from "@/components/hr/GradeEmployeeFilter";
 import HROrgTree from "@/components/hr/HROrgTree";
-import SmartPositionTree from "@/components/hr/SmartPositionTree";
+import FlexOrgTree from "@/components/hr/FlexOrgTree";
 import ComplaintEscalationEditor from "@/components/hr/ComplaintEscalationEditor";
 
 export default function HRStructureManagement() {
@@ -56,7 +56,7 @@ export default function HRStructureManagement() {
         <p className="text-muted-foreground font-body text-sm mt-1">{t("hrPageNote")}</p>
       </div>
 
-      <SmartPositionTree data={data} company={company} currentUser={currentUser} lang={lang} />
+      <FlexOrgTree data={data} company={company} currentUser={currentUser} lang={lang} />
       <ComplaintEscalationEditor data={data} companyId={company.id} canManage={canManage} lang={lang} />
       <HROrgTree data={data} company={company} currentUser={currentUser} lang={lang} />
 

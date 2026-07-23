@@ -1,9 +1,0 @@
-import React from "react";
-import { GripVertical } from "lucide-react";
-import { SMART_DEPARTMENTS, rankLabel } from "@/lib/smartPositions";
-
-const STYLES = { executive: "w-72 border-accent bg-primary p-5 text-primary-foreground shadow-elevated", manager: "w-64 border-accent/70 bg-primary/90 p-4 text-primary-foreground shadow-lg", supervisor: "w-60 border-accent/45 bg-card p-3.5 text-foreground shadow-md", employee: "w-56 border-border bg-card p-3 text-foreground shadow-sm" };
-
-export default function SmartPositionCard({ position, employee, ar, onClick, canDrag }) {
-  return <button type="button" onClick={onClick} className={`rounded-xl border text-start transition hover:-translate-y-0.5 hover:shadow-lg ${STYLES[position.rank]}`}><span className="flex items-start justify-between gap-3"><span className="min-w-0"><span className="flex items-center gap-1"><span className="block truncate font-heading text-lg font-semibold">{employee.name}</span>{canDrag && <GripVertical className="h-4 w-4 shrink-0 opacity-45" />}</span><span className={`mt-0.5 block text-xs ${["executive", "manager"].includes(position.rank) ? "text-primary-foreground/75" : "text-muted-foreground"}`}>{position.title}</span></span><span className="rounded-full bg-accent/20 px-2 py-1 text-[9px] font-bold text-accent">{position.score} · {rankLabel(position.rank, ar)}</span></span><span className="mt-3 flex flex-wrap gap-1">{SMART_DEPARTMENTS.filter((department) => position.permissions?.[department.id]).map((department) => <span key={department.id} className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold ${department.badge}`}>{ar ? department.ar : department.en}</span>)}</span></button>;
-}

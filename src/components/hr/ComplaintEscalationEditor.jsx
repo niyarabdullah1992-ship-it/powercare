@@ -5,7 +5,10 @@ import { updateCompany } from "@/lib/store";
 
 export default function ComplaintEscalationEditor({ data, companyId, canManage, lang }) {
   const ar = lang === "ar";
-  const eligible = useMemo(() => (data.smartPositions || []).filter((p) => p.permissions?.complaints === "manage").map((p) => ({ ...p, employee: data.employees.find((e) => e.id === p.employeeId) })).filter((p) => p.employee), [data.smartPositions, data.employees]);
+  const eligible = useMemo(() => (data.orgTree || []).filter((node) => node.type === "employee").map((node) => {
+    const access = (data.smartPositions || []).find((position) => position.employeeId === node.refId);
+    return { employeeId: node.refId, title: node.title, permissions: access?.permissions || {}, employee: data.employees.find((employee) => employee.id === node.refId) };
+  }).filter((item) => item.employee && item.permissions.complaints === "manage"), [data.orgTree, data.smartPositions, data.employees]);
   const [chain, setChain] = useState(data.complaintEscalationChain || []);
   const [selected, setSelected] = useState("");
   useEffect(() => setChain((data.complaintEscalationChain || []).filter((id) => eligible.some((p) => p.employeeId === id))), [data.complaintEscalationChain, eligible]);

@@ -5,8 +5,9 @@ import { groupLevelsByOrder, levelName } from "./hrLevels";
 
 const escalationGroups = (data) => groupLevelsByOrder(data?.hrLevels || []).filter((group) => group.manager?.active !== false);
 const manualChain = (data) => (data?.complaintEscalationChain || []).map((id) => {
-  const position = data.smartPositions?.find((item) => item.employeeId === id);
-  return position?.permissions?.complaints === "manage" ? data.employees?.find((employee) => employee.id === id) : null;
+  const node = data.orgTree?.find((item) => item.type === "employee" && item.refId === id);
+  const access = data.smartPositions?.find((item) => item.employeeId === id);
+  return node && access?.permissions?.complaints === "manage" ? data.employees?.find((employee) => employee.id === id) : null;
 }).filter(Boolean);
 
 export const escalationStageCount = (data) => escalationGroups(data).length + 1;
@@ -45,8 +46,8 @@ export function complaintLevelLabel(levelIdx, data, t, lang) {
   const manual = manualChain(data);
   if (!manual.length) return levelLabel(levelIdx, data, t, lang);
   const employee = manual[levelIdx];
-  const position = data.smartPositions?.find((item) => item.employeeId === employee?.id);
-  return employee ? `${employee.name}${position?.title ? ` — ${position.title}` : ""}` : "";
+  const node = data.orgTree?.find((item) => item.type === "employee" && item.refId === employee?.id);
+  return employee ? `${employee.name}${node?.title ? ` — ${node.title}` : ""}` : "";
 }
 
 export const hasHandlerAtLevel = (levelIdx, r, data) => handlersForLevel(levelIdx, r, data).length > 0;
