@@ -3,7 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
-import { handlersForLevel, hasHandlerAtLevel, levelLabel, escalationStageCount } from "@/lib/escalation";
+import { complaintHandlersForLevel, complaintHasHandlerAtLevel, complaintLevelLabel, complaintEscalationStageCount, isManualComplaintHandler, usesManualComplaintEscalation } from "@/lib/escalation";
 import { formatDateTime } from "@/lib/dateFormat";
 import { Megaphone, Send, Building2, CheckCircle2, ChevronRight, ArrowLeft, X as XIcon, ArrowUpCircle } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
@@ -30,11 +30,12 @@ export default function PublicComplaints() {
 
   if (!data || !currentUser) return null;
   const reportsList = data.publicReports || [];
-  const STAGE_COUNT = escalationStageCount(data);
-  const canAct = hasHRPermission(currentUser, data, "manage_anonymous_reports");
-  const canView = hasHRPermission(currentUser, data, "view_anonymous_reports");
+  const STAGE_COUNT = complaintEscalationStageCount(data);
+  const manualHandler = isManualComplaintHandler(currentUser, data);
+  const canAct = manualHandler || hasHRPermission(currentUser, data, "manage_anonymous_reports");
+  const canView = manualHandler || hasHRPermission(currentUser, data, "view_anonymous_reports");
   const isHRStaff = canAct || canView;
-  const hrStations = isHRStaff ? hrScopeStations(currentUser, data) : [];
+  const hrStations = manualHandler ? null : isHRStaff ? hrScopeStations(currentUser, data) : [];
   const isOwner = currentUser.id === data.ownerId;
   const isStaff = isHRStaff || currentUser.role === "director" || currentUser.role === "ops_manager" || currentUser.role === "station_manager" || isOwner;
   const myReports = reportsList.filter((r) => r.authorId === currentUser.id);
@@ -52,11 +53,11 @@ export default function PublicComplaints() {
     return false;
   });
 
-  const currentHandlerLabel = (r) => levelLabel(r.escalationLevel || 0, data, t, lang);
+  const currentHandlerLabel = (r) => complaintLevelLabel(r.escalationLevel || 0, data, t, lang);
   const canReplyTo = (r) => {
     const level = r.escalationLevel || 0;
-    if (!handlersForLevel(level, r, data).some((h) => h.id === currentUser.id)) return false;
-    return level === 0 ? true : canAct;
+    if (!complaintHandlersForLevel(level, r, data).some((h) => h.id === currentUser.id)) return false;
+    return usesManualComplaintEscalation(data) ? true : level === 0 ? true : canAct;
   };
   const isAtTop = (r) => (r.escalationLevel || 0) >= STAGE_COUNT - 1;
 
@@ -64,7 +65,7 @@ export default function PublicComplaints() {
     e.preventDefault();
     if (!message.trim()) return;
     const draft = { stationId: currentUser.stationId || null };
-    const initialLevel = Array.from({ length: STAGE_COUNT }).findIndex((_, level) => handlersForLevel(level, draft, data).length > 0);
+    const initialLevel = Array.from({ length: STAGE_COUNT }).findIndex((_, level) => complaintHandlersForLevel(level, draft, data).length > 0);
     if (initialLevel < 0) {
       alert(t("noHandlerAssigned"));
       return;
@@ -83,7 +84,7 @@ export default function PublicComplaints() {
       });
     });
     const station = data.stations.find((s) => s.id === currentUser.stationId);
-    const initialHandlers = handlersForLevel(initialLevel, draft, data);
+    const initialHandlers = complaintHandlersForLevel(initialLevel, draft, data);
     for (const handler of initialHandlers) addNotification(company.id, handler.id, `${currentUser.name} filed a new ${t(type)} at ${station?.name || ""} (${t(priority)}).`);
     setMessage("");
     setFiles([]);
@@ -123,11 +124,11 @@ export default function PublicComplaints() {
     if (!isAuthorAppeal && (rep.status !== "open" || !canReplyTo(rep))) return;
     const nextLevel = (rep.escalationLevel || 0) + 1;
     if (nextLevel >= STAGE_COUNT) return;
-    if (!hasHandlerAtLevel(nextLevel, rep, data)) {
+    if (!complaintHasHandlerAtLevel(nextLevel, rep, data)) {
       alert(t("noHandlerAssigned"));
       return;
     }
-    const nextHandlers = handlersForLevel(nextLevel, rep, data);
+    const nextHandlers = complaintHandlersForLevel(nextLevel, rep, data);
     updateCompany(company.id, (d) => {
       const r = (d.publicReports || []).find((x) => x.id === id);
       if (r) { r.escalationLevel = nextLevel; r.status = "open"; r.resolution = null; }
@@ -142,7 +143,7 @@ export default function PublicComplaints() {
         const replyAtLevel = (r.replies || []).find((rp) => rp.level === idx);
         const isCurrent = (r.escalationLevel || 0) === idx;
         const isPast = (r.escalationLevel || 0) > idx;
-        const label = levelLabel(idx, data, t, lang);
+        const label = complaintLevelLabel(idx, data, t, lang);
         return (
           <div key={idx} className={`flex items-start gap-2 text-xs font-body ${isPast ? "opacity-50" : ""}`}>
             <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${replyAtLevel ? "bg-accent text-accent-foreground" : isCurrent ? "bg-amber-100 text-amber-700 border border-amber-300" : "bg-muted text-muted-foreground"}`}>

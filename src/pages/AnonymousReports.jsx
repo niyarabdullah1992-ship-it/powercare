@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { updateCompany, addNotification, getCompanyToken, setAnonRateLimits } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations, canManageStations } from "@/lib/permissions";
-import { handlersForLevel, hasHandlerAtLevel, levelLabel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
+import { complaintHandlersForLevel, complaintHasHandlerAtLevel, complaintLevelLabel, buildComplaintEscalationSteps, complaintEscalationStageCount, isManualComplaintHandler, usesManualComplaintEscalation } from "@/lib/escalation";
 import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, ChevronRight, ArrowLeft, X as XIcon } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import FlowSwipeAction from "@/components/flow/FlowSwipeAction";
@@ -41,11 +41,12 @@ export default function AnonymousReports() {
   }, [company?.id, currentUser?.id]);
 
   if (!data || !currentUser) return null;
-  const STAGE_COUNT = escalationStageCount(data);
-  const canAct = hasHRPermission(currentUser, data, "manage_anonymous_reports");
-  const canView = hasHRPermission(currentUser, data, "view_anonymous_reports");
+  const STAGE_COUNT = complaintEscalationStageCount(data);
+  const manualHandler = isManualComplaintHandler(currentUser, data);
+  const canAct = manualHandler || hasHRPermission(currentUser, data, "manage_anonymous_reports");
+  const canView = manualHandler || hasHRPermission(currentUser, data, "view_anonymous_reports");
   const isHRAnon = canAct || canView;
-  const hrStations = isHRAnon ? hrScopeStations(currentUser, data) : [];
+  const hrStations = manualHandler ? null : isHRAnon ? hrScopeStations(currentUser, data) : [];
   const isOwner = currentUser.id === data.ownerId;
   const isStaff = isHRAnon || currentUser.role === "director" || currentUser.role === "ops_manager" || currentUser.role === "station_manager" || isOwner;
   const myAnon = data.anonymousReports.filter((report) => ownReportIds.includes(report.id));
@@ -88,11 +89,11 @@ export default function AnonymousReports() {
     return false;
   });
 
-  const currentHandlerLabel = (r) => levelLabel(r.escalationLevel || 0, data, t, lang);
+  const currentHandlerLabel = (r) => complaintLevelLabel(r.escalationLevel || 0, data, t, lang);
   const canReplyTo = (r) => {
     const level = r.escalationLevel || 0;
-    if (!handlersForLevel(level, r, data).some((h) => h.id === currentUser.id)) return false;
-    return level === 0 ? true : canAct;
+    if (!complaintHandlersForLevel(level, r, data).some((h) => h.id === currentUser.id)) return false;
+    return usesManualComplaintEscalation(data) ? true : level === 0 ? true : canAct;
   };
   const isAtTop = (r) => (r.escalationLevel || 0) >= STAGE_COUNT - 1;
   const isConfidentialHidden = (r) => r.confidential && r.confidentialBy !== currentUser.id;
@@ -120,7 +121,7 @@ export default function AnonymousReports() {
     }
     if (usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit) return;
     const draft = { stationId: assignedStation.id };
-    const initialLevel = Array.from({ length: STAGE_COUNT }).findIndex((_, level) => handlersForLevel(level, draft, data).length > 0);
+    const initialLevel = Array.from({ length: STAGE_COUNT }).findIndex((_, level) => complaintHandlersForLevel(level, draft, data).length > 0);
     if (initialLevel < 0) {
       alert(t("noHandlerAssigned"));
       return;
@@ -148,7 +149,7 @@ export default function AnonymousReports() {
       sessionToken: getCompanyToken(company.id),
     });
     const station = assignedStation;
-    const initialHandlers = handlersForLevel(initialLevel, draft, data);
+    const initialHandlers = complaintHandlersForLevel(initialLevel, draft, data);
     for (const handler of initialHandlers) addNotification(company.id, handler.id, `New ${t(type)} report at ${station?.name || ""} (${t(priority)}).`);
     setMessage("");
     setFiles([]);
@@ -194,11 +195,11 @@ export default function AnonymousReports() {
     if (!isAuthorAppeal && (rep.status !== "open" || !canReplyTo(rep))) return;
     const nextLevel = (rep.escalationLevel || 0) + 1;
     if (nextLevel >= STAGE_COUNT) return;
-    if (!hasHandlerAtLevel(nextLevel, rep, data)) {
+    if (!complaintHasHandlerAtLevel(nextLevel, rep, data)) {
       alert(t("noHandlerAssigned"));
       return;
     }
-    const nextHandlers = handlersForLevel(nextLevel, rep, data);
+    const nextHandlers = complaintHandlersForLevel(nextLevel, rep, data);
     updateCompany(company.id, (d) => {
       const r = d.anonymousReports.find((x) => x.id === id);
       if (r) { r.escalationLevel = nextLevel; r.status = "open"; r.resolution = null; }
@@ -208,7 +209,7 @@ export default function AnonymousReports() {
 
   // Escalation ladder showing each level, its reply (if any), and whether anyone is assigned to it
   const renderTimeline = (r) => {
-    const steps = buildEscalationSteps(r.escalationLevel || 0, r, data, t, lang, STAGE_COUNT).map((s) => ({
+    const steps = buildComplaintEscalationSteps(r.escalationLevel || 0, r, data, t, lang, STAGE_COUNT).map((s) => ({
       ...s,
       reply: (r.replies || []).find((rp) => rp.level === s.idx) || null,
     }));

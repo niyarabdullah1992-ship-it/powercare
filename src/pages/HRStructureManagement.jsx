@@ -12,6 +12,7 @@ import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
 import GradeEmployeeFilter from "@/components/hr/GradeEmployeeFilter";
 import HROrgTree from "@/components/hr/HROrgTree";
 import SmartPositionTree from "@/components/hr/SmartPositionTree";
+import ComplaintEscalationEditor from "@/components/hr/ComplaintEscalationEditor";
 
 export default function HRStructureManagement() {
   const { t, dir, lang } = useI18n();
@@ -56,6 +57,7 @@ export default function HRStructureManagement() {
       </div>
 
       <SmartPositionTree data={data} company={company} currentUser={currentUser} lang={lang} />
+      <ComplaintEscalationEditor data={data} companyId={company.id} canManage={canManage} lang={lang} />
       <HROrgTree data={data} company={company} currentUser={currentUser} lang={lang} />
 
       <EscalationInfoBox t={t} />

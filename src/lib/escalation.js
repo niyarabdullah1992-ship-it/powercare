@@ -4,15 +4,20 @@
 import { groupLevelsByOrder, levelName } from "./hrLevels";
 
 const escalationGroups = (data) => groupLevelsByOrder(data?.hrLevels || []).filter((group) => group.manager?.active !== false);
+const manualChain = (data) => (data?.complaintEscalationChain || []).map((id) => {
+  const position = data.smartPositions?.find((item) => item.employeeId === id);
+  return position?.permissions?.complaints === "manage" ? data.employees?.find((employee) => employee.id === id) : null;
+}).filter(Boolean);
+
 export const escalationStageCount = (data) => escalationGroups(data).length + 1;
+export const complaintEscalationStageCount = (data) => manualChain(data).length || escalationStageCount(data);
+export const usesManualComplaintEscalation = (data) => manualChain(data).length > 0;
+export const isManualComplaintHandler = (employee, data) => manualChain(data).some((handler) => handler.id === employee?.id);
 
 export function handlersForLevel(levelIdx, r, data) {
-  if (levelIdx === 0) {
-    return data.employees.filter((e) => e.role === "station_manager" && (e.stationId === r.stationId || (e.managedStations || []).includes(r.stationId)));
-  }
-  const groups = escalationGroups(data);
-  const group = groups[levelIdx - 1];
-  if (!group || !group.manager) return [];
+  if (levelIdx === 0) return data.employees.filter((e) => e.role === "station_manager" && (e.stationId === r.stationId || (e.managedStations || []).includes(r.stationId)));
+  const group = escalationGroups(data)[levelIdx - 1];
+  if (!group?.manager) return [];
   return data.employees.filter((e) => {
     if (e.hrLevelId !== group.manager.id) return false;
     if (group.manager.stationIds?.length && !group.manager.stationIds.includes(r.stationId)) return false;
@@ -25,27 +30,32 @@ export function handlersForLevel(levelIdx, r, data) {
   });
 }
 
+export function complaintHandlersForLevel(levelIdx, r, data) {
+  const manual = manualChain(data);
+  return manual.length ? (manual[levelIdx] ? [manual[levelIdx]] : []) : handlersForLevel(levelIdx, r, data);
+}
+
 export function levelLabel(levelIdx, data, t, lang) {
   if (levelIdx === 0) return t("stationManager");
-  const groups = escalationGroups(data);
-  const group = groups[levelIdx - 1];
-  if (!group) return "";
-  return levelName(group.manager || group.assistant, lang);
+  const group = escalationGroups(data)[levelIdx - 1];
+  return group ? levelName(group.manager || group.assistant, lang) : "";
 }
 
-// Whether anyone is actually assigned to handle a given escalation level right now —
-// surfaces the "gap" case where a level exists but no employee holds that position.
-export function hasHandlerAtLevel(levelIdx, r, data) {
-  return handlersForLevel(levelIdx, r, data).length > 0;
+export function complaintLevelLabel(levelIdx, data, t, lang) {
+  const manual = manualChain(data);
+  if (!manual.length) return levelLabel(levelIdx, data, t, lang);
+  const employee = manual[levelIdx];
+  const position = data.smartPositions?.find((item) => item.employeeId === employee?.id);
+  return employee ? `${employee.name}${position?.title ? ` — ${position.title}` : ""}` : "";
 }
 
-// Builds the full escalation ladder (station manager → every HR tier) for display,
-// so complaints and task-rejection disputes can show the exact same visual chain.
+export const hasHandlerAtLevel = (levelIdx, r, data) => handlersForLevel(levelIdx, r, data).length > 0;
+export const complaintHasHandlerAtLevel = (levelIdx, r, data) => complaintHandlersForLevel(levelIdx, r, data).length > 0;
+
 export function buildEscalationSteps(currentLevel, r, data, t, lang, stageCount) {
-  return Array.from({ length: stageCount }).map((_, idx) => ({
-    idx,
-    label: levelLabel(idx, data, t, lang),
-    hasHandler: hasHandlerAtLevel(idx, r, data),
-    state: idx < currentLevel ? "done" : idx === currentLevel ? "current" : "pending",
-  }));
+  return Array.from({ length: stageCount }).map((_, idx) => ({ idx, label: levelLabel(idx, data, t, lang), hasHandler: hasHandlerAtLevel(idx, r, data), state: idx < currentLevel ? "done" : idx === currentLevel ? "current" : "pending" }));
+}
+
+export function buildComplaintEscalationSteps(currentLevel, r, data, t, lang, stageCount) {
+  return Array.from({ length: stageCount }).map((_, idx) => ({ idx, label: complaintLevelLabel(idx, data, t, lang), hasHandler: complaintHasHandlerAtLevel(idx, r, data), state: idx < currentLevel ? "done" : idx === currentLevel ? "current" : "pending" }));
 }
