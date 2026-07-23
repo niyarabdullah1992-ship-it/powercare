@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { PenLine, Trash2, Keyboard, Fingerprint, Copy, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { updateEmployeeProfile } from "@/lib/store";
@@ -39,6 +39,17 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [refreshedPreview, setRefreshedPreview] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    setRefreshedPreview("");
+    if (!signatureRawUrl || !signatureId || signatureVariant === "composed") return () => { active = false; };
+    const signerName = currentUser?.profile?.signatureName || currentUser?.name || "";
+    makeSignatureStamp(signatureRawUrl, signerName, signatureId, signatureVariant)
+      .then((preview) => { if (active) setRefreshedPreview(preview); });
+    return () => { active = false; };
+  }, [signatureRawUrl, signatureId, signatureVariant, currentUser?.profile?.signatureName, currentUser?.name]);
 
   const saveSignature = async (dataUrl, typedName, signatureStyle = "composed") => {
     setSaving(true);
@@ -95,8 +106,8 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
       </p>
       {!editing && signatureUrl ? (
         <div className="space-y-3">
-          <div className={`w-full bg-white rounded-lg border border-border p-2 flex items-center justify-center ${signatureVariant === "unique" ? "aspect-[3/1] max-w-2xl" : ""}`}>
-            <img src={signatureUrl} alt="signature" className={signatureVariant === "unique" ? "h-full w-full object-contain" : "h-20 max-w-full object-contain"} />
+          <div className={`w-full bg-white rounded-lg border border-border p-2 flex items-center justify-center ${signatureRawUrl ? "aspect-[3/1] max-w-2xl" : ""}`}>
+            <img src={refreshedPreview || signatureUrl} alt="signature" className={signatureRawUrl ? "h-full w-full object-contain" : "h-20 max-w-full object-contain"} />
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setEditing(true)} className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-primary-foreground/25 px-5 py-2 text-xs font-bold hover:bg-primary-foreground/10 whitespace-nowrap">
