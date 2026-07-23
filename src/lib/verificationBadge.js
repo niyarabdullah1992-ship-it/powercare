@@ -10,7 +10,7 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
   const scale = 2;
   const typedLayout = Boolean(signatureImg && variant === "typed");
   const W = signatureImg ? 640 : 560;
-  const H = signatureImg ? 210 : signerName ? 128 : 96;
+  const H = signatureImg ? 150 : signerName ? 128 : 96;
   const canvas = document.createElement("canvas");
   canvas.width = W * scale;
   canvas.height = H * scale;
@@ -33,8 +33,8 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
   if (signatureImg && typedLayout) {
     ctx.strokeStyle = "#C7AD7638";
     ctx.beginPath();
-    ctx.moveTo(112, 18); ctx.lineTo(112, H - 18);
-    ctx.moveTo(492, 18); ctx.lineTo(492, H - 18);
+    ctx.moveTo(112, 10); ctx.lineTo(112, H - 10);
+    ctx.moveTo(492, 10); ctx.lineTo(492, H - 10);
     ctx.stroke();
     drawHeritageFingerprint(ctx, 58, H / 2, 76);
 
@@ -42,26 +42,25 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.textAlign = "left";
     ctx.fillStyle = "#F4EEE2";
     ctx.font = "500 12px sans-serif";
-    ctx.fillText("ENCRYPTED VERIFICATION ID", tx, 29);
+    ctx.fillText("ENCRYPTED VERIFICATION ID", tx, 20);
     ctx.strokeStyle = "#C7AD7660";
-    ctx.beginPath(); ctx.moveTo(tx, 39); ctx.lineTo(470, 39); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx, 29); ctx.lineTo(470, 29); ctx.stroke();
 
     ctx.fillStyle = "#C7AD76";
     ctx.font = "600 15px 'Courier New', monospace";
-    ctx.fillText(sigId || "PENDING", tx, 68);
+    ctx.fillText(sigId || "PENDING", tx, 50);
     ctx.strokeStyle = "#C7AD7638";
-    ctx.beginPath(); ctx.moveTo(tx, 82); ctx.lineTo(470, 82); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx, 61); ctx.lineTo(470, 61); ctx.stroke();
 
-    const maxWidth = 338, maxHeight = 66;
+    const maxWidth = 338, maxHeight = 58;
     const ratio = Math.min(maxWidth / signatureImg.width, maxHeight / signatureImg.height);
     const width = signatureImg.width * ratio, height = signatureImg.height * ratio;
-    const qrCenterY = 47 + 116 / 2;
-    ctx.drawImage(signatureImg, tx, qrCenterY - height / 2, width, height);
+    ctx.drawImage(signatureImg, tx, H / 2 - height / 2, width, height);
   } else if (signatureImg) {
     ctx.strokeStyle = "#C7AD7638";
     ctx.beginPath();
-    ctx.moveTo(112, 18); ctx.lineTo(112, H - 18);
-    ctx.moveTo(492, 18); ctx.lineTo(492, H - 18);
+    ctx.moveTo(112, 10); ctx.lineTo(112, H - 10);
+    ctx.moveTo(492, 10); ctx.lineTo(492, H - 10);
     ctx.stroke();
     drawHeritageFingerprint(ctx, 58, H / 2, 76);
 
@@ -69,22 +68,22 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.textAlign = "left";
     ctx.fillStyle = "#F4EEE2";
     ctx.font = "500 12px sans-serif";
-    ctx.fillText("ENCRYPTED VERIFICATION ID", tx, 29);
+    ctx.fillText("ENCRYPTED VERIFICATION ID", tx, 20);
     ctx.strokeStyle = "#C7AD7660";
-    ctx.beginPath(); ctx.moveTo(tx, 39); ctx.lineTo(470, 39); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx, 29); ctx.lineTo(470, 29); ctx.stroke();
 
-    const maxWidth = 338, maxHeight = 76;
+    const maxWidth = 338, maxHeight = 48;
     const ratio = Math.min(maxWidth / signatureImg.width, maxHeight / signatureImg.height);
     const width = signatureImg.width * ratio, height = signatureImg.height * ratio;
-    ctx.drawImage(signatureImg, tx + (maxWidth - width) / 2, 48 + (maxHeight - height) / 2, width, height);
+    ctx.drawImage(signatureImg, tx + (maxWidth - width) / 2, 35 + (48 - height) / 2, width, height);
 
     ctx.fillStyle = "#C7AD76";
     ctx.font = "600 15px 'Courier New', monospace";
-    ctx.fillText(sigId || "PENDING", tx, 143);
+    ctx.fillText(sigId || "PENDING", tx, 103);
     ctx.strokeStyle = "#C7AD7638";
-    ctx.beginPath(); ctx.moveTo(tx, 157); ctx.lineTo(470, 157); ctx.stroke();
-    ctx.font = "600 16px sans-serif";
-    ctx.fillText(`${signerName || ""}  —  ${new Date().toLocaleDateString("en-GB")}`, tx, 183);
+    ctx.beginPath(); ctx.moveTo(tx, 112); ctx.lineTo(470, 112); ctx.stroke();
+    ctx.font = "600 14px sans-serif";
+    ctx.fillText(`${signerName || ""}  —  ${new Date().toLocaleDateString("en-GB")}`, tx, 134);
   } else {
     drawHeritageFingerprint(ctx, 50, H / 2, signerName ? 62 : 54);
     ctx.textAlign = "left";
@@ -102,7 +101,7 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
 
   const q = signatureImg ? 116 : H - 20;
   const qx = W - q - 16;
-  const qy = signatureImg ? 47 : 10;
+  const qy = signatureImg ? (H - q) / 2 : 10;
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(qx, qy, q, q);
   ctx.strokeStyle = "#C7AD76";
