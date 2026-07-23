@@ -41,16 +41,19 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(tx, 38); ctx.lineTo(tx + 96, 38); ctx.stroke();
 
-    const maxWidth = 300, maxHeight = 54;
-    const ratio = Math.min(maxWidth / signatureImg.width, maxHeight / signatureImg.height);
-    const width = signatureImg.width * ratio, height = signatureImg.height * ratio;
-    ctx.drawImage(signatureImg, tx + (maxWidth - width) / 2, 47 + (maxHeight - height) / 2, width, height);
-
     ctx.fillStyle = "#C7AD76";
     ctx.font = "600 16px 'Courier New', monospace";
-    ctx.fillText(sigId || "PENDING", tx, 122);
+    ctx.fillText(sigId || "PENDING", tx, 68);
+    ctx.strokeStyle = "#C7AD7638";
+    ctx.beginPath(); ctx.moveTo(tx, 84); ctx.lineTo(416, 84); ctx.stroke();
+
+    const maxWidth = 210, maxHeight = 48;
+    const ratio = Math.min(maxWidth / signatureImg.width, maxHeight / signatureImg.height);
+    const width = signatureImg.width * ratio, height = signatureImg.height * ratio;
+    ctx.drawImage(signatureImg, tx, 105 + (maxHeight - height) / 2, width, height);
+    ctx.fillStyle = "#C7AD76";
     ctx.font = "600 17px sans-serif";
-    ctx.fillText(`${signerName || ""}  —  ${new Date().toLocaleDateString("en-GB")}`, tx, 153);
+    ctx.fillText(`—  ${new Date().toLocaleDateString("en-GB")}`, 338, 140);
   } else if (signatureImg) {
     ctx.strokeStyle = "#C7AD7638";
     ctx.beginPath();

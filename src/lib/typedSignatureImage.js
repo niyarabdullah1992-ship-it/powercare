@@ -5,7 +5,7 @@ export async function createTypedSignatureImage(text, fontFamily) {
   canvas.width = 560;
   canvas.height = 160;
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#b07d3f";
+  ctx.fillStyle = "#C7AD76";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   let size = 64;
