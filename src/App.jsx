@@ -11,6 +11,7 @@ import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import TrialExpiryGate from '@/components/TrialExpiryGate';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
+import { canAccessPath } from '@/lib/navVisibility';
 
 import { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -90,6 +91,7 @@ function RequireAuth({ children }) {
   // While the workspace is still loading (fresh device / restored account),
   // show a spinner instead of the blank page that pages render without a user.
   if (!data || (session.userId && !currentUser)) return <PageLoader />;
+  if (!canAccessPath(location.pathname, currentUser, data)) return <Navigate to="/app" replace />;
   return <TrialExpiryGate company={company}><Layout>{children}</Layout></TrialExpiryGate>;
 }
 
