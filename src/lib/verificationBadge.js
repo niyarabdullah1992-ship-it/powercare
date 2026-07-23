@@ -80,7 +80,7 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   ctx.font = "600 21px 'Courier New', monospace";
   ctx.fillText(sigId || "", tx, signerName ? 62 : 66);
   if (signerName) {
-    ctx.fillStyle = "#2b2418";
+    ctx.fillStyle = "#b07d3f";
     ctx.font = "600 17px sans-serif";
     ctx.direction = "ltr";
     ctx.fillText(`${signerName} — ${new Date().toLocaleDateString("en-GB")}`, tx, 98);

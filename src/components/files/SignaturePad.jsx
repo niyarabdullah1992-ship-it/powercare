@@ -39,7 +39,7 @@ export default function SignaturePad({ ar, signerName, verificationId, onPreview
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.lineWidth = width;
-    ctx.strokeStyle = "#1e293b";
+    ctx.strokeStyle = "#b07d3f";
     ctx.stroke();
     previous.current = { ...current, width };
     inkRef.current = true;
