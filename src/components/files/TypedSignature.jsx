@@ -29,6 +29,7 @@ export default function TypedSignature({ ar, defaultName = "", verificationId, o
   const [name, setName] = useState(defaultName);
   const [fontId, setFontId] = useState(FONTS[0].id);
   const [samples, setSamples] = useState({});
+  const [datedSignature, setDatedSignature] = useState("");
   const [stamp, setStamp] = useState("");
 
   useEffect(() => {
@@ -42,14 +43,20 @@ export default function TypedSignature({ ar, defaultName = "", verificationId, o
 
   useEffect(() => {
     let active = true;
-    const rawSignature = samples[fontId];
-    if (!rawSignature) return () => { active = false; };
-    makeSignatureStamp(rawSignature, name.trim(), verificationId, "typed")
-      .then((composed) => { if (active) { setStamp(composed); onPreview?.(composed); } });
+    const font = FONTS.find((item) => item.id === fontId);
+    if (!samples[fontId] || !font || !name.trim()) return () => { active = false; };
+    const date = new Date().toLocaleDateString("en-GB");
+    createTypedSignatureImage(`${name.trim()}  —  ${date}`, font.family)
+      .then((rawSignature) => {
+        if (!active) return null;
+        setDatedSignature(rawSignature);
+        return makeSignatureStamp(rawSignature, name.trim(), verificationId, "typed");
+      })
+      .then((composed) => { if (active && composed) { setStamp(composed); onPreview?.(composed); } });
     return () => { active = false; };
-  }, [samples, fontId, defaultName, name, verificationId, onPreview]);
+  }, [samples, fontId, name, verificationId, onPreview]);
 
-  const save = () => onSave(samples[fontId], name.trim(), "typed");
+  const save = () => onSave(datedSignature, name.trim(), "typed");
 
   return (
     <div className="space-y-5">

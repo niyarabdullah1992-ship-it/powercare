@@ -47,13 +47,10 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.strokeStyle = "#C7AD7638";
     ctx.beginPath(); ctx.moveTo(tx, 63); ctx.lineTo(416, 63); ctx.stroke();
 
-    const maxWidth = 180, maxHeight = 38;
+    const maxWidth = 285, maxHeight = 42;
     const ratio = Math.min(maxWidth / signatureImg.width, maxHeight / signatureImg.height);
     const width = signatureImg.width * ratio, height = signatureImg.height * ratio;
-    ctx.drawImage(signatureImg, tx, 76 + (maxHeight - height) / 2, width, height);
-    ctx.fillStyle = "#C7AD76";
-    ctx.font = "600 15px sans-serif";
-    ctx.fillText(`—  ${new Date().toLocaleDateString("en-GB")}`, 310, 101);
+    ctx.drawImage(signatureImg, tx, 74 + (maxHeight - height) / 2, width, height);
   } else if (signatureImg) {
     ctx.strokeStyle = "#C7AD7638";
     ctx.beginPath();
