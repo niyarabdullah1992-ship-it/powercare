@@ -101,11 +101,11 @@ export function moveOrgNode(companyId, nodeId, targetId, mode) {
       renumber(nodes, moving.id);
       return;
     }
-    const newParent = mode === "below" ? target.id : target.parentId || null;
+    const newParent = mode === "below" || mode === "inside" ? target.id : target.parentId || null;
     moving.parentId = newParent;
     const siblings = nodes.filter((node) => node.id !== moving.id && (node.parentId || null) === newParent).sort((a, b) => a.order - b.order);
     const targetIndex = siblings.findIndex((node) => node.id === target.id);
-    moving.order = mode === "below" ? siblings.length : Math.max(0, targetIndex + (mode === "right" ? 1 : 0));
+    moving.order = mode === "below" || mode === "inside" ? siblings.length : Math.max(0, targetIndex + (mode === "right" ? 1 : 0));
     siblings.splice(moving.order, 0, moving);
     siblings.forEach((node, index) => { node.order = index; });
     renumber(nodes, oldParent);

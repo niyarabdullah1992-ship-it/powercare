@@ -7,7 +7,7 @@ const items = [
   [GitBranch, "افهم العلاقة", "Understand hierarchy", "العقدة العليا تدير ما تحتها، والفروع تمثل الفرق والمحطات التابعة.", "Higher nodes manage descendants; branches represent reporting teams and sites."],
   [Move, "غيّر الموضع والعلاقة", "Move and reorganize", "ضع العقدة أعلى أو أسفل عقدة أخرى لتغيير التبعية، أو بجانبها لتغيير الترتيب.", "Drop above or below another node to change reporting, or beside it to change order."],
   [KeyRound, "اربط الصلاحيات", "Attach permissions", "صلاحيات العرض والإدارة تتبع الموظف وموقعه داخل الهيكل.", "View and manage permissions follow the employee and hierarchy position."],
-  [MapPin, "اربط الموظف بالمحطة", "Connect people to sites", "وضع الموظف تحت محطة يحدد نطاقه التشغيلي ومسؤولياته المحلية.", "Placing a person under a site defines operating scope and local responsibility."],
+  [MapPin, "اربط الموظف بالمحطة", "Connect people to sites", "استخدم خيار «تابع» لوضع موظفين ومحطات فرعية معًا تحت المحطة نفسها دون إزالة أي فرع.", "Use Inside to place employees and child sites together under the same site without removing any branch."],
   [Route, "فعّل مسار التصعيد", "Drive escalation", "ترتيب المديرين في الشجرة يحدد انتقال الشكاوى والاعتراضات تلقائيًا.", "Management order automatically drives complaints and dispute escalation."],
 ];
 
