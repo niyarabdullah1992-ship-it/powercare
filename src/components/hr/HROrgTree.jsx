@@ -4,7 +4,7 @@ import HierarchyZoomControls from "@/components/directory/HierarchyZoomControls"
 import HROrgStationBranch from "@/components/hr/HROrgStationBranch";
 import useOrgTreeViewport from "@/hooks/useOrgTreeViewport";
 
-export default function HROrgTree({ data, company, currentUser, lang }) {
+export default function HROrgTree({ data, company, currentUser, lang, canManage }) {
   const ar = lang === "ar";
   const stations = data.stations || [];
   const employees = data.employees || [];
@@ -28,7 +28,7 @@ export default function HROrgTree({ data, company, currentUser, lang }) {
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-accent/20 bg-card px-4 py-3"><div><h2 className="font-heading text-lg font-semibold">{ar ? "الهيكل التنظيمي" : "Organization tree"}</h2><p className="text-[11px] text-muted-foreground">{ar ? "اسحب للتنقل، واستخدم إصبعين أو Ctrl للتكبير" : "Drag to pan; pinch or use Ctrl to zoom"}</p></div><HierarchyZoomControls zoom={zoom} onZoom={(change) => setZoom(zoom + change)} onFit={() => setCustomZoom(null)} ar={ar} /></div>
     <div ref={viewportRef} {...gestures} className="max-h-[680px] cursor-grab overflow-auto p-5 active:cursor-grabbing md:p-8" style={{ touchAction: "none" }}><div className="mx-auto min-w-max origin-top" style={{ zoom }}>
       <div className="mx-auto w-64 rounded-xl border-2 border-accent bg-primary p-4 text-center text-primary-foreground shadow-elevated"><Crown className="mx-auto h-6 w-6 text-accent" /><p className="mt-1 text-[9px] font-bold uppercase tracking-widest text-primary-foreground/70">{ar ? "الإدارة العامة" : "General management"}</p><h3 className="mt-1 truncate font-heading text-lg font-semibold">{owner?.name || company?.name}</h3></div>
-      {branches.length ? <><div className="mx-auto h-10 w-px bg-accent/60" /><div className="relative flex items-start justify-center gap-8 border-t-2 border-accent/45 px-10">{branches.map(({ station, employees: team }) => <HROrgStationBranch key={station.id} station={station} employees={team} ar={ar} />)}</div></> : <p className="mt-6 text-center text-sm text-muted-foreground">{ar ? "لا توجد محطات" : "No stations"}</p>}
+      {branches.length ? <><div className="mx-auto h-10 w-px bg-accent/60" /><div className="relative flex items-start justify-center gap-8 border-t-2 border-accent/45 px-10">{branches.map(({ station, employees: team }) => <HROrgStationBranch key={station.id} station={station} employees={team} ar={ar} companyId={company.id} canManage={canManage} />)}</div></> : <p className="mt-6 text-center text-sm text-muted-foreground">{ar ? "لا توجد محطات" : "No stations"}</p>}
     </div></div>
   </section>;
 }

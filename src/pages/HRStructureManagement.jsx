@@ -54,7 +54,7 @@ export default function HRStructureManagement() {
         <p className="text-muted-foreground font-body text-sm mt-1">{t("hrPageNote")}</p>
       </div>
 
-      <HROrgTree data={data} company={company} currentUser={currentUser} lang={lang} />
+      <HROrgTree data={data} company={company} currentUser={currentUser} lang={lang} canManage={canManage} />
 
       <EscalationInfoBox t={t} />
       <GradeEmployeeFilter data={data} currentUser={currentUser} />
