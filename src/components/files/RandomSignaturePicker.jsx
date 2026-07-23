@@ -9,7 +9,7 @@ export default function RandomSignaturePicker({ ar, signerName, verificationId, 
   const generate = () => {
     const seeds = new Uint32Array(6);
     crypto.getRandomValues(seeds);
-    setOptions(Array.from(seeds, createRandomSignature));
+    setOptions(Array.from(seeds, (seed) => createRandomSignature(seed, signerName)));
     setSelected("");
   };
   useEffect(generate, []);
