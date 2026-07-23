@@ -75,6 +75,12 @@ export function saveOrgStationLocation(companyId, stationId, location) {
   });
 }
 
+export function saveOrgNodeVisualPosition(companyId, nodeId, position) {
+  updateCompany(companyId, (data) => {
+    data.orgVisualPositions = { ...(data.orgVisualPositions || {}), [nodeId]: position };
+  });
+}
+
 export function moveOrgNode(companyId, nodeId, targetId, mode) {
   updateCompany(companyId, (data) => {
     const nodes = data.orgTree || [];

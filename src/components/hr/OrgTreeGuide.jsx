@@ -5,7 +5,7 @@ import ComplaintEscalationGuide from "@/components/hr/ComplaintEscalationGuide";
 const items = [
   [UserPlus, "أنشئ الهيكل مباشرة", "Create directly", "أضف محطة أو موظفًا، ثم حدّد المسمى والموقع والصلاحيات.", "Add a site or employee, then define title, location and access."],
   [GitBranch, "افهم العلاقة", "Understand hierarchy", "العقدة العليا تدير ما تحتها، والفروع تمثل الفرق والمحطات التابعة.", "Higher nodes manage descendants; branches represent reporting teams and sites."],
-  [Move, "غيّر موضع العقد", "Move any node", "اسحب أعلى أو أسفل أو يمينًا أو يسارًا لتغيير المستوى أو الترتيب.", "Drag up, down, left or right to change level or order."],
+  [Move, "غيّر موضع العقد", "Move any node", "اسحب بحرية إلى أي موضع بصري دون تغيير التبعية الإدارية.", "Drag freely to any visual position without changing reporting relationships."],
   [KeyRound, "اربط الصلاحيات", "Attach permissions", "صلاحيات العرض والإدارة تتبع الموظف وموقعه داخل الهيكل.", "View and manage permissions follow the employee and hierarchy position."],
   [MapPin, "اربط الموظف بالمحطة", "Connect people to sites", "وضع الموظف تحت محطة يحدد نطاقه التشغيلي ومسؤولياته المحلية.", "Placing a person under a site defines operating scope and local responsibility."],
   [Route, "فعّل مسار التصعيد", "Drive escalation", "ترتيب المديرين في الشجرة يحدد انتقال الشكاوى والاعتراضات تلقائيًا.", "Management order automatically drives complaints and dispute escalation."],
