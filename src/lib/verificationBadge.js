@@ -24,10 +24,15 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   ctx.arcTo(1, H - 1, 1, 1, r);
   ctx.arcTo(1, 1, W - 1, 1, r);
   ctx.closePath();
-  ctx.fillStyle = "#faf6ef";
+  ctx.fillStyle = "#13283d";
   ctx.fill();
-  ctx.strokeStyle = "#e3d9c8";
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "#d4af55";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.roundRect(7, 7, W - 14, H - 14, 10);
+  ctx.strokeStyle = "#d4af5566";
+  ctx.lineWidth = 1;
   ctx.stroke();
 
   // Symmetrical heritage fingerprint in layered executive gold.
@@ -38,13 +43,13 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
   const qx = W - q - 12, qy = 10;
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(qx, qy, q, q);
-  ctx.strokeStyle = "#e3d9c8";
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = "#d4af55";
+  ctx.lineWidth = 1.5;
   ctx.strokeRect(qx, qy, q, q);
   if (qrImg) {
     ctx.drawImage(qrImg, qx + 3, qy + 3, q - 6, q - 6);
   } else {
-    ctx.fillStyle = "#c9bda6";
+    ctx.fillStyle = "#b08d47";
     ctx.font = "600 12px sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("QR", qx + q / 2, qy + q / 2 + 4);
@@ -53,7 +58,7 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg) {
 
   // Texts
   const tx = 82;
-  ctx.fillStyle = "#8a7d6a";
+  ctx.fillStyle = "#d7bd7a";
   ctx.font = "13px sans-serif";
   ctx.textAlign = "left";
   ctx.fillText("Encrypted verification ID", tx, signerName ? 34 : 36);
