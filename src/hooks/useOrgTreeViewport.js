@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-const clamp = (value) => Math.max(0.5, Math.min(1.5, value));
+const clamp = (value) => Math.max(0.1, Math.min(1.5, value));
 const distance = (points) => Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
 
 export default function useOrgTreeViewport(viewportRef, zoom, setZoom) {
