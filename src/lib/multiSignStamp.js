@@ -3,16 +3,12 @@ import { base44 } from "@/api/base44Client";
 import { loadBadgeQr, makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
 import { STAMP_FALLBACK_SPOT, STAMP_WIDTH_PERCENT, clampStampScale } from "@/lib/signatureStampGeometry";
 import { drawTextField } from "@/lib/signPdf";
+import loadExportableImage from "@/lib/loadExportableImage";
 
 // Builds the one canonical stamp image used by the web preview and the PDF.
 export async function makeSignatureStamp(sigDataUrl, name, verificationId = "", variant = "unique") {
   const qr = verificationId ? await loadBadgeQr(verificationId) : null;
-  const signatureImage = sigDataUrl ? await new Promise((resolve) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => resolve(null);
-    image.src = sigDataUrl;
-  }) : null;
+  const signatureImage = await loadExportableImage(sigDataUrl);
   return makeVerificationBadgeCanvas(verificationId, name, qr, signatureImage, variant).toDataURL("image/png");
 }
 

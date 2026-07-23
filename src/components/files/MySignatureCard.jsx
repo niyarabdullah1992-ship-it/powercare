@@ -47,7 +47,8 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
     if (!signatureRawUrl || !signatureId || signatureVariant === "composed") return () => { active = false; };
     const signerName = currentUser?.profile?.signatureName || currentUser?.name || "";
     makeSignatureStamp(signatureRawUrl, signerName, signatureId, signatureVariant)
-      .then((preview) => { if (active) setRefreshedPreview(preview); });
+      .then((preview) => { if (active) setRefreshedPreview(preview); })
+      .catch(() => { if (active) setRefreshedPreview(""); });
     return () => { active = false; };
   }, [signatureRawUrl, signatureId, signatureVariant, currentUser?.profile?.signatureName, currentUser?.name]);
 
