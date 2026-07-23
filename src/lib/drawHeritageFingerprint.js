@@ -2,6 +2,7 @@ export default function drawHeritageFingerprint(ctx, cx, cy, size) {
   const silver = "#dce6ee";
   const ridgeOutline = "#29445f";
   const glassGlow = "#a9c7df";
+  const digitalOrange = "#e3a13a";
   const paths = [
     [[-.48,-.27],[-.35,-.49],[0,-.56],[.35,-.49],[.48,-.27]],
     [[-.53,.02],[-.49,-.31],[-.26,-.5],[0,-.53],[.29,-.45],[.47,-.18],[.51,.12]],
@@ -40,6 +41,26 @@ export default function drawHeritageFingerprint(ctx, cx, cy, size) {
   paths.forEach((path) => trace(path, ridgeOutline, size * .06));
   ctx.shadowBlur = 0;
   paths.forEach((path) => trace(path, silver, size * .026));
+
+  const circuitTraces = [
+    [[-.45,-.22],[-.58,-.22],[-.62,-.15]],
+    [[.46,-.13],[.58,-.13],[.62,-.2]],
+    [[-.42,.24],[-.56,.24],[-.6,.34]],
+    [[.4,.34],[.54,.34],[.59,.26]],
+  ];
+  circuitTraces.forEach((path) => trace(path, digitalOrange, size * .014));
+
+  const dataNodes = [[-.45,-.22],[-.22,-.4],[.08,-.45],[.46,-.13],[-.42,.24],[-.2,.12],[.12,-.08],[.26,.18],[.4,.34],[-.08,.42]];
+  ctx.fillStyle = digitalOrange;
+  ctx.shadowColor = digitalOrange;
+  ctx.shadowBlur = size * .035;
+  dataNodes.forEach(([x, y], index) => {
+    const px = cx + x * size, py = cy + y * size;
+    const nodeSize = size * (index % 3 === 0 ? .045 : .032);
+    if (index % 3 === 0) ctx.fillRect(px - nodeSize / 2, py - nodeSize / 2, nodeSize, nodeSize);
+    else { ctx.beginPath(); ctx.arc(px, py, nodeSize / 2, 0, Math.PI * 2); ctx.fill(); }
+  });
+  ctx.shadowBlur = 0;
   ctx.setLineDash([]);
   ctx.restore();
 }
