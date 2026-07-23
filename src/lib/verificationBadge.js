@@ -51,10 +51,10 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
   drawHeritageFingerprint(ctx, 50, H / 2, signatureImg ? 66 : signerName ? 62 : 54);
 
   if (signatureImg) {
-    const maxWidth = 300, maxHeight = 62;
+    const maxWidth = 300, maxHeight = 50;
     const ratio = Math.min(maxWidth / signatureImg.width, maxHeight / signatureImg.height);
     const width = signatureImg.width * ratio, height = signatureImg.height * ratio;
-    ctx.drawImage(signatureImg, 116 + (maxWidth - width) / 2, 14 + (maxHeight - height) / 2, width, height);
+    ctx.drawImage(signatureImg, 116 + (maxWidth - width) / 2, 43 + (maxHeight - height) / 2, width, height);
   }
 
   // QR code box on the right side of the card
@@ -98,16 +98,16 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
   ctx.textAlign = "left";
   ctx.fillStyle = "#f4eee2";
   ctx.font = "500 13px sans-serif";
-  ctx.fillText("Encrypted verification ID", tx, signatureImg ? 94 : signerName ? 30 : 32);
+  ctx.fillText("Encrypted verification ID", tx, signatureImg ? 28 : signerName ? 30 : 32);
   ctx.strokeStyle = "#B9975E";
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(tx, signatureImg ? 104 : signerName ? 40 : 42);
-  ctx.lineTo(tx + 96, signatureImg ? 104 : signerName ? 40 : 42);
+  ctx.moveTo(tx, signatureImg ? 38 : signerName ? 40 : 42);
+  ctx.lineTo(tx + 96, signatureImg ? 38 : signerName ? 40 : 42);
   ctx.stroke();
   ctx.fillStyle = "#B9975E";
   ctx.font = "600 19px 'Courier New', monospace";
-  ctx.fillText(sigId || "", tx, signatureImg ? 127 : signerName ? 65 : 70);
+  ctx.fillText(sigId || "", tx, signatureImg ? 119 : signerName ? 65 : 70);
   if (signerName) {
     ctx.fillStyle = "#C7AD76";
     ctx.font = "600 17px sans-serif";
