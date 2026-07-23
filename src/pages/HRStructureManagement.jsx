@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import FlexOrgTree from "@/components/hr/FlexOrgTree";
@@ -7,6 +8,7 @@ import JobGradeManager from "@/components/employees/JobGradeManager";
 export default function HRStructureManagement() {
   const { t, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
+  const [gradesOpen, setGradesOpen] = useState(false);
   if (!data || !currentUser) return null;
 
   return (
@@ -15,7 +17,18 @@ export default function HRStructureManagement() {
         <h1 className="font-heading text-3xl font-semibold">{t("hr")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("hrPageNote")}</p>
       </div>
-      <JobGradeManager companyId={company.id} data={data} />
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setGradesOpen((open) => !open)}
+          aria-expanded={gradesOpen}
+          className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-start font-heading text-lg font-semibold"
+        >
+          {t("jobGradesManage")}
+          <ChevronDown className={`h-5 w-5 transition-transform ${gradesOpen ? "rotate-180" : ""}`} />
+        </button>
+        {gradesOpen && <JobGradeManager companyId={company.id} data={data} />}
+      </div>
       <FlexOrgTree data={data} company={company} currentUser={currentUser} lang={lang} />
     </div>
   );
