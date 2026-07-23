@@ -2,11 +2,11 @@
 // used by the sidebar/mobile nav and the dashboards' quick-access shortcuts.
 
 const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/inventory", "/app/expenses", "/app/signing", "/app/assistant", "/app/complaints", "/app/performance", "/app/manual"];
-const MANAGER_EXTRA = ["/app/employees", "/app/safety"];
+const MANAGER_EXTRA = ["/app/safety"];
 const EXEC_EXTRA = ["/app/hr", "/app/payroll"];
 const SMART_SECTION_ROUTES = {
   complaints: "/app/complaints", safety: "/app/safety", payroll: "/app/payroll",
-  employees: "/app/employees", performance: "/app/performance", attendance: "/app/attendance",
+  performance: "/app/performance", attendance: "/app/attendance",
   hr: "/app/hr", inventory: "/app/inventory",
 };
 
@@ -24,10 +24,9 @@ export function allowedNavFor(user, data) {
     EXEC_EXTRA.forEach((p) => allowed.add(p));
   }
   if (role === "pgm") allowed.add("/app/payroll");
-  // Employees holding an HR position need the HR section and the employee directory.
+  // Employees holding an HR position access workforce management through HR.
   if (user.hrLevelId) {
     allowed.add("/app/hr");
-    if (hrPermissions.has("view_employees") || hrPermissions.has("manage_employees")) allowed.add("/app/employees");
     if (hrPermissions.has("view_safety")) allowed.add("/app/safety");
     if (hrPermissions.has("manage_payroll")) allowed.add("/app/payroll");
   }

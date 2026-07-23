@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ListTodo, ClipboardCheck, Warehouse, ReceiptText, Users, FileText, Megaphone, ShieldQuestion } from "lucide-react";
+import { LayoutDashboard, ListTodo, ClipboardCheck, Warehouse, ReceiptText, FileText, Megaphone, ShieldQuestion, UserCog } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { allowedNavFor } from "@/lib/navVisibility";
@@ -12,7 +12,7 @@ const TABS = [
   { to: "/app/attendance", icon: ClipboardCheck, key: "attendanceScheduling" },
   { to: "/app/inventory", icon: Warehouse, key: "inventory" },
   { to: "/app/expenses", icon: ReceiptText, key: "expenses" },
-  { to: "/app/employees", icon: Users, key: "employees" },
+  { to: "/app/hr", icon: UserCog, key: "hr" },
   { to: "/app/daily-report", icon: FileText, key: "reports" },
   { to: "/app/complaints", icon: Megaphone, key: "allComplaints" },
   { to: "/app/safety", icon: ShieldQuestion, key: "safety" },

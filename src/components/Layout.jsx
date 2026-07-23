@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio, Search,
-  Users, Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText,
+  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -149,7 +149,6 @@ export default function Layout({ children }) {
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks"), category: "operations" },
     { to: "/app/inventory", icon: Warehouse, label: t("inventory"), category: "operations" },
     { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling"), category: "workforce" },
-    { to: "/app/employees", icon: Users, label: `${t("employees")} · ${t("stations")}`, category: "workforce" },
     { to: "/app/hr", icon: UserCog, label: t("hr"), category: "workforce" },
     { to: "/app/performance", icon: Trophy, label: t("performance"), category: "workforce" },
     { to: "/app/expenses", icon: ReceiptText, label: t("expenses"), category: "finance" },
@@ -291,7 +290,6 @@ export default function Layout({ children }) {
                           to={item.to}
                           end={item.end}
                           title={item.label}
-                          onClick={() => { if (item.to === "/app/employees") window.dispatchEvent(new Event("powercare:show-employee-hierarchy")); }}
                           className={({ isActive }) =>
                             `flex h-10 w-full items-center rounded-md border-s-2 transition-all ${sidebarCollapsed ? "justify-center px-1" : "gap-3 px-3"} ${
                               isActive
