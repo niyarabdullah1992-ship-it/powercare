@@ -2,6 +2,7 @@ import React from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import FlexOrgTree from "@/components/hr/FlexOrgTree";
+import JobGradeManager from "@/components/employees/JobGradeManager";
 
 export default function HRStructureManagement() {
   const { t, lang } = useI18n();
@@ -14,6 +15,7 @@ export default function HRStructureManagement() {
         <h1 className="font-heading text-3xl font-semibold">{t("hr")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("hrPageNote")}</p>
       </div>
+      <JobGradeManager companyId={company.id} data={data} />
       <FlexOrgTree data={data} company={company} currentUser={currentUser} lang={lang} />
     </div>
   );
