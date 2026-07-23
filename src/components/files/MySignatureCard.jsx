@@ -34,7 +34,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   const signatureVariant = localSignature?.signatureVariant ?? currentUser?.profile?.signatureVariant ?? "unique";
   const signatureId = localSignature?.signatureId ?? currentUser?.profile?.signatureId ?? "";
   const [editing, setEditing] = useState(!signatureUrl);
-  const [mode, setMode] = useState("draw"); // "type" | "draw"
+  const [mode, setMode] = useState("type"); // "type" | "draw"
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
