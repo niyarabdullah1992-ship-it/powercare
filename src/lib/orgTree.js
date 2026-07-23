@@ -52,16 +52,17 @@ export function saveOrgNode(companyId, node, permissions = {}) {
 export function createOrgRecord(companyId, record, permissions = {}) {
   updateCompany(companyId, (data) => {
     data.orgTree = data.orgTree || [];
-    const order = data.orgTree.filter((node) => !node.parentId).length;
+    const parentId = record.parentId || null;
+    const order = data.orgTree.filter((node) => (node.parentId || null) === parentId).length;
     if (record.type === "station") {
       const id = `st_${Math.random().toString(36).slice(2, 9)}`;
       data.stations.push({ id, name: record.name.trim(), location: record.location.trim(), type: record.stationType.trim(), status: "active", managerId: null, lat: record.lat ?? null, lng: record.lng ?? null, radiusMeters: record.radiusMeters ?? 200, createdAt: new Date().toISOString() });
-      data.orgTree.push({ id: `org_station_${id}`, type: "station", refId: id, title: record.stationType.trim() || record.location.trim(), parentId: null, order });
+      data.orgTree.push({ id: `org_station_${id}`, type: "station", refId: id, title: record.stationType.trim() || record.location.trim(), parentId, order });
       return;
     }
     const id = `emp_${Math.random().toString(36).slice(2, 9)}`;
     data.employees.push({ id, name: record.name.trim(), email: record.email, role: "employee", stationId: record.stationId || null, phone: "", anonymousId: `ANON-${Math.floor(Math.random() * 1e8).toString(16).toUpperCase().padStart(8, "0")}`, managedStations: [], profile: {}, createdAt: new Date().toISOString() });
-    data.orgTree.push({ id: `org_${id}`, type: "employee", refId: id, title: record.title, parentId: null, order });
+    data.orgTree.push({ id: `org_${id}`, type: "employee", refId: id, title: record.title, parentId, order });
     const score = scorePermissions(permissions);
     data.smartPositions = data.smartPositions || [];
     data.smartPositions.push({ employeeId: id, title: record.title, titleManual: true, permissions, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() });
