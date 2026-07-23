@@ -30,10 +30,10 @@ export default function drawHeritageFingerprint(ctx, cx, cy, size) {
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   const fiberGradient = ctx.createLinearGradient(cx - size * .58, cy - size * .5, cx + size * .58, cy + size * .48);
-  fiberGradient.addColorStop(0, "#FFF0A6");
-  fiberGradient.addColorStop(.44, "#FFD05A");
-  fiberGradient.addColorStop(.72, "#FF9A18");
-  fiberGradient.addColorStop(1, "#F66A00");
+  fiberGradient.addColorStop(0, "#E2D1A7");
+  fiberGradient.addColorStop(.44, "#C7AD76");
+  fiberGradient.addColorStop(.72, "#B9975E");
+  fiberGradient.addColorStop(1, "#9E7C47");
 
   paths.forEach((path) => {
     trace(path);
