@@ -1,5 +1,5 @@
-import React from "react";
-import { GitBranch, KeyRound, MapPin, Move, Route, UserPlus } from "lucide-react";
+import React, { useState } from "react";
+import { ChevronDown, ChevronUp, GitBranch, KeyRound, MapPin, Move, Route, UserPlus } from "lucide-react";
 import ComplaintEscalationGuide from "@/components/hr/ComplaintEscalationGuide";
 
 const items = [
@@ -12,5 +12,6 @@ const items = [
 ];
 
 export default function OrgTreeGuide({ ar }) {
-  return <div className="border-b border-accent/20 bg-secondary/45 px-4 py-4"><div className="mb-3"><h3 className="text-sm font-semibold">{ar ? "كيف تعمل شجرة الموارد البشرية؟" : "How does the HR tree work?"}</h3><p className="mt-1 text-xs text-muted-foreground">{ar ? "الشجرة ليست رسمًا فقط؛ كل موضع فيها يحدد علاقة إدارية ونطاق عمل وصلاحيات ومسار تصعيد." : "The tree is not only a diagram; every position defines reporting, scope, permissions and escalation."}</p></div><div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">{items.map(([Icon, arTitle, enTitle, arText, enText]) => <div key={enTitle} className="flex gap-3 rounded-md border bg-card p-3"><Icon className="mt-0.5 h-4 w-4 shrink-0 text-accent" /><div><p className="text-xs font-semibold">{ar ? arTitle : enTitle}</p><p className="mt-1 text-[11px] leading-5 text-muted-foreground">{ar ? arText : enText}</p></div></div>)}</div><ComplaintEscalationGuide ar={ar} /></div>;
+  const [open, setOpen] = useState(false);
+  return <div className="border-b border-accent/20 bg-secondary/45 px-4 py-4"><button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center justify-between gap-3 text-start"><div><h3 className="text-sm font-semibold">{ar ? "كيف تعمل شجرة الموارد البشرية؟" : "How does the HR tree work?"}</h3><p className="mt-1 text-xs text-muted-foreground">{ar ? "اضغط لعرض شرح الشجرة ومسار تصعيد الشكاوى." : "Select to view the tree and complaint escalation guide."}</p></div>{open ? <ChevronUp className="h-5 w-5 shrink-0 text-accent" /> : <ChevronDown className="h-5 w-5 shrink-0 text-accent" />}</button>{open && <div className="mt-4"><div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">{items.map(([Icon, arTitle, enTitle, arText, enText]) => <div key={enTitle} className="flex gap-3 rounded-md border bg-card p-3"><Icon className="mt-0.5 h-4 w-4 shrink-0 text-accent" /><div><p className="text-xs font-semibold">{ar ? arTitle : enTitle}</p><p className="mt-1 text-[11px] leading-5 text-muted-foreground">{ar ? arText : enText}</p></div></div>)}</div><ComplaintEscalationGuide ar={ar} /></div>}</div>;
 }
