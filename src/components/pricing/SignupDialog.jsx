@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import GoogleIcon from "@/components/GoogleIcon";
+import { MicrosoftIcon } from "@/components/ProviderIcons";
 import SignupOtpStep from "@/components/pricing/SignupOtpStep";
 
-export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, googleEmail, error }) {
+export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, onMicrosoft, googleEmail, error }) {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
   const [companyName, setCompanyName] = useState("");
@@ -44,8 +45,11 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, google
         </p>
         {!googleEmail && (
           <>
-            <button type="button" onClick={onGoogle} className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-2.5 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg">
+            <button type="button" onClick={onGoogle} className="mb-2 flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-2.5 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg">
               <GoogleIcon className="h-5 w-5" /> {lang === "ar" ? "المتابعة باستخدام Google" : "Continue with Google"}
+            </button>
+            <button type="button" onClick={onMicrosoft} className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-2.5 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg">
+              <MicrosoftIcon className="h-5 w-5" /> {lang === "ar" ? "المتابعة باستخدام Microsoft" : "Continue with Microsoft"}
             </button>
             <div className="mb-3 flex items-center gap-3 text-xs text-[#3a2f22]/40"><span className="h-px flex-1 bg-landing-gold/20" />{lang === "ar" ? "أو" : "or"}<span className="h-px flex-1 bg-landing-gold/20" /></div>
           </>

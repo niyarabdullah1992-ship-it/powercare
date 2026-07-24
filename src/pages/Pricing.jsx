@@ -28,20 +28,25 @@ export default function Pricing() {
   ];
 
   useEffect(() => {
-    if (!new URLSearchParams(window.location.search).has("google_signup")) return;
-    const saved = JSON.parse(sessionStorage.getItem("powercare_google_signup") || "null");
-    sessionStorage.removeItem("powercare_google_signup");
+    const params = new URLSearchParams(window.location.search);
+    const provider = params.has("microsoft_signup") ? "Microsoft" : params.has("google_signup") ? "Google" : null;
+    if (!provider) return;
+    const saved = JSON.parse(sessionStorage.getItem("powercare_social_signup") || "null");
+    sessionStorage.removeItem("powercare_social_signup");
     if (!saved) return;
     setBilling(saved.billing || "monthly");
     setActivePlan(PLANS.find((plan) => plan.id === saved.planId) || null);
-    base44.auth.me().then((user) => setGoogleEmail(user.email || "")).catch(() => setError(lang === "ar" ? "تعذر تسجيل Google." : "Google sign-up could not be completed."));
+    base44.auth.me().then((user) => setGoogleEmail(user.email || "")).catch(() => setError(lang === "ar" ? `تعذر التسجيل باستخدام ${provider}.` : `${provider} sign-up could not be completed.`));
   }, []);
 
+  const saveSocialSignup = () => sessionStorage.setItem("powercare_social_signup", JSON.stringify({ planId: activePlan.id, billing }));
   const handleGoogleSignup = () => {
-    sessionStorage.setItem("powercare_google_signup", JSON.stringify({ planId: activePlan.id, billing }));
-    // Google sign-in goes through the app's configured SSO provider —
-    // direct "google" social login is disabled when a custom SSO is set.
+    saveSocialSignup();
     base44.auth.loginWithProvider("sso", "/pricing?google_signup=1");
+  };
+  const handleMicrosoftSignup = () => {
+    saveSocialSignup();
+    base44.auth.loginWithProvider("microsoft", "/pricing?microsoft_signup=1");
   };
 
   const handleTrialSignup = async ({ companyName, ownerEmail, ownerPassword, authMethod, pendingId, otpCode }) => {
@@ -180,6 +185,7 @@ export default function Pricing() {
           onClose={() => { pendingCompanyRef.current = null; setActivePlan(null); setError(""); }}
           onSubmit={handleTrialSignup}
           onGoogle={handleGoogleSignup}
+          onMicrosoft={handleMicrosoftSignup}
           googleEmail={googleEmail}
           error={error}
         />
