@@ -42,7 +42,40 @@ const normalizeStationParents = (nodes) => {
   return changed;
 };
 
+const restorePreChangeTree = (companyId, data) => {
+  const nodes = data?.orgTree || [];
+  const employeeNode = (names) => {
+    const employee = (data.employees || []).find((item) => names.includes(String(item.name || "").trim()));
+    return employee ? nodes.find((node) => node.type === "employee" && node.refId === employee.id) : null;
+  };
+  const stationNode = (name) => {
+    const station = (data.stations || []).find((item) => String(item.name || "").includes(name));
+    return station ? nodes.find((node) => node.type === "station" && node.refId === station.id) : null;
+  };
+  const khalid = employeeNode(["خالد"]);
+  const saad = employeeNode(["سعاد", "سعد"]);
+  const hazm = stationNode("الحزم");
+  const rass = stationNode("الرس");
+  if (!khalid || !saad || !hazm || !rass || khalid.parentId !== rass.id || saad.parentId !== khalid.id) return false;
+  updateCompany(companyId, (draft) => {
+    const draftKhalid = draft.orgTree.find((node) => node.id === khalid.id);
+    const draftSaad = draft.orgTree.find((node) => node.id === saad.id);
+    const draftHazm = draft.orgTree.find((node) => node.id === hazm.id);
+    const draftRass = draft.orgTree.find((node) => node.id === rass.id);
+    draftRass.parentId = draftHazm.id;
+    draftRass.order = 0;
+    draftKhalid.parentId = draftHazm.id;
+    draftKhalid.order = 1;
+    draftSaad.parentId = draftRass.id;
+    draftSaad.order = 1;
+    renumber(draft.orgTree, draftHazm.id);
+    renumber(draft.orgTree, draftRass.id);
+  });
+  return true;
+};
+
 export function initializeOrgTree(companyId, data) {
+  if (restorePreChangeTree(companyId, data)) return;
   const existing = Array.isArray(data?.orgTree)
     ? data.orgTree
     : (data.smartPositions || []).map((position, order) => ({ id: `org_${position.employeeId}`, type: "employee", refId: position.employeeId, title: position.title || "", parentId: null, order }));
