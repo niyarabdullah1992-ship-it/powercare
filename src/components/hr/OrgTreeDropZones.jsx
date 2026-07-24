@@ -8,9 +8,9 @@ const positions = {
   below: "col-start-2 row-start-3",
 };
 
-export default function OrgTreeDropZones({ active, targetId, onDrop, ar }) {
+export default function OrgTreeDropZones({ active, targetId, onDrop, ar, insideOnly = false }) {
   if (!active) return null;
-  const zones = [
+  const zones = insideOnly ? [["inside", ar ? "إسناد للمحطة" : "Assign to station"]] : [
     ["above", ar ? "أعلى" : "Above"],
     ["left", ar ? "يسار" : "Left"],
     ["right", ar ? "يمين" : "Right"],

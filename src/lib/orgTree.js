@@ -33,6 +33,27 @@ export function stationIdForTreeEmployee(data, employeeId) {
   return node ? treeStationForNode(nodes, node) : null;
 }
 
+export function assignEmployeeToOrgStation(companyId, employeeId, stationNodeId) {
+  updateCompany(companyId, (data) => {
+    const nodes = data.orgTree || [];
+    const station = nodes.find((node) => node.id === stationNodeId && node.type === "station");
+    const employee = (data.employees || []).find((item) => item.id === employeeId);
+    if (!station || !employee) return;
+    let node = nodes.find((item) => item.type === "employee" && item.refId === employeeId);
+    const oldParent = node?.parentId || null;
+    if (!node) {
+      const position = (data.smartPositions || []).find((item) => item.employeeId === employeeId);
+      node = { id: `org_${employeeId}`, type: "employee", refId: employeeId, title: position?.title || employee.profile?.position || employee.position || "", parentId: station.id, order: 0 };
+      nodes.push(node);
+    }
+    node.parentId = station.id;
+    node.order = nodes.filter((item) => item.id !== node.id && item.parentId === station.id).length;
+    renumber(nodes, oldParent);
+    renumber(nodes, station.id);
+    syncEmployeeStationsFromTree(data);
+  });
+}
+
 export function positionManagerInOrgTree(companyId, employeeId, stationIds) {
   updateCompany(companyId, (data) => {
     const nodes = data.orgTree || [];
