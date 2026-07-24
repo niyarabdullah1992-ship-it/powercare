@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
+import { useI18n } from "@/lib/i18n";
 
 export default function usePowerCareLogin(returnPath = "/login") {
   const { login, loginWithGoogle, verifyOtp, session } = useAuth();
+  const { lang } = useI18n();
   const navigate = useNavigate();
   const [kind, setKind] = useState(() => new URLSearchParams(window.location.search).get("type") === "individual" ? "individual" : "company");
   const [email, setEmail] = useState("");
@@ -35,7 +37,9 @@ export default function usePowerCareLogin(returnPath = "/login") {
         setPendingId(result.pendingId);
         setAccounts([]);
         setGoogleOtpAccountKey(result.accountKey || null);
-      } else if (!result) setError(`No workspace is linked to this ${provider} account`);
+      } else if (!result) setError(lang === "ar"
+        ? `أنت لا تملك حسابًا مرتبطًا بـ ${provider} في PowerCare. استخدم البريد المسجل أو أنشئ حسابًا جديدًا.`
+        : `You do not have a PowerCare account linked to ${provider}. Use your registered email or create a new account.`);
     }).catch((error) => {
       const message = error.message || `${provider} login failed`;
       setError(provider === "Microsoft" ? message.replaceAll("Google", "Microsoft") : message);
