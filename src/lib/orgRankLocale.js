@@ -1,13 +1,13 @@
 const ui = {
-  en: { title: "Tree grades and icons", hint: "Order controls automatic grades by depth", add: "Grade", positionGrade: "Position grade", automatic: "Automatic by tree level", station: "Station", legend: "Position grade legend", grade: "Grade" },
-  ar: { title: "درجات ورموز الشجرة", hint: "الترتيب يحدد الدرجة التلقائية حسب العمق", add: "درجة", positionGrade: "درجة المنصب", automatic: "تلقائي حسب مستوى الشجرة", station: "محطة", legend: "مفتاح درجات المناصب", grade: "درجة" },
-  de: { title: "Hierarchiestufen und Symbole", hint: "Die Reihenfolge bestimmt die automatische Stufe", add: "Stufe", positionGrade: "Positionsstufe", automatic: "Automatisch nach Hierarchieebene", station: "Station", legend: "Legende der Positionsstufen", grade: "Stufe" },
-  fr: { title: "Niveaux et icônes", hint: "L’ordre détermine le niveau automatique", add: "Niveau", positionGrade: "Niveau du poste", automatic: "Automatique selon la hiérarchie", station: "Station", legend: "Légende des niveaux", grade: "Niveau" },
-  es: { title: "Niveles e iconos", hint: "El orden define el nivel automático", add: "Nivel", positionGrade: "Nivel del puesto", automatic: "Automático según la jerarquía", station: "Estación", legend: "Leyenda de niveles", grade: "Nivel" },
-  pt: { title: "Níveis e ícones", hint: "A ordem define o nível automático", add: "Nível", positionGrade: "Nível do cargo", automatic: "Automático pela hierarquia", station: "Estação", legend: "Legenda dos níveis", grade: "Nível" },
-  ru: { title: "Уровни и значки", hint: "Порядок задаёт автоматический уровень", add: "Уровень", positionGrade: "Уровень должности", automatic: "Автоматически по иерархии", station: "Станция", legend: "Обозначения уровней", grade: "Уровень" },
-  ja: { title: "階層とアイコン", hint: "順序で自動階層が決まります", add: "階層", positionGrade: "役職階層", automatic: "ツリー階層で自動設定", station: "ステーション", legend: "役職階層の凡例", grade: "階層" },
-  ko: { title: "등급 및 아이콘", hint: "순서에 따라 자동 등급이 정해집니다", add: "등급", positionGrade: "직책 등급", automatic: "조직도 깊이에 따라 자동", station: "현장", legend: "직책 등급 범례", grade: "등급" },
+  en: { title: "Tree grades and icons", hint: "Order controls automatic grades by depth", add: "Grade", positionGrade: "Position grade", automatic: "Automatic by tree level", station: "Station", owner: "Owner", legend: "Position grade legend", grade: "Grade" },
+  ar: { title: "درجات ورموز الشجرة", hint: "الترتيب يحدد الدرجة التلقائية حسب العمق", add: "درجة", positionGrade: "درجة المنصب", automatic: "تلقائي حسب مستوى الشجرة", station: "محطة", owner: "المالك", legend: "مفتاح درجات المناصب", grade: "درجة" },
+  de: { title: "Hierarchiestufen und Symbole", hint: "Die Reihenfolge bestimmt die automatische Stufe", add: "Stufe", positionGrade: "Positionsstufe", automatic: "Automatisch nach Hierarchieebene", station: "Station", owner: "Inhaber", legend: "Legende der Positionsstufen", grade: "Stufe" },
+  fr: { title: "Niveaux et icônes", hint: "L’ordre détermine le niveau automatique", add: "Niveau", positionGrade: "Niveau du poste", automatic: "Automatique selon la hiérarchie", station: "Station", owner: "Propriétaire", legend: "Légende des niveaux", grade: "Niveau" },
+  es: { title: "Niveles e iconos", hint: "El orden define el nivel automático", add: "Nivel", positionGrade: "Nivel del puesto", automatic: "Automático según la jerarquía", station: "Estación", owner: "Propietario", legend: "Leyenda de niveles", grade: "Nivel" },
+  pt: { title: "Níveis e ícones", hint: "A ordem define o nível automático", add: "Nível", positionGrade: "Nível do cargo", automatic: "Automático pela hierarquia", station: "Estação", owner: "Proprietário", legend: "Legenda dos níveis", grade: "Nível" },
+  ru: { title: "Уровни и значки", hint: "Порядок задаёт автоматический уровень", add: "Уровень", positionGrade: "Уровень должности", automatic: "Автоматически по иерархии", station: "Станция", owner: "Владелец", legend: "Обозначения уровней", grade: "Уровень" },
+  ja: { title: "階層とアイコン", hint: "順序で自動階層が決まります", add: "階層", positionGrade: "役職階層", automatic: "ツリー階層で自動設定", station: "ステーション", owner: "オーナー", legend: "役職階層の凡例", grade: "階層" },
+  ko: { title: "등급 및 아이콘", hint: "순서에 따라 자동 등급이 정해집니다", add: "등급", positionGrade: "직책 등급", automatic: "조직도 깊이에 따라 자동", station: "현장", owner: "소유자", legend: "직책 등급 범례", grade: "등급" },
 };
 
 const options = {
