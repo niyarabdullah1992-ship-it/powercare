@@ -1,7 +1,6 @@
 import React from "react";
-import { getOrgRankLabel } from "@/lib/orgTreeRank";
 
-export default function OrgCardIdentityMeta({ station, managerName, rank, isStationManager, isHierarchyManager, lang, ar }) {
+export default function OrgCardIdentityMeta({ station, managerName, isStationManager, isHierarchyManager, ar }) {
   if (station) {
     return managerName ? (
       <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-primary-foreground/80">
@@ -18,13 +17,8 @@ export default function OrgCardIdentityMeta({ station, managerName, rank, isStat
   }
 
   return (
-    <span className={`mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] ${isHierarchyManager || isStationManager ? "font-semibold text-accent" : "text-muted-foreground"}`}>
-      <span>{rank ? getOrgRankLabel(rank, lang) : (ar ? "موظف" : "Employee")}</span>
-      {(isHierarchyManager || isStationManager) && (
-        <span className="rounded-full bg-accent/15 px-2 py-0.5 text-accent">
-          {isHierarchyManager ? (ar ? "مدير" : "Manager") : (ar ? "مدير المحطة" : "Station Manager")}
-        </span>
-      )}
+    <span className={`mt-0.5 block text-[10px] ${isHierarchyManager || isStationManager ? "font-semibold text-accent" : "text-muted-foreground"}`}>
+      {isHierarchyManager ? (ar ? "مدير" : "Manager") : isStationManager ? (ar ? "مدير المحطة" : "Station Manager") : (ar ? "موظف" : "Employee")}
     </span>
   );
 }
