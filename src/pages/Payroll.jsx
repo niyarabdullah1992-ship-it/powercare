@@ -13,6 +13,8 @@ import { canAdjustPayroll, hrScopeStations } from "@/lib/permissions";
 import { toast } from "@/components/ui/use-toast";
 import { stationIdForTreeEmployee } from "@/lib/orgTree";
 
+const UNASSIGNED_STATION_ID = "__unassigned__";
+
 export default function Payroll() {
   const { lang, dir } = useI18n();
   const ar = lang === "ar";
@@ -52,11 +54,12 @@ export default function Payroll() {
     return employee ? employeeStationId(employee) : stationIdOf(item.employeeStationId);
   };
   const allowedStations = (data.stations || []).filter((station) => payrollScope === null || payrollScope.includes(station.id));
-  const allowedStationIds = new Set(allowedStations.map((station) => station.id));
+  const filterStations = [...allowedStations, { id: UNASSIGNED_STATION_ID, name: ar ? "بدون محطة" : "Without station" }];
+  const allowedStationIds = new Set(filterStations.map((station) => station.id));
   const selectedStationIds = stationFilter.filter((id) => allowedStationIds.has(id));
   const scopedItems = items.filter((item) => !ownerIds.has(item.employeeId) && (payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (payrollScope === null || payrollScope.includes(itemStationId(item))))));
-  const visible = selectedStationIds.length === 0 ? scopedItems : scopedItems.filter((item) => selectedStationIds.includes(itemStationId(item)));
-  const selectedStationNames = allowedStations.filter((station) => selectedStationIds.includes(station.id)).map((station) => station.name);
+  const visible = selectedStationIds.length === 0 ? scopedItems : scopedItems.filter((item) => selectedStationIds.includes(itemStationId(item) || UNASSIGNED_STATION_ID));
+  const selectedStationNames = filterStations.filter((station) => selectedStationIds.includes(station.id)).map((station) => station.name);
   const stationLabel = selectedStationNames.length ? selectedStationNames.join(", ") : (ar ? "جميع المحطات" : "All stations");
   const currency = visible[0]?.currency || "SAR";
   const totalNet = visible.reduce((s, i) => s + netOf(i), 0);
@@ -122,7 +125,7 @@ export default function Payroll() {
             className="px-3 py-2 rounded-md border border-input bg-card text-sm font-body"
             dir="ltr"
           />
-          <StationMultiSelect stations={allowedStations} value={selectedStationIds} onChange={setStationFilter} ar={ar} />
+          <StationMultiSelect stations={filterStations} value={selectedStationIds} onChange={setStationFilter} ar={ar} />
           <button onClick={syncFromProfiles} className="flex items-center gap-1.5 rounded-md border border-input bg-card px-3.5 py-2 text-sm font-body text-foreground hover:bg-secondary">
             <RefreshCw className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تحديث من الملفات الشخصية" : "Refresh from profiles"}
           </button>
