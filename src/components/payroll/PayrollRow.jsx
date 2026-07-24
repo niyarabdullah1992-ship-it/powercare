@@ -14,9 +14,9 @@ export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid,
       value={item[field] ?? 0}
       disabled={!editable || item.paid}
       onChange={(e) => onChange(field, Number(normalizeLocalizedNumber(e.target.value)) || 0)}
-      aria-invalid={field === "base" && num(item.base) <= 0}
-      title={field === "base" ? (ar ? "يُعدَّل من الملف الشخصي للموظف" : "Edit from the employee profile") : undefined}
-      className={`h-8 w-full max-w-24 rounded-md border bg-background px-2 text-center text-sm font-body disabled:opacity-60 ${field === "base" && num(item.base) <= 0 ? "border-destructive/60" : "border-input"}`}
+      aria-invalid={field === "base" && !item.isOwner && num(item.base) <= 0}
+      title={field === "base" ? (item.isOwner ? (ar ? "راتب المالك اختياري" : "Owner salary is optional") : (ar ? "يُعدَّل من الملف الشخصي للموظف" : "Edit from the employee profile")) : undefined}
+      className={`h-8 w-full max-w-24 rounded-md border bg-background px-2 text-center text-sm font-body disabled:opacity-60 ${field === "base" && !item.isOwner && num(item.base) <= 0 ? "border-destructive/60" : "border-input"}`}
       dir="ltr"
     />
   );
@@ -48,8 +48,8 @@ export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid,
       <td data-label={ar ? "الحالة" : "Status"}>
         <button
           onClick={() => onTogglePaid(!item.paid)}
-          disabled={!item.paid && num(item.base) <= 0}
-          title={!item.paid && num(item.base) <= 0 ? (ar ? "حدّد الراتب الأساسي أولاً" : "Set the base salary first") : undefined}
+          disabled={!item.isOwner && !item.paid && num(item.base) <= 0}
+          title={!item.isOwner && !item.paid && num(item.base) <= 0 ? (ar ? "حدّد الراتب الأساسي أولاً" : "Set the base salary first") : undefined}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-body font-medium border transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
             item.paid
               ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800"

@@ -16,7 +16,7 @@ export function getRun(data, month) {
 export const netOf = (i) =>
   (Number(i.base) || 0) + (Number(i.allowances) || 0) + (Number(i.bonus) || 0) - (Number(i.deductions) || 0);
 
-export const isPayrollEmployee = (employee) => employee?.role !== "owner";
+export const isPayrollEmployee = (employee, includeOwner = false) => includeOwner || employee?.role !== "owner";
 
 const itemFromEmployee = (employee) => {
   const profile = employee.profile || {};
@@ -24,16 +24,17 @@ const itemFromEmployee = (employee) => {
   return {
     id: uid("itm"), employeeId: employee.id,
     employeeName: employee.name, employeePosition: employee.position || employee.role || "", employeeStationId: employee.stationId || null,
+    isOwner: employee.role === "owner",
     base: Number(profile.baseSalary) || 0, allowances: Number(profile.allowances) || 0,
     bonus: 0, deductions: 0, currency: /^[A-Z]{3}$/.test(currency) ? currency : "SAR", paid: false,
   };
 };
 
 export function payrollItemIssues(item) {
-  if (!Number.isFinite(Number(item?.base)) || Number(item.base) <= 0) return ["BASE_REQUIRED"];
+  if (!Number.isFinite(Number(item?.base)) || (!item?.isOwner && Number(item.base) <= 0) || Number(item.base) < 0) return ["BASE_REQUIRED"];
   const fields = ["allowances", "bonus", "deductions"];
   if (fields.some((field) => !Number.isFinite(Number(item?.[field])) || Number(item[field]) < 0)) return ["INVALID_AMOUNTS"];
-  if (netOf(item) <= 0) return ["NET_REQUIRED"];
+  if (!item?.isOwner && netOf(item) <= 0) return ["NET_REQUIRED"];
   if (!/^[A-Z]{3}$/.test(String(item?.currency || ""))) return ["CURRENCY_REQUIRED"];
   return [];
 }
@@ -48,10 +49,11 @@ export function ensurePayrollRun(companyId, month) {
       run = { id: uid("run"), month, createdAt: new Date().toISOString(), items: [] };
       d.payrollRuns.push(run);
     }
-    const ownerIds = new Set((d.employees || []).filter((employee) => !isPayrollEmployee(employee)).map((employee) => employee.id));
-    run.items = run.items.filter((item) => !ownerIds.has(item.employeeId));
+    const includeOwner = d.settings?.includeOwnerInPayroll === true;
+    const ownerIds = new Set((d.employees || []).filter((employee) => employee.role === "owner").map((employee) => employee.id));
+    if (!includeOwner) run.items = run.items.filter((item) => !ownerIds.has(item.employeeId));
     const existing = new Set(run.items.map((item) => item.employeeId));
-    (d.employees || []).filter(isPayrollEmployee).forEach((employee) => {
+    (d.employees || []).filter((employee) => isPayrollEmployee(employee, includeOwner)).forEach((employee) => {
       const hiredMonth = employee.createdAt ? monthKey(new Date(employee.createdAt)) : month;
       if (existing.has(employee.id) || hiredMonth > month) return;
       run.items.push(itemFromEmployee(employee));
@@ -70,7 +72,8 @@ export function syncPayrollFromProfiles(companyId, month) {
   updateCompany(companyId, (d) => {
     const run = (d.payrollRuns || []).find((r) => r.month === month);
     if (!run) return;
-    const employees = new Map((d.employees || []).filter(isPayrollEmployee).map((employee) => [employee.id, employee]));
+    const includeOwner = d.settings?.includeOwnerInPayroll === true;
+    const employees = new Map((d.employees || []).filter((employee) => isPayrollEmployee(employee, includeOwner)).map((employee) => [employee.id, employee]));
     run.items.forEach((item) => {
       if (item.paid) return;
       const employee = employees.get(item.employeeId);
@@ -95,7 +98,7 @@ export function syncPayrollFromProfiles(companyId, month) {
 export function syncEmployeeSalaryToPayroll(companyId, employeeId) {
   updateCompany(companyId, (d) => {
     const employee = (d.employees || []).find((entry) => entry.id === employeeId);
-    if (!employee || !isPayrollEmployee(employee)) return;
+    if (!employee || !isPayrollEmployee(employee, d.settings?.includeOwnerInPayroll === true)) return;
     d.payrollRuns = d.payrollRuns || [];
     const month = monthKey();
     let run = d.payrollRuns.find((entry) => entry.month === month);
@@ -116,6 +119,17 @@ export function syncEmployeeSalaryToPayroll(companyId, employeeId) {
     item.employeeName = profileItem.employeeName;
     item.employeePosition = profileItem.employeePosition;
     item.employeeStationId = profileItem.employeeStationId;
+  });
+}
+
+export function setOwnerPayrollEnabled(companyId, enabled) {
+  updateCompany(companyId, (d) => {
+    d.settings = d.settings || {};
+    d.settings.includeOwnerInPayroll = Boolean(enabled);
+    if (!enabled) {
+      const ownerIds = new Set((d.employees || []).filter((employee) => employee.role === "owner").map((employee) => employee.id));
+      (d.payrollRuns || []).forEach((run) => { run.items = (run.items || []).filter((item) => !ownerIds.has(item.employeeId)); });
+    }
   });
 }
 

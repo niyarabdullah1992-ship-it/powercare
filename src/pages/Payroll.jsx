@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { Banknote, Users, CheckCircle2, Wallet, RefreshCw, FileText } from "lucide-react";
-import { ensurePayrollRun, getRun, isPayrollEmployee, monthKey, netOf, payrollItemIssues, updatePayrollItem, setItemPaid, syncPayrollFromProfiles } from "@/lib/payroll";
+import { ensurePayrollRun, getRun, isPayrollEmployee, monthKey, netOf, payrollItemIssues, setOwnerPayrollEnabled, updatePayrollItem, setItemPaid, syncPayrollFromProfiles } from "@/lib/payroll";
 import { printReport } from "@/lib/printReport";
 import PayrollRow from "@/components/payroll/PayrollRow";
 import PayrollReportExport from "@/components/payroll/PayrollReportExport";
 import StationMultiSelect from "@/components/payroll/StationMultiSelect";
 import PayrollSalaryNotice from "@/components/payroll/PayrollSalaryNotice";
+import OwnerPayrollToggle from "@/components/payroll/OwnerPayrollToggle";
 import { canAdjustPayroll, hrScopeStations } from "@/lib/permissions";
 import { toast } from "@/components/ui/use-toast";
 
@@ -20,10 +21,11 @@ export default function Payroll() {
   const [showReport, setShowReport] = useState(false);
 
   const canView = canAdjustPayroll(currentUser, data);
+  const includeOwner = data?.settings?.includeOwnerInPayroll === true;
 
   useEffect(() => {
     if (canView && company) ensurePayrollRun(company.id, month);
-  }, [company?.id, month, canView]);
+  }, [company?.id, month, canView, includeOwner]);
 
   if (!canView) {
     return <p className="text-sm text-muted-foreground font-body py-10 text-center">{ar ? "هذا القسم متاح للإدارة العليا فقط." : "This section is available to executive management only."}</p>;
@@ -35,8 +37,8 @@ export default function Payroll() {
     ? hrScopeStations(currentUser, data)
     : currentUser?.role === "pgm" ? (currentUser.managedStations || []) : null;
   const stationIdOf = (stationId) => stationId || data.stations?.[0]?.id || null;
-  const payrollEmployees = (data.employees || []).filter((employee) => isPayrollEmployee(employee) && (payrollScope === null || payrollScope.includes(stationIdOf(employee.stationId))));
-  const ownerIds = new Set((data.employees || []).filter((employee) => !isPayrollEmployee(employee)).map((employee) => employee.id));
+  const payrollEmployees = (data.employees || []).filter((employee) => isPayrollEmployee(employee, includeOwner) && (payrollScope === null || payrollScope.includes(stationIdOf(employee.stationId))));
+  const ownerIds = new Set(includeOwner ? [] : (data.employees || []).filter((employee) => employee.role === "owner").map((employee) => employee.id));
   const employeeForItem = (item) => payrollEmployees.find((employee) => employee.id === item.employeeId) || {
     id: item.employeeId,
     name: item.employeeName || (ar ? "موظف سابق" : "Former employee"),
@@ -120,6 +122,8 @@ export default function Payroll() {
           </button>
         </div>
       </div>
+
+      <OwnerPayrollToggle checked={includeOwner} onChange={(checked) => setOwnerPayrollEnabled(company.id, checked)} ar={ar} />
 
       <PayrollSalaryNotice ar={ar} />
 
