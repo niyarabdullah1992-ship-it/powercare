@@ -1,8 +1,18 @@
-export const ORG_RANKS = ["manager", "supervisor", "lead"];
+export const DEFAULT_ORG_RANKS = [
+  { id: "manager", labelAr: "مدير", labelEn: "Manager", icon: "crown", color: "navy" },
+  { id: "supervisor", labelAr: "سوبرفايزر", labelEn: "Supervisor", icon: "star", color: "ivory" },
+  { id: "lead", labelAr: "قائد فريق", labelEn: "Team lead", icon: "shield", color: "blue" },
+];
 
-export function resolveRank(node, nodes = []) {
+export const getOrgRanks = (value) => {
+  const ranks = Array.isArray(value) ? value : value?.orgRanks;
+  return Array.isArray(ranks) && ranks.length ? ranks : DEFAULT_ORG_RANKS;
+};
+
+export function resolveRank(node, nodes = [], configuredRanks) {
   if (!node || node.type !== "employee") return null;
-  if (ORG_RANKS.includes(node.rank)) return node.rank;
+  const ranks = getOrgRanks(configuredRanks);
+  if (ranks.some((rank) => rank.id === node.rank)) return node.rank;
   const byId = new Map(nodes.map((item) => [item.id, item]));
   const visited = new Set([node.id]);
   let depth = 0;
@@ -13,8 +23,12 @@ export function resolveRank(node, nodes = []) {
     depth += 1;
     if (cursor?.type === "station") break;
   }
-  if (depth === 1) return "manager";
-  if (depth === 2) return "supervisor";
-  if (depth >= 3) return "lead";
-  return null;
+  if (!depth) return null;
+  return ranks[Math.min(depth - 1, ranks.length - 1)]?.id || null;
+}
+
+export function getOrgRankDefinition(ranks, rankId) {
+  const list = getOrgRanks(ranks);
+  const index = list.findIndex((rank) => rank.id === rankId);
+  return index < 0 ? null : { ...list[index], index };
 }

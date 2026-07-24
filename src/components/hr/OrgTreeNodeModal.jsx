@@ -5,9 +5,12 @@ import { useI18n } from "@/lib/i18n";
 import { canAddStation } from "@/lib/planLimits";
 import OrgTreeNodeFields from "@/components/hr/OrgTreeNodeFields";
 import OrgTreeCreateFields from "@/components/hr/OrgTreeCreateFields";
+import OrgRankManager from "@/components/hr/OrgRankManager";
+import OrgRankPicker from "@/components/hr/OrgRankPicker";
 import OrgParentPicker from "@/components/hr/OrgParentPicker";
 import StationLocationEditor from "@/components/stations/StationLocationEditor";
-import { createOrgRecord, deleteOrgNode, nodeAccess, saveOrgNode, saveOrgStationLocation, saveOrgStationName } from "@/lib/orgTree";
+import { createOrgRecord, deleteOrgNode, nodeAccess, saveOrgNode, saveOrgRanks, saveOrgStationLocation, saveOrgStationName } from "@/lib/orgTree";
+import { getOrgRanks } from "@/lib/orgTreeRank";
 
 const empty = { name: "", email: "", stationId: "", location: "", stationType: "" };
 export default function OrgTreeNodeModal({ initial, data, company, companyId, lang, onClose }) {
@@ -17,6 +20,7 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
   const [refId] = useState(initial?.refId || "");
   const [title, setTitle] = useState(initial?.title || "");
   const [rank, setRank] = useState(initial?.rank || null);
+  const [ranks, setRanks] = useState(() => getOrgRanks(data).map((item) => ({ ...item })));
   const [parentId, setParentId] = useState(initial?.parentId || null);
   const [form, setForm] = useState(empty);
   const station = initial?.type === "station" ? data.stations.find((item) => item.id === initial.refId) : null;
@@ -38,6 +42,7 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
   };
   const submit = (event) => {
     event.preventDefault();
+    saveOrgRanks(companyId, ranks);
     if (initial) {
       const order = parentId === initial.parentId ? initial.order : nodes.filter((node) => (node.parentId || null) === parentId).length;
       saveOrgNode(companyId, { ...initial, title: title.trim(), rank: type === "employee" ? rank : null, parentId, order }, permissions);
@@ -51,12 +56,13 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
       const allowed = (data.settings?.allowedEmails || []).map((item) => String(item).trim().toLowerCase());
       if (type === "employee" && data.employees.some((employee) => employee.email?.toLowerCase() === email)) return alert(ar ? "البريد مستخدم مسبقًا." : "Email already exists.");
       if (type === "employee" && allowed.length && !allowed.includes(email)) return alert(ar ? "البريد غير موجود في القائمة المسموحة." : "Email is not on the allowed list.");
-      createOrgRecord(companyId, { ...form, ...mapLocation, email, type, title: title.trim(), parentId }, permissions);
+      createOrgRecord(companyId, { ...form, ...mapLocation, email, type, title: title.trim(), rank: type === "employee" ? rank : null, parentId }, permissions);
     }
     onClose();
   };
   return <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/45 p-4" onClick={onClose}><form onSubmit={submit} onClick={(event) => event.stopPropagation()} dir={ar ? "rtl" : "ltr"} className="max-h-[92vh] w-full max-w-2xl space-y-4 overflow-auto rounded-xl border border-accent/40 bg-card p-5 shadow-elevated"><div className="flex items-start justify-between"><div><h3 className="font-heading text-2xl font-semibold">{initial ? (ar ? "تعديل العقدة" : "Edit node") : (ar ? "إنشاء مباشر" : "Create directly")}</h3><p className="text-xs text-muted-foreground">{ar ? "أنشئ محطة أو موظفًا وأضفه للشجرة فورًا" : "Create a station or employee and add it to the tree"}</p></div><button type="button" onClick={onClose} className="rounded-md p-2 hover:bg-muted"><X className="h-4 w-4" /></button></div>
-    {initial ? <OrgTreeNodeFields type={type} refId={refId} setRefId={() => {}} title={title} setTitle={setTitle} rank={rank} setRank={setRank} stationName={stationName} setStationName={setStationName} permissions={permissions} setPermissions={setPermissions} employees={data.employees || []} stations={data.stations || []} usedEmployees={[]} editing ar={ar} /> : <OrgTreeCreateFields type={type} setType={setType} form={form} setForm={setForm} title={title} setTitle={setTitle} permissions={permissions} setPermissions={setPermissions} stations={data.stations || []} ar={ar} />}
+    {initial ? <OrgTreeNodeFields type={type} refId={refId} setRefId={() => {}} title={title} setTitle={setTitle} stationName={stationName} setStationName={setStationName} permissions={permissions} setPermissions={setPermissions} employees={data.employees || []} stations={data.stations || []} usedEmployees={[]} editing ar={ar} /> : <OrgTreeCreateFields type={type} setType={setType} form={form} setForm={setForm} title={title} setTitle={setTitle} permissions={permissions} setPermissions={setPermissions} stations={data.stations || []} ar={ar} />}
+    {type === "employee" && <><OrgRankPicker rank={rank} setRank={setRank} ranks={ranks} ar={ar} /><OrgRankManager ranks={ranks} onChange={setRanks} ar={ar} /></>}
     <OrgParentPicker nodes={nodes} employees={data.employees || []} stations={data.stations || []} currentId={initial?.id} value={parentId} onChange={setParentId} ar={ar} />
     {type === "station" && <button type="button" onClick={() => setShowMap(true)} className="flex w-full items-center justify-center gap-2 rounded-md border border-accent/40 bg-accent/5 px-4 py-2 text-sm font-semibold text-accent"><MapPin className="h-4 w-4" />{mapLocation.lat != null ? (ar ? "تعديل الموقع على الخريطة" : "Edit location on map") : (ar ? "تحديد الموقع على الخريطة" : "Set location on map")}</button>}
     {type === "employee" && <button type="button" onClick={suggest} disabled={!(initial ? refId : form.name.trim()) || suggesting} className="flex w-full items-center justify-center gap-2 rounded-md border border-accent/40 bg-accent/5 px-4 py-2 text-sm font-semibold text-accent disabled:opacity-40">{suggesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{ar ? "اقتراح مسمى بالذكاء الاصطناعي" : "Suggest title with AI"}</button>}

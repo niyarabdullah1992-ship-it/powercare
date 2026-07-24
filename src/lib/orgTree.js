@@ -75,10 +75,16 @@ export function createOrgRecord(companyId, record, permissions = {}) {
     }
     const id = `emp_${Math.random().toString(36).slice(2, 9)}`;
     data.employees.push({ id, name: record.name.trim(), email: record.email, role: "employee", stationId: record.stationId || null, phone: "", anonymousId: `ANON-${Math.floor(Math.random() * 1e8).toString(16).toUpperCase().padStart(8, "0")}`, managedStations: [], profile: {}, createdAt: new Date().toISOString() });
-    data.orgTree.push({ id: `org_${id}`, type: "employee", refId: id, title: record.title, parentId, order });
+    data.orgTree.push({ id: `org_${id}`, type: "employee", refId: id, title: record.title, rank: record.rank || null, parentId, order });
     const score = scorePermissions(permissions);
     data.smartPositions = data.smartPositions || [];
     data.smartPositions.push({ employeeId: id, title: record.title, titleManual: true, permissions, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() });
+  });
+}
+
+export function saveOrgRanks(companyId, ranks) {
+  updateCompany(companyId, (data) => {
+    data.orgRanks = ranks;
   });
 }
 
