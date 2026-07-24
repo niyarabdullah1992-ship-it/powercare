@@ -32,28 +32,15 @@ const validOrgParentId = (nodes, type, parentId) => {
   return parent?.id || null;
 };
 
-const normalizeStationParents = (nodes) => {
-  let changed = false;
-  nodes.filter((node) => node.type === "station").forEach((node) => {
-    const parentId = validOrgParentId(nodes, node.type, node.parentId);
-    if ((node.parentId || null) !== parentId) { node.parentId = parentId; changed = true; }
-  });
-  if (changed) new Set(nodes.map((node) => node.parentId || null)).forEach((parentId) => renumber(nodes, parentId));
-  return changed;
-};
-
 export function initializeOrgTree(companyId, data) {
   const existing = Array.isArray(data?.orgTree)
     ? data.orgTree
     : (data.smartPositions || []).map((position, order) => ({ id: `org_${position.employeeId}`, type: "employee", refId: position.employeeId, title: position.title || "", parentId: null, order }));
   const stationIds = new Set(existing.filter((node) => node.type === "station").map((node) => node.refId));
   const missingStations = (data.stations || []).filter((station) => !stationIds.has(station.id));
-  const invalidStationParent = existing.some((node) => node.type === "station" && node.parentId && existing.find((parent) => parent.id === node.parentId)?.type === "employee");
-  if (Array.isArray(data?.orgTree) && !missingStations.length && !invalidStationParent) return;
+  if (Array.isArray(data?.orgTree) && !missingStations.length) return;
   updateCompany(companyId, (draft) => {
-    const nodes = [...existing, ...missingStations.map((station, index) => ({ id: `org_station_${station.id}`, type: "station", refId: station.id, title: station.location || "", parentId: null, order: existing.length + index }))];
-    normalizeStationParents(nodes);
-    draft.orgTree = nodes;
+    draft.orgTree = [...existing, ...missingStations.map((station, index) => ({ id: `org_station_${station.id}`, type: "station", refId: station.id, title: station.location || "", parentId: null, order: existing.length + index }))];
   });
 }
 
@@ -141,8 +128,7 @@ export function moveOrgNode(companyId, nodeId, targetId, mode) {
     if (!moving || !target || moving.id === target.id) return;
     const targetParent = nodes.find((node) => node.id === target.parentId);
     const stationUnderEmployee = moving.type === "station" && ((mode === "below" || mode === "inside") ? target.type === "employee" : targetParent?.type === "employee");
-    const stationMadeChildOfEmployee = moving.type === "employee" && target.type === "station" && mode === "above";
-    if (stationUnderEmployee || stationMadeChildOfEmployee) return;
+    if (stationUnderEmployee) return;
     const oldParent = moving.parentId || null;
     let cursor = target;
     let targetIsDescendant = false;
