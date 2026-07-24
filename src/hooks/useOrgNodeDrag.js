@@ -29,7 +29,11 @@ export default function useOrgNodeDrag(nodeId, enabled, onStart, onEnd, onDrop) 
     clear();
     if (active.current && !cancelled) {
       const zone = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-org-drop]");
-      if (zone) onDrop(zone.dataset.targetId, zone.dataset.dropMode);
+      if (zone) {
+        const rect = zone.getBoundingClientRect();
+        const mode = event.clientX < rect.left + rect.width / 2 ? "visual-left" : "visual-right";
+        onDrop(zone.dataset.targetId, mode);
+      }
       blockClick.current = true;
       setTimeout(() => { blockClick.current = false; }, 0);
       event.preventDefault();
