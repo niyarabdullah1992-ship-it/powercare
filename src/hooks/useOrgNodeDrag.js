@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { getOrgDirectDropMode } from "@/lib/orgDirectDrop";
 
 export default function useOrgNodeDrag(nodeId, enabled, onStart, onEnd, onDrop) {
   const timer = useRef(null);
@@ -29,7 +30,10 @@ export default function useOrgNodeDrag(nodeId, enabled, onStart, onEnd, onDrop) 
     clear();
     if (active.current && !cancelled) {
       const zone = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-org-drop]");
-      if (zone) onDrop(zone.dataset.targetId, zone.dataset.dropMode);
+      if (zone) {
+        const mode = zone.dataset.dropMode === "auto" ? getOrgDirectDropMode(zone, event.clientX, event.clientY) : zone.dataset.dropMode;
+        onDrop(zone.dataset.targetId, mode);
+      }
       blockClick.current = true;
       setTimeout(() => { blockClick.current = false; }, 0);
       event.preventDefault();
