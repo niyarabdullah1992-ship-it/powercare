@@ -18,7 +18,7 @@ export default function TaskCard({
   commentsOpen, setCommentsOpen, commentText, setCommentText, commentFiles, setCommentFiles, submitComment,
   markIssue, setMarkIssue,
   allSectionFolders, moveTaskToSection, setEditTarget, deleteTarget,
-  taskLocked, convertToRemote, canChangeCompletionMode,
+  taskLocked, convertToRemote, canChangeCompletionMode, completeTarget,
 }) {
   const pct = Math.min(Math.round((tg.completed_tasks / tg.task_target) * 100), 100);
   const daysLeft = Math.ceil((new Date(tg.end_date).getTime() - Date.now()) / 86400000);
@@ -29,6 +29,7 @@ export default function TaskCard({
   const [rejectReason, setRejectReason] = useState("");
   const [disputing, setDisputing] = useState(false);
   const [disputeMessage, setDisputeMessage] = useState("");
+  const [completing, setCompleting] = useState(false);
   const comments = Array.isArray(tg.comments) ? tg.comments : [];
   const lastComment = comments[comments.length - 1];
   const canObject = !canManage && tg.status === "active" && lastComment?.is_rejection;
@@ -133,10 +134,13 @@ export default function TaskCard({
           <span>{lang === "ar" ? "هذه المهمة تتطلب الحضور في الموقع — يرجى تسجيل الدخول أولًا" : "This task requires on-site attendance — please check in first."}</span>
         </div>
       )}
-      {canManage && canChangeCompletionMode && completionMode === "onsite" && !done && (
-        <button onClick={() => convertToRemote(tg)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-body text-muted-foreground hover:text-foreground">
-          🌐 {lang === "ar" ? "تحويل إلى عن بُعد" : "Convert to remote"}
-        </button>
+      {canManage && !done && (
+        <div className="flex flex-wrap gap-2">
+          {canChangeCompletionMode && completionMode === "onsite" && <button onClick={() => convertToRemote(tg)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-body text-muted-foreground hover:text-foreground">🌐 {lang === "ar" ? "تحويل إلى عن بُعد" : "Convert to remote"}</button>}
+          <button disabled={completing} onClick={async () => { setCompleting(true); try { await completeTarget(tg); } finally { setCompleting(false); } }} className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
+            <Check className="h-3.5 w-3.5" /> {completing ? (lang === "ar" ? "جارٍ الإنهاء..." : "Completing...") : (lang === "ar" ? "إنهاء المهمة" : "Complete task")}
+          </button>
+        </div>
       )}
       <div className="flex items-center gap-1.5 text-xs font-body">
         {done ? (

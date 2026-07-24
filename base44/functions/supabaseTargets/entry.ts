@@ -613,6 +613,31 @@ Deno.serve(async (req) => {
       return Response.json({ target: await withTaskMetadata(updated[0]) });
     }
 
+    if (action === "managerComplete") {
+      if (!isManager) return Response.json({ error: "Forbidden: only managers can complete tasks" }, { status: 403 });
+      const { targetId } = body;
+      if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
+      const tg = await getScopedTarget(targetId);
+      if (!tg) return Response.json({ error: "Target not found" }, { status: 404 });
+      if (!canManageTarget(tg)) return Response.json({ error: "Forbidden" }, { status: 403 });
+      if (tg.status === "completed") return Response.json({ target: tg });
+      const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, {
+        method: "PATCH",
+        headers: { ...headers, Prefer: "return=representation" },
+        body: JSON.stringify({ status: "completed", completed_tasks: tg.task_target }),
+      });
+      const updated = await patchRes.json();
+      if (!patchRes.ok) return Response.json({ error: updated?.message || "Failed to complete task" }, { status: 400 });
+      if (tg.assignment_type === "member" && tg.employee_id) {
+        await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ user_id: tg.employee_id, message: `✅ ${auth?.name || "Manager"} completed task: ${tg.title || "Untitled"}` }),
+        });
+      }
+      return Response.json({ target: await withTaskMetadata(updated[0]) });
+    }
+
     if (action === "disputeRejection") {
       const { targetId, message, escalationLevel, notifyUserIds } = body;
       if (!targetId || !(message || "").trim()) return Response.json({ error: "Missing fields" }, { status: 400 });

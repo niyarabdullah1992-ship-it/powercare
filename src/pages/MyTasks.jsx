@@ -669,6 +669,20 @@ export default function MyTasks() {
     }
   };
 
+  const completeTarget = async (tg) => {
+    const previous = { ...tg };
+    setTargets((items) => items.map((item) => item.id === tg.id ? { ...item, status: "completed", completed_tasks: item.task_target } : item));
+    try {
+      const res = await targetsCall({ action: "managerComplete", targetId: tg.id });
+      const updated = res?.data?.target;
+      if (updated) setTargets((items) => items.map((item) => item.id === updated.id ? updated : item));
+    } catch (err) {
+      setTargets((items) => items.map((item) => item.id === tg.id ? previous : item));
+      alert(err?.response?.data?.error || (lang === "ar" ? "تعذر إنهاء المهمة" : "Failed to complete task"));
+      throw err;
+    }
+  };
+
   const deleteTarget = async (targetId) => {
     const tg = targets.find((x) => x.id === targetId);
     try {
@@ -806,6 +820,7 @@ export default function MyTasks() {
       taskLocked={!canManage(tg) && !isIndividual && (tg.completionMode || "onsite") === "onsite" && !checkedInToday}
       convertToRemote={convertToRemote}
       canChangeCompletionMode={canSetCompletionMode}
+      completeTarget={completeTarget}
     />
   );
 
