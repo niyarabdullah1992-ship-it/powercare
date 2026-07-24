@@ -18,9 +18,11 @@ export default function usePowerCareLogin(returnPath = "/login") {
 
   useEffect(() => { if (session) navigate("/app", { replace: true }); }, [session, navigate]);
   useEffect(() => {
-    if (!new URLSearchParams(window.location.search).has("google_login")) return;
+    const params = new URLSearchParams(window.location.search);
+    const provider = params.has("microsoft_login") ? "Microsoft" : params.has("google_login") ? "Google" : null;
+    if (!provider) return;
     setLoading(true);
-    const loginKind = new URLSearchParams(window.location.search).get("type") === "individual" ? "individual" : "company";
+    const loginKind = params.get("type") === "individual" ? "individual" : "company";
     setKind(loginKind);
     loginWithGoogle(loginKind).then((result) => {
       if (result?.selectionRequired) setGoogleAccounts(result.accounts || []);
@@ -29,8 +31,8 @@ export default function usePowerCareLogin(returnPath = "/login") {
         setPendingId(result.pendingId);
         setAccounts([]);
         setGoogleOtpAccountKey(result.accountKey || null);
-      } else if (!result) setError("No workspace is linked to this Google account");
-    }).catch((error) => setError(error.message || "Google login failed"))
+      } else if (!result) setError(`No workspace is linked to this ${provider} account`);
+    }).catch((error) => setError(error.message || `${provider} login failed`))
       .finally(() => setLoading(false));
   }, []);
 
@@ -60,7 +62,8 @@ export default function usePowerCareLogin(returnPath = "/login") {
       setError(error.message || "Could not resend the code"); return false;
     }
   };
-  const google = () => base44.auth.loginWithProvider("sso", `${returnPath}?google_login=1&type=${kind}`);
+  const google = () => base44.auth.loginWithProvider("google", `${returnPath}?google_login=1&type=${kind}`);
+  const microsoft = () => base44.auth.loginWithProvider("microsoft", `${returnPath}?microsoft_login=1&type=${kind}`);
   const chooseGoogleAccount = async (accountKey) => {
     setError(""); setLoading(true);
     const result = await loginWithGoogle(kind, accountKey);
@@ -74,5 +77,5 @@ export default function usePowerCareLogin(returnPath = "/login") {
     setLoading(false);
   };
   const backFromOtp = () => { setPendingId(null); setGoogleOtpAccountKey(null); };
-  return { kind, setKind, email, setEmail, password, setPassword, error, loading, pendingId, accounts, googleAccounts, setGoogleAccounts, submit, verify, resend, google, chooseGoogleAccount, backFromOtp };
+  return { kind, setKind, email, setEmail, password, setPassword, error, loading, pendingId, accounts, googleAccounts, setGoogleAccounts, submit, verify, resend, google, microsoft, chooseGoogleAccount, backFromOtp };
 }
