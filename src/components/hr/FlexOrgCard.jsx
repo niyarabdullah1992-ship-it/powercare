@@ -19,6 +19,6 @@ export default function FlexOrgCard({ node, label, stationManagerName, isStation
     {childrenCount > 0 && <button type="button" onClick={onToggleCollapse} className="absolute -end-3 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-accent/40 bg-card text-accent shadow-sm" title={collapsed ? (ar ? "إظهار الفروع" : "Expand branches") : (ar ? "طي الفروع" : "Collapse branches")} aria-label={collapsed ? (ar ? "إظهار الفروع" : "Expand branches") : (ar ? "طي الفروع" : "Collapse branches")}>
       {collapsed ? <ChevronRight className="h-4 w-4 rtl:rotate-180" /> : <ChevronDown className="h-4 w-4" />}
     </button>}
-    <OrgTreeDropZones active={dragging && dragging !== node.id} targetId={node.id} onDrop={(mode) => onDrop(node.id, mode)} ar={ar} />
+    <OrgTreeDropZones active={dragging && dragging !== node.id} targetId={node.id} onDrop={(mode, sourceId) => onDrop(node.id, mode, sourceId)} ar={ar} />
   </div>;
 }
