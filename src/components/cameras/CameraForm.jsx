@@ -1,0 +1,18 @@
+import React, { useState } from "react";
+import { X } from "lucide-react";
+
+const empty = { name: "", stationId: "", streamUrl: "", streamType: "player", lat: "", lng: "", status: "active" };
+export default function CameraForm({ initial, stations, ar, onSave, onClose }) {
+  const [form, setForm] = useState(initial || empty);
+  const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const chooseStation = (id) => { const station = stations.find((item) => item.id === id); setForm((current) => ({ ...current, stationId: id, lat: station?.lat ?? current.lat, lng: station?.lng ?? current.lng })); };
+  const labels = { name: ar ? "اسم الكاميرا" : "Camera name", url: ar ? "رابط البث الآمن" : "Secure stream URL", station: ar ? "المحطة" : "Station" };
+  return <div className="fixed inset-0 z-[100] grid place-items-center bg-foreground/40 p-4"><form onSubmit={(event) => { event.preventDefault(); onSave(form); }} className="w-full max-w-xl space-y-4 rounded-xl border border-border bg-card p-5 shadow-elevated">
+    <div className="flex items-center justify-between"><h2 className="font-heading text-xl font-semibold">{initial ? (ar ? "تعديل الكاميرا" : "Edit camera") : (ar ? "إضافة كاميرا IP" : "Add IP camera")}</h2><button type="button" onClick={onClose}><X className="h-5 w-5" /></button></div>
+    <div className="grid gap-3 sm:grid-cols-2"><input required value={form.name} onChange={(e) => set("name", e.target.value)} placeholder={labels.name} className="rounded-md border p-3" /><select required value={form.stationId} onChange={(e) => chooseStation(e.target.value)} className="rounded-md border p-3"><option value="">{labels.station}</option>{stations.map((station) => <option key={station.id} value={station.id}>{station.name}</option>)}</select></div>
+    <input required value={form.streamUrl} onChange={(e) => set("streamUrl", e.target.value)} placeholder={labels.url} className="w-full rounded-md border p-3" />
+    <div className="grid gap-3 sm:grid-cols-2"><select value={form.streamType} onChange={(e) => set("streamType", e.target.value)} className="rounded-md border p-3"><option value="player">Web player</option><option value="hls">HLS / MP4</option><option value="mjpeg">MJPEG</option><option value="rtsp">RTSP</option></select><select value={form.status} onChange={(e) => set("status", e.target.value)} className="rounded-md border p-3"><option value="active">{ar ? "نشطة" : "Active"}</option><option value="offline">{ar ? "متوقفة" : "Offline"}</option></select></div>
+    <div className="grid gap-3 sm:grid-cols-2"><input type="number" step="any" value={form.lat} onChange={(e) => set("lat", e.target.value)} placeholder={ar ? "خط العرض" : "Latitude"} className="rounded-md border p-3" /><input type="number" step="any" value={form.lng} onChange={(e) => set("lng", e.target.value)} placeholder={ar ? "خط الطول" : "Longitude"} className="rounded-md border p-3" /></div>
+    <p className="text-[11px] text-muted-foreground">{ar ? "استخدم رابط HTTPS متوافقًا مع المتصفح، ولا تضع بيانات الدخول داخل الرابط." : "Use a browser-compatible HTTPS URL and never include credentials in it."}</p><div className="flex justify-end gap-2"><button type="button" onClick={onClose} className="rounded-md border px-4 py-2 text-sm">{ar ? "إلغاء" : "Cancel"}</button><button className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground">{ar ? "حفظ" : "Save"}</button></div>
+  </form></div>;
+}

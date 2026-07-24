@@ -2,10 +2,10 @@
 // used by the sidebar/mobile nav and the dashboards' quick-access shortcuts.
 
 const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/inventory", "/app/expenses", "/app/signing", "/app/assistant", "/app/complaints", "/app/performance", "/app/manual"];
-const MANAGER_EXTRA = ["/app/safety"];
+const MANAGER_EXTRA = ["/app/safety", "/app/cameras"];
 const EXEC_EXTRA = ["/app/hr", "/app/payroll"];
 const SMART_SECTION_ROUTES = {
-  complaints: "/app/complaints", safety: "/app/safety", payroll: "/app/payroll",
+  complaints: "/app/complaints", safety: "/app/safety", cameras: "/app/cameras", payroll: "/app/payroll",
   performance: "/app/performance", attendance: "/app/attendance",
   hr: "/app/hr", inventory: "/app/inventory",
 };
@@ -16,7 +16,7 @@ export function allowedNavFor(user, data) {
   const role = user.role;
   const hrLevel = user.hrLevelId && Array.isArray(data?.hrLevels) ? data.hrLevels.find((level) => level.id === user.hrLevelId) : null;
   const hrPermissions = new Set(hrLevel?.permissions || []);
-  if (["station_manager", "pgm", "ops_manager", "director"].includes(role)) {
+  if (["station_manager", "pgm", "ops_manager", "director"].includes(role) || user.id === data?.ownerId) {
     MANAGER_EXTRA.forEach((p) => allowed.add(p));
   }
   if (["employee", "safety_officer"].includes(role)) allowed.add("/app/safety");
