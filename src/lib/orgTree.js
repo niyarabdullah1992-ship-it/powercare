@@ -21,7 +21,26 @@ export function toggleComplaintEscalationMember(companyId, employeeId) {
 
 const renumber = (nodes, parentId) => nodes.filter((node) => (node.parentId || null) === (parentId || null)).sort((a, b) => a.order - b.order).forEach((node, index) => { node.order = index; });
 
-const validOrgParentId = (_nodes, _type, parentId) => parentId || null;
+const validOrgParentId = (nodes, type, parentId) => {
+  if (type !== "station" || !parentId) return parentId || null;
+  let parent = nodes.find((node) => node.id === parentId);
+  const visited = new Set();
+  while (parent && parent.type !== "station" && !visited.has(parent.id)) {
+    visited.add(parent.id);
+    parent = nodes.find((node) => node.id === parent.parentId);
+  }
+  return parent?.id || null;
+};
+
+const normalizeStationParents = (nodes) => {
+  let changed = false;
+  nodes.filter((node) => node.type === "station").forEach((node) => {
+    const parentId = validOrgParentId(nodes, node.type, node.parentId);
+    if ((node.parentId || null) !== parentId) { node.parentId = parentId; changed = true; }
+  });
+  if (changed) new Set(nodes.map((node) => node.parentId || null)).forEach((parentId) => renumber(nodes, parentId));
+  return changed;
+};
 
 export function initializeOrgTree(companyId, data) {
   const existing = Array.isArray(data?.orgTree)
@@ -29,9 +48,12 @@ export function initializeOrgTree(companyId, data) {
     : (data.smartPositions || []).map((position, order) => ({ id: `org_${position.employeeId}`, type: "employee", refId: position.employeeId, title: position.title || "", parentId: null, order }));
   const stationIds = new Set(existing.filter((node) => node.type === "station").map((node) => node.refId));
   const missingStations = (data.stations || []).filter((station) => !stationIds.has(station.id));
-  if (Array.isArray(data?.orgTree) && !missingStations.length) return;
+  const invalidStationParent = existing.some((node) => node.type === "station" && node.parentId && existing.find((parent) => parent.id === node.parentId)?.type === "employee");
+  if (Array.isArray(data?.orgTree) && !missingStations.length && !invalidStationParent) return;
   updateCompany(companyId, (draft) => {
-    draft.orgTree = [...existing, ...missingStations.map((station, index) => ({ id: `org_station_${station.id}`, type: "station", refId: station.id, title: station.location || "", parentId: null, order: existing.length + index }))];
+    const nodes = [...existing, ...missingStations.map((station, index) => ({ id: `org_station_${station.id}`, type: "station", refId: station.id, title: station.location || "", parentId: null, order: existing.length + index }))];
+    normalizeStationParents(nodes);
+    draft.orgTree = nodes;
   });
 }
 
@@ -117,6 +139,10 @@ export function moveOrgNode(companyId, nodeId, targetId, mode) {
     const moving = nodes.find((node) => node.id === nodeId);
     const target = nodes.find((node) => node.id === targetId);
     if (!moving || !target || moving.id === target.id) return;
+    const targetParent = nodes.find((node) => node.id === target.parentId);
+    const stationUnderEmployee = moving.type === "station" && ((mode === "below" || mode === "inside") ? target.type === "employee" : targetParent?.type === "employee");
+    const stationMadeChildOfEmployee = moving.type === "employee" && target.type === "station" && mode === "above";
+    if (stationUnderEmployee || stationMadeChildOfEmployee) return;
     const oldParent = moving.parentId || null;
     let cursor = target;
     let targetIsDescendant = false;
@@ -134,16 +160,10 @@ export function moveOrgNode(companyId, nodeId, targetId, mode) {
     }
     if (mode === "above") {
       const targetParent = target.parentId || null;
-      const groupedSiblings = nodes
-        .filter((node) => node.id !== moving.id && (node.parentId || null) === targetParent && node.type === target.type)
-        .sort((a, b) => a.order - b.order);
       moving.parentId = targetParent;
-      moving.order = groupedSiblings[0]?.order ?? target.order;
-      const existingChildrenCount = nodes.filter((node) => node.id !== moving.id && node.parentId === moving.id).length;
-      groupedSiblings.forEach((node, index) => {
-        node.parentId = moving.id;
-        node.order = existingChildrenCount + index;
-      });
+      moving.order = target.order;
+      target.parentId = moving.id;
+      target.order = nodes.filter((node) => node.id !== target.id && node.parentId === moving.id).length;
       renumber(nodes, oldParent);
       renumber(nodes, targetParent);
       renumber(nodes, moving.id);

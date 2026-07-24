@@ -1,7 +1,7 @@
 import React from "react";
 
 export default function OrgParentPicker({ nodes, employees, stations, currentId, nodeType, value, onChange, ar }) {
-  const options = nodes.filter((node) => node.id !== currentId);
+  const options = nodes.filter((node) => node.id !== currentId && (nodeType !== "station" || node.type === "station"));
   const labelFor = (node) => node.type === "station"
     ? stations.find((item) => item.id === node.refId)?.name
     : employees.find((item) => item.id === node.refId)?.name;
@@ -14,6 +14,6 @@ export default function OrgParentPicker({ nodes, employees, stations, currentId,
         {node.type === "station" ? (ar ? "محطة" : "Site") : (ar ? "موظف" : "Employee")} — {labelFor(node) || node.title}
       </option>)}
     </select>
-    <span className="block text-[11px] text-muted-foreground">{ar ? "يمكن وضع الموظفين أو المحطات تحت أي عقدة أعلى." : "Employees and sites can be placed under any parent node."}</span>
+    <span className="block text-[11px] text-muted-foreground">{ar ? "يمكن للمحطة نفسها احتواء موظفين ومحطات فرعية معًا." : "The same site can contain employees and child sites together."}</span>
   </label>;
 }
