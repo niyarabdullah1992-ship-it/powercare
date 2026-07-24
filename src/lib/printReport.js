@@ -1,5 +1,6 @@
 import { PDF_THEME } from "@/lib/pdfTheme";
 import { POWERCARE_LOGO_URL } from "@/lib/brand";
+import { getReportVisualTheme } from "@/lib/reportVisualThemes";
 
 // Opens a print-ready, brand-styled report in a new window and triggers the
 // browser's print dialog (user can save as PDF). Full RTL/Arabic support since
@@ -9,6 +10,7 @@ import { POWERCARE_LOGO_URL } from "@/lib/brand";
 export function printReport({ title, companyName, periodLabel, dir = "ltr", stats = [], sections = [], logoUrl = "", color = "#e0a43b", theme = "default" }) {
   const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const accent = String(color || PDF_THEME.gold).toLowerCase() === "#b07d3f" ? PDF_THEME.gold : (color || PDF_THEME.gold);
+  const visual = getReportVisualTheme(title);
   const isWide = theme === "executiveGold" || sections.some((section) => (section.headers || []).length > 8);
   const locale = dir === "rtl" ? "ar-SA" : "en-GB";
   const generatedAt = new Date().toLocaleString(locale);
@@ -64,6 +66,27 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   .foot { margin-top: 30px; padding-top: 10px; border-top: 1px solid ${PDF_THEME.line}; font-size: 9px; color: ${PDF_THEME.muted}; display: flex; justify-content: space-between; }
   .head img { width: 58px; height: 58px; object-fit: contain; }
   .company-logo { margin-inline-start: auto; }
+  .report-mark { margin-inline-start: auto; min-width: 58px; height: 58px; display: grid; place-items: center; border: 2px solid ${accent}; color: ${accent}; background: ${PDF_THEME.cream}; font: 700 15px Georgia, serif; letter-spacing: .06em; }
+  .report-workflow .head { border-bottom: 4px solid ${accent}; }
+  .report-workflow .stat { border-radius: 18px 3px 18px 3px; }
+  .report-ledger table { border-top: 4px double ${accent}; border-bottom: 4px double ${accent}; }
+  .report-ledger td { border-inline-end: 1px solid ${PDF_THEME.line}; }
+  .report-grid body, .report-grid { background-image: linear-gradient(${PDF_THEME.line}55 1px, transparent 1px), linear-gradient(90deg, ${PDF_THEME.line}55 1px, transparent 1px); background-size: 24px 24px; }
+  .report-grid table { outline: 2px solid ${PDF_THEME.ink}; }
+  .report-receipt .head, .report-receipt .foot { border-style: dashed; }
+  .report-receipt table { border-inline: 1px dashed ${PDF_THEME.line}; }
+  .report-shield .report-mark { border-radius: 50% 50% 45% 45%; background: ${PDF_THEME.ink}; color: ${accent}; }
+  .report-shield h2 { background: ${PDF_THEME.ink}; color: white; padding: 9px 12px; border: 0; }
+  .report-timeline .stat { border: 0; border-inline-start: 5px solid ${accent}; }
+  .report-timeline tbody tr td:first-child { border-inline-start: 3px solid ${accent}; }
+  .report-profile .head { background: ${PDF_THEME.cream}; padding: 18px; border-inline-start: 8px solid ${accent}; }
+  .report-profile .report-mark { border-radius: 999px; }
+  .report-award .head { text-align: center; justify-content: center; border: 2px solid ${accent}; padding: 20px; }
+  .report-award .report-mark { border-radius: 999px; box-shadow: 0 0 0 5px ${PDF_THEME.creamDeep}; }
+  .report-blueprint .head { border: 1px solid ${PDF_THEME.ink}; box-shadow: inset 0 0 0 4px white, inset 0 0 0 5px ${PDF_THEME.line}; padding: 18px; }
+  .report-blueprint th { border: 1px solid ${PDF_THEME.inkSoft}; }
+  .report-certificate .head { border: 3px double ${accent}; padding: 22px; }
+  .report-certificate .report-mark { transform: rotate(-3deg); }
   .executive-gold { color: #13283d; }
   .executive-gold .top-rule { height: 9px; background: linear-gradient(90deg, #13283d 0 68%, #e0a43b 68% 86%, #f0c56d 86% 100%); }
   .executive-gold .head { padding: 8px 4px 22px; border-bottom: 2px solid #e0a43b; }
@@ -83,17 +106,18 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   @media print { body { padding: 0; } .top-rule { margin-top: 0; } }
 </style>
 </head>
-<body class="${isWide ? "wide" : "standard"} ${theme === "executiveGold" ? "executive-gold" : ""}">
+<body class="${isWide ? "wide" : "standard"} report-${visual.layout} ${theme === "executiveGold" ? "executive-gold" : ""}">
   <div class="top-rule"></div>
   <div class="head">
     <div class="identity">
       <img src="${POWERCARE_LOGO_URL}" alt="PowerCare" />
       <div>
-        <p class="document-label">PowerCare • Official Report</p>
+        <p class="document-label">PowerCare • ${esc(visual.label)}</p>
         <h1>${esc(title)}</h1>
         <p class="meta">${esc(companyName)}${periodLabel ? " — " + esc(periodLabel) : ""}</p>
       </div>
     </div>
+    <div class="report-mark">${esc(visual.mark)}</div>
     ${logoUrl ? `<img class="company-logo" src="${logoUrl}" alt="${esc(companyName)}" />` : ""}
   </div>
   ${statsHtml}
