@@ -21,50 +21,6 @@ export function toggleComplaintEscalationMember(companyId, employeeId) {
 
 const renumber = (nodes, parentId) => nodes.filter((node) => (node.parentId || null) === (parentId || null)).sort((a, b) => a.order - b.order).forEach((node, index) => { node.order = index; });
 
-const validOrgParentId = (_nodes, _type, parentId) => parentId || null;
-
-const normalizeStationParents = (nodes) => {
-  let changed = false;
-  nodes.filter((node) => node.type === "station").forEach((node) => {
-    const parentId = validOrgParentId(nodes, node.type, node.parentId);
-    if ((node.parentId || null) !== parentId) { node.parentId = parentId; changed = true; }
-  });
-  if (changed) new Set(nodes.map((node) => node.parentId || null)).forEach((parentId) => renumber(nodes, parentId));
-  return changed;
-};
-
-const restorePreChangeTree = (companyId, data) => {
-  const nodes = data?.orgTree || [];
-  const employeeNode = (names) => {
-    const employee = (data.employees || []).find((item) => names.includes(String(item.name || "").trim()));
-    return employee ? nodes.find((node) => node.type === "employee" && node.refId === employee.id) : null;
-  };
-  const stationNode = (name) => {
-    const station = (data.stations || []).find((item) => String(item.name || "").includes(name));
-    return station ? nodes.find((node) => node.type === "station" && node.refId === station.id) : null;
-  };
-  const khalid = employeeNode(["خالد"]);
-  const saad = employeeNode(["سعاد", "سعد"]);
-  const hazm = stationNode("الحزم");
-  const rass = stationNode("الرس");
-  if (!khalid || !saad || !hazm || !rass || khalid.parentId !== rass.id || saad.parentId !== khalid.id) return false;
-  updateCompany(companyId, (draft) => {
-    const draftKhalid = draft.orgTree.find((node) => node.id === khalid.id);
-    const draftSaad = draft.orgTree.find((node) => node.id === saad.id);
-    const draftHazm = draft.orgTree.find((node) => node.id === hazm.id);
-    const draftRass = draft.orgTree.find((node) => node.id === rass.id);
-    draftRass.parentId = draftHazm.id;
-    draftRass.order = 0;
-    draftKhalid.parentId = draftHazm.id;
-    draftKhalid.order = 1;
-    draftSaad.parentId = draftRass.id;
-    draftSaad.order = 1;
-    renumber(draft.orgTree, draftHazm.id);
-    renumber(draft.orgTree, draftRass.id);
-  });
-  return true;
-};
-
 export function initializeOrgTree(companyId, data) {
   const existing = Array.isArray(data?.orgTree)
     ? data.orgTree
@@ -73,18 +29,16 @@ export function initializeOrgTree(companyId, data) {
   const missingStations = (data.stations || []).filter((station) => !stationIds.has(station.id));
   if (Array.isArray(data?.orgTree) && !missingStations.length) return;
   updateCompany(companyId, (draft) => {
-    const nodes = [...existing, ...missingStations.map((station, index) => ({ id: `org_station_${station.id}`, type: "station", refId: station.id, title: station.location || "", parentId: null, order: existing.length + index }))];
-    draft.orgTree = nodes;
+    draft.orgTree = [...existing, ...missingStations.map((station, index) => ({ id: `org_station_${station.id}`, type: "station", refId: station.id, title: station.location || "", parentId: null, order: existing.length + index }))];
   });
 }
 
 export function saveOrgNode(companyId, node, permissions = {}) {
   updateCompany(companyId, (data) => {
     data.orgTree = data.orgTree || [];
-    const savedNode = { ...node, parentId: validOrgParentId(data.orgTree, node.type, node.parentId) };
-    const index = data.orgTree.findIndex((item) => item.id === savedNode.id);
+    const index = data.orgTree.findIndex((item) => item.id === node.id);
     const current = data.orgTree[index];
-    const requestedParent = data.orgTree.find((item) => item.id === savedNode.parentId);
+    const requestedParent = data.orgTree.find((item) => item.id === node.parentId);
     let cursor = requestedParent;
     while (current && cursor?.parentId) {
       if (cursor.parentId === current.id) {
@@ -96,13 +50,13 @@ export function saveOrgNode(companyId, node, permissions = {}) {
       }
       cursor = data.orgTree.find((item) => item.id === cursor.parentId);
     }
-    if (index >= 0) data.orgTree[index] = savedNode; else data.orgTree.push(savedNode);
-    renumber(data.orgTree, savedNode.parentId);
-    if (savedNode.type === "employee") {
+    if (index >= 0) data.orgTree[index] = node; else data.orgTree.push(node);
+    renumber(data.orgTree, node.parentId);
+    if (node.type === "employee") {
       data.smartPositions = data.smartPositions || [];
-      const savedIndex = data.smartPositions.findIndex((item) => item.employeeId === savedNode.refId);
+      const savedIndex = data.smartPositions.findIndex((item) => item.employeeId === node.refId);
       const score = scorePermissions(permissions);
-      const record = { employeeId: savedNode.refId, title: savedNode.title, titleManual: true, permissions, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() };
+      const record = { employeeId: node.refId, title: node.title, titleManual: true, permissions, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() };
       if (savedIndex >= 0) data.smartPositions[savedIndex] = { ...data.smartPositions[savedIndex], ...record }; else data.smartPositions.push(record);
     }
   });
@@ -111,7 +65,7 @@ export function saveOrgNode(companyId, node, permissions = {}) {
 export function createOrgRecord(companyId, record, permissions = {}) {
   updateCompany(companyId, (data) => {
     data.orgTree = data.orgTree || [];
-    const parentId = validOrgParentId(data.orgTree, record.type, record.parentId);
+    const parentId = record.parentId || null;
     const order = data.orgTree.filter((node) => (node.parentId || null) === parentId).length;
     if (record.type === "station") {
       const id = `st_${Math.random().toString(36).slice(2, 9)}`;
@@ -121,16 +75,10 @@ export function createOrgRecord(companyId, record, permissions = {}) {
     }
     const id = `emp_${Math.random().toString(36).slice(2, 9)}`;
     data.employees.push({ id, name: record.name.trim(), email: record.email, role: "employee", stationId: record.stationId || null, phone: "", anonymousId: `ANON-${Math.floor(Math.random() * 1e8).toString(16).toUpperCase().padStart(8, "0")}`, managedStations: [], profile: {}, createdAt: new Date().toISOString() });
-    data.orgTree.push({ id: `org_${id}`, type: "employee", refId: id, title: record.title, rank: record.rank || null, parentId, order });
+    data.orgTree.push({ id: `org_${id}`, type: "employee", refId: id, title: record.title, parentId, order });
     const score = scorePermissions(permissions);
     data.smartPositions = data.smartPositions || [];
     data.smartPositions.push({ employeeId: id, title: record.title, titleManual: true, permissions, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() });
-  });
-}
-
-export function saveOrgRanks(companyId, ranks) {
-  updateCompany(companyId, (data) => {
-    data.orgRanks = ranks;
   });
 }
 
@@ -186,11 +134,11 @@ export function moveOrgNode(companyId, nodeId, targetId, mode) {
       renumber(nodes, moving.id);
       return;
     }
-    const newParent = mode === "inside" ? target.id : target.parentId || null;
+    const newParent = mode === "below" || mode === "inside" ? target.id : target.parentId || null;
     moving.parentId = newParent;
     const siblings = nodes.filter((node) => node.id !== moving.id && (node.parentId || null) === newParent).sort((a, b) => a.order - b.order);
     const targetIndex = siblings.findIndex((node) => node.id === target.id);
-    moving.order = mode === "inside" ? siblings.length : Math.max(0, targetIndex + (mode === "below" || mode === "right" ? 1 : 0));
+    moving.order = mode === "below" || mode === "inside" ? siblings.length : Math.max(0, targetIndex + (mode === "right" ? 1 : 0));
     siblings.splice(moving.order, 0, moving);
     siblings.forEach((node, index) => { node.order = index; });
     renumber(nodes, oldParent);

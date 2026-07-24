@@ -39,7 +39,7 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
     event.preventDefault();
     if (initial) {
       const order = parentId === initial.parentId ? initial.order : nodes.filter((node) => (node.parentId || null) === parentId).length;
-      saveOrgNode(companyId, { ...initial, title: title.trim(), rank: null, parentId, order }, permissions);
+      saveOrgNode(companyId, { ...initial, title: title.trim(), parentId, order }, permissions);
       if (type === "station") {
         saveOrgStationName(companyId, refId, stationName.trim());
         saveOrgStationLocation(companyId, refId, mapLocation);
@@ -50,7 +50,7 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
       const allowed = (data.settings?.allowedEmails || []).map((item) => String(item).trim().toLowerCase());
       if (type === "employee" && data.employees.some((employee) => employee.email?.toLowerCase() === email)) return alert(ar ? "البريد مستخدم مسبقًا." : "Email already exists.");
       if (type === "employee" && allowed.length && !allowed.includes(email)) return alert(ar ? "البريد غير موجود في القائمة المسموحة." : "Email is not on the allowed list.");
-      createOrgRecord(companyId, { ...form, ...mapLocation, email, type, title: title.trim(), rank: null, parentId }, permissions);
+      createOrgRecord(companyId, { ...form, ...mapLocation, email, type, title: title.trim(), parentId }, permissions);
     }
     onClose();
   };

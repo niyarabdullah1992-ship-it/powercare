@@ -22,18 +22,14 @@ export default function useOrgNodeDrag(nodeId, enabled, onStart, onEnd, onDrop) 
     if (!start.current || start.current.pointerId !== event.pointerId) return;
     const moved = Math.hypot(event.clientX - start.current.x, event.clientY - start.current.y);
     if (!active.current && start.current.pointerType === "mouse" && moved > 4) activate();
-    if (!active.current && start.current.pointerType !== "mouse" && moved > 8) activate();
+    if (!active.current && start.current.pointerType !== "mouse" && moved > 8) clear();
     if (active.current) { event.preventDefault(); event.stopPropagation(); }
   };
   const finish = (event, cancelled = false) => {
     clear();
     if (active.current && !cancelled) {
       const zone = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-org-drop]");
-      if (zone) {
-        const rect = zone.getBoundingClientRect();
-        const mode = event.clientX < rect.left + rect.width / 2 ? "visual-left" : "visual-right";
-        onDrop(zone.dataset.targetId, mode);
-      }
+      if (zone) onDrop(zone.dataset.targetId, zone.dataset.dropMode);
       blockClick.current = true;
       setTimeout(() => { blockClick.current = false; }, 0);
       event.preventDefault();
