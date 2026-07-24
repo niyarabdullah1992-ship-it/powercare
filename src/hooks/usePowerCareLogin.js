@@ -36,8 +36,10 @@ export default function usePowerCareLogin(returnPath = "/login") {
         setAccounts([]);
         setGoogleOtpAccountKey(result.accountKey || null);
       } else if (!result) setError(`No workspace is linked to this ${provider} account`);
-    }).catch((error) => setError(error.message || `${provider} login failed`))
-      .finally(() => setLoading(false));
+    }).catch((error) => {
+      const message = error.message || `${provider} login failed`;
+      setError(provider === "Microsoft" ? message.replaceAll("Google", "Microsoft") : message);
+    }).finally(() => setLoading(false));
   }, []);
 
   const submit = async (event) => {
