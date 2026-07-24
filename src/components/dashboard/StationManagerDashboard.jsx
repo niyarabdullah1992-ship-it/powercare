@@ -13,6 +13,7 @@ import { formatDate } from "@/lib/dateFormat";
 import QuickCheckInCard from "@/components/attendance/QuickCheckInCard";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { isActiveAttendance } from "@/lib/attendance";
+import { stationIdForTreeEmployee } from "@/lib/orgTree";
 
 const SAFETY_COLORS = { green: "bg-emerald-500", amber: "bg-amber-500", red: "bg-destructive" };
 
@@ -24,7 +25,7 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
   const stationIds = new Set(stations.map((s) => s.id));
 
   const defaultStationId = data.stations?.[0]?.id || null;
-  const team = data.employees.filter((e) => stationIds.has(e.stationId || defaultStationId));
+  const team = data.employees.filter((employee) => stationIds.has(stationIdForTreeEmployee(data, employee.id) || employee.stationId || defaultStationId));
   const tasks = data.tasks.filter((tk) => stationIds.has(tk.stationId));
   const reports = data.reports.filter((r) => stationIds.has(r.stationId));
   const anon = data.anonymousReports.filter((a) => stationIds.has(a.stationId));

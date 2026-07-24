@@ -27,12 +27,18 @@ const treeStationForNode = (nodes, node) => {
   return parent?.refId || null;
 };
 
+export function stationIdForTreeEmployee(data, employeeId) {
+  const nodes = data?.orgTree || [];
+  const node = nodes.find((item) => item.type === "employee" && item.refId === employeeId);
+  return node ? treeStationForNode(nodes, node) : null;
+}
+
 const syncEmployeeStationsFromTree = (data) => {
   const nodes = data.orgTree || [];
   nodes.filter((node) => node.type === "employee").forEach((node) => {
     const stationId = treeStationForNode(nodes, node);
     if (!stationId) return;
-    const employee = (data.employees || []).find((item) => item.id === node.refId);
+    const employee = (data.employees || []).find((item) => item.id === node.refId || item.employeeId === node.refId);
     if (employee) employee.stationId = stationId;
   });
 };
