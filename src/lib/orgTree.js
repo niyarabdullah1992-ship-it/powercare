@@ -21,15 +21,37 @@ export function toggleComplaintEscalationMember(companyId, employeeId) {
 
 const renumber = (nodes, parentId) => nodes.filter((node) => (node.parentId || null) === (parentId || null)).sort((a, b) => a.order - b.order).forEach((node, index) => { node.order = index; });
 
+const treeStationForNode = (nodes, node) => {
+  let parent = nodes.find((item) => item.id === node.parentId);
+  while (parent && parent.type !== "station") parent = nodes.find((item) => item.id === parent.parentId);
+  return parent?.refId || null;
+};
+
+const syncEmployeeStationsFromTree = (data) => {
+  const nodes = data.orgTree || [];
+  nodes.filter((node) => node.type === "employee").forEach((node) => {
+    const stationId = treeStationForNode(nodes, node);
+    if (!stationId) return;
+    const employee = (data.employees || []).find((item) => item.id === node.refId);
+    if (employee) employee.stationId = stationId;
+  });
+};
+
 export function initializeOrgTree(companyId, data) {
   const existing = Array.isArray(data?.orgTree)
     ? data.orgTree
     : (data.smartPositions || []).map((position, order) => ({ id: `org_${position.employeeId}`, type: "employee", refId: position.employeeId, title: position.title || "", parentId: null, order }));
   const stationIds = new Set(existing.filter((node) => node.type === "station").map((node) => node.refId));
   const missingStations = (data.stations || []).filter((station) => !stationIds.has(station.id));
-  if (Array.isArray(data?.orgTree) && !missingStations.length) return;
+  const stationMismatch = existing.filter((node) => node.type === "employee").some((node) => {
+    const stationId = treeStationForNode(existing, node);
+    const employee = (data.employees || []).find((item) => item.id === node.refId);
+    return stationId && employee?.stationId !== stationId;
+  });
+  if (Array.isArray(data?.orgTree) && !missingStations.length && !stationMismatch) return;
   updateCompany(companyId, (draft) => {
     draft.orgTree = [...existing, ...missingStations.map((station, index) => ({ id: `org_station_${station.id}`, type: "station", refId: station.id, title: station.location || "", parentId: null, order: existing.length + index }))];
+    syncEmployeeStationsFromTree(draft);
   });
 }
 
@@ -59,6 +81,7 @@ export function saveOrgNode(companyId, node, permissions = {}) {
       const record = { employeeId: node.refId, title: node.title, titleManual: true, permissions, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() };
       if (savedIndex >= 0) data.smartPositions[savedIndex] = { ...data.smartPositions[savedIndex], ...record }; else data.smartPositions.push(record);
     }
+    syncEmployeeStationsFromTree(data);
   });
 }
 
@@ -81,6 +104,7 @@ export function createOrgRecord(companyId, record, permissions = {}) {
     const score = scorePermissions(permissions);
     data.smartPositions = data.smartPositions || [];
     data.smartPositions.push({ employeeId: id, title: record.title, titleManual: true, permissions, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() });
+    syncEmployeeStationsFromTree(data);
   });
   return createdStationId;
 }
@@ -135,6 +159,7 @@ export function moveOrgNode(companyId, nodeId, targetId, mode) {
       renumber(nodes, oldParent);
       renumber(nodes, targetParent);
       renumber(nodes, moving.id);
+      syncEmployeeStationsFromTree(data);
       return;
     }
     const newParent = mode === "below" || mode === "inside" ? target.id : target.parentId || null;
@@ -145,6 +170,7 @@ export function moveOrgNode(companyId, nodeId, targetId, mode) {
     siblings.splice(moving.order, 0, moving);
     siblings.forEach((node, index) => { node.order = index; });
     renumber(nodes, oldParent);
+    syncEmployeeStationsFromTree(data);
   });
 }
 
@@ -156,6 +182,7 @@ export function deleteOrgNode(companyId, nodeId) {
     nodes.filter((node) => node.parentId === nodeId).forEach((node) => { node.parentId = removed.parentId || null; });
     data.orgTree = nodes.filter((node) => node.id !== nodeId);
     renumber(data.orgTree, removed.parentId);
+    syncEmployeeStationsFromTree(data);
     if (removed.type === "employee") data.complaintEscalationChain = (data.complaintEscalationChain || []).filter((id) => id !== removed.refId);
   });
 }
