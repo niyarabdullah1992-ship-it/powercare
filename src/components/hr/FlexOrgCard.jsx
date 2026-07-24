@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Image } from "@/components/ui/image";
-import { Building2, ChevronDown, ChevronRight, GripVertical, UserRound } from "lucide-react";
+import { Building2, ChevronDown, ChevronRight, Crown, GripVertical } from "lucide-react";
 import ComplaintEscalationBadge from "@/components/hr/ComplaintEscalationBadge";
 import OrgCardIdentityMeta from "@/components/hr/OrgCardIdentityMeta";
 import OrgTreeDropZones from "@/components/hr/OrgTreeDropZones";
@@ -11,13 +11,14 @@ import { getOrgRankVisual } from "@/lib/orgRankVisuals";
 export default function FlexOrgCard({ node, employee, label, rank, owner, stationManagerName, isStationManager, isHierarchyManager, canManage, lang, dragging, complaintLevel, childrenCount, collapsed, onToggleCollapse, onToggleEscalation, onDragStart, onDragEnd, onDrop, onEdit, ar }) {
   const station = node.type === "station";
   const rankVisual = getOrgRankVisual(rank);
+  const RankIcon = owner ? Crown : rankVisual.Icon;
   const touchDrag = useOrgNodeDrag(node.id, canManage, onDragStart, onDragEnd, onDrop);
   return <div className={`relative mx-auto ${owner || rank?.index === 0 ? "w-64" : "w-56"}`} onDragEnter={(event) => event.preventDefault()}>
     {!station && <ComplaintEscalationBadge level={complaintLevel} canManage={canManage} ar={ar} onToggle={onToggleEscalation} />}
     <div role="button" tabIndex={0} draggable={canManage} {...touchDrag.handlers} onDragStart={(event) => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", node.id); onDragStart(node.id); }} onDragEnd={onDragEnd} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") onEdit(node); }} onClick={(event) => { if (touchDrag.suppressClick()) event.preventDefault(); else onEdit(node); }} className={`relative w-full cursor-grab select-none rounded-lg border p-3 text-start transition active:cursor-grabbing ${station ? "border-2 border-primary bg-accent text-accent-foreground shadow-md" : rank ? rankVisual.card : "border-border bg-card shadow-sm hover:border-accent/60"}`}>
       <span className="flex items-center gap-2.5">
         {canManage && <GripVertical className={`h-4 w-4 shrink-0 ${station ? "text-accent-foreground/55" : "text-muted-foreground"}`} />}
-        {station ? <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Building2 className="h-4 w-4" /></span> : <Link to={`/app/employees/${employee?.id}`} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent/10 text-accent ring-2 ring-transparent hover:ring-accent" aria-label={ar ? `فتح ملف ${label}` : `Open ${label}'s profile`}>{employee?.profile?.avatarUrl ? <Image src={employee.profile.avatarUrl} alt={label} fittingType="fill" className="h-full w-full" /> : <UserRound className="h-4 w-4" />}</Link>}
+        {station ? <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Building2 className="h-4 w-4" /></span> : <Link to={`/app/employees/${employee?.id}`} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()} className={`flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border ring-2 ring-transparent hover:ring-accent ${rankVisual.badge}`} aria-label={ar ? `فتح ملف ${label}` : `Open ${label}'s profile`}>{employee?.profile?.avatarUrl ? <Image src={employee.profile.avatarUrl} alt={label} fittingType="fill" className="h-full w-full" /> : <RankIcon className="h-4 w-4" />}</Link>}
         <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{label}</span><OrgCardIdentityMeta station={station} managerName={stationManagerName} rank={rank} isStationManager={isStationManager} isHierarchyManager={isHierarchyManager} lang={lang} ar={ar} /></span>
       </span>
     </div>
