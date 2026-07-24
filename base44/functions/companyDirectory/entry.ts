@@ -484,59 +484,57 @@ Deno.serve(async (req) => {
     if (action === 'syncAccount') {
       const { name, ownerEmail, ownerPassword, plan, allowedEmailDomain, emailLanguage, subscriptionStart, subscriptionEnd } = body;
       const existing = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
-      // Existing accounts may only be modified by their owner (or the platform builder).
-      if (existing.length && (!auth || auth.role !== 'owner')) {
+      const email = String(ownerEmail || '').trim().toLowerCase();
+      const newIsIndividual = String(plan || '').toLowerCase() === 'individual';
+      let signupOtp = null;
+
+      if (body.signupPendingId) {
+        const otpRows = await base44.asServiceRole.entities.LoginOtp.filter({ pendingId: body.signupPendingId });
+        const candidate = otpRows[0];
+        if (candidate && candidate.kind === 'signup' && candidate.email === email && new Date(candidate.expiresAt).getTime() >= Date.now() && (candidate.attempts || 0) < 5) {
+          const otpHash = await sha256Hex(candidate.pendingId + '::' + String(body.signupOtpCode || '').trim());
+          if (otpHash !== candidate.codeHash) {
+            await base44.asServiceRole.entities.LoginOtp.update(candidate.id, { attempts: (candidate.attempts || 0) + 1 });
+            return Response.json({ error: 'invalid_code' }, { status: 401 });
+          }
+          signupOtp = candidate;
+        }
+      }
+
+      // If account creation completed but the browser lost the response, the same
+      // verified signup request may safely finish the owner session on retry.
+      const canResumeSignup = existing.length > 0 && signupOtp && String(existing[0].ownerEmail || '').trim().toLowerCase() === email;
+      if (existing.length && (!auth || auth.role !== 'owner') && !canResumeSignup) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
       }
-      // Always store a slow PBKDF2 hash; keep the existing hash if no password was sent.
+      if (!existing.length && !newIsIndividual && !signupOtp) {
+        return Response.json({ error: 'signup_otp_required' }, { status: 401 });
+      }
+
       let storedPassword = ownerPassword;
       if (storedPassword && !String(storedPassword).startsWith('pbkdf2$')) {
         storedPassword = await pbkdf2Password(storedPassword);
       } else if (!storedPassword && existing.length) {
         storedPassword = existing[0].ownerPassword;
       }
-      // Block duplicate signups of the SAME kind only: one email may own both an
-      // individual workspace AND a company account (the login picker lets the
-      // user choose), but not two accounts of the same kind.
+
       if (!existing.length) {
-        const email = String(ownerEmail || '').trim().toLowerCase();
-        const newIsIndividual = String(plan || '').toLowerCase() === 'individual';
-        let signupOtp = null;
-        if (!newIsIndividual) {
-          const otpRows = body.signupPendingId ? await base44.asServiceRole.entities.LoginOtp.filter({ pendingId: body.signupPendingId }) : [];
-          signupOtp = otpRows[0];
-          if (!signupOtp || signupOtp.kind !== 'signup' || signupOtp.email !== email || new Date(signupOtp.expiresAt).getTime() < Date.now() || (signupOtp.attempts || 0) >= 5) {
-            return Response.json({ error: 'signup_otp_required' }, { status: 401 });
-          }
-          const otpHash = await sha256Hex(signupOtp.pendingId + '::' + String(body.signupOtpCode || '').trim());
-          if (otpHash !== signupOtp.codeHash) {
-            await base44.asServiceRole.entities.LoginOtp.update(signupOtp.id, { attempts: (signupOtp.attempts || 0) + 1 });
-            return Response.json({ error: 'invalid_code' }, { status: 401 });
-          }
-        }
         const dupes = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email });
-        const sameKind = dupes.some((d) => (String(d.plan || '').toLowerCase() === 'individual') === newIsIndividual);
+        const sameKind = dupes.some((account) => (String(account.plan || '').toLowerCase() === 'individual') === newIsIndividual);
         if (sameKind) return Response.json({ error: 'email_exists' }, { status: 409 });
       }
+
       const supportedEmailLanguages = ['en', 'ar', 'de', 'fr', 'es', 'pt', 'ru', 'ja', 'ko'];
-      const fields = { companyId, name, ownerEmail, ownerPassword: storedPassword, plan, allowedEmailDomain: allowedEmailDomain || '', emailLanguage: supportedEmailLanguages.includes(emailLanguage) ? emailLanguage : (existing[0]?.emailLanguage || 'en'), subscriptionStart: Object.prototype.hasOwnProperty.call(body, 'subscriptionStart') ? subscriptionStart : (existing[0]?.subscriptionStart ?? null), subscriptionEnd: Object.prototype.hasOwnProperty.call(body, 'subscriptionEnd') ? subscriptionEnd : (existing[0]?.subscriptionEnd ?? null) };
+      const fields = { companyId, name, ownerEmail: email, ownerPassword: storedPassword, plan, allowedEmailDomain: allowedEmailDomain || '', emailLanguage: supportedEmailLanguages.includes(emailLanguage) ? emailLanguage : (existing[0]?.emailLanguage || 'en'), subscriptionStart: Object.prototype.hasOwnProperty.call(body, 'subscriptionStart') ? subscriptionStart : (existing[0]?.subscriptionStart ?? null), subscriptionEnd: Object.prototype.hasOwnProperty.call(body, 'subscriptionEnd') ? subscriptionEnd : (existing[0]?.subscriptionEnd ?? null) };
       let token = null;
       if (existing.length) {
         await base44.asServiceRole.entities.CompanyAccount.update(existing[0].id, fields);
+        if (canResumeSignup) token = await makeSession(base44, companyId, null, 'owner');
       } else {
         await base44.asServiceRole.entities.CompanyAccount.create(fields);
-        // Registration can be submitted twice by overlapping browser requests. Keep
-        // one deterministic company record so the same email never appears as a new account.
-        const duplicateRows = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId }, 'created_date');
-        const keeper = duplicateRows[0];
-        for (const duplicate of duplicateRows.slice(1)) {
-          await base44.asServiceRole.entities.CompanyAccount.delete(duplicate.id).catch(() => null);
-        }
-        if (keeper) await base44.asServiceRole.entities.CompanyAccount.update(keeper.id, fields);
-        if (signupOtp) await base44.asServiceRole.entities.LoginOtp.delete(signupOtp.id);
-        // Brand-new signup — issue the creator an owner session only after OTP verification.
         token = await makeSession(base44, companyId, null, 'owner');
       }
+      if (signupOtp) await base44.asServiceRole.entities.LoginOtp.delete(signupOtp.id);
       return Response.json({ ok: true, token });
     }
 

@@ -172,7 +172,7 @@ async function syncAccountToEntity(company, signupVerification = null) {
     if (res?.data?.error === 'email_exists') return 'email_exists';
     return !!res?.data?.ok;
   } catch (err) {
-    const code = err?.response?.data?.error;
+    const code = err?.response?.data?.error || err?.data?.error || err?.message;
     if (code === 'email_exists') return 'email_exists';
     if (['invalid_code', 'invalid_or_expired', 'signup_otp_required'].includes(code)) return code;
     return false;
