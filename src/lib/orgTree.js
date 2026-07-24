@@ -82,6 +82,13 @@ export function createOrgRecord(companyId, record, permissions = {}) {
   });
 }
 
+export function saveOrgStationName(companyId, stationId, name) {
+  updateCompany(companyId, (data) => {
+    const station = (data.stations || []).find((item) => item.id === stationId);
+    if (station && name) station.name = name;
+  });
+}
+
 export function saveOrgStationLocation(companyId, stationId, location) {
   updateCompany(companyId, (data) => {
     const station = (data.stations || []).find((item) => item.id === stationId);
