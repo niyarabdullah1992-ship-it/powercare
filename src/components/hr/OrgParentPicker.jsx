@@ -1,7 +1,7 @@
 import React from "react";
 
-export default function OrgParentPicker({ nodes, employees, stations, currentId, value, onChange, ar }) {
-  const options = nodes.filter((node) => node.id !== currentId);
+export default function OrgParentPicker({ nodes, employees, stations, currentId, nodeType, value, onChange, ar }) {
+  const options = nodes.filter((node) => node.id !== currentId && (nodeType !== "station" || node.type === "station"));
   const labelFor = (node) => node.type === "station"
     ? stations.find((item) => item.id === node.refId)?.name
     : employees.find((item) => item.id === node.refId)?.name;

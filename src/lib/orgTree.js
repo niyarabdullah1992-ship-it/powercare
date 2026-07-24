@@ -21,24 +21,49 @@ export function toggleComplaintEscalationMember(companyId, employeeId) {
 
 const renumber = (nodes, parentId) => nodes.filter((node) => (node.parentId || null) === (parentId || null)).sort((a, b) => a.order - b.order).forEach((node, index) => { node.order = index; });
 
+const validOrgParentId = (nodes, type, parentId) => {
+  if (type !== "station" || !parentId) return parentId || null;
+  let parent = nodes.find((node) => node.id === parentId);
+  const visited = new Set();
+  while (parent && parent.type !== "station" && !visited.has(parent.id)) {
+    visited.add(parent.id);
+    parent = nodes.find((node) => node.id === parent.parentId);
+  }
+  return parent?.id || null;
+};
+
+const normalizeStationParents = (nodes) => {
+  let changed = false;
+  nodes.filter((node) => node.type === "station").forEach((node) => {
+    const parentId = validOrgParentId(nodes, node.type, node.parentId);
+    if ((node.parentId || null) !== parentId) { node.parentId = parentId; changed = true; }
+  });
+  if (changed) new Set(nodes.map((node) => node.parentId || null)).forEach((parentId) => renumber(nodes, parentId));
+  return changed;
+};
+
 export function initializeOrgTree(companyId, data) {
   const existing = Array.isArray(data?.orgTree)
     ? data.orgTree
     : (data.smartPositions || []).map((position, order) => ({ id: `org_${position.employeeId}`, type: "employee", refId: position.employeeId, title: position.title || "", parentId: null, order }));
   const stationIds = new Set(existing.filter((node) => node.type === "station").map((node) => node.refId));
   const missingStations = (data.stations || []).filter((station) => !stationIds.has(station.id));
-  if (Array.isArray(data?.orgTree) && !missingStations.length) return;
+  const invalidStationParent = existing.some((node) => node.type === "station" && node.parentId && existing.find((parent) => parent.id === node.parentId)?.type === "employee");
+  if (Array.isArray(data?.orgTree) && !missingStations.length && !invalidStationParent) return;
   updateCompany(companyId, (draft) => {
-    draft.orgTree = [...existing, ...missingStations.map((station, index) => ({ id: `org_station_${station.id}`, type: "station", refId: station.id, title: station.location || "", parentId: null, order: existing.length + index }))];
+    const nodes = [...existing, ...missingStations.map((station, index) => ({ id: `org_station_${station.id}`, type: "station", refId: station.id, title: station.location || "", parentId: null, order: existing.length + index }))];
+    normalizeStationParents(nodes);
+    draft.orgTree = nodes;
   });
 }
 
 export function saveOrgNode(companyId, node, permissions = {}) {
   updateCompany(companyId, (data) => {
     data.orgTree = data.orgTree || [];
-    const index = data.orgTree.findIndex((item) => item.id === node.id);
+    const savedNode = { ...node, parentId: validOrgParentId(data.orgTree, node.type, node.parentId) };
+    const index = data.orgTree.findIndex((item) => item.id === savedNode.id);
     const current = data.orgTree[index];
-    const requestedParent = data.orgTree.find((item) => item.id === node.parentId);
+    const requestedParent = data.orgTree.find((item) => item.id === savedNode.parentId);
     let cursor = requestedParent;
     while (current && cursor?.parentId) {
       if (cursor.parentId === current.id) {
@@ -50,13 +75,13 @@ export function saveOrgNode(companyId, node, permissions = {}) {
       }
       cursor = data.orgTree.find((item) => item.id === cursor.parentId);
     }
-    if (index >= 0) data.orgTree[index] = node; else data.orgTree.push(node);
-    renumber(data.orgTree, node.parentId);
-    if (node.type === "employee") {
+    if (index >= 0) data.orgTree[index] = savedNode; else data.orgTree.push(savedNode);
+    renumber(data.orgTree, savedNode.parentId);
+    if (savedNode.type === "employee") {
       data.smartPositions = data.smartPositions || [];
-      const savedIndex = data.smartPositions.findIndex((item) => item.employeeId === node.refId);
+      const savedIndex = data.smartPositions.findIndex((item) => item.employeeId === savedNode.refId);
       const score = scorePermissions(permissions);
-      const record = { employeeId: node.refId, title: node.title, titleManual: true, permissions, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() };
+      const record = { employeeId: savedNode.refId, title: savedNode.title, titleManual: true, permissions, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() };
       if (savedIndex >= 0) data.smartPositions[savedIndex] = { ...data.smartPositions[savedIndex], ...record }; else data.smartPositions.push(record);
     }
   });
@@ -65,7 +90,7 @@ export function saveOrgNode(companyId, node, permissions = {}) {
 export function createOrgRecord(companyId, record, permissions = {}) {
   updateCompany(companyId, (data) => {
     data.orgTree = data.orgTree || [];
-    const parentId = record.parentId || null;
+    const parentId = validOrgParentId(data.orgTree, record.type, record.parentId);
     const order = data.orgTree.filter((node) => (node.parentId || null) === parentId).length;
     if (record.type === "station") {
       const id = `st_${Math.random().toString(36).slice(2, 9)}`;
@@ -114,6 +139,10 @@ export function moveOrgNode(companyId, nodeId, targetId, mode) {
     const moving = nodes.find((node) => node.id === nodeId);
     const target = nodes.find((node) => node.id === targetId);
     if (!moving || !target || moving.id === target.id) return;
+    const targetParent = nodes.find((node) => node.id === target.parentId);
+    const stationUnderEmployee = moving.type === "station" && ((mode === "below" || mode === "inside") ? target.type === "employee" : targetParent?.type === "employee");
+    const stationMadeChildOfEmployee = moving.type === "employee" && target.type === "station" && mode === "above";
+    if (stationUnderEmployee || stationMadeChildOfEmployee) return;
     const oldParent = moving.parentId || null;
     let cursor = target;
     let targetIsDescendant = false;
