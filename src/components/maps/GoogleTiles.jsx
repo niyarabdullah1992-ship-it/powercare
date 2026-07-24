@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { TileLayer } from "react-leaflet";
 import { Layers } from "lucide-react";
+import FullscreenMapControl from "@/components/maps/FullscreenMapControl";
 
 // Google Maps tile layer for Leaflet, with a map/satellite toggle button.
 export default function GoogleTiles() {
   const [satellite, setSatellite] = useState(false);
   return (
     <>
+      <FullscreenMapControl />
       <TileLayer
         key={satellite ? "sat" : "map"}
         attribution="&copy; Google Maps"

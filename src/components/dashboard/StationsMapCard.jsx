@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip } from
 import "leaflet/dist/leaflet.css";
 import { MapPin, Loader2 } from "lucide-react";
 import { resolveStationPositions } from "@/lib/geocodeStations";
+import FullscreenMapControl from "@/components/maps/FullscreenMapControl";
 
 // Compact map card with gold markers on every located station. Stations without
 // a pinned GPS point are placed automatically from the coordinates or city name
@@ -40,6 +41,7 @@ export default function StationsMapCard({ stations, t }) {
           scrollWheelZoom={false}
           attributionControl={false}
         >
+          <FullscreenMapControl />
           <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
           {rows.map((s) => (
             <CircleMarker key={s.id} center={[s.lat, s.lng]} radius={8} pathOptions={{ color: "#a9782f", fillColor: "#c99b4f", fillOpacity: 0.9, weight: 2 }}>

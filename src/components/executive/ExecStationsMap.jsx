@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, CircleMarker, Tooltip as LeafletTooltip } from
 import "leaflet/dist/leaflet.css";
 import { MapPin, Loader2 } from "lucide-react";
 import { resolveStationPositions } from "@/lib/geocodeStations";
+import FullscreenMapControl from "@/components/maps/FullscreenMapControl";
 
 const LEVEL_COLORS = {
   red: { color: "#b91c1c", fill: "#ef4444" },
@@ -45,6 +46,7 @@ export default function ExecStationsMap({ stations, safety, lang }) {
         <p className="px-5 py-12 text-center text-sm font-body text-muted-foreground">{ar ? "لا توجد مواقع محددة للمحطات بعد" : "No station locations set yet"}</p>
       ) : (
         <MapContainer key={rows.map((s) => s.id).join(",")} center={center} zoom={rows.length > 1 ? 5 : 10} style={{ height: 340, width: "100%" }} scrollWheelZoom={false} attributionControl={false}>
+          <FullscreenMapControl />
           <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
           {rows.map((s) => {
             const c = LEVEL_COLORS[levelOf(s.id)];
