@@ -786,3 +786,54 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   .powercare-shell main { background-size: 24px 24px; }
   .powercare-shell main :is(.rounded-xl, .rounded-2xl, .rounded-3xl) { border-radius: .75rem; }
 }
+
+/* Owner operations center — aligned with the navy, ivory and gold PowerCare identity. */
+.owner-operations-panel {
+  --background: 42 33% 97%;
+  --foreground: 207 45% 16%;
+  --card: 42 38% 99%;
+  --card-foreground: 207 45% 16%;
+  --primary: 207 55% 15%;
+  --primary-foreground: 42 38% 96%;
+  --secondary: 40 26% 91%;
+  --secondary-foreground: 207 45% 16%;
+  --muted: 40 22% 94%;
+  --muted-foreground: 207 14% 42%;
+  --accent: 41 48% 54%;
+  --accent-foreground: 207 55% 13%;
+  --border: 39 27% 76%;
+  min-height: 100vh;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+.owner-operations-header {
+  background-color: hsl(var(--primary));
+  box-shadow: 0 8px 28px hsl(var(--primary) / .16);
+}
+.owner-operations-content > * { position: relative; }
+.owner-operations-content :is(.shadow-xl, .shadow-sm, .shadow-soft) {
+  border: 1px solid hsl(var(--border));
+  box-shadow: none;
+}
+.owner-operations-content :is(.rounded-2xl, .rounded-xl) { border-radius: .625rem; }
+.owner-operations-content [class*="bg-white"] { background-color: hsl(var(--card)); }
+.owner-operations-content [class*="bg-landing-bg"] { background-color: hsl(var(--secondary)); }
+.owner-operations-content [class*="text-[#3a2f22]"] { color: hsl(var(--foreground)); }
+.owner-operations-content [class*="from-[#3a2f22]"] {
+  background-image: none;
+  background-color: hsl(var(--primary));
+}
+.owner-operations-content table { border-collapse: separate; border-spacing: 0; }
+.owner-operations-content thead { background-color: hsl(var(--secondary)); }
+.owner-operations-content tbody tr { border-color: hsl(var(--border)); }
+.owner-operations-content input,
+.owner-operations-content textarea,
+.owner-operations-content select {
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--card));
+}
+.owner-operations-content .recharts-cartesian-grid line { stroke: hsl(var(--border)); }
+@media (max-width: 639px) {
+  .owner-operations-header nav button { padding-inline: .875rem; }
+  .owner-operations-content { padding-top: 1rem; }
+}

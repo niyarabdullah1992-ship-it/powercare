@@ -2,7 +2,7 @@ import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 import { DollarSign, TrendingUp } from "lucide-react";
 
-const PLAN_COLORS = { Free: "#c8bba8", Starter: "#d4a95c", Professional: "#b3873a", Enterprise: "#3a2f22", Custom: "#7c9a6d" };
+const PLAN_COLORS = { Free: "#d9ccb1", Starter: "#c7a14a", Professional: "#526b7e", Enterprise: "#112a3d", Custom: "#8f7a4d" };
 
 export default function SubscriberAnalytics({ data, ar }) {
   const summary = data?.summary;
@@ -67,7 +67,7 @@ export default function SubscriberAnalytics({ data, ar }) {
               <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#8a7a60" }} />
               <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "#8a7a60" }} />
               <Tooltip />
-              <Line type="monotone" dataKey="count" stroke="#b3873a" strokeWidth={2} dot={{ r: 3, fill: "#b3873a" }} />
+              <Line type="monotone" dataKey="count" stroke="#112a3d" strokeWidth={2} dot={{ r: 3, fill: "#c7a14a" }} />
             </LineChart>
           </ResponsiveContainer>
         </div>

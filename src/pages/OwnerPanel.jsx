@@ -104,54 +104,39 @@ export default function OwnerPanel() {
   };
 
   return (
-    <div className="min-h-screen bg-landing-bg px-4 py-10 sm:px-6" dir={lang === "ar" ? "rtl" : "ltr"}>
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Logo size={28} />
-            <span className="font-heading font-semibold text-lg text-[#3a2f22] flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-landing-gold" /> {t("ownerPanel")}
-            </span>
+    <div className="owner-operations-panel min-h-screen bg-background" dir={lang === "ar" ? "rtl" : "ltr"}>
+      <header className="owner-operations-header border-b border-accent/40 bg-primary text-primary-foreground">
+        <div className="mx-auto flex min-h-16 max-w-[1600px] flex-wrap items-center gap-x-6 px-4 sm:px-6 md:flex-nowrap lg:px-8">
+          <div className="flex shrink-0 items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-accent/30 bg-primary-foreground/10"><Logo size={24} /></span>
+            <span className="font-heading text-xl font-semibold tracking-tight text-primary-foreground">Power<span className="text-accent">Care</span></span>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => refresh(true)}
-              disabled={refreshing}
-              className="flex items-center gap-1.5 text-sm text-[#3a2f22]/60 hover:text-[#3a2f22] disabled:opacity-50 font-body"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} /> {lang === "ar" ? "تحديث الكل" : "Refresh all"}
+          <nav className="order-3 flex w-full overflow-x-auto no-scrollbar md:order-none md:w-auto md:flex-1 md:self-stretch">
+            {[
+              { key: "analytics", ar: "لوحة التحليلات", en: "Analytics" },
+              { key: "subscriptions", ar: "إدارة الاشتراكات", en: "Subscriptions" },
+              { key: "report", ar: "تقرير المنصة", en: "Platform report" },
+              { key: "companies", ar: "الشركات", en: "Companies" },
+              { key: "feedback", ar: "التقييمات", en: "Feedback" },
+              { key: "audit", ar: "سجل التدقيق", en: "Audit log" },
+              { key: "roadmap", ar: "خارطة التطوير", en: "Roadmap" },
+            ].map((tb) => (
+              <button key={tb.key} onClick={() => setTab(tb.key)} className={`min-w-max border-b-2 px-4 py-3 text-xs font-medium transition-colors ${tab === tb.key ? "border-accent text-primary-foreground" : "border-transparent text-primary-foreground/55 hover:text-primary-foreground"}`}>
+                {lang === "ar" ? tb.ar : tb.en}
+              </button>
+            ))}
+          </nav>
+          <div className="ms-auto flex shrink-0 items-center gap-3">
+            <button onClick={() => refresh(true)} disabled={refreshing} className="flex items-center gap-1.5 text-xs text-primary-foreground/65 hover:text-primary-foreground disabled:opacity-50">
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /><span className="hidden lg:inline">{lang === "ar" ? "تحديث الكل" : "Refresh all"}</span>
             </button>
-            <button
-              onClick={() => base44.auth.logout("/")}
-              className="flex items-center gap-1.5 text-sm text-[#3a2f22]/60 hover:text-[#3a2f22] font-body"
-            >
-              <LogOut className="w-4 h-4" /> {t("logout")}
+            <button onClick={() => base44.auth.logout("/")} className="flex items-center gap-1.5 rounded-full border border-accent/55 px-3 py-1.5 text-xs text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground">
+              <LogOut className="h-3.5 w-3.5" /><span className="hidden sm:inline">{t("logout")}</span>
             </button>
           </div>
         </div>
-
-        <div className="flex overflow-x-auto rounded-2xl bg-white p-1 shadow-sm no-scrollbar">
-          {[
-            { key: "analytics", ar: "لوحة التحليلات", en: "Analytics" },
-            { key: "subscriptions", ar: "إدارة الاشتراكات", en: "Subscriptions" },
-            { key: "report", ar: "تقرير المنصة", en: "Platform report" },
-            { key: "companies", ar: "الشركات", en: "Companies" },
-            { key: "feedback", ar: "التقييمات", en: "Feedback" },
-            { key: "audit", ar: "سجل التدقيق", en: "Audit log" },
-            { key: "roadmap", ar: "خارطة التطوير", en: "Roadmap" },
-          ].map((tb) => (
-            <button
-              key={tb.key}
-              onClick={() => setTab(tb.key)}
-              className={`min-w-max flex-1 px-4 py-2.5 rounded-xl text-sm font-body font-semibold transition-colors ${
-                tab === tb.key ? "bg-gradient-to-b from-landing-gold-light to-landing-gold text-white" : "text-[#3a2f22]/60 hover:text-[#3a2f22]"
-              }`}
-            >
-              {lang === "ar" ? tb.ar : tb.en}
-            </button>
-          ))}
-        </div>
-
+      </header>
+      <div className="owner-operations-content mx-auto max-w-[1600px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
         {tab === "analytics" && <SaasAnalyticsDashboard key={`analytics-${refreshKey}`} lang={lang} />}
         {tab === "subscriptions" && <SubscribersDashboard key={`subscriptions-${refreshKey}`} ar={lang === "ar"} />}
         {tab === "report" && <PlatformReportDashboard key={`report-${refreshKey}`} ar={lang === "ar"} />}
