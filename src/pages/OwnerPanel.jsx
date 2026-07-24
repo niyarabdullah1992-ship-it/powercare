@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
 import { listCompanies, createCompany, deleteCompany, getCompanyData, setSession } from "@/lib/store";
 import { logAudit, fetchAllAuditLog } from "@/lib/auditLog";
-import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn } from "lucide-react";
+import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn, RefreshCw } from "lucide-react";
 import Logo from "@/components/Logo";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import NewsBroadcast from "@/components/owner/NewsBroadcast";
@@ -22,16 +22,40 @@ export default function OwnerPanel() {
   const [companies, setCompanies] = useState([]);
   const [form, setForm] = useState({ name: "", ownerEmail: "", ownerPassword: "", plan: "Starter", allowedEmailDomain: "" });
   const [tab, setTab] = useState("analytics");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => setUser(null));
   }, []);
 
-  const refresh = () => setCompanies(listCompanies());
-  useEffect(() => {
-    if (user?.role === "admin") {
-      refresh();
+  const refresh = async (showLoading = false) => {
+    if (showLoading) setRefreshing(true);
+    const localCompanies = listCompanies();
+    try {
+      const accounts = await base44.entities.CompanyAccount.list("-created_date", 500);
+      const merged = new Map(localCompanies.map((company) => [company.id, company]));
+      accounts.forEach((account) => merged.set(account.companyId, {
+        ...merged.get(account.companyId),
+        id: account.companyId,
+        name: account.name || merged.get(account.companyId)?.name || account.companyId,
+        ownerEmail: account.ownerEmail,
+        plan: account.plan,
+      }));
+      setCompanies([...merged.values()]);
+    } catch {
+      setCompanies(localCompanies);
     }
+    setRefreshKey((value) => value + 1);
+    if (showLoading) setRefreshing(false);
+  };
+  useEffect(() => {
+    if (user?.role !== "admin") return;
+    refresh();
+    const interval = window.setInterval(() => refresh(), 30000);
+    const onFocus = () => refresh();
+    window.addEventListener("focus", onFocus);
+    return () => { window.clearInterval(interval); window.removeEventListener("focus", onFocus); };
   }, [user]);
 
   if (user === undefined) return null;
@@ -89,12 +113,21 @@ export default function OwnerPanel() {
               <ShieldCheck className="w-4 h-4 text-landing-gold" /> {t("ownerPanel")}
             </span>
           </div>
-          <button
-            onClick={() => base44.auth.logout("/")}
-            className="flex items-center gap-1.5 text-sm text-[#3a2f22]/60 hover:text-[#3a2f22] font-body"
-          >
-            <LogOut className="w-4 h-4" /> {t("logout")}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => refresh(true)}
+              disabled={refreshing}
+              className="flex items-center gap-1.5 text-sm text-[#3a2f22]/60 hover:text-[#3a2f22] disabled:opacity-50 font-body"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} /> {lang === "ar" ? "تحديث الكل" : "Refresh all"}
+            </button>
+            <button
+              onClick={() => base44.auth.logout("/")}
+              className="flex items-center gap-1.5 text-sm text-[#3a2f22]/60 hover:text-[#3a2f22] font-body"
+            >
+              <LogOut className="w-4 h-4" /> {t("logout")}
+            </button>
+          </div>
         </div>
 
         <div className="flex overflow-x-auto rounded-2xl bg-white p-1 shadow-sm no-scrollbar">
@@ -119,12 +152,12 @@ export default function OwnerPanel() {
           ))}
         </div>
 
-        {tab === "analytics" && <SaasAnalyticsDashboard lang={lang} />}
-        {tab === "subscriptions" && <SubscribersDashboard ar={lang === "ar"} />}
-        {tab === "report" && <PlatformReportDashboard ar={lang === "ar"} />}
+        {tab === "analytics" && <SaasAnalyticsDashboard key={`analytics-${refreshKey}`} lang={lang} />}
+        {tab === "subscriptions" && <SubscribersDashboard key={`subscriptions-${refreshKey}`} ar={lang === "ar"} />}
+        {tab === "report" && <PlatformReportDashboard key={`report-${refreshKey}`} ar={lang === "ar"} />}
         {tab === "roadmap" && <PlatformRoadmap ar={lang === "ar"} />}
-        {tab === "feedback" && <ProductFeedbackDashboard ar={lang === "ar"} companies={companies} />}
-        {tab === "audit" && <AuditLogDashboard ar={lang === "ar"} companies={companies} />}
+        {tab === "feedback" && <ProductFeedbackDashboard key={`feedback-${refreshKey}`} ar={lang === "ar"} companies={companies} />}
+        {tab === "audit" && <AuditLogDashboard key={`audit-${refreshKey}`} ar={lang === "ar"} companies={companies} />}
 
         {tab === "companies" && (<>
         <div className="bg-white rounded-2xl p-6 shadow-xl space-y-6">
