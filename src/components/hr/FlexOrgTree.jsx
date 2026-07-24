@@ -25,7 +25,7 @@ export default function FlexOrgTree({ data, company, currentUser, lang }) {
   const escalationChain = useMemo(() => sortComplaintChainByTree(data.complaintEscalationChain || [], data), [data.complaintEscalationChain, data.orgTree]);
   const canManage = isCompanyOwner(currentUser, data) || canManageEmployees(currentUser) || hasHRPermission(currentUser, data, "manage_employees");
   const setSafeZoom = (value) => setZoom(Math.max(.1, Math.min(1.5, value)));
-  const panTree = (distance) => setOffset((current) => ({ ...current, x: current.x + distance }));
+  const panTree = (x, y) => setOffset((current) => ({ x: current.x + x, y: current.y + y }));
   const gestures = useOrgTreeViewport(viewportRef, zoom, setSafeZoom, offset, setOffset);
   const fitTree = () => {
     if (!viewportRef.current || !treeRef.current) return;
