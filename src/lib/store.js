@@ -841,7 +841,11 @@ export function assignStationManager(companyId, employeeId, stationIds) {
     if (!emp) return;
     d.stations.forEach((s) => { if (s.managerId === emp.id) s.managerId = null; });
     const ids = Array.isArray(stationIds) ? stationIds.filter(Boolean) : [];
-    emp.role = "station_manager";
+    d.employees.filter((other) => other.id !== emp.id).forEach((other) => {
+      other.managedStations = (other.managedStations || []).filter((id) => !ids.includes(id));
+      if (other.role === "station_manager" && !other.managedStations.length) { other.role = "employee"; other.stationId = null; }
+    });
+    emp.role = ids.length ? "station_manager" : "employee";
     emp.stationId = ids.length === 1 ? ids[0] : null;
     emp.managedStations = ids;
     ids.forEach((sid) => {
