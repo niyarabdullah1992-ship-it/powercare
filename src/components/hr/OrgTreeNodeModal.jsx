@@ -8,7 +8,7 @@ import OrgTreeCreateFields from "@/components/hr/OrgTreeCreateFields";
 import EmployeeManagerField from "@/components/hr/EmployeeManagerField";
 import OrgParentPicker from "@/components/hr/OrgParentPicker";
 import StationLocationEditor from "@/components/stations/StationLocationEditor";
-import { createOrgRecord, deleteOrgNode, nodeAccess, saveOrgNode, saveOrgStationLocation, saveOrgStationName } from "@/lib/orgTree";
+import { createOrgRecord, deleteOrgNode, nodeAccess, positionManagerInOrgTree, saveOrgNode, saveOrgStationLocation, saveOrgStationName } from "@/lib/orgTree";
 import { assignStationManager, setStationManager } from "@/lib/store";
 
 const empty = { name: "", email: "", stationId: "", location: "", stationType: "", managerId: "" };
@@ -50,8 +50,10 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
         saveOrgStationName(companyId, refId, stationName.trim());
         saveOrgStationLocation(companyId, refId, mapLocation);
         setStationManager(companyId, refId, managerId || null);
+        if (managerId) positionManagerInOrgTree(companyId, managerId, [refId]);
       } else if ([...managerStationIds].sort().join() !== [...initialManagerStations].sort().join()) {
         assignStationManager(companyId, refId, managerStationIds);
+        positionManagerInOrgTree(companyId, refId, managerStationIds);
       }
     } else {
       if (type === "station" && !canAddStation(company, data)) return alert(ar ? "تم بلوغ حد المحطات في الباقة." : "The plan station limit has been reached.");
@@ -60,7 +62,10 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
       if (type === "employee" && data.employees.some((employee) => employee.email?.toLowerCase() === email)) return alert(ar ? "البريد مستخدم مسبقًا." : "Email already exists.");
       if (type === "employee" && allowed.length && !allowed.includes(email)) return alert(ar ? "البريد غير موجود في القائمة المسموحة." : "Email is not on the allowed list.");
       const createdStationId = createOrgRecord(companyId, { ...form, ...mapLocation, email, type, title: title.trim(), parentId }, permissions);
-      if (type === "station" && createdStationId) setStationManager(companyId, createdStationId, form.managerId || null);
+      if (type === "station" && createdStationId) {
+        setStationManager(companyId, createdStationId, form.managerId || null);
+        if (form.managerId) positionManagerInOrgTree(companyId, form.managerId, [createdStationId]);
+      }
     }
     onClose();
   };

@@ -33,6 +33,50 @@ export function stationIdForTreeEmployee(data, employeeId) {
   return node ? treeStationForNode(nodes, node) : null;
 }
 
+export function positionManagerInOrgTree(companyId, employeeId, stationIds) {
+  updateCompany(companyId, (data) => {
+    const nodes = data.orgTree || [];
+    const manager = nodes.find((node) => node.type === "employee" && node.refId === employeeId);
+    const selectedIds = new Set((stationIds || []).filter(Boolean));
+    const stations = nodes.filter((node) => node.type === "station" && selectedIds.has(node.refId));
+    if (!manager || !stations.length) return;
+    const oldParent = manager.parentId || null;
+    const affected = new Set([oldParent, manager.id]);
+    const isBelowManager = (node) => {
+      let cursor = node;
+      while (cursor?.parentId) {
+        if (cursor.parentId === manager.id) return true;
+        cursor = nodes.find((item) => item.id === cursor.parentId);
+      }
+      return false;
+    };
+    nodes.filter((node) => node.type === "station" && isBelowManager(node)).forEach((node) => {
+      affected.add(node.parentId || null);
+      node.parentId = oldParent;
+    });
+    if (stations.length === 1) {
+      const station = stations[0];
+      affected.add(station.id);
+      manager.parentId = station.id;
+      manager.order = nodes.filter((node) => node.parentId === station.id && node.id !== manager.id).length;
+    } else {
+      const parents = stations.map((station) => station.parentId || null);
+      const commonParent = parents.every((parent) => parent === parents[0]) && !stations.some((station) => station.id === parents[0]) ? parents[0] : null;
+      manager.parentId = commonParent;
+      manager.order = nodes.filter((node) => (node.parentId || null) === commonParent && node.id !== manager.id).length;
+      affected.add(commonParent);
+      stations.forEach((station, index) => {
+        affected.add(station.parentId || null);
+        station.parentId = manager.id;
+        station.order = index;
+      });
+    }
+    affected.add(manager.parentId || null);
+    affected.forEach((parentId) => renumber(nodes, parentId));
+    syncEmployeeStationsFromTree(data);
+  });
+}
+
 const syncEmployeeStationsFromTree = (data) => {
   const nodes = data.orgTree || [];
   nodes.filter((node) => node.type === "employee").forEach((node) => {
