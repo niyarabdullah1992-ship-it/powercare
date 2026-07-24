@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
@@ -83,6 +83,8 @@ export default function MyTasks() {
   const [showReport, setShowReport] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
   const [completionMode, setCompletionMode] = useState("onsite");
+  const [isCreating, setIsCreating] = useState(false);
+  const creatingRef = useRef(false);
 
   // Smart form memory — opening the create form pre-fills the user's usual choices.
   const openCreateForm = (stationId = null, sectionPath = null) => {
@@ -433,6 +435,9 @@ export default function MyTasks() {
 
     const fileUrls = taskFiles.length > 0 ? taskFiles.map((f) => ({ url: f.url, name: f.name, type: f.type })) : null;
 
+    if (creatingRef.current) return;
+    creatingRef.current = true;
+    setIsCreating(true);
     try {
       const res = await targetsCall({
         action: "createTarget",
@@ -479,6 +484,9 @@ export default function MyTasks() {
       fetchTargets();
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to create");
+    } finally {
+      creatingRef.current = false;
+      setIsCreating(false);
     }
   };
 
@@ -1020,7 +1028,7 @@ export default function MyTasks() {
           )}
 
           <div className="grid grid-cols-2 gap-3 border-t border-border pt-4">
-            <button type="submit" className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground hover:bg-accent/90">{t("save")}</button>
+            <button type="submit" disabled={isCreating} className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50">{isCreating ? (lang === "ar" ? "جارٍ الحفظ..." : "Saving...") : t("save")}</button>
             <button type="button" onClick={() => { setShowCreate(false); setSectionValue(""); }} className="rounded-lg border border-accent/60 bg-secondary/60 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary">{t("cancel")}</button>
           </div>
           </div>
