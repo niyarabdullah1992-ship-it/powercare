@@ -1,13 +1,18 @@
 export const DEFAULT_ORG_RANKS = [
-  { id: "manager", labelAr: "مدير", labelEn: "Manager", icon: "crown", color: "navy" },
-  { id: "supervisor", labelAr: "سوبرفايزر", labelEn: "Supervisor", icon: "star", color: "ivory" },
-  { id: "lead", labelAr: "قائد فريق", labelEn: "Team lead", icon: "shield", color: "blue" },
+  { id: "manager", labels: { en: "Manager", ar: "مدير", de: "Manager", fr: "Responsable", es: "Gerente", pt: "Gerente", ru: "Менеджер", ja: "マネージャー", ko: "관리자" }, icon: "crown", color: "navy" },
+  { id: "supervisor", labels: { en: "Supervisor", ar: "مشرف", de: "Aufsicht", fr: "Superviseur", es: "Supervisor", pt: "Supervisor", ru: "Супервайзер", ja: "スーパーバイザー", ko: "슈퍼바이저" }, icon: "star", color: "ivory" },
+  { id: "lead", labels: { en: "Team lead", ar: "قائد فريق", de: "Teamleiter", fr: "Chef d’équipe", es: "Líder de equipo", pt: "Líder de equipe", ru: "Руководитель команды", ja: "チームリーダー", ko: "팀 리더" }, icon: "shield", color: "blue" },
 ];
 
 export const getOrgRanks = (value) => {
   const ranks = Array.isArray(value) ? value : value?.orgRanks;
   return Array.isArray(ranks) && ranks.length ? ranks : DEFAULT_ORG_RANKS;
 };
+
+export function getOrgRankLabel(rank, lang = "en") {
+  const standard = DEFAULT_ORG_RANKS.find((item) => item.id === rank?.id);
+  return rank?.labels?.[lang] || (lang === "ar" ? rank?.labelAr : null) || standard?.labels?.[lang] || (lang === "en" ? rank?.labelEn : null) || rank?.labels?.en || rank?.labelEn || rank?.labelAr || rank?.id || "";
+}
 
 export function resolveRank(node, nodes = [], configuredRanks) {
   if (!node || node.type !== "employee") return null;
