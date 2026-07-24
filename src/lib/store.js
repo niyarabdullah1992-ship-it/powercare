@@ -808,6 +808,31 @@ export function switchUser(userId) {
 // them to the station_manager role, clears their old single-station manager slot (if any),
 // and sets station.managerId on every selected station so the escalation chain (level 0,
 // see src/lib/escalation.js) and org chart both recognize them everywhere they manage.
+export function setStationManager(companyId, stationId, employeeId) {
+  const current = getCompanyData(companyId);
+  const stationName = current?.stations.find((station) => station.id === stationId)?.name || "";
+  const managerName = current?.employees.find((employee) => employee.id === employeeId)?.name || "No manager";
+  audit(companyId, "station_manager_changed", `${stationName}: ${managerName}.`);
+  updateCompany(companyId, (data) => {
+    const station = data.stations.find((item) => item.id === stationId);
+    if (!station || station.managerId === (employeeId || null)) return;
+    const previous = data.employees.find((employee) => employee.id === station.managerId);
+    if (previous) {
+      previous.managedStations = (previous.managedStations || []).filter((id) => id !== stationId);
+      if (!previous.managedStations.length && previous.role === "station_manager") {
+        previous.role = "employee";
+        previous.stationId = null;
+      }
+    }
+    station.managerId = employeeId || null;
+    const next = data.employees.find((employee) => employee.id === employeeId);
+    if (!next) return;
+    next.role = "station_manager";
+    next.managedStations = [...new Set([...(next.managedStations || []), stationId])];
+    next.stationId = next.managedStations.length === 1 ? stationId : null;
+  });
+}
+
 export function assignStationManager(companyId, employeeId, stationIds) {
   const empName = getCompanyData(companyId)?.employees.find((e) => e.id === employeeId)?.name || "";
   audit(companyId, "station_manager_assigned", `${empName} assigned as station manager of ${(stationIds || []).length} station(s).`);

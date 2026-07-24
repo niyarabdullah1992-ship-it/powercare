@@ -1,7 +1,8 @@
 import React from "react";
 import SmartDepartmentGrid from "@/components/hr/SmartDepartmentGrid";
+import StationManagerField from "@/components/hr/StationManagerField";
 
-export default function OrgTreeCreateFields({ type, setType, form, setForm, title, setTitle, permissions, setPermissions, stations, ar }) {
+export default function OrgTreeCreateFields({ type, setType, form, setForm, title, setTitle, permissions, setPermissions, stations, employees, ar }) {
   const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
   return (
     <>
@@ -14,6 +15,7 @@ export default function OrgTreeCreateFields({ type, setType, form, setForm, titl
         <div className="grid gap-3 sm:grid-cols-2">
           <input required value={form.location} onChange={(event) => update("location", event.target.value)} placeholder={ar ? "الموقع" : "Location"} className="rounded-md border px-3 py-2 text-sm" />
           <input value={form.stationType} onChange={(event) => update("stationType", event.target.value)} placeholder={ar ? "نوع المحطة" : "Station type"} className="rounded-md border px-3 py-2 text-sm" />
+          <div className="sm:col-span-2"><StationManagerField value={form.managerId} onChange={(value) => update("managerId", value)} employees={employees} ar={ar} /></div>
         </div>
       ) : (
         <>
