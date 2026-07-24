@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { Banknote, Users, CheckCircle2, Wallet, RefreshCw, FileText } from "lucide-react";
 import { ensurePayrollRun, getRun, isPayrollEmployee, monthKey, netOf, payrollItemIssues, setOwnerPayrollEnabled, updatePayrollItem, setItemPaid, syncPayrollFromProfiles } from "@/lib/payroll";
 import { printReport } from "@/lib/printReport";
-import PayrollRow from "@/components/payroll/PayrollRow";
+import PayrollTableRows from "@/components/payroll/PayrollTableRows";
 import PayrollReportExport from "@/components/payroll/PayrollReportExport";
 import StationMultiSelect from "@/components/payroll/StationMultiSelect";
 import PayrollSalaryNotice from "@/components/payroll/PayrollSalaryNotice";
@@ -185,24 +185,23 @@ export default function Payroll() {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
-              {visible.map((item) => (
-                <PayrollRow
-                  key={item.id}
-                  item={item}
-                  employee={employeeForItem(item)}
-                  ar={ar}
-                  onChange={(field, value) => updatePayrollItem(company.id, month, item.id, { [field]: value })}
-                  onTogglePaid={(paid) => {
-                    if (paid && payrollItemIssues(item).length) {
-                      alert(ar ? "لا يمكن اعتماد الدفع قبل إدخال راتب أساسي ومبالغ صحيحة وصافي موجب وعملة صالحة." : "Payment cannot be approved until base salary, valid amounts, a positive net, and a valid currency are set.");
-                      return;
-                    }
-                    setItemPaid(company.id, month, item.id, paid);
-                  }}
-                  onPayslip={() => exportPayslip(item)}
-                />
-              ))}
+            <tbody>
+              <PayrollTableRows
+                items={visible}
+                stations={allowedStations}
+                getStationId={itemStationId}
+                employeeForItem={employeeForItem}
+                ar={ar}
+                onChange={(itemId, field, value) => updatePayrollItem(company.id, month, itemId, { [field]: value })}
+                onTogglePaid={(item, paid) => {
+                  if (paid && payrollItemIssues(item).length) {
+                    alert(ar ? "لا يمكن اعتماد الدفع قبل إدخال راتب أساسي ومبالغ صحيحة وصافي موجب وعملة صالحة." : "Payment cannot be approved until base salary, valid amounts, a positive net, and a valid currency are set.");
+                    return;
+                  }
+                  setItemPaid(company.id, month, item.id, paid);
+                }}
+                onPayslip={exportPayslip}
+              />
             </tbody>
           </table>
         )}
