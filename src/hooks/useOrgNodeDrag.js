@@ -22,7 +22,7 @@ export default function useOrgNodeDrag(nodeId, enabled, onStart, onEnd, onDrop) 
     if (!start.current || start.current.pointerId !== event.pointerId) return;
     const moved = Math.hypot(event.clientX - start.current.x, event.clientY - start.current.y);
     if (!active.current && start.current.pointerType === "mouse" && moved > 4) activate();
-    if (!active.current && start.current.pointerType !== "mouse" && moved > 8) clear();
+    if (!active.current && start.current.pointerType !== "mouse" && moved > 8) activate();
     if (active.current) { event.preventDefault(); event.stopPropagation(); }
   };
   const finish = (event, cancelled = false) => {
