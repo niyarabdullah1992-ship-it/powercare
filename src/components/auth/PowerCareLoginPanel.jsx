@@ -16,9 +16,9 @@ export default function PowerCareLoginPanel({ showTypeSelector = false, returnPa
   if (flow.pendingId) return <OtpStep email={flow.email} accounts={flow.accounts} onVerify={flow.verify} onResend={flow.resend} onBack={flow.backFromOtp} />;
   return <div className="space-y-2">
     {showTypeSelector && <LoginTypeSelector value={flow.kind} onChange={flow.setKind} lang={lang} />}
-    <div className="grid grid-cols-2 gap-2">
-      <button type="button" onClick={flow.google} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-md border border-border py-2 text-xs font-semibold hover:bg-muted disabled:opacity-50"><GoogleIcon className="h-5 w-5" />Google</button>
-      <button type="button" onClick={flow.microsoft} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-md border border-border py-2 text-xs font-semibold hover:bg-muted disabled:opacity-50"><MicrosoftIcon className="h-5 w-5" />Microsoft</button>
+    <div className="space-y-2">
+      <button type="button" onClick={flow.google} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-md border border-border py-2 text-xs font-semibold hover:bg-muted disabled:opacity-50"><GoogleIcon className="h-5 w-5" />Continue with Google</button>
+      <button type="button" onClick={flow.microsoft} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-md border border-border py-2 text-xs font-semibold hover:bg-muted disabled:opacity-50"><MicrosoftIcon className="h-5 w-5" />Continue with Microsoft</button>
     </div>
     <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />{t("orDivider")}<span className="h-px flex-1 bg-border" /></div>
     <form onSubmit={flow.submit} className="space-y-2">
