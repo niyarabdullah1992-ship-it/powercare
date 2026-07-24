@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import usePowerCareLogin from "@/hooks/usePowerCareLogin";
 import GoogleIcon from "@/components/GoogleIcon";
-import { MicrosoftIcon } from "@/components/ProviderIcons";
+import { AppleIcon, MicrosoftIcon } from "@/components/ProviderIcons";
 import OtpStep from "@/components/landing/OtpStep";
 import LoginTypeSelector from "@/components/landing/LoginTypeSelector";
 import GoogleAccountPicker from "@/components/landing/GoogleAccountPicker";
@@ -19,6 +19,7 @@ export default function PowerCareLoginPanel({ showTypeSelector = false, returnPa
     <div className="space-y-2">
       <button type="button" onClick={flow.google} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-md border border-border py-2 text-xs font-semibold hover:bg-muted disabled:opacity-50"><GoogleIcon className="h-5 w-5" />Continue with Google</button>
       <button type="button" onClick={flow.microsoft} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-md border border-border py-2 text-xs font-semibold hover:bg-muted disabled:opacity-50"><MicrosoftIcon className="h-5 w-5" />Continue with Microsoft</button>
+      <button type="button" onClick={flow.apple} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-md border border-border py-2 text-xs font-semibold hover:bg-muted disabled:opacity-50"><AppleIcon className="h-5 w-5" />Continue with Apple</button>
     </div>
     <div className="flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />{t("orDivider")}<span className="h-px flex-1 bg-border" /></div>
     <form onSubmit={flow.submit} className="space-y-2">

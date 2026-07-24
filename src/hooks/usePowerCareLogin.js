@@ -21,10 +21,11 @@ export default function usePowerCareLogin(returnPath = "/login") {
   useEffect(() => { if (session) navigate("/app", { replace: true }); }, [session, navigate]);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const provider = params.has("microsoft_login") ? "Microsoft" : params.has("google_login") ? "Google" : null;
+    const provider = params.has("apple_login") ? "Apple" : params.has("microsoft_login") ? "Microsoft" : params.has("google_login") ? "Google" : null;
     if (!provider) return;
     params.delete("google_login");
     params.delete("microsoft_login");
+    params.delete("apple_login");
     const cleanSearch = params.toString();
     window.history.replaceState({}, "", `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ""}${window.location.hash}`);
     setLoading(true);
@@ -42,7 +43,7 @@ export default function usePowerCareLogin(returnPath = "/login") {
         : `You do not have a PowerCare account linked to ${provider}. Use your registered email or create a new account.`);
     }).catch((error) => {
       const message = error.message || `${provider} login failed`;
-      setError(provider === "Microsoft" ? message.replaceAll("Google", "Microsoft") : message);
+      setError(provider === "Google" ? message : message.replaceAll("Google", provider));
     }).finally(() => setLoading(false));
   }, []);
 
@@ -74,6 +75,7 @@ export default function usePowerCareLogin(returnPath = "/login") {
   };
   const google = () => base44.auth.loginWithProvider("google", `${returnPath}?google_login=1&type=${kind}`);
   const microsoft = () => base44.auth.loginWithProvider("microsoft", `${returnPath}?microsoft_login=1&type=${kind}`);
+  const apple = () => base44.auth.loginWithProvider("apple", `${returnPath}?apple_login=1&type=${kind}`);
   const chooseGoogleAccount = async (accountKey) => {
     setError(""); setLoading(true);
     const result = await loginWithGoogle(kind, accountKey);
@@ -87,5 +89,5 @@ export default function usePowerCareLogin(returnPath = "/login") {
     setLoading(false);
   };
   const backFromOtp = () => { setPendingId(null); setGoogleOtpAccountKey(null); };
-  return { kind, setKind, email, setEmail, password, setPassword, error, loading, pendingId, accounts, googleAccounts, setGoogleAccounts, submit, verify, resend, google, microsoft, chooseGoogleAccount, backFromOtp };
+  return { kind, setKind, email, setEmail, password, setPassword, error, loading, pendingId, accounts, googleAccounts, setGoogleAccounts, submit, verify, resend, google, microsoft, apple, chooseGoogleAccount, backFromOtp };
 }
