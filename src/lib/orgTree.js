@@ -21,16 +21,7 @@ export function toggleComplaintEscalationMember(companyId, employeeId) {
 
 const renumber = (nodes, parentId) => nodes.filter((node) => (node.parentId || null) === (parentId || null)).sort((a, b) => a.order - b.order).forEach((node, index) => { node.order = index; });
 
-const validOrgParentId = (nodes, type, parentId) => {
-  if (type !== "station" || !parentId) return parentId || null;
-  let parent = nodes.find((node) => node.id === parentId);
-  const visited = new Set();
-  while (parent && parent.type !== "station" && !visited.has(parent.id)) {
-    visited.add(parent.id);
-    parent = nodes.find((node) => node.id === parent.parentId);
-  }
-  return parent?.id || null;
-};
+const validOrgParentId = (_nodes, _type, parentId) => parentId || null;
 
 export function initializeOrgTree(companyId, data) {
   const existing = Array.isArray(data?.orgTree)
@@ -126,9 +117,6 @@ export function moveOrgNode(companyId, nodeId, targetId, mode) {
     const moving = nodes.find((node) => node.id === nodeId);
     const target = nodes.find((node) => node.id === targetId);
     if (!moving || !target || moving.id === target.id) return;
-    const targetParent = nodes.find((node) => node.id === target.parentId);
-    const stationUnderEmployee = moving.type === "station" && ((mode === "below" || mode === "inside") ? target.type === "employee" : targetParent?.type === "employee");
-    if (stationUnderEmployee) return;
     const oldParent = moving.parentId || null;
     let cursor = target;
     let targetIsDescendant = false;
@@ -146,10 +134,16 @@ export function moveOrgNode(companyId, nodeId, targetId, mode) {
     }
     if (mode === "above") {
       const targetParent = target.parentId || null;
+      const groupedSiblings = nodes
+        .filter((node) => node.id !== moving.id && (node.parentId || null) === targetParent && node.type === target.type)
+        .sort((a, b) => a.order - b.order);
       moving.parentId = targetParent;
-      moving.order = target.order;
-      target.parentId = moving.id;
-      target.order = nodes.filter((node) => node.id !== target.id && node.parentId === moving.id).length;
+      moving.order = groupedSiblings[0]?.order ?? target.order;
+      const existingChildrenCount = nodes.filter((node) => node.id !== moving.id && node.parentId === moving.id).length;
+      groupedSiblings.forEach((node, index) => {
+        node.parentId = moving.id;
+        node.order = existingChildrenCount + index;
+      });
       renumber(nodes, oldParent);
       renumber(nodes, targetParent);
       renumber(nodes, moving.id);
