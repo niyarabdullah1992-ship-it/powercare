@@ -12,8 +12,8 @@ function toBase64Url(str) {
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// Branded HTML email template — gold header, clean card, bilingual-friendly.
-const EMAIL_LOGO = 'https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/b75eb58e7_9a8843bf0_generated_image.png';
+// Branded HTML email template — uses the same logo asset as the PowerCare website.
+const EMAIL_LOGO = 'https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/1914d20bd_.png';
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 function emailHtml({ title, lines = [], code = null, footerNote = '' }) {
   const paragraphs = lines.map((line) => `<p style="margin:0 auto 22px;max-width:520px;font-size:20px;line-height:1.55;color:#17202b;text-align:center;" dir="auto">${escapeHtml(line)}</p>`).join('');
@@ -25,8 +25,8 @@ function emailHtml({ title, lines = [], code = null, footerNote = '' }) {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:650px;background:#ffffff;border:1px solid #d8d8d4;border-radius:8px;overflow:hidden;box-shadow:0 10px 28px rgba(24,42,60,.08);">
       <tr><td align="center" style="background:#183957;padding:29px 20px;">
         <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-          <td style="padding-right:12px;"><span style="display:inline-block;width:38px;height:38px;border-radius:50%;background:#d0ad63;color:#183957;font-size:25px;font-weight:700;line-height:38px;text-align:center;font-family:Georgia,serif;">P</span></td>
-          <td style="font-size:29px;line-height:38px;font-weight:600;color:#ffffff;letter-spacing:-.5px;">PowerCare</td>
+          <td style="padding-right:12px;"><img src="${EMAIL_LOGO}" width="42" height="42" alt="PowerCare" style="display:block;width:42px;height:42px;object-fit:contain;border:0;" /></td>
+          <td style="font-size:29px;line-height:42px;font-weight:600;color:#ffffff;letter-spacing:-.5px;">PowerCare</td>
         </tr></table>
       </td></tr>
       <tr><td class="pc-body" style="padding:48px 34px 40px;text-align:center;">
