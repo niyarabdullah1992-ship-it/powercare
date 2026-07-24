@@ -3,8 +3,9 @@ import { POWERCARE_LOGO_URL } from "@/lib/brand";
 // Builds an elegant, print-ready (A4) HTML document from AI-generated content.
 // Used by Niro's "create_document" action — supports headings, paragraphs,
 // bullet lists, in Arabic (RTL) or English (LTR).
-export function buildDocumentHtml({ title, subtitle, sections = [], dir = "ltr", companyName = "", authorName = "", color = "#b07d3f", logoUrl = "" }) {
+export function buildDocumentHtml({ title, subtitle, sections = [], dir = "ltr", companyName = "", authorName = "", color = "#e0a43b", logoUrl = "" }) {
   const ar = dir === "rtl";
+  const accent = String(color || "#e0a43b").toLowerCase() === "#b07d3f" ? "#e0a43b" : (color || "#e0a43b");
   const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   const sectionHtml = sections.map((sec, i) => `
@@ -24,23 +25,23 @@ export function buildDocumentHtml({ title, subtitle, sections = [], dir = "ltr",
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: ${ar ? "'IBM Plex Sans Arabic'" : "'IBM Plex Sans Arabic'"}, sans-serif; color: #2a2118; background: #f2ece1; padding: 32px 16px; line-height: 1.9; }
-  .page { max-width: 800px; margin: 0 auto; background: #fff; padding: 56px 52px; box-shadow: 0 4px 30px rgba(0,0,0,.08); }
-  .head { text-align: center; border-bottom: 2px solid ${color}; padding-bottom: 24px; margin-bottom: 32px; }
+  body { font-family: ${ar ? "'IBM Plex Sans Arabic'" : "'IBM Plex Sans Arabic'"}, sans-serif; color: #13283d; background: #f1eadc; padding: 32px 16px; line-height: 1.9; }
+  .page { max-width: 800px; margin: 0 auto; background: #fff; padding: 56px 52px; border-top: 7px solid #e0a43b; box-shadow: 0 4px 30px rgba(19,40,61,.1); }
+  .head { text-align: center; border-bottom: 2px solid ${accent}; padding-bottom: 24px; margin-bottom: 32px; }
   .head img { height: 52px; margin-bottom: 12px; }
-  .head .brand { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: ${color}; margin-bottom: 10px; }
-  h1 { font-family: 'Cormorant Garamond', serif; font-size: 34px; font-weight: 600; color: #241c12; }
-  .subtitle { color: #7a6a52; font-size: 14px; margin-top: 8px; }
+  .head .brand { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: ${accent}; margin-bottom: 10px; }
+  h1 { font-family: 'Cormorant Garamond', serif; font-size: 34px; font-weight: 600; color: #13283d; }
+  .subtitle { color: #657383; font-size: 14px; margin-top: 8px; }
   .sec { margin-bottom: 26px; page-break-inside: avoid; }
-  h2 { font-size: 18px; font-weight: 700; color: #241c12; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
-  .num { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: ${color}; color: #fff; font-size: 13px; flex-shrink: 0; }
+  h2 { font-size: 18px; font-weight: 700; color: #13283d; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+  .num { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: ${accent}; color: #fff; font-size: 13px; flex-shrink: 0; }
   p { font-size: 14.5px; margin-bottom: 8px; text-align: justify; }
   ul { padding-${ar ? "right" : "left"}: 22px; }
   li { font-size: 14.5px; margin-bottom: 6px; }
-  li::marker { color: ${color}; }
+  li::marker { color: ${accent}; }
   .foot { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5dccb; display: flex; justify-content: space-between; font-size: 12px; color: #8a7a60; }
   .toolbar { max-width: 800px; margin: 0 auto 16px; display: flex; justify-content: flex-end; }
-  .toolbar button { background: ${color}; color: #fff; border: 0; border-radius: 8px; padding: 10px 22px; font-size: 14px; font-family: inherit; cursor: pointer; }
+  .toolbar button { background: ${accent}; color: #fff; border: 0; border-radius: 8px; padding: 10px 22px; font-size: 14px; font-family: inherit; cursor: pointer; }
   @media print {
     body { background: #fff; padding: 0; }
     .page { box-shadow: none; padding: 24px 8px; max-width: none; }

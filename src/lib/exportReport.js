@@ -1,14 +1,7 @@
-// Exports tabular data as a CSV file (opens directly in Excel).
+import { exportExcelColored } from "@/lib/exportExcelColored";
+
+// Legacy callers now receive the same branded, Excel-openable workbook used by every report.
 export function exportCSV(filename, headers, rows) {
-  const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const csv = [headers.map(escape).join(","), ...rows.map((r) => r.map(escape).join(","))].join("\n");
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  const cleanName = String(filename || "powercare-report").replace(/\.(csv|xls|xlsx)$/i, "");
+  exportExcelColored({ filename: cleanName, title: cleanName.replace(/[_-]+/g, " "), headers, rows });
 }

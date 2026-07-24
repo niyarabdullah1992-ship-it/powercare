@@ -1,10 +1,10 @@
 export const PDF_THEME = {
-  ink: "#30271f",
-  inkSoft: "#594b3d",
-  gold: "#b07d3f",
-  goldLight: "#d8b77c",
-  cream: "#faf6ef",
-  creamDeep: "#f1e7d8",
-  muted: "#8a7660",
-  line: "#dfd2bf",
+  ink: "#13283d",
+  inkSoft: "#29445f",
+  gold: "#e0a43b",
+  goldLight: "#f0c56d",
+  cream: "#faf8f2",
+  creamDeep: "#f1eadc",
+  muted: "#657383",
+  line: "#d8d5cc",
 };
