@@ -54,7 +54,7 @@ export default function Payroll() {
     return employee ? employeeStationId(employee) : stationIdOf(item.employeeStationId);
   };
   const allowedStations = (data.stations || []).filter((station) => payrollScope === null || payrollScope.includes(station.id));
-  const filterStations = [...allowedStations, { id: UNASSIGNED_STATION_ID, name: ar ? "بدون محطة" : "Without station" }];
+  const filterStations = [...allowedStations, { id: UNASSIGNED_STATION_ID, name: ar ? "غير مخصص" : "Unassigned" }];
   const allowedStationIds = new Set(filterStations.map((station) => station.id));
   const selectedStationIds = stationFilter.filter((id) => allowedStationIds.has(id));
   const scopedItems = items.filter((item) => !ownerIds.has(item.employeeId) && (payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (payrollScope === null || payrollScope.includes(itemStationId(item))))));
