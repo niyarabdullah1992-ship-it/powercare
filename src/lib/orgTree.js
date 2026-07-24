@@ -54,6 +54,21 @@ export function assignEmployeeToOrgStation(companyId, employeeId, stationNodeId)
   });
 }
 
+export function unassignEmployeeFromOrgTree(companyId, nodeId) {
+  updateCompany(companyId, (data) => {
+    const nodes = data.orgTree || [];
+    const node = nodes.find((item) => item.id === nodeId && item.type === "employee");
+    if (!node || nodes.some((item) => item.parentId === node.id)) return;
+    const employee = (data.employees || []).find((item) => item.id === node.refId);
+    const oldParent = node.parentId || null;
+    node.parentId = null;
+    node.order = nodes.filter((item) => item.id !== node.id && !item.parentId).length;
+    if (employee) employee.stationId = null;
+    renumber(nodes, oldParent);
+    renumber(nodes, null);
+  });
+}
+
 export function positionManagerInOrgTree(companyId, employeeId, stationIds) {
   updateCompany(companyId, (data) => {
     const nodes = data.orgTree || [];
