@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Camera, FileUp, Link2, Plus } from "lucide-react";
+import { BookOpen, Camera, FileUp, Link2, Plus } from "lucide-react";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { updateCompany } from "@/lib/store";
@@ -11,10 +11,11 @@ import CameraForm from "@/components/cameras/CameraForm";
 import CameraSetupWizard from "@/components/cameras/CameraSetupWizard";
 import CameraCsvImport from "@/components/cameras/CameraCsvImport";
 import CameraDiscovery from "@/components/cameras/CameraDiscovery";
+import CameraGuideDialog from "@/components/cameras/CameraGuideDialog";
 
 export default function Cameras() {
   const { data, currentUser, company } = useAuth(); const { lang } = useI18n(); const ar = lang === "ar";
-  const [editing, setEditing] = useState(null); const [formOpen, setFormOpen] = useState(false); const [wizardOpen, setWizardOpen] = useState(false); const [importOpen, setImportOpen] = useState(false); const [discoveredAddress, setDiscoveredAddress] = useState(""); const [selectedStationId, setSelectedStationId] = useState(null);
+  const [editing, setEditing] = useState(null); const [formOpen, setFormOpen] = useState(false); const [wizardOpen, setWizardOpen] = useState(false); const [importOpen, setImportOpen] = useState(false); const [guideOpen, setGuideOpen] = useState(false); const [discoveredAddress, setDiscoveredAddress] = useState(""); const [selectedStationId, setSelectedStationId] = useState(null);
   if (!data || !currentUser) return null;
   const stations = visibleStations(currentUser, data); const stationIds = new Set(stations.map((item) => item.id));
   const cameras = (data.cameras || []).filter((item) => stationIds.has(item.stationId));
@@ -25,7 +26,7 @@ export default function Cameras() {
   const remove = (camera) => { if (!window.confirm(ar ? "حذف هذه الكاميرا؟" : "Delete this camera?")) return; updateCompany(company.id, (current) => { current.cameras = (current.cameras || []).filter((item) => item.id !== camera.id); }); };
   const importRows = (rows) => { updateCompany(company.id, (current) => { current.cameras = current.cameras || []; current.cameras.push(...rows.map((row) => { const station = stations.find((item) => item.id === row.stationId); return { ...row, id: crypto.randomUUID(), lat: station?.lat ?? null, lng: station?.lng ?? null, createdAt: new Date().toISOString() }; })); }); setImportOpen(false); };
   const useDiscovered = (address) => { setDiscoveredAddress(address); setWizardOpen(true); };
-  return <div className="space-y-6"><PageHeader title={ar ? "مركز الكاميرات" : "Camera Center"} description={ar ? "مراقبة كاميرات IP وربطها بالمحطات والمواقع الجغرافية." : "Monitor IP cameras linked to stations and geographic locations."} icon={Camera} actions={canManage && <div className="flex flex-wrap gap-2"><button onClick={() => setImportOpen(true)} className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm"><FileUp className="h-4 w-4" />{ar ? "استيراد CSV" : "Import CSV"}</button><button onClick={() => { setDiscoveredAddress(""); setWizardOpen(true); }} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"><Link2 className="h-4 w-4" />{ar ? "ربط كاميرا" : "Connect camera"}</button><button onClick={() => { setEditing(null); setFormOpen(true); }} className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm"><Plus className="h-4 w-4" />{ar ? "إضافة سريعة" : "Quick add"}</button></div>} />
+  return <div className="space-y-6"><PageHeader title={ar ? "مركز الكاميرات" : "Camera Center"} description={ar ? "مراقبة كاميرات IP وربطها بالمحطات والمواقع الجغرافية." : "Monitor IP cameras linked to stations and geographic locations."} icon={Camera} actions={<div className="flex flex-wrap gap-2"><button onClick={() => setGuideOpen(true)} className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm"><BookOpen className="h-4 w-4" />{ar ? "دليل القسم" : "Section guide"}</button>{canManage && <><button onClick={() => setImportOpen(true)} className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm"><FileUp className="h-4 w-4" />{ar ? "استيراد CSV" : "Import CSV"}</button><button onClick={() => { setDiscoveredAddress(""); setWizardOpen(true); }} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"><Link2 className="h-4 w-4" />{ar ? "ربط كاميرا" : "Connect camera"}</button><button onClick={() => { setEditing(null); setFormOpen(true); }} className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm"><Plus className="h-4 w-4" />{ar ? "إضافة سريعة" : "Quick add"}</button></>}</div>} />
     {canManage && <CameraDiscovery ar={ar} onUse={useDiscovered} />}
     <CameraMap cameras={cameras} stations={stations} ar={ar} onSelectStation={setSelectedStationId} />
     {selectedStation && <div className="flex items-center justify-between rounded-lg border border-accent/25 bg-card px-4 py-3"><p className="text-sm font-semibold">{ar ? `كاميرات محطة ${selectedStation.name}` : `${selectedStation.name} cameras`}</p><button onClick={() => setSelectedStationId(null)} className="text-xs text-accent hover:underline">{ar ? "عرض جميع المحطات" : "Show all stations"}</button></div>}
@@ -34,5 +35,6 @@ export default function Cameras() {
     {formOpen && <CameraForm key={editing?.id || "new"} initial={editing} stations={stations} ar={ar} onSave={save} onClose={() => { setFormOpen(false); setEditing(null); }} />}
     {wizardOpen && <CameraSetupWizard key={discoveredAddress || "wizard"} stations={stations} companyId={company.id} ar={ar} initialAddress={discoveredAddress} onSave={save} onClose={() => { setWizardOpen(false); setDiscoveredAddress(""); }} />}
     {importOpen && <CameraCsvImport stations={stations} ar={ar} onImport={importRows} onClose={() => setImportOpen(false)} />}
+    {guideOpen && <CameraGuideDialog ar={ar} onClose={() => setGuideOpen(false)} />}
   </div>;
 }
