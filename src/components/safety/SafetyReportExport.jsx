@@ -51,7 +51,7 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
     : preset === "custom"
       ? !!customStart && !!customEnd && new Date(customStart) <= new Date(customEnd)
       : true;
-  const canExport = selectedApproved && periodValid;
+  const canExport = periodValid;
 
   const buildReport = () => {
     let start = new Date();
@@ -196,8 +196,8 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
         </div>
       )}
 
-      {!selectedApproved && <p className="text-[11px] text-red-600 font-body">{L("لا يمكن التصدير: يجب اعتماد بيانات جميع المحطات المحددة أولًا.", "Export unavailable: approve every selected station first.")}</p>}
-      {selectedApproved && !periodValid && <p className="text-[11px] text-red-600 font-body">{L("أدخل فترة زمنية صحيحة.", "Enter a valid date period.")}</p>}
+      {!selectedApproved && <p className="text-[11px] text-amber-700 font-body">{L("تنبيه: سيتضمن التقرير محطات غير معتمدة، وستظهر حالة الاعتماد بوضوح داخله.", "Notice: the report includes unapproved stations and clearly identifies their approval status.")}</p>}
+      {!periodValid && <p className="text-[11px] text-red-600 font-body">{L("أدخل فترة زمنية صحيحة.", "Enter a valid date period.")}</p>}
       <div className="flex flex-wrap gap-2 pt-1">
         <button
           type="button" disabled={!canExport} onClick={exportExcel}
