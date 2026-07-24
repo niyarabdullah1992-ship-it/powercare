@@ -2,7 +2,7 @@ import React from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Maximize2, Minus, Plus } from "lucide-react";
 
 export default function HierarchyZoomControls({ zoom, onZoom, onSetZoom, onFit, onPan, ar }) {
-  return <div className="flex flex-wrap items-center gap-1">
+  return <div dir="ltr" className="flex flex-wrap items-center gap-1">
     <button type="button" onClick={() => onPan(-120, 0)} className="rounded-md border border-border p-2 hover:bg-muted" aria-label={ar ? "تحريك العرض لليسار" : "Move view left"}><ArrowLeft className="h-4 w-4" /></button>
     <button type="button" onClick={() => onPan(120, 0)} className="rounded-md border border-border p-2 hover:bg-muted" aria-label={ar ? "تحريك العرض لليمين" : "Move view right"}><ArrowRight className="h-4 w-4" /></button>
     <button type="button" onClick={() => onPan(0, -120)} className="rounded-md border border-border p-2 hover:bg-muted" aria-label={ar ? "تحريك العرض لأعلى" : "Move view up"}><ArrowUp className="h-4 w-4" /></button>
