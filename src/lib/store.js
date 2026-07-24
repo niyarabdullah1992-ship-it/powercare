@@ -5,7 +5,6 @@ import { base44 } from "@/api/base44Client";
 import { sendEmailAlert } from "./emailAlerts";
 import { toRiyadhDateKey } from "./riyadhDate";
 import { reconcileStationReferences } from "./stationConsistency";
-import { positionStationManager } from "./stationManagerHierarchy";
 
 const REGISTRY_KEY = "powercare_registry";
 const COMPANY_PREFIX = "powercare_company_";
@@ -831,7 +830,6 @@ export function setStationManager(companyId, stationId, employeeId) {
     next.role = "station_manager";
     next.managedStations = [...new Set([...(next.managedStations || []), stationId])];
     next.stationId = next.managedStations.length === 1 ? stationId : null;
-    positionStationManager(data, next.id, next.managedStations);
   });
 }
 
@@ -854,7 +852,6 @@ export function assignStationManager(companyId, employeeId, stationIds) {
       const s = d.stations.find((x) => x.id === sid);
       if (s) s.managerId = emp.id;
     });
-    positionStationManager(d, emp.id, ids);
   });
 }
 
