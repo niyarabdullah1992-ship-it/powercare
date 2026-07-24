@@ -1,0 +1,22 @@
+import React, { useState } from "react";
+import { CheckCircle2, Loader2, X } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { cameraProviders } from "@/lib/cameraProviders";
+import CameraWizardFields from "@/components/cameras/CameraWizardFields";
+
+const initial = { provider: "", name: "", stationId: "", streamUrl: "", streamType: "hls", deviceAddress: "", status: "active" };
+export default function CameraSetupWizard({ stations, companyId, ar, initialAddress = "", onSave, onClose }) {
+  const [step, setStep] = useState(initialAddress ? 2 : 1); const [form, setForm] = useState({ ...initial, provider: initialAddress ? "onvif" : "", deviceAddress: initialAddress }); const [testing, setTesting] = useState(false); const [result, setResult] = useState(null);
+  const provider = cameraProviders.find((item) => item.id === form.provider);
+  const set = (key, value) => { setForm((current) => ({ ...current, [key]: value })); if (key === "streamUrl") setResult(null); };
+  const test = async () => { setTesting(true); setResult(null); try { const response = await base44.functions.invoke("cameraConnectionTest", { companyId, url: form.streamUrl, streamType: form.streamType }); setResult(response.data); } catch (error) { setResult({ ok: false, message: error?.response?.data?.error || error.message }); } finally { setTesting(false); } };
+  const save = () => { const station = stations.find((item) => item.id === form.stationId); onSave({ ...form, lat: station?.lat ?? null, lng: station?.lng ?? null }); };
+  return <div className="fixed inset-0 z-[2000] grid place-items-center bg-foreground/40 p-4"><div className="w-full max-w-2xl rounded-xl border border-border bg-card p-5 shadow-elevated">
+    <div className="flex items-center justify-between"><div><h2 className="font-heading text-xl font-semibold">{ar ? "معالج ربط الكاميرا" : "Camera setup wizard"}</h2><p className="text-xs text-muted-foreground">{ar ? `الخطوة ${step} من 3` : `Step ${step} of 3`}</p></div><button onClick={onClose}><X className="h-5 w-5" /></button></div>
+    <div className="my-4 h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full bg-accent transition-all" style={{ width: `${step * 33.34}%` }} /></div>
+    {step === 1 && <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{cameraProviders.map((item) => <button key={item.id} onClick={() => set("provider", item.id)} className={`rounded-lg border p-3 text-sm font-semibold ${form.provider === item.id ? "border-accent bg-accent/10" : "border-border"}`}>{item.name}</button>)}</div>}
+    {step === 2 && <div className="space-y-4"><div className="rounded-md border border-accent/25 bg-accent/5 p-3 text-sm">{ar ? provider?.hintAr : provider?.hintEn}</div><CameraWizardFields form={form} set={set} stations={stations} ar={ar} /></div>}
+    {step === 3 && <div className="space-y-4"><div className="rounded-md border bg-muted/40 p-4"><p className="font-semibold">{form.name}</p><p className="mt-1 break-all text-xs text-muted-foreground" dir="ltr">{form.streamUrl}</p></div><button onClick={test} disabled={testing} className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm">{testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}{ar ? "اختبار الاتصال" : "Test connection"}</button>{result && <p className={`rounded-md p-3 text-sm ${result.ok ? "bg-emerald-100 text-emerald-800" : "bg-destructive/10 text-destructive"}`}>{result.message || (result.ok ? "Connected" : "Connection failed")}</p>}<p className="text-xs text-muted-foreground">{ar ? "RTSP الخام يحتاج بوابة RTSP-to-HLS داخل شبكتك؛ لا تُحفظ بيانات دخول الجهاز في PowerCare." : "Raw RTSP needs an RTSP-to-HLS gateway on your network; device credentials are not stored in PowerCare."}</p></div>}
+    <div className="mt-5 flex justify-between"><button onClick={() => step === 1 ? onClose() : setStep(step - 1)} className="rounded-md border px-4 py-2 text-sm">{step === 1 ? (ar ? "إلغاء" : "Cancel") : (ar ? "السابق" : "Back")}</button>{step < 3 ? <button disabled={step === 1 ? !form.provider : !form.name || !form.stationId || !form.streamUrl} onClick={() => setStep(step + 1)} className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-40">{ar ? "التالي" : "Next"}</button> : <button onClick={save} className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground">{ar ? "حفظ وربط" : "Save & connect"}</button>}</div>
+  </div></div>;
+}
