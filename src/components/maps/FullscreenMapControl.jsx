@@ -65,7 +65,7 @@ export default function FullscreenMapControl() {
     <button
       type="button"
       onClick={toggle}
-      className="absolute top-3 end-3 z-[1000] grid h-9 w-9 place-items-center rounded-md border border-border bg-card/95 text-foreground shadow hover:bg-card"
+      className="absolute top-3 right-3 z-[1000] grid h-9 w-9 place-items-center rounded-md border border-border bg-card/95 text-foreground shadow hover:bg-card"
       aria-label={active ? (ar ? "تصغير الخريطة" : "Exit full screen") : (ar ? "تكبير الخريطة" : "View full screen")}
       title={active ? (ar ? "تصغير الخريطة" : "Exit full screen") : (ar ? "تكبير الخريطة" : "View full screen")}
     >
