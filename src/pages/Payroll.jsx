@@ -11,6 +11,7 @@ import PayrollSalaryNotice from "@/components/payroll/PayrollSalaryNotice";
 import OwnerPayrollToggle from "@/components/payroll/OwnerPayrollToggle";
 import { canAdjustPayroll, hrScopeStations } from "@/lib/permissions";
 import { toast } from "@/components/ui/use-toast";
+import { stationIdForTreeEmployee } from "@/lib/orgTree";
 
 export default function Payroll() {
   const { lang, dir } = useI18n();
@@ -37,7 +38,8 @@ export default function Payroll() {
     ? hrScopeStations(currentUser, data)
     : currentUser?.role === "pgm" ? (currentUser.managedStations || []) : null;
   const stationIdOf = (stationId) => stationId || data.stations?.[0]?.id || null;
-  const payrollEmployees = (data.employees || []).filter((employee) => isPayrollEmployee(employee, includeOwner) && (payrollScope === null || payrollScope.includes(stationIdOf(employee.stationId))));
+  const employeeStationId = (employee) => stationIdOf(stationIdForTreeEmployee(data, employee.id) || employee.stationId);
+  const payrollEmployees = (data.employees || []).filter((employee) => isPayrollEmployee(employee, includeOwner) && (payrollScope === null || payrollScope.includes(employeeStationId(employee))));
   const ownerIds = new Set(includeOwner ? [] : (data.employees || []).filter((employee) => employee.role === "owner").map((employee) => employee.id));
   const employeeForItem = (item) => payrollEmployees.find((employee) => employee.id === item.employeeId) || {
     id: item.employeeId,
@@ -45,11 +47,15 @@ export default function Payroll() {
     position: item.employeePosition || "",
     stationId: stationIdOf(item.employeeStationId),
   };
+  const itemStationId = (item) => {
+    const employee = payrollEmployees.find((entry) => entry.id === item.employeeId);
+    return employee ? employeeStationId(employee) : stationIdOf(item.employeeStationId);
+  };
   const allowedStations = (data.stations || []).filter((station) => payrollScope === null || payrollScope.includes(station.id));
   const allowedStationIds = new Set(allowedStations.map((station) => station.id));
   const selectedStationIds = stationFilter.filter((id) => allowedStationIds.has(id));
-  const scopedItems = items.filter((item) => !ownerIds.has(item.employeeId) && (payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (payrollScope === null || payrollScope.includes(stationIdOf(item.employeeStationId))))));
-  const visible = selectedStationIds.length === 0 ? scopedItems : scopedItems.filter((item) => selectedStationIds.includes(stationIdOf(item.employeeStationId)));
+  const scopedItems = items.filter((item) => !ownerIds.has(item.employeeId) && (payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (payrollScope === null || payrollScope.includes(itemStationId(item))))));
+  const visible = selectedStationIds.length === 0 ? scopedItems : scopedItems.filter((item) => selectedStationIds.includes(itemStationId(item)));
   const selectedStationNames = allowedStations.filter((station) => selectedStationIds.includes(station.id)).map((station) => station.name);
   const stationLabel = selectedStationNames.length ? selectedStationNames.join(", ") : (ar ? "جميع المحطات" : "All stations");
   const currency = visible[0]?.currency || "SAR";
