@@ -82,6 +82,40 @@ export function createOrgRecord(companyId, record, permissions = {}) {
   });
 }
 
+export function employeesUnderOrgNode(data, nodeId) {
+  const nodes = data.orgTree || [];
+  const descendantIds = new Set([nodeId]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    nodes.forEach((node) => {
+      if (node.parentId && descendantIds.has(node.parentId) && !descendantIds.has(node.id)) {
+        descendantIds.add(node.id);
+        changed = true;
+      }
+    });
+  }
+  const employeeIds = new Set(nodes.filter((node) => node.type === "employee" && descendantIds.has(node.id)).map((node) => node.refId));
+  return (data.employees || []).filter((employee) => employeeIds.has(employee.id));
+}
+
+export function assignOrgStationManager(companyId, stationId, employeeId) {
+  updateCompany(companyId, (data) => {
+    const station = (data.stations || []).find((item) => item.id === stationId);
+    const manager = (data.employees || []).find((item) => item.id === employeeId);
+    if (!station || !manager) return;
+    const previous = (data.employees || []).find((item) => item.id === station.managerId);
+    if (previous && previous.id !== manager.id) {
+      previous.managedStations = (previous.managedStations || []).filter((id) => id !== stationId);
+      if (previous.role === "station_manager" && previous.managedStations.length === 0) previous.role = "employee";
+    }
+    manager.role = "station_manager";
+    manager.managedStations = [...new Set([...(manager.managedStations || []), stationId])];
+    manager.stationId = manager.managedStations.length === 1 ? stationId : null;
+    station.managerId = manager.id;
+  });
+}
+
 export function saveOrgStationName(companyId, stationId, name) {
   updateCompany(companyId, (data) => {
     const station = (data.stations || []).find((item) => item.id === stationId);
