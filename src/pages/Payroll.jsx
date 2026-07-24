@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { Banknote, Users, CheckCircle2, Wallet, RefreshCw, FileText } from "lucide-react";
-import { ensurePayrollRun, getRun, monthKey, netOf, payrollItemIssues, updatePayrollItem, setItemPaid, syncPayrollFromProfiles } from "@/lib/payroll";
+import { ensurePayrollRun, getRun, isPayrollEmployee, monthKey, netOf, payrollItemIssues, updatePayrollItem, setItemPaid, syncPayrollFromProfiles } from "@/lib/payroll";
 import { printReport } from "@/lib/printReport";
 import PayrollRow from "@/components/payroll/PayrollRow";
 import PayrollReportExport from "@/components/payroll/PayrollReportExport";
@@ -35,7 +35,8 @@ export default function Payroll() {
     ? hrScopeStations(currentUser, data)
     : currentUser?.role === "pgm" ? (currentUser.managedStations || []) : null;
   const stationIdOf = (stationId) => stationId || data.stations?.[0]?.id || null;
-  const payrollEmployees = (data.employees || []).filter((employee) => payrollScope === null || payrollScope.includes(stationIdOf(employee.stationId)));
+  const payrollEmployees = (data.employees || []).filter((employee) => isPayrollEmployee(employee) && (payrollScope === null || payrollScope.includes(stationIdOf(employee.stationId))));
+  const ownerIds = new Set((data.employees || []).filter((employee) => !isPayrollEmployee(employee)).map((employee) => employee.id));
   const employeeForItem = (item) => payrollEmployees.find((employee) => employee.id === item.employeeId) || {
     id: item.employeeId,
     name: item.employeeName || (ar ? "موظف سابق" : "Former employee"),
@@ -45,7 +46,7 @@ export default function Payroll() {
   const allowedStations = (data.stations || []).filter((station) => payrollScope === null || payrollScope.includes(station.id));
   const allowedStationIds = new Set(allowedStations.map((station) => station.id));
   const selectedStationIds = stationFilter.filter((id) => allowedStationIds.has(id));
-  const scopedItems = items.filter((item) => payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (payrollScope === null || payrollScope.includes(stationIdOf(item.employeeStationId)))));
+  const scopedItems = items.filter((item) => !ownerIds.has(item.employeeId) && (payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (payrollScope === null || payrollScope.includes(stationIdOf(item.employeeStationId))))));
   const visible = selectedStationIds.length === 0 ? scopedItems : scopedItems.filter((item) => selectedStationIds.includes(stationIdOf(item.employeeStationId)));
   const selectedStationNames = allowedStations.filter((station) => selectedStationIds.includes(station.id)).map((station) => station.name);
   const stationLabel = selectedStationNames.length ? selectedStationNames.join(", ") : (ar ? "جميع المحطات" : "All stations");
@@ -126,7 +127,7 @@ export default function Payroll() {
         <button type="button" onClick={() => setShowReport((value) => !value)} className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-body ${showReport ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-muted"}`}>
           <FileText className="h-4 w-4" /> {ar ? "تقرير الرواتب (PDF / Excel)" : "Payroll report (PDF / Excel)"}
         </button>
-        {showReport && <PayrollReportExport runs={data.payrollRuns || []} employees={payrollEmployees} stations={allowedStations} companyName={company.name} branding={branding} lang={lang} dir={dir} />}
+        {showReport && <PayrollReportExport runs={data.payrollRuns || []} employees={payrollEmployees} excludedEmployeeIds={ownerIds} stations={allowedStations} companyName={company.name} branding={branding} lang={lang} dir={dir} />}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

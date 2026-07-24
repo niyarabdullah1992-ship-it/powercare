@@ -16,6 +16,8 @@ export function getRun(data, month) {
 export const netOf = (i) =>
   (Number(i.base) || 0) + (Number(i.allowances) || 0) + (Number(i.bonus) || 0) - (Number(i.deductions) || 0);
 
+export const isPayrollEmployee = (employee) => employee?.role !== "owner";
+
 const itemFromEmployee = (employee) => {
   const profile = employee.profile || {};
   const currency = String(profile.currency || "SAR").toUpperCase();
@@ -46,8 +48,10 @@ export function ensurePayrollRun(companyId, month) {
       run = { id: uid("run"), month, createdAt: new Date().toISOString(), items: [] };
       d.payrollRuns.push(run);
     }
+    const ownerIds = new Set((d.employees || []).filter((employee) => !isPayrollEmployee(employee)).map((employee) => employee.id));
+    run.items = run.items.filter((item) => !ownerIds.has(item.employeeId));
     const existing = new Set(run.items.map((item) => item.employeeId));
-    (d.employees || []).forEach((employee) => {
+    (d.employees || []).filter(isPayrollEmployee).forEach((employee) => {
       const hiredMonth = employee.createdAt ? monthKey(new Date(employee.createdAt)) : month;
       if (existing.has(employee.id) || hiredMonth > month) return;
       run.items.push(itemFromEmployee(employee));
@@ -66,7 +70,7 @@ export function syncPayrollFromProfiles(companyId, month) {
   updateCompany(companyId, (d) => {
     const run = (d.payrollRuns || []).find((r) => r.month === month);
     if (!run) return;
-    const employees = new Map((d.employees || []).map((employee) => [employee.id, employee]));
+    const employees = new Map((d.employees || []).filter(isPayrollEmployee).map((employee) => [employee.id, employee]));
     run.items.forEach((item) => {
       if (item.paid) return;
       const employee = employees.get(item.employeeId);
@@ -91,7 +95,7 @@ export function syncPayrollFromProfiles(companyId, month) {
 export function syncEmployeeSalaryToPayroll(companyId, employeeId) {
   updateCompany(companyId, (d) => {
     const employee = (d.employees || []).find((entry) => entry.id === employeeId);
-    if (!employee) return;
+    if (!employee || !isPayrollEmployee(employee)) return;
     d.payrollRuns = d.payrollRuns || [];
     const month = monthKey();
     let run = d.payrollRuns.find((entry) => entry.month === month);

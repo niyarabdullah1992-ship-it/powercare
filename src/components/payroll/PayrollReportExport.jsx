@@ -8,7 +8,7 @@ import { printReport } from "@/lib/printReport";
 const PRESETS = [{ id: "month", months: 1 }, { id: "3months", months: 3 }, { id: "6months", months: 6 }, { id: "year", months: 12 }, { id: "range", months: 0 }];
 const shiftMonth = (key, amount) => { const date = new Date(`${key}-01T00:00:00`); date.setMonth(date.getMonth() + amount); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`; };
 
-export default function PayrollReportExport({ runs, employees, stations, companyName, branding, lang, dir }) {
+export default function PayrollReportExport({ runs, employees, excludedEmployeeIds, stations, companyName, branding, lang, dir }) {
   const ar = lang === "ar"; const L = (a, e) => ar ? a : e;
   const [preset, setPreset] = useState("month"); const [stationId, setStationId] = useState("all");
   const [from, setFrom] = useState(shiftMonth(new Date().toISOString().slice(0, 7), -2)); const [to, setTo] = useState(new Date().toISOString().slice(0, 7));
@@ -21,7 +21,7 @@ export default function PayrollReportExport({ runs, employees, stations, company
     const start = preset === "range" ? from : shiftMonth(currentMonth, -(months - 1)); const end = preset === "range" ? to : currentMonth;
     if (!start || !end || start > end) { alert(L("اختر نطاق أشهر صحيحًا", "Choose a valid month range")); return null; }
     const allowedStationIds = new Set(stations.map((station) => station.id));
-    const entries = runs.filter((run) => run.month >= start && run.month <= end).flatMap((run) => (run.items || []).map((item) => ({ ...item, month: run.month }))).filter((item) => allowedStationIds.has(item.employeeStationId || stations[0]?.id)).filter((item) => stationId === "all" || (item.employeeStationId || stations[0]?.id) === stationId);
+    const entries = runs.filter((run) => run.month >= start && run.month <= end).flatMap((run) => (run.items || []).map((item) => ({ ...item, month: run.month }))).filter((item) => !excludedEmployeeIds?.has(item.employeeId)).filter((item) => allowedStationIds.has(item.employeeStationId || stations[0]?.id)).filter((item) => stationId === "all" || (item.employeeStationId || stations[0]?.id) === stationId);
     return { entries, period: `${start} → ${end}` };
   };
   const headers = [L("الشهر", "Month"), L("الموظف", "Employee"), L("المحطة", "Station"), L("الأساسي", "Base"), L("البدلات", "Allowances"), L("مكافآت", "Bonus"), L("خصومات", "Deductions"), L("الصافي", "Net"), L("الحالة", "Status")];
