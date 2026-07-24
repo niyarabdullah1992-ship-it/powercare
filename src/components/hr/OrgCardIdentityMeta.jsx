@@ -4,9 +4,9 @@ import { getOrgRankLabel } from "@/lib/orgTreeRank";
 export default function OrgCardIdentityMeta({ station, managerName, rank, isStationManager, isHierarchyManager, lang, ar }) {
   if (station) {
     return managerName ? (
-      <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-accent-foreground/80">
+      <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-primary-foreground/80">
         <span>{managerName}</span>
-        <span className="rounded-full bg-primary px-2 py-0.5 font-semibold text-primary-foreground">
+        <span className="rounded-full bg-primary-foreground/15 px-2 py-0.5 font-semibold text-primary-foreground">
           {ar ? "مدير المحطة" : "Station Manager"}
         </span>
       </span>
