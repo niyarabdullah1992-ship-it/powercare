@@ -16,23 +16,24 @@ function toBase64Url(str) {
 const EMAIL_LOGO = 'https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/b75eb58e7_9a8843bf0_generated_image.png';
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 function emailHtml({ title, lines = [], code = null, footerNote = '' }) {
-  const paragraphs = lines.map((line) => `<p style="margin:0 0 12px;font-size:14px;line-height:1.8;color:#4a3d2c;" dir="auto">${escapeHtml(line)}</p>`).join('');
+  const paragraphs = lines.map((line) => `<p style="margin:0 auto 22px;max-width:520px;font-size:20px;line-height:1.55;color:#17202b;text-align:center;" dir="auto">${escapeHtml(line)}</p>`).join('');
   const codeBlock = code
-    ? `<div style="margin:24px 0;text-align:center;"><span style="display:inline-block;padding:14px 28px;border-radius:12px;background:#faf4e8;border:1px solid #e3cfa8;font-size:30px;letter-spacing:10px;font-weight:700;color:#8a5f1e;" dir="ltr">${escapeHtml(code)}</span></div>`
+    ? `<div style="margin:24px 0 26px;padding:17px 20px;border-radius:6px;background:#d0ad63;color:#101820;font-size:40px;line-height:1.1;letter-spacing:5px;font-weight:500;text-align:center;" dir="ltr">${escapeHtml(code)}</div>`
     : '';
-  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5efe4;font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5efe4;padding:32px 12px;"><tr><td align="center">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #eadfc9;">
-      <tr><td style="background:linear-gradient(180deg,#d8b578,#b8863e);padding:26px;text-align:center;">
-        <img src="${EMAIL_LOGO}" width="52" height="52" alt="PowerCare" style="display:block;margin:0 auto 8px;" />
-        <div style="font-size:20px;font-weight:700;color:#ffffff;font-family:Georgia,serif;letter-spacing:1px;">PowerCare</div>
+  return `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media(max-width:600px){.pc-wrap{padding:28px 14px!important}.pc-body{padding:38px 24px 34px!important}.pc-title{font-size:29px!important}.pc-copy{font-size:17px!important}.pc-code{font-size:34px!important}}</style></head><body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f0e3;"><tr><td class="pc-wrap" align="center" style="padding:72px 20px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:650px;background:#ffffff;border:1px solid #d8d8d4;border-radius:8px;overflow:hidden;box-shadow:0 10px 28px rgba(24,42,60,.08);">
+      <tr><td align="center" style="background:#183957;padding:29px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td style="padding-right:12px;"><span style="display:inline-block;width:38px;height:38px;border-radius:50%;background:#d0ad63;color:#183957;font-size:25px;font-weight:700;line-height:38px;text-align:center;font-family:Georgia,serif;">P</span></td>
+          <td style="font-size:29px;line-height:38px;font-weight:600;color:#ffffff;letter-spacing:-.5px;">PowerCare</td>
+        </tr></table>
       </td></tr>
-      <tr><td style="padding:30px 30px 10px;">
-        <h1 style="margin:0 0 16px;font-size:18px;color:#3a2f22;font-family:Georgia,serif;" dir="auto">${escapeHtml(title)}</h1>
-        ${paragraphs}${codeBlock}
-      </td></tr>
-      <tr><td style="padding:18px 30px 26px;border-top:1px solid #f0e8d8;">
-        <p style="margin:0;font-size:12px;color:#a08c6a;text-align:center;" dir="auto">${escapeHtml(footerNote || 'PowerCare — إدارة ذكية لفريقك ومهامك · Smart workforce management')}</p>
+      <tr><td class="pc-body" style="padding:48px 34px 40px;text-align:center;">
+        <h1 class="pc-title" style="margin:0 0 20px;font-size:38px;line-height:1.2;color:#101820;font-family:Georgia,'Times New Roman',serif;font-weight:700;text-align:center;" dir="auto">${escapeHtml(title)}</h1>
+        <div class="pc-copy">${paragraphs}</div>
+        <div class="pc-code">${codeBlock}</div>
+        <p style="margin:0 auto;max-width:540px;font-size:18px;line-height:1.55;color:#28313b;text-align:center;" dir="auto">${escapeHtml(footerNote || 'PowerCare — إدارة ذكية لفريقك ومهامك · Smart workforce management')}</p>
       </td></tr>
     </table>
   </td></tr></table></body></html>`;
