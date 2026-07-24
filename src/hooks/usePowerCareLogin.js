@@ -21,6 +21,10 @@ export default function usePowerCareLogin(returnPath = "/login") {
     const params = new URLSearchParams(window.location.search);
     const provider = params.has("microsoft_login") ? "Microsoft" : params.has("google_login") ? "Google" : null;
     if (!provider) return;
+    params.delete("google_login");
+    params.delete("microsoft_login");
+    const cleanSearch = params.toString();
+    window.history.replaceState({}, "", `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ""}${window.location.hash}`);
     setLoading(true);
     const loginKind = params.get("type") === "individual" ? "individual" : "company";
     setKind(loginKind);
