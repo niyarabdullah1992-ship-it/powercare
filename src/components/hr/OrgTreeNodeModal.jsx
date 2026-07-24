@@ -29,6 +29,7 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
   const employee = initial?.type === "employee" ? data.employees.find((item) => item.id === initial.refId) : null;
   const initialManagerStations = employee ? [...new Set([...(employee.managedStations || []), ...(data.stations || []).filter((item) => item.managerId === employee.id).map((item) => item.id)])] : [];
   const [managerStationIds, setManagerStationIds] = useState(initialManagerStations);
+  const [managerPlacement, setManagerPlacement] = useState("none");
   const [suggesting, setSuggesting] = useState(false);
   const nodes = data.orgTree || [];
   const suggest = async () => {
@@ -50,10 +51,9 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
         saveOrgStationName(companyId, refId, stationName.trim());
         saveOrgStationLocation(companyId, refId, mapLocation);
         setStationManager(companyId, refId, managerId || null);
-        if (managerId) positionManagerInOrgTree(companyId, managerId, [refId]);
-      } else if ([...managerStationIds].sort().join() !== [...initialManagerStations].sort().join()) {
-        assignStationManager(companyId, refId, managerStationIds);
-        positionManagerInOrgTree(companyId, refId, managerStationIds);
+      } else {
+        if ([...managerStationIds].sort().join() !== [...initialManagerStations].sort().join()) assignStationManager(companyId, refId, managerStationIds);
+        if (managerPlacement !== "none") positionManagerInOrgTree(companyId, refId, managerStationIds);
       }
     } else {
       if (type === "station" && !canAddStation(company, data)) return alert(ar ? "تم بلوغ حد المحطات في الباقة." : "The plan station limit has been reached.");
@@ -62,16 +62,13 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
       if (type === "employee" && data.employees.some((employee) => employee.email?.toLowerCase() === email)) return alert(ar ? "البريد مستخدم مسبقًا." : "Email already exists.");
       if (type === "employee" && allowed.length && !allowed.includes(email)) return alert(ar ? "البريد غير موجود في القائمة المسموحة." : "Email is not on the allowed list.");
       const createdStationId = createOrgRecord(companyId, { ...form, ...mapLocation, email, type, title: title.trim(), parentId }, permissions);
-      if (type === "station" && createdStationId) {
-        setStationManager(companyId, createdStationId, form.managerId || null);
-        if (form.managerId) positionManagerInOrgTree(companyId, form.managerId, [createdStationId]);
-      }
+      if (type === "station" && createdStationId) setStationManager(companyId, createdStationId, form.managerId || null);
     }
     onClose();
   };
   return <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/45 p-4" onClick={onClose}><form onSubmit={submit} onClick={(event) => event.stopPropagation()} dir={ar ? "rtl" : "ltr"} className="max-h-[92vh] w-full max-w-2xl space-y-4 overflow-auto rounded-xl border border-accent/40 bg-card p-5 shadow-elevated"><div className="flex items-start justify-between"><div><h3 className="font-heading text-2xl font-semibold">{initial ? (ar ? "تعديل العقدة" : "Edit node") : (ar ? "إنشاء مباشر" : "Create directly")}</h3><p className="text-xs text-muted-foreground">{ar ? "أنشئ محطة أو موظفًا وأضفه للشجرة فورًا" : "Create a station or employee and add it to the tree"}</p></div><button type="button" onClick={onClose} className="rounded-md p-2 hover:bg-muted"><X className="h-4 w-4" /></button></div>
     {initial ? <OrgTreeNodeFields type={type} refId={refId} setRefId={() => {}} title={title} setTitle={setTitle} stationName={stationName} setStationName={setStationName} managerId={managerId} setManagerId={setManagerId} permissions={permissions} setPermissions={setPermissions} employees={data.employees || []} stations={data.stations || []} usedEmployees={[]} editing ar={ar} /> : <OrgTreeCreateFields type={type} setType={setType} form={form} setForm={setForm} title={title} setTitle={setTitle} permissions={permissions} setPermissions={setPermissions} stations={data.stations || []} employees={data.employees || []} ar={ar} />}
-    {initial?.type === "employee" && <EmployeeManagerField value={managerStationIds} onChange={setManagerStationIds} stations={data.stations || []} ar={ar} />}
+    {initial?.type === "employee" && <EmployeeManagerField value={managerStationIds} onChange={setManagerStationIds} placement={managerPlacement} onPlacementChange={setManagerPlacement} stations={data.stations || []} ar={ar} />}
     <OrgParentPicker nodes={nodes} employees={data.employees || []} stations={data.stations || []} currentId={initial?.id} value={parentId} onChange={setParentId} ar={ar} />
     {type === "station" && <button type="button" onClick={() => setShowMap(true)} className="flex w-full items-center justify-center gap-2 rounded-md border border-accent/40 bg-accent/5 px-4 py-2 text-sm font-semibold text-accent"><MapPin className="h-4 w-4" />{mapLocation.lat != null ? (ar ? "تعديل الموقع على الخريطة" : "Edit location on map") : (ar ? "تحديد الموقع على الخريطة" : "Set location on map")}</button>}
     {type === "employee" && <button type="button" onClick={suggest} disabled={!(initial ? refId : form.name.trim()) || suggesting} className="flex w-full items-center justify-center gap-2 rounded-md border border-accent/40 bg-accent/5 px-4 py-2 text-sm font-semibold text-accent disabled:opacity-40">{suggesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{ar ? "اقتراح مسمى بالذكاء الاصطناعي" : "Suggest title with AI"}</button>}

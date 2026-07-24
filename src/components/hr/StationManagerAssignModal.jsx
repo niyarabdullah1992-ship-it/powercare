@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { assignStationManager } from "@/lib/store";
-import { positionManagerInOrgTree } from "@/lib/orgTree";
 import { X, UserCog } from "lucide-react";
 import StationPicker from "@/components/hr/StationPicker";
 
@@ -19,7 +18,6 @@ export default function StationManagerAssignModal({ company, data, initialStatio
   const submit = () => {
     if (!employeeId || stationIds.length === 0) return;
     assignStationManager(company.id, employeeId, stationIds);
-    positionManagerInOrgTree(company.id, employeeId, stationIds);
     onClose();
   };
 
