@@ -7,8 +7,7 @@ import OrgTreeNodeFields from "@/components/hr/OrgTreeNodeFields";
 import OrgTreeCreateFields from "@/components/hr/OrgTreeCreateFields";
 import OrgParentPicker from "@/components/hr/OrgParentPicker";
 import StationLocationEditor from "@/components/stations/StationLocationEditor";
-import StationTreeManagerField from "@/components/hr/StationTreeManagerField";
-import { assignOrgStationManager, createOrgRecord, deleteOrgNode, employeesUnderOrgNode, nodeAccess, saveOrgNode, saveOrgStationLocation, saveOrgStationName } from "@/lib/orgTree";
+import { createOrgRecord, deleteOrgNode, nodeAccess, saveOrgNode, saveOrgStationLocation, saveOrgStationName } from "@/lib/orgTree";
 
 const empty = { name: "", email: "", stationId: "", location: "", stationType: "" };
 export default function OrgTreeNodeModal({ initial, data, company, companyId, lang, onClose }) {
@@ -21,13 +20,11 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
   const [form, setForm] = useState(empty);
   const station = initial?.type === "station" ? data.stations.find((item) => item.id === initial.refId) : null;
   const [stationName, setStationName] = useState(station?.name || "");
-  const [managerId, setManagerId] = useState(station?.managerId || "");
   const [mapLocation, setMapLocation] = useState(station ? { lat: station.lat, lng: station.lng, radiusMeters: station.radiusMeters } : { lat: null, lng: null, radiusMeters: 200 });
   const [showMap, setShowMap] = useState(false);
   const [permissions, setPermissions] = useState(initial ? nodeAccess(data, initial.refId) : {});
   const [suggesting, setSuggesting] = useState(false);
   const nodes = data.orgTree || [];
-  const stationEmployees = initial?.type === "station" ? employeesUnderOrgNode(data, initial.id) : [];
   const suggest = async () => {
     const employeeName = initial ? data.employees.find((employee) => employee.id === refId)?.name : form.name;
     if (!employeeName || type !== "employee") return;
@@ -46,7 +43,6 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
       if (type === "station") {
         saveOrgStationName(companyId, refId, stationName.trim());
         saveOrgStationLocation(companyId, refId, mapLocation);
-        if (managerId && managerId !== station?.managerId) assignOrgStationManager(companyId, refId, managerId);
       }
     } else {
       if (type === "station" && !canAddStation(company, data)) return alert(ar ? "تم بلوغ حد المحطات في الباقة." : "The plan station limit has been reached.");
@@ -60,7 +56,6 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, la
   };
   return <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/45 p-4" onClick={onClose}><form onSubmit={submit} onClick={(event) => event.stopPropagation()} dir={ar ? "rtl" : "ltr"} className="max-h-[92vh] w-full max-w-2xl space-y-4 overflow-auto rounded-xl border border-accent/40 bg-card p-5 shadow-elevated"><div className="flex items-start justify-between"><div><h3 className="font-heading text-2xl font-semibold">{initial ? (ar ? "تعديل العقدة" : "Edit node") : (ar ? "إنشاء مباشر" : "Create directly")}</h3><p className="text-xs text-muted-foreground">{ar ? "أنشئ محطة أو موظفًا وأضفه للشجرة فورًا" : "Create a station or employee and add it to the tree"}</p></div><button type="button" onClick={onClose} className="rounded-md p-2 hover:bg-muted"><X className="h-4 w-4" /></button></div>
     {initial ? <OrgTreeNodeFields type={type} refId={refId} setRefId={() => {}} title={title} setTitle={setTitle} stationName={stationName} setStationName={setStationName} permissions={permissions} setPermissions={setPermissions} employees={data.employees || []} stations={data.stations || []} usedEmployees={[]} editing ar={ar} /> : <OrgTreeCreateFields type={type} setType={setType} form={form} setForm={setForm} title={title} setTitle={setTitle} permissions={permissions} setPermissions={setPermissions} stations={data.stations || []} ar={ar} />}
-    {initial?.type === "station" && stationEmployees.length > 1 && <StationTreeManagerField employees={stationEmployees} value={managerId} onChange={setManagerId} ar={ar} />}
     <OrgParentPicker nodes={nodes} employees={data.employees || []} stations={data.stations || []} currentId={initial?.id} value={parentId} onChange={setParentId} ar={ar} />
     {type === "station" && <button type="button" onClick={() => setShowMap(true)} className="flex w-full items-center justify-center gap-2 rounded-md border border-accent/40 bg-accent/5 px-4 py-2 text-sm font-semibold text-accent"><MapPin className="h-4 w-4" />{mapLocation.lat != null ? (ar ? "تعديل الموقع على الخريطة" : "Edit location on map") : (ar ? "تحديد الموقع على الخريطة" : "Set location on map")}</button>}
     {type === "employee" && <button type="button" onClick={suggest} disabled={!(initial ? refId : form.name.trim()) || suggesting} className="flex w-full items-center justify-center gap-2 rounded-md border border-accent/40 bg-accent/5 px-4 py-2 text-sm font-semibold text-accent disabled:opacity-40">{suggesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{ar ? "اقتراح مسمى بالذكاء الاصطناعي" : "Suggest title with AI"}</button>}
