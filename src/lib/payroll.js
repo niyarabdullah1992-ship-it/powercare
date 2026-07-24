@@ -52,16 +52,20 @@ export function ensurePayrollRun(companyId, month) {
     const includeOwner = d.settings?.includeOwnerInPayroll === true;
     const ownerIds = new Set((d.employees || []).filter((employee) => employee.role === "owner").map((employee) => employee.id));
     if (!includeOwner) run.items = run.items.filter((item) => !ownerIds.has(item.employeeId));
+    const employees = d.employees || [];
     const existing = new Set(run.items.map((item) => item.employeeId));
-    (d.employees || []).filter((employee) => isPayrollEmployee(employee, includeOwner)).forEach((employee) => {
+    employees.filter((employee) => isPayrollEmployee(employee, includeOwner)).forEach((employee) => {
       const hiredMonth = employee.createdAt ? monthKey(new Date(employee.createdAt)) : month;
       if (existing.has(employee.id) || hiredMonth > month) return;
       run.items.push(itemFromEmployee(employee));
     });
+    const employeesById = new Map(employees.map((employee) => [employee.id, employee]));
     run.items.forEach((item) => {
       if (!item.paid) {
         const currency = String(item.currency || "SAR").toUpperCase();
         item.currency = /^[A-Z]{3}$/.test(currency) ? currency : "SAR";
+        const employee = employeesById.get(item.employeeId);
+        if (employee) item.employeeStationId = employee.stationId || null;
       }
     });
   });
@@ -84,11 +88,13 @@ export function syncPayrollFromProfiles(companyId, month) {
         base: Number(profile.baseSalary) || 0,
         allowances: Number(profile.allowances) || 0,
         currency: /^[A-Z]{3}$/.test(profileCurrency) ? profileCurrency : "SAR",
+        employeeStationId: employee.stationId || null,
       };
-      if (item.base === next.base && item.allowances === next.allowances && item.currency === next.currency) return;
+      if (item.base === next.base && item.allowances === next.allowances && item.currency === next.currency && item.employeeStationId === next.employeeStationId) return;
       item.base = next.base;
       item.allowances = next.allowances;
       item.currency = next.currency;
+      item.employeeStationId = next.employeeStationId;
       updatedCount += 1;
     });
   });

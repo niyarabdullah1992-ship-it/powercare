@@ -37,7 +37,7 @@ export default function Payroll() {
   const payrollScope = currentUser?.hrLevelId
     ? hrScopeStations(currentUser, data)
     : currentUser?.role === "pgm" ? (currentUser.managedStations || []) : null;
-  const stationIdOf = (stationId) => stationId || data.stations?.[0]?.id || null;
+  const stationIdOf = (stationId) => stationId || null;
   const employeeStationId = (employee) => stationIdOf(stationIdForTreeEmployee(data, employee.id) || employee.stationId);
   const payrollEmployees = (data.employees || []).filter((employee) => isPayrollEmployee(employee, includeOwner) && (payrollScope === null || payrollScope.includes(employeeStationId(employee))));
   const ownerIds = new Set(includeOwner ? [] : (data.employees || []).filter((employee) => employee.role === "owner").map((employee) => employee.id));
@@ -48,7 +48,7 @@ export default function Payroll() {
     stationId: stationIdOf(item.employeeStationId),
   };
   const itemStationId = (item) => {
-    const employee = payrollEmployees.find((entry) => entry.id === item.employeeId);
+    const employee = (data.employees || []).find((entry) => entry.id === item.employeeId);
     return employee ? employeeStationId(employee) : stationIdOf(item.employeeStationId);
   };
   const allowedStations = (data.stations || []).filter((station) => payrollScope === null || payrollScope.includes(station.id));
