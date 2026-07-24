@@ -12,6 +12,7 @@ import CameraSetupWizard from "@/components/cameras/CameraSetupWizard";
 import CameraCsvImport from "@/components/cameras/CameraCsvImport";
 import CameraDiscovery from "@/components/cameras/CameraDiscovery";
 import CameraGuideDialog from "@/components/cameras/CameraGuideDialog";
+import CameraAlertsPanel from "@/components/cameras/CameraAlertsPanel";
 
 export default function Cameras() {
   const { data, currentUser, company } = useAuth(); const { lang } = useI18n(); const ar = lang === "ar";
@@ -28,6 +29,7 @@ export default function Cameras() {
   const useDiscovered = (address) => { setDiscoveredAddress(address); setWizardOpen(true); };
   return <div className="space-y-6"><PageHeader title={ar ? "مركز الكاميرات" : "Camera Center"} description={ar ? "مراقبة كاميرات IP وربطها بالمحطات والمواقع الجغرافية." : "Monitor IP cameras linked to stations and geographic locations."} icon={Camera} actions={<div className="flex flex-wrap gap-2"><button onClick={() => setGuideOpen(true)} className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm"><BookOpen className="h-4 w-4" />{ar ? "دليل القسم" : "Section guide"}</button>{canManage && <><button onClick={() => setImportOpen(true)} className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm"><FileUp className="h-4 w-4" />{ar ? "استيراد CSV" : "Import CSV"}</button><button onClick={() => { setDiscoveredAddress(""); setWizardOpen(true); }} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"><Link2 className="h-4 w-4" />{ar ? "ربط كاميرا" : "Connect camera"}</button><button onClick={() => { setEditing(null); setFormOpen(true); }} className="inline-flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm"><Plus className="h-4 w-4" />{ar ? "إضافة سريعة" : "Quick add"}</button></>}</div>} />
     {canManage && <CameraDiscovery ar={ar} onUse={useDiscovered} />}
+    <CameraAlertsPanel companyId={company.id} currentUser={currentUser} cameras={cameras} stations={stations} ar={ar} />
     <CameraMap cameras={cameras} stations={stations} ar={ar} onSelectStation={setSelectedStationId} />
     {selectedStation && <div className="flex items-center justify-between rounded-lg border border-accent/25 bg-card px-4 py-3"><p className="text-sm font-semibold">{ar ? `كاميرات محطة ${selectedStation.name}` : `${selectedStation.name} cameras`}</p><button onClick={() => setSelectedStationId(null)} className="text-xs text-accent hover:underline">{ar ? "عرض جميع المحطات" : "Show all stations"}</button></div>}
     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{shownCameras.map((camera) => <CameraCard key={camera.id} camera={camera} station={stations.find((item) => item.id === camera.stationId)} canManage={canManage} ar={ar} onEdit={(item) => { setEditing(item); setFormOpen(true); }} onDelete={remove} />)}</div>

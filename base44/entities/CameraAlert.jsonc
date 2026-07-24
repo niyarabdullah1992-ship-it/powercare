@@ -1,0 +1,97 @@
+{
+  "name": "CameraAlert",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "cameraId": {
+      "type": "string"
+    },
+    "stationId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "eventType": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "snapshotUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "externalEventId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "occurredAt": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "acknowledged"
+      ],
+      "default": "new"
+    },
+    "acknowledgedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "acknowledgedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "companyId",
+    "cameraId",
+    "eventType",
+    "occurredAt",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

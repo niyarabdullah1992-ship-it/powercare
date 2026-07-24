@@ -136,7 +136,7 @@ export default function Layout({ children }) {
       }
     };
     poll();
-    const interval = setInterval(poll, 30000);
+    const interval = setInterval(poll, 5000);
     return () => clearInterval(interval);
   }, [currentUser?.id, company?.id]);
 
