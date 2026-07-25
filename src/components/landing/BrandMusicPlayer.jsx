@@ -21,22 +21,24 @@ export default function BrandMusicPlayer({ lang }) {
     context.resume();
     const master = context.createGain();
     master.gain.setValueAtTime(0.0001, context.currentTime);
-    master.gain.exponentialRampToValueAtTime(0.32, context.currentTime + 2);
-    master.gain.setValueAtTime(0.32, context.currentTime + 116);
-    master.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 120);
-    master.connect(context.destination);
-    Array.from({ length: 15 }, (_, index) => CHORDS[index % CHORDS.length]).forEach((chord, index) => {
-      chord.forEach((frequency, note) => {
-        const oscillator = context.createOscillator(); const gain = context.createGain();
-        oscillator.type = note === 0 ? "sine" : "triangle"; oscillator.frequency.value = frequency;
-        gain.gain.setValueAtTime(0.0001, context.currentTime + index * 8);
-        gain.gain.exponentialRampToValueAtTime(note === 0 ? 0.12 : 0.045, context.currentTime + index * 8 + 2);
-        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + index * 8 + 8);
-        oscillator.connect(gain).connect(master); oscillator.start(context.currentTime + index * 8); oscillator.stop(context.currentTime + index * 8 + 8);
-      });
+    master.gain.exponentialRampToValueAtTime(0.32, context.currentTime + 3);
+    master.gain.setValueAtTime(0.32, context.currentTime + 7195);
+    master.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 7200);
+    const filter = context.createBiquadFilter();
+    filter.type = "lowpass"; filter.frequency.value = 900; filter.Q.value = 0.7;
+    master.connect(filter).connect(context.destination);
+    CHORDS[0].forEach((frequency, note) => {
+      const oscillator = context.createOscillator(); const gain = context.createGain();
+      oscillator.type = note === 0 ? "sine" : "triangle";
+      gain.gain.value = note === 0 ? 0.12 : 0.045;
+      Array.from({ length: 900 }).forEach((_, index) => oscillator.frequency.setValueAtTime(CHORDS[index % CHORDS.length][note], context.currentTime + index * 8));
+      oscillator.connect(gain).connect(master); oscillator.start(); oscillator.stop(context.currentTime + 7200);
     });
-    contextRef.current = context; setPlaying(true); timerRef.current = window.setTimeout(stop, 120000);
+    const pulse = context.createOscillator(); const pulseDepth = context.createGain();
+    pulse.type = "sine"; pulse.frequency.value = 0.12; pulseDepth.gain.value = 0.035;
+    pulse.connect(pulseDepth).connect(master.gain); pulse.start(); pulse.stop(context.currentTime + 7200);
+    contextRef.current = context; setPlaying(true); timerRef.current = window.setTimeout(stop, 7200000);
   }, [stop]);
   useEffect(() => { window.addEventListener("pointerdown", play, { once: true }); return () => { window.removeEventListener("pointerdown", play); stop(); }; }, [play, stop]);
-  return <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={playing ? stop : play} aria-label={lang === "ar" ? "التحكم بموسيقى PowerCare" : "Control PowerCare music"} className="fixed bottom-5 end-5 z-50 flex items-center gap-2 rounded-full border border-accent/40 bg-primary px-4 py-3 text-xs font-semibold text-primary-foreground shadow-elevated hover:bg-primary/90"><Music2 className="h-4 w-4 text-accent" />{playing ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}<span className="hidden sm:inline">{lang === "ar" ? (playing ? "إيقاف الموسيقى" : "تشغيل الموسيقى") : (playing ? "Mute music" : "Play music")}</span></button>;
+  return <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={playing ? stop : play} aria-label={lang === "ar" ? "التحكم بموسيقى PowerCare" : "Control PowerCare music"} className="fixed bottom-5 end-5 z-50 flex items-center gap-2 rounded-full border border-accent/40 bg-primary px-4 py-3 text-xs font-semibold text-primary-foreground shadow-elevated hover:bg-primary/90"><Music2 className="h-4 w-4 text-accent" />{playing ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}<span className="hidden sm:inline">{lang === "ar" ? (playing ? "إيقاف موسيقى التركيز" : "موسيقى تركيز · ساعتان") : (playing ? "Stop focus music" : "Focus music · 2 hours")}</span></button>;
 }
