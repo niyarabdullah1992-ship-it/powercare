@@ -8,13 +8,7 @@ export default function useOrgTreeViewport(viewportRef, zoom, setZoom, offset, s
   const gesture = useRef(null);
   const begin = () => {
     const points = [...pointers.current.values()];
-    gesture.current = null;
-    if (points.length === 1) gesture.current = {
-      type: "pan",
-      ...points[0],
-      offset: offset || null,
-      scroll: { x: viewportRef.current?.scrollLeft || 0, y: viewportRef.current?.scrollTop || 0 },
-    };
+    if (points.length === 1) gesture.current = { type: "pan", ...points[0], offset };
     if (points.length === 2) gesture.current = { type: "pinch", distance: distance(points), zoom };
   };
   const onPointerDown = (event) => {
@@ -29,14 +23,10 @@ export default function useOrgTreeViewport(viewportRef, zoom, setZoom, offset, s
     const points = [...pointers.current.values()];
     if (points.length === 2 && gesture.current?.type === "pinch") setZoom(clamp(gesture.current.zoom * distance(points) / gesture.current.distance));
     if (points.length === 1 && gesture.current?.type === "pan") {
-      const deltaX = points[0].x - gesture.current.x;
-      const deltaY = points[0].y - gesture.current.y;
-      if (typeof setOffset === "function" && gesture.current.offset) {
-        setOffset({ x: gesture.current.offset.x + deltaX, y: gesture.current.offset.y + deltaY });
-      } else if (viewportRef.current) {
-        viewportRef.current.scrollLeft = gesture.current.scroll.x - deltaX;
-        viewportRef.current.scrollTop = gesture.current.scroll.y - deltaY;
-      }
+      setOffset({
+        x: gesture.current.offset.x + points[0].x - gesture.current.x,
+        y: gesture.current.offset.y + points[0].y - gesture.current.y,
+      });
     }
   };
   const onPointerEnd = (event) => { pointers.current.delete(event.pointerId); begin(); };

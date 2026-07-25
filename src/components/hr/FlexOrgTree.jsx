@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Network, Plus } from "lucide-react";
 import { canManageEmployees, hasHRPermission, isCompanyOwner } from "@/lib/permissions";
 import { assignEmployeeToOrgStation, initializeOrgTree, moveOrgNode, stationIdForTreeEmployee, toggleComplaintEscalationMember, unassignEmployeeFromOrgTree } from "@/lib/orgTree";
-import { createHROrgEmployee, deleteHROrgNode, initializeHROrgTree, moveHROrgNode, placeEmployeeInHROrgTree, saveHROrgNode, unassignHROrgNode } from "@/lib/hrOrgTree";
 import { sortComplaintChainByTree } from "@/lib/escalation";
 import HierarchyZoomControls from "@/components/directory/HierarchyZoomControls";
 import FlexOrgBranch from "@/components/hr/FlexOrgBranch";
@@ -13,7 +12,7 @@ import OrgTreeDragCancel from "@/components/hr/OrgTreeDragCancel";
 import OrgTreeUnassignedEmployees from "@/components/hr/OrgTreeUnassignedEmployees";
 import useOrgTreeViewport from "@/hooks/useOrgTreeViewport";
 
-export default function FlexOrgTree({ data, company, currentUser, lang, onOpenHR, hrOnly = false }) {
+export default function FlexOrgTree({ data, company, currentUser, lang }) {
   const ar = lang === "ar";
   const [editing, setEditing] = useState(undefined);
   const [dragging, setDragging] = useState(null);
@@ -23,15 +22,14 @@ export default function FlexOrgTree({ data, company, currentUser, lang, onOpenHR
   const sectionRef = useRef(null);
   const viewportRef = useRef(null);
   const treeRef = useRef(null);
-  const nodes = (hrOnly ? data.hrOrgTree : data.orgTree) || [];
+  const nodes = data.orgTree || [];
   const unassignedEmployees = useMemo(() => (data.employees || []).filter((employee) => {
     if (employee.role === "owner") return false;
     const node = nodes.find((item) => item.type === "employee" && item.refId === employee.id);
-    if (hrOnly) return (employee.role === "hr" || employee.hrLevelId) && !node;
     if (!node) return true;
     const hasChildren = nodes.some((item) => item.parentId === node.id);
     return !node.parentId && !hasChildren && !stationIdForTreeEmployee(data, employee.id) && !(employee.managedStations || []).length;
-  }), [data.employees, data.orgTree, data.hrOrgTree, hrOnly]);
+  }), [data.employees, data.orgTree]);
   const unassignedNodeIds = useMemo(() => new Set(unassignedEmployees.map((employee) => nodes.find((node) => node.type === "employee" && node.refId === employee.id)?.id).filter(Boolean)), [unassignedEmployees, nodes]);
   const roots = useMemo(() => nodes.filter((node) => !node.parentId && !unassignedNodeIds.has(node.id)).sort((a, b) => a.order - b.order), [nodes, unassignedNodeIds]);
   const escalationChain = useMemo(() => sortComplaintChainByTree(data.complaintEscalationChain || [], data), [data.complaintEscalationChain, data.orgTree]);
@@ -48,20 +46,17 @@ export default function FlexOrgTree({ data, company, currentUser, lang, onOpenHR
     setSafeZoom(Math.min(widthScale, heightScale));
     setOffset({ x: 0, y: 0 });
   };
-  useEffect(() => {
-    if (hrOnly) initializeHROrgTree(company.id, data);
-    else initializeOrgTree(company.id, data);
-  }, [company.id, data.orgTree, data.hrOrgTree, data.stations, hrOnly]);
+  useEffect(() => initializeOrgTree(company.id, data), [company.id, data.orgTree, data.stations]);
   const toggleFullscreen = (next) => {
     setFullscreen(next);
     window.setTimeout(fitTree, 50);
   };
-  const actions = { start: setDragging, end: () => setDragging(null), edit: setEditing, openDepartment: (node) => { if (node.refId === "hr") onOpenHR?.(); }, toggleEscalation: (employeeId) => toggleComplaintEscalationMember(company.id, employeeId), drop: (targetId, mode) => { if (mode === "cancel") { setDragging(null); return; } if (mode === "unassign") { (hrOnly ? unassignHROrgNode : unassignEmployeeFromOrgTree)(company.id, dragging); setDragging(null); return; } if (typeof dragging === "string" && dragging.startsWith("unassigned:")) { (hrOnly ? placeEmployeeInHROrgTree : assignEmployeeToOrgStation)(company.id, dragging.slice(11), targetId); setDragging(null); return; } const resolvedMode = ar && mode === "left" ? "right" : ar && mode === "right" ? "left" : mode; (hrOnly ? moveHROrgNode : moveOrgNode)(company.id, dragging, targetId, resolvedMode); setDragging(null); } };
-  return <section ref={sectionRef} className={`${fullscreen ? "fixed inset-0 z-[70] flex h-screen w-screen flex-col rounded-none" : "rounded-xl"} overflow-hidden border border-accent/30 bg-card shadow-sm`} dir={ar ? "rtl" : "ltr"}><header className="flex flex-wrap items-center justify-between gap-3 border-b border-accent/20 bg-primary px-4 py-4 text-primary-foreground"><div className="flex items-center gap-3"><span className="rounded-lg bg-accent/15 p-2"><Network className="h-5 w-5 text-accent" /></span><div><h2 className="font-heading text-2xl font-bold !text-white">{hrOnly ? (ar ? "شجرة الموارد البشرية" : "Human Resources tree") : (ar ? "الشجرة التنظيمية المرنة" : "Flexible organization tree")}</h2><p className="text-[11px] text-primary-foreground/70">{hrOnly ? (ar ? "أضف موظفي الموارد البشرية ورتبهم بحرية داخل القسم" : "Add and freely arrange HR employees inside the department") : (ar ? "اسحب أي محطة أو شخص إلى اليمين أو اليسار أو الأعلى أو الأسفل" : "Drag any station or person left, right, above, or below")}</p></div></div><div className="flex items-center gap-2"><OrgTreeFullscreenButton active={fullscreen} onToggle={toggleFullscreen} targetRef={sectionRef} ar={ar} /><HierarchyZoomControls zoom={zoom} onZoom={(change) => setSafeZoom(zoom + change)} onSetZoom={setSafeZoom} onFit={fitTree} onPan={panTree} ar={ar} />{canManage && <button onClick={() => setEditing(null)} className="flex items-center gap-2 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-accent-foreground"><Plus className="h-4 w-4" />{ar ? "إضافة" : "Add"}</button>}</div></header>
+  const actions = { start: setDragging, end: () => setDragging(null), edit: setEditing, toggleEscalation: (employeeId) => toggleComplaintEscalationMember(company.id, employeeId), drop: (targetId, mode) => { if (mode === "cancel") { setDragging(null); return; } if (mode === "unassign") { unassignEmployeeFromOrgTree(company.id, dragging); setDragging(null); return; } if (typeof dragging === "string" && dragging.startsWith("unassigned:")) { assignEmployeeToOrgStation(company.id, dragging.slice(11), targetId); setDragging(null); return; } const resolvedMode = ar && mode === "left" ? "right" : ar && mode === "right" ? "left" : mode; moveOrgNode(company.id, dragging, targetId, resolvedMode); setDragging(null); } };
+  return <section ref={sectionRef} className={`${fullscreen ? "fixed inset-0 z-[70] flex h-screen w-screen flex-col rounded-none" : "rounded-xl"} overflow-hidden border border-accent/30 bg-card shadow-sm`} dir={ar ? "rtl" : "ltr"}><header className="flex flex-wrap items-center justify-between gap-3 border-b border-accent/20 bg-primary px-4 py-4 text-primary-foreground"><div className="flex items-center gap-3"><span className="rounded-lg bg-accent/15 p-2"><Network className="h-5 w-5 text-accent" /></span><div><h2 className="font-heading text-2xl font-bold !text-white">{ar ? "الشجرة التنظيمية المرنة" : "Flexible organization tree"}</h2><p className="text-[11px] text-primary-foreground/70">{ar ? "اسحب أي محطة أو شخص إلى اليمين أو اليسار أو الأعلى أو الأسفل" : "Drag any station or person left, right, above, or below"}</p></div></div><div className="flex items-center gap-2"><OrgTreeFullscreenButton active={fullscreen} onToggle={toggleFullscreen} targetRef={sectionRef} ar={ar} /><HierarchyZoomControls zoom={zoom} onZoom={(change) => setSafeZoom(zoom + change)} onSetZoom={setSafeZoom} onFit={fitTree} onPan={panTree} ar={ar} />{canManage && <button onClick={() => setEditing(null)} className="flex items-center gap-2 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-accent-foreground"><Plus className="h-4 w-4" />{ar ? "إضافة" : "Add"}</button>}</div></header>
     <OrgTreeGuide ar={ar} />
     <OrgTreeUnassignedEmployees employees={unassignedEmployees} canManage={canManage} dropActive={canDropToUnassigned} actions={actions} ar={ar} />
     <div ref={viewportRef} {...gestures} className={`${fullscreen ? "min-h-0 flex-1" : "h-[70vh] min-h-[420px] max-h-[760px]"} cursor-grab overflow-hidden p-6 active:cursor-grabbing`} style={{ touchAction: "none" }}><div ref={treeRef} className="mx-auto flex min-w-max origin-top items-start justify-center gap-10" style={{ zoom, transform: `translate3d(${offset.x}px, ${offset.y}px, 0)` }}>{roots.length ? roots.map((root) => <FlexOrgBranch key={root.id} node={root} nodes={nodes} data={data} escalationChain={escalationChain} canManage={canManage} dragging={dragging} actions={actions} ar={ar} />) : <div className="py-12 text-center"><Network className="mx-auto h-8 w-8 text-accent" /><p className="mt-3 text-sm font-semibold">{ar ? "ابدأ بإضافة أول عقدة" : "Add the first node to begin"}</p></div>}</div></div>
     <OrgTreeDragCancel active={Boolean(dragging)} ar={ar} />
-    {editing !== undefined && <OrgTreeNodeModal initial={editing} treeNodes={nodes} employeeOnly={hrOnly} onSaveNode={hrOnly ? saveHROrgNode : undefined} onCreateRecord={hrOnly ? createHROrgEmployee : undefined} onDeleteNode={hrOnly ? deleteHROrgNode : undefined} data={data} company={company} companyId={company.id} lang={lang} onClose={() => setEditing(undefined)} />}
+    {editing !== undefined && <OrgTreeNodeModal initial={editing} data={data} company={company} companyId={company.id} lang={lang} onClose={() => setEditing(undefined)} />}
   </section>;
 }
