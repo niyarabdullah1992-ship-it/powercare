@@ -36,13 +36,10 @@ export function allowedNavFor(user, data) {
       if (!smartPosition.permissions?.[department]) allowed.delete(route);
     });
   }
-  if (allowed.has("/app/hr")) allowed.add("/app/hr-tree");
-  else allowed.delete("/app/hr-tree");
   return allowed;
 }
 
 export function canAccessPath(pathname, user, data) {
-  if (pathname === "/app/hr-tree") return allowedNavFor(user, data).has("/app/hr");
   const route = Object.values(SMART_SECTION_ROUTES).find((item) => pathname === item || pathname.startsWith(item + "/"));
   return !route || allowedNavFor(user, data).has(route);
 }
