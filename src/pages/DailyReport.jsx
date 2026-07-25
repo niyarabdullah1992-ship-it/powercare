@@ -3,21 +3,19 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { formatDateTime } from "@/lib/dateFormat";
-import { visibleStations, canSeeAllStations, isCompanyOwner } from "@/lib/permissions";
+import { visibleStations, canSeeAllStations } from "@/lib/permissions";
 import moment from "moment";
-import { FileText, ListTodo, AlertTriangle, Activity, Building2, Palette } from "lucide-react";
+import { FileText, ListTodo, AlertTriangle, Activity, Building2 } from "lucide-react";
 import ReportCard from "@/components/reports/ReportCard";
-import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import PageHeader from "@/components/PageHeader";
 
 export default function DailyReport() {
   const { t, lang } = useI18n();
-  const { data, currentUser, company } = useAuth();
+  const { data, currentUser } = useAuth();
   const [targets, setTargets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showBranding, setShowBranding] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -102,34 +100,13 @@ export default function DailyReport() {
     { icon: AlertTriangle, label: t("todayIssues"), value: totalIssuesToday },
     { icon: Activity, label: t("todayActions"), value: todaysActions.length },
   ];
-  const canEditBranding = isCompanyOwner(currentUser, data) || currentUser.role === "director";
-
   return (
     <div className="reports-hub space-y-6">
       <PageHeader
         title={t("reports")}
         description={t("dailyReportNote")}
         icon={FileText}
-        actions={canEditBranding ? (
-          <button
-            onClick={() => setShowBranding((value) => !value)}
-            className="flex shrink-0 items-center gap-1.5 rounded-md border border-accent/50 bg-primary-foreground/5 px-3 py-2 text-xs text-primary-foreground hover:bg-primary-foreground/10"
-          >
-            <Palette className="h-3.5 w-3.5 text-accent" />
-            {lang === "ar" ? "إعدادات الهوية" : "Brand settings"}
-          </button>
-        ) : null}
       />
-
-      {showBranding && canEditBranding && (
-        <BrandingSettingsCard
-          companyId={company.id}
-          branding={data.reportBranding}
-          companyName={data.name || company?.name || ""}
-          lang={lang}
-          onClose={() => setShowBranding(false)}
-        />
-      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {stats.map((s) => (
