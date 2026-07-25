@@ -50,14 +50,15 @@ export default function SubscribersDashboard({ ar }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex justify-end">
-        <button onClick={load} disabled={loading} className="p-2 text-landing-gold hover:text-landing-gold-deep" title={ar ? "تحديث" : "Refresh"}>
+      <div className="flex items-center justify-between rounded-xl border border-border bg-card px-5 py-4 shadow-soft">
+        <div><p className="text-xs font-semibold uppercase tracking-widest text-accent">{ar ? "مركز العمليات المالية" : "Financial operations"}</p><h1 className="mt-1 font-heading text-2xl font-semibold text-card-foreground">{ar ? "إدارة الاشتراكات" : "Subscription management"}</h1></div>
+        <button onClick={load} disabled={loading} className="rounded-md border border-border bg-card p-2 text-accent hover:bg-muted" title={ar ? "تحديث" : "Refresh"}>
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
         </button>
       </div>
 
       {loading && !data && (
-        <div className="flex items-center gap-2 text-sm text-[#3a2f22]/50 font-body py-6 justify-center">
+        <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
           <Loader2 className="w-4 h-4 animate-spin" /> {ar ? "جارٍ التحميل…" : "Loading…"}
         </div>
       )}
@@ -67,9 +68,9 @@ export default function SubscribersDashboard({ ar }) {
         <>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             {stats.map((s) => (
-              <div key={s.label} className={`rounded-xl p-4 text-center bg-white shadow-sm ${s.warn ? "ring-1 ring-red-200" : ""}`}>
-                <p className={`hero-title text-3xl ${s.warn ? "text-red-600" : "text-[#3a2f22]"}`}>{s.value}</p>
-                <p className="text-[11px] font-body text-[#3a2f22]/50 mt-1 leading-tight">{s.label}</p>
+              <div key={s.label} className={`ops-kpi-card rounded-xl border bg-card p-4 text-center shadow-soft ${s.warn ? "border-destructive/40" : "border-border"}`}>
+                <p className={`font-heading text-3xl font-semibold ${s.warn ? "text-destructive" : "text-card-foreground"}`}>{s.value}</p>
+                <p className="mt-1 text-[11px] leading-tight text-muted-foreground">{s.label}</p>
               </div>
             ))}
           </div>
@@ -80,12 +81,12 @@ export default function SubscribersDashboard({ ar }) {
 
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
-              <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3a2f22]/35" />
+              <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={ar ? "بحث باسم الشركة أو الإيميل…" : "Search by company or email…"}
-                className="w-full ps-9 pe-3 py-2.5 rounded-xl bg-white shadow-sm text-sm font-body text-[#3a2f22] focus:outline-none focus:ring-2 focus:ring-landing-gold"
+                className="w-full rounded-md border border-input bg-card py-2.5 pe-3 ps-9 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <div className="flex gap-1.5">
@@ -100,7 +101,7 @@ export default function SubscribersDashboard({ ar }) {
                   key={f.key}
                   onClick={() => setStatusFilter(f.key)}
                   className={`px-3 py-2 rounded-xl text-xs font-body font-semibold transition-colors ${
-                    statusFilter === f.key ? "bg-landing-gold text-white" : "bg-white text-[#3a2f22]/60 shadow-sm hover:text-[#3a2f22]"
+                    statusFilter === f.key ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   {ar ? f.ar : f.en}
@@ -109,10 +110,10 @@ export default function SubscribersDashboard({ ar }) {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
             <table className="w-full text-sm font-body mobile-cards">
               <thead>
-                <tr className="text-start text-[11px] uppercase tracking-wide text-[#3a2f22]/45 border-b border-[#3a2f22]/10">
+                <tr className="border-b border-border bg-secondary text-start text-[11px] uppercase tracking-wide text-secondary-foreground/70">
                   <th className="px-4 py-3 text-start">{ar ? "الشركة" : "Company"}</th>
                   <th className="px-4 py-3 text-start">{ar ? "الباقة" : "Plan"}</th>
                   <th className="px-4 py-3 text-start">{ar ? "الحالة" : "Status"}</th>
@@ -125,13 +126,13 @@ export default function SubscribersDashboard({ ar }) {
               </thead>
               <tbody>
                 {rows.length === 0 && (
-                  <tr><td colSpan={8} className="px-4 py-6 text-center text-[#3a2f22]/40">{ar ? "لا يوجد مشتركون بعد." : "No subscribers yet."}</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">{ar ? "لا يوجد مشتركون بعد." : "No subscribers yet."}</td></tr>
                 )}
                 {rows.map((r, i) => (
                   <SubscriberRow key={r.id || r.accountId || i} row={r} ar={ar} onChanged={load} />
                 ))}
               </tbody>
-              <tfoot><tr className="border-t-2 border-landing-gold/40 bg-secondary"><td colSpan={8} className="px-4 py-4"><div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-xs"><span>{ar ? "قبل الضريبة" : "Before VAT"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.subtotal, "USD", ar)}</strong></span><span>{ar ? "الضريبة 15%" : "VAT 15%"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.vat, "USD", ar)}</strong></span><span className="text-sm text-landing-gold-deep">{ar ? "الإجمالي شامل الضريبة" : "Total including VAT"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.total, "USD", ar)}</strong></span></div></td></tr></tfoot>
+              <tfoot><tr className="border-t-2 border-landing-gold/40 bg-secondary"><td colSpan={8} className="px-4 py-4"><div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-xs"><span>{ar ? "قبل الضريبة" : "Before VAT"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.subtotal, "USD", ar)}</strong></span><span>{ar ? "الضريبة 15%" : "VAT 15%"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.vat, "USD", ar)}</strong></span><span className="text-sm text-accent-foreground">{ar ? "الإجمالي شامل الضريبة" : "Total including VAT"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.total, "USD", ar)}</strong></span></div></td></tr></tfoot>
               </table>
           </div>
         </>

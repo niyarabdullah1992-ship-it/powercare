@@ -10,9 +10,9 @@ export default function SubscriptionRevenueSummary({ amount = 0, ar }) {
   ];
 
   return <section className="grid gap-3 sm:grid-cols-3">
-    {items.map((item) => <div key={item.label} className={`rounded-2xl border p-4 shadow-sm ${item.total ? "border-landing-gold bg-secondary" : "border-border bg-card"}`}>
-      <p className="text-xs text-muted-foreground">{item.label}</p>
-      <p className={`mt-2 font-heading text-2xl font-semibold ${item.total ? "text-landing-gold-deep" : "text-foreground"}`}>{formatSubscriptionMoney(item.value, "USD", ar)}</p>
+    {items.map((item) => <div key={item.label} className={`rounded-xl border p-4 shadow-soft ${item.total ? "border-accent/40 bg-primary text-primary-foreground" : "border-border bg-card"}`}>
+      <p className={`text-xs ${item.total ? "text-primary-foreground/65" : "text-muted-foreground"}`}>{item.label}</p>
+      <p className={`mt-2 font-heading text-2xl font-semibold ${item.total ? "text-accent" : "text-foreground"}`}>{formatSubscriptionMoney(item.value, "USD", ar)}</p>
     </div>)}
   </section>;
 }
