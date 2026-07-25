@@ -943,3 +943,52 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   }
   .performance-hub-tabs button { flex: 0 0 auto; }
 }
+
+/* Unified PowerCare identity for every authenticated section. */
+.powercare-interior-page {
+  color: hsl(var(--foreground));
+}
+.powercare-interior-page [class*="bg-white"] {
+  background-color: hsl(var(--card));
+}
+.powercare-interior-page :is([class*="border-gray-"], [class*="border-slate-"], [class*="border-zinc-"]) {
+  border-color: hsl(var(--border));
+}
+.powercare-interior-page :is([class*="text-gray-"], [class*="text-slate-"], [class*="text-zinc-"]) {
+  color: hsl(var(--muted-foreground));
+}
+.powercare-interior-page :is(button, a).bg-foreground,
+.powercare-interior-page :is(button, a)[class*="bg-foreground"] {
+  border-color: hsl(var(--primary));
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+.powercare-interior-page :is(button, a).bg-foreground:hover,
+.powercare-interior-page :is(button, a)[class*="bg-foreground"]:hover {
+  border-color: hsl(var(--accent));
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+.powercare-interior-page :is(.border-foreground, [class*="border-foreground"]) {
+  border-color: hsl(var(--primary));
+}
+.powercare-interior-page :is(p, span).uppercase[class*="tracking-"] {
+  color: hsl(var(--accent));
+}
+.powercare-interior-page :is(.rounded-xl, .rounded-2xl, .rounded-3xl).bg-card {
+  border-color: hsl(var(--border));
+  background: linear-gradient(145deg, hsl(var(--card)), hsl(var(--secondary) / .3));
+}
+.powercare-interior-page :is(input, textarea, select):focus {
+  border-color: hsl(var(--accent));
+}
+.powercare-interior-page table thead {
+  border-block: 1px solid hsl(var(--accent) / .22);
+  background: hsl(var(--secondary));
+}
+.powercare-interior-page table tbody tr:hover {
+  background: hsl(var(--accent) / .055);
+}
+.dark .powercare-interior-page [class*="bg-white"] {
+  background-color: hsl(var(--card));
+}

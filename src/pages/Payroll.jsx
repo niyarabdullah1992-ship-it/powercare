@@ -12,6 +12,7 @@ import OwnerPayrollToggle from "@/components/payroll/OwnerPayrollToggle";
 import { canAdjustPayroll, hrScopeStations } from "@/lib/permissions";
 import { toast } from "@/components/ui/use-toast";
 import { stationIdForTreeEmployee } from "@/lib/orgTree";
+import PageHeader from "@/components/PageHeader";
 
 const UNASSIGNED_STATION_ID = "__unassigned__";
 
@@ -107,30 +108,18 @@ export default function Payroll() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="w-11 h-11 rounded-xl bg-accent/10 text-accent flex items-center justify-center">
-            <Banknote className="w-5 h-5" strokeWidth={1.75} />
-          </span>
-          <div>
-            <h1 className="font-heading text-2xl font-semibold">{ar ? "الرواتب" : "Payroll"}</h1>
-            <p className="text-xs text-muted-foreground font-body">{ar ? "مسيّر رواتب شهري مبني على ملفات الموظفين" : "Monthly payroll run built from employee salary profiles"}</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => e.target.value && setMonth(e.target.value)}
-            className="px-3 py-2 rounded-md border border-input bg-card text-sm font-body"
-            dir="ltr"
-          />
+      <PageHeader
+        title={ar ? "الرواتب" : "Payroll"}
+        description={ar ? "مسيّر رواتب شهري مبني على ملفات الموظفين" : "Monthly payroll run built from employee salary profiles"}
+        icon={Banknote}
+        actions={<>
+          <input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} className="border-primary-foreground/25 bg-primary-foreground/10 px-3 py-2 text-sm text-primary-foreground" dir="ltr" />
           <StationMultiSelect stations={filterStations} value={selectedStationIds} onChange={setStationFilter} ar={ar} />
-          <button onClick={syncFromProfiles} className="flex items-center gap-1.5 rounded-md border border-input bg-card px-3.5 py-2 text-sm font-body text-foreground hover:bg-secondary">
+          <button onClick={syncFromProfiles} className="flex items-center gap-1.5 border border-accent/45 bg-accent px-3.5 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent/90">
             <RefreshCw className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تحديث من الملفات الشخصية" : "Refresh from profiles"}
           </button>
-        </div>
-      </div>
+        </>}
+      />
 
       <OwnerPayrollToggle checked={includeOwner} onChange={(checked) => setOwnerPayrollEnabled(company.id, checked)} ar={ar} />
 

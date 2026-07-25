@@ -6,7 +6,8 @@ import { addFileFolder, addCompanyFile, deleteFileNode, renameFileNode } from "@
 import { visibleStations } from "@/lib/permissions";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { FolderPlus, Upload, Loader2, ChevronRight, ChevronLeft, Home, Radio } from "lucide-react";
+import { FolderPlus, Upload, Loader2, ChevronRight, ChevronLeft, Home, Radio, FolderOpen } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import FolderCard from "@/components/files/FolderCard";
 import FileRow from "@/components/files/FileRow";
 import NewFolderDialog from "@/components/files/NewFolderDialog";
@@ -76,12 +77,11 @@ export default function Files() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="font-heading text-2xl md:text-3xl font-semibold">{pageTitle}</h1>
-        <p className="text-sm text-muted-foreground font-body mt-1">
-          {isIndividual ? (lang === "ar" ? "احفظ ونظّم مستنداتك الخاصة في مجلدات." : "Store and organize your personal documents in folders.") : t("filesNote")}
-        </p>
-      </div>
+      <PageHeader
+        title={pageTitle}
+        description={isIndividual ? (lang === "ar" ? "احفظ ونظّم مستنداتك الخاصة في مجلدات." : "Store and organize your personal documents in folders.") : t("filesNote")}
+        icon={FolderOpen}
+      />
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 flex-wrap text-sm font-body">

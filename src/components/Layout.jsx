@@ -517,7 +517,7 @@ export default function Layout({ children }) {
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={location.pathname}
-              className="mx-auto w-full max-w-[1600px]"
+              className="powercare-interior-page mx-auto w-full max-w-[1600px]"
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
