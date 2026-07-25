@@ -24,7 +24,7 @@ export default function CommandCenterHero({ companyName, riskScore, activeStatio
           <StabilityWave pulseDuration={pulseDuration} />
           <span className="absolute left-1/2 top-3 z-10 h-2 w-2 -translate-x-1/2 rounded-full bg-accent"><span className="absolute inset-0 animate-ping rounded-full bg-accent opacity-50" style={{ animationDuration: pulseDuration }} /></span>
           {breakdown && <StabilityInfoPopover breakdown={breakdown} riskScore={riskScore} ar={ar} companyId={companyId} canEditWeights={canEditWeights} />}
-          <div className="relative z-10"><Activity className="mb-3 h-4 w-4 animate-pulse text-accent" style={{ animationDuration: pulseDuration }} /><p className={`text-3xl font-heading ${riskScore < 40 ? "text-accent" : ""}`}>{100 - riskScore}%</p><p className="text-xs text-white/50">{state}</p></div>
+          <div className="relative z-10"><Activity className="mb-3 h-4 w-4 animate-pulse text-accent" style={{ animationDuration: pulseDuration }} /><p className={`text-3xl font-heading ${riskScore < 40 ? "text-accent" : ""}`}>{100 - riskScore}%</p><p className="text-xs font-semibold text-primary-foreground/90">{state}</p></div>
         </div>
           <div className="min-w-32 rounded-2xl border border-white/10 bg-white/5 p-4"><BrainCircuit className="mb-3 h-4 w-4 text-accent" /><p className="text-3xl font-heading">{activeStations}</p><p className="text-xs text-white/50">{ar ? "محطات مراقبة" : "Stations monitored"}</p></div>
           {safety && (

@@ -948,7 +948,7 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 .powercare-interior-page {
   color: hsl(var(--foreground));
 }
-.powercare-interior-page [class*="bg-white"] {
+.powercare-interior-page [class~="bg-white"] {
   background-color: hsl(var(--card));
 }
 .powercare-interior-page :is([class*="border-gray-"], [class*="border-slate-"], [class*="border-zinc-"]) {
@@ -989,6 +989,6 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 .powercare-interior-page table tbody tr:hover {
   background: hsl(var(--accent) / .055);
 }
-.dark .powercare-interior-page [class*="bg-white"] {
+.dark .powercare-interior-page [class~="bg-white"] {
   background-color: hsl(var(--card));
 }
