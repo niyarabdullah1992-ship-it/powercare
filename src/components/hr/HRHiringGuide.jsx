@@ -4,14 +4,14 @@ import { ArrowDown, UserPlus, Users } from "lucide-react";
 const CONTENT = {
   ar: {
     title: "كيف توظف فريق الموارد البشرية داخل الشجرة؟",
-    intro: "أنشئ حساب الموظف أولًا، ثم اربطه بمدير الموارد البشرية ليصبح جزءًا من قسم HR داخل الهيكل نفسه.",
-    steps: ["من قسم الموظفين أضف الموظف الجديد وأدخل بياناته ودوره ومحطته.", "ارجع إلى الشجرة؛ ستجد الموظف في قائمة الموظفين غير المعينين.", "اسحب الموظف وضعه أسفل مدير الموارد البشرية، أو اختره من زر إضافة موظف.", "حدد مسماه: توظيف، رواتب، تدريب، علاقات موظفين، أو مساعد مدير HR.", "امنحه صلاحيات عمله فقط وحدد نطاق المحطات التي يخدمها.", "احفظ وتأكد من ظهور بطاقته تحت المدير أو المشرف المسؤول."],
+    intro: "أضف موظف الموارد البشرية مباشرة من الشجرة، وحدد محطته وصلاحياته ومديره ليصبح جزءًا من قسم HR داخل الهيكل نفسه.",
+    steps: ["اضغط «إضافة» داخل الشجرة، ثم اختر «موظف».", "أدخل اسم الموظف وبريده الإلكتروني، ثم اختر محطته من قائمة المحطات.", "حدد مسماه: توظيف، رواتب، تدريب، علاقات موظفين، أو مساعد مدير HR.", "اختر صلاحيات عمله فقط، مثل التوظيف أو الرواتب أو التدريب.", "حدد مدير الموارد البشرية أو المشرف بوصفه المسؤول المباشر من حقل التبعية.", "احفظ وتأكد من ظهور بطاقته تحت المدير أو المشرف المسؤول."],
     example: "مثال: مدير HR ← مساعد المدير ← أخصائي توظيف وموظف رواتب"
   },
   en: {
     title: "How do you hire an HR team in the tree?",
-    intro: "Create the employee account first, then connect it to the HR manager inside the same organization tree.",
-    steps: ["Add the employee from Employees and enter their role and station.", "Return to the tree and find them under Unassigned employees.", "Drag them below the HR manager, or select them with Add employee.", "Set their HR title: recruiter, payroll, training, relations, or HR assistant.", "Grant only the permissions they need and choose their station scope.", "Save and confirm their card appears below the responsible manager."],
+    intro: "Add the HR employee directly from the tree, then choose their station, permissions and manager.",
+    steps: ["Select Add inside the tree, then choose Employee.", "Enter the employee name and email, then select their station.", "Set their HR title: recruiter, payroll, training, relations, or HR assistant.", "Grant only the work permissions they need.", "Choose the HR manager or supervisor as their direct parent.", "Save and confirm their card appears below the responsible manager."],
     example: "Example: HR Manager → HR Assistant → Recruiter and Payroll Officer"
   }
 };
