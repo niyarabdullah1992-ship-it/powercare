@@ -1,4 +1,4 @@
-export async function downloadProfilePdf(container, onProgress) {
+export async function downloadProfilePdf(container, onProgress, fileName = "PowerCare-Corporate-Profile-AR-EN-2026.pdf") {
   if (!container) return;
   const pages = [...container.querySelectorAll("[data-pdf-page]")];
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
@@ -12,5 +12,5 @@ export async function downloadProfilePdf(container, onProgress) {
     if (index) pdf.addPage();
     pdf.addImage(canvas.toDataURL("image/jpeg", .9), "JPEG", 0, 0, 210, 297, undefined, "FAST");
   }
-  pdf.save("PowerCare-Corporate-Profile-AR-EN-2026.pdf");
+  pdf.save(fileName);
 }
