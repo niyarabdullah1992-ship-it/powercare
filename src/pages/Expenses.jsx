@@ -20,9 +20,11 @@ export default function Expenses() {
   const load = async () => {
     setLoading(true);
     try {
-      const next = await expensesCall(session, "list", { stations: data?.stations || [] });
-      const allowedIds = new Set(next.stations.map((station) => station.stationId));
+      const next = await expensesCall(session, "list");
+      const allowedIds = new Set((next.stations || []).map((station) => station.stationId));
       setState({ ...next, stations: canonicalStations.filter((station) => allowedIds.has(station.stationId)) });
+    } catch (error) {
+      toast({ description: error?.response?.data?.error || error.message, variant: "destructive" });
     } finally { setLoading(false); }
   };
   useEffect(() => { load(); }, [session?.companyId, stationVersion]);

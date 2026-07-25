@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 
 const managerRoles = ["director", "ops_manager", "pgm", "station_manager"];
 const seniorRoles = ["owner", "director", "ops_manager"];
@@ -27,32 +27,7 @@ Deno.serve(async (req) => {
 
     const isManager = managerRoles.includes(auth.role) || auth.role === "owner";
     const isFinance = auth.role === "financial_officer" || auth.role === "owner";
-    let allStations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
-    // An owner may repair the persisted directory from the same canonical station
-    // roster used by the rest of the app. Empty snapshots are never accepted.
-    if (auth.role === "owner" && Array.isArray(body.stations) && body.stations.length) {
-      const incomingIds = new Set(body.stations.map((station) => station?.id).filter(Boolean));
-      const existingIds = new Set(allStations.map((station) => station.stationId));
-      const missing = body.stations
-        .filter((station) => station?.id && !existingIds.has(station.id))
-        .map((station) => ({
-          stationId: station.id,
-          companyId: auth.companyId,
-          name: String(station.name || "Station"),
-          location: String(station.location || ""),
-          type: String(station.type || ""),
-          status: String(station.status || "active"),
-          managerId: station.managerId || null,
-          lat: station.lat != null && station.lat !== "" && Number.isFinite(Number(station.lat)) ? Number(station.lat) : null,
-          lng: station.lng != null && station.lng !== "" && Number.isFinite(Number(station.lng)) ? Number(station.lng) : null,
-          radiusMeters: station.radiusMeters != null && station.radiusMeters !== "" && Number.isFinite(Number(station.radiusMeters)) ? Number(station.radiusMeters) : null,
-          isCentralWarehouse: station.isCentralWarehouse === true,
-        }));
-      const staleIds = allStations.filter((station) => !incomingIds.has(station.stationId)).map((station) => station.stationId);
-      if (missing.length) await base44.asServiceRole.entities.Station.bulkCreate(missing);
-      if (staleIds.length) await base44.asServiceRole.entities.Station.deleteMany({ companyId: auth.companyId, stationId: { $in: staleIds } });
-      if (missing.length || staleIds.length) allStations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
-    }
+    const allStations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
     const visibleStationIds = seniorRoles.includes(auth.role) || isFinance ? allStations.map((station) => station.stationId) : auth.role === "pgm" ? auth.managedStations : auth.role === "station_manager" ? [auth.stationId, ...auth.managedStations].filter(Boolean) : [auth.stationId].filter(Boolean);
     const claimStations = (claim) => claim.stationIds?.length ? claim.stationIds : [claim.stationId];
 
