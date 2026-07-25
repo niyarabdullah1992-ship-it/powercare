@@ -7,11 +7,11 @@ export default function useDraggablePosition() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null; } catch { return null; }
   });
   const drag = useRef(null);
-  const suppressClick = useRef(false);
+  const lastPosition = useRef(position);
 
   const onPointerDown = (event) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, moved: false };
+    const rect = event.currentTarget.parentElement?.getBoundingClientRect() || event.currentTarget.getBoundingClientRect();
+    drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, width: rect.width, height: rect.height, moved: false };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
   const onPointerMove = (event) => {
@@ -20,22 +20,17 @@ export default function useDraggablePosition() {
     const dy = event.clientY - drag.current.y;
     if (Math.abs(dx) + Math.abs(dy) > 4) drag.current.moved = true;
     const next = {
-      x: Math.max(8, Math.min(window.innerWidth - 48, drag.current.left + dx)),
-      y: Math.max(8, Math.min(window.innerHeight - 48, drag.current.top + dy)),
+      x: Math.max(8, Math.min(window.innerWidth - drag.current.width - 8, drag.current.left + dx)),
+      y: Math.max(8, Math.min(window.innerHeight - drag.current.height - 8, drag.current.top + dy)),
     };
+    lastPosition.current = next;
     setPosition(next);
   };
   const onPointerUp = (event) => {
     if (!drag.current || drag.current.id !== event.pointerId) return;
-    suppressClick.current = drag.current.moved;
-    if (drag.current.moved) localStorage.setItem(STORAGE_KEY, JSON.stringify(position));
+    if (drag.current.moved) localStorage.setItem(STORAGE_KEY, JSON.stringify(lastPosition.current));
     drag.current = null;
   };
-  const consumeDrag = () => {
-    const value = suppressClick.current;
-    suppressClick.current = false;
-    return value;
-  };
 
-  return { position, handlers: { onPointerDown, onPointerMove, onPointerUp }, consumeDrag };
+  return { position, handlers: { onPointerDown, onPointerMove, onPointerUp } };
 }
