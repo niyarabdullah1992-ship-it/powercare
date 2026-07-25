@@ -76,6 +76,15 @@ export function logAudit(companyId, action, details) {
 function getStationHRManager(data, employeeId) {
   const emp = data.employees.find((e) => e.id === employeeId);
   if (!emp) return null;
+  const nodes = data.orgTree || [];
+  const positions = data.smartPositions || [];
+  let node = nodes.find((item) => item.type === "employee" && item.refId === employeeId);
+  while (node?.parentId) {
+    node = nodes.find((item) => item.id === node.parentId);
+    if (node?.type !== "employee") continue;
+    const permissions = positions.find((item) => item.employeeId === node.refId)?.permissions || {};
+    if (permissions.hr === "manage") return data.employees.find((employee) => employee.id === node.refId) || null;
+  }
   const employeeStationId = emp.stationId || data.stations?.[0]?.id || null;
   const groups = groupLevelsByOrder(data.hrLevels || []);
   for (const group of groups) {

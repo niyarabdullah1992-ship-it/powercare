@@ -161,12 +161,16 @@ function hasTreeEmployeeAccess(user, employee, data, allowedAccess, departments 
   return false;
 }
 
+export function canManageEmployeeHR(user, employee, data) {
+  return !!user && (user.id === data?.ownerId || user.role === "director" || hasTreeEmployeeAccess(user, employee, data, ["manage"], ["hr"]));
+}
+
 export function canManageEmployeeContract(user, employee, data) {
-  return !!user && (user.id === data?.ownerId || user.role === "director" || hasTreeEmployeeAccess(user, employee, data, ["manage"]));
+  return canManageEmployeeHR(user, employee, data);
 }
 
 export function canManageEmployeeCommunication(user, employee, data) {
-  return !!user && (user.id === data?.ownerId || user.role === "director" || hasTreeEmployeeAccess(user, employee, data, ["manage"], ["employees", "hr"]));
+  return canManageEmployeeHR(user, employee, data);
 }
 
 export function isHRAssistant(user, data) {
@@ -201,7 +205,7 @@ export function canViewEmployeeProfile(viewer, employee, data) {
     const managed = viewer.managedStations?.length ? viewer.managedStations : [employeeStationId(viewer, data)].filter(Boolean);
     return managed.includes(employeeStationId(employee, data));
   }
-  if (hasTreeEmployeeAccess(viewer, employee, data, ["view", "manage"])) return true;
+  if (hasTreeEmployeeAccess(viewer, employee, data, ["view", "manage"], ["hr"])) return true;
   if (viewer.hrLevelId) {
     const scope = hrScopeStations(viewer, data);
     return scope === null || scope.includes(employeeStationId(employee, data));

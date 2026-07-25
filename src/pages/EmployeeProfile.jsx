@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { canManageEmployees, hasHRPermission, canViewEmployeeProfile, isCompanyOwner, canAdjustPayroll, canManageEmployeeContract, canManageEmployeeCommunication } from "@/lib/permissions";
+import { canManageEmployees, hasHRPermission, canViewEmployeeProfile, isCompanyOwner, canAdjustPayroll, canManageEmployeeHR, canManageEmployeeContract, canManageEmployeeCommunication } from "@/lib/permissions";
 import { getRoleLabel } from "@/lib/roles";
 import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle, Lock, FileSignature } from "lucide-react";
 import ProfileHero from "@/components/employees/ProfileHero";
@@ -58,8 +58,9 @@ export default function EmployeeProfile() {
     );
   }
 
-  const canManage = canManageEmployees(currentUser) || currentUser.role === "director" || currentUser.role === "ops_manager";
-  const canEditGrade = isCompanyOwner(currentUser, data) || currentUser.role === "director" || hasHRPermission(currentUser, data, "manage_employees");
+  const canManageHRProfile = canManageEmployeeHR(currentUser, employee, data);
+  const canManage = canManageEmployees(currentUser) || currentUser.role === "director" || currentUser.role === "ops_manager" || canManageHRProfile;
+  const canEditGrade = isCompanyOwner(currentUser, data) || currentUser.role === "director" || hasHRPermission(currentUser, data, "manage_employees") || canManageHRProfile;
   const canEditSalary = canAdjustPayroll(currentUser, data);
   const canApproveLeave = canManage || hasHRPermission(currentUser, data, "manage_leave");
   const canApproveCerts = canManage || hasHRPermission(currentUser, data, "manage_leave");
