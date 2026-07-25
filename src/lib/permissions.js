@@ -147,8 +147,22 @@ export function isHRManager(user, data) {
   return getHRLevel(user, data)?.role === "manager";
 }
 
-export function canManageEmployeeContract(user, data) {
-  return !!user && (user.id === data?.ownerId || user.role === "director" || isHRManager(user, data));
+function hasTreeEmployeeAccess(user, employee, data, allowedAccess) {
+  if (!user?.id || !employee?.id) return false;
+  const access = (data?.smartPositions || []).find((item) => item.employeeId === user.id)?.permissions?.employees;
+  if (!allowedAccess.includes(access)) return false;
+  const nodes = data?.orgTree || [];
+  const managerNode = nodes.find((node) => node.type === "employee" && node.refId === user.id);
+  let targetNode = nodes.find((node) => node.type === "employee" && node.refId === employee.id);
+  while (targetNode?.parentId) {
+    if (targetNode.parentId === managerNode?.id) return true;
+    targetNode = nodes.find((node) => node.id === targetNode.parentId);
+  }
+  return false;
+}
+
+export function canManageEmployeeContract(user, employee, data) {
+  return !!user && (user.id === data?.ownerId || user.role === "director" || hasTreeEmployeeAccess(user, employee, data, ["manage"]));
 }
 
 export function isHRAssistant(user, data) {
@@ -183,6 +197,7 @@ export function canViewEmployeeProfile(viewer, employee, data) {
     const managed = viewer.managedStations?.length ? viewer.managedStations : [employeeStationId(viewer, data)].filter(Boolean);
     return managed.includes(employeeStationId(employee, data));
   }
+  if (hasTreeEmployeeAccess(viewer, employee, data, ["view", "manage"])) return true;
   if (viewer.hrLevelId) {
     const scope = hrScopeStations(viewer, data);
     return scope === null || scope.includes(employeeStationId(employee, data));

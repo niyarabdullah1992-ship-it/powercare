@@ -63,7 +63,7 @@ export default function EmployeeProfile() {
   const canEditSalary = canAdjustPayroll(currentUser, data);
   const canApproveLeave = canManage || hasHRPermission(currentUser, data, "manage_leave");
   const canApproveCerts = canManage || hasHRPermission(currentUser, data, "manage_leave");
-  const canEditContract = canManageEmployeeContract(currentUser, data);
+  const canEditContract = canManageEmployeeContract(currentUser, employee, data);
   const stationName = data.stations.find((s) => s.id === employee.stationId)?.name;
   const fallbackPosition = employee.customTitle || getRoleLabel(company, employee.role, t);
   const grade = employeeJobGrade(employee, data);
