@@ -876,7 +876,7 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 }
 .performance-hub-title,
 .performance-hub-tabs { position: relative; z-index: 1; }
-.performance-hub-header h1 { color: hsl(var(--primary-foreground)); }
+.powercare-shell main .performance-hub-header h1 { color: hsl(var(--primary-foreground)); }
 .performance-hub-header h1 svg { color: hsl(var(--accent)); }
 .performance-hub-header .text-muted-foreground { color: hsl(var(--primary-foreground) / .68); }
 .performance-hub-tabs {
