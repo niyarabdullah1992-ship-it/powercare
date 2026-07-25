@@ -68,7 +68,7 @@ export default async function speak(text, lang, gender = "female") {
   try {
     const { url } = await base44.integrations.Core.GenerateSpeech({
       text: clean,
-      voice: gender === "male" ? "storm" : "honey",
+      voice: gender === "male" ? "river" : "honey",
       language_code: lang === "ar" ? "ar" : "en",
     });
     if (requestId !== speechRequestId) return;
