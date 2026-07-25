@@ -13,6 +13,8 @@ import AssistantImageUpload from "@/components/assistant/AssistantImageUpload";
 import { Sparkles, Send, Loader2 } from "lucide-react";
 import speak from "@/components/assistant/speak";
 import formatNiroImageAnalysis from "@/lib/formatNiroImageAnalysis";
+import { loadAssistantMemory, saveAssistantMemory } from "@/lib/assistantMemory";
+import { needsWebSearch, relevantDocumentUrls, selectAssistantContext } from "@/lib/assistantRetrieval";
 
 export default function Assistant() {
   const { t, lang } = useI18n();
@@ -20,6 +22,7 @@ export default function Assistant() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState(() => new URLSearchParams(window.location.search).get("prompt") || "");
   const [imageFile, setImageFile] = useState(null);
+  const [memory, setMemory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pendingActions, setPendingActions] = useState([]);
   const [approvalLoading, setApprovalLoading] = useState(false);
@@ -49,18 +52,31 @@ export default function Assistant() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  useEffect(() => {
+    if (!company?.id) return;
+    loadAssistantMemory(company.id).then(setMemory).catch(() => setMemory([]));
+  }, [company?.id, currentUser?.id]);
+
   if (!data || !currentUser) return null;
 
   const analyzeImage = async (question = "") => {
     if (!imageFile || loading || pendingActions.length) return;
     const prompt = question.trim();
-    const userText = `${lang === "ar" ? "تحليل الصورة" : "Analyze image"}: ${imageFile.name}${prompt ? `\n${prompt}` : ""}`;
+    const userText = `${lang === "ar" ? "تحليل الملف" : "Analyze file"}: ${imageFile.name}${prompt ? `\n${prompt}` : ""}`;
     setMessages((previous) => [...previous, { role: "user", text: userText }]);
     setLoading(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file: imageFile });
-      const response = await base44.functions.invoke("niroDocumentReview", { action: "review", companyId: company.id, sessionToken: getCompanyToken(company.id), fileName: imageFile.name, docUrl: file_url, analysisPrompt: prompt });
-      setMessages((previous) => [...previous, { role: "assistant", text: formatNiroImageAnalysis(response.data.report, lang === "ar") }]);
+      const isImage = imageFile.type.startsWith("image/");
+      let text;
+      if (isImage) {
+        const response = await base44.functions.invoke("niroDocumentReview", { action: "review", companyId: company.id, sessionToken: getCompanyToken(company.id), fileName: imageFile.name, docUrl: file_url, analysisPrompt: prompt });
+        text = formatNiroImageAnalysis(response.data.report, lang === "ar");
+      } else {
+        const transcript = imageFile.type.startsWith("audio/") ? await base44.integrations.Core.TranscribeAudio({ audio_url: file_url }) : "";
+        text = await base44.integrations.Core.InvokeLLM({ prompt: `${lang === "ar" ? "حلل الملف المرفق بدقة وأجب بالعربية" : "Analyze the attached file accurately and answer in English"}.${prompt ? ` ${prompt}` : ""}${transcript ? `\nAudio transcript:\n${transcript}` : ""}`, file_urls: transcript ? undefined : [file_url], model: "gpt_5_4" });
+      }
+      setMessages((previous) => [...previous, { role: "assistant", text }]);
       setImageFile(null);
       setInput("");
     } catch {
@@ -128,7 +144,13 @@ export default function Assistant() {
         context.tasksUnavailable = true;
       }
       const history = nextMessages.slice(-8).map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`).join("\n");
+      const relevantContext = selectAssistantContext(context, q);
+      const documentUrls = relevantDocumentUrls(context, q);
+      const useWeb = needsWebSearch(q);
       const res = await base44.integrations.Core.InvokeLLM({
+        model: useWeb ? "gemini_3_1_pro" : "gpt_5_4",
+        add_context_from_internet: useWeb,
+        ...(documentUrls.length ? { file_urls: documentUrls } : {}),
         prompt: `You are "Niro" (Arabic: نيرو) — PowerCare's smart operations assistant for power/water station management. PowerCare was founded by Niyar Abdullah (نيار عبدالله), a man. His nickname is Niro (نيرو), and you were named Niro in his honor. When asked about your name, identity, the platform founder, or why you are called Niro, explain this origin clearly and respectfully without inventing additional biographical details.
 You answer questions from "${currentUser.name}" (role: ${currentUser.role}) about their company's operations. You prepare supported actions when the request is clear, always within the user's validated permissions. Every action is shown to the user for explicit approval before the app executes it.
 
@@ -158,6 +180,7 @@ DOCUMENT SIGNING & VERIFICATION (you know this feature well):
 - Explain signing and verification questions without opening any page. Include open_page only when the user explicitly asks to open or navigate to that page.
 
 Rules:
+- PERSONAL MEMORY: Use the saved memory below only to personalize answers. Return "memoryUpdates" containing only new stable preferences, recurring work preferences, or explicit long-term decisions stated by the user. Never save passwords, secrets, authentication details, private health data, or temporary operational facts.
 - When the user asks you to DO something covered by an action and all required details are present, include it in "actions" as a proposal awaiting approval and describe the intended result briefly in "answer". Never claim it was executed until the approval result is appended.
 - If an action request is missing a required detail that cannot be safely inferred (such as which station, employee, task, dataset, or file format), ask exactly one short clarifying question in "answer" and return no actions. Never guess and execute the wrong action.
 - IMPORTANT: "tasks" and "targets" in COMPANY DATA are the REAL tasks from the Tasks section (قسم المهام). When the user asks about their tasks/مهام, answer from BOTH lists — a task assigned to the user's name means the user HAS tasks. Never say there are no tasks while either list contains an entry for them.
@@ -177,8 +200,11 @@ Rules:
 - Be concise and practical. Use short bullet points, bold key numbers/names. Use markdown in "answer".
 - When asked for a summary, group by station and call out problems (stopped tasks, pending reports, red safety levels, low performance).
 
-COMPANY DATA (JSON):
-${JSON.stringify(context)}
+SAVED USER MEMORY (JSON):
+${JSON.stringify(memory)}
+
+RELEVANT COMPANY DATA (JSON):
+${JSON.stringify(relevantContext)}
 
 CONVERSATION SO FAR:
 ${history}
@@ -188,6 +214,7 @@ Answer the last user question.`,
           type: "object",
           properties: {
             answer: { type: "string" },
+            memoryUpdates: { type: "array", items: { type: "string" } },
             actions: {
               type: "array",
               items: {
@@ -254,6 +281,11 @@ Answer the last user question.`,
         },
       });
       let text = res?.answer || "";
+      if (res?.memoryUpdates?.length) {
+        const nextMemory = [...new Set([...memory, ...res.memoryUpdates])].slice(-20);
+        setMemory(nextMemory);
+        saveAssistantMemory(company.id, nextMemory).catch(() => {});
+      }
       // Guaranteed signing: if the user's message contains a signing word, any
       // plain export action is upgraded to a signed report — never rely on the
       // model alone to pick the right action.
@@ -301,6 +333,11 @@ Answer the last user question.`,
     setMessages((prev) => [...prev, { role: "assistant", text: lang === "ar" ? "تم رفض الإجراء المقترح ولم يتم تنفيذ أي تغيير." : "The proposed action was rejected and no changes were made." }]);
   };
 
+  const rateMessage = (index, value) => {
+    setMessages((previous) => previous.map((message, messageIndex) => messageIndex === index ? { ...message, feedback: value } : message));
+    base44.entities.ProductFeedback.create({ companyId: company.id, role: currentUser.role, rating: value === "up" ? 5 : 1, message: "Niro assistant response rating", page: "/app/assistant" }).catch(() => {});
+  };
+
   return (
     <div className="max-w-3xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
       <div className="flex items-center gap-2 mb-4">
@@ -322,7 +359,7 @@ Answer the last user question.`,
           </div>
         )}
         {messages.map((m, i) => (
-          <AssistantMessage key={i} message={m} />
+          <AssistantMessage key={i} message={m} onFeedback={m.role === "assistant" ? (value) => rateMessage(i, value) : undefined} />
         ))}
         <AutomationApprovalCard actions={pendingActions} loading={approvalLoading} ar={lang === "ar"} onApprove={approvePending} onReject={rejectPending} />
         {loading && (

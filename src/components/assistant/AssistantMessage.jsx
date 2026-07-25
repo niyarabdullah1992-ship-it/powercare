@@ -1,8 +1,9 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import { Sparkles, FileText, ExternalLink } from "lucide-react";
+import AssistantFeedback from "@/components/assistant/AssistantFeedback";
 
-export default function AssistantMessage({ message }) {
+export default function AssistantMessage({ message, onFeedback }) {
   const isUser = message.role === "user";
   const displayText = isUser ? message.text : String(message.text || "").replace(
     /(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?/g,
@@ -40,6 +41,7 @@ export default function AssistantMessage({ message }) {
             <ExternalLink className="h-4 w-4 shrink-0 text-accent" />
           </a>
         ))}
+        {!isUser && onFeedback && <AssistantFeedback value={message.feedback} onRate={onFeedback} />}
       </div>
     </div>
   );

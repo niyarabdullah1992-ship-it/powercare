@@ -557,6 +557,18 @@ Deno.serve(async (req) => {
       return Response.json({ employeeIds });
     }
 
+    if (action === 'getNiroMemory' || action === 'saveNiroMemory') {
+      const actorKey = auth.role === 'owner' || auth.admin ? 'owner' : auth.userId;
+      if (!actorKey) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const category = `niroMemory:${actorKey}`;
+      const records = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
+      if (action === 'getNiroMemory') return Response.json({ memory: records[0]?.payload || [] });
+      const memory = (Array.isArray(body.memory) ? body.memory : []).map((item) => String(item).trim().slice(0, 500)).filter(Boolean).slice(-20);
+      if (records[0]) await base44.asServiceRole.entities.CompanyDataBlob.update(records[0].id, { payload: memory.map((text) => ({ text })) });
+      else await base44.asServiceRole.entities.CompanyDataBlob.create({ companyId, category, payload: memory.map((text) => ({ text })) });
+      return Response.json({ ok: true, memory });
+    }
+
     if (action === 'updateEmailLanguage') {
       if (auth.role !== 'owner' && !auth.admin) return Response.json({ error: 'Forbidden' }, { status: 403 });
       const supported = ['en', 'ar', 'de', 'fr', 'es', 'pt', 'ru', 'ja', 'ko'];
