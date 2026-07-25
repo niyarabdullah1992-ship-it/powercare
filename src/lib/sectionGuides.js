@@ -62,8 +62,8 @@ const GUIDES = {
     en: ["This section combines stations and employees; open a station to manage its details and team together.", "Add a station and set its location and attendance radius, then add or move employees into it.", "Rename stations and employees directly while retaining analytics, expenses and location settings."],
   },
   "/app/hr": {
-    ar: ["اضغط «إضافة» داخل الشجرة واختر «موظف»، ثم أدخل الاسم والبريد.", "اختر محطة الموظف مباشرة من قائمة المحطات داخل نموذج الإضافة.", "حدد المسمى والصلاحيات، ثم اختر مدير HR أو المشرف بوصفه المسؤول المباشر.", "يمكن وضع مساعدين أو مشرفين أسفل مدير HR، ثم إضافة فرق التوظيف والرواتب والتدريب تحتهم.", "راجع سلسلة تصعيد الشكاوى بعد أي تغيير في التبعية."],
-    en: ["Select Add inside the tree, choose Employee, then enter the name and email.", "Choose the employee station directly from the station list in the form.", "Set the title and permissions, then choose the HR manager or supervisor as the direct parent.", "Place assistants below the HR manager and recruiter, payroll or training teams below them.", "Review complaint escalation after changing reporting lines."],
+    ar: ["ابدأ بالمحطة، ثم أضف مدير الموارد البشرية واجعله تابعًا لها داخل الشجرة.", "اختر محطة مدير HR وحدد مسماه وصلاحياته، ثم احفظه تحت المحطة.", "أضف المساعدين وموظفي التوظيف والرواتب والتدريب واجعل مدير HR مسؤولهم المباشر.", "يمكن وضع مشرف تحت مدير HR ثم ربط مجموعة من الموظفين بالمشرف.", "راجع سلسلة تصعيد الشكاوى بعد أي تغيير في التبعية."],
+    en: ["Start with the station, then add the HR manager below it in the tree.", "Choose the HR manager station, title and permissions, then save below the station.", "Add assistants, recruiters, payroll and training employees below the HR manager.", "A supervisor can sit below the HR manager with employees reporting to that supervisor.", "Review complaint escalation after changing reporting lines."],
   },
   "/app/performance": {
     ar: ["تابع ترتيب الأفراد والمحطات حسب النقاط المكتسبة من المهام المنجزة.", "استعرض تحليلات الإنتاجية وقارن بين الموظفين أو المحطات.", "عدّل قيم النقاط لكل أولوية من زر «قيم النقاط»."],

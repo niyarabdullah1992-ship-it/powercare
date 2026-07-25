@@ -4,15 +4,15 @@ import { ArrowDown, UserPlus, Users } from "lucide-react";
 const CONTENT = {
   ar: {
     title: "كيف توظف فريق الموارد البشرية داخل الشجرة؟",
-    intro: "أضف موظف الموارد البشرية مباشرة من الشجرة، وحدد محطته وصلاحياته ومديره ليصبح جزءًا من قسم HR داخل الهيكل نفسه.",
-    steps: ["اضغط «إضافة» داخل الشجرة، ثم اختر «موظف».", "أدخل اسم الموظف وبريده الإلكتروني، ثم اختر محطته من قائمة المحطات.", "حدد مسماه: توظيف، رواتب، تدريب، علاقات موظفين، أو مساعد مدير HR.", "اختر صلاحيات عمله فقط، مثل التوظيف أو الرواتب أو التدريب.", "حدد مدير الموارد البشرية أو المشرف بوصفه المسؤول المباشر من حقل التبعية.", "احفظ وتأكد من ظهور بطاقته تحت المدير أو المشرف المسؤول."],
-    example: "مثال: مدير HR ← مساعد المدير ← أخصائي توظيف وموظف رواتب"
+    intro: "ابدأ بالمحطة، ثم أضف مدير الموارد البشرية تحتها، وبعد ذلك أضف مساعديه وموظفيه تحته داخل الشجرة.",
+    steps: ["اختر المحطة التي سيتبع لها قسم الموارد البشرية.", "اضغط «إضافة» واختر «موظف»، ثم أدخل بيانات مدير الموارد البشرية واختر المحطة.", "حدد مسمى «مدير الموارد البشرية» وامنحه صلاحيات HR المناسبة، ثم اجعل المحطة هي العقدة الأعلى له.", "أضف المساعدين والموظفين من زر «إضافة» وحدد محطتهم ومسمياتهم وصلاحياتهم.", "اجعل مدير الموارد البشرية المسؤول المباشر عنهم، أو ضع مشرفًا تحته ثم اربط الموظفين بالمشرف.", "احفظ وتأكد من ترتيب الشجرة: المحطة، ثم مدير HR، ثم المساعدون والموظفون."],
+    example: "مثال: المحطة ← مدير HR ← مساعد المدير ← أخصائي توظيف وموظف رواتب"
   },
   en: {
     title: "How do you hire an HR team in the tree?",
-    intro: "Add the HR employee directly from the tree, then choose their station, permissions and manager.",
-    steps: ["Select Add inside the tree, then choose Employee.", "Enter the employee name and email, then select their station.", "Set their HR title: recruiter, payroll, training, relations, or HR assistant.", "Grant only the work permissions they need.", "Choose the HR manager or supervisor as their direct parent.", "Save and confirm their card appears below the responsible manager."],
-    example: "Example: HR Manager → HR Assistant → Recruiter and Payroll Officer"
+    intro: "Start with the station, place the HR manager below it, then place assistants and HR employees below the manager.",
+    steps: ["Choose the station that the HR team belongs to.", "Select Add and Employee, enter the HR manager details, and choose the station.", "Set the HR Manager title and permissions, then place the manager below the station.", "Add assistants and employees with their station, titles and required permissions.", "Choose the HR manager as their direct parent, or place a supervisor between them.", "Save and confirm the order: station, HR manager, then assistants and employees."],
+    example: "Example: Station → HR Manager → HR Assistant → Recruiter and Payroll Officer"
   }
 };
 
