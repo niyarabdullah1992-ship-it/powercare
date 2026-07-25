@@ -353,17 +353,17 @@ export default function Layout({ children }) {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="sticky top-0 z-40 overflow-visible border-b border-border bg-card/95 pt-safe shadow-sm backdrop-blur-xl">
+        <header className="powercare-global-header sticky top-0 z-40 overflow-visible border-b border-accent/35 bg-primary/95 pt-safe text-primary-foreground shadow-lg backdrop-blur-xl">
           <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" />
           <div className="flex h-16 items-center justify-between px-4 md:h-[76px] md:px-8">
             {/* Mobile nav (scrollable pills) */}
-            <div className="md:hidden flex min-w-0 items-center gap-2">
+            <div className="md:hidden flex min-w-0 items-center gap-2 text-primary-foreground">
               <BackButton />
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-card p-1 shadow-sm"><Logo size={32} className="h-full w-full" /></span>
               <CompanyNameEditor company={company} data={data} currentUser={currentUser} lang={lang} compact />
             </div>
 
-            <div className="hidden min-w-0 items-center gap-4 md:flex">
+            <div className="hidden min-w-0 items-center gap-4 text-primary-foreground md:flex">
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-border bg-card p-1.5 shadow-sm">
                 <Logo size={38} className="h-full w-full" />
               </span>
@@ -371,19 +371,19 @@ export default function Layout({ children }) {
               <div className="min-w-0">
                 <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-accent">PowerCare</p>
                 <CompanyNameEditor company={company} data={data} currentUser={currentUser} lang={lang} />
-                <p className="mt-1 truncate text-[11px] text-muted-foreground">{t("welcome")}, {currentUser.name}</p>
+                <p className="mt-1 truncate text-[11px] text-primary-foreground/60">{t("welcome")}, {currentUser.name}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 md:gap-3">
-              <button onClick={() => setSearchOpen(true)} aria-label={lang === "ar" ? "البحث العام" : "Global search"} className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-md hover:bg-muted md:px-3"><Search className="h-5 w-5" /><span className="hidden text-xs text-muted-foreground lg:inline">⌘K</span></button>
+              <button onClick={() => setSearchOpen(true)} aria-label={lang === "ar" ? "البحث العام" : "Global search"} className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-md text-primary-foreground hover:bg-primary-foreground/10 md:px-3"><Search className="h-5 w-5 text-accent" /><span className="hidden text-xs text-primary-foreground/55 lg:inline">⌘K</span></button>
               <SyncStatusIndicator isSyncing={isSyncing} />
               <ThemeToggle />
               {/* Language */}
               <div className="relative" ref={langRef}>
                 <button
                   onClick={() => setLangOpen((o) => !o)}
-                  className="flex items-center justify-center gap-1.5 px-2.5 py-2 max-md:min-w-[44px] max-md:min-h-[44px] rounded-md hover:bg-muted text-sm font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex items-center justify-center gap-1.5 px-2.5 py-2 max-md:min-w-[44px] max-md:min-h-[44px] rounded-md text-sm text-primary-foreground hover:bg-primary-foreground/10 font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label={t("language")}
                 >
                   <Globe className="w-4 h-4" strokeWidth={1.75} />
@@ -391,7 +391,7 @@ export default function Layout({ children }) {
                   <ChevronDown className="w-3 h-3" />
                 </button>
                 {langOpen && (
-                  <div className={`absolute mt-2 ${dir === "rtl" ? "left-0" : "right-0"} w-44 bg-card border border-border rounded-md shadow-lg py-1 z-50`}>
+                  <div className={`absolute mt-2 ${dir === "rtl" ? "left-0" : "right-0"} w-44 bg-card text-foreground border border-border rounded-md shadow-lg py-1 z-50`}>
                     {languages.map((l) => (
                       <button
                         key={l.code}
@@ -411,7 +411,7 @@ export default function Layout({ children }) {
               <div className="relative" ref={notifRef}>
                 <button
                   onClick={() => setNotifOpen((o) => !o)}
-                  className="relative p-2 max-md:min-w-[44px] max-md:min-h-[44px] max-md:flex max-md:items-center max-md:justify-center rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="relative p-2 max-md:min-w-[44px] max-md:min-h-[44px] max-md:flex max-md:items-center max-md:justify-center rounded-md text-primary-foreground hover:bg-primary-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label={t("notifications")}
                 >
                   <Bell className="w-5 h-5" strokeWidth={1.75} />
@@ -422,7 +422,7 @@ export default function Layout({ children }) {
                   )}
                 </button>
                 {notifOpen && (
-                  <div className={`absolute mt-2 ${dir === "rtl" ? "left-0" : "right-0"} w-80 max-w-[90vw] bg-card border border-border rounded-md shadow-xl z-50`}>
+                  <div className={`absolute mt-2 ${dir === "rtl" ? "left-0" : "right-0"} w-80 max-w-[90vw] bg-card text-foreground border border-border rounded-md shadow-xl z-50`}>
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                       <p className="font-heading font-semibold text-sm">{t("notifications")}</p>
                       {unread > 0 && (
@@ -467,7 +467,7 @@ export default function Layout({ children }) {
               <div className="relative" ref={userRef}>
                 <button
                   onClick={() => setUserOpen((o) => !o)}
-                  className="flex items-center justify-center gap-2 px-2 py-1.5 max-md:min-w-[44px] max-md:min-h-[44px] rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex items-center justify-center gap-2 px-2 py-1.5 max-md:min-w-[44px] max-md:min-h-[44px] rounded-md text-primary-foreground hover:bg-primary-foreground/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-medium overflow-hidden">
                     {currentUser.profile?.avatarUrl ? (
@@ -480,7 +480,7 @@ export default function Layout({ children }) {
                   <ChevronDown className="w-3 h-3 hidden sm:block" />
                 </button>
                 {userOpen && (
-                  <div className={`absolute mt-2 ${dir === "rtl" ? "left-0" : "right-0"} w-64 bg-card border border-border rounded-md shadow-xl z-50`}>
+                  <div className={`absolute mt-2 ${dir === "rtl" ? "left-0" : "right-0"} w-64 bg-card text-foreground border border-border rounded-md shadow-xl z-50`}>
                     <button
                       onClick={() => { navigate(`/app/employees/${currentUser.id}`); setUserOpen(false); }}
                       className="w-full flex items-center gap-3 px-4 py-3 border-b border-border hover:bg-muted text-start"
