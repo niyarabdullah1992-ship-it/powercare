@@ -33,6 +33,8 @@ const IMG = {
   inventory: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/0ff1da597_generated_image.png",
   payroll: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/a12bf82fa_generated_image.png",
   hse: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/66e87da07_generated_image.png",
+  cameras: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/61d0e9d0f_generated_image.png",
+  expenses: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/8efc7d6f7_generated_image.png",
   schedules: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/636273866_generated_image.png",
   security: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/059d6bbd0_generated_image.png",
 };
@@ -312,15 +314,28 @@ export const GUIDE_SECTIONS = [
   },
   {
     image: IMG.payroll,
-    titleAr: "الرواتب والمصروفات المالية",
-    titleEn: "Payroll & Operational Expenses",
+    titleAr: "الرواتب",
+    titleEn: "Payroll",
     bodyAr: [
       "يربط قسم الرواتب بيانات الموظف الوظيفية بسجل الحضور والإجازات والغياب ليمنح الإدارة أساسًا موحدًا للمراجعة الشهرية. يمكن إعداد قوالب الرواتب واستيراد البيانات ومراجعة كل موظف ومحطة، مع إبقاء البيانات المالية الحساسة ضمن نطاق الصلاحيات الممنوحة.",
-      "أما المصروفات التشغيلية فتُرفع من المحطة أو لمجموعة محطات مع نوع المصروف وقيمته وتاريخه ووصفه وإيصال الإثبات. تمر المطالبة بمراجعة المدير ثم المالية، وتظهر حالتها بوضوح من التقديم حتى الاعتماد أو الرفض، مع تقارير قابلة للتصفية والتصدير.",
     ],
     bodyEn: [
       "Payroll connects employee records with attendance, leave and absence data to give management one consistent basis for monthly review. Salary templates can be prepared, data imported, and each employee or station reviewed while sensitive financial information remains within its authorized scope.",
-      "Operational expenses can be submitted for one or multiple stations with type, amount, date, description and receipt evidence. Claims pass through manager and finance review, with a clear status from submission to approval or rejection and filterable, exportable reports.",
+    ],
+  },
+  {
+    image: IMG.expenses,
+    titleAr: "المصروفات التشغيلية",
+    titleEn: "Operational Expenses",
+    bodyAr: [
+      "يتيح قسم المصروفات للموظف رفع مطالبة مالية مرتبطة بمحطة واحدة أو بعدة محطات، مع تحديد نوع المصروف والتاريخ والكمية والمبلغ قبل الضريبة وقيمة الضريبة والإجمالي النهائي، وإرفاق صورة الإيصال أو الفاتورة كإثبات.",
+      "تمر المطالبة بمسار اعتماد واضح يبدأ بمراجعة المدير ثم ينتقل إلى الإدارة المالية، مع تسجيل هوية المراجع ووقت القرار وحالة الطلب من التقديم حتى الاعتماد أو الرفض.",
+      "توفر اللوحة مؤشرات وتقارير قابلة للتصفية حسب الفترة والمحطة والنوع والحالة، مع تصدير منظم يساعد الإدارة على تحليل الإنفاق ومقارنة المصروفات بين المواقع.",
+    ],
+    bodyEn: [
+      "The Expenses module lets employees submit a financial claim for one or multiple stations, specifying expense type, date, quantity, pre-tax amount, tax and final total, with a receipt or invoice image attached as evidence.",
+      "Each claim follows a clear approval path from manager review to finance review, recording the reviewer, decision time and request status from submission through approval or rejection.",
+      "The dashboard provides indicators and filterable reports by period, station, type and status, with structured exports that help management analyze spending and compare expenses across sites.",
     ],
   },
   {
@@ -334,6 +349,21 @@ export const GUIDE_SECTIONS = [
     bodyEn: [
       "The safety module turns HSE requirements into measurable daily practice: permits to work, risk assessments, checklists, safe work hours, incidents, injuries and stoppages recorded per station. Permit fields and safety tabs can be customized to match the company's operating environment.",
       "Indicators feed a safety dashboard, analytical charts and monthly reports, while incidents and hazards influence the Command Center and company stability score. Safety therefore becomes part of operational decision-making rather than a disconnected archive.",
+    ],
+  },
+  {
+    image: IMG.cameras,
+    titleAr: "الكاميرات والمراقبة الميدانية",
+    titleEn: "Cameras & Site Monitoring",
+    bodyAr: [
+      "يجمع قسم الكاميرات بث المواقع في لوحة موحدة مرتبطة بمحطات الشركة، مع عرض حالة كل كاميرا وموقعها على الخريطة وبيانات الاتصال الخاصة بها ضمن نطاق صلاحيات المستخدم.",
+      "يدعم النظام إضافة الكاميرات واختبار الاتصال واستيراد بياناتها، وعرض البث المتوافق، مع تنظيم الأجهزة حسب المحطة لتسهيل وصول فرق التشغيل إلى المشهد المطلوب بسرعة.",
+      "تظهر تنبيهات الكاميرات مصنفة حسب مستوى الخطورة والموقع والوقت، لتتحول المراقبة من مشاهدة منفصلة إلى سجل تشغيلي يساعد على المتابعة والاستجابة وتوثيق الحدث.",
+    ],
+    bodyEn: [
+      "The Cameras module brings site feeds into one station-linked workspace, showing each camera's status, map location and connection details within the user's authorized scope.",
+      "The system supports adding cameras, testing connections, importing device data and viewing compatible streams, organized by station so operations teams can reach the required view quickly.",
+      "Camera alerts are classified by severity, location and time, turning monitoring from isolated viewing into an operational record that supports response, follow-up and event documentation.",
     ],
   },
   {

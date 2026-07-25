@@ -10,7 +10,7 @@ export default function ProjectGuideIntro({ philosophy, sections, image }) {
     </article>
     <article className="guide-page flex flex-col bg-secondary p-12 text-foreground">
       <div className="mb-8 border-b border-accent/50 pb-5"><p className="font-mono text-[9px] tracking-[.25em] text-accent">EDITORIAL INDEX</p><h2 className="mt-2 font-heading text-4xl font-bold">المحتويات <span dir="ltr" className="text-2xl text-muted-foreground">— Contents</span></h2></div>
-      <ol className="grid flex-1 grid-cols-2 grid-rows-9 gap-x-10 gap-y-3">{sections.map((section, index) => <li key={section.titleEn} className="flex items-center gap-3 border-b border-border py-3"><span className="font-heading text-2xl text-accent">{String(index + 1).padStart(2, "0")}</span><span><strong className="block text-sm">{section.titleAr}</strong><small dir="ltr" className="text-[10px] text-muted-foreground">{section.titleEn}</small></span></li>)}</ol>
+      <ol className="grid flex-1 grid-cols-2 grid-rows-10 gap-x-10 gap-y-3">{sections.map((section, index) => <li key={section.titleEn} className="flex items-center gap-3 border-b border-border py-3"><span className="font-heading text-2xl text-accent">{String(index + 1).padStart(2, "0")}</span><span><strong className="block text-sm">{section.titleAr}</strong><small dir="ltr" className="text-[10px] text-muted-foreground">{section.titleEn}</small></span></li>)}</ol>
     </article>
   </>;
 }
