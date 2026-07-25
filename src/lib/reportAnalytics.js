@@ -16,7 +16,7 @@ const format = (value) => Number(value.toFixed(2)).toLocaleString("en-US");
 function makeChart(title, entries) {
   const clean = entries.filter((entry) => entry.label && Number.isFinite(entry.value)).slice(0, 12);
   const max = Math.max(...clean.map((entry) => Math.abs(entry.value)), 1);
-  return { title, entries: clean.map((entry) => ({ ...entry, display: format(entry.value), percent: Math.max(3, Math.round((Math.abs(entry.value) / max) * 100)) })) };
+  return { title, entries: clean.map((entry) => ({ ...entry, display: format(entry.value), percent: entry.value === 0 ? 0 : Math.max(4, Math.round((Math.abs(entry.value) / max) * 100)) })) };
 }
 
 export function deriveReportAnalytics(headers = [], rows = []) {
