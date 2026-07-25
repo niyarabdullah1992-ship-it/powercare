@@ -1,26 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { Hand, Pause, Play } from "lucide-react";
-import { useLocation } from "react-router-dom";
 import useDraggablePosition from "@/hooks/useDraggablePosition";
 
 const VIDEO_ID = "5n5YG8ShXRQ";
 
 export default function PlatformMusicButton() {
-  const { pathname } = useLocation();
   const frameRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [playing, setPlaying] = useState(false);
   const { position, handlers } = useDraggablePosition();
-  const insidePlatform = pathname.startsWith("/app");
-
-  useEffect(() => {
-    if (!insidePlatform) {
-      setLoaded(false);
-      setPlaying(false);
-    }
-  }, [insidePlatform]);
-
-  if (!insidePlatform) return null;
 
   const toggleMusic = () => {
     if (!loaded) {
