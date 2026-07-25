@@ -18,10 +18,11 @@ export default function BrandMusicPlayer({ lang }) {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
     const context = new AudioContext();
+    context.resume();
     const master = context.createGain();
     master.gain.setValueAtTime(0.0001, context.currentTime);
-    master.gain.exponentialRampToValueAtTime(0.11, context.currentTime + 2);
-    master.gain.setValueAtTime(0.11, context.currentTime + 116);
+    master.gain.exponentialRampToValueAtTime(0.32, context.currentTime + 2);
+    master.gain.setValueAtTime(0.32, context.currentTime + 116);
     master.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 120);
     master.connect(context.destination);
     Array.from({ length: 15 }, (_, index) => CHORDS[index % CHORDS.length]).forEach((chord, index) => {
@@ -37,5 +38,5 @@ export default function BrandMusicPlayer({ lang }) {
     contextRef.current = context; setPlaying(true); timerRef.current = window.setTimeout(stop, 120000);
   }, [stop]);
   useEffect(() => { window.addEventListener("pointerdown", play, { once: true }); return () => { window.removeEventListener("pointerdown", play); stop(); }; }, [play, stop]);
-  return <button type="button" onClick={playing ? stop : play} aria-label={lang === "ar" ? "التحكم بموسيقى PowerCare" : "Control PowerCare music"} className="fixed bottom-5 end-5 z-50 flex items-center gap-2 rounded-full border border-accent/40 bg-primary px-4 py-3 text-xs font-semibold text-primary-foreground shadow-elevated hover:bg-primary/90"><Music2 className="h-4 w-4 text-accent" />{playing ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}<span className="hidden sm:inline">{lang === "ar" ? (playing ? "إيقاف الموسيقى" : "تشغيل الموسيقى") : (playing ? "Mute music" : "Play music")}</span></button>;
+  return <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={playing ? stop : play} aria-label={lang === "ar" ? "التحكم بموسيقى PowerCare" : "Control PowerCare music"} className="fixed bottom-5 end-5 z-50 flex items-center gap-2 rounded-full border border-accent/40 bg-primary px-4 py-3 text-xs font-semibold text-primary-foreground shadow-elevated hover:bg-primary/90"><Music2 className="h-4 w-4 text-accent" />{playing ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}<span className="hidden sm:inline">{lang === "ar" ? (playing ? "إيقاف الموسيقى" : "تشغيل الموسيقى") : (playing ? "Mute music" : "Play music")}</span></button>;
 }
