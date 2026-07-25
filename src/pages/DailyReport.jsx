@@ -10,6 +10,7 @@ import ReportCard from "@/components/reports/ReportCard";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
+import PageHeader from "@/components/PageHeader";
 
 export default function DailyReport() {
   const { t, lang } = useI18n();
@@ -104,24 +105,21 @@ export default function DailyReport() {
   const canEditBranding = isCompanyOwner(currentUser, data) || currentUser.role === "director";
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-3xl font-semibold flex items-center gap-2">
-            <FileText className="w-6 h-6" /> {t("reports")}
-          </h1>
-          <p className="text-muted-foreground font-body text-sm mt-1">{t("dailyReportNote")}</p>
-        </div>
-        {canEditBranding && (
+    <div className="reports-hub space-y-6">
+      <PageHeader
+        title={t("reports")}
+        description={t("dailyReportNote")}
+        icon={FileText}
+        actions={canEditBranding ? (
           <button
             onClick={() => setShowBranding((value) => !value)}
-            className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-body hover:bg-muted"
+            className="flex shrink-0 items-center gap-1.5 rounded-md border border-accent/50 bg-primary-foreground/5 px-3 py-2 text-xs text-primary-foreground hover:bg-primary-foreground/10"
           >
             <Palette className="h-3.5 w-3.5 text-accent" />
             {lang === "ar" ? "إعدادات الهوية" : "Brand settings"}
           </button>
-        )}
-      </div>
+        ) : null}
+      />
 
       {showBranding && canEditBranding && (
         <BrandingSettingsCard

@@ -838,7 +838,7 @@ export default function MyTasks() {
       await Promise.allSettled([fetchTargets(), fetchFolders(), queryClientInstance.invalidateQueries()]);
       refresh();
     }}>
-    <div className="space-y-6">
+    <div className="tasks-hub space-y-6">
       <PageHeader
         title={t("myTasks")}
         icon={Target}
@@ -1036,7 +1036,7 @@ export default function MyTasks() {
       )}
 
       {/* Task Targets — organized by station as a hierarchical folder tree */}
-      <div className="p-5 rounded-xl border border-border bg-card space-y-4">
+      <div className="space-y-4 rounded-xl border border-accent/25 bg-card p-5 shadow-soft">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
             {showArchive ? <Archive className="w-4 h-4" /> : <Target className="w-4 h-4" />} {showArchive ? t("smartArchive") : t("targets")}

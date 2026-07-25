@@ -9,7 +9,7 @@ export default function TaskStats({ targets, t }) {
   const urgent = targets.filter((x) => x.priority === "urgent" && x.status === "active").length;
 
   const cards = [
-    { label: t("total"), value: total, icon: Target, color: "text-foreground", bg: "bg-foreground/5" },
+    { label: t("total"), value: total, icon: Target, color: "text-accent", bg: "bg-primary" },
     { label: t("inProgress"), value: active, icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
     { label: t("completed"), value: completed, icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-50" },
     { label: t("overdue"), value: overdue, icon: AlertTriangle, color: "text-red-600", bg: "bg-red-50" },
@@ -19,7 +19,7 @@ export default function TaskStats({ targets, t }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {cards.map((c) => (
-        <div key={c.label} className="p-4 rounded-xl border border-border bg-card flex items-center gap-3">
+        <div key={c.label} className="flex items-center gap-3 rounded-xl border border-accent/20 bg-card p-4 shadow-soft">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${c.bg}`}>
             <c.icon className={`w-5 h-5 ${c.color}`} strokeWidth={1.75} />
           </div>
