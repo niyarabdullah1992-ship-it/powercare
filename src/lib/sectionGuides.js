@@ -62,8 +62,8 @@ const GUIDES = {
     en: ["This section combines stations and employees; open a station to manage its details and team together.", "Add a station and set its location and attendance radius, then add or move employees into it.", "Rename stations and employees directly while retaining analytics, expenses and location settings."],
   },
   "/app/hr": {
-    ar: ["ابنِ هرم الموارد البشرية: أضف مناصب وحدد نطاق كل منصب (محطة/مجموعة/شركة).", "أنشئ مجموعات (Clusters) لمشرفين يغطون عدة محطات.", "هذا الهرم هو نفسه سلسلة التصعيد للشكاوى والاعتراضات في كل التطبيق."],
-    en: ["Build your HR pyramid: add positions and set each one's scope.", "Create clusters for supervisors covering multiple stations.", "This pyramid is the escalation chain used across the whole app."],
+    ar: ["أنشئ حساب موظف الموارد البشرية أولًا من قسم الموظفين مع دوره ومحطته.", "ارجع إلى الشجرة واسحبه من قائمة غير المعينين إلى أسفل مدير الموارد البشرية.", "حدد مسماه الوظيفي وصلاحياته ونطاق محطاته، ثم احفظ.", "يمكن وضع مساعدين أو مشرفين أسفل مدير HR، ثم إضافة فرق التوظيف والرواتب والتدريب تحتهم.", "راجع سلسلة تصعيد الشكاوى بعد أي تغيير في التبعية."],
+    en: ["Create the HR employee account first from Employees with their role and station.", "Return to the tree and drag them from Unassigned below the HR manager.", "Set their title, permissions and station scope, then save.", "Place assistants below the HR manager and recruiter, payroll or training teams below them.", "Review complaint escalation after changing reporting lines."],
   },
   "/app/performance": {
     ar: ["تابع ترتيب الأفراد والمحطات حسب النقاط المكتسبة من المهام المنجزة.", "استعرض تحليلات الإنتاجية وقارن بين الموظفين أو المحطات.", "عدّل قيم النقاط لكل أولوية من زر «قيم النقاط»."],
