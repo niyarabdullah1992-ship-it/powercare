@@ -113,7 +113,7 @@ export default function Payroll() {
         description={ar ? "مسيّر رواتب شهري مبني على ملفات الموظفين" : "Monthly payroll run built from employee salary profiles"}
         icon={Banknote}
         actions={<>
-          <input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} className="border-primary-foreground/25 bg-primary-foreground/10 px-3 py-2 text-sm text-primary-foreground" dir="ltr" />
+          <input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} className="border-border bg-card px-3 py-2 text-sm font-medium text-foreground shadow-sm [color-scheme:light] dark:[color-scheme:dark]" dir="ltr" />
           <StationMultiSelect stations={filterStations} value={selectedStationIds} onChange={setStationFilter} ar={ar} />
           <button onClick={syncFromProfiles} className="flex items-center gap-1.5 border border-accent/45 bg-accent px-3.5 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent/90">
             <RefreshCw className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تحديث من الملفات الشخصية" : "Refresh from profiles"}

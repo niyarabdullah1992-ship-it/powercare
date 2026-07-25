@@ -14,10 +14,10 @@ export default function StationMultiSelect({ stations, value, onChange, ar }) {
 
   return (
     <details className="relative">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-input bg-card px-3.5 py-2 text-sm font-body hover:bg-secondary">
-        <MapPin className="h-4 w-4 text-accent" strokeWidth={1.75} />
-        <span className="max-w-36 truncate">{label}</span>
-        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-md border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-secondary">
+        <MapPin className="h-4 w-4 text-accent" strokeWidth={2} />
+        <span className="max-w-36 truncate text-foreground">{label}</span>
+        <ChevronDown className="h-3.5 w-3.5 text-foreground/70" />
       </summary>
       <div className="absolute end-0 z-30 mt-2 min-w-56 rounded-xl border border-border bg-popover p-2 shadow-elevated">
         <button type="button" onClick={() => onChange([])} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-secondary">
