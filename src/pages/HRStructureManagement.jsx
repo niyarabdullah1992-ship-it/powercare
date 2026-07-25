@@ -3,7 +3,6 @@ import { ArrowRight, ChevronDown } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import FlexOrgTree from "@/components/hr/FlexOrgTree";
-import HROrgTree from "@/components/hr/HROrgTree";
 import JobGradeManager from "@/components/employees/JobGradeManager";
 
 export default function HRStructureManagement() {
@@ -39,7 +38,7 @@ export default function HRStructureManagement() {
             <ArrowRight className="h-4 w-4 rtl:rotate-180" />
             {lang === "ar" ? "العودة إلى الشجرة العامة" : "Back to organization tree"}
           </button>
-          <HROrgTree data={data} company={company} currentUser={currentUser} lang={lang} />
+          <FlexOrgTree data={data} company={company} currentUser={currentUser} lang={lang} hrOnly />
         </div>
       )}
     </div>

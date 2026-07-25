@@ -12,13 +12,13 @@ import { createOrgRecord, deleteOrgNode, nodeAccess, positionManagerInOrgTree, s
 import { assignStationManager, setStationManager } from "@/lib/store";
 
 const empty = { name: "", email: "", stationId: "", location: "", stationType: "", managerId: "" };
-export default function OrgTreeNodeModal({ initial, data, company, companyId, lang, onClose }) {
+export default function OrgTreeNodeModal({ initial, defaultParentId = null, data, company, companyId, lang, onClose }) {
   const { t } = useI18n();
   const ar = lang === "ar";
   const [type, setType] = useState(initial?.type || "employee");
   const [refId] = useState(initial?.refId || "");
   const [title, setTitle] = useState(initial?.title || "");
-  const [parentId, setParentId] = useState(initial?.parentId || null);
+  const [parentId, setParentId] = useState(initial?.parentId || defaultParentId || null);
   const [form, setForm] = useState(empty);
   const station = initial?.type === "station" ? data.stations.find((item) => item.id === initial.refId) : null;
   const [stationName, setStationName] = useState(station?.name || "");
