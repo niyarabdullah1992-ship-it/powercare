@@ -1,6 +1,7 @@
 import { PDF_THEME } from "@/lib/pdfTheme";
 import { POWERCARE_LOGO_URL } from "@/lib/brand";
 import { getReportVisualTheme } from "@/lib/reportVisualThemes";
+import { deriveReportAnalytics } from "@/lib/reportAnalytics";
 
 // Opens a print-ready, brand-styled report in a new window and triggers the
 // browser's print dialog (user can save as PDF). Full RTL/Arabic support since
@@ -14,15 +15,18 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   const isWide = theme === "executiveGold" || sections.some((section) => (section.headers || []).length > 8);
   const locale = dir === "rtl" ? "ar-SA" : "en-GB";
   const generatedAt = new Date().toLocaleString(locale);
+  const sectionAnalytics = sections.map((section) => deriveReportAnalytics(section.headers, section.rows));
+  const displayedStats = stats.length ? stats : sectionAnalytics.flatMap((item) => item.stats).slice(0, 4);
+  const chartHtml = (chart) => `<div class="chart"><h3>${esc(chart.title)}</h3>${chart.entries.map((entry) => `<div class="bar-row"><span>${esc(entry.label)}</span><i><b style="width:${entry.percent}%"></b></i><strong>${esc(entry.display)}</strong></div>`).join("")}</div>`;
 
-  const statsHtml = stats.length
-    ? `<div class="stats">${stats.map((s) => `<div class="stat"><p class="val">${esc(s.value)}</p><p class="lbl">${esc(s.label)}</p></div>`).join("")}</div>`
+  const statsHtml = displayedStats.length
+    ? `<div class="stats">${displayedStats.map((s) => `<div class="stat"><p class="val">${esc(s.value)}</p><p class="lbl">${esc(s.label)}</p></div>`).join("")}</div>`
     : "";
 
   const sectionsHtml = sections
-    .map(
-      (sec) => `
+    .map((sec, index) => `
       <h2>${esc(sec.heading)}</h2>
+      ${sectionAnalytics[index].charts.map(chartHtml).join("")}
       ${sec.rows.length === 0 ? `<p class="empty">—</p>` : `
       <table>
         <thead><tr>${sec.headers.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead>
@@ -51,6 +55,12 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   .stat { flex: 1; min-width: 110px; border: 1px solid ${PDF_THEME.line}; border-top: 3px solid ${accent}; padding: 13px 14px; background: ${PDF_THEME.cream}; }
   .stat .val { font: 700 23px Georgia, Tahoma, serif; color: ${PDF_THEME.ink}; }
   .stat .lbl { font-size: 10px; color: ${PDF_THEME.muted}; margin-top: 4px; }
+  .chart { margin: 12px 0 20px; padding: 14px; border: 1px solid ${PDF_THEME.line}; background: ${PDF_THEME.cream}; break-inside: avoid; }
+  .chart h3 { color: ${PDF_THEME.ink}; font: 700 12px Tahoma, sans-serif; margin-bottom: 10px; }
+  .bar-row { display: grid; grid-template-columns: minmax(80px, 1fr) 3fr 58px; gap: 8px; align-items: center; margin: 6px 0; font-size: 9px; }
+  .bar-row i { display: block; height: 10px; background: #fff; border: 1px solid ${PDF_THEME.line}; }
+  .bar-row b { display: block; height: 100%; background: linear-gradient(90deg, ${PDF_THEME.ink}, ${accent}); }
+  .bar-row strong { color: ${PDF_THEME.ink}; text-align: end; }
   h2 { font: 600 16px Georgia, Tahoma, serif; margin: 24px 0 10px; color: ${PDF_THEME.ink}; padding-bottom: 7px; border-bottom: 1px solid ${PDF_THEME.line}; }
   h2::before { content: ""; display: inline-block; width: 18px; height: 3px; margin-inline-end: 8px; vertical-align: middle; background: ${accent}; }
   table { width: 100%; border-collapse: collapse; font-size: 10.5px; margin-bottom: 16px; }
