@@ -2,15 +2,16 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { canManageEmployees, hasHRPermission, canViewEmployeeProfile, isCompanyOwner, canAdjustPayroll } from "@/lib/permissions";
+import { canManageEmployees, hasHRPermission, canViewEmployeeProfile, isCompanyOwner, canAdjustPayroll, canManageEmployeeContract } from "@/lib/permissions";
 import { getRoleLabel } from "@/lib/roles";
-import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle, Lock } from "lucide-react";
+import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle, Lock, FileSignature } from "lucide-react";
 import ProfileHero from "@/components/employees/ProfileHero";
 import ProfessionalInfoTab from "@/components/employees/ProfessionalInfoTab";
 import CertificatesTab from "@/components/employees/CertificatesTab";
 import SalaryTab from "@/components/employees/SalaryTab";
 import LeaveTab from "@/components/employees/LeaveTab";
 import HRCommunicationsTab from "@/components/employees/HRCommunicationsTab";
+import ContractTab from "@/components/employees/ContractTab";
 import LoginAccessCard from "@/components/employees/LoginAccessCard";
 import AccountSettingsCard from "@/components/employees/AccountSettingsCard";
 import DeleteEmployeeAccountCard from "@/components/employees/DeleteEmployeeAccountCard";
@@ -23,6 +24,7 @@ const TABS = [
   { key: "salary", icon: Wallet },
   { key: "leave", icon: CalendarDays },
   { key: "communications", icon: MessageCircle },
+  { key: "contract", icon: FileSignature },
 ];
 
 export default function EmployeeProfile() {
@@ -61,6 +63,7 @@ export default function EmployeeProfile() {
   const canEditSalary = canAdjustPayroll(currentUser, data);
   const canApproveLeave = canManage || hasHRPermission(currentUser, data, "manage_leave");
   const canApproveCerts = canManage || hasHRPermission(currentUser, data, "manage_leave");
+  const canEditContract = canManageEmployeeContract(currentUser, data);
   const stationName = data.stations.find((s) => s.id === employee.stationId)?.name;
   const fallbackPosition = employee.customTitle || getRoleLabel(company, employee.role, t);
   const grade = employeeJobGrade(employee, data);
@@ -74,7 +77,7 @@ export default function EmployeeProfile() {
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
           <main className="space-y-5 lg:col-start-1 lg:row-start-1">
-            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-2 sm:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-2 sm:grid-cols-6">
               {TABS.map(({ key, icon: Icon }) => (
                 <button
                   key={key}
@@ -83,7 +86,7 @@ export default function EmployeeProfile() {
                     tab === key ? "bg-accent text-accent-foreground shadow-lg" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                   }`}
                 >
-                  <Icon className="h-4 w-4" /> {t(key)}
+                  <Icon className="h-4 w-4" /> {key === "contract" ? (dir === "rtl" ? "العقد" : "Contract") : t(key)}
                 </button>
               ))}
             </div>
@@ -94,6 +97,7 @@ export default function EmployeeProfile() {
               {tab === "salary" && <SalaryTab employee={employee} companyId={company.id} canEdit={canEditSalary} />}
               {tab === "leave" && <LeaveTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canApprove={canApproveLeave} />}
               {tab === "communications" && <HRCommunicationsTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canReply={canManage} />}
+              {tab === "contract" && <ContractTab employee={employee} companyId={company.id} canEdit={canEditContract} />}
             </section>
           </main>
 

@@ -147,6 +147,10 @@ export function isHRManager(user, data) {
   return getHRLevel(user, data)?.role === "manager";
 }
 
+export function canManageEmployeeContract(user, data) {
+  return !!user && (user.id === data?.ownerId || user.role === "director" || isHRManager(user, data));
+}
+
 export function isHRAssistant(user, data) {
   return getHRLevel(user, data)?.role === "assistant";
 }
