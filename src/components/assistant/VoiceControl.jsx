@@ -23,7 +23,7 @@ function playListeningChime() {
   } catch { /* audio not available */ }
 }
 
-export default function VoiceControl({ onCommand }) {
+export default function VoiceControl({ onCommand, voiceGender }) {
   const { lang } = useI18n();
   const [enabled, setEnabled] = useState(false);
   const [micDenied, setMicDenied] = useState(false);
@@ -46,8 +46,8 @@ export default function VoiceControl({ onCommand }) {
 
   // Audible acknowledgment when the wake word is heard alone.
   useEffect(() => {
-    if (awake) speak(ar ? "نعم، تفضل" : "Yes, go ahead", lang);
-  }, [awake, ar, lang]);
+    if (awake) speak(ar ? "نعم، تفضل" : "Yes, go ahead", lang, voiceGender);
+  }, [awake, ar, lang, voiceGender]);
 
   // If the browser denied the microphone, flip the button back off so its state is honest.
   useEffect(() => {

@@ -1,5 +1,10 @@
 // Browser text-to-speech for Niro's voice replies.
-const preferredVoice = (voices, locale) => voices
+const VOICE_NAMES = {
+  female: /zariyah|salma|zeina|laila|hoda|jenny|aria|samantha|victoria|karen|susan|ava|zira/i,
+  male: /hamed|maged|majed|tarik|guy|ryan|david|daniel|mark|george/i,
+};
+
+const preferredVoice = (voices, locale, gender) => voices
   .filter((voice) => voice.lang.toLowerCase().startsWith(locale.slice(0, 2).toLowerCase()))
   .sort((a, b) => {
     const quality = (voice) => {
@@ -7,16 +12,25 @@ const preferredVoice = (voices, locale) => voices
       return (voice.lang.toLowerCase() === locale.toLowerCase() ? 8 : 0)
         + (/natural|neural|premium|enhanced|online/.test(name) ? 8 : 0)
         + (/microsoft|google|apple|siri/.test(name) ? 4 : 0)
-        + (/zariyah|hamed|maged|tarik|salma|majed/.test(name) ? 3 : 0)
+        + (VOICE_NAMES[gender].test(name) ? 6 : 0)
+        - (VOICE_NAMES[gender === "female" ? "male" : "female"].test(name) ? 6 : 0)
         - (/compact|espeak|festival/.test(name) ? 6 : 0);
     };
     return quality(b) - quality(a);
   })[0];
 
-export default function speak(text, lang) {
+let speechRequestId = 0;
+
+export function stopSpeaking() {
+  speechRequestId += 1;
+  if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+}
+
+export default function speak(text, lang, gender = "female") {
   if (typeof window === "undefined" || !window.speechSynthesis || !text) return;
   const synthesis = window.speechSynthesis;
-  synthesis.cancel();
+  stopSpeaking();
+  const requestId = speechRequestId;
 
   const clean = text
     .replace(/\[[^\]]*\]\([^)]*\)/g, "")
@@ -31,9 +45,10 @@ export default function speak(text, lang) {
   const locale = lang === "ar" ? "ar-SA" : "en-US";
 
   const play = () => {
+    if (requestId !== speechRequestId) return;
     const utter = new SpeechSynthesisUtterance(clean);
     utter.lang = locale;
-    utter.voice = preferredVoice(synthesis.getVoices(), locale) || null;
+    utter.voice = preferredVoice(synthesis.getVoices(), locale, gender) || null;
     utter.rate = lang === "ar" ? 0.92 : 0.96;
     utter.pitch = lang === "ar" ? 0.97 : 1;
     utter.volume = 1;

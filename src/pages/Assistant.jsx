@@ -8,10 +8,11 @@ import { getCompanyToken } from "@/lib/store";
 import AssistantMessage from "@/components/assistant/AssistantMessage";
 import SuggestedQuestions from "@/components/assistant/SuggestedQuestions";
 import VoiceControl from "@/components/assistant/VoiceControl";
+import NiroVoiceSettings from "@/components/assistant/NiroVoiceSettings";
 import AutomationApprovalCard from "@/components/assistant/AutomationApprovalCard";
 import AssistantImageUpload from "@/components/assistant/AssistantImageUpload";
 import { Sparkles, Send, Loader2 } from "lucide-react";
-import speak from "@/components/assistant/speak";
+import speak, { stopSpeaking } from "@/components/assistant/speak";
 import formatNiroImageAnalysis from "@/lib/formatNiroImageAnalysis";
 import { loadAssistantMemory, saveAssistantMemory } from "@/lib/assistantMemory";
 import { needsWebSearch, relevantDocumentUrls, selectAssistantContext } from "@/lib/assistantRetrieval";
@@ -26,6 +27,7 @@ export default function Assistant() {
   const [loading, setLoading] = useState(false);
   const [pendingActions, setPendingActions] = useState([]);
   const [approvalLoading, setApprovalLoading] = useState(false);
+  const [voiceGender, setVoiceGender] = useState(() => localStorage.getItem("powercare_niro_voice_gender") || "male");
   const bottomRef = useRef(null);
   const loadedConversationRef = useRef("");
   const conversationKey = company?.id && currentUser?.id
@@ -56,6 +58,14 @@ export default function Assistant() {
     if (!company?.id) return;
     loadAssistantMemory(company.id).then(setMemory).catch(() => setMemory([]));
   }, [company?.id, currentUser?.id]);
+
+  useEffect(() => () => stopSpeaking(), []);
+
+  const changeVoiceGender = (gender) => {
+    stopSpeaking();
+    setVoiceGender(gender);
+    localStorage.setItem("powercare_niro_voice_gender", gender);
+  };
 
   if (!data || !currentUser) return null;
 
@@ -299,10 +309,10 @@ Answer the last user question.`,
         text += lang === "ar" ? "\n\n**تم تجهيز الإجراء للمراجعة، ولن يُنفذ قبل موافقتك.**" : "\n\n**The action is ready for review and will not run until you approve it.**";
       }
       setMessages((prev) => [...prev, { role: "assistant", text }]);
-      if (fromVoice) speak(text, lang);
+      if (fromVoice) speak(text, lang, voiceGender);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", text: t("aiError") }]);
-      if (fromVoice) speak(t("aiError"), lang);
+      if (fromVoice) speak(t("aiError"), lang, voiceGender);
     }
     setLoading(false);
   };
@@ -348,7 +358,8 @@ Answer the last user question.`,
           <h1 className="font-heading text-2xl font-semibold">{t("aiAssistant")}</h1>
           <p className="text-xs text-muted-foreground font-body">{t("aiAssistantDesc")}</p>
         </div>
-        <VoiceControl onCommand={(cmd) => ask(cmd, true)} />
+        <VoiceControl onCommand={(cmd) => ask(cmd, true)} voiceGender={voiceGender} />
+        <NiroVoiceSettings gender={voiceGender} onGenderChange={changeVoiceGender} ar={lang === "ar"} />
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-3 pb-4">
