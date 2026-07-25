@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ManualHeader from "@/components/manual/ManualHeader";
 import ManualToc from "@/components/manual/ManualToc";
 import ManualChapter from "@/components/manual/ManualChapter";
+import ManualUpdateHighlights from "@/components/manual/ManualUpdateHighlights";
 import { useI18n } from "@/lib/i18n";
-import { useAuth } from "@/lib/PowerCareAuth";
-import { allowedNavFor } from "@/lib/navVisibility";
 import { MANUAL_UI_LABELS } from "@/lib/manualUiLabels";
 import { MANUAL_SECTIONS } from "@/lib/siteManualBuilder";
 import { downloadManualPdf } from "@/lib/downloadManualPdf";
@@ -34,7 +33,6 @@ const ROUTES = Object.fromEntries(MANUAL_SECTIONS);
 
 export default function SiteManual() {
   const { lang, setLang } = useI18n();
-  const { currentUser, data } = useAuth();
   const [manualLang, setManualLang] = useState(CONTENT[lang] ? lang : "en");
   const [exporting, setExporting] = useState(false);
   const manualRef = useRef(null);
@@ -51,8 +49,7 @@ export default function SiteManual() {
   const content = CONTENT[manualLang];
   const labels = MANUAL_UI_LABELS[manualLang];
 
-  const allowed = useMemo(() => currentUser ? allowedNavFor(currentUser, data) : null, [currentUser, data]);
-  const chapters = content.MANUAL_CHAPTERS.filter((chapter) => ROUTES[chapter.id] && (!allowed || allowed.has(ROUTES[chapter.id]))).map((chapter, index) => {
+  const chapters = content.MANUAL_CHAPTERS.filter((chapter) => ROUTES[chapter.id]).map((chapter, index) => {
     const name = chapter.name || chapter.title.replace(/^\d+\.\s*/, "");
     const actions = chapter.actions?.length ? chapter.actions : chapter.steps.map((step, stepIndex) => ({
       title: step.split(/[.:؛،]/)[0], steps: [step], note: stepIndex === 0 ? chapter.roles?.[0] : "",
@@ -83,6 +80,7 @@ export default function SiteManual() {
       <style>{`@media print{@page{size:A4;margin:12mm}.no-print{display:none!important}.manual-chapter{break-inside:avoid;box-shadow:none!important}}`}</style>
       <div ref={manualRef} className="manual-shell mx-auto max-w-[1500px] space-y-6">
         <ManualHeader meta={content.MANUAL_META} labels={labels} languages={MANUAL_LANGUAGES} activeLang={manualLang} onLanguage={changeManualLanguage} onDownload={exportPdf} exporting={exporting} />
+        <ManualUpdateHighlights items={content.MANUAL_META.highlights} lang={manualLang} />
         <div className="grid items-start gap-6 lg:grid-cols-[250px_minmax(0,1fr)]">
           <ManualToc chapters={chapters} labels={labels} />
           <main className="space-y-6">{chapters.map((chapter) => <ManualChapter key={chapter.id} chapter={chapter} labels={labels} lang={manualLang} exportMode={exporting} />)}</main>

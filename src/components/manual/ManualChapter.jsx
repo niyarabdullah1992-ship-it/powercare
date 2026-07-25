@@ -1,10 +1,10 @@
 import React from "react";
-import { AlertTriangle, Banknote, CheckCircle2, CircleDot, ClipboardCheck, FileText, FolderOpen, Info, LayoutDashboard, ListTodo, Megaphone, MessageSquare, PenLine, Radio, ReceiptText, ShieldAlert, ShieldCheck, Sparkles, Trophy, UserCog, Users, Warehouse } from "lucide-react";
+import { AlertTriangle, Banknote, Camera, CheckCircle2, CircleDot, ClipboardCheck, FileText, FolderOpen, Info, LayoutDashboard, ListTodo, Megaphone, MessageSquare, PenLine, Radio, ReceiptText, ShieldAlert, ShieldCheck, Sparkles, Trophy, UserCog, Users, Warehouse } from "lucide-react";
 import ManualDemoShot from "@/components/manual/ManualDemoShot";
 import ManualActions from "@/components/manual/ManualActions";
 import { MANUAL_SCREEN_GUIDES } from "@/lib/siteManualScreens";
 
-const ICONS = { dashboard: LayoutDashboard, tasks: ListTodo, attendance: ClipboardCheck, inventory: Warehouse, expenses: ReceiptText, signing: PenLine, niro: Sparkles, employees: Users, stations: Radio, hr: UserCog, payroll: Banknote, performance: Trophy, safety: ShieldCheck, reports: FileText, chat: MessageSquare, files: FolderOpen, complaints: Megaphone };
+const ICONS = { dashboard: LayoutDashboard, tasks: ListTodo, attendance: ClipboardCheck, inventory: Warehouse, expenses: ReceiptText, signing: PenLine, niro: Sparkles, employees: Users, stations: Radio, hr: UserCog, payroll: Banknote, performance: Trophy, safety: ShieldCheck, cameras: Camera, reports: FileText, chat: MessageSquare, files: FolderOpen, complaints: Megaphone };
 
 const InfoList = ({ title, items, tone = "neutral" }) => {
   const styles = { neutral: "border-border bg-muted/35", warning: "border-amber-300/60 bg-amber-50 text-amber-950", danger: "border-destructive/25 bg-destructive/5", success: "border-emerald-300/60 bg-emerald-50 text-emerald-950" };

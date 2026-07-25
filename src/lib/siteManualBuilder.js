@@ -1,10 +1,12 @@
 export const MANUAL_SECTIONS = [
-  ["dashboard", "/app"], ["tasks", "/app/tasks"], ["attendance", "/app/attendance"],
-  ["inventory", "/app/inventory"], ["expenses", "/app/expenses"], ["signing", "/app/signing"],
-  ["niro", "/app/assistant"], ["employees", "/app/employees"], ["stations", "/app/stations"],
-  ["hr", "/app/hr"], ["payroll", "/app/payroll"], ["performance", "/app/performance"],
-  ["safety", "/app/safety"], ["reports", "/app/daily-report"], ["chat", "/app/chat"],
-  ["files", "/app/files"], ["complaints", "/app/complaints"],
+  ["start", "/login"], ["dashboard", "/app"], ["executive", "/app"],
+  ["stations", "/app"], ["employees", "/app"], ["hr", "/app/hr"],
+  ["tasks", "/app/tasks"], ["attendance", "/app/attendance"], ["reports", "/app/daily-report"],
+  ["chat", "/app/chat"], ["complaints", "/app/complaints"], ["files", "/app/files"],
+  ["signing", "/app/signing"], ["inventory", "/app/inventory"], ["expenses", "/app/expenses"],
+  ["payroll", "/app/payroll"], ["performance", "/app/performance"], ["safety", "/app/safety"],
+  ["cameras", "/app/cameras"], ["niro", "/app/assistant"], ["guide", "/app/manual"],
+  ["subscriptions", "/pricing"], ["security", "/security"],
 ];
 
 export function buildManualContent(config) {
