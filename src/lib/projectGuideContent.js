@@ -14,20 +14,27 @@ export const GUIDE_PROGRAM = {
 };
 
 export const GUIDE_COVER_IMAGE = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/aba2eb3a8_generated_image.png";
+export const GUIDE_PHILOSOPHY_IMAGE = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/ea5be15a4_generated_image.png";
 
 const IMG = {
-  dashboard: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/2f87cb32b_generated_image.png",
+  dashboard: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/e67eba164_generated_image.png",
   tasks: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/aa01de5b9_generated_image.png",
-  chat: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/aa01de5b9_generated_image.png",
+  chat: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/638d0411e_generated_image.png",
   attendance: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/75fdb4688_generated_image.png",
   hr: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/387275035_generated_image.png",
-  signing: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/bd363d09e_generated_image.png",
+  complaints: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/13945aa4c_generated_image.png",
+  signing: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/3b655eba2_generated_image.png",
   assistant: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/946cd00e2_generated_image.png",
   reports: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/bd363d09e_generated_image.png",
+  performance: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/e128b10a6_generated_image.png",
+  files: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/bca7aae66_generated_image.png",
   stations: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/16708ad7f_generated_image.png",
-  employees: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/387275035_generated_image.png",
+  employees: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/d3274e882_generated_image.png",
   inventory: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/0ff1da597_generated_image.png",
+  payroll: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/a12bf82fa_generated_image.png",
   hse: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/66e87da07_generated_image.png",
+  schedules: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/636273866_generated_image.png",
+  security: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/059d6bbd0_generated_image.png",
 };
 
 // ————— فلسفة المشروع — تُعرض بعد الغلاف مباشرة —————
@@ -184,7 +191,7 @@ export const GUIDE_SECTIONS = [
     ],
   },
   {
-    image: IMG.hr,
+    image: IMG.complaints,
     titleAr: "الشكاوى والبلاغات مجهولة الهوية",
     titleEn: "Complaints & Anonymous Reports",
     bodyAr: [
@@ -214,7 +221,7 @@ export const GUIDE_SECTIONS = [
     ],
   },
   {
-    image: IMG.dashboard,
+    image: IMG.performance,
     titleAr: "الأداء والتحليلات",
     titleEn: "Performance & Analytics",
     bodyAr: [
@@ -244,7 +251,7 @@ export const GUIDE_SECTIONS = [
     ],
   },
   {
-    image: IMG.reports,
+    image: IMG.files,
     titleAr: "ملفات الشركة",
     titleEn: "Company Files",
     bodyAr: [
@@ -304,7 +311,7 @@ export const GUIDE_SECTIONS = [
     ],
   },
   {
-    image: IMG.reports,
+    image: IMG.payroll,
     titleAr: "الرواتب والمصروفات المالية",
     titleEn: "Payroll & Operational Expenses",
     bodyAr: [
@@ -330,7 +337,7 @@ export const GUIDE_SECTIONS = [
     ],
   },
   {
-    image: IMG.attendance,
+    image: IMG.schedules,
     titleAr: "الجداول والورديات والتقويم",
     titleEn: "Schedules, Shifts & Calendar",
     bodyAr: [
@@ -343,7 +350,7 @@ export const GUIDE_SECTIONS = [
     ],
   },
   {
-    image: IMG.signing,
+    image: IMG.security,
     titleAr: "الأمان وتعدد اللغات والاشتراكات",
     titleEn: "Security, Languages & Subscriptions",
     bodyAr: [

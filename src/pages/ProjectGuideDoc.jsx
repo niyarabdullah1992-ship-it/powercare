@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
-import { GUIDE_AUTHOR, GUIDE_PROGRAM, GUIDE_SECTIONS, GUIDE_PHILOSOPHY, GUIDE_INTERCONNECTION, GUIDE_PITCH, GUIDE_COVER_IMAGE } from "@/lib/projectGuideContent";
+import { GUIDE_AUTHOR, GUIDE_PROGRAM, GUIDE_SECTIONS, GUIDE_PHILOSOPHY, GUIDE_INTERCONNECTION, GUIDE_PITCH, GUIDE_COVER_IMAGE, GUIDE_PHILOSOPHY_IMAGE } from "@/lib/projectGuideContent";
 import { downloadElementPdf } from "@/lib/downloadElementPdf";
 import ProjectGuideCover from "@/components/project-guide/ProjectGuideCover";
 import ProjectGuideIntro from "@/components/project-guide/ProjectGuideIntro";
@@ -43,7 +43,7 @@ export default function ProjectGuideDoc() {
 
       <div ref={documentRef} className="doc-sheet mx-auto w-[794px] max-w-full overflow-hidden bg-background shadow-elevated">
         <ProjectGuideCover program={GUIDE_PROGRAM} author={GUIDE_AUTHOR} dateAr={todayAr} dateEn={todayEn} image={GUIDE_COVER_IMAGE} />
-        <ProjectGuideIntro philosophy={GUIDE_PHILOSOPHY} sections={GUIDE_SECTIONS} image={GUIDE_SECTIONS[0].image} />
+        <ProjectGuideIntro philosophy={GUIDE_PHILOSOPHY} sections={GUIDE_SECTIONS} image={GUIDE_PHILOSOPHY_IMAGE} />
         {GUIDE_SECTIONS.map((section, index) => <ProjectGuideSection key={section.titleEn} section={section} index={index} />)}
         <ProjectGuideClosing interconnection={GUIDE_INTERCONNECTION} pitch={GUIDE_PITCH} author={GUIDE_AUTHOR} />
       </div>
