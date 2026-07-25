@@ -22,6 +22,7 @@ const AttendanceAnalytics = lazy(() => import("@/components/attendance/Attendanc
 const AttendanceMapDashboard = lazy(() => import("@/components/attendance/AttendanceMapDashboard"));
 const ScheduleTab = lazy(() => import("@/components/attendance/ScheduleTab"));
 const AttendanceLeaveRequests = lazy(() => import("@/components/attendance/AttendanceLeaveRequests"));
+const MonthlyTaskCalendar = lazy(() => import("@/components/attendance/MonthlyTaskCalendar"));
 
 function TabLoader() {
   return <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>;
@@ -74,6 +75,7 @@ export default function Attendance() {
   if (!data || !currentUser) return null;
 
   const tabs = [
+    { key: "calendar", label: lang === "ar" ? "التقويم الشهري" : "Monthly calendar" },
     ...(isManager ? [
       { key: "team", label: t("teamTab") },
       { key: "map", label: t("mapTab") },
@@ -101,8 +103,7 @@ export default function Attendance() {
         </Suspense>
       )}
 
-      {(isManager || canManageLeave) && (
-        <div className="space-y-4">
+      <div className="space-y-4">
           <div className="flex gap-2 border-b border-border overflow-x-auto no-scrollbar">
             {tabs.map((tb) => (
               <button
@@ -117,6 +118,7 @@ export default function Attendance() {
 
           {activeTab === "team" && <AttendanceDailyDashboard employees={employees} currentUser={currentUser} company={company} data={data} t={t} />}
           <Suspense fallback={<TabLoader />}>
+            {activeTab === "calendar" && <MonthlyTaskCalendar />}
             {activeTab === "map" && <AttendanceMapDashboard employees={employees} t={t} />}
             {activeTab === "schedule" && <ScheduleTab />}
             {activeTab === "report" && <AttendanceMonthlyReport employees={employees} defaultEmployeeId={currentUser.id} t={t} />}
@@ -131,7 +133,6 @@ export default function Attendance() {
             )}
           </Suspense>
         </div>
-      )}
     </div>
     </PullToRefresh>
   );
