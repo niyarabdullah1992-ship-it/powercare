@@ -85,6 +85,18 @@ function getStationHRManager(data, employeeId) {
     const permissions = positions.find((item) => item.employeeId === node.refId)?.permissions || {};
     if (permissions.hr === "manage") return data.employees.find((employee) => employee.id === node.refId) || null;
   }
+  const stationFor = (startNode) => {
+    let current = startNode;
+    while (current) {
+      if (current.type === "station") return current.id;
+      current = nodes.find((item) => item.id === current.parentId);
+    }
+    return null;
+  };
+  const employeeNode = nodes.find((item) => item.type === "employee" && item.refId === employeeId);
+  const employeeStationNodeId = stationFor(employeeNode);
+  const stationHRNode = nodes.find((item) => item.type === "employee" && item.refId !== employeeId && stationFor(item) === employeeStationNodeId && positions.find((position) => position.employeeId === item.refId)?.permissions?.hr === "manage");
+  if (stationHRNode) return data.employees.find((employee) => employee.id === stationHRNode.refId) || null;
   const employeeStationId = emp.stationId || data.stations?.[0]?.id || null;
   const groups = groupLevelsByOrder(data.hrLevels || []);
   for (const group of groups) {

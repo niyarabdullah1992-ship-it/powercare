@@ -154,6 +154,15 @@ function hasTreeEmployeeAccess(user, employee, data, allowedAccess, departments 
   const nodes = data?.orgTree || [];
   const managerNode = nodes.find((node) => node.type === "employee" && node.refId === user.id);
   let targetNode = nodes.find((node) => node.type === "employee" && node.refId === employee.id);
+  const stationFor = (startNode) => {
+    let node = startNode;
+    while (node) {
+      if (node.type === "station") return node.id;
+      node = nodes.find((item) => item.id === node.parentId);
+    }
+    return null;
+  };
+  if (departments.includes("hr") && stationFor(managerNode) && stationFor(managerNode) === stationFor(targetNode)) return true;
   while (targetNode?.parentId) {
     if (targetNode.parentId === managerNode?.id) return true;
     targetNode = nodes.find((node) => node.id === targetNode.parentId);
