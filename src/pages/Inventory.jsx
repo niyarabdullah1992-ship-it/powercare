@@ -4,7 +4,6 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { inventoryCall } from "@/lib/inventoryApi";
 import InventoryStats from "@/components/inventory/InventoryStats";
-import InventoryDataFiles from "@/components/inventory/InventoryDataFiles";
 import ItemForm from "@/components/inventory/ItemForm";
 import MaterialRequestForm from "@/components/inventory/MaterialRequestForm";
 import RequestsList from "@/components/inventory/RequestsList";
@@ -97,7 +96,7 @@ export default function Inventory() {
       <GlobalInventorySearch items={state.items} stations={state.stations} stationIds={selectedInventoryStations} onStationIdsChange={setSelectedInventoryStations} onOpen={(item, stationId) => setSelectedItem({ ...item, quantity: Number(item.locationBalances?.find((balance) => balance.locationId === stationId)?.quantity || 0), currentLocationId: stationId })} ar={ar} />
       <InventoryTabs active={active} onChange={setActive} ar={ar} />
       <InventoryPeriodReport reportData={{ items: state.items, purchases: state.purchases, movements: state.movements, stations: state.stations }} ar={ar} />
-      {active === "overview" && <div className="space-y-4"><InventoryStats items={stationItems} requests={state.requests} movements={state.movements} ar={ar} /><InventoryDataFiles movements={state.movements} items={state.historyItems} stations={state.transferStations} employees={state.employees} ar={ar} /></div>}
+      {active === "overview" && <InventoryStats items={stationItems} requests={state.requests} movements={state.movements} ar={ar} />}
       {active === "purchases" && <div className="space-y-4">
         {state.canPurchase && <ItemForm stations={state.locations} defaultStationId={allStationsSelected ? "" : activeStation} onSubmit={(payload) => run("createItem", payload)} ar={ar} />}
         <PurchasesTab purchases={state.purchases} items={state.historyItems} stations={state.transferStations} activeStation={activeStation} canViewAll={state.canViewAllPurchases} ar={ar} />
