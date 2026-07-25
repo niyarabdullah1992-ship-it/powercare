@@ -10,7 +10,6 @@ import { trackVisit } from "@/lib/trackVisit";
 import WhyPowerCare from "@/components/landing/WhyPowerCare";
 import IpCertificateBadge from "@/components/landing/IpCertificateBadge";
 import PlatformServices from "@/components/landing/PlatformServices";
-import BrandMusicPlayer from "@/components/landing/BrandMusicPlayer";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/613ed91a1_generated_image.png";
 
@@ -33,7 +32,6 @@ export default function Landing() {
 
   return (
     <div className="powercare-public min-h-screen bg-landing-bg font-body text-foreground">
-      <BrandMusicPlayer lang={lang} />
       <header className="sticky top-0 z-50 border-b border-border bg-landing-bg/95 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-[1440px] flex-row-reverse items-center justify-between px-4 sm:px-6 md:px-8">
           <div className="flex items-center gap-2">
