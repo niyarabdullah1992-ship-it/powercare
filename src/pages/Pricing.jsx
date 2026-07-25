@@ -29,7 +29,7 @@ export default function Pricing() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const provider = params.has("microsoft_signup") ? "Microsoft" : params.has("google_signup") ? "Google" : null;
+    const provider = params.has("apple_signup") ? "Apple" : params.has("microsoft_signup") ? "Microsoft" : params.has("google_signup") ? "Google" : null;
     if (!provider) return;
     const saved = JSON.parse(sessionStorage.getItem("powercare_social_signup") || "null");
     sessionStorage.removeItem("powercare_social_signup");
@@ -47,6 +47,10 @@ export default function Pricing() {
   const handleMicrosoftSignup = () => {
     saveSocialSignup();
     base44.auth.loginWithProvider("microsoft", "/pricing?microsoft_signup=1");
+  };
+  const handleAppleSignup = () => {
+    saveSocialSignup();
+    base44.auth.loginWithProvider("apple", "/pricing?apple_signup=1");
   };
 
   const handleTrialSignup = async ({ companyName, ownerEmail, ownerPassword, authMethod, pendingId, otpCode }) => {
@@ -186,6 +190,7 @@ export default function Pricing() {
           onSubmit={handleTrialSignup}
           onGoogle={handleGoogleSignup}
           onMicrosoft={handleMicrosoftSignup}
+          onApple={handleAppleSignup}
           googleEmail={googleEmail}
           error={error}
         />
