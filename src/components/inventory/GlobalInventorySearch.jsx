@@ -18,7 +18,7 @@ export default function GlobalInventorySearch({ items, stations, stationIds, onS
     });
   }, [items, query, stationIds]);
 
-  return <div className="relative rounded-xl border border-border bg-card p-3">
+  return <div className="relative rounded-xl border border-accent/30 bg-card p-3 shadow-soft">
     <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_280px]">
       <div className="flex items-center gap-2"><Search className="h-4 w-4 text-accent" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={ar ? "ابحث باسم الصنف أو الكود" : "Search item name or code"} className="w-full border-0 bg-transparent px-1 py-2 text-sm outline-none focus-visible:ring-0" /></div>
       <InventoryStationMultiSelect stations={stations} value={stationIds} onChange={onStationIdsChange} ar={ar} />

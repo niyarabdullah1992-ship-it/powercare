@@ -17,6 +17,7 @@ import WorkIssueTab from "@/components/inventory/WorkIssueTab";
 import InventoryTabs from "@/components/inventory/InventoryTabs";
 import InventoryWorkflow from "@/components/inventory/InventoryWorkflow";
 import InventoryPeriodReport from "@/components/inventory/InventoryPeriodReport";
+import InventoryHeader from "@/components/inventory/InventoryHeader";
 import { toast } from "@/components/ui/use-toast";
 
 const emptyData = { items: [], requestItems: [], historyItems: [], movements: [], purchases: [], requests: [], stations: [], locations: [], transferStations: [], employees: [], procurementRequests: [], purchaseOrders: [], canManage: false, canPurchase: false, canCreateItem: false, canIssueToWork: false, canIssueFromAnyStation: false, canRequest: false, canReviewRequests: false, canReviewAllRequests: false, canDelete: false, canApproveProcurement: false, canReceiveProcurement: false, canViewAllPurchases: false, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, canReverse: false, centralWarehouseId: null };
@@ -89,8 +90,9 @@ export default function Inventory() {
     return [];
   });
 
-  return <div className="space-y-6">
-    {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <>
+  return <div className="inventory-hub space-y-6">
+    <InventoryHeader ar={ar} />
+    {loading ? <div className="h-40 animate-pulse rounded-xl border border-accent/20 bg-muted" /> : <>
       <InventoryWorkflow ar={ar} onNavigate={(key) => setActive(tabFromWorkflow[key])} />
       <InventoryItemScanner items={state.items} stationIds={selectedInventoryStations} onOpen={setSelectedItem} ar={ar} />
       <GlobalInventorySearch items={state.items} stations={state.stations} stationIds={selectedInventoryStations} onStationIdsChange={setSelectedInventoryStations} onOpen={(item, stationId) => setSelectedItem({ ...item, quantity: Number(item.locationBalances?.find((balance) => balance.locationId === stationId)?.quantity || 0), currentLocationId: stationId })} ar={ar} />

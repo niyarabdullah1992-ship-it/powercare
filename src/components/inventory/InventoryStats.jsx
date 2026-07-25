@@ -8,7 +8,7 @@ export default function InventoryStats({ items = [], requests = [], movements = 
     { icon: Boxes, label: ar ? "الأصناف" : "Items", value: items.length, card: "border-accent/30", iconStyle: "bg-accent/15 text-accent", valueStyle: "text-accent", edge: "bg-accent" },
     { icon: low ? AlertTriangle : Check, label: ar ? "تحت الحد الأدنى" : "Low stock", value: low, card: low ? "border-orange-300" : "border-emerald-300", iconStyle: low ? "bg-orange-100 text-orange-700" : "bg-emerald-100 text-emerald-700", valueStyle: low ? "text-orange-700" : "text-emerald-700", edge: low ? "bg-orange-500" : "bg-emerald-500" },
     { icon: ClipboardList, label: ar ? "طلبات معلقة" : "Pending requests", value: pending, card: pending ? "border-orange-300" : "border-border", iconStyle: pending ? "bg-orange-100 text-orange-700" : "bg-muted text-muted-foreground", valueStyle: pending ? "text-orange-700" : "text-foreground", edge: pending ? "bg-orange-500" : "bg-muted-foreground/40", alert: pending > 0 },
-    { icon: ArrowLeftRight, label: ar ? "حركات المخزون" : "Movements", value: movements.length, card: "border-slate-300", iconStyle: "bg-slate-100 text-slate-600", valueStyle: "text-slate-700", edge: "bg-slate-500" },
+    { icon: ArrowLeftRight, label: ar ? "حركات المخزون" : "Movements", value: movements.length, card: "border-primary/25", iconStyle: "bg-primary/10 text-primary", valueStyle: "text-primary", edge: "bg-primary" },
   ];
 
   return (
