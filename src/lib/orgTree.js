@@ -33,6 +33,24 @@ export function stationIdForTreeEmployee(data, employeeId) {
   return node ? treeStationForNode(nodes, node) : null;
 }
 
+export function treeCommunicationTargets(data, employeeId) {
+  const nodes = data?.orgTree || [];
+  const employees = data?.employees || [];
+  const positions = data?.smartPositions || [];
+  const targets = [];
+  let node = nodes.find((item) => item.type === "employee" && item.refId === employeeId);
+  while (node?.parentId) {
+    node = nodes.find((item) => item.id === node.parentId);
+    if (node?.type !== "employee") continue;
+    const permissions = positions.find((item) => item.employeeId === node.refId)?.permissions || {};
+    if (permissions.hr === "manage" || permissions.employees === "manage") {
+      const person = employees.find((item) => item.id === node.refId);
+      if (person) targets.push({ id: person.id, name: person.name, title: node.title || "" });
+    }
+  }
+  return targets;
+}
+
 export function assignEmployeeToOrgStation(companyId, employeeId, stationNodeId) {
   updateCompany(companyId, (data) => {
     const nodes = data.orgTree || [];

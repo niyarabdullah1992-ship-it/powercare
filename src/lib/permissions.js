@@ -147,10 +147,10 @@ export function isHRManager(user, data) {
   return getHRLevel(user, data)?.role === "manager";
 }
 
-function hasTreeEmployeeAccess(user, employee, data, allowedAccess) {
+function hasTreeEmployeeAccess(user, employee, data, allowedAccess, departments = ["employees"]) {
   if (!user?.id || !employee?.id) return false;
-  const access = (data?.smartPositions || []).find((item) => item.employeeId === user.id)?.permissions?.employees;
-  if (!allowedAccess.includes(access)) return false;
+  const permissions = (data?.smartPositions || []).find((item) => item.employeeId === user.id)?.permissions || {};
+  if (!departments.some((department) => allowedAccess.includes(permissions[department]))) return false;
   const nodes = data?.orgTree || [];
   const managerNode = nodes.find((node) => node.type === "employee" && node.refId === user.id);
   let targetNode = nodes.find((node) => node.type === "employee" && node.refId === employee.id);
@@ -163,6 +163,10 @@ function hasTreeEmployeeAccess(user, employee, data, allowedAccess) {
 
 export function canManageEmployeeContract(user, employee, data) {
   return !!user && (user.id === data?.ownerId || user.role === "director" || hasTreeEmployeeAccess(user, employee, data, ["manage"]));
+}
+
+export function canManageEmployeeCommunication(user, employee, data) {
+  return !!user && (user.id === data?.ownerId || user.role === "director" || hasTreeEmployeeAccess(user, employee, data, ["manage"], ["employees", "hr"]));
 }
 
 export function isHRAssistant(user, data) {

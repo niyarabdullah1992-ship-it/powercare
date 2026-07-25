@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { canManageEmployees, hasHRPermission, canViewEmployeeProfile, isCompanyOwner, canAdjustPayroll, canManageEmployeeContract } from "@/lib/permissions";
+import { canManageEmployees, hasHRPermission, canViewEmployeeProfile, isCompanyOwner, canAdjustPayroll, canManageEmployeeContract, canManageEmployeeCommunication } from "@/lib/permissions";
 import { getRoleLabel } from "@/lib/roles";
 import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle, Lock, FileSignature } from "lucide-react";
 import ProfileHero from "@/components/employees/ProfileHero";
@@ -64,6 +64,7 @@ export default function EmployeeProfile() {
   const canApproveLeave = canManage || hasHRPermission(currentUser, data, "manage_leave");
   const canApproveCerts = canManage || hasHRPermission(currentUser, data, "manage_leave");
   const canEditContract = canManageEmployeeContract(currentUser, employee, data);
+  const canReplyCommunication = canManageEmployeeCommunication(currentUser, employee, data);
   const stationName = data.stations.find((s) => s.id === employee.stationId)?.name;
   const fallbackPosition = employee.customTitle || getRoleLabel(company, employee.role, t);
   const grade = employeeJobGrade(employee, data);
@@ -86,7 +87,7 @@ export default function EmployeeProfile() {
                     tab === key ? "bg-accent text-accent-foreground shadow-lg" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                   }`}
                 >
-                  <Icon className="h-4 w-4" /> {key === "contract" ? (dir === "rtl" ? "العقد" : "Contract") : t(key)}
+                  <Icon className="h-4 w-4" /> {key === "contract" ? (dir === "rtl" ? "العقد" : "Contract") : key === "communications" ? (dir === "rtl" ? "التواصل" : "Communications") : t(key)}
                 </button>
               ))}
             </div>
@@ -96,7 +97,7 @@ export default function EmployeeProfile() {
               {tab === "certificates" && <CertificatesTab employee={employee} companyId={company.id} canEdit={isSelf || canManage} canApprove={canApproveCerts} currentUser={currentUser} />}
               {tab === "salary" && <SalaryTab employee={employee} companyId={company.id} canEdit={canEditSalary} />}
               {tab === "leave" && <LeaveTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canApprove={canApproveLeave} />}
-              {tab === "communications" && <HRCommunicationsTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canReply={canManage} />}
+              {tab === "communications" && <HRCommunicationsTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canReply={canReplyCommunication} data={data} />}
               {tab === "contract" && <ContractTab employee={employee} companyId={company.id} canEdit={canEditContract} />}
             </section>
           </main>

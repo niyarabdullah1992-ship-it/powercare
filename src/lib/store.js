@@ -1039,13 +1039,15 @@ export function setLeaveTotal(companyId, employeeId, type, total) {
   });
 }
 
-// HR communications — per-employee thread routed to Station HR or HQ HR.
-export function addHRMessage(companyId, employeeId, { from, target, text, files, senderName }) {
+// Per-employee communication thread routed through the live organization tree.
+export function addHRMessage(companyId, employeeId, { from, targetId, targetName, text, files, senderName }) {
   updateCompany(companyId, (d) => {
     const emp = d.employees.find((e) => e.id === employeeId);
     if (!emp) return;
     emp.hrMessages = emp.hrMessages || [];
-    emp.hrMessages.push({ id: uid("msg"), from, target, text, files: files || [], senderName, createdAt: new Date().toISOString() });
+    emp.hrMessages.push({ id: uid("msg"), from, targetId, targetName, text, files: files || [], senderName, createdAt: new Date().toISOString() });
+    d.notifications = d.notifications || [];
+    if (targetId) d.notifications.unshift({ id: uid("ntf"), userId: targetId, text: `${senderName}: ${text || "New communication attachment"}`, read: false, createdAt: new Date().toISOString() });
   });
 }
 
