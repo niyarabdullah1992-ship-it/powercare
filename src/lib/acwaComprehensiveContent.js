@@ -1,3 +1,5 @@
+import { ACWA_DETAILED_NARRATIVES } from "@/lib/acwaDetailedNarratives";
+
 const bar = (title, items) => ({ title, items });
 const compare = (traditionalLabel, rows) => ({ traditionalLabel, rows });
 const kpis = (items) => ({ items });
@@ -48,4 +50,8 @@ const pages = [
   page("33", "NEXT STEP", "ابدأ صغيراً، وتوسع بالدليل", "Start focused. Scale with evidence.", "الخطوة التالية ورشة مشتركة لمدة 90 دقيقة لتحديد الموقع والحالات والمستخدمين والبيانات وخط الأساس والمسؤوليات.", "The next step is a 90-minute joint workshop to define the site, use cases, users, data, baseline and responsibilities.", ["اختيار الموقع", "تسمية المالكين", "اعتماد المقاييس"], ["Select the site", "Name owners", "Approve measures"], "kpi", kpis([kpi("90", "Workshop minutes", "دقيقة للورشة", "time"), kpi("3", "Use cases", "حالات استخدام", "layers"), kpi("1", "Approved charter", "ميثاق معتمد", "file")]), "PowerCare • powercares.pro", "PowerCare • powercares.pro")
 ];
 
-export const acwaComprehensivePages = pages.map((item) => ({ ...item, total: pages.length }));
+export const acwaComprehensivePages = pages.map((item) => ({
+  ...item,
+  narrative: ACWA_DETAILED_NARRATIVES[item.number] || [],
+  total: pages.length,
+}));

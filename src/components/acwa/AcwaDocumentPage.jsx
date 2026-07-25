@@ -2,6 +2,7 @@ import React from "react";
 import { ShieldCheck } from "lucide-react";
 import ProfileBulletGrid from "@/components/profile/ProfileBulletGrid";
 import AcwaPageVisual from "@/components/acwa/AcwaPageVisual";
+import AcwaNarrativeBlock from "@/components/acwa/AcwaNarrativeBlock";
 
 export default function AcwaDocumentPage({ page, total, documentType }) {
   return <article data-pdf-page className="relative mx-auto flex h-[1123px] w-[794px] shrink-0 flex-col overflow-hidden bg-background text-foreground shadow-elevated">
@@ -17,8 +18,9 @@ export default function AcwaDocumentPage({ page, total, documentType }) {
     </div>
     <AcwaPageVisual page={page} />
     <div className="flex flex-1 flex-col px-12 py-6">
-      <div className="grid grid-cols-2 gap-10"><p dir="rtl" className="text-right text-[13px] leading-6 text-muted-foreground">{page.summaryAr}</p><p className="text-[12px] leading-6 text-muted-foreground">{page.summaryEn}</p></div>
-      {!!page.bulletsAr.length && <div className="mt-5"><ProfileBulletGrid ar={page.bulletsAr} en={page.bulletsEn} /></div>}
+      <div className="grid grid-cols-2 gap-10"><p dir="rtl" className="text-right text-[12px] font-semibold leading-5 text-muted-foreground">{page.summaryAr}</p><p className="text-[11px] font-semibold leading-5 text-muted-foreground">{page.summaryEn}</p></div>
+      <AcwaNarrativeBlock sections={page.narrative} />
+      {!!page.bulletsAr.length && <div className="mt-4"><ProfileBulletGrid ar={page.bulletsAr} en={page.bulletsEn} /></div>}
       {(page.noteAr || page.noteEn) && <div className="mt-5 grid grid-cols-2 gap-8 rounded-xl border border-accent/30 bg-secondary p-4 text-[10px] leading-5"><p dir="rtl" className="text-right">{page.noteAr}</p><p>{page.noteEn}</p></div>}
       <footer className="mt-auto flex items-center justify-between border-t border-border pt-4 font-mono text-[8px] tracking-[.12em] text-muted-foreground"><span>CONFIDENTIAL • FOR DISCUSSION</span><span>POWERCARE • 2026</span></footer>
     </div>

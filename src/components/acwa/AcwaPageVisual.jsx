@@ -16,5 +16,5 @@ const visuals = {
 export default function AcwaPageVisual({ page }) {
   const Visual = visuals[page.visualType];
   if (!Visual) return null;
-  return <div className="mx-12 mt-6 h-[220px] overflow-hidden rounded-xl border border-border bg-card p-4"><Visual type={page.visualType} data={page.visualData} /></div>;
+  return <div className="mx-12 mt-6 overflow-hidden rounded-xl border border-border bg-card p-3"><div className="h-[186px]"><Visual type={page.visualType} data={page.visualData} /></div><p className="mt-1 text-center font-mono text-[7px] tracking-wide text-muted-foreground">ILLUSTRATIVE MODEL • FINAL BASELINES AND TARGETS TO BE VALIDATED WITH ACWA</p></div>;
 }
