@@ -1,3 +1,5 @@
+import { detailedComparisonPages } from "@/lib/powerCareSapDetailedComparison";
+
 export const comparisonPages = [
   {
     number: "01", eyebrow: "EXECUTIVE COMPARISON • 2026", title: "PowerCare مقابل أنظمة SAP التقليدية",
@@ -26,6 +28,7 @@ export const comparisonPages = [
       ["اللغة والجوال", "عربي وRTL وتجربة ميدانية تعمل باللمس", "دعم عالمي يتفاوت حسب التطبيق", "PowerCare ملائم محليًا"],
     ]
   },
+  ...detailedComparisonPages,
   {
     number: "03", eyebrow: "USABILITY • سهولة الاستخدام", title: "سهولة الاستخدام — Ease of Use",
     intro: "المعيار هو عدد الخطوات ووضوح الواجهة وسهولة التعلم. The measure is workflow clarity, number of steps, and learning effort.",
@@ -70,12 +73,15 @@ export const comparisonPages = [
     number: "06", eyebrow: "METHODOLOGY & SOURCES", title: "المنهجية والمصادر",
     intro: "بُني جانب PowerCare على الوظائف الحالية في المنصة، وجانب SAP على الوصف الرسمي للمنتجات ووثائق التكامل المتاحة حتى يوليو 2026.",
     rows: [
-      ["SAP Cloud ERP", "عمليات المالية والمشتريات والخدمات والموارد البشرية", "sap.com/products/erp/s4hana.html", "مصدر رسمي"],
-      ["SuccessFactors Employee Central", "الموارد البشرية الأساسية والبيانات التنظيمية", "help.sap.com/docs/SAP_SUCCESSFACTORS_EMPLOYEE_CENTRAL", "مصدر رسمي"],
-      ["تكامل Employee Central", "نسخ البيانات مع S/4HANA وERP HCM", "help.sap.com/docs/SAP_SUCCESSFACTORS_EMPLOYEE_CENTRAL_INTEGRATION_TO_SAP_BUSINESS_SUITE", "مصدر رسمي"],
-      ["SAP Business Accelerator Hub", "واجهات وحزم تكامل الموظفين والهيكل", "api.sap.com", "مصدر رسمي"],
-      ["حدود المقارنة", "لا توجد نتائج حمل مستقلة أو قياسات زمن استجابة موحدة", "الأحكام نوعية ومعلنة", "شفافية"],
-      ["استقلالية التقرير", "PowerCare ليس تابعًا أو شريكًا معتمدًا لـSAP في هذا التقرير", "الأسماء ملك لأصحابها", "إفصاح"],
+      ["الهيكل والموارد", "SuccessFactors Employee Central وPerformance & Goals", "sap.com/products/hcm", "مصدر SAP رسمي"],
+      ["المهام والأتمتة", "SAP Task Center وSAP Build Process Automation", "sap.com/products/technology-platform/process-automation", "مصدر SAP رسمي"],
+      ["النقاط والمكافآت", "SuccessFactors Compensation يدعم برامج نقاط وتقدير", "sap.com/products/hcm/compensation-management", "مصدر SAP رسمي"],
+      ["التوقيع الإلكتروني", "SAP Signature Management by DocuSign", "sap.com/products/technology-platform/electronic-signature-management", "مصدر SAP رسمي"],
+      ["السلامة", "SAP S/4HANA for EHS وإدارة الحوادث", "sap.com/products/scm/safety-management-software", "مصدر SAP رسمي"],
+      ["الحضور والجداول", "SuccessFactors وTime Management by WorkForce Software", "sap.com/products/hcm/workforce-management", "مصدر SAP رسمي"],
+      ["المخزون", "Inventory Management للكمية والقيمة والحركات", "help.sap.com • Inventory Management", "مصدر SAP رسمي"],
+      ["الكاميرات", "لم نجد مركز CCTV قياسيًا؛ الموجود وصول كاميرا جهاز أو تكاملات", "help.sap.com • SAP Build camera capabilities", "حد وظيفي معلن"],
+      ["حدود المقارنة", "لا توجد قياسات حمل موحدة بين البيئتين", "الأحكام نوعية وليست Benchmark", "شفافية"],
     ],
     note: "تُراجع النتيجة لكل عميل بعد تحديد إصدار SAP، عدد المستخدمين، الدول، حجم المعاملات، والتكاملات المطلوبة."
   }
