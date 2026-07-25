@@ -1,6 +1,7 @@
 import React from "react";
 import Logo from "@/components/Logo";
 import ProfileBulletGrid from "@/components/profile/ProfileBulletGrid";
+import AcwaPageVisual from "@/components/acwa/AcwaPageVisual";
 
 export default function AcwaDocumentPage({ page, total, documentType }) {
   return <article data-pdf-page className="relative mx-auto flex h-[1123px] w-[794px] shrink-0 flex-col overflow-hidden bg-background text-foreground shadow-elevated">
@@ -14,11 +15,12 @@ export default function AcwaDocumentPage({ page, total, documentType }) {
       <p className="mb-5 font-mono text-[10px] tracking-[.24em] text-accent">{page.eyebrow}</p>
       <div className="grid grid-cols-2 gap-10"><h1 dir="rtl" className="text-right font-heading text-4xl font-bold leading-tight">{page.titleAr}</h1><h2 className="font-heading text-4xl font-bold leading-tight">{page.titleEn}</h2></div>
     </div>
-    <div className="flex flex-1 flex-col px-12 py-10">
-      <div className="grid grid-cols-2 gap-10"><p dir="rtl" className="text-right text-[15px] leading-8 text-muted-foreground">{page.summaryAr}</p><p className="text-[14px] leading-7 text-muted-foreground">{page.summaryEn}</p></div>
-      {!!page.bulletsAr.length && <div className="mt-9"><ProfileBulletGrid ar={page.bulletsAr} en={page.bulletsEn} /></div>}
-      {(page.noteAr || page.noteEn) && <div className="mt-8 grid grid-cols-2 gap-8 rounded-xl border border-accent/30 bg-secondary p-5 text-xs leading-6"><p dir="rtl" className="text-right">{page.noteAr}</p><p>{page.noteEn}</p></div>}
-      <footer className="mt-auto flex items-center justify-between border-t border-border pt-5 font-mono text-[8px] tracking-[.12em] text-muted-foreground"><span>CONFIDENTIAL • FOR DISCUSSION</span><span>POWERCARE • 2026</span></footer>
+    <AcwaPageVisual page={page} />
+    <div className="flex flex-1 flex-col px-12 py-7">
+      <div className="grid grid-cols-2 gap-10"><p dir="rtl" className="text-right text-[13px] leading-6 text-muted-foreground">{page.summaryAr}</p><p className="text-[12px] leading-6 text-muted-foreground">{page.summaryEn}</p></div>
+      {!!page.bulletsAr.length && <div className="mt-5"><ProfileBulletGrid ar={page.bulletsAr} en={page.bulletsEn} /></div>}
+      {(page.noteAr || page.noteEn) && <div className="mt-5 grid grid-cols-2 gap-8 rounded-xl border border-accent/30 bg-secondary p-4 text-[10px] leading-5"><p dir="rtl" className="text-right">{page.noteAr}</p><p>{page.noteEn}</p></div>}
+      <footer className="mt-auto flex items-center justify-between border-t border-border pt-4 font-mono text-[8px] tracking-[.12em] text-muted-foreground"><span>CONFIDENTIAL • FOR DISCUSSION</span><span>POWERCARE • 2026</span></footer>
     </div>
   </article>;
 }
