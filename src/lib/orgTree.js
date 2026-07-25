@@ -129,14 +129,25 @@ export function initializeOrgTree(companyId, data) {
     : (data.smartPositions || []).map((position, order) => ({ id: `org_${position.employeeId}`, type: "employee", refId: position.employeeId, title: position.title || "", parentId: null, order }));
   const stationIds = new Set(existing.filter((node) => node.type === "station").map((node) => node.refId));
   const missingStations = (data.stations || []).filter((station) => !stationIds.has(station.id));
+  const hrBranch = existing.find((node) => node.type === "department" && node.refId === "hr");
+  const hrEmployees = (data.employees || []).filter((employee) => employee.id !== data.ownerId && employee.hrLevelId);
+  const employeeNodeIds = new Set(existing.filter((node) => node.type === "employee").map((node) => node.refId));
+  const missingHrEmployees = hrEmployees.filter((employee) => !employeeNodeIds.has(employee.id));
   const stationMismatch = existing.filter((node) => node.type === "employee").some((node) => {
     const stationId = treeStationForNode(existing, node);
     const employee = (data.employees || []).find((item) => item.id === node.refId);
     return stationId && employee?.stationId !== stationId;
   });
-  if (Array.isArray(data?.orgTree) && !missingStations.length && !stationMismatch) return;
+  if (Array.isArray(data?.orgTree) && !missingStations.length && hrBranch && !missingHrEmployees.length && !stationMismatch) return;
   updateCompany(companyId, (draft) => {
-    draft.orgTree = [...existing, ...missingStations.map((station, index) => ({ id: `org_station_${station.id}`, type: "station", refId: station.id, title: station.location || "", parentId: null, order: existing.length + index }))];
+    const nodes = [...existing];
+    const ownerNode = nodes.find((node) => node.type === "employee" && node.refId === draft.ownerId);
+    const department = hrBranch || { id: "org_department_hr", type: "department", refId: "hr", title: "الموارد البشرية · Human Resources", parentId: ownerNode?.id || null, order: nodes.filter((node) => (node.parentId || null) === (ownerNode?.id || null)).length };
+    if (!hrBranch) nodes.push(department);
+    const levelById = new Map((draft.hrLevels || []).map((level) => [level.id, level]));
+    if (!hrBranch) nodes.filter((node) => node.type === "employee" && hrEmployees.some((employee) => employee.id === node.refId)).forEach((node, index) => { node.parentId = department.id; node.order = index; });
+    missingHrEmployees.forEach((employee, index) => nodes.push({ id: `org_${employee.id}`, type: "employee", refId: employee.id, title: levelById.get(employee.hrLevelId)?.name || employee.position || "HR", parentId: department.id, order: nodes.filter((node) => node.parentId === department.id).length + index }));
+    draft.orgTree = [...nodes, ...missingStations.map((station, index) => ({ id: `org_station_${station.id}`, type: "station", refId: station.id, title: station.location || "", parentId: null, order: nodes.length + index }))];
     syncEmployeeStationsFromTree(draft);
   });
 }
