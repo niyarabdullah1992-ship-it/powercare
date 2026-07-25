@@ -13,17 +13,21 @@ export const GUIDE_PROGRAM = {
   taglineEn: "An integrated cloud platform for company, HR and task management",
 };
 
+export const GUIDE_COVER_IMAGE = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/aba2eb3a8_generated_image.png";
+
 const IMG = {
-  dashboard: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/3c83c65c5_generated_image.png",
-  tasks: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/cbb47dce1_generated_image.png",
-  chat: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/24732d25b_generated_image.png",
-  attendance: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/ee0ce723d_generated_image.png",
-  hr: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/9bbacd03c_generated_image.png",
-  signing: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/09d46b0b4_generated_image.png",
-  assistant: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/1dac196eb_generated_image.png",
-  reports: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/33c9b16c5_generated_image.png",
-  stations: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/4ccd0f2b5_generated_image.png",
-  employees: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/c346590d6_generated_image.png",
+  dashboard: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/2f87cb32b_generated_image.png",
+  tasks: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/aa01de5b9_generated_image.png",
+  chat: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/aa01de5b9_generated_image.png",
+  attendance: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/75fdb4688_generated_image.png",
+  hr: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/387275035_generated_image.png",
+  signing: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/bd363d09e_generated_image.png",
+  assistant: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/946cd00e2_generated_image.png",
+  reports: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/bd363d09e_generated_image.png",
+  stations: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/16708ad7f_generated_image.png",
+  employees: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/387275035_generated_image.png",
+  inventory: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/0ff1da597_generated_image.png",
+  hse: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/66e87da07_generated_image.png",
 };
 
 // ————— فلسفة المشروع — تُعرض بعد الغلاف مباشرة —————
@@ -285,7 +289,7 @@ export const GUIDE_SECTIONS = [
     ],
   },
   {
-    image: IMG.stations,
+    image: IMG.inventory,
     titleAr: "المخزون اللامركزي وإدارة المواد",
     titleEn: "Decentralized Inventory & Materials",
     bodyAr: [
@@ -313,7 +317,7 @@ export const GUIDE_SECTIONS = [
     ],
   },
   {
-    image: IMG.dashboard,
+    image: IMG.hse,
     titleAr: "السلامة والصحة المهنية HSE",
     titleEn: "Health, Safety & Environment (HSE)",
     bodyAr: [
