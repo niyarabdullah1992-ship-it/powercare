@@ -26,8 +26,8 @@ export default function PlatformServices({ lang }) {
         </div>
         <p className="relative mt-8 max-w-sm border-s-2 border-accent ps-5 text-sm leading-6 text-white/65 md:mt-0">{ar ? "أدوات مترابطة تمنح شركتك رؤية موحدة وتحكماً أدق في كل مستوى." : "Connected modules give your company unified visibility and precise control at every level."}</p>
       </div>
-      <div className="grid sm:grid-cols-2 md:grid-cols-3">
-        {modules.map(({ icon: Icon, en, ar: titleAr, enText, arText }, index) => <article key={en} className="group relative min-h-[164px] border-b border-border p-4 transition-colors hover:bg-secondary/70 sm:odd:border-e sm:[&:nth-last-child(-n+2)]:border-b-0 md:min-h-[178px] md:border-b md:border-e md:[&:nth-last-child(-n+3)]:border-b-0 md:[&:nth-child(3n)]:border-e-0">
+      <div className="grid sm:grid-cols-2 md:grid-cols-[repeat(20,minmax(0,1fr))]">
+        {modules.map(({ icon: Icon, en, ar: titleAr, enText, arText }, index) => <article key={en} className="group relative min-h-[164px] border-b border-border p-4 transition-colors hover:bg-secondary/70 sm:odd:border-e sm:[&:nth-last-child(-n+2)]:border-b-0 md:col-span-4 md:min-h-[178px] md:border-b md:border-e md:[&:nth-child(n+6)]:col-span-5 md:[&:nth-child(n+6)]:border-b-0 md:[&:nth-child(5)]:border-e-0 md:[&:nth-child(9)]:border-e-0">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-background text-accent transition-colors group-hover:border-accent group-hover:bg-accent group-hover:text-accent-foreground"><Icon className="h-4 w-4" strokeWidth={1.5} /></span>
           <div className="mt-3 min-w-0"><span className="font-mono text-[9px] tracking-[0.18em] text-muted-foreground">MODULE {String(index + 1).padStart(2, "0")}</span><h3 className="mt-2 font-heading text-lg font-semibold text-foreground">{ar ? titleAr : en}</h3><p className="mt-1.5 text-xs leading-5 text-muted-foreground">{ar ? arText : enText}</p></div>
         </article>)}
