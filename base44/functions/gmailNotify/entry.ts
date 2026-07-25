@@ -14,7 +14,7 @@ function toBase64Url(str) {
 
 // Branded HTML wrapper — gold header, clean card, bilingual-friendly.
 function escapeHtml(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 const isAllowedCtaUrl = (value) => {
   try {

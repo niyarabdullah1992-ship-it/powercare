@@ -508,7 +508,7 @@ Deno.serve(async (req) => {
       if (existing.length && (!auth || auth.role !== 'owner') && !canResumeSignup) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
       }
-      if (!existing.length && !newIsIndividual && !signupOtp) {
+      if (!existing.length && !signupOtp) {
         return Response.json({ error: 'signup_otp_required' }, { status: 401 });
       }
 
@@ -826,16 +826,19 @@ Deno.serve(async (req) => {
     if (action === 'syncBlob') {
       const { category, payload } = body;
       if (!category) return Response.json({ error: 'Missing category' }, { status: 400 });
-      // Sensitive snapshots require their exact role/permission dependency.
+      // Deny by default: every writable snapshot must be explicitly listed with
+      // the server-derived role or permission required to replace it.
       const context = await getActorContext();
       const actorRole = context.actor?.role;
-      let allowed = true;
-      if (['companyMeta', 'files'].includes(category)) allowed = context.senior;
+      const privilege = await getActorPrivilege();
+      let allowed = false;
+      if (['companyMeta', 'files', 'orgTree', 'smartPositions', 'complaintEscalationChain', 'cameras'].includes(category)) allowed = context.senior;
       else if (['hrLevels', 'hrClusters', 'jobGrades'].includes(category)) allowed = context.senior && (!context.actor || context.actor.role === 'director');
       else if (category === 'payrollRuns') allowed = context.senior || context.permissions.has('manage_payroll');
       else if (category === 'schedules') allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole) || context.permissions.has('manage_schedules');
       else if (category === 'safety') allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole);
       else if (['plans', 'templates', 'targets'].includes(category)) allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole);
+      else if (['tasks', 'reports', 'anonymousReports', 'publicReports', 'notifications', 'personalPlaces', 'personalAttendance', 'plannerItems', 'journalEntries'].includes(category)) allowed = privilege === 'full';
       if (!allowed) return Response.json({ ok: true, ignored: true });
       const existing = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
       const data = Array.isArray(payload) ? payload : [];
