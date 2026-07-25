@@ -58,9 +58,9 @@ export default function Performance() {
     <span className="text-xs text-muted-foreground">{i + 1}</span>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
+    <div className="performance-hub space-y-6">
+      <div className="performance-hub-header flex items-center justify-between flex-wrap gap-5">
+        <div className="performance-hub-title">
           <h1 className="font-heading text-3xl font-semibold flex items-center gap-2">
             <Trophy className="w-6 h-6" /> {t("performance")}
           </h1>
@@ -70,7 +70,7 @@ export default function Performance() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="performance-hub-tabs flex items-center gap-1.5">
           <button
             onClick={() => setView("individual")}
             className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "individual" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}

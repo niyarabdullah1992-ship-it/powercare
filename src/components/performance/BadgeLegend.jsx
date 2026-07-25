@@ -7,11 +7,11 @@ import { Award, Pencil, Save, RotateCcw, X } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
 const TIER_STYLES = [
-  "from-emerald-500/15 to-emerald-500/5 ring-emerald-500/20 text-emerald-600",
-  "from-teal-500/15 to-teal-500/5 ring-teal-500/20 text-teal-600",
-  "from-amber-500/15 to-amber-500/5 ring-amber-500/20 text-amber-600",
-  "from-orange-500/15 to-orange-500/5 ring-orange-500/20 text-orange-600",
-  "from-rose-500/15 to-rose-500/5 ring-rose-500/20 text-rose-600",
+  "from-secondary to-card ring-accent/15 text-primary",
+  "from-accent/10 to-card ring-accent/20 text-primary",
+  "from-accent/15 to-card ring-accent/25 text-primary",
+  "from-accent/20 to-card ring-accent/30 text-primary",
+  "from-accent/25 to-card ring-accent/35 text-primary",
 ];
 
 export default function BadgeLegend() {
@@ -53,9 +53,9 @@ export default function BadgeLegend() {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
-      <div className="px-5 py-4 border-b border-border bg-muted/40 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-foreground text-background flex items-center justify-center shrink-0">
+    <div className="performance-badge-legend rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+      <div className="px-5 py-4 border-b border-border bg-secondary/70 flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0">
           <Award className="w-4 h-4" />
         </div>
         <div className="min-w-0 flex-1">

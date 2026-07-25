@@ -837,3 +837,109 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   .owner-operations-header nav button { padding-inline: .875rem; }
   .owner-operations-content { padding-top: 1rem; }
 }
+
+/* Performance center — PowerCare navy, ivory and restrained gold identity. */
+.performance-hub {
+  position: relative;
+  isolation: isolate;
+}
+.performance-hub::before {
+  content: "";
+  position: absolute;
+  inset: -1rem;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(145deg, hsl(var(--secondary) / .72), transparent 22rem);
+  border-radius: .875rem;
+}
+.performance-hub-header {
+  position: relative;
+  overflow: hidden;
+  padding: 1.5rem;
+  border: 1px solid hsl(var(--accent) / .42);
+  border-radius: .75rem;
+  color: hsl(var(--primary-foreground));
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--sidebar-background)));
+  box-shadow: 0 16px 42px hsl(var(--foreground) / .14), inset 3px 0 hsl(var(--accent));
+}
+.performance-hub-header::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: -5rem;
+  top: -7rem;
+  width: 16rem;
+  height: 16rem;
+  border: 1px solid hsl(var(--accent) / .18);
+  border-radius: 999px;
+  box-shadow: 0 0 0 2rem hsl(var(--accent) / .035), 0 0 0 4rem hsl(var(--accent) / .025);
+  pointer-events: none;
+}
+.performance-hub-title,
+.performance-hub-tabs { position: relative; z-index: 1; }
+.performance-hub-header h1 { color: hsl(var(--primary-foreground)); }
+.performance-hub-header h1 svg { color: hsl(var(--accent)); }
+.performance-hub-header .text-muted-foreground { color: hsl(var(--primary-foreground) / .68); }
+.performance-hub-tabs {
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.performance-hub-tabs button {
+  border-color: hsl(var(--primary-foreground) / .2);
+  color: hsl(var(--primary-foreground) / .78);
+  background: hsl(var(--primary-foreground) / .035);
+}
+.performance-hub-tabs button:hover {
+  border-color: hsl(var(--accent) / .62);
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--accent) / .12);
+}
+.performance-hub-tabs button.bg-foreground {
+  border-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  background: hsl(var(--accent));
+  box-shadow: 0 5px 16px hsl(var(--accent) / .24);
+}
+.performance-hub > .flex.justify-end {
+  padding-inline: .125rem;
+}
+.performance-hub > .flex.justify-end button {
+  border-color: hsl(var(--accent) / .34);
+  background: hsl(var(--card));
+}
+.performance-hub > :is(.space-y-2, .space-y-4, .space-y-5),
+.performance-hub > .grid {
+  position: relative;
+}
+.performance-hub .performance-badge-legend {
+  border-color: hsl(var(--accent) / .28);
+  box-shadow: 0 12px 32px hsl(var(--foreground) / .07);
+}
+.performance-hub .performance-badge-legend > div:first-child {
+  box-shadow: inset 3px 0 hsl(var(--accent));
+}
+.performance-hub :is(.rounded-xl, .rounded-2xl).border.bg-card {
+  border-color: hsl(var(--border));
+  box-shadow: 0 8px 24px hsl(var(--foreground) / .055);
+}
+.performance-hub :is(.rounded-xl, .rounded-2xl).border.bg-card:hover {
+  border-color: hsl(var(--accent) / .42);
+}
+.performance-hub .bg-foreground.text-background {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+.performance-hub .bg-accent\/5 {
+  background: hsl(var(--accent) / .08);
+}
+@media (max-width: 767px) {
+  .performance-hub-header { padding: 1.125rem; }
+  .performance-hub-tabs {
+    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: .25rem;
+  }
+  .performance-hub-tabs button { flex: 0 0 auto; }
+}
