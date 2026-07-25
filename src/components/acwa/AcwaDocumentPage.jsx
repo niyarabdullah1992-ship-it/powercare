@@ -1,5 +1,5 @@
 import React from "react";
-import Logo from "@/components/Logo";
+import { ShieldCheck } from "lucide-react";
 import ProfileBulletGrid from "@/components/profile/ProfileBulletGrid";
 import AcwaPageVisual from "@/components/acwa/AcwaPageVisual";
 
@@ -7,7 +7,7 @@ export default function AcwaDocumentPage({ page, total, documentType }) {
   return <article data-pdf-page className="relative mx-auto flex h-[1123px] w-[794px] shrink-0 flex-col overflow-hidden bg-background text-foreground shadow-elevated">
     <div className="h-3 bg-accent" />
     <header className="flex items-center justify-between border-b border-border px-12 py-7">
-      <div className="flex items-center gap-3"><Logo size={40} /><div><p className="font-heading text-xl font-bold">PowerCare</p><p className="font-mono text-[8px] tracking-[.2em] text-muted-foreground">PROPOSAL FOR ACWA POWER</p></div></div>
+      <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-full border border-accent bg-primary text-accent"><ShieldCheck className="h-5 w-5" /></span><div><p className="font-heading text-xl font-bold">PowerCare</p><p className="font-mono text-[8px] tracking-[.2em] text-muted-foreground">PROPOSAL FOR ACWA POWER</p></div></div>
       <div className="text-right"><p className="font-mono text-[9px] text-accent">{page.number} / {String(total).padStart(2, "0")}</p><p className="mt-1 text-[8px] text-muted-foreground">{documentType}</p></div>
     </header>
     <div className="relative overflow-hidden bg-primary px-12 py-12 text-primary-foreground">
@@ -16,7 +16,7 @@ export default function AcwaDocumentPage({ page, total, documentType }) {
       <div className="grid grid-cols-2 gap-10"><h1 dir="rtl" className="text-right font-heading text-4xl font-bold leading-tight">{page.titleAr}</h1><h2 className="font-heading text-4xl font-bold leading-tight">{page.titleEn}</h2></div>
     </div>
     <AcwaPageVisual page={page} />
-    <div className="flex flex-1 flex-col px-12 py-7">
+    <div className="flex flex-1 flex-col px-12 py-6">
       <div className="grid grid-cols-2 gap-10"><p dir="rtl" className="text-right text-[13px] leading-6 text-muted-foreground">{page.summaryAr}</p><p className="text-[12px] leading-6 text-muted-foreground">{page.summaryEn}</p></div>
       {!!page.bulletsAr.length && <div className="mt-5"><ProfileBulletGrid ar={page.bulletsAr} en={page.bulletsEn} /></div>}
       {(page.noteAr || page.noteEn) && <div className="mt-5 grid grid-cols-2 gap-8 rounded-xl border border-accent/30 bg-secondary p-4 text-[10px] leading-5"><p dir="rtl" className="text-right">{page.noteAr}</p><p>{page.noteEn}</p></div>}

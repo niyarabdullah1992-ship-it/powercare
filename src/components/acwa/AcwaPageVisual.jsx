@@ -1,9 +1,20 @@
 import React from "react";
-import { Image } from "@/components/ui/image";
-import ManualDemoShot from "@/components/manual/ManualDemoShot";
+import AcwaChartVisual from "@/components/acwa/AcwaChartVisual";
+import AcwaComparisonVisual from "@/components/acwa/AcwaComparisonVisual";
+import AcwaKpiVisual from "@/components/acwa/AcwaKpiVisual";
+import AcwaStepsVisual from "@/components/acwa/AcwaStepsVisual";
+
+const visuals = {
+  chart: AcwaChartVisual,
+  radar: AcwaChartVisual,
+  pie: AcwaChartVisual,
+  comparison: AcwaComparisonVisual,
+  kpi: AcwaKpiVisual,
+  steps: AcwaStepsVisual,
+};
 
 export default function AcwaPageVisual({ page }) {
-  if (page.screenId) return <div className="mx-12 mt-7 overflow-hidden rounded-xl border border-accent/25 bg-card"><ManualDemoShot chapterId={page.screenId} title={page.titleEn} language="en" /></div>;
-  if (page.image) return <div className="mx-12 mt-7 overflow-hidden rounded-xl border border-accent/25"><Image src={page.image} alt={`${page.titleAr} — ${page.titleEn}`} originWidth={1536} originHeight={864} loading="eager" className="h-[255px] w-full" fittingType="fill" /></div>;
-  return null;
+  const Visual = visuals[page.visualType];
+  if (!Visual) return null;
+  return <div className="mx-12 mt-6 h-[220px] overflow-hidden rounded-xl border border-border bg-card p-4"><Visual type={page.visualType} data={page.visualData} /></div>;
 }
