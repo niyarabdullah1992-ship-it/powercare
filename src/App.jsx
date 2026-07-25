@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'r
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider } from '@/lib/AuthContext';
 import ScrollToTop from './components/ScrollToTop';
+import PlatformMusicButton from '@/components/PlatformMusicButton';
 import { I18nProvider } from '@/lib/i18n';
 import { AuthProvider as PowerCareAuthProvider, useAuth as usePowerCareAuth } from '@/lib/PowerCareAuth';
 import Layout from '@/components/Layout';
@@ -152,6 +153,7 @@ function AppRoutes() {
       <Route path="/app/manual" element={<RequireAuth><ProjectGuideDoc /></RequireAuth>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    <PlatformMusicButton />
     </Suspense>
   );
 }
