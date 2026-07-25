@@ -56,7 +56,6 @@ const AdAudio = lazy(() => import('./pages/AdAudio'));
 const CopyrightDoc = lazy(() => import('./pages/CopyrightDoc'));
 const SourceCodeDoc = lazy(() => import('./pages/SourceCodeDoc'));
 const ProjectGuideDoc = lazy(() => import('./pages/ProjectGuideDoc'));
-const SiteManual = lazy(() => import('./pages/SiteManual'));
 const TiktokAd = lazy(() => import('./pages/TiktokAd'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const Expenses = lazy(() => import('./pages/Expenses'));
@@ -124,7 +123,7 @@ function AppRoutes() {
       <Route path="/copyright-doc" element={<CopyrightDoc />} />
       <Route path="/source-code-doc" element={<SourceCodeDoc />} />
       <Route path="/project-guide" element={<ProjectGuideDoc />} />
-      <Route path="/manual" element={<SiteManual />} />
+      <Route path="/manual" element={<ProjectGuideDoc />} />
       <Route path="/tiktok-ad" element={<TiktokAd />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/owner-panel" element={<OwnerPanel />} />
@@ -150,7 +149,7 @@ function AppRoutes() {
       <Route path="/app/signing" element={<RequireAuth><FileSigning /></RequireAuth>} />
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
       <Route path="/app/help" element={<RequireAuth><Help /></RequireAuth>} />
-      <Route path="/app/manual" element={<RequireAuth><SiteManual /></RequireAuth>} />
+      <Route path="/app/manual" element={<RequireAuth><ProjectGuideDoc /></RequireAuth>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </Suspense>
