@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, MapPinCheck, ListChecks, ShieldCheck, WalletCards, Boxes, FileSignature, BrainCircuit } from "lucide-react";
+import { Users, MapPinCheck, ListChecks, ShieldCheck, WalletCards, Boxes, Cctv, FileSignature, BrainCircuit } from "lucide-react";
 
 const modules = [
   { icon: Users, en: "Workforce & HR", ar: "الموارد البشرية", enText: "People, hierarchy, profiles and leave in one workspace.", arText: "إدارة الموظفين والهيكل والملفات والإجازات في مساحة موحدة." },
@@ -8,6 +8,7 @@ const modules = [
   { icon: ShieldCheck, en: "HSE & Compliance", ar: "السلامة والامتثال", enText: "Safety controls, permits, incidents and compliance insight.", arText: "ضوابط السلامة والتصاريح والحوادث ومؤشرات الامتثال." },
   { icon: WalletCards, en: "Payroll", ar: "الرواتب", enText: "Structured payroll management and professional reporting.", arText: "إدارة منظمة للرواتب وتقارير مالية احترافية." },
   { icon: Boxes, en: "Inventory", ar: "المخزون", enText: "Distributed stock, purchasing and movement traceability.", arText: "مخزون موزع ومشتريات وتتبع كامل للحركات." },
+  { icon: Cctv, en: "Cameras & Monitoring", ar: "الكاميرات والمراقبة", enText: "Live site feeds, camera status and severity-ranked alerts.", arText: "بث مباشر للمواقع وحالة الكاميرات وتنبيهات مصنفة حسب الخطورة." },
   { icon: FileSignature, en: "Files & Signing", ar: "الملفات والتوقيع", enText: "Secure documents, approvals and verifiable signatures.", arText: "مستندات آمنة واعتمادات وتوقيعات قابلة للتحقق." },
   { icon: BrainCircuit, en: "Niro Intelligence", ar: "ذكاء نيرو", enText: "Operational intelligence, analysis and decision support.", arText: "ذكاء تشغيلي وتحليلات ودعم متقدم للقرارات." },
 ];
