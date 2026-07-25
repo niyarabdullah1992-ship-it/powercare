@@ -3,7 +3,7 @@ import { PDFDocument, StandardFonts, rgb } from 'npm:pdf-lib@1.17.1';
 import { authPowerCareSession } from '../../shared/powerCareSession.ts';
 
 const trustedHosts = new Set(['media.base44.com', 'base44.app']);
-const validPdfUrl = (value) => { try { const url = new URL(String(value || '')); return url.protocol === 'https:' && trustedHosts.has(url.hostname.toLowerCase()) && !url.username && !url.password; } catch { return false; } };
+const validFileUrl = (value) => { try { const url = new URL(String(value || '')); return url.protocol === 'https:' && trustedHosts.has(url.hostname.toLowerCase()) && !url.username && !url.password; } catch { return false; } };
 const verificationId = () => { const bytes = crypto.getRandomValues(new Uint8Array(6)); const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0').toUpperCase()).join(''); return `PWC-${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}`; };
 const sha256 = async (bytes) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map((b) => b.toString(16).padStart(2, '0')).join('');
 
@@ -21,7 +21,18 @@ Deno.serve(async (req) => {
     if (!actor.admin && !allowed.has(actor.role) && !actor.hrLevelId) return Response.json({ error: 'Forbidden' }, { status: 403 });
     const sourceUrl = String(body.docUrl || '').slice(0, 2000);
     const fileName = String(body.fileName || '').slice(0, 200);
-    if (!validPdfUrl(sourceUrl) || !fileName.toLowerCase().endsWith('.pdf')) return Response.json({ error: 'A valid PDF is required' }, { status: 400 });
+    const lowerName = fileName.toLowerCase();
+    const isPdf = lowerName.endsWith('.pdf');
+    const isImage = ['.jpg', '.jpeg', '.png', '.webp'].some((extension) => lowerName.endsWith(extension));
+    if (!validFileUrl(sourceUrl) || (!isPdf && !isImage)) return Response.json({ error: 'A valid PDF, JPG, PNG, or WebP file is required' }, { status: 400 });
+    if (isImage) {
+      const report = await base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt: 'You are Niro, a rigorous enterprise visual analyst. Analyze the attached image without inventing details. Identify the scene or subject, transcribe clearly visible text, list important visual findings, flag safety, operational, compliance, quality, or security risks when present, and provide concise practical recommendations. Respond in the dominant language visible in the image, or Arabic when no language is visible.',
+        file_urls: [sourceUrl],
+        response_json_schema: { type: 'object', properties: { documentType: { type: 'string' }, summary: { type: 'string' }, complete: { type: 'boolean' }, confidence: { type: 'number' }, requiredChecks: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, status: { type: 'string', enum: ['complete', 'missing', 'unclear'] }, evidence: { type: 'string' } }, required: ['label', 'status', 'evidence'] } }, missingItems: { type: 'array', items: { type: 'string' } }, riskNotes: { type: 'array', items: { type: 'string' } } }, required: ['documentType', 'summary', 'complete', 'confidence', 'requiredChecks', 'missingItems', 'riskNotes'] }
+      });
+      return Response.json({ ok: true, sealed: false, analysisOnly: true, report, auditTrail: [{ type: 'niro_image_analysis_completed', at: new Date().toISOString(), actorName: 'Niro' }] });
+    }
     const now = new Date().toISOString();
     review = await base44.asServiceRole.entities.NiroDocumentReview.create({ companyId, actorId: actor.userId || 'admin', actorName: actor.name, actorRole: actor.role || 'admin', fileName, sourceUrl, status: 'analyzing', sealedUrl: null, verificationId: null, fileHash: null, auditTrail: [{ type: 'uploaded_for_ai_review', at: now, actorName: actor.name, actorRole: actor.role || 'admin' }] });
     const report = await base44.asServiceRole.integrations.Core.InvokeLLM({
