@@ -26,8 +26,9 @@ Deno.serve(async (req) => {
     const isImage = ['.jpg', '.jpeg', '.png', '.webp'].some((extension) => lowerName.endsWith(extension));
     if (!validFileUrl(sourceUrl) || (!isPdf && !isImage)) return Response.json({ error: 'A valid PDF, JPG, PNG, or WebP file is required' }, { status: 400 });
     if (isImage) {
+      const analysisPrompt = String(body.analysisPrompt || '').slice(0, 1000);
       const report = await base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: 'You are Niro, a rigorous enterprise visual analyst. Analyze the attached image without inventing details. Identify the scene or subject, transcribe clearly visible text, list important visual findings, flag safety, operational, compliance, quality, or security risks when present, and provide concise practical recommendations. Respond in the dominant language visible in the image, or Arabic when no language is visible.',
+        prompt: `You are Niro, a rigorous enterprise visual analyst. Analyze the attached image without inventing details. Identify the scene or subject, transcribe clearly visible text, list important visual findings, flag safety, operational, compliance, quality, or security risks when present, and provide concise practical recommendations. Respond in the dominant language visible in the image, or Arabic when no language is visible.${analysisPrompt ? ` The user specifically asks: ${analysisPrompt}` : ''}`,
         file_urls: [sourceUrl],
         response_json_schema: { type: 'object', properties: { documentType: { type: 'string' }, summary: { type: 'string' }, complete: { type: 'boolean' }, confidence: { type: 'number' }, requiredChecks: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, status: { type: 'string', enum: ['complete', 'missing', 'unclear'] }, evidence: { type: 'string' } }, required: ['label', 'status', 'evidence'] } }, missingItems: { type: 'array', items: { type: 'string' } }, riskNotes: { type: 'array', items: { type: 'string' } } }, required: ['documentType', 'summary', 'complete', 'confidence', 'requiredChecks', 'missingItems', 'riskNotes'] }
       });

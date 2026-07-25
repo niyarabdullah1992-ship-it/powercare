@@ -9,14 +9,17 @@ import AssistantMessage from "@/components/assistant/AssistantMessage";
 import SuggestedQuestions from "@/components/assistant/SuggestedQuestions";
 import VoiceControl from "@/components/assistant/VoiceControl";
 import AutomationApprovalCard from "@/components/assistant/AutomationApprovalCard";
+import AssistantImageUpload from "@/components/assistant/AssistantImageUpload";
 import { Sparkles, Send, Loader2 } from "lucide-react";
 import speak from "@/components/assistant/speak";
+import formatNiroImageAnalysis from "@/lib/formatNiroImageAnalysis";
 
 export default function Assistant() {
   const { t, lang } = useI18n();
   const { session, data, currentUser, company } = useAuth();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState(() => new URLSearchParams(window.location.search).get("prompt") || "");
+  const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [pendingActions, setPendingActions] = useState([]);
   const [approvalLoading, setApprovalLoading] = useState(false);
@@ -47,6 +50,24 @@ export default function Assistant() {
   }, [messages, loading]);
 
   if (!data || !currentUser) return null;
+
+  const analyzeImage = async (question = "") => {
+    if (!imageFile || loading || pendingActions.length) return;
+    const prompt = question.trim();
+    const userText = `${lang === "ar" ? "تحليل الصورة" : "Analyze image"}: ${imageFile.name}${prompt ? `\n${prompt}` : ""}`;
+    setMessages((previous) => [...previous, { role: "user", text: userText }]);
+    setLoading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: imageFile });
+      const response = await base44.functions.invoke("niroDocumentReview", { action: "review", companyId: company.id, sessionToken: getCompanyToken(company.id), fileName: imageFile.name, docUrl: file_url, analysisPrompt: prompt });
+      setMessages((previous) => [...previous, { role: "assistant", text: formatNiroImageAnalysis(response.data.report, lang === "ar") }]);
+      setImageFile(null);
+      setInput("");
+    } catch {
+      setMessages((previous) => [...previous, { role: "assistant", text: t("aiError") }]);
+    }
+    setLoading(false);
+  };
 
   const ask = async (question, fromVoice = false) => {
     const q = question.trim();
@@ -313,9 +334,10 @@ Answer the last user question.`,
       </div>
 
       <form
-        onSubmit={(e) => { e.preventDefault(); ask(input); }}
+        onSubmit={(e) => { e.preventDefault(); imageFile ? analyzeImage(input) : ask(input); }}
         className="flex items-center gap-2 pt-3 border-t border-border"
       >
+        <AssistantImageUpload file={imageFile} onSelect={setImageFile} disabled={loading || pendingActions.length > 0} ar={lang === "ar"} />
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -325,7 +347,7 @@ Answer the last user question.`,
         />
         <button
           type="submit"
-          disabled={loading || pendingActions.length > 0 || !input.trim()}
+          disabled={loading || pendingActions.length > 0 || (!input.trim() && !imageFile)}
           className="p-2.5 rounded-md bg-foreground text-background hover:bg-accent disabled:opacity-50"
           aria-label={t("send")}
         >
