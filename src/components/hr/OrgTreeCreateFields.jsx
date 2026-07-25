@@ -2,14 +2,14 @@ import React from "react";
 import SmartDepartmentGrid from "@/components/hr/SmartDepartmentGrid";
 import StationManagerField from "@/components/hr/StationManagerField";
 
-export default function OrgTreeCreateFields({ type, setType, form, setForm, title, setTitle, permissions, setPermissions, stations, employees, ar }) {
+export default function OrgTreeCreateFields({ type, setType, employeeOnly = false, form, setForm, title, setTitle, permissions, setPermissions, stations, employees, ar }) {
   const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
   return (
     <>
-      <div className="grid grid-cols-2 gap-2">
+      {!employeeOnly && <div className="grid grid-cols-2 gap-2">
         <button type="button" onClick={() => setType("station")} className={`rounded-md border p-3 text-sm ${type === "station" ? "border-accent bg-accent/10" : "border-border"}`}>{ar ? "محطة / فرع / مقر" : "Station / branch / HQ"}</button>
         <button type="button" onClick={() => setType("employee")} className={`rounded-md border p-3 text-sm ${type === "employee" ? "border-accent bg-accent/10" : "border-border"}`}>{ar ? "موظف" : "Employee"}</button>
-      </div>
+      </div>}
       <input required value={form.name} onChange={(event) => update("name", event.target.value)} placeholder={type === "station" ? (ar ? "اسم المحطة" : "Station name") : (ar ? "اسم الموظف" : "Employee name")} className="w-full rounded-md border px-3 py-2 text-sm" />
       {type === "station" ? (
         <div className="grid gap-3 sm:grid-cols-2">

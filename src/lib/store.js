@@ -308,6 +308,7 @@ function emptyCompanyData(meta) {
     journalEntries: [],
     payrollRuns: [],
     smartPositions: [],
+    hrOrgTree: [],
     complaintEscalationChain: [],
     cameras: [],
     settings: { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30 },
@@ -436,7 +437,7 @@ export const BLOB_CATEGORIES = [
   "tasks", "reports", "anonymousReports", "publicReports", "safety", "plans",
   "schedules", "hrLevels", "jobGrades", "hrClusters", "files", "notifications", "templates", "targets",
   "personalPlaces", "personalAttendance", "plannerItems", "journalEntries", "payrollRuns", "smartPositions",
-  "complaintEscalationChain", "orgTree", "cameras",
+  "complaintEscalationChain", "orgTree", "hrOrgTree", "cameras",
   ];
 const lastSyncedBlobJSON = {};
 async function syncBlobToEntity(companyId, category, payload) {
