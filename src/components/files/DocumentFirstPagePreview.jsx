@@ -20,8 +20,8 @@ export default function DocumentFirstPagePreview({ url, file, ar }) {
       cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
       cMapPacked: true,
       standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`,
-      useSystemFonts: true,
-      disableFontFace: false,
+      useSystemFonts: false,
+      disableFontFace: true,
     }).promise.then((pdf) => pdf.getPage(1)).then((page) => {
       if (cancelled) return null;
       const baseViewport = page.getViewport({ scale: 1 });
