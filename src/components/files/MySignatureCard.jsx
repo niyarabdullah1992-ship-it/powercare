@@ -5,6 +5,7 @@ import { updateEmployeeProfile } from "@/lib/store";
 import { makeSignatureStamp } from "@/lib/multiSignStamp";
 import SignaturePad from "./SignaturePad";
 import TypedSignature from "./TypedSignature";
+import RandomSignaturePicker from "./RandomSignaturePicker";
 import SelfSignDocumentCard from "./SelfSignDocumentCard";
 
 // DocuSign-style unique signature ID: a non-reversible SHA-256 hash of the
@@ -34,7 +35,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   const signatureVariant = localSignature?.signatureVariant ?? currentUser?.profile?.signatureVariant ?? "unique";
   const signatureId = localSignature?.signatureId ?? currentUser?.profile?.signatureId ?? "";
   const [editing, setEditing] = useState(!signatureUrl);
-  const [mode, setMode] = useState("type"); // "type" | "draw"
+  const [mode, setMode] = useState("type"); // "type" | "draw" | "templates"
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
@@ -144,11 +145,14 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
           <p className="mx-auto max-w-sm text-center text-xs leading-5 text-signature-ink">
             {ar ? "اختر طريقة إنشاء التوقيع، راجع المعاينة، ثم اعتمده للحصول على رقم تحقق مشفّر." : "Choose how to create your signature, review the preview, then approve it for an encrypted verification ID."}
           </p>
-          <div className="space-y-2">
-            <button onClick={() => { setMode("type"); setCreationPreview(""); }} className={`flex h-10 w-full items-center justify-center !rounded-full px-4 text-xs font-bold transition ${mode === "type" ? "bg-signature-ink text-signature-organic shadow-sm" : "border border-signature-ink/40 text-signature-ink"}`}>{ar ? "كتابة الاسم" : "Type name"}</button>
-            <button onClick={() => { setMode("draw"); setCreationPreview(""); }} className={`flex h-10 w-full items-center justify-center !rounded-full px-4 text-xs font-bold transition ${mode === "draw" ? "bg-signature-ink text-signature-organic shadow-sm" : "border border-signature-ink/40 text-signature-ink"}`}>{ar ? "رسم التوقيع" : "Draw signature"}</button>
+          <div className="grid grid-cols-3 gap-2">
+            <button onClick={() => { setMode("type"); setCreationPreview(""); }} className={`flex h-10 items-center justify-center !rounded-full px-3 text-xs font-bold transition ${mode === "type" ? "bg-signature-ink text-signature-organic shadow-sm" : "border border-signature-ink/40 text-signature-ink"}`}>{ar ? "كتابة الاسم" : "Type name"}</button>
+            <button onClick={() => { setMode("draw"); setCreationPreview(""); }} className={`flex h-10 items-center justify-center !rounded-full px-3 text-xs font-bold transition ${mode === "draw" ? "bg-signature-ink text-signature-organic shadow-sm" : "border border-signature-ink/40 text-signature-ink"}`}>{ar ? "رسم التوقيع" : "Draw"}</button>
+            <button onClick={() => { setMode("templates"); setCreationPreview(""); }} className={`flex h-10 items-center justify-center !rounded-full px-3 text-xs font-bold transition ${mode === "templates" ? "bg-signature-ink text-signature-organic shadow-sm" : "border border-signature-ink/40 text-signature-ink"}`}>{ar ? "قوالب جاهزة" : "Templates"}</button>
           </div>
-          {mode === "type" ? <TypedSignature ar={ar} defaultName={currentUser?.name || ""} onPreview={setCreationPreview} onSave={saveSignature} saving={saving} /> : <SignaturePad ar={ar} onPreview={setCreationPreview} onSave={saveSignature} saving={saving} />}
+          {mode === "type" && <TypedSignature ar={ar} defaultName={currentUser?.name || ""} onPreview={setCreationPreview} onSave={saveSignature} saving={saving} />}
+          {mode === "draw" && <SignaturePad ar={ar} onPreview={setCreationPreview} onSave={saveSignature} saving={saving} />}
+          {mode === "templates" && <RandomSignaturePicker ar={ar} signerName={currentUser?.name || ""} onPreview={setCreationPreview} onSave={saveSignature} saving={saving} />}
           {error && <p className="text-xs text-destructive font-body">{error}</p>}
         </div>
       )}
