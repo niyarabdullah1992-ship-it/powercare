@@ -9,6 +9,7 @@ import PayrollReportExport from "@/components/payroll/PayrollReportExport";
 import StationMultiSelect from "@/components/payroll/StationMultiSelect";
 import PayrollSalaryNotice from "@/components/payroll/PayrollSalaryNotice";
 import OwnerPayrollToggle from "@/components/payroll/OwnerPayrollToggle";
+import PayrollSyncDialog from "@/components/payroll/PayrollSyncDialog";
 import { canAdjustPayroll, hrScopeStations } from "@/lib/permissions";
 import { toast } from "@/components/ui/use-toast";
 import { stationIdForTreeEmployee } from "@/lib/orgTree";
@@ -23,6 +24,7 @@ export default function Payroll() {
   const [month, setMonth] = useState(monthKey());
   const [stationFilter, setStationFilter] = useState([]);
   const [showReport, setShowReport] = useState(false);
+  const [showSyncConfirm, setShowSyncConfirm] = useState(false);
 
   const canView = canAdjustPayroll(currentUser, data);
   const includeOwner = data?.settings?.includeOwnerInPayroll === true;
@@ -73,10 +75,6 @@ export default function Payroll() {
     : ["Employee", "Base", "Allowances", "Bonus", "Deductions", "Net", "Status"];
 
   const syncFromProfiles = () => {
-    const confirmed = window.confirm(ar
-      ? "سيتم تحديث الراتب الأساسي والبدلات والعملة للموظفين غير المدفوعين فقط. هل تريد المتابعة؟"
-      : "Base salary, allowances, and currency will be refreshed for unpaid employees only. Continue?");
-    if (!confirmed) return;
     const count = syncPayrollFromProfiles(company.id, month);
     toast({
       title: ar ? "تم تحديث بيانات الرواتب" : "Payroll data refreshed",
@@ -115,11 +113,13 @@ export default function Payroll() {
         actions={<>
           <input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} className="border-border bg-card px-3 py-2 text-sm font-medium text-foreground shadow-sm [color-scheme:light] dark:[color-scheme:dark]" dir="ltr" />
           <StationMultiSelect stations={filterStations} value={selectedStationIds} onChange={setStationFilter} ar={ar} />
-          <button onClick={syncFromProfiles} className="flex items-center gap-1.5 border border-accent/45 bg-accent px-3.5 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent/90">
+          <button onClick={() => setShowSyncConfirm(true)} className="flex items-center gap-1.5 border border-accent/45 bg-accent px-3.5 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent/90">
             <RefreshCw className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تحديث من الملفات الشخصية" : "Refresh from profiles"}
           </button>
         </>}
       />
+
+      <PayrollSyncDialog open={showSyncConfirm} onOpenChange={setShowSyncConfirm} onConfirm={syncFromProfiles} ar={ar} />
 
       <OwnerPayrollToggle checked={includeOwner} onChange={(checked) => setOwnerPayrollEnabled(company.id, checked)} ar={ar} />
 
