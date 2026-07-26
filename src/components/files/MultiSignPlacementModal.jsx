@@ -24,6 +24,7 @@ export default function MultiSignPlacementModal({ docUrl, signers, initialSpots,
   const [spots, setSpots] = useState(() => normalize(initialSpots));
   const [selectedId, setSelectedId] = useState(null);
   const canvasRef = useRef(null);
+  const renderTaskRef = useRef(null);
   const wrapRef = useRef(null);
   const stageRef = useRef(null);
   const [stageSize, setStageSize] = useState({ width: 600, height: 600 });
@@ -72,7 +73,52 @@ export default function MultiSignPlacementModal({ docUrl, signers, initialSpots,
   }, []);
 
   useEffect(() => { let cancelled = false; (async () => { try { const bytes = await fetch(docUrl).then((response) => { if (!response.ok) throw new Error("PDF download failed"); return response.arrayBuffer(); }); const loaded = await pdfjsLib.getDocument({ data: bytes }).promise; if (!cancelled) { setPdfDoc(loaded); setNumPages(loaded.numPages); } } catch { if (!cancelled) { setLoadError(true); setLoading(false); } } })(); return () => { cancelled = true; }; }, [docUrl]);
-  useEffect(() => { if (!pdfDoc || !canvasRef.current || !stageSize.width || !stageSize.height) return; let cancelled = false; (async () => { setLoading(true); const pdfPage = await pdfDoc.getPage(page); if (cancelled) return; const base = pdfPage.getViewport({ scale: 1 }); const cssScale = Math.min((stageSize.width - 8) / base.width, (stageSize.height - 8) / base.height); const displayWidth = base.width * cssScale; const displayHeight = base.height * cssScale; const viewport = pdfPage.getViewport({ scale: cssScale * (window.devicePixelRatio || 1) }); const canvas = canvasRef.current; canvas.width = viewport.width; canvas.height = viewport.height; canvas.style.width = `${displayWidth}px`; canvas.style.height = `${displayHeight}px`; canvas.style.direction = "ltr"; if (wrapRef.current) { wrapRef.current.style.width = `${displayWidth}px`; wrapRef.current.style.height = `${displayHeight}px`; } const context = canvas.getContext("2d"); context.direction = "ltr"; await pdfPage.render({ canvasContext: context, viewport }).promise; if (!cancelled) setLoading(false); })(); return () => { cancelled = true; }; }, [pdfDoc, page, stageSize]);
+  useEffect(() => {
+    if (!pdfDoc || !canvasRef.current || !stageSize.width || !stageSize.height) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const previousTask = renderTaskRef.current;
+      if (previousTask) {
+        previousTask.cancel();
+        try { await previousTask.promise; } catch { /* Expected cancellation. */ }
+      }
+      if (cancelled) return;
+      const pdfPage = await pdfDoc.getPage(page);
+      if (cancelled) return;
+      const base = pdfPage.getViewport({ scale: 1 });
+      const cssScale = Math.min((stageSize.width - 8) / base.width, (stageSize.height - 8) / base.height);
+      const displayWidth = base.width * cssScale;
+      const displayHeight = base.height * cssScale;
+      const viewport = pdfPage.getViewport({ scale: cssScale * (window.devicePixelRatio || 1) });
+      const canvas = canvasRef.current;
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      canvas.style.width = `${displayWidth}px`;
+      canvas.style.height = `${displayHeight}px`;
+      canvas.style.direction = "ltr";
+      if (wrapRef.current) {
+        wrapRef.current.style.width = `${displayWidth}px`;
+        wrapRef.current.style.height = `${displayHeight}px`;
+      }
+      const context = canvas.getContext("2d");
+      context.direction = "ltr";
+      const task = pdfPage.render({ canvasContext: context, viewport });
+      renderTaskRef.current = task;
+      try {
+        await task.promise;
+        if (!cancelled) setLoading(false);
+      } catch (error) {
+        if (error?.name !== "RenderingCancelledException") throw error;
+      } finally {
+        if (renderTaskRef.current === task) renderTaskRef.current = null;
+      }
+    })();
+    return () => {
+      cancelled = true;
+      renderTaskRef.current?.cancel();
+    };
+  }, [pdfDoc, page, stageSize]);
 
   const placeField = (event) => {
     if (event.target !== wrapRef.current && event.target !== canvasRef.current) return;
