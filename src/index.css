@@ -72,6 +72,35 @@
     --holo-green-soft: 215 92% 72%;
   }
 
+  .signing-theme-balanced {
+    --signing-bg: #f8f9fa;
+    --signing-panel: #ffffff;
+    --signing-accent: #6d28d9;
+    --signing-accent-soft: #ede9fe;
+    --signing-border: #d9dce3;
+  }
+  .signing-theme-executive {
+    --signing-bg: #0f172a;
+    --signing-panel: #172033;
+    --signing-accent: #c9a227;
+    --signing-accent-soft: #2b2a24;
+    --signing-border: #39445a;
+    --foreground: 40 30% 94%;
+    --card: 217 35% 16%;
+    --card-foreground: 40 30% 94%;
+    --muted: 217 28% 21%;
+    --muted-foreground: 40 16% 70%;
+    --border: 218 23% 29%;
+    --input: 218 23% 34%;
+  }
+  .signing-theme-clean {
+    --signing-bg: #ffffff;
+    --signing-panel: #f8fbff;
+    --signing-accent: #2563eb;
+    --signing-accent-soft: #dbeafe;
+    --signing-border: #cbd5e1;
+  }
+
   .dark {
     --background: 211 48% 8%;
     --foreground: 40 30% 94%;

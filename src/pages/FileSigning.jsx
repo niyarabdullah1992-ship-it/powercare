@@ -42,7 +42,7 @@ export default function FileSigning() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <div className="overflow-hidden rounded-3xl border border-accent/20 bg-gradient-to-br from-landing-bg via-card to-secondary p-6 shadow-soft sm:p-8">
         <div className="flex items-center gap-4">
           <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-accent/25 bg-card shadow-sm"><PenLine className="h-7 w-7 text-accent" /></span>
