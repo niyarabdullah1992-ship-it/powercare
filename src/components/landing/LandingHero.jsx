@@ -4,7 +4,7 @@ import { Image } from "@/components/ui/image";
 import Logo from "@/components/Logo";
 import PowerCareLoginPanel from "@/components/auth/PowerCareLoginPanel";
 
-const HERO_IMAGE = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/738c0a20a_generated_image.png";
+const HERO_IMAGE = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/573c53f75_generated_image.png";
 
 export default function LandingHero({ lang, t }) {
   const features = [[Clock, "feature1"], [TrendingUp, "feature2"], [ShieldCheck, "feature3"]];
