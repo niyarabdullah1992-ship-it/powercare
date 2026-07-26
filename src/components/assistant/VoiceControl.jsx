@@ -70,25 +70,26 @@ export default function VoiceControl({ onCommand, voiceGender }) {
         : null;
 
   return (
-    <div className="ms-auto flex items-center gap-2">
+    <div className="absolute end-2 top-1/2 z-10 -translate-y-1/2">
       {status && (
-        <span className={`max-w-[200px] text-xs font-body leading-tight ${awake || directReady ? "text-accent font-semibold" : (denied || micDenied) ? "text-red-500" : "text-muted-foreground"}`}>
+        <span className={`absolute bottom-full end-0 mb-2 w-52 rounded-md border border-border bg-card px-2.5 py-2 text-xs font-body leading-relaxed shadow-sm ${awake || directReady ? "text-accent font-semibold" : (denied || micDenied) ? "text-red-500" : "text-muted-foreground"}`}>
           {status}
         </span>
       )}
       <button
         type="button"
         onClick={toggle}
-        aria-label={ar ? "الاستماع الصوتي" : "Voice listening"}
-        className={`relative p-2.5 rounded-full border transition-colors ${
+        aria-label={enabled ? (ar ? "إيقاف الاستماع" : "Stop listening") : (ar ? "بدء الاستماع" : "Start listening")}
+        title={enabled ? (ar ? "إيقاف الاستماع" : "Stop listening") : (ar ? "بدء الاستماع" : "Start listening")}
+        className={`relative flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${
           enabled
             ? "bg-accent text-accent-foreground border-accent"
-            : "bg-card text-muted-foreground border-border hover:text-foreground"
+            : "bg-secondary text-foreground border-accent/45 hover:bg-accent hover:text-accent-foreground"
         }`}
       >
-        {enabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+        {enabled ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
         {listening && (
-          <span className={`absolute -top-0.5 -end-0.5 w-2.5 h-2.5 rounded-full ${awake || directReady ? "bg-green-500 animate-ping" : "bg-green-500 animate-pulse"}`} />
+          <span className={`absolute -top-0.5 -end-0.5 h-2.5 w-2.5 rounded-full ${awake || directReady ? "bg-green-500 animate-ping" : "bg-green-500 animate-pulse"}`} />
         )}
       </button>
     </div>

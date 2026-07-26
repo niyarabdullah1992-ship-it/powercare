@@ -358,7 +358,6 @@ Answer the last user question.`,
           <h1 className="font-heading text-2xl font-semibold">{t("aiAssistant")}</h1>
           <p className="text-xs text-muted-foreground font-body">{t("aiAssistantDesc")}</p>
         </div>
-        <VoiceControl onCommand={(cmd) => ask(cmd, true)} voiceGender={voiceGender} />
         <NiroVoiceSettings gender={voiceGender} onGenderChange={changeVoiceGender} ar={lang === "ar"} />
       </div>
 
@@ -392,8 +391,9 @@ Answer the last user question.`,
             onChange={(e) => setInput(e.target.value)}
             placeholder={t("aiPlaceholder")}
             dir="auto"
-            className="w-full py-2.5 pe-4 ps-12 rounded-md border border-input bg-card text-sm font-body focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full py-2.5 pe-12 ps-12 rounded-md border border-input bg-card text-sm font-body focus:outline-none focus:ring-2 focus:ring-ring"
           />
+          <VoiceControl onCommand={(cmd) => ask(cmd, true)} voiceGender={voiceGender} />
         </div>
         <button
           type="submit"
