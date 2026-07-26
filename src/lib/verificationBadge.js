@@ -21,14 +21,16 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
   ctx.scale(scale, scale);
 
   const drawSignerLine = (tx, y, fontSize, nameMaxWidth) => {
+    const nameText = signerName || "";
     const dateText = new Date().toLocaleDateString("en-GB");
     ctx.font = `600 ${fontSize}px sans-serif`;
-    ctx.direction = /[\u0600-\u06ff]/.test(signerName || "") ? "rtl" : "ltr";
+    ctx.direction = /[\u0600-\u06ff]/.test(nameText) ? "rtl" : "ltr";
     ctx.textAlign = "left";
-    ctx.fillText(signerName || "", tx, y, nameMaxWidth);
+    ctx.fillText(nameText, tx, y, nameMaxWidth);
+    const nameWidth = ctx.measureText(nameText).width;
     ctx.direction = "ltr";
-    ctx.textAlign = "right";
-    ctx.fillText(dateText, qx - 10, y, 88);
+    ctx.textAlign = "left";
+    ctx.fillText(dateText, tx + nameWidth + 8, y, 88);
   };
 
   ctx.beginPath();
