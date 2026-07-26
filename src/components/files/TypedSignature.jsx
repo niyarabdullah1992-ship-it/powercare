@@ -25,21 +25,30 @@ const FONTS = [
   { id: "lateef", label: "لطيف", family: "'Lateef'" },
 ];
 
+const ENGLISH_FONTS = FONTS.slice(0, 11);
+const ARABIC_FONTS = FONTS.slice(11);
+
 export default function TypedSignature({ ar, defaultName = "", verificationId, onPreview, onSave, saving }) {
+  const availableFonts = ar ? ARABIC_FONTS : ENGLISH_FONTS;
   const [name, setName] = useState(defaultName);
-  const [fontId, setFontId] = useState(FONTS[0].id);
+  const [fontId, setFontId] = useState(() => (ar ? ARABIC_FONTS[0].id : ENGLISH_FONTS[0].id));
   const [samples, setSamples] = useState({});
   const [datedSignature, setDatedSignature] = useState("");
   const [stamp, setStamp] = useState("");
 
   useEffect(() => {
+    const languageFonts = ar ? ARABIC_FONTS : ENGLISH_FONTS;
+    if (!languageFonts.some((font) => font.id === fontId)) setFontId(languageFonts[0].id);
+  }, [ar, fontId]);
+
+  useEffect(() => {
     let active = true;
     setSamples({}); setStamp(""); onPreview?.("");
     if (!name.trim()) return () => { active = false; };
-    Promise.all(FONTS.map(async (font) => [font.id, await createTypedSignatureImage(name.trim(), font.family)]))
+    Promise.all(availableFonts.map(async (font) => [font.id, await createTypedSignatureImage(name.trim(), font.family)]))
       .then((entries) => { if (active) setSamples(Object.fromEntries(entries)); });
     return () => { active = false; };
-  }, [name, onPreview]);
+  }, [name, ar, onPreview]);
 
   useEffect(() => {
     let active = true;
@@ -69,7 +78,7 @@ export default function TypedSignature({ ar, defaultName = "", verificationId, o
         <div>
           <div className="mb-1.5 flex items-center justify-between gap-3"><label className="text-xs font-semibold text-foreground">{ar ? "نمط الكتابة" : "Writing style"}</label><span className="text-[10px] text-muted-foreground">{selectedFont?.label}</span></div>
           <select value={fontId} onChange={(event) => setFontId(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring">
-            {FONTS.map((font) => <option key={font.id} value={font.id}>{font.label}</option>)}
+            {availableFonts.map((font) => <option key={font.id} value={font.id}>{font.label}</option>) }
           </select>
         </div>
         {samples[fontId] && <div className="flex h-16 items-center justify-center rounded-md border border-dashed border-border bg-secondary/20 px-4"><img src={samples[fontId]} alt={selectedFont?.label || "Signature"} className="max-h-12 w-full object-contain" /></div>}
