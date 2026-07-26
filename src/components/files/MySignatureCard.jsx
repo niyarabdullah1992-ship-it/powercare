@@ -1,170 +1,35 @@
 import React, { useEffect, useState } from "react";
-import { PenLine, Trash2, Keyboard, Fingerprint, Copy, Check } from "lucide-react";
+import { Check, Keyboard, PenLine, Trash2, Upload } from "lucide-react";
+import { Image } from "@/components/ui/image";
 import { base44 } from "@/api/base44Client";
 import { updateEmployeeProfile } from "@/lib/store";
 import { makeSignatureStamp } from "@/lib/multiSignStamp";
 import SignaturePad from "./SignaturePad";
 import TypedSignature from "./TypedSignature";
+import UploadedSignature from "./UploadedSignature";
 import SelfSignDocumentCard from "./SelfSignDocumentCard";
+import SignatureSecurityBar from "./SignatureSecurityBar";
 
-// DocuSign-style unique signature ID: a non-reversible SHA-256 hash of the
-// signer + timestamp, formatted as PWC-XXXX-XXXX-XXXX for verification.
-async function generateSignatureId(userId) {
-  const data = new TextEncoder().encode(`${userId}::${Date.now()}::${Math.random()}`);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  const hex = [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
-  return `PWC-${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}`;
-}
+async function generateSignatureId(userId) { const data = new TextEncoder().encode(`${userId}::${Date.now()}::${Math.random()}`); const hash = await crypto.subtle.digest("SHA-256", data); const hex = [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase(); return `PWC-${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}`; }
+function dataUrlToBlob(dataUrl) { const [header, encoded] = dataUrl.split(","); const mime = header.match(/data:(.*?);base64/)?.[1] || "image/png"; const binary = atob(encoded); const bytes = new Uint8Array(binary.length); for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i); return new Blob([bytes], { type: mime }); }
 
-function dataUrlToBlob(dataUrl) {
-  const [header, encoded] = dataUrl.split(",");
-  const mime = header.match(/data:(.*?);base64/)?.[1] || "image/png";
-  const binary = atob(encoded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-  return new Blob([bytes], { type: mime });
-}
-
-// Each employee's personal signature: drawn or typed once, stored on their
-// profile with a unique encrypted ID, and reused for signing documents.
 export default function MySignatureCard({ companyId, currentUser, ar, onSaved }) {
-  const [localSignature, setLocalSignature] = useState(null);
-  const signatureUrl = localSignature?.signatureUrl ?? currentUser?.profile?.signatureUrl ?? "";
-  const signatureRawUrl = localSignature?.signatureRawUrl ?? currentUser?.profile?.signatureRawUrl ?? "";
-  const signatureVariant = localSignature?.signatureVariant ?? currentUser?.profile?.signatureVariant ?? "unique";
-  const signatureId = localSignature?.signatureId ?? currentUser?.profile?.signatureId ?? "";
-  const [editing, setEditing] = useState(!signatureUrl);
-  const [mode, setMode] = useState("type"); // "type" | "draw"
-  const [saving, setSaving] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [error, setError] = useState("");
-  const [refreshedPreview, setRefreshedPreview] = useState("");
+  const [localSignature, setLocalSignature] = useState(null); const signatureUrl = localSignature?.signatureUrl ?? currentUser?.profile?.signatureUrl ?? ""; const signatureRawUrl = localSignature?.signatureRawUrl ?? currentUser?.profile?.signatureRawUrl ?? ""; const signatureVariant = localSignature?.signatureVariant ?? currentUser?.profile?.signatureVariant ?? "unique"; const signatureId = localSignature?.signatureId ?? currentUser?.profile?.signatureId ?? "";
+  const [editing, setEditing] = useState(!signatureUrl); const [mode, setMode] = useState("draw"); const [saving, setSaving] = useState(false); const [error, setError] = useState(""); const [refreshedPreview, setRefreshedPreview] = useState(""); const [security, setSecurity] = useState({ signatureId, timestamp: currentUser?.profile?.signatureUpdatedAt || "", verified: false });
 
-  useEffect(() => {
-    let active = true;
-    setRefreshedPreview("");
-    if (!signatureRawUrl || !signatureId || signatureVariant === "composed") return () => { active = false; };
-    const signerName = currentUser?.profile?.signatureName || currentUser?.name || "";
-    makeSignatureStamp(signatureRawUrl, signerName, signatureId, signatureVariant)
-      .then((preview) => { if (active) setRefreshedPreview(preview); })
-      .catch(() => { if (active) setRefreshedPreview(""); });
-    return () => { active = false; };
-  }, [signatureRawUrl, signatureId, signatureVariant, currentUser?.profile?.signatureName, currentUser?.name]);
+  useEffect(() => { let active = true; setRefreshedPreview(""); if (!signatureRawUrl || !signatureId || signatureVariant === "composed") return () => { active = false; }; const signerName = currentUser?.profile?.signatureName || currentUser?.name || ""; makeSignatureStamp(signatureRawUrl, signerName, signatureId, signatureVariant).then((preview) => { if (active) setRefreshedPreview(preview); }).catch(() => { if (active) setRefreshedPreview(""); }); return () => { active = false; }; }, [signatureRawUrl, signatureId, signatureVariant, currentUser?.profile?.signatureName, currentUser?.name]);
 
-  const saveSignature = async (dataUrl, typedName, signatureStyle = "composed") => {
-    setSaving(true);
-    setError("");
-    try {
-      const sigId = await generateSignatureId(currentUser.id);
-      const signerName = typeof typedName === "string" ? typedName : currentUser.name;
-      const finalDataUrl = signatureStyle !== "composed"
-        ? await makeSignatureStamp(dataUrl, signerName, sigId, signatureStyle)
-        : dataUrl;
-      const finalFile = new File([dataUrlToBlob(finalDataUrl)], "signature.png", { type: "image/png" });
-      const rawFile = signatureStyle !== "composed"
-        ? new File([dataUrlToBlob(dataUrl)], "signature-original.png", { type: "image/png" })
-        : null;
-      const [finalUpload, rawUpload] = await Promise.all([
-        base44.integrations.Core.UploadFile({ file: finalFile }),
-        rawFile ? base44.integrations.Core.UploadFile({ file: rawFile }) : Promise.resolve(null),
-      ]);
-      const savedProfile = {
-        signatureUrl: finalUpload.file_url,
-        signatureRawUrl: rawUpload?.file_url || "",
-        signatureVariant: signatureStyle,
-        signatureId: sigId,
-        signatureName: signerName,
-        signatureUpdatedAt: new Date().toISOString(),
-      };
-      updateEmployeeProfile(companyId, currentUser.id, savedProfile);
-      setLocalSignature(savedProfile);
-      onSaved?.(savedProfile);
-      setEditing(false);
-    } catch {
-      setError(ar ? "تعذّر حفظ التوقيع؛ حاول مرة أخرى." : "Couldn't save the signature; try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
+  const saveSignature = async (dataUrl, typedName, signatureStyle = "composed") => { setSaving(true); setError(""); try { const sigId = await generateSignatureId(currentUser.id); const signerName = typeof typedName === "string" ? typedName : currentUser.name; const finalDataUrl = signatureStyle !== "composed" ? await makeSignatureStamp(dataUrl, signerName, sigId, signatureStyle) : dataUrl; const finalFile = new File([dataUrlToBlob(finalDataUrl)], "signature.png", { type: "image/png" }); const rawFile = signatureStyle !== "composed" ? new File([dataUrlToBlob(dataUrl)], "signature-original.png", { type: "image/png" }) : null; const [finalUpload, rawUpload] = await Promise.all([base44.integrations.Core.UploadFile({ file: finalFile }), rawFile ? base44.integrations.Core.UploadFile({ file: rawFile }) : Promise.resolve(null)]); const timestamp = new Date().toISOString(); const savedProfile = { signatureUrl: finalUpload.file_url, signatureRawUrl: rawUpload?.file_url || "", signatureVariant: signatureStyle, signatureId: sigId, signatureName: signerName, signatureUpdatedAt: timestamp }; updateEmployeeProfile(companyId, currentUser.id, savedProfile); setLocalSignature(savedProfile); setSecurity({ signatureId: sigId, timestamp, verified: false }); onSaved?.(savedProfile); setEditing(false); } catch { setError(ar ? "تعذّر حفظ التوقيع؛ حاول مرة أخرى." : "Couldn't save the signature; try again."); } finally { setSaving(false); } };
+  const remove = () => { const cleared = { signatureUrl: "", signatureRawUrl: "", signatureVariant: "", signatureId: "" }; updateEmployeeProfile(companyId, currentUser.id, cleared); setLocalSignature(cleared); setSecurity({ signatureId: "", timestamp: "", verified: false }); onSaved?.(cleared); setEditing(true); };
+  const tabs = [{ id: "draw", icon: PenLine, label: ar ? "رسم التوقيع" : "Draw" }, { id: "type", icon: Keyboard, label: ar ? "كتابة الاسم" : "Type" }, { id: "upload", icon: Upload, label: ar ? "رفع توقيع" : "Upload" }];
 
-  const copyId = () => {
-    navigator.clipboard.writeText(signatureId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
-  return (
-    <div className="space-y-5">
-    <div className="space-y-6 overflow-hidden rounded-3xl border border-accent/30 bg-gradient-to-br from-primary to-sidebar p-6 text-primary-foreground shadow-elevated md:p-8">
-      <h3 className="flex items-center gap-2 font-heading text-xl font-semibold">
-        <PenLine className="h-5 w-5 text-accent" /> {ar ? "توقيعي الشخصي" : "My personal signature"}
-      </h3>
-      <p className="max-w-2xl text-sm text-primary-foreground/70 font-body">
-        {ar
-          ? "اكتب اسمك، ارسم توقيعك، أو اختر نموذجًا فريدًا — ويحصل توقيعك على رقم تحقق مشفّر."
-          : "Type, draw, or choose a unique generated signature — it gets an encrypted verification ID."}
-      </p>
-      {!editing && signatureUrl ? (
-        <div className="space-y-3">
-          <div className={`w-full bg-white rounded-lg border border-border p-2 flex items-center justify-center ${signatureRawUrl ? "aspect-[3/1] max-w-2xl" : ""}`}>
-            <img src={refreshedPreview || signatureUrl} alt="signature" className={signatureRawUrl ? "h-full w-full object-contain" : "h-20 max-w-full object-contain"} />
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setEditing(true)} className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-primary-foreground/25 px-5 py-2 text-xs font-bold hover:bg-primary-foreground/10 whitespace-nowrap">
-              <PenLine className="w-3.5 h-3.5" /> {ar ? "توقيع جديد" : "New signature"}
-            </button>
-            <button
-              onClick={() => {
-                const cleared = { signatureUrl: "", signatureRawUrl: "", signatureVariant: "", signatureId: "" };
-                updateEmployeeProfile(companyId, currentUser.id, cleared);
-                setLocalSignature(cleared);
-                onSaved?.(cleared);
-                setEditing(true);
-              }}
-              className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-destructive/50 px-5 py-2 text-xs font-bold text-red-300 hover:bg-destructive/15 whitespace-nowrap"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> {ar ? "حذف" : "Delete"}
-            </button>
-          </div>
-          {signatureId && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/60 border border-border w-fit">
-              <Fingerprint className="w-4 h-4 text-accent shrink-0" />
-              <div>
-                <p className="text-[10px] text-muted-foreground font-body">{ar ? "رقم التحقق المشفّر" : "Encrypted verification ID"}</p>
-                <p className="text-xs font-mono font-medium tracking-wider" dir="ltr">{signatureId}</p>
-              </div>
-              <button onClick={copyId} className="p-1.5 rounded hover:bg-background text-muted-foreground" title={ar ? "نسخ" : "Copy"}>
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setMode("type")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "type" ? "bg-accent text-accent-foreground border-accent" : "border-primary-foreground/20 hover:bg-primary-foreground/10"}`}
-            >
-              <Keyboard className="w-3.5 h-3.5" /> {ar ? "كتابة الاسم" : "Type name"}
-            </button>
-            <button
-              onClick={() => setMode("draw")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "draw" ? "bg-accent text-accent-foreground border-accent" : "border-primary-foreground/20 hover:bg-primary-foreground/10"}`}
-            >
-              <PenLine className="w-3.5 h-3.5" /> {ar ? "رسم التوقيع" : "Draw"}
-            </button>
-          </div>
-          {mode === "type" ? (
-            <TypedSignature ar={ar} defaultName={currentUser?.name || ""} onSave={saveSignature} saving={saving} />
-          ) : (
-            <SignaturePad ar={ar} onSave={saveSignature} saving={saving} />
-          )}
-          {error && <p className="text-xs text-destructive font-body">{error}</p>}
-        </div>
-      )}
+  return <div className="space-y-5" dir={ar ? "rtl" : "ltr"}>
+    <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(360px,.85fr)]">
+      <SelfSignDocumentCard signatureUrl={signatureUrl} signatureRawUrl={signatureRawUrl} signatureVariant={signatureVariant} currentUser={currentUser} companyId={companyId} ar={ar} onVerified={setSecurity} />
+      <aside className="overflow-hidden rounded-2xl border border-accent/25 bg-card shadow-soft lg:sticky lg:top-5"><div className="border-b border-border bg-gradient-to-l from-secondary/80 to-card p-5"><p className="text-[10px] font-bold uppercase tracking-widest text-accent">PowerCare Identity</p><h2 className="mt-1 font-heading text-2xl font-semibold">{ar ? "إنشاء التوقيع" : "Create signature"}</h2><p className="mt-1 text-xs leading-5 text-muted-foreground">{ar ? "أنشئ توقيعك الشخصي المحمي لاستخدامه على المستند." : "Create your protected personal signature for this document."}</p></div>
+        <div className="p-5">{!editing && signatureUrl ? <div className="space-y-4"><div className="rounded-xl border border-accent/25 bg-white p-3"><Image src={refreshedPreview || signatureUrl} alt={ar ? "توقيعك" : "Your signature"} fittingType="fit" className="h-36 w-full" /></div><div className="flex gap-2"><button type="button" onClick={() => setEditing(true)} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-bold text-primary-foreground"><PenLine className="h-4 w-4" />{ar ? "توقيع جديد" : "New signature"}</button><button type="button" onClick={remove} className="rounded-lg border border-destructive/40 px-4 text-destructive"><Trash2 className="h-4 w-4" /></button></div><p className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700"><Check className="h-4 w-4" />{ar ? "التوقيع محفوظ وجاهز للاستخدام" : "Signature saved and ready"}</p></div> : <div className="space-y-4"><div className="grid grid-cols-3 gap-1 rounded-lg bg-secondary p-1">{tabs.map(({ id, icon: Icon, label }) => <button key={id} type="button" onClick={() => setMode(id)} className={`flex min-h-11 items-center justify-center gap-1.5 rounded-md px-2 text-[11px] font-bold ${mode === id ? "bg-card text-foreground shadow-sm ring-1 ring-accent/30" : "text-muted-foreground"}`}><Icon className="h-3.5 w-3.5" />{label}</button>)}</div>{mode === "draw" && <SignaturePad ar={ar} signerName={currentUser?.name || ""} onSave={saveSignature} saving={saving} />}{mode === "type" && <TypedSignature ar={ar} defaultName={currentUser?.name || ""} onSave={saveSignature} saving={saving} />}{mode === "upload" && <UploadedSignature ar={ar} signerName={currentUser?.name || ""} onSave={saveSignature} saving={saving} />}{error && <p className="text-xs text-destructive">{error}</p>}</div>}</div>
+      </aside>
     </div>
-    {signatureUrl && !editing && <SelfSignDocumentCard signatureUrl={signatureUrl} signatureRawUrl={signatureRawUrl} signatureVariant={signatureVariant} currentUser={currentUser} companyId={companyId} ar={ar} />}
-    </div>
-  );
+    <SignatureSecurityBar signatureId={security.signatureId || signatureId} timestamp={security.timestamp || currentUser?.profile?.signatureUpdatedAt} verified={security.verified} ar={ar} />
+  </div>;
 }
