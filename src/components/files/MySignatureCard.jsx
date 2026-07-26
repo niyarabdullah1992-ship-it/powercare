@@ -94,19 +94,19 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="mx-auto max-w-2xl space-y-3">
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-      <div className="border-b border-border bg-secondary/40 p-4">
-        <h3 className="flex items-center gap-3 font-heading text-2xl font-semibold text-foreground">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-accent/30 bg-accent/10"><PenLine className="h-5 w-5 text-accent" /></span> {ar ? "توقيعي الشخصي" : "My personal signature"}
+      <div className="border-b border-border bg-secondary/40 p-3">
+        <h3 className="flex items-center gap-2 font-heading text-lg font-semibold text-foreground">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-accent/30 bg-accent/10"><PenLine className="h-4 w-4 text-accent" /></span> {ar ? "توقيعي الشخصي" : "My personal signature"}
         </h3>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground font-body">
+        <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground font-body">
           {ar
             ? "اختر طريقة إنشاء التوقيع، راجع المعاينة، ثم اعتمده للحصول على رقم تحقق مشفّر."
             : "Choose how to create your signature, review the preview, then approve it for an encrypted verification ID."}
         </p>
       </div>
-      <div className="space-y-4 p-4">
+      <div className="space-y-3 p-3">
       {!editing && signatureUrl ? (
         <div className="space-y-3">
           <div className={`w-full bg-white rounded-lg border border-border p-2 flex items-center justify-center ${signatureRawUrl ? "aspect-[3/1] max-w-2xl" : ""}`}>
@@ -147,13 +147,13 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
           <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-secondary/40 p-1">
             <button
               onClick={() => setMode("type")}
-              className={`flex h-10 items-center justify-center gap-2 rounded-md px-3 text-xs font-semibold transition ${mode === "type" ? "bg-card text-foreground shadow-sm ring-1 ring-accent/30" : "text-muted-foreground hover:text-foreground"}`}
+              className={`flex h-9 items-center justify-center gap-1.5 rounded-md px-3 text-xs font-semibold transition ${mode === "type" ? "bg-card text-foreground shadow-sm ring-1 ring-accent/30" : "text-muted-foreground hover:text-foreground"}`}
             >
               <Keyboard className="w-3.5 h-3.5" /> {ar ? "كتابة الاسم" : "Type name"}
             </button>
             <button
               onClick={() => setMode("draw")}
-              className={`flex h-10 items-center justify-center gap-2 rounded-md px-3 text-xs font-semibold transition ${mode === "draw" ? "bg-card text-foreground shadow-sm ring-1 ring-accent/30" : "text-muted-foreground hover:text-foreground"}`}
+              className={`flex h-9 items-center justify-center gap-1.5 rounded-md px-3 text-xs font-semibold transition ${mode === "draw" ? "bg-card text-foreground shadow-sm ring-1 ring-accent/30" : "text-muted-foreground hover:text-foreground"}`}
             >
               <PenLine className="w-3.5 h-3.5" /> {ar ? "رسم التوقيع" : "Draw"}
             </button>

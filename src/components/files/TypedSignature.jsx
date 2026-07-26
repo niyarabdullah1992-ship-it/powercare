@@ -69,24 +69,24 @@ export default function TypedSignature({ ar, defaultName = "", verificationId, o
   const selectedFont = FONTS.find((font) => font.id === fontId);
 
   return (
-    <div className="grid overflow-hidden rounded-xl border border-border bg-card md:grid-cols-[minmax(0,1fr)_280px]">
-      <div className="space-y-4 p-4">
+    <div className="grid overflow-hidden rounded-lg border border-border bg-card md:grid-cols-[minmax(0,1fr)_200px]">
+      <div className="space-y-3 p-3">
         <div>
           <label className="mb-1.5 block text-xs font-semibold text-foreground">{ar ? "اسم التوقيع" : "Signature name"}</label>
-          <input value={name} onChange={(event) => setName(event.target.value)} dir="auto" placeholder={ar ? "اكتب اسمك…" : "Type your name…"} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm font-body outline-none focus:ring-2 focus:ring-ring" />
+          <input value={name} onChange={(event) => setName(event.target.value)} dir="auto" placeholder={ar ? "اكتب اسمك…" : "Type your name…"} className="h-9 w-full rounded-md border border-input bg-background px-3 text-xs font-body outline-none focus:ring-2 focus:ring-ring" />
         </div>
         <div>
           <div className="mb-1.5 flex items-center justify-between gap-3"><label className="text-xs font-semibold text-foreground">{ar ? "نمط الكتابة" : "Writing style"}</label><span className="text-[10px] text-muted-foreground">{selectedFont?.label}</span></div>
-          <select value={fontId} onChange={(event) => setFontId(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring">
+          <select value={fontId} onChange={(event) => setFontId(event.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 text-xs text-foreground outline-none focus:ring-2 focus:ring-ring">
             {availableFonts.map((font) => <option key={font.id} value={font.id}>{font.label}</option>) }
           </select>
         </div>
-        {samples[fontId] && <div className="flex h-16 items-center justify-center rounded-md border border-dashed border-border bg-secondary/20 px-4"><img src={samples[fontId]} alt={selectedFont?.label || "Signature"} className="max-h-12 w-full object-contain" /></div>}
+        {samples[fontId] && <div className="flex h-12 items-center justify-center rounded-md border border-dashed border-border bg-secondary/20 px-3"><img src={samples[fontId]} alt={selectedFont?.label || "Signature"} className="max-h-9 w-full object-contain" /></div>}
       </div>
-      <aside className="border-t border-border bg-secondary/25 p-4 md:border-s md:border-t-0">
+      <aside className="border-t border-border bg-secondary/25 p-3 md:border-s md:border-t-0">
         <p className="mb-2 text-xs font-semibold text-foreground">{ar ? "المعاينة النهائية" : "Final preview"}</p>
-        <div className="flex h-28 items-center justify-center rounded-md border border-border bg-card p-2">{stamp ? <img src={stamp} alt={ar ? "معاينة الختم" : "Stamp preview"} className="max-h-full w-full object-contain" /> : <p className="text-center text-[10px] text-muted-foreground">{ar ? "ستظهر المعاينة هنا." : "Preview appears here."}</p>}</div>
-        <button type="button" disabled={!stamp || saving} onClick={save} className="mt-3 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm disabled:opacity-40"><Check className="h-3.5 w-3.5" />{saving ? (ar ? "جارٍ الحفظ…" : "Saving…") : ar ? "اعتماد التوقيع" : "Approve signature"}</button>
+        <div className="flex h-20 items-center justify-center rounded-md border border-border bg-card p-2">{stamp ? <img src={stamp} alt={ar ? "معاينة الختم" : "Stamp preview"} className="max-h-full w-full object-contain" /> : <p className="text-center text-[10px] text-muted-foreground">{ar ? "ستظهر المعاينة هنا." : "Preview appears here."}</p>}</div>
+        <button type="button" disabled={!stamp || saving} onClick={save} className="mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm disabled:opacity-40"><Check className="h-3.5 w-3.5" />{saving ? (ar ? "جارٍ الحفظ…" : "Saving…") : ar ? "اعتماد التوقيع" : "Approve signature"}</button>
       </aside>
     </div>
   );
