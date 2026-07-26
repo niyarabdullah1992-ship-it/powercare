@@ -1,6 +1,6 @@
 export const SIGNATURE_STAMP_THEMES = [
   { id: "heritage", ar: "المسار الرقمي", en: "Digital Trace", preview: "rounded-xl border-2 border-accent" },
-  { id: "executive", ar: "الدوّامة", en: "Whorl Code", preview: "rounded-sm border-t-4 border-accent" },
+  { id: "executive", ar: "الأرقام المشفّرة", en: "Encrypted Numbers", preview: "rounded-sm border-t-4 border-accent" },
   { id: "minimal", ar: "رمز القفل", en: "Lock Symbol", preview: "rounded-md border-s-4 border-accent" },
   { id: "certificate", ar: "رمز البصمة الإلكترونية", en: "E-Fingerprint", preview: "rounded-lg border-4 border-double border-accent" },
   { id: "vault", ar: "رمز المفتاح", en: "Digital Key", preview: "rounded-2xl border-2 border-accent shadow-inner" },

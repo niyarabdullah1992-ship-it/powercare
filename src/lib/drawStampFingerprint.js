@@ -28,13 +28,20 @@ function drawRidges(ctx, cx, cy, size, count, rotation = 0, broken = false) {
 
 function drawExecutive(ctx, cx, cy, size) {
   ctx.save(); clipFingerprint(ctx, cx, cy, size);
-  drawRidges(ctx, cx, cy, size, 11, -.06, false);
+  ctx.font = `600 ${Math.max(7, size * .115)}px 'Courier New', monospace`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const rows = ["101101", "011010", "110011", "001101", "101010", "010111"];
+  rows.forEach((digits, row) => {
+    [...digits].forEach((digit, column) => {
+      ctx.fillStyle = (row + column) % 3 === 0 ? GOLD_LIGHT : "#C7AD7699";
+      ctx.fillText(digit, cx + (column - 2.5) * size * .115, cy + (row - 2.5) * size * .145);
+    });
+  });
   ctx.strokeStyle = GOLD; ctx.lineWidth = Math.max(1.2, size * .022);
-  for (let turn = 0; turn < 4; turn += 1) {
-    ctx.beginPath();
-    ctx.ellipse(cx + size * .035, cy + size * .035, size * (.06 + turn * .045), size * (.08 + turn * .055), -.14, 0, Math.PI * 2);
-    ctx.stroke();
-  }
+  ctx.beginPath(); ctx.roundRect(cx - size * .39, cy - size * .49, size * .78, size * .98, size * .08); ctx.stroke();
+  ctx.strokeStyle = GOLD_LIGHT; ctx.lineWidth = Math.max(1.6, size * .026);
+  ctx.beginPath(); ctx.moveTo(cx - size * .46, cy - size * .18); ctx.lineTo(cx - size * .46, cy - size * .38); ctx.lineTo(cx - size * .28, cy - size * .38); ctx.moveTo(cx + size * .46, cy + size * .18); ctx.lineTo(cx + size * .46, cy + size * .38); ctx.lineTo(cx + size * .28, cy + size * .38); ctx.stroke();
+  ctx.fillStyle = GOLD_LIGHT; ctx.beginPath(); ctx.arc(cx, cy, size * .045, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
