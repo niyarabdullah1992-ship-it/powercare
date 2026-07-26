@@ -5,7 +5,7 @@ import { STAMP_WIDTH_PERCENT } from "@/lib/signatureStampGeometry";
 
 // Renders the verification badge to PNG bytes using an ALREADY-LOADED QR image
 // (prefetched while the user was choosing the file) — no network wait here.
-async function badgePngBytes(sigId, signerName, qrImg, sigUrl, signatureVariant) {
+async function badgePngBytes(sigId, signerName, qrImg, sigUrl, signatureVariant, signatureTheme) {
   let signatureImg = null;
   let objectUrl = "";
   if (sigUrl) {
@@ -18,7 +18,7 @@ async function badgePngBytes(sigId, signerName, qrImg, sigUrl, signatureVariant)
       image.src = objectUrl;
     });
   }
-  const canvas = makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureImg, signatureVariant);
+  const canvas = makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureImg, signatureVariant, signatureTheme);
   if (objectUrl) URL.revokeObjectURL(objectUrl);
   const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
   return { bytes: await blob.arrayBuffer(), ratio: canvas.height / canvas.width };
@@ -51,11 +51,11 @@ export async function drawTextField(pdf, page, field, rawValue) {
 // Stamps the verification badge onto the PDF, uploads the signed copy and
 // returns { url, bytes } — bytes are used to hash the file locally without
 // re-downloading it.
-export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot, qrImg, sizeScale = 1, uploadResult = true, fields = null, textValues = {}, signatureVariant = "unique") {
+export async function signPdfFile(docUrl, sigUrl, signerName, sigId, spot, qrImg, sizeScale = 1, uploadResult = true, fields = null, textValues = {}, signatureVariant = "unique", signatureTheme = "heritage") {
   const sc = Math.min(Math.max(Number(sizeScale) || 1, 0.5), 2);
   const pdfBytes = await fetch(docUrl).then((r) => r.arrayBuffer());
   const pdf = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
-  const badge = await badgePngBytes(sigId, signerName, qrImg, sigUrl, signatureVariant);
+  const badge = await badgePngBytes(sigId, signerName, qrImg, sigUrl, signatureVariant, signatureTheme);
   const badgeImg = await pdf.embedPng(badge.bytes);
   const pages = pdf.getPages();
   const assignedFields = Array.isArray(fields) && fields.length ? fields : [{ ...(spot || { page: pages.length, x: 76, y: 88 }), id: "signature", type: "signature", scale: sc * 100 }];

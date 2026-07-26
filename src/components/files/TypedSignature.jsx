@@ -4,7 +4,7 @@ import { Image } from "@/components/ui/image";
 import { makeSignatureStamp } from "@/lib/multiSignStamp";
 import { createTypedSignatureWithDate } from "@/lib/typedSignatureImage";
 
-export default function TypedSignature({ ar, defaultName = "", verificationId, onPreview, onSave, saving }) {
+export default function TypedSignature({ ar, defaultName = "", verificationId, stampTheme = "heritage", onPreview, onSave, saving }) {
   const [name, setName] = useState(defaultName);
   const [datedSignature, setDatedSignature] = useState("");
   const [stamp, setStamp] = useState("");
@@ -19,13 +19,13 @@ export default function TypedSignature({ ar, defaultName = "", verificationId, o
       .then((rawSignature) => {
         if (!active) return null;
         setDatedSignature(rawSignature);
-        return makeSignatureStamp(rawSignature, name.trim(), verificationId, "typed");
+        return makeSignatureStamp(rawSignature, name.trim(), verificationId, "typed", stampTheme);
       })
       .then((composed) => { if (active && composed) { setStamp(composed); onPreview?.(composed); } });
     return () => { active = false; };
-  }, [name, ar, verificationId, onPreview]);
+  }, [name, ar, verificationId, stampTheme, onPreview]);
 
-  const save = () => onSave(datedSignature, name.trim(), "typed");
+  const save = () => onSave(datedSignature, name.trim(), "typed", stampTheme);
 
   return (
     <div className="space-y-5">

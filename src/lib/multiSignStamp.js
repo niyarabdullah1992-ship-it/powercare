@@ -6,10 +6,10 @@ import { drawTextField } from "@/lib/signPdf";
 import loadExportableImage from "@/lib/loadExportableImage";
 
 // Builds the one canonical stamp image used by the web preview and the PDF.
-export async function makeSignatureStamp(sigDataUrl, name, verificationId = "", variant = "unique") {
+export async function makeSignatureStamp(sigDataUrl, name, verificationId = "", variant = "unique", theme = "heritage") {
   const qr = verificationId ? await loadBadgeQr(verificationId) : null;
   const signatureImage = await loadExportableImage(sigDataUrl);
-  return makeVerificationBadgeCanvas(verificationId, name, qr, signatureImage, variant).toDataURL("image/png");
+  return makeVerificationBadgeCanvas(verificationId, name, qr, signatureImage, variant, theme).toDataURL("image/png");
 }
 
 // Stamps the signer's composed stamp only in the creator-assigned fields.

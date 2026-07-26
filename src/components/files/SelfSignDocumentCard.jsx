@@ -11,7 +11,7 @@ import { makeSignatureStamp } from "@/lib/multiSignStamp";
 const MAX_SIZE = 25 * 1024 * 1024;
 const isPdfFile = (file) => file?.type === "application/pdf" || file?.name?.toLowerCase().endsWith(".pdf");
 
-export default function SelfSignDocumentCard({ signatureUrl, signatureRawUrl, signatureVariant, currentUser, companyId, ar, onVerified }) {
+export default function SelfSignDocumentCard({ signatureUrl, signatureRawUrl, signatureVariant, signatureTheme, currentUser, companyId, ar, onVerified }) {
   const inputRef = useRef(null);
   const [file, setFile] = useState(null); const [fileUrl, setFileUrl] = useState(""); const [sourceUrl, setSourceUrl] = useState("");
   const [scanning, setScanning] = useState(false); const [signing, setSigning] = useState(false); const [success, setSuccess] = useState(""); const [error, setError] = useState(""); const [download, setDownload] = useState(null);
@@ -21,10 +21,10 @@ export default function SelfSignDocumentCard({ signatureUrl, signatureRawUrl, si
     let active = true;
     if (!signatureUrl || !verificationId) { setStampPreview(""); return () => { active = false; }; }
     const signerName = currentUser?.profile?.signatureName || currentUser?.name || "";
-    const build = signatureRawUrl ? makeSignatureStamp(signatureRawUrl, signerName, verificationId, signatureVariant) : Promise.resolve(signatureUrl);
+    const build = signatureRawUrl ? makeSignatureStamp(signatureRawUrl, signerName, verificationId, signatureVariant, signatureTheme) : Promise.resolve(signatureUrl);
     build.then((preview) => { if (active) setStampPreview(preview); }).catch(() => { if (active) setStampPreview(signatureUrl); });
     return () => { active = false; };
-  }, [signatureUrl, signatureRawUrl, signatureVariant, verificationId, currentUser?.profile?.signatureName, currentUser?.name]);
+  }, [signatureUrl, signatureRawUrl, signatureVariant, signatureTheme, verificationId, currentUser?.profile?.signatureName, currentUser?.name]);
 
   useEffect(() => () => { if (download?.url) URL.revokeObjectURL(download.url); }, [download?.url]);
 
@@ -49,7 +49,7 @@ export default function SelfSignDocumentCard({ signatureUrl, signatureRawUrl, si
   const signAndDownload = async () => {
     const signatureField = fields.find((field) => field.type === "signature"); if (!signatureUrl) { setError(ar ? "أنشئ توقيعك أولًا." : "Create your signature first."); return; } if (!signatureField) { setError(ar ? "ضع التوقيع على المستند أولًا." : "Place the signature on the document first."); return; }
     setSigning(true); setError(""); setSuccess(""); const id = generateVerificationId(); setVerificationId(id);
-    try { const signerName = currentUser?.profile?.signatureName || currentUser?.name || ""; const qr = await loadBadgeQr(id); const { bytes } = await signPdfFile(sourceUrl, signatureRawUrl || null, signerName, id, signatureField, qr, (signatureField.scale || 100) / 100, false, fields, textValues, signatureVariant); const fileHash = await sha256HexOfBuffer(bytes); await base44.functions.invoke("signedDocs", { action: "register", verificationId: id, fileHash, signerName, signerId: currentUser.id, companyId, sessionToken: getCompanyToken(companyId), fileName: file.name }); const outputName = `${file.name.replace(/\.(pdf|png)$/i, "")}-signed.pdf`; const downloadUrl = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })); setDownload({ url: downloadUrl, name: outputName }); const timestamp = new Date().toISOString(); setSuccess(outputName); onVerified?.({ signatureId: id, timestamp, verified: true }); } catch (err) { setError((ar ? "تعذّر توقيع المستند — " : "Couldn't sign the document — ") + (err?.message || "")); } finally { setSigning(false); }
+    try { const signerName = currentUser?.profile?.signatureName || currentUser?.name || ""; const qr = await loadBadgeQr(id); const { bytes } = await signPdfFile(sourceUrl, signatureRawUrl || null, signerName, id, signatureField, qr, (signatureField.scale || 100) / 100, false, fields, textValues, signatureVariant, signatureTheme); const fileHash = await sha256HexOfBuffer(bytes); await base44.functions.invoke("signedDocs", { action: "register", verificationId: id, fileHash, signerName, signerId: currentUser.id, companyId, sessionToken: getCompanyToken(companyId), fileName: file.name }); const outputName = `${file.name.replace(/\.(pdf|png)$/i, "")}-signed.pdf`; const downloadUrl = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })); setDownload({ url: downloadUrl, name: outputName }); const timestamp = new Date().toISOString(); setSuccess(outputName); onVerified?.({ signatureId: id, timestamp, verified: true }); } catch (err) { setError((ar ? "تعذّر توقيع المستند — " : "Couldn't sign the document — ") + (err?.message || "")); } finally { setSigning(false); }
   };
 
   return <section className="self-sign-document-card w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-accent/25 bg-card shadow-soft">

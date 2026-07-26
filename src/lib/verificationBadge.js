@@ -1,4 +1,5 @@
 import drawHeritageFingerprint from "@/lib/drawHeritageFingerprint";
+import { drawStampThemeFrame } from "@/lib/signatureStampThemes";
 
 // Draws the "Encrypted verification ID" badge (fingerprint icon + framed ID +
 // signer name & date + QR code) onto a canvas — so it can be stamped into PDFs
@@ -6,7 +7,7 @@ import drawHeritageFingerprint from "@/lib/drawHeritageFingerprint";
 // The QR encodes the verification ID; the file's SHA-256 hash is registered in
 // the platform's verification registry, so a badge copied onto another file
 // will always fail verification (hash mismatch).
-export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureImg = null, variant = "unique") {
+export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureImg = null, variant = "unique", theme = "heritage") {
   const scale = 2;
   const typedLayout = Boolean(signatureImg && variant === "typed");
   const W = signatureImg ? 640 : 560;
@@ -33,18 +34,7 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.fillText(dateText, tx + nameWidth + 8, y, 88);
   };
 
-  ctx.beginPath();
-  ctx.roundRect(1, 1, W - 2, H - 2, 15);
-  ctx.fillStyle = "#13283d";
-  ctx.fill();
-  ctx.strokeStyle = "#C7AD76";
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.roundRect(8, 8, W - 16, H - 16, 9);
-  ctx.strokeStyle = "#C7AD7680";
-  ctx.lineWidth = 1;
-  ctx.stroke();
+  drawStampThemeFrame(ctx, W, H, theme);
 
   if (signatureImg && typedLayout) {
     ctx.strokeStyle = "#C7AD7638";
