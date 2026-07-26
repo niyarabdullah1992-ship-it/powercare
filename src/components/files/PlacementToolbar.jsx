@@ -3,7 +3,7 @@ import { PenLine, Type } from "lucide-react";
 
 export default function PlacementToolbar({ ar, fieldType, setFieldType, signers, spots, active, setActive, colors }) {
   return (
-    <div className="space-y-4 border-b border-border bg-landing-bg/40 px-5 py-4">
+    <div className="space-y-4 border-b border-accent/20 bg-gradient-to-l from-secondary/80 to-card px-5 py-4">
       <div className="grid gap-3 sm:grid-cols-2">
         <button onClick={() => setFieldType("signature")} className={`flex min-h-[52px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-bold ${fieldType === "signature" ? "border-accent bg-accent text-accent-foreground shadow-md" : "border-border bg-card text-foreground"}`}><PenLine className="h-5 w-5" />{ar ? "حقل توقيع" : "Signature field"}</button>
         <button onClick={() => setFieldType("text")} className={`flex min-h-[52px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-bold ${fieldType === "text" ? "border-primary bg-primary text-primary-foreground shadow-md" : "border-border bg-card text-foreground"}`}><Type className="h-5 w-5" />{ar ? "حقل نص" : "Text field"}</button>
