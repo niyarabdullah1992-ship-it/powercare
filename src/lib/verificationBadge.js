@@ -37,10 +37,22 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
   drawStampThemeFrame(ctx, W, H, theme);
   const drawThemeIcon = (x, y, size) => {
     if (!themeIcon) return drawStampFingerprint(ctx, x, y, size, theme);
-    const side = size * .9;
+    const side = Math.min(size * 1.08, 92);
+    const cropX = themeIcon.naturalWidth * .12;
+    const cropY = themeIcon.naturalHeight * .12;
+    const cropWidth = themeIcon.naturalWidth * .76;
+    const cropHeight = themeIcon.naturalHeight * .76;
     ctx.save();
-    ctx.beginPath(); ctx.roundRect(x - side / 2, y - side / 2, side, side, side * .12); ctx.clip();
-    ctx.drawImage(themeIcon, x - side / 2, y - side / 2, side, side);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.shadowColor = "#C7AD7666";
+    ctx.shadowBlur = 5;
+    ctx.beginPath(); ctx.roundRect(x - side / 2, y - side / 2, side, side, side * .14); ctx.clip();
+    ctx.drawImage(themeIcon, cropX, cropY, cropWidth, cropHeight, x - side / 2, y - side / 2, side, side);
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "#C7AD7699";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x - side / 2 + .5, y - side / 2 + .5, side - 1, side - 1);
     ctx.restore();
   };
 
@@ -56,15 +68,15 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.textAlign = "left";
     ctx.fillStyle = "#F4EEE2";
     ctx.font = "500 12px sans-serif";
-    ctx.fillText("ENCRYPTED VERIFICATION ID", tx, 20);
+    ctx.fillText("ENCRYPTED VERIFICATION ID", tx, 26);
     ctx.strokeStyle = "#C7AD7660";
-    ctx.beginPath(); ctx.moveTo(tx, 29); ctx.lineTo(470, 29); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx, 34); ctx.lineTo(470, 34); ctx.stroke();
 
     ctx.fillStyle = "#C7AD76";
     ctx.font = "600 15px 'Courier New', monospace";
-    ctx.fillText(sigId || "PENDING", tx, 50);
+    ctx.fillText(sigId || "PENDING", tx, 56);
     ctx.strokeStyle = "#C7AD7638";
-    ctx.beginPath(); ctx.moveTo(tx, 61); ctx.lineTo(470, 61); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx, 65); ctx.lineTo(470, 65); ctx.stroke();
 
     const maxWidth = 300, maxHeight = 42;
     const ratio = Math.min(maxWidth / signatureImg.width, maxHeight / signatureImg.height);
@@ -84,9 +96,9 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.textAlign = "left";
     ctx.fillStyle = "#F4EEE2";
     ctx.font = "500 12px sans-serif";
-    ctx.fillText("ENCRYPTED VERIFICATION ID", tx, 20);
+    ctx.fillText("ENCRYPTED VERIFICATION ID", tx, 26);
     ctx.strokeStyle = "#C7AD7660";
-    ctx.beginPath(); ctx.moveTo(tx, 29); ctx.lineTo(470, 29); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx, 34); ctx.lineTo(470, 34); ctx.stroke();
 
     const maxWidth = 338, maxHeight = 48;
     const ratio = Math.min(maxWidth / signatureImg.width, maxHeight / signatureImg.height);

@@ -12,7 +12,7 @@ export default function SignatureThemePicker({ value, onChange, ar }) {
           const selected = value === theme.id;
           return (
             <button key={theme.id} type="button" onClick={() => onChange(theme.id)} className={`relative rounded-lg border p-1.5 text-start ${selected ? "border-accent bg-accent/10 ring-1 ring-accent" : "border-border bg-card"}`}>
-              <Image src={theme.iconUrl} alt={ar ? theme.ar : theme.en} fittingType="fit" className={`h-16 w-full overflow-hidden bg-primary ${theme.preview}`} />
+              <Image src={theme.iconUrl} alt={ar ? theme.ar : theme.en} fittingType="fill" quality={100} className={`h-16 w-full overflow-hidden bg-primary ${theme.preview}`} />
               <span className="mt-1 block text-[10px] font-semibold">{ar ? theme.ar : theme.en}</span>
               {selected && <Check className="absolute end-2 top-2 h-3.5 w-3.5 text-accent" />}
             </button>
