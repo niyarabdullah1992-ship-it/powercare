@@ -4,13 +4,15 @@ import { Image } from "@/components/ui/image";
 import { ExternalLink, Maximize2, Radio } from "lucide-react";
 import HlsPlayer from "@/components/cameras/HlsPlayer";
 
-export default function CameraStream({ camera, companyId, sessionToken, ar }) {
+export default function CameraStream({ camera, companyId, sessionToken, ar, onStatusChange }) {
   const frameRef = useRef(null);
   const [state, setState] = useState("loading");
   const [playerCheck, setPlayerCheck] = useState(null);
-  const ready = useCallback(() => setState("online"), []);
+  const ready = useCallback((event) => setState(event?.currentTarget?.dataset?.errorImage ? "offline" : "online"), []);
   const failed = useCallback(() => setState("offline"), []);
   const fullscreen = () => frameRef.current?.requestFullscreen?.();
+
+  useEffect(() => { onStatusChange?.(state); }, [state, onStatusChange]);
 
   useEffect(() => {
     if (camera.streamType !== "player" || !camera.streamUrl) return;

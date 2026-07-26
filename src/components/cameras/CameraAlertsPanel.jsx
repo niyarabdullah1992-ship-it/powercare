@@ -3,13 +3,13 @@ import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { getCompanyToken } from "@/lib/store";
 
-export default function CameraAlertsPanel({ companyId, currentUser, cameras, stations, ar }) {
+export default function CameraAlertsPanel({ companyId, currentUser, cameras, stations, ar, onUnreadChange }) {
   const [alerts, setAlerts] = useState([]); const [loading, setLoading] = useState(true);
   const load = useCallback(async () => {
     if (currentUser.role !== "ops_manager") return;
     const response = await base44.functions.invoke("cameraAlerts", { action: "list", companyId, sessionToken: getCompanyToken(companyId) });
-    setAlerts(response.data?.alerts || []); setLoading(false);
-  }, [companyId, currentUser.role]);
+    const next = response.data?.alerts || []; setAlerts(next); onUnreadChange?.(next.filter((item) => item.status === "new").length); setLoading(false);
+  }, [companyId, currentUser.role, onUnreadChange]);
   useEffect(() => { if (currentUser.role !== "ops_manager") return undefined; load(); const timer = window.setInterval(load, 10000); return () => window.clearInterval(timer); }, [load, currentUser.role]);
   if (currentUser.role !== "ops_manager") return null;
   const acknowledge = async (alertId) => { await base44.functions.invoke("cameraAlerts", { action: "acknowledge", alertId, companyId, sessionToken: getCompanyToken(companyId) }); await load(); };
