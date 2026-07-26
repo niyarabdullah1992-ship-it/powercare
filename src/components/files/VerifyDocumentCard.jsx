@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
-import { ShieldCheck, ShieldX, ShieldQuestion, Upload, Loader2 } from "lucide-react";
+import { ShieldCheck, ShieldX, ShieldQuestion } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import PowerCareUploadZone from "@/components/files/PowerCareUploadZone";
 import { sha256HexOfFile } from "@/lib/fileHash";
 
 // Verify a document's authenticity: upload the file → compute SHA-256 locally →
@@ -41,23 +42,23 @@ export default function VerifyDocumentCard({ ar, initialId = "" }) {
           ? "ارفع الملف الموقّع (PDF) وسنقارن بصمته الرقمية SHA-256 بسجل التوقيعات — أي تعديل على الملف بعد التوقيع سيُكشف فورًا."
           : "Upload the signed PDF and we'll compare its SHA-256 fingerprint against the signing registry — any change after signing is detected instantly."}
       </p>
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="space-y-3">
         <input
           value={verId}
           onChange={(e) => setVerId(e.target.value)}
           dir="ltr"
           placeholder={ar ? "رقم التحقق (اختياري) PWC-XXXX-XXXX-XXXX" : "Verification ID (optional) PWC-XXXX-XXXX-XXXX"}
-          className="min-h-[52px] flex-1 border-0 border-b-2 border-accent/50 bg-transparent px-2 py-3 text-center font-mono text-base tracking-wider focus:border-accent focus:outline-none focus:ring-0"
+          className="min-h-[52px] w-full border-0 border-b-2 border-accent/50 bg-transparent px-2 py-3 text-center font-mono text-base tracking-wider focus:border-accent focus:outline-none focus:ring-0"
         />
-        <button
+        <PowerCareUploadZone
           onClick={() => fileRef.current?.click()}
-          disabled={checking}
-          className="flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-[15px] font-bold text-primary-foreground shadow-lg disabled:opacity-40"
-        >
-          {checking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-          {checking ? (ar ? "جارٍ الفحص…" : "Checking…") : ar ? "رفع الملف للتحقق" : "Upload file to verify"}
-        </button>
-        <input ref={fileRef} type="file" className="hidden" onChange={handleFile} />
+          loading={checking}
+          compact
+          title={checking ? (ar ? "جارٍ الفحص…" : "Checking…") : (ar ? "رفع الملف للتحقق" : "Upload file to verify")}
+          description={ar ? "ارفع مستند PDF الموقّع لمطابقة بصمته الرقمية." : "Upload the signed PDF to match its digital fingerprint."}
+          formats="PDF"
+        />
+        <input ref={fileRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={handleFile} />
       </div>
 
       {result?.status === "valid" && (

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { PenLine, Upload, Loader2, FileText, MousePointerClick, ShieldCheck } from "lucide-react";
+import { PenLine, Loader2, MousePointerClick, ShieldCheck } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { getCompanyToken } from "@/lib/store";
 import { signPdfFile, imageBlobToPdf } from "@/lib/signPdf";
@@ -7,6 +7,7 @@ import SignaturePlacementModal from "@/components/files/SignaturePlacementModal"
 import { makeVerificationBadgeCanvas, generateVerificationId, loadBadgeQr } from "@/lib/verificationBadge";
 import { sha256HexOfBuffer } from "@/lib/fileHash";
 import SignedDocActions from "@/components/files/SignedDocActions";
+import PowerCareUploadZone from "@/components/files/PowerCareUploadZone";
 
 // Merges the verification badge (with QR) onto image documents and returns the
 // signed PNG blob; PDFs are stamped directly via signPdfFile.
@@ -157,18 +158,15 @@ export default function SignAndSendCard({ currentUser, companyId, companyName, a
       )}
 
       {/* Document */}
-      <div className="flex items-center gap-2">
-        <button onClick={() => fileRef.current?.click()} disabled={uploading} className="flex items-center gap-1.5 px-3 py-2 rounded-md border border-border text-xs font-body hover:bg-muted">
-          {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-          {ar ? "اختيار ملف" : "Choose file"}
-        </button>
-        <input ref={fileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={handleUpload} />
-        {doc && (
-          <span className="flex items-center gap-1.5 text-xs font-body text-muted-foreground truncate">
-            <FileText className="w-3.5 h-3.5 shrink-0" /> {doc.name}
-          </span>
-        )}
-      </div>
+      <PowerCareUploadZone
+        onClick={() => fileRef.current?.click()}
+        loading={uploading}
+        compact
+        title={doc?.name || (ar ? "اختيار مستند للتوقيع والإرسال" : "Choose a document to sign and send")}
+        description={ar ? "ارفع المستند ليتم تجهيزه للتوقيع الآمن." : "Upload the document to prepare it for secure signing."}
+        formats="PDF / Image"
+      />
+      <input ref={fileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={handleUpload} />
 
       {/* Spot picking + sign — hidden once signed */}
       {doc && !signed && (
