@@ -42,15 +42,15 @@ export default function FileSigning() {
   ];
 
   return (
-    <div className="powercare-interior-page mx-auto max-w-7xl space-y-5">
+    <div className="powercare-interior-page mx-auto w-full min-w-0 max-w-7xl overflow-x-hidden space-y-5">
       <header className="overflow-hidden rounded-2xl border border-accent/35 bg-gradient-to-l from-primary to-sidebar px-5 py-6 text-primary-foreground shadow-elevated sm:px-7">
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div className="flex items-center gap-4"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-accent/40 bg-primary-foreground/5"><PenLine className="h-6 w-6 text-accent" /></span><div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-accent">PowerCare Secure Sign</p><h1 className="mt-1 font-heading text-3xl font-semibold text-primary-foreground md:text-4xl">{ar ? "منصة التوقيع الرقمي" : "Digital signing workspace"}</h1></div></div>
           <div className="flex items-center gap-2 rounded-full border border-accent/30 bg-primary-foreground/5 px-4 py-2 text-xs"><ShieldCheck className="h-4 w-4 text-accent" />{ar ? "تشفير وحماية موثّقة" : "Verified encryption & protection"}</div>
         </div>
       </header>
-      <Tabs defaultValue="signature" dir={ar ? "rtl" : "ltr"} className="w-full">
-        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-accent/20 bg-card p-1.5 shadow-sm no-scrollbar">
+      <Tabs defaultValue="signature" dir={ar ? "rtl" : "ltr"} className="w-full min-w-0 max-w-full overflow-hidden">
+        <TabsList className="h-auto w-full min-w-0 max-w-full justify-start gap-1 overflow-x-auto rounded-xl border border-accent/20 bg-card p-1.5 shadow-sm no-scrollbar">
           {tabs.map(({ value, label, icon: Icon, count }) => <TabsTrigger key={value} value={value} className="min-h-11 min-w-max gap-2 rounded-lg px-5 py-2.5 font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"><Icon className="h-4 w-4" />{label}{count > 0 && <Badge className="h-5 min-w-5 justify-center rounded-full bg-accent px-1.5 text-accent-foreground">{count}</Badge>}</TabsTrigger>)}
         </TabsList>
         <TabsContent value="signature" className="mt-5"><MySignatureCard companyId={company.id} currentUser={currentUser} ar={ar} /></TabsContent>
