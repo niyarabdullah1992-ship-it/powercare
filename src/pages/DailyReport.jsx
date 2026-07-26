@@ -10,7 +10,6 @@ import ReportCard from "@/components/reports/ReportCard";
 import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import PageHeader from "@/components/PageHeader";
-import RemarkReportTemplate from "@/components/reports/RemarkReportTemplate";
 
 export default function DailyReport() {
   const { t, lang } = useI18n();
@@ -122,8 +121,6 @@ export default function DailyReport() {
           </ReportCard>
         ))}
       </div>
-
-      <RemarkReportTemplate ar={lang === "ar"} />
 
       {loading ? (
         <p className="text-sm text-muted-foreground font-body">…</p>
