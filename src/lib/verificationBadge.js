@@ -92,7 +92,8 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.fillText(dateText, tx, 134, 88);
     ctx.direction = arabicName ? "rtl" : "ltr";
     ctx.textAlign = arabicName ? "right" : "left";
-    ctx.fillText(signerName || "", tx + 338, 134, 235);
+    const signerNameX = arabicName ? tx + 338 : tx + 105;
+    ctx.fillText(signerName || "", signerNameX, 134, 235);
   } else {
     drawHeritageFingerprint(ctx, 50, H / 2, signerName ? 62 : 54);
     ctx.textAlign = "left";
