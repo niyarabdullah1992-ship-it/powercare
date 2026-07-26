@@ -37,22 +37,28 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
   drawStampThemeFrame(ctx, W, H, theme);
   const drawThemeIcon = (x, y, size) => {
     if (!themeIcon) return drawStampFingerprint(ctx, x, y, size, theme);
-    const side = Math.min(size * 1.08, 92);
-    const cropX = themeIcon.naturalWidth * .12;
-    const cropY = themeIcon.naturalHeight * .12;
-    const cropWidth = themeIcon.naturalWidth * .76;
-    const cropHeight = themeIcon.naturalHeight * .76;
+    const side = Math.min(size * 1.14, 96);
+    const sourceWidth = themeIcon.naturalWidth || themeIcon.width;
+    const sourceHeight = themeIcon.naturalHeight || themeIcon.height;
+    const mask = document.createElement("canvas");
+    mask.width = 256; mask.height = 256;
+    const maskCtx = mask.getContext("2d", { willReadFrequently: true });
+    maskCtx.imageSmoothingEnabled = true;
+    maskCtx.imageSmoothingQuality = "high";
+    maskCtx.drawImage(themeIcon, sourceWidth * .12, sourceHeight * .12, sourceWidth * .76, sourceHeight * .76, 0, 0, 256, 256);
+    const pixels = maskCtx.getImageData(0, 0, 256, 256);
+    for (let i = 0; i < pixels.data.length; i += 4) {
+      const brightness = Math.max(pixels.data[i], pixels.data[i + 1], pixels.data[i + 2]);
+      const blend = Math.min(1, Math.max(0, (brightness - 30) / 105));
+      pixels.data[i + 3] = Math.round(pixels.data[i + 3] * blend);
+    }
+    maskCtx.putImageData(pixels, 0, 0);
     ctx.save();
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.shadowColor = "#C7AD7666";
-    ctx.shadowBlur = 5;
-    ctx.beginPath(); ctx.roundRect(x - side / 2, y - side / 2, side, side, side * .14); ctx.clip();
-    ctx.drawImage(themeIcon, cropX, cropY, cropWidth, cropHeight, x - side / 2, y - side / 2, side, side);
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = "#C7AD7699";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x - side / 2 + .5, y - side / 2 + .5, side - 1, side - 1);
+    ctx.shadowBlur = 4;
+    ctx.drawImage(mask, x - side / 2, y - side / 2, side, side);
     ctx.restore();
   };
 
