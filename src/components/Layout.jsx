@@ -154,7 +154,7 @@ export default function Layout({ children }) {
     { to: "/app/expenses", icon: ReceiptText, label: t("expenses"), category: "finance" },
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "finance" },
     { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)", category: "governance" },
-    { to: "/app/cameras", icon: Camera, label: lang === "ar" ? "مركز الكاميرات" : "Camera Center", category: "governance" },
+    { to: "/app/cameras", icon: Camera, label: lang === "ar" ? "مركز العمليات الأمنية" : "Security Operations Center", category: "governance" },
     { to: "/app/complaints", icon: Megaphone, label: t("allComplaints"), category: "governance" },
     { to: "/app/files", icon: FolderOpen, label: t("files"), category: "documents" },
     { to: "/app/signing", icon: PenLine, label: t("fileSigning"), category: "documents" },
