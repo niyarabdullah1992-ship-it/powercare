@@ -89,15 +89,17 @@ function drawVault(ctx, cx, cy, size) {
 
 function drawHorizon(ctx, cx, cy, size) {
   ctx.save(); clipFingerprint(ctx, cx, cy, size); ctx.lineCap = "round";
-  drawRidges(ctx, cx, cy, size, 8, .04, false);
-  ctx.strokeStyle = "#F4EEE299"; ctx.lineWidth = Math.max(.7, size * .01);
-  for (let scan = -4; scan <= 4; scan += 1) {
-    const y = cy + scan * size * .105; ctx.beginPath(); ctx.moveTo(cx - size * .48, y); ctx.lineTo(cx + size * .48, y); ctx.stroke();
+  ctx.strokeStyle = GOLD_LIGHT; ctx.lineWidth = Math.max(1, size * .016);
+  for (let orbit = 0; orbit < 4; orbit += 1) {
+    ctx.beginPath(); ctx.ellipse(cx, cy, size * (.18 + orbit * .07), size * (.08 + orbit * .055), orbit % 2 ? -.65 : .65, 0, Math.PI * 2); ctx.stroke();
   }
-  ctx.strokeStyle = GOLD_LIGHT; ctx.lineWidth = Math.max(1.2, size * .02);
-  ctx.beginPath(); ctx.moveTo(cx - size * .48, cy); ctx.lineTo(cx - size * .16, cy); ctx.moveTo(cx + size * .16, cy); ctx.lineTo(cx + size * .48, cy); ctx.moveTo(cx, cy - size * .5); ctx.lineTo(cx, cy - size * .18); ctx.moveTo(cx, cy + size * .18); ctx.lineTo(cx, cy + size * .5); ctx.stroke();
-  ctx.strokeStyle = GOLD; ctx.beginPath(); ctx.arc(cx, cy, size * .16, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = GOLD_LIGHT; [[-.34,-.36],[.34,-.36],[-.34,.36],[.34,.36]].forEach(([x,y]) => { ctx.fillRect(cx + x * size - size * .018, cy + y * size - size * .018, size * .036, size * .036); });
+  ctx.strokeStyle = GOLD; ctx.lineWidth = Math.max(1.4, size * .023);
+  ctx.beginPath(); ctx.moveTo(cx, cy - size * .43); ctx.lineTo(cx + size * .22, cy); ctx.lineTo(cx, cy + size * .43); ctx.lineTo(cx - size * .22, cy); ctx.closePath(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx - size * .4, cy); ctx.lineTo(cx, cy - size * .2); ctx.lineTo(cx + size * .4, cy); ctx.lineTo(cx, cy + size * .2); ctx.closePath(); ctx.stroke();
+  ctx.fillStyle = GOLD_LIGHT; ctx.beginPath(); ctx.arc(cx, cy, size * .055, 0, Math.PI * 2); ctx.fill();
+  [[0,-.43],[.4,0],[0,.43],[-.4,0],[-.27,-.27],[.27,-.27],[-.27,.27],[.27,.27]].forEach(([x,y], index) => {
+    ctx.fillStyle = index < 4 ? GOLD : GOLD_LIGHT; ctx.beginPath(); ctx.arc(cx + x * size, cy + y * size, size * (index < 4 ? .026 : .018), 0, Math.PI * 2); ctx.fill();
+  });
   ctx.restore();
 }
 
