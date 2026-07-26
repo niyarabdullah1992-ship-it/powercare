@@ -96,7 +96,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   return (
     <div className="mx-auto max-w-5xl space-y-5">
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-      <div className="border-b border-border bg-secondary/40 p-5 sm:p-6">
+      <div className="border-b border-border bg-secondary/40 p-4">
         <h3 className="flex items-center gap-3 font-heading text-2xl font-semibold text-foreground">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-accent/30 bg-accent/10"><PenLine className="h-5 w-5 text-accent" /></span> {ar ? "توقيعي الشخصي" : "My personal signature"}
         </h3>
@@ -106,7 +106,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
             : "Choose how to create your signature, review the preview, then approve it for an encrypted verification ID."}
         </p>
       </div>
-      <div className="space-y-6 p-5 sm:p-6">
+      <div className="space-y-4 p-4">
       {!editing && signatureUrl ? (
         <div className="space-y-3">
           <div className={`w-full bg-white rounded-lg border border-border p-2 flex items-center justify-center ${signatureRawUrl ? "aspect-[3/1] max-w-2xl" : ""}`}>
@@ -144,16 +144,16 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2 rounded-xl border border-border bg-secondary/50 p-1.5">
+          <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-secondary/40 p-1">
             <button
               onClick={() => setMode("type")}
-              className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${mode === "type" ? "bg-card text-foreground shadow-sm ring-1 ring-accent/30" : "text-muted-foreground hover:text-foreground"}`}
+              className={`flex h-10 items-center justify-center gap-2 rounded-md px-3 text-xs font-semibold transition ${mode === "type" ? "bg-card text-foreground shadow-sm ring-1 ring-accent/30" : "text-muted-foreground hover:text-foreground"}`}
             >
               <Keyboard className="w-3.5 h-3.5" /> {ar ? "كتابة الاسم" : "Type name"}
             </button>
             <button
               onClick={() => setMode("draw")}
-              className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${mode === "draw" ? "bg-card text-foreground shadow-sm ring-1 ring-accent/30" : "text-muted-foreground hover:text-foreground"}`}
+              className={`flex h-10 items-center justify-center gap-2 rounded-md px-3 text-xs font-semibold transition ${mode === "draw" ? "bg-card text-foreground shadow-sm ring-1 ring-accent/30" : "text-muted-foreground hover:text-foreground"}`}
             >
               <PenLine className="w-3.5 h-3.5" /> {ar ? "رسم التوقيع" : "Draw"}
             </button>
