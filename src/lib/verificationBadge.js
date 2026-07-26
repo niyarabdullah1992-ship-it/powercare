@@ -84,8 +84,15 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.fillText(sigId || "PENDING", tx, 103);
     ctx.strokeStyle = "#C7AD7638";
     ctx.beginPath(); ctx.moveTo(tx, 112); ctx.lineTo(470, 112); ctx.stroke();
+    const dateText = new Date().toLocaleDateString("en-GB");
+    const arabicName = /[\u0600-\u06ff]/.test(signerName || "");
     ctx.font = "600 14px sans-serif";
-    ctx.fillText(`${signerName || ""}  —  ${new Date().toLocaleDateString("en-GB")}`, tx, 134);
+    ctx.direction = "ltr";
+    ctx.textAlign = "left";
+    ctx.fillText(dateText, tx, 134, 88);
+    ctx.direction = arabicName ? "rtl" : "ltr";
+    ctx.textAlign = arabicName ? "right" : "left";
+    ctx.fillText(signerName || "", tx + 338, 134, 235);
   } else {
     drawHeritageFingerprint(ctx, 50, H / 2, signerName ? 62 : 54);
     ctx.textAlign = "left";
@@ -96,8 +103,15 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.font = "600 19px 'Courier New', monospace";
     ctx.fillText(sigId || "", 116, signerName ? 65 : 70);
     if (signerName) {
-      ctx.font = "600 17px sans-serif";
-      ctx.fillText(`${signerName}  —  ${new Date().toLocaleDateString("en-GB")}`, 116, 101);
+      const dateText = new Date().toLocaleDateString("en-GB");
+      const arabicName = /[\u0600-\u06ff]/.test(signerName);
+      ctx.font = "600 15px sans-serif";
+      ctx.direction = "ltr";
+      ctx.textAlign = "left";
+      ctx.fillText(dateText, 116, 101, 86);
+      ctx.direction = arabicName ? "rtl" : "ltr";
+      ctx.textAlign = arabicName ? "right" : "left";
+      ctx.fillText(signerName, W - 32, 101, 245);
     }
   }
 

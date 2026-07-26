@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { CalendarDays, FileCheck2, FileUp, Loader2, MousePointerClick, PenLine, ScanLine, Type, Upload } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { getCompanyToken } from "@/lib/store";
@@ -7,6 +7,7 @@ import { generateVerificationId, loadBadgeQr } from "@/lib/verificationBadge";
 import { sha256HexOfBuffer } from "@/lib/fileHash";
 import MultiSignPlacementModal from "@/components/files/MultiSignPlacementModal";
 import DocumentFirstPagePreview from "@/components/files/DocumentFirstPagePreview";
+import { makeSignatureStamp } from "@/lib/multiSignStamp";
 
 const MAX_SIZE = 25 * 1024 * 1024;
 const isPdfFile = (file) => file?.type === "application/pdf" || file?.name?.toLowerCase().endsWith(".pdf");
@@ -15,7 +16,16 @@ export default function SelfSignDocumentCard({ signatureUrl, signatureRawUrl, si
   const inputRef = useRef(null);
   const [file, setFile] = useState(null); const [fileUrl, setFileUrl] = useState(""); const [sourceUrl, setSourceUrl] = useState("");
   const [scanning, setScanning] = useState(false); const [signing, setSigning] = useState(false); const [success, setSuccess] = useState(""); const [error, setError] = useState("");
-  const [placing, setPlacing] = useState(false); const [fields, setFields] = useState([]); const [textValues, setTextValues] = useState({}); const [verificationId, setVerificationId] = useState("");
+  const [placing, setPlacing] = useState(false); const [fields, setFields] = useState([]); const [textValues, setTextValues] = useState({}); const [verificationId, setVerificationId] = useState(""); const [stampPreview, setStampPreview] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    if (!signatureUrl || !verificationId) { setStampPreview(""); return () => { active = false; }; }
+    const signerName = currentUser?.profile?.signatureName || currentUser?.name || "";
+    const build = signatureRawUrl ? makeSignatureStamp(signatureRawUrl, signerName, verificationId, signatureVariant) : Promise.resolve(signatureUrl);
+    build.then((preview) => { if (active) setStampPreview(preview); }).catch(() => { if (active) setStampPreview(signatureUrl); });
+    return () => { active = false; };
+  }, [signatureUrl, signatureRawUrl, signatureVariant, verificationId, currentUser?.profile?.signatureName, currentUser?.name]);
 
   const chooseFile = async (event) => {
     const selected = event.target.files?.[0]; if (!selected) return;
@@ -44,6 +54,6 @@ export default function SelfSignDocumentCard({ signatureUrl, signatureRawUrl, si
     <div className="flex items-start justify-between gap-4 border-b border-border p-5"><div className="flex gap-3"><span className="rounded-xl bg-accent/10 p-2.5"><FileUp className="h-5 w-5 text-accent" /></span><div><h2 className="font-heading text-xl font-semibold">{ar ? "المستند" : "Document"}</h2><p className="mt-1 text-xs text-muted-foreground">PDF / DOCX / PNG · 25MB</p></div></div>{file && <span className="max-w-48 truncate rounded-full bg-secondary px-3 py-1 text-[11px] font-medium">{file.name}</span>}</div>
     {!file ? <button type="button" onClick={() => inputRef.current?.click()} className="m-5 flex min-h-[460px] w-[calc(100%-2.5rem)] flex-col items-center justify-center rounded-xl border-2 border-dashed border-accent/35 bg-secondary/25 p-8 text-center hover:border-accent hover:bg-accent/5"><span className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground"><Upload className="h-7 w-7" /></span><span className="text-base font-bold">{ar ? "ارفع المستند لبدء التوقيع" : "Upload a document to start signing"}</span><span className="mt-2 max-w-sm text-xs leading-5 text-muted-foreground">{ar ? "سيتم فحص الملف أمنيًا ثم عرض الصفحة الأولى مباشرة." : "The file will be security-scanned, then its first page will appear here."}</span></button> : <><div className="relative border-b border-border"><DocumentFirstPagePreview url={fileUrl} file={file} ar={ar} />{scanning && <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/85"><ScanLine className="mb-3 h-7 w-7 animate-pulse text-accent" /><p className="text-sm font-bold">{ar ? "جارٍ فحص أمان المستند…" : "Scanning document security…"}</p></div>}</div><div className="space-y-4 p-5"><div className="flex flex-wrap gap-2"><button type="button" disabled={!sourceUrl} onClick={() => openPlacement("signature")} className="flex items-center gap-2 rounded-lg border border-accent/35 bg-accent/5 px-3 py-2 text-xs font-bold text-accent disabled:opacity-40"><PenLine className="h-4 w-4" />{ar ? "إضافة توقيع" : "Add signature"}</button><button type="button" disabled={!sourceUrl} onClick={() => openPlacement("date")} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-bold disabled:opacity-40"><CalendarDays className="h-4 w-4 text-accent" />{ar ? "إضافة التاريخ" : "Add date"}</button><button type="button" disabled={!sourceUrl} onClick={() => openPlacement("initials")} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-bold disabled:opacity-40"><Type className="h-4 w-4 text-accent" />{ar ? "الأحرف الأولى" : "Initials"}</button>{fields.length > 0 && <button type="button" onClick={() => openPlacement()} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-bold"><MousePointerClick className="h-4 w-4 text-accent" />{ar ? "تعديل المواضع" : "Edit positions"}</button>}</div>{!sourceUrl && <p className="text-xs text-muted-foreground">{ar ? "تم رفع ملف DOCX وحمايته؛ حوّله إلى PDF لإضافة الحقول والتوقيع." : "DOCX uploaded and protected; convert it to PDF to place fields and sign."}</p>}<button type="button" onClick={signAndDownload} disabled={signing || !sourceUrl || scanning} className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3.5 text-sm font-bold text-primary-foreground shadow-md disabled:opacity-40">{signing ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}{signing ? (ar ? "جارٍ التشفير والتوقيع…" : "Encrypting and signing…") : (ar ? "توقيع وإرسال" : "Sign and send")}</button>{success && <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">{ar ? `تم إنشاء ${success}` : `${success} created successfully`}</p>}{error && <p className="text-sm text-destructive">{error}</p>}</div></>}
     <input ref={inputRef} type="file" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png" onChange={chooseFile} className="hidden" />
-    {placing && sourceUrl && <MultiSignPlacementModal docUrl={sourceUrl} signers={[{ name: currentUser?.profile?.signatureName || currentUser?.name || (ar ? "أنا" : "Me"), email: currentUser?.email || "self" }]} initialSpots={{ 0: fields }} ar={ar} onConfirm={(value) => { const next = value[0] || []; setFields(next); setTextValues((current) => Object.fromEntries(next.filter((field) => field.type === "text").map((field) => [field.id, current[field.id] || ""]))); setPlacing(false); }} onClose={() => setPlacing(false)} />}
+    {placing && sourceUrl && <MultiSignPlacementModal docUrl={sourceUrl} signers={[{ name: currentUser?.profile?.signatureName || currentUser?.name || (ar ? "أنا" : "Me"), email: currentUser?.email || "self" }]} initialSpots={{ 0: fields }} signaturePreviews={[stampPreview]} ar={ar} onConfirm={(value) => { const next = value[0] || []; setFields(next); setTextValues((current) => Object.fromEntries(next.filter((field) => field.type === "text").map((field) => [field.id, current[field.id] || ""]))); setPlacing(false); }} onClose={() => setPlacing(false)} />}
   </section>;
 }

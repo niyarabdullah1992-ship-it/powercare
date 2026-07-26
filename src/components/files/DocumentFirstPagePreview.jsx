@@ -17,7 +17,9 @@ export default function DocumentFirstPagePreview({ url, file, ar }) {
     setLoading(true);
     pdfjsLib.getDocument(url).promise.then((pdf) => pdf.getPage(1)).then((page) => {
       if (cancelled) return null;
-      const viewport = page.getViewport({ scale: 1.25 });
+      const baseViewport = page.getViewport({ scale: 1 });
+      const availableWidth = Math.max(canvasRef.current.parentElement?.clientWidth - 24 || 900, 320);
+      const viewport = page.getViewport({ scale: Math.max(1.5, availableWidth / baseViewport.width) * (window.devicePixelRatio || 1) });
       const canvas = canvasRef.current;
       canvas.width = viewport.width;
       canvas.height = viewport.height;
@@ -28,5 +30,5 @@ export default function DocumentFirstPagePreview({ url, file, ar }) {
 
   if (isImage) return <Image src={url} alt={file.name} fittingType="fit" className="min-h-80 w-full bg-secondary/30" />;
   if (!isPdf) return <div className="flex min-h-80 flex-col items-center justify-center bg-secondary/35 p-8 text-center"><FileText className="mb-3 h-10 w-10 text-accent" /><p className="text-sm font-bold">{file?.name}</p><p className="mt-2 text-xs text-muted-foreground">{ar ? "تم فحص الملف. تتوفر المعاينة المباشرة لملفات PDF وPNG." : "File scanned. Live preview is available for PDF and PNG files."}</p></div>;
-  return <div className="relative min-h-80 bg-secondary/45 p-3"><canvas ref={canvasRef} className="mx-auto block max-h-[650px] max-w-full bg-white shadow-md" />{loading && <div className="absolute inset-0 flex items-center justify-center bg-card/70"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}</div>;
+  return <div className="relative min-h-[640px] overflow-auto bg-secondary/45 p-3"><canvas ref={canvasRef} className="mx-auto block h-auto w-full bg-white shadow-md" />{loading && <div className="absolute inset-0 flex items-center justify-center bg-card/70"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}</div>;
 }

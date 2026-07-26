@@ -8,6 +8,7 @@ export async function createTypedSignatureImage(text, fontFamily) {
   ctx.fillStyle = "#C7AD76";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  ctx.direction = /[\u0600-\u06ff]/.test(text) ? "rtl" : "ltr";
   let size = 64;
   ctx.font = `${size}px ${fontFamily}`;
   while (ctx.measureText(text).width > 520 && size > 20) {
@@ -37,21 +38,28 @@ export async function createTypedSignatureImage(text, fontFamily) {
 export async function createTypedSignatureWithDate(name, date, fontFamily) {
   await Promise.all([
     document.fonts.load(`64px ${fontFamily}`, name),
-    document.fonts.load("64px Arial", date),
+    document.fonts.load("28px Arial", date),
   ]);
   await document.fonts.ready;
   const canvas = document.createElement("canvas");
   canvas.width = 960;
-  canvas.height = 160;
+  canvas.height = 190;
   const ctx = canvas.getContext("2d");
+  const isArabic = /[\u0600-\u06ff]/.test(name);
   ctx.fillStyle = "#C7AD76";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.font = `64px ${fontFamily}`;
-  ctx.fillText(name, 10, 105);
-  const nameWidth = ctx.measureText(name).width;
-  ctx.font = "64px Arial";
-  ctx.fillText(` — ${date}`, nameWidth + 18, 105);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.direction = isArabic ? "rtl" : "ltr";
+  let size = 68;
+  ctx.font = `${size}px ${fontFamily}`;
+  while (ctx.measureText(name).width > 900 && size > 28) {
+    size -= 4;
+    ctx.font = `${size}px ${fontFamily}`;
+  }
+  ctx.fillText(name, 480, 78, 900);
+  ctx.direction = "ltr";
+  ctx.font = "28px Arial";
+  ctx.fillText(date, 480, 145);
 
   const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
   let left = canvas.width, top = canvas.height, right = 0, bottom = 0;
@@ -63,10 +71,10 @@ export async function createTypedSignatureWithDate(name, date, fontFamily) {
       }
     }
   }
-  const padding = 4;
+  const padding = 6;
   const trimmed = document.createElement("canvas");
-  trimmed.width = right - left + 1 + padding * 2;
-  trimmed.height = bottom - top + 1 + padding * 2;
+  trimmed.width = Math.max(1, right - left + 1 + padding * 2);
+  trimmed.height = Math.max(1, bottom - top + 1 + padding * 2);
   trimmed.getContext("2d").drawImage(canvas, left, top, right - left + 1, bottom - top + 1, padding, padding, right - left + 1, bottom - top + 1);
   return trimmed.toDataURL("image/png");
 }
