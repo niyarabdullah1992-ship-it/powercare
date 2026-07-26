@@ -2,7 +2,7 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.40";
 import { authPowerCareSession } from "../../shared/powerCareSession.ts";
 
 const privateHost = (host) => host === "localhost" || host === "::1" || /^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^169\.254\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host);
-Deno.serve(async (req) => {
+export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
@@ -18,9 +18,11 @@ Deno.serve(async (req) => {
     const response = await fetch(url.toString(), { method: "GET", headers: { Range: "bytes=0-1023" }, redirect: "manual", signal: controller.signal });
     clearTimeout(timer);
     if (!response.ok && response.status !== 206) return Response.json({ ok: false, message: `Stream endpoint returned HTTP ${response.status}.` });
+    const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+    if (contentType.includes("application/json")) return Response.json({ ok: false, message: "The URL returned an API error instead of a camera stream." });
     return Response.json({ ok: true, message: "Stream endpoint is reachable." });
   } catch (error) {
     console.error("Camera connection test failed:", error.message);
     return Response.json({ ok: false, message: error.name === "AbortError" ? "Connection timed out." : "Stream endpoint could not be reached." });
   }
-});
+}

@@ -6,11 +6,11 @@ import CameraWizardFields from "@/components/cameras/CameraWizardFields";
 import CameraBarcodeImport from "@/components/cameras/CameraBarcodeImport";
 
 const initial = { provider: "", name: "", stationId: "", streamUrl: "", streamType: "hls", deviceAddress: "", status: "active" };
-export default function CameraSetupWizard({ stations, companyId, ar, initialAddress = "", onSave, onClose }) {
+export default function CameraSetupWizard({ stations, companyId, sessionToken, ar, initialAddress = "", onSave, onClose }) {
   const [step, setStep] = useState(initialAddress ? 2 : 1); const [form, setForm] = useState({ ...initial, provider: initialAddress ? "onvif" : "", deviceAddress: initialAddress }); const [testing, setTesting] = useState(false); const [result, setResult] = useState(null);
   const provider = cameraProviders.find((item) => item.id === form.provider);
   const set = (key, value) => { setForm((current) => ({ ...current, [key]: value })); if (key === "streamUrl") setResult(null); };
-  const test = async () => { setTesting(true); setResult(null); try { const response = await base44.functions.invoke("cameraConnectionTest", { companyId, url: form.streamUrl, streamType: form.streamType }); setResult(response.data); } catch (error) { setResult({ ok: false, message: error?.response?.data?.error || error.message }); } finally { setTesting(false); } };
+  const test = async () => { setTesting(true); setResult(null); try { const response = await base44.functions.invoke("cameraConnectionTest", { companyId, sessionToken, url: form.streamUrl, streamType: form.streamType }); setResult(response.data); } catch (error) { setResult({ ok: false, message: error?.response?.data?.error || error.message }); } finally { setTesting(false); } };
   const save = () => { const station = stations.find((item) => item.id === form.stationId); onSave({ ...form, lat: station?.lat ?? null, lng: station?.lng ?? null }); };
   return <div className="fixed inset-0 z-[2000] grid place-items-center bg-foreground/40 p-4"><div className="w-full max-w-2xl rounded-xl border border-border bg-card p-5 shadow-elevated">
     <div className="flex items-center justify-between"><div><h2 className="font-heading text-xl font-semibold">{ar ? "معالج ربط الكاميرا" : "Camera setup wizard"}</h2><p className="text-xs text-muted-foreground">{ar ? `الخطوة ${step} من 3` : `Step ${step} of 3`}</p></div><button onClick={onClose}><X className="h-5 w-5" /></button></div>

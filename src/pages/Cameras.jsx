@@ -15,7 +15,7 @@ import CameraGuideDialog from "@/components/cameras/CameraGuideDialog";
 import CameraAlertsPanel from "@/components/cameras/CameraAlertsPanel";
 
 export default function Cameras() {
-  const { data, currentUser, company } = useAuth(); const { lang } = useI18n(); const ar = lang === "ar";
+  const { data, currentUser, company, session } = useAuth(); const { lang } = useI18n(); const ar = lang === "ar";
   const [editing, setEditing] = useState(null); const [formOpen, setFormOpen] = useState(false); const [wizardOpen, setWizardOpen] = useState(false); const [importOpen, setImportOpen] = useState(false); const [guideOpen, setGuideOpen] = useState(false); const [discoveredAddress, setDiscoveredAddress] = useState(""); const [selectedStationId, setSelectedStationId] = useState(null);
   if (!data || !currentUser) return null;
   const stations = visibleStations(currentUser, data); const stationIds = new Set(stations.map((item) => item.id));
@@ -32,10 +32,10 @@ export default function Cameras() {
     <CameraAlertsPanel companyId={company.id} currentUser={currentUser} cameras={cameras} stations={stations} ar={ar} />
     <CameraMap cameras={cameras} stations={stations} ar={ar} onSelectStation={setSelectedStationId} />
     {selectedStation && <div className="flex items-center justify-between rounded-lg border border-accent/25 bg-card px-4 py-3"><p className="text-sm font-semibold">{ar ? `كاميرات محطة ${selectedStation.name}` : `${selectedStation.name} cameras`}</p><button onClick={() => setSelectedStationId(null)} className="text-xs text-accent hover:underline">{ar ? "عرض جميع المحطات" : "Show all stations"}</button></div>}
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{shownCameras.map((camera) => <CameraCard key={camera.id} camera={camera} station={stations.find((item) => item.id === camera.stationId)} canManage={canManage} ar={ar} onEdit={(item) => { setEditing(item); setFormOpen(true); }} onDelete={remove} />)}</div>
+    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{shownCameras.map((camera) => <CameraCard key={camera.id} camera={camera} station={stations.find((item) => item.id === camera.stationId)} companyId={company.id} sessionToken={session?.token} canManage={canManage} ar={ar} onEdit={(item) => { setEditing(item); setFormOpen(true); }} onDelete={remove} />)}</div>
     {!cameras.length && <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">{ar ? "لا توجد كاميرات مرتبطة بعد." : "No cameras linked yet."}</div>}
     {formOpen && <CameraForm key={editing?.id || "new"} initial={editing} stations={stations} ar={ar} onSave={save} onClose={() => { setFormOpen(false); setEditing(null); }} />}
-    {wizardOpen && <CameraSetupWizard key={discoveredAddress || "wizard"} stations={stations} companyId={company.id} ar={ar} initialAddress={discoveredAddress} onSave={save} onClose={() => { setWizardOpen(false); setDiscoveredAddress(""); }} />}
+    {wizardOpen && <CameraSetupWizard key={discoveredAddress || "wizard"} stations={stations} companyId={company.id} sessionToken={session?.token} ar={ar} initialAddress={discoveredAddress} onSave={save} onClose={() => { setWizardOpen(false); setDiscoveredAddress(""); }} />}
     {importOpen && <CameraCsvImport stations={stations} ar={ar} onImport={importRows} onClose={() => setImportOpen(false)} />}
     {guideOpen && <CameraGuideDialog ar={ar} onClose={() => setGuideOpen(false)} />}
   </div>;
