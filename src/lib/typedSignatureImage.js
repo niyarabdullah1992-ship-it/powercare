@@ -57,10 +57,13 @@ export async function createTypedSignatureWithDate(name, date, fontFamily) {
   }
   ctx.textAlign = "center";
   ctx.fillText(name, 355, 60, 690);
+  const nameWidth = Math.min(ctx.measureText(name).width, 690);
   ctx.direction = "ltr";
   ctx.font = "28px Arial";
+  const dateWidth = Math.min(ctx.measureText(date).width, 180);
+  const dateCenter = Math.min(850, 355 + nameWidth / 2 + 18 + dateWidth / 2);
   ctx.textAlign = "center";
-  ctx.fillText(date, 850, 60, 180);
+  ctx.fillText(date, dateCenter, 60, 180);
 
   const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
   let left = canvas.width, top = canvas.height, right = 0, bottom = 0;
