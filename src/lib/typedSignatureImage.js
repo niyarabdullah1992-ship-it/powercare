@@ -43,23 +43,24 @@ export async function createTypedSignatureWithDate(name, date, fontFamily) {
   await document.fonts.ready;
   const canvas = document.createElement("canvas");
   canvas.width = 960;
-  canvas.height = 190;
+  canvas.height = 120;
   const ctx = canvas.getContext("2d");
   const isArabic = /[\u0600-\u06ff]/.test(name);
   ctx.fillStyle = "#C7AD76";
-  ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.direction = isArabic ? "rtl" : "ltr";
   let size = 68;
   ctx.font = `${size}px ${fontFamily}`;
-  while (ctx.measureText(name).width > 900 && size > 28) {
+  while (ctx.measureText(name).width > 690 && size > 28) {
     size -= 4;
     ctx.font = `${size}px ${fontFamily}`;
   }
-  ctx.fillText(name, 480, 78, 900);
+  ctx.textAlign = "center";
+  ctx.fillText(name, 355, 60, 690);
   ctx.direction = "ltr";
   ctx.font = "28px Arial";
-  ctx.fillText(date, 480, 145);
+  ctx.textAlign = "center";
+  ctx.fillText(date, 850, 60, 180);
 
   const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
   let left = canvas.width, top = canvas.height, right = 0, bottom = 0;
