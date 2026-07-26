@@ -15,7 +15,14 @@ export default function DocumentFirstPagePreview({ url, file, ar }) {
     if (!url || !isPdf || !canvasRef.current) return;
     let cancelled = false;
     setLoading(true);
-    pdfjsLib.getDocument(url).promise.then((pdf) => pdf.getPage(1)).then((page) => {
+    pdfjsLib.getDocument({
+      url,
+      cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+      cMapPacked: true,
+      standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`,
+      useSystemFonts: true,
+      disableFontFace: false,
+    }).promise.then((pdf) => pdf.getPage(1)).then((page) => {
       if (cancelled) return null;
       const baseViewport = page.getViewport({ scale: 1 });
       const availableWidth = Math.max(canvasRef.current.parentElement?.clientWidth - 24 || 900, 320);
