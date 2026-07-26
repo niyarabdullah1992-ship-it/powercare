@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FileText, Loader2 } from "lucide-react";
 import { Image } from "@/components/ui/image";
-import PinchZoomViewport from "@/components/files/PinchZoomViewport";
 import * as pdfjsLib from "pdfjs-dist";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -36,7 +35,7 @@ export default function DocumentFirstPagePreview({ url, file, ar }) {
     return () => { cancelled = true; };
   }, [url, isPdf]);
 
-  if (isImage) return <PinchZoomViewport className="min-h-80 w-full bg-secondary/30" ariaLabel={ar ? "معاينة مستند قابلة للتكبير" : "Zoomable document preview"}><Image src={url} alt={file.name} fittingType="fit" className="min-h-80 w-full" /></PinchZoomViewport>;
+  if (isImage) return <Image src={url} alt={file.name} fittingType="fit" className="min-h-80 w-full bg-secondary/30" />;
   if (!isPdf) return <div className="flex min-h-80 flex-col items-center justify-center bg-secondary/35 p-8 text-center"><FileText className="mb-3 h-10 w-10 text-accent" /><p className="text-sm font-bold">{file?.name}</p><p className="mt-2 text-xs text-muted-foreground">{ar ? "تم فحص الملف. تتوفر المعاينة المباشرة لملفات PDF وPNG." : "File scanned. Live preview is available for PDF and PNG files."}</p></div>;
-  return <PinchZoomViewport className="min-h-[70vh] w-full min-w-0 max-w-full bg-secondary/45 p-4" ariaLabel={ar ? "معاينة PDF قابلة للتكبير بإصبعين" : "Pinch-zoomable PDF preview"}><canvas ref={canvasRef} className="block h-auto min-w-0 w-full max-w-full bg-white shadow-lg" />{loading && <div className="absolute inset-0 flex items-center justify-center bg-card/70"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}</PinchZoomViewport>;
+  return <div className="relative flex min-h-[70vh] w-full min-w-0 max-w-full items-start justify-center overflow-hidden bg-secondary/45 p-4"><canvas ref={canvasRef} className="block h-auto min-w-0 w-full max-w-full bg-white shadow-lg" />{loading && <div className="absolute inset-0 flex items-center justify-center bg-card/70"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>}</div>;
 }
