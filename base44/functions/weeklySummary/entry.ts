@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
 import { POWERCARE_LOGO_URL } from '../../shared/brand.ts';
 
@@ -16,10 +16,10 @@ function escapeHtml(value) {
   return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 function metric(label, value) {
-  return `<td width="33.33%" style="padding:5px;"><div style="padding:15px 8px;border:1px solid #eadfc9;border-radius:12px;background:#faf6ee;text-align:center;"><div style="font-size:24px;font-weight:700;color:#b8863e;">${value}</div><div style="margin-top:4px;font-size:12px;color:#75644d;">${label}</div></div></td>`;
+  return `<td width="33.33%" style="padding:5px;"><div style="padding:16px 8px;border:1px solid #d9cfbc;border-top:3px solid #b99852;border-radius:8px;background:#ffffff;text-align:center;"><div style="font-size:25px;font-weight:700;color:#102b3e;">${value}</div><div style="margin-top:5px;font-size:11px;font-weight:600;letter-spacing:.3px;color:#65717a;">${label}</div></div></td>`;
 }
 function detailRow(label, value, last = false) {
-  return `<tr><td style="padding:11px 14px;font-size:13px;color:#75644d;${last ? '' : 'border-bottom:1px solid #f0e8d8;'}">${label}</td><td style="padding:11px 14px;font-size:14px;font-weight:700;color:#3a2f22;text-align:left;${last ? '' : 'border-bottom:1px solid #f0e8d8;'}">${value}</td></tr>`;
+  return `<tr><td style="padding:12px 15px;font-size:13px;color:#65717a;${last ? '' : 'border-bottom:1px solid #e8e1d4;'}">${label}</td><td style="padding:12px 15px;font-size:14px;font-weight:700;color:#102b3e;text-align:left;${last ? '' : 'border-bottom:1px solid #e8e1d4;'}">${value}</td></tr>`;
 }
 const EMAIL_COPY = {
   en: { dir:'ltr', subject:'Weekly summary for', header:'Your company weekly performance summary', hello:'Hello,', intro:'Here is the performance summary for', period:'over the past seven days.', employees:'Employees', stations:'Stations', completed:'Tasks completed', tasks:'Tasks', newTasks:'New tasks this week', active:'In progress', review:'Awaiting review', overdue:'Overdue tasks', reports:'Reports and notices', dailyReports:'Daily reports submitted', newNotices:'New notices this week', openNotices:'Notices still open', cta:'Sign in to PowerCare to review full details and take action.', footer:'Smart management for your team and tasks' },
@@ -36,16 +36,17 @@ function getCopy(language) { return EMAIL_COPY[language] || EMAIL_COPY.en; }
 function weeklySummaryHtml(companyName, stats, language = 'en') {
   const c = getCopy(language);
   const align = c.dir === 'rtl' ? 'right' : 'left';
-  return `<!DOCTYPE html><html lang="${language}" dir="${c.dir}"><body style="margin:0;padding:0;background:#f5efe4;font-family:Arial,Tahoma,sans-serif;direction:${c.dir};">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5efe4;padding:32px 12px;"><tr><td align="center">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid #eadfc9;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(76,55,28,.08);">
-      <tr><td style="padding:28px;text-align:center;background:linear-gradient(180deg,#d8b578,#b8863e);"><img src="${POWERCARE_LOGO_URL}" width="74" height="74" alt="PowerCare" style="display:block;margin:0 auto 9px;" /><div style="font-family:Georgia,serif;font-size:22px;font-weight:700;letter-spacing:1px;color:#ffffff;">PowerCare</div><div style="margin-top:7px;font-size:13px;color:#fff8ec;">${c.header}</div></td></tr>
-      <tr><td style="padding:28px 28px 12px;text-align:${align};"><h1 style="margin:0 0 8px;font-size:21px;color:#3a2f22;">${c.hello}</h1><p style="margin:0 0 22px;font-size:14px;line-height:1.8;color:#75644d;">${c.intro} <strong style="color:#3a2f22;">${escapeHtml(companyName)}</strong> ${c.period}</p>
+  return `<!DOCTYPE html><html lang="${language}" dir="${c.dir}"><body style="margin:0;padding:0;background:#f4f1e9;font-family:Arial,Tahoma,sans-serif;direction:${c.dir};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f1e9;padding:34px 12px;"><tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fffefa;border:1px solid #d9cfbc;border-radius:12px;overflow:hidden;box-shadow:0 12px 36px rgba(16,43,62,.12);">
+      <tr><td style="height:4px;background:#b99852;font-size:0;line-height:0;">&nbsp;</td></tr>
+      <tr><td style="padding:26px 28px 24px;text-align:center;background:#102b3e;"><img src="${POWERCARE_LOGO_URL}" width="68" height="68" alt="PowerCare" style="display:block;margin:0 auto 11px;padding:7px;border-radius:8px;background:#fffefa;" /><div style="font-family:Georgia,serif;font-size:23px;font-weight:700;letter-spacing:1.4px;color:#fffefa;">PowerCare</div><div style="width:38px;height:2px;margin:10px auto;background:#b99852;font-size:0;line-height:0;">&nbsp;</div><div style="font-size:12px;font-weight:600;letter-spacing:.35px;color:#dcc78f;">${c.header}</div></td></tr>
+      <tr><td style="padding:28px 28px 14px;text-align:${align};"><h1 style="margin:0 0 9px;font-family:Georgia,Tahoma,serif;font-size:22px;color:#102b3e;">${c.hello}</h1><p style="margin:0 0 22px;font-size:14px;line-height:1.8;color:#65717a;">${c.intro} <strong style="color:#102b3e;">${escapeHtml(companyName)}</strong> ${c.period}</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${metric(c.employees, stats.employees)}${metric(c.stations, stats.stations)}${metric(c.completed, stats.completedThisWeek)}</tr></table>
-        <h2 style="margin:24px 0 10px;font-size:15px;color:#3a2f22;">${c.tasks}</h2><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eadfc9;border-radius:12px;background:#fffdf9;overflow:hidden;">${detailRow(c.newTasks, stats.newThisWeek)}${detailRow(c.active, stats.active)}${detailRow(c.review, stats.pendingReview)}${detailRow(c.overdue, stats.overdue, true)}</table>
-        <h2 style="margin:22px 0 10px;font-size:15px;color:#3a2f22;">${c.reports}</h2><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eadfc9;border-radius:12px;background:#fffdf9;overflow:hidden;">${detailRow(c.dailyReports, stats.reportsThisWeek)}${detailRow(c.newNotices, stats.newComplaintsThisWeek)}${detailRow(c.openNotices, stats.openComplaints, true)}</table>
-        <p style="margin:22px 0 10px;padding:14px;border-radius:10px;background:#faf6ee;font-size:13px;line-height:1.8;color:#75644d;text-align:center;">${c.cta}</p></td></tr>
-      <tr><td style="padding:18px 28px 24px;border-top:1px solid #f0e8d8;text-align:center;"><p style="margin:0;font-size:12px;color:#a08c6a;">PowerCare — ${c.footer}</p></td></tr>
+        <h2 style="margin:25px 0 10px;padding-${c.dir === 'rtl' ? 'right' : 'left'}:10px;border-${c.dir === 'rtl' ? 'right' : 'left'}:3px solid #b99852;font-size:15px;color:#102b3e;">${c.tasks}</h2><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #d9cfbc;border-radius:8px;background:#ffffff;overflow:hidden;">${detailRow(c.newTasks, stats.newThisWeek)}${detailRow(c.active, stats.active)}${detailRow(c.review, stats.pendingReview)}${detailRow(c.overdue, stats.overdue, true)}</table>
+        <h2 style="margin:23px 0 10px;padding-${c.dir === 'rtl' ? 'right' : 'left'}:10px;border-${c.dir === 'rtl' ? 'right' : 'left'}:3px solid #b99852;font-size:15px;color:#102b3e;">${c.reports}</h2><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #d9cfbc;border-radius:8px;background:#ffffff;overflow:hidden;">${detailRow(c.dailyReports, stats.reportsThisWeek)}${detailRow(c.newNotices, stats.newComplaintsThisWeek)}${detailRow(c.openNotices, stats.openComplaints, true)}</table>
+        <p style="margin:23px 0 10px;padding:15px 18px;border:1px solid #b99852;border-radius:8px;background:#102b3e;font-size:13px;line-height:1.8;color:#fffefa;text-align:center;">${c.cta}</p></td></tr>
+      <tr><td style="padding:18px 28px 22px;border-top:1px solid #e8e1d4;text-align:center;background:#f8f5ee;"><p style="margin:0;font-size:11px;letter-spacing:.25px;color:#7b756a;">PowerCare &nbsp;•&nbsp; ${c.footer}</p></td></tr>
     </table></td></tr></table></body></html>`;
 }
 function weeklySummaryText(companyName, stats, language) {
@@ -53,7 +54,7 @@ function weeklySummaryText(companyName, stats, language) {
   return `${c.hello}\n\n${c.intro} ${companyName} ${c.period}\n\n${c.employees}: ${stats.employees} — ${c.stations}: ${stats.stations}\n\n${c.tasks}:\n• ${c.newTasks}: ${stats.newThisWeek}\n• ${c.active}: ${stats.active}\n• ${c.review}: ${stats.pendingReview}\n• ${c.overdue}: ${stats.overdue}\n• ${c.completed}: ${stats.completedThisWeek}\n\n${c.reports}:\n• ${c.dailyReports}: ${stats.reportsThisWeek}\n• ${c.newNotices}: ${stats.newComplaintsThisWeek}\n• ${c.openNotices}: ${stats.openComplaints}\n\n${c.cta}\n\n— PowerCare`;
 }
 
-Deno.serve(async (req) => {
+export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
@@ -166,4 +167,4 @@ Deno.serve(async (req) => {
     console.error('weeklySummary error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
-});
+}
