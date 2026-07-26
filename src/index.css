@@ -1029,8 +1029,68 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   background-color: hsl(var(--card));
 }
 
-/* Camera center surfaces stay fully opaque above maps, streams and modal backdrops. */
-.powercare-interior-page .camera-center :is(.rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl).bg-card,
-.powercare-interior-page .camera-center :is(details, section).bg-card {
-  background: hsl(var(--card));
+/* Security Operations Center — dark command-room presentation. */
+.camera-command-center { margin: -1rem; padding: 1rem; color: #f8f4e8; background: #062943; border: 1px solid #bca15d; border-radius: .5rem; }
+.camera-command-center > header { color: #f8f4e8; background: #082f4b; border-color: #bca15d; box-shadow: none; }
+.camera-command-center > header h1 { color: #fffaf0; }
+.camera-command-center > header p { color: #d7c58e; }
+.camera-command-center > header button { border-color: #bca15d; }
+.camera-command-center .camera-health-ribbon,
+.camera-command-center .camera-station-panel,
+.camera-command-center .camera-discovery-panel,
+.camera-command-center .camera-map-panel,
+.camera-command-center .camera-alerts-sidebar { overflow: hidden; border: 1px solid #bca15d; border-radius: .4rem; background: #072b46; box-shadow: none; }
+.camera-panel-heading { display:flex; align-items:end; justify-content:space-between; gap:1rem; padding:.75rem 1rem .5rem; }
+.camera-panel-heading p,.camera-panel-kicker { color:#d7c58e; font-size:.65rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; }
+.camera-panel-heading h2 { color:#fffaf0; font-size:1rem; }
+.camera-panel-heading > span { color:#6fd28b; font:600 .62rem var(--font-mono); }
+.camera-health-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.35rem; padding:0 .5rem .5rem; }
+.camera-health-cell { position:relative; display:flex; align-items:center; gap:.65rem; min-height:4.5rem; padding:.65rem; border:1px solid #bca15d; border-radius:.3rem; background:#082f4b; }
+.camera-health-icon { display:grid; place-items:center; width:2.3rem; height:2.3rem; border:1px solid #bca15d; border-radius:.25rem; }
+.camera-health-value { color:#fffaf0; font-size:1.65rem; font-weight:700; line-height:1; }
+.camera-health-label { margin-top:.3rem; color:#d8d2c1; font-size:.68rem; }
+.camera-health-pulse { position:absolute; inset-block-start:.55rem; inset-inline-end:.55rem; width:.45rem; height:.45rem; border-radius:999px; background:#52c878; box-shadow:0 0 8px #52c878; }
+.camera-station-panel { padding:.75rem; }
+.camera-station-tile { display:flex; align-items:center; gap:.7rem; padding:.75rem; color:#12212d; text-align:start; border:1px solid #bca15d; border-radius:.3rem; background:#f7f2e4; }
+.camera-station-tile:hover { background:#fffaf0; }
+.camera-command-center .camera-station-tile .bg-primary { color:#062943; background:#e9dfbf; }
+.camera-discovery-panel { color:#f8f4e8; }
+.camera-discovery-panel > div { border-color:#bca15d; background:#f7f2e4; color:#12212d; }
+.camera-command-map-grid { display:grid; grid-template-columns:minmax(0,3fr) minmax(16rem,1fr); gap:.5rem; align-items:stretch; }
+.camera-command-map-grid > :only-child { grid-column:1 / -1; }
+.camera-map-panel { min-width:0; }
+.camera-map-heading { padding:.65rem 1rem; border-bottom:1px solid #bca15d; }
+.camera-map-heading h2 { color:#fffaf0; }
+.camera-map-heading p { color:#d7c58e; }
+.camera-map-panel .leaflet-container { height:430px; }
+.camera-alerts-sidebar { min-height:100%; background:#f7f2e4; color:#12212d; }
+.camera-alerts-heading { border-color:#bca15d; background:#c7aa62; }
+.camera-alerts-sidebar .divide-y > div { border-color:#ddd4ba; }
+.camera-device-register { padding:.5rem; border:1px solid #bca15d; border-radius:.4rem; background:#072b46; }
+.camera-device-register::before { content:"COMPREHENSIVE DEVICE & ASSET REGISTER"; display:block; padding:.35rem .5rem; color:#fffaf0; font-size:.8rem; font-weight:700; letter-spacing:.06em; }
+.camera-device-row { display:grid; grid-template-columns:9rem minmax(10rem,1.4fr) minmax(8rem,1fr) 7rem auto; align-items:center; gap:.75rem; min-height:4.5rem; padding:.35rem .5rem; color:#15232d; border:1px solid #ded6c1; border-radius:.25rem; background:#f8f4e8; }
+.camera-device-preview { overflow:hidden; height:3.8rem; border-radius:.2rem; background:#061b2c; }
+.camera-device-preview > div,.camera-device-preview iframe,.camera-device-preview video,.camera-device-preview img { height:100%; min-height:100%; aspect-ratio:auto; }
+.camera-device-preview button,.camera-device-preview > div > span { display:none; }
+.camera-device-identity h2 { display:flex; align-items:center; gap:.4rem; font-size:.82rem; font-weight:700; }
+.camera-device-identity p { display:flex; align-items:center; gap:.3rem; margin-top:.25rem; color:#687078; font-size:.68rem; }
+.camera-device-meta { display:flex; flex-direction:column; font-size:.75rem; }
+.camera-device-meta small { color:#687078; }
+.camera-device-status { justify-self:start; border-radius:999px; padding:.3rem .5rem; font-size:.65rem; font-weight:700; }
+.camera-device-actions { display:flex; gap:.35rem; }
+.camera-device-actions button { display:flex; align-items:center; gap:.25rem; padding:.4rem .55rem; color:#062943; font-size:.65rem; font-weight:700; border:1px solid #bca15d; border-radius:.25rem; background:#d4b86d; }
+@media (max-width: 900px) {
+  .camera-health-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .camera-command-map-grid { grid-template-columns:1fr; }
+  .camera-device-row { grid-template-columns:6rem 1fr auto; }
+  .camera-device-meta { display:none; }
+  .camera-device-actions { grid-column:2 / -1; }
+}
+@media (max-width: 560px) {
+  .camera-command-center { margin:-.5rem; padding:.5rem; }
+  .camera-health-grid { grid-template-columns:1fr 1fr; }
+  .camera-health-cell { align-items:flex-start; flex-direction:column; }
+  .camera-device-row { grid-template-columns:5rem 1fr; }
+  .camera-device-status { grid-column:2; }
+  .camera-device-actions { grid-column:1 / -1; justify-content:flex-end; }
 }
