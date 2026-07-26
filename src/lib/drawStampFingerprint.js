@@ -27,45 +27,60 @@ function drawRidges(ctx, cx, cy, size, count, rotation = 0, broken = false) {
 }
 
 function drawExecutive(ctx, cx, cy, size) {
-  ctx.save(); clipFingerprint(ctx, cx, cy, size); drawRidges(ctx, cx, cy, size, 8, -.08, true);
-  ctx.strokeStyle = GOLD; ctx.lineWidth = Math.max(1.5, size * .026);
-  ctx.beginPath(); ctx.moveTo(cx - size * .2, cy + size * .12); ctx.lineTo(cx, cy - size * .13); ctx.lineTo(cx + size * .2, cy + size * .12); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx - size * .14, cy + size * .22); ctx.lineTo(cx, cy + size * .05); ctx.lineTo(cx + size * .14, cy + size * .22); ctx.stroke();
+  ctx.save(); clipFingerprint(ctx, cx, cy, size);
+  drawRidges(ctx, cx, cy, size, 11, -.06, false);
+  ctx.strokeStyle = GOLD; ctx.lineWidth = Math.max(1.2, size * .022);
+  for (let turn = 0; turn < 4; turn += 1) {
+    ctx.beginPath();
+    ctx.ellipse(cx + size * .035, cy + size * .035, size * (.06 + turn * .045), size * (.08 + turn * .055), -.14, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 
 function drawMinimal(ctx, cx, cy, size) {
-  ctx.save(); clipFingerprint(ctx, cx, cy, size); drawRidges(ctx, cx, cy, size, 6, 0, true);
-  ctx.fillStyle = GOLD; ctx.beginPath(); ctx.arc(cx, cy, size * .055, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = GOLD_LIGHT; ctx.lineWidth = Math.max(1, size * .018);
-  ctx.beginPath(); ctx.moveTo(cx, cy - size * .18); ctx.lineTo(cx, cy + size * .27); ctx.stroke();
+  ctx.save(); clipFingerprint(ctx, cx, cy, size); ctx.lineCap = "round";
+  for (let ridge = 0; ridge < 11; ridge += 1) {
+    const offset = ridge * size * .035;
+    ctx.beginPath();
+    ctx.moveTo(cx + size * .45, cy - size * .46 + offset * .3);
+    ctx.bezierCurveTo(cx - size * .1 + offset, cy - size * .55 + offset, cx - size * .42 + offset * .25, cy + size * .03, cx - size * .25 + offset * .35, cy + size * .5);
+    ctx.strokeStyle = ridge % 2 ? GOLD : GOLD_LIGHT; ctx.lineWidth = Math.max(.8, size * .015); ctx.stroke();
+  }
   ctx.restore();
 }
 
 function drawCertificate(ctx, cx, cy, size) {
-  ctx.save(); clipFingerprint(ctx, cx, cy, size); drawRidges(ctx, cx, cy, size, 9, .08, false);
-  ctx.fillStyle = "#13283d"; ctx.beginPath(); ctx.moveTo(cx, cy - size * .22); ctx.lineTo(cx + size * .18, cy - size * .12); ctx.lineTo(cx + size * .13, cy + size * .18); ctx.lineTo(cx, cy + size * .29); ctx.lineTo(cx - size * .13, cy + size * .18); ctx.lineTo(cx - size * .18, cy - size * .12); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = GOLD; ctx.lineWidth = Math.max(1.5, size * .028); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx - size * .09, cy + size * .02); ctx.lineTo(cx - size * .02, cy + size * .1); ctx.lineTo(cx + size * .11, cy - size * .08); ctx.stroke();
+  ctx.save(); clipFingerprint(ctx, cx, cy, size); ctx.lineCap = "round";
+  for (let ridge = 0; ridge < 12; ridge += 1) {
+    const height = size * (.12 + ridge * .043);
+    ctx.beginPath(); ctx.moveTo(cx - size * .48, cy + size * .44 - ridge * size * .025);
+    ctx.quadraticCurveTo(cx, cy + size * .38 - height * 1.7, cx + size * .48, cy + size * .44 - ridge * size * .025);
+    ctx.strokeStyle = ridge % 2 ? GOLD : GOLD_LIGHT; ctx.lineWidth = Math.max(.8, size * .015); ctx.stroke();
+  }
   ctx.restore();
 }
 
 function drawVault(ctx, cx, cy, size) {
-  ctx.save(); clipFingerprint(ctx, cx, cy, size); drawRidges(ctx, cx, cy, size, 10, 0, true);
-  ctx.fillStyle = "#13283d"; ctx.fillRect(cx - size * .16, cy - size * .02, size * .32, size * .28);
-  ctx.strokeStyle = GOLD; ctx.lineWidth = Math.max(1.5, size * .025); ctx.strokeRect(cx - size * .16, cy - size * .02, size * .32, size * .28);
-  ctx.beginPath(); ctx.arc(cx, cy - size * .03, size * .12, Math.PI, 0); ctx.stroke();
-  ctx.fillStyle = GOLD; ctx.beginPath(); ctx.arc(cx, cy + size * .09, size * .035, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(cx - size * .015, cy + size * .09, size * .03, size * .08);
+  ctx.save(); clipFingerprint(ctx, cx, cy, size); ctx.lineCap = "round";
+  for (let ridge = 0; ridge < 9; ridge += 1) {
+    const rx = size * (.08 + ridge * .035); const ry = size * (.13 + ridge * .046);
+    ctx.strokeStyle = ridge % 2 ? GOLD : GOLD_LIGHT; ctx.lineWidth = Math.max(.8, size * .015);
+    ctx.beginPath(); ctx.ellipse(cx - size * .13, cy, rx, ry, -.25, Math.PI * .25, Math.PI * 1.82); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx + size * .13, cy, rx, ry, .25, Math.PI * 1.18, Math.PI * 2.75); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(cx - size * .43, cy + size * .46); ctx.bezierCurveTo(cx - size * .18, cy + size * .15, cx + size * .18, cy - size * .15, cx + size * .43, cy - size * .46); ctx.strokeStyle = GOLD; ctx.stroke();
   ctx.restore();
 }
 
 function drawHorizon(ctx, cx, cy, size) {
-  ctx.save(); clipFingerprint(ctx, cx, cy, size); drawRidges(ctx, cx, cy, size, 7, 0, false);
-  ctx.fillStyle = "#13283d"; ctx.fillRect(cx - size * .5, cy - size * .12, size, size * .28);
-  ctx.strokeStyle = GOLD; ctx.lineWidth = Math.max(1.2, size * .022);
-  for (let wave = 0; wave < 3; wave += 1) {
-    const y = cy - size * .07 + wave * size * .09;
-    ctx.beginPath(); ctx.moveTo(cx - size * .45, y); ctx.bezierCurveTo(cx - size * .23, y - size * .11, cx - size * .08, y + size * .11, cx + size * .1, y); ctx.bezierCurveTo(cx + size * .25, y - size * .1, cx + size * .36, y + size * .07, cx + size * .47, y); ctx.stroke();
+  ctx.save(); clipFingerprint(ctx, cx, cy, size); ctx.lineCap = "round";
+  for (let ridge = 0; ridge < 11; ridge += 1) {
+    const inset = ridge * size * .022;
+    ctx.beginPath(); ctx.moveTo(cx - size * .48 + inset, cy + size * .43 - inset);
+    ctx.lineTo(cx, cy - size * (.5 - ridge * .035));
+    ctx.lineTo(cx + size * .48 - inset, cy + size * .43 - inset);
+    ctx.strokeStyle = ridge % 2 ? GOLD : GOLD_LIGHT; ctx.lineWidth = Math.max(.8, size * .015); ctx.stroke();
   }
   ctx.restore();
 }

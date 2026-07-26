@@ -1,10 +1,10 @@
 export const SIGNATURE_STAMP_THEMES = [
-  { id: "heritage", ar: "التراثي", en: "Heritage", preview: "rounded-xl border-2 border-accent" },
-  { id: "executive", ar: "التنفيذي", en: "Executive", preview: "rounded-sm border-t-4 border-accent" },
-  { id: "minimal", ar: "البسيط", en: "Minimal", preview: "rounded-md border-s-4 border-accent" },
-  { id: "certificate", ar: "الشهادة", en: "Certificate", preview: "rounded-lg border-4 border-double border-accent" },
-  { id: "vault", ar: "الخزنة", en: "Vault", preview: "rounded-2xl border-2 border-accent shadow-inner" },
-  { id: "horizon", ar: "الأفق", en: "Horizon", preview: "rounded-full border-y-4 border-accent" },
+  { id: "heritage", ar: "المسار الرقمي", en: "Digital Trace", preview: "rounded-xl border-2 border-accent" },
+  { id: "executive", ar: "الدوّامة", en: "Whorl Code", preview: "rounded-sm border-t-4 border-accent" },
+  { id: "minimal", ar: "الحلقة الأحادية", en: "Single Loop", preview: "rounded-md border-s-4 border-accent" },
+  { id: "certificate", ar: "القوس", en: "Arch Code", preview: "rounded-lg border-4 border-double border-accent" },
+  { id: "vault", ar: "الحلقة المزدوجة", en: "Double Loop", preview: "rounded-2xl border-2 border-accent shadow-inner" },
+  { id: "horizon", ar: "القوس المرتفع", en: "Tented Arch", preview: "rounded-full border-y-4 border-accent" },
 ];
 
 function baseFrame(ctx, width, height, radius = 14, fill = "#13283d", lineWidth = 2.5) {
