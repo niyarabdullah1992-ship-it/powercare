@@ -1,4 +1,4 @@
-import drawHeritageFingerprint from "@/lib/drawHeritageFingerprint";
+import drawStampFingerprint from "@/lib/drawStampFingerprint";
 import { drawStampThemeFrame } from "@/lib/signatureStampThemes";
 
 // Draws the "Encrypted verification ID" badge (fingerprint icon + framed ID +
@@ -42,7 +42,7 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.moveTo(112, 10); ctx.lineTo(112, H - 10);
     ctx.moveTo(492, 10); ctx.lineTo(492, H - 10);
     ctx.stroke();
-    drawHeritageFingerprint(ctx, 58, H / 2, 76);
+    drawStampFingerprint(ctx, 58, H / 2, 76, theme);
 
     const tx = 132;
     ctx.textAlign = "left";
@@ -70,7 +70,7 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.moveTo(112, 10); ctx.lineTo(112, H - 10);
     ctx.moveTo(492, 10); ctx.lineTo(492, H - 10);
     ctx.stroke();
-    drawHeritageFingerprint(ctx, 58, H / 2, 76);
+    drawStampFingerprint(ctx, 58, H / 2, 76, theme);
 
     const tx = 132;
     ctx.textAlign = "left";
@@ -95,7 +95,7 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.textAlign = "left";
     ctx.fillText(sigId || "PENDING", tx, 130);
   } else {
-    drawHeritageFingerprint(ctx, 50, H / 2, signerName ? 62 : 54);
+    drawStampFingerprint(ctx, 50, H / 2, signerName ? 62 : 54, theme);
     ctx.textAlign = "left";
     ctx.fillStyle = "#F4EEE2";
     ctx.font = "500 13px sans-serif";
