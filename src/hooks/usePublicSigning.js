@@ -27,6 +27,7 @@ export default function usePublicSigning() {
   const [sigSize, setSigSize] = useState(100);
   const [chosenSpot, setChosenSpot] = useState(null);
   const [stampPreview, setStampPreview] = useState("");
+  const [stampTheme, setStampTheme] = useState("heritage");
   const [textValues, setTextValues] = useState({});
 
   const load = async () => {
@@ -35,6 +36,7 @@ export default function usePublicSigning() {
     try {
       const response = await base44.functions.invoke("multiSign", { action: "getByToken", token });
       setInfo(response.data);
+      setStampTheme(response.data?.signer?.stampTheme || "heritage");
       if (response.data?.signer?.spot?.scale) setSigSize(clampStampScale(response.data.signer.spot.scale));
     } catch (err) {
       setFailure({ type: err?.response?.status === 404 ? "invalid" : "error", message: err?.response?.data?.error || err.message });
@@ -45,7 +47,7 @@ export default function usePublicSigning() {
 
   const setTextValue = (fieldId, value) => setTextValues((current) => ({ ...current, [fieldId]: value }));
 
-  const sign = async (sigDataUrl, composedOrName = false, signatureStyle = "unique") => {
+  const sign = async (sigDataUrl, composedOrName = false, signatureStyle = "unique", selectedTheme = stampTheme) => {
     const isComposedStamp = composedOrName === true;
     const textFields = (info?.signer?.spots || []).filter((field) => field.type === "text");
     if (textFields.some((field) => !String(textValues[field.id] || "").trim())) { setError(ar ? "يرجى تعبئة جميع حقول النص قبل الإرسال." : "Complete every text field before submitting."); return; }
@@ -57,7 +59,7 @@ export default function usePublicSigning() {
       if (fresh.expiresAt && new Date(fresh.expiresAt).getTime() <= Date.now()) throw new Error(ar ? "انتهت صلاحية طلب التوقيع." : "This signature request has expired.");
       if (fresh.signer.status === "signed") throw new Error(ar ? "وقّعت هذا المستند مسبقًا." : "You already signed this document.");
       setStage(ar ? "جارٍ ختم توقيعك على المستند…" : "Stamping your signature…");
-      const stamp = isComposedStamp ? sigDataUrl : await makeSignatureStamp(sigDataUrl, fresh.signer.name, fresh.verificationId, signatureStyle);
+      const stamp = isComposedStamp ? sigDataUrl : await makeSignatureStamp(sigDataUrl, fresh.signer.name, fresh.verificationId, signatureStyle, selectedTheme);
       const fields = fresh.signer.spots || (fresh.signer.spot ? [{ ...fresh.signer.spot, id: "signature", type: "signature" }] : []);
       const signatureField = fields.find((field) => field.type === "signature") || fresh.signer.spot;
       const stamped = await stampOnPdf(fresh.docUrl, stamp, fresh.signedCount, null, signatureField, (signatureField?.scale || 100) / 100, true, fields, textValues);
@@ -81,5 +83,5 @@ export default function usePublicSigning() {
     finally { setSigning(false); }
   };
 
-  return { ar, info, failure, loading, signing, stage, done, error, mode, setMode, sigSize, setSigSize, chosenSpot, setChosenSpot, stampPreview, setStampPreview, textValues, setTextValue, sign, reject, reload: load };
+  return { ar, info, failure, loading, signing, stage, done, error, mode, setMode, sigSize, setSigSize, chosenSpot, setChosenSpot, stampTheme, setStampTheme, stampPreview, setStampPreview, textValues, setTextValue, sign, reject, reload: load };
 }
