@@ -94,12 +94,15 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     const width = signatureImg.width * ratio, height = signatureImg.height * ratio;
     ctx.drawImage(signatureImg, tx + (maxWidth - width) / 2, 35 + (48 - height) / 2, width, height);
 
+    ctx.fillStyle = "#F4EEE2";
+    drawSignerLine(tx, 98, 14, 235);
+    ctx.strokeStyle = "#C7AD7638";
+    ctx.beginPath(); ctx.moveTo(tx, 108); ctx.lineTo(470, 108); ctx.stroke();
     ctx.fillStyle = "#C7AD76";
     ctx.font = "600 15px 'Courier New', monospace";
-    ctx.fillText(sigId || "PENDING", tx, 103);
-    ctx.strokeStyle = "#C7AD7638";
-    ctx.beginPath(); ctx.moveTo(tx, 112); ctx.lineTo(470, 112); ctx.stroke();
-    drawSignerLine(tx, 134, 14, 235);
+    ctx.direction = "ltr";
+    ctx.textAlign = "left";
+    ctx.fillText(sigId || "PENDING", tx, 130);
   } else {
     drawHeritageFingerprint(ctx, 50, H / 2, signerName ? 62 : 54);
     ctx.textAlign = "left";
