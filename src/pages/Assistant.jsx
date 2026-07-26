@@ -385,14 +385,16 @@ Answer the last user question.`,
         onSubmit={(e) => { e.preventDefault(); imageFile ? analyzeImage(input) : ask(input); }}
         className="flex items-center gap-2 pt-3 border-t border-border"
       >
-        <AssistantImageUpload file={imageFile} onSelect={setImageFile} disabled={loading || pendingActions.length > 0} ar={lang === "ar"} />
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={t("aiPlaceholder")}
-          dir="auto"
-          className="flex-1 px-4 py-2.5 rounded-md border border-input bg-card text-sm font-body focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+        <div className="relative flex-1">
+          <AssistantImageUpload file={imageFile} onSelect={setImageFile} disabled={loading || pendingActions.length > 0} ar={lang === "ar"} />
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={t("aiPlaceholder")}
+            dir="auto"
+            className="w-full py-2.5 pe-4 ps-12 rounded-md border border-input bg-card text-sm font-body focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
         <button
           type="submit"
           disabled={loading || pendingActions.length > 0 || (!input.trim() && !imageFile)}
