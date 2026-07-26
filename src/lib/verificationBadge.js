@@ -11,11 +11,25 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
   const typedLayout = Boolean(signatureImg && variant === "typed");
   const W = signatureImg ? 640 : 560;
   const H = signatureImg ? 150 : signerName ? 128 : 96;
+  const q = signatureImg ? 116 : H - 20;
+  const qx = W - q - 16;
+  const qy = signatureImg ? (H - q) / 2 : 10;
   const canvas = document.createElement("canvas");
   canvas.width = W * scale;
   canvas.height = H * scale;
   const ctx = canvas.getContext("2d");
   ctx.scale(scale, scale);
+
+  const drawSignerLine = (tx, y, fontSize, nameMaxWidth) => {
+    const dateText = new Date().toLocaleDateString("en-GB");
+    ctx.font = `600 ${fontSize}px sans-serif`;
+    ctx.direction = /[\u0600-\u06ff]/.test(signerName || "") ? "rtl" : "ltr";
+    ctx.textAlign = "left";
+    ctx.fillText(signerName || "", tx, y, nameMaxWidth);
+    ctx.direction = "ltr";
+    ctx.textAlign = "right";
+    ctx.fillText(dateText, qx - 10, y, 88);
+  };
 
   ctx.beginPath();
   ctx.roundRect(1, 1, W - 2, H - 2, 15);
@@ -58,6 +72,7 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     const signatureX = tx;
     const signatureY = 72 + (46 - height) / 2;
     ctx.drawImage(signatureImg, signatureX, signatureY, width, height);
+    drawSignerLine(tx, 134, 14, 235);
   } else if (signatureImg) {
     ctx.strokeStyle = "#C7AD7638";
     ctx.beginPath();
@@ -84,16 +99,7 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.fillText(sigId || "PENDING", tx, 103);
     ctx.strokeStyle = "#C7AD7638";
     ctx.beginPath(); ctx.moveTo(tx, 112); ctx.lineTo(470, 112); ctx.stroke();
-    const dateText = new Date().toLocaleDateString("en-GB");
-    const arabicName = /[\u0600-\u06ff]/.test(signerName || "");
-    ctx.font = "600 14px sans-serif";
-    ctx.direction = "ltr";
-    ctx.textAlign = "left";
-    ctx.fillText(dateText, tx, 134, 88);
-    ctx.direction = arabicName ? "rtl" : "ltr";
-    ctx.textAlign = arabicName ? "right" : "left";
-    const signerNameX = arabicName ? tx + 338 : tx + 105;
-    ctx.fillText(signerName || "", signerNameX, 134, 235);
+    drawSignerLine(tx, 134, 14, 235);
   } else {
     drawHeritageFingerprint(ctx, 50, H / 2, signerName ? 62 : 54);
     ctx.textAlign = "left";
@@ -103,22 +109,9 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.fillStyle = "#C7AD76";
     ctx.font = "600 19px 'Courier New', monospace";
     ctx.fillText(sigId || "", 116, signerName ? 65 : 70);
-    if (signerName) {
-      const dateText = new Date().toLocaleDateString("en-GB");
-      const arabicName = /[\u0600-\u06ff]/.test(signerName);
-      ctx.font = "600 15px sans-serif";
-      ctx.direction = "ltr";
-      ctx.textAlign = "left";
-      ctx.fillText(dateText, 116, 101, 86);
-      ctx.direction = arabicName ? "rtl" : "ltr";
-      ctx.textAlign = arabicName ? "right" : "left";
-      ctx.fillText(signerName, W - 32, 101, 245);
-    }
+    if (signerName) drawSignerLine(116, 101, 15, 245);
   }
 
-  const q = signatureImg ? 116 : H - 20;
-  const qx = W - q - 16;
-  const qy = signatureImg ? (H - q) / 2 : 10;
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(qx, qy, q, q);
   ctx.strokeStyle = "#C7AD76";
