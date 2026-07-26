@@ -1028,3 +1028,9 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 .dark .powercare-interior-page [class~="bg-white"] {
   background-color: hsl(var(--card));
 }
+
+/* Camera center surfaces stay fully opaque above maps, streams and modal backdrops. */
+.powercare-interior-page .camera-center :is(.rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl).bg-card,
+.powercare-interior-page .camera-center :is(details, section).bg-card {
+  background: hsl(var(--card));
+}
