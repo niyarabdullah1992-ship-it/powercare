@@ -996,12 +996,12 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   .self-sign-document-preview {
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow: auto;
   }
   .document-first-page-preview {
     min-height: 0;
     height: 100%;
-    align-items: center;
+    align-items: flex-start;
     padding: .5rem;
   }
   .document-first-page-canvas {
