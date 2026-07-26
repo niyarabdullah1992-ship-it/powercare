@@ -61,7 +61,6 @@ const TiktokAd = lazy(() => import('./pages/TiktokAd'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const Expenses = lazy(() => import('./pages/Expenses'));
 const StationExpenses = lazy(() => import('./pages/StationExpenses'));
-const Cameras = lazy(() => import('./pages/Cameras'));
 
 // After the first page is interactive, quietly download the most-used pages in
 // the background so navigating to them later is instant.
@@ -140,7 +139,6 @@ function AppRoutes() {
       <Route path="/app/payroll" element={<RequireAuth><Payroll /></RequireAuth>} />
       <Route path="/app/performance" element={<RequireAuth><Performance /></RequireAuth>} />
       <Route path="/app/safety" element={<RequireAuth><Safety /></RequireAuth>} />
-      <Route path="/app/cameras" element={<RequireAuth><Cameras /></RequireAuth>} />
       <Route path="/app/daily-report" element={<RequireAuth><DailyReport /></RequireAuth>} />
       <Route path="/app/attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/files" element={<RequireAuth><Files /></RequireAuth>} />

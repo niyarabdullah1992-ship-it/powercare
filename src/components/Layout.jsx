@@ -8,7 +8,7 @@ import { RefreshCw } from "lucide-react";
 import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
-  LayoutDashboard, ListTodo, ShieldQuestion, Radio, Search, Camera,
+  LayoutDashboard, ListTodo, ShieldQuestion, Radio, Search,
   Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
@@ -154,7 +154,6 @@ export default function Layout({ children }) {
     { to: "/app/expenses", icon: ReceiptText, label: t("expenses"), category: "finance" },
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "finance" },
     { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)", category: "governance" },
-    { to: "/app/cameras", icon: Camera, label: lang === "ar" ? "مركز العمليات الأمنية" : "Security Operations Center", category: "governance" },
     { to: "/app/complaints", icon: Megaphone, label: t("allComplaints"), category: "governance" },
     { to: "/app/files", icon: FolderOpen, label: t("files"), category: "documents" },
     { to: "/app/signing", icon: PenLine, label: t("fileSigning"), category: "documents" },

@@ -330,14 +330,18 @@ function emptyCompanyData(meta) {
     payrollRuns: [],
     smartPositions: [],
     complaintEscalationChain: [],
-    cameras: [],
     settings: { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30 },
   };
 }
 
 /* ----------------------------- company data ----------------------------- */
 export function getCompanyData(id) {
-  return read(companyKey(id), null);
+  const data = read(companyKey(id), null);
+  if (data && Object.prototype.hasOwnProperty.call(data, "cameras")) {
+    delete data.cameras;
+    localStorage.setItem(companyKey(id), JSON.stringify(data));
+  }
+  return data;
 }
 
 // Persists authoritative cloud reads into the local cache without re-uploading
@@ -457,7 +461,7 @@ export const BLOB_CATEGORIES = [
   "tasks", "reports", "anonymousReports", "publicReports", "safety", "plans",
   "schedules", "hrLevels", "jobGrades", "hrClusters", "files", "notifications", "templates", "targets",
   "personalPlaces", "personalAttendance", "plannerItems", "journalEntries", "payrollRuns", "smartPositions",
-  "complaintEscalationChain", "orgTree", "cameras",
+  "complaintEscalationChain", "orgTree",
   ];
 const lastSyncedBlobJSON = {};
 async function syncBlobToEntity(companyId, category, payload) {
