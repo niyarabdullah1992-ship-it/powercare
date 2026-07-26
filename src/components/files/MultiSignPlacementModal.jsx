@@ -10,7 +10,7 @@ const COLORS = ["#b45309", "#0369a1", "#15803d", "#7c3aed", "#be123c", "#0f766e"
 const normalize = (value = {}) => Object.fromEntries(Object.entries(value).map(([key, item]) => [key, Array.isArray(item) ? item : item ? [{ ...item, id: `legacy-${key}`, type: "signature", label: "" }] : []]));
 const fieldWidth = (field) => (field.type === "text" ? 26 : STAMP_WIDTH_PERCENT) * ((field.scale || 100) / 100);
 const fieldHalfHeight = (field, rect) => field.type === "signature" ? fieldWidth(field) * (rect.width / rect.height) * (STAMP_CANVAS_HEIGHT / STAMP_CANVAS_WIDTH) / 2 : 3;
-const scaleBounds = (field) => field?.type === "signature" ? [STAMP_MIN_SCALE, STAMP_MAX_SCALE] : [50, 200];
+const scaleBounds = (field) => field?.type === "signature" ? [40, STAMP_MAX_SCALE] : [50, 200];
 const clampScale = (field, value) => { const [min, max] = scaleBounds(field); return Math.min(max, Math.max(min, Math.round(value))); };
 
 export default function MultiSignPlacementModal({ docUrl, signers, initialSpots, signaturePreviews = [], ar, onConfirm, onClose }) {

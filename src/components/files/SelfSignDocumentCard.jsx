@@ -40,7 +40,7 @@ export default function SelfSignDocumentCard({ signatureUrl, signatureRawUrl, si
   const openPlacement = (kind) => {
     if (!sourceUrl) return;
     let next = fields;
-    if (kind) { const id = `${kind}-${Date.now()}`; const y = 78 + fields.length * 5; const field = kind === "signature" ? { id, type: "signature", page: 1, x: 72, y, scale: 100 } : { id, type: "text", label: kind === "date" ? (ar ? "التاريخ" : "Date") : (ar ? "الأحرف الأولى" : "Initials"), page: 1, x: 72, y, scale: 100 }; next = [...fields, field]; setFields(next); if (kind !== "signature") { const name = currentUser?.profile?.signatureName || currentUser?.name || ""; const value = kind === "date" ? new Date().toLocaleDateString(ar ? "ar-SA" : "en-GB") : name.split(/\s+/).map((part) => part[0]).join("").slice(0, 4).toUpperCase(); setTextValues((current) => ({ ...current, [id]: value })); } }
+    if (kind) { const id = `${kind}-${Date.now()}`; const y = 78 + fields.length * 5; const field = kind === "signature" ? { id, type: "signature", page: 1, x: 72, y, scale: 55 } : { id, type: "text", label: kind === "date" ? (ar ? "التاريخ" : "Date") : (ar ? "الأحرف الأولى" : "Initials"), page: 1, x: 72, y, scale: 100 }; next = [...fields, field]; setFields(next); if (kind !== "signature") { const name = currentUser?.profile?.signatureName || currentUser?.name || ""; const value = kind === "date" ? new Date().toLocaleDateString(ar ? "ar-SA" : "en-GB") : name.split(/\s+/).map((part) => part[0]).join("").slice(0, 4).toUpperCase(); setTextValues((current) => ({ ...current, [id]: value })); } }
     setPlacing(true);
   };
 
