@@ -1,4 +1,4 @@
-import drawHeritageFingerprint from "@/lib/drawHeritageFingerprint";
+import drawVerificationMethodSymbol from "@/lib/drawVerificationMethodSymbol";
 
 const GOLD = "#C7AD76";
 const GOLD_LIGHT = "#E2D1A7";
@@ -108,10 +108,5 @@ function drawHorizon(ctx, cx, cy, size) {
 }
 
 export default function drawStampFingerprint(ctx, cx, cy, size, theme = "heritage") {
-  if (theme === "executive") return drawExecutive(ctx, cx, cy, size);
-  if (theme === "minimal") return drawMinimal(ctx, cx, cy, size);
-  if (theme === "certificate") return drawCertificate(ctx, cx, cy, size);
-  if (theme === "vault") return drawVault(ctx, cx, cy, size);
-  if (theme === "horizon") return drawHorizon(ctx, cx, cy, size);
-  return drawHeritageFingerprint(ctx, cx, cy, size);
+  return drawVerificationMethodSymbol(ctx, cx, cy, size, theme);
 }
