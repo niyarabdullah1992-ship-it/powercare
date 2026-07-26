@@ -10,7 +10,6 @@ import MySignatureCard from "@/components/files/MySignatureCard";
 import MultiSignCard from "@/components/files/MultiSignCard";
 import MultiSignInbox from "@/components/files/MultiSignInbox";
 import VerifyDocumentCard from "@/components/files/VerifyDocumentCard";
-import PagePinchZoom from "@/components/files/PagePinchZoom";
 import { canCreateSignatureRequests, visibleEmployees } from "@/lib/permissions";
 
 export default function FileSigning() {
@@ -43,7 +42,6 @@ export default function FileSigning() {
   ];
 
   return (
-    <PagePinchZoom>
     <div className="powercare-interior-page mx-auto w-full min-w-0 max-w-7xl overflow-x-hidden space-y-5">
       <header className="overflow-hidden rounded-2xl border border-accent/35 bg-gradient-to-l from-primary to-sidebar px-5 py-6 text-primary-foreground shadow-elevated sm:px-7">
         <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
@@ -61,6 +59,5 @@ export default function FileSigning() {
         <TabsContent value="verify" className="mt-5"><VerifyDocumentCard ar={ar} /></TabsContent>
       </Tabs>
     </div>
-    </PagePinchZoom>
   );
 }
