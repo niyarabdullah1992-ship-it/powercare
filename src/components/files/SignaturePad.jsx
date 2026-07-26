@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { Eraser, Check, PenTool } from "lucide-react";
 import { makeSignatureStamp } from "@/lib/multiSignStamp";
 
 export default function SignaturePad({ ar, signerName, verificationId, onPreview, onSave, saving }) {
@@ -61,10 +62,11 @@ export default function SignaturePad({ ar, signerName, verificationId, onPreview
   };
 
   return (
-    <div className="space-y-2.5">
-      <p className="text-center text-[11px] text-signature-ink">{ar ? "ارسم توقيعك بإصبعك داخل الإطار" : "Draw your signature inside the frame"}</p>
-      <canvas ref={canvasRef} width={900} height={260} className="h-32 w-full touch-none cursor-crosshair rounded-3xl border-2 border-dashed border-signature-ink/35 bg-signature-organic shadow-inner" onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={end} />
-      <div className="grid grid-cols-2 gap-2"><button type="button" onClick={clear} className="inline-flex h-11 items-center justify-center !rounded-full border border-signature-ink/50 px-4 text-xs font-bold text-signature-ink">{ar ? "مسح" : "Clear"}</button><button type="button" disabled={!stamp || saving} onClick={() => onSave(stamp, true)} className="inline-flex h-11 items-center justify-center !rounded-full border-2 border-signature-ink px-4 text-xs font-bold text-signature-ink disabled:opacity-40">{saving ? (ar ? "جارٍ الحفظ…" : "Saving…") : ar ? "اعتماد التوقيع" : "Approve signature"}</button></div>
+    <div className="space-y-4">
+      <p className="flex items-center gap-2 text-xs text-muted-foreground"><PenTool className="h-4 w-4 text-accent" />{ar ? "ارسم توقيعك بإصبعك داخل الإطار" : "Draw your signature inside the frame"}</p>
+      <canvas ref={canvasRef} width={900} height={260} className="h-44 w-full touch-none cursor-crosshair rounded-2xl border-2 border-dashed border-border bg-secondary/40 shadow-inner sm:h-52" onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onPointerLeave={end} />
+      {stamp && <div><p className="mb-2 text-xs font-medium text-muted-foreground">{ar ? "المعاينة النهائية داخل الملف" : "Final in-document preview"}</p><img src={stamp} alt={ar ? "معاينة الختم" : "Stamp preview"} className="mx-auto w-full max-w-sm" /></div>}
+      <div className="grid gap-2 sm:grid-cols-[auto_1fr]"><button type="button" onClick={clear} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3 text-sm font-medium hover:bg-secondary"><Eraser className="h-4 w-4" />{ar ? "مسح" : "Clear"}</button><button type="button" disabled={!stamp || saving} onClick={() => onSave(stamp, true)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"><Check className="h-4 w-4" />{saving ? (ar ? "جارٍ الحفظ…" : "Saving…") : ar ? "اعتماد وإرسال التوقيع" : "Approve and submit signature"}</button></div>
     </div>
   );
 }

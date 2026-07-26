@@ -83,9 +83,7 @@ module.exports = {
   			'sign-surface': 'hsl(var(--sign-surface))',
   			'sign-ink': 'hsl(var(--sign-ink))',
   			'sign-gold': 'hsl(var(--sign-gold))',
-  			'holo-green': 'hsl(var(--holo-green))',
-  			'signature-organic': 'hsl(var(--signature-organic-bg))',
-  			'signature-ink': 'hsl(var(--signature-organic-ink))'
+  			'holo-green': 'hsl(var(--holo-green))'
   		},
   		fontFamily: {
   			heading: ['var(--font-heading)'],

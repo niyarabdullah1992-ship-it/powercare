@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { PenLine, Trash2, Fingerprint, Copy, Check } from "lucide-react";
+import { PenLine, Trash2, Keyboard, Fingerprint, Copy, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { updateEmployeeProfile } from "@/lib/store";
 import { makeSignatureStamp } from "@/lib/multiSignStamp";
@@ -39,7 +39,6 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const [refreshedPreview, setRefreshedPreview] = useState("");
-  const [creationPreview, setCreationPreview] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -95,19 +94,23 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   };
 
   return (
-    <div className="mx-auto max-w-xl space-y-3">
-    <div className="overflow-hidden !rounded-2xl border border-signature-ink/10 bg-signature-organic shadow-soft">
-      <div className="px-6 pb-2 pt-7 text-center">
-        <h3 className="font-heading text-2xl font-bold text-signature-ink">{ar ? "توقيعي الشخصي" : "My personal signature"}</h3>
-      </div>
-      <div className="space-y-4 px-6 pb-7 pt-2 sm:px-10">
+    <div className="space-y-5">
+    <div className="space-y-6 overflow-hidden rounded-3xl border border-accent/30 bg-gradient-to-br from-primary to-sidebar p-6 text-primary-foreground shadow-elevated md:p-8">
+      <h3 className="flex items-center gap-2 font-heading text-xl font-semibold">
+        <PenLine className="h-5 w-5 text-accent" /> {ar ? "توقيعي الشخصي" : "My personal signature"}
+      </h3>
+      <p className="max-w-2xl text-sm text-primary-foreground/70 font-body">
+        {ar
+          ? "اكتب اسمك، ارسم توقيعك، أو اختر نموذجًا فريدًا — ويحصل توقيعك على رقم تحقق مشفّر."
+          : "Type, draw, or choose a unique generated signature — it gets an encrypted verification ID."}
+      </p>
       {!editing && signatureUrl ? (
         <div className="space-y-3">
           <div className={`w-full bg-white rounded-lg border border-border p-2 flex items-center justify-center ${signatureRawUrl ? "aspect-[3/1] max-w-2xl" : ""}`}>
             <img src={refreshedPreview || signatureUrl} alt="signature" className={signatureRawUrl ? "h-full w-full object-contain" : "h-20 max-w-full object-contain"} />
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setEditing(true)} className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-5 py-2 text-xs font-bold text-foreground hover:bg-secondary whitespace-nowrap">
+            <button onClick={() => setEditing(true)} className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-primary-foreground/25 px-5 py-2 text-xs font-bold hover:bg-primary-foreground/10 whitespace-nowrap">
               <PenLine className="w-3.5 h-3.5" /> {ar ? "توقيع جديد" : "New signature"}
             </button>
             <button
@@ -118,7 +121,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
                 onSaved?.(cleared);
                 setEditing(true);
               }}
-              className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-destructive/40 px-5 py-2 text-xs font-bold text-destructive hover:bg-destructive/10 whitespace-nowrap"
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-destructive/50 px-5 py-2 text-xs font-bold text-red-300 hover:bg-destructive/15 whitespace-nowrap"
             >
               <Trash2 className="w-3.5 h-3.5" /> {ar ? "حذف" : "Delete"}
             </button>
@@ -137,22 +140,29 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
           )}
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="flex min-h-52 items-center justify-center overflow-hidden border-2 border-signature-organic bg-signature-ink p-5 text-signature-organic shadow-inner [border-radius:2.25rem_3.5rem_2.5rem_3.25rem/3.25rem_2.25rem_3.5rem_2.5rem]">
-            {creationPreview ? <img src={creationPreview} alt={ar ? "معاينة التوقيع" : "Signature preview"} className="max-h-40 w-full object-contain" /> : <div className="text-center"><p className="text-lg font-bold">{ar ? "المعاينة النهائية" : "Final preview"}</p><p className="mt-1 text-sm opacity-80">{ar ? "ستظهر المعاينة هنا." : "Your preview will appear here."}</p></div>}
+        <div className="space-y-3">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setMode("type")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "type" ? "bg-accent text-accent-foreground border-accent" : "border-primary-foreground/20 hover:bg-primary-foreground/10"}`}
+            >
+              <Keyboard className="w-3.5 h-3.5" /> {ar ? "كتابة الاسم" : "Type name"}
+            </button>
+            <button
+              onClick={() => setMode("draw")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${mode === "draw" ? "bg-accent text-accent-foreground border-accent" : "border-primary-foreground/20 hover:bg-primary-foreground/10"}`}
+            >
+              <PenLine className="w-3.5 h-3.5" /> {ar ? "رسم التوقيع" : "Draw"}
+            </button>
           </div>
-          <p className="mx-auto max-w-sm text-center text-xs leading-5 text-signature-ink">
-            {ar ? "اختر طريقة إنشاء التوقيع، راجع المعاينة، ثم اعتمده للحصول على رقم تحقق مشفّر." : "Choose how to create your signature, review the preview, then approve it for an encrypted verification ID."}
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => { setMode("type"); setCreationPreview(""); }} className={`flex h-10 items-center justify-center !rounded-full px-3 text-xs font-bold transition ${mode === "type" ? "bg-signature-ink text-signature-organic shadow-sm" : "border border-signature-ink/40 text-signature-ink"}`}>{ar ? "كتابة الاسم" : "Type name"}</button>
-            <button onClick={() => { setMode("draw"); setCreationPreview(""); }} className={`flex h-10 items-center justify-center !rounded-full px-3 text-xs font-bold transition ${mode === "draw" ? "bg-signature-ink text-signature-organic shadow-sm" : "border border-signature-ink/40 text-signature-ink"}`}>{ar ? "رسم التوقيع" : "Draw signature"}</button>
-          </div>
-          {mode === "type" ? <TypedSignature ar={ar} defaultName={currentUser?.name || ""} onPreview={setCreationPreview} onSave={saveSignature} saving={saving} /> : <SignaturePad ar={ar} onPreview={setCreationPreview} onSave={saveSignature} saving={saving} />}
+          {mode === "type" ? (
+            <TypedSignature ar={ar} defaultName={currentUser?.name || ""} onSave={saveSignature} saving={saving} />
+          ) : (
+            <SignaturePad ar={ar} onSave={saveSignature} saving={saving} />
+          )}
           {error && <p className="text-xs text-destructive font-body">{error}</p>}
         </div>
       )}
-      </div>
     </div>
     {signatureUrl && !editing && <SelfSignDocumentCard signatureUrl={signatureUrl} signatureRawUrl={signatureRawUrl} signatureVariant={signatureVariant} currentUser={currentUser} companyId={companyId} ar={ar} />}
     </div>
