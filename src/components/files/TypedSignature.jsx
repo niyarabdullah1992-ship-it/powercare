@@ -14,7 +14,7 @@ export default function TypedSignature({ ar, defaultName = "", verificationId, o
     setDatedSignature(""); setStamp(""); onPreview?.("");
     if (!name.trim()) return () => { active = false; };
     const date = new Date().toLocaleDateString("en-GB");
-    const fontFamily = ar ? "'Aref Ruqaa'" : "'Great Vibes'";
+    const fontFamily = "Arial";
     createTypedSignatureWithDate(name.trim(), date, fontFamily)
       .then((rawSignature) => {
         if (!active) return null;

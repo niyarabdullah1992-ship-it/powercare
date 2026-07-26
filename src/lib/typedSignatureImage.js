@@ -37,7 +37,7 @@ export async function createTypedSignatureImage(text, fontFamily) {
 
 export async function createTypedSignatureWithDate(name, date, fontFamily) {
   await Promise.all([
-    document.fonts.load(`44px ${fontFamily}`, name),
+    document.fonts.load(`32px ${fontFamily}`, name),
     document.fonts.load("32px Arial", date),
   ]);
   await document.fonts.ready;
@@ -49,9 +49,9 @@ export async function createTypedSignatureWithDate(name, date, fontFamily) {
   ctx.fillStyle = "#C7AD76";
   ctx.textBaseline = "middle";
   ctx.direction = isArabic ? "rtl" : "ltr";
-  let size = 44;
+  let size = 32;
   ctx.font = `${size}px ${fontFamily}`;
-  while (ctx.measureText(name).width > 690 && size > 28) {
+  while (ctx.measureText(name).width > 690 && size > 20) {
     size -= 4;
     ctx.font = `${size}px ${fontFamily}`;
   }
