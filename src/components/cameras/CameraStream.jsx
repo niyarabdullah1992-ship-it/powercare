@@ -13,13 +13,15 @@ export default function CameraStream({ camera, companyId, sessionToken, ar }) {
   const fullscreen = () => frameRef.current?.requestFullscreen?.();
 
   useEffect(() => {
-    if (camera.streamType !== "player" || !camera.streamUrl || !companyId || !sessionToken) return;
+    if (camera.streamType !== "player" || !camera.streamUrl) return;
+    if (!companyId || !sessionToken) { setPlayerCheck({ ok: false }); setState("offline"); return; }
     let active = true;
     setState("loading"); setPlayerCheck(null);
+    const timeout = window.setTimeout(() => { if (active) { setPlayerCheck({ ok: false }); setState("offline"); } }, 9000);
     base44.functions.invoke("cameraConnectionTest", { companyId, sessionToken, url: camera.streamUrl, streamType: "player" })
-      .then(({ data }) => { if (!active) return; setPlayerCheck(data); setState(data.ok ? "online" : "offline"); })
-      .catch(() => { if (active) { setPlayerCheck({ ok: false }); setState("offline"); } });
-    return () => { active = false; };
+      .then(({ data }) => { if (!active) return; window.clearTimeout(timeout); setPlayerCheck(data); setState(data.ok ? "online" : "offline"); })
+      .catch(() => { if (active) { window.clearTimeout(timeout); setPlayerCheck({ ok: false }); setState("offline"); } });
+    return () => { active = false; window.clearTimeout(timeout); };
   }, [camera.streamType, camera.streamUrl, companyId, sessionToken]);
 
   if (!camera.streamUrl) return <div className="grid aspect-video place-items-center bg-muted text-sm text-muted-foreground">{ar ? "لا يوجد رابط بث" : "No stream URL"}</div>;
