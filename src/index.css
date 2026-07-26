@@ -70,6 +70,8 @@
     --holo-cyan: 211 80% 70%;
     --holo-green: 218 78% 52%;
     --holo-green-soft: 215 92% 72%;
+    --signature-organic-bg: 32 42% 93%;
+    --signature-organic-ink: 218 17% 35%;
   }
 
   .signing-theme-balanced {
@@ -155,6 +157,8 @@
     --holo-cyan: 218 74% 67%;
     --holo-green: 216 88% 62%;
     --holo-green-soft: 215 92% 72%;
+    --signature-organic-bg: 32 24% 18%;
+    --signature-organic-ink: 32 42% 93%;
   }
 }
 

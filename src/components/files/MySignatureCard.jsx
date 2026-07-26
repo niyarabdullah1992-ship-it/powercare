@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { PenLine, Trash2, Keyboard, Fingerprint, Copy, Check } from "lucide-react";
+import { PenLine, Trash2, Fingerprint, Copy, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { updateEmployeeProfile } from "@/lib/store";
 import { makeSignatureStamp } from "@/lib/multiSignStamp";
@@ -39,6 +39,7 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const [refreshedPreview, setRefreshedPreview] = useState("");
+  const [creationPreview, setCreationPreview] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -94,19 +95,12 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-3">
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-      <div className="border-b border-border bg-secondary/40 p-3">
-        <h3 className="flex items-center gap-2 font-heading text-lg font-semibold text-foreground">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-accent/30 bg-accent/10"><PenLine className="h-4 w-4 text-accent" /></span> {ar ? "توقيعي الشخصي" : "My personal signature"}
-        </h3>
-        <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground font-body">
-          {ar
-            ? "اختر طريقة إنشاء التوقيع، راجع المعاينة، ثم اعتمده للحصول على رقم تحقق مشفّر."
-            : "Choose how to create your signature, review the preview, then approve it for an encrypted verification ID."}
-        </p>
+    <div className="mx-auto max-w-xl space-y-3">
+    <div className="overflow-hidden !rounded-2xl border border-signature-ink/10 bg-signature-organic shadow-soft">
+      <div className="px-6 pb-2 pt-7 text-center">
+        <h3 className="font-heading text-2xl font-bold text-signature-ink">{ar ? "توقيعي الشخصي" : "My personal signature"}</h3>
       </div>
-      <div className="space-y-3 p-3">
+      <div className="space-y-4 px-6 pb-7 pt-2 sm:px-10">
       {!editing && signatureUrl ? (
         <div className="space-y-3">
           <div className={`w-full bg-white rounded-lg border border-border p-2 flex items-center justify-center ${signatureRawUrl ? "aspect-[3/1] max-w-2xl" : ""}`}>
@@ -143,26 +137,18 @@ export default function MySignatureCard({ companyId, currentUser, ar, onSaved })
           )}
         </div>
       ) : (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-secondary/40 p-1">
-            <button
-              onClick={() => setMode("type")}
-              className={`flex h-9 items-center justify-center gap-1.5 rounded-md px-3 text-xs font-semibold transition ${mode === "type" ? "bg-card text-foreground shadow-sm ring-1 ring-accent/30" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              <Keyboard className="w-3.5 h-3.5" /> {ar ? "كتابة الاسم" : "Type name"}
-            </button>
-            <button
-              onClick={() => setMode("draw")}
-              className={`flex h-9 items-center justify-center gap-1.5 rounded-md px-3 text-xs font-semibold transition ${mode === "draw" ? "bg-card text-foreground shadow-sm ring-1 ring-accent/30" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              <PenLine className="w-3.5 h-3.5" /> {ar ? "رسم التوقيع" : "Draw"}
-            </button>
+        <div className="space-y-4">
+          <div className="flex min-h-52 items-center justify-center overflow-hidden border-2 border-signature-organic bg-signature-ink p-5 text-signature-organic shadow-inner [border-radius:2.25rem_3.5rem_2.5rem_3.25rem/3.25rem_2.25rem_3.5rem_2.5rem]">
+            {creationPreview ? <img src={creationPreview} alt={ar ? "معاينة التوقيع" : "Signature preview"} className="max-h-40 w-full object-contain" /> : <div className="text-center"><p className="text-lg font-bold">{ar ? "المعاينة النهائية" : "Final preview"}</p><p className="mt-1 text-sm opacity-80">{ar ? "ستظهر المعاينة هنا." : "Your preview will appear here."}</p></div>}
           </div>
-          {mode === "type" ? (
-            <TypedSignature ar={ar} defaultName={currentUser?.name || ""} onSave={saveSignature} saving={saving} />
-          ) : (
-            <SignaturePad ar={ar} onSave={saveSignature} saving={saving} />
-          )}
+          <p className="mx-auto max-w-sm text-center text-xs leading-5 text-signature-ink">
+            {ar ? "اختر طريقة إنشاء التوقيع، راجع المعاينة، ثم اعتمده للحصول على رقم تحقق مشفّر." : "Choose how to create your signature, review the preview, then approve it for an encrypted verification ID."}
+          </p>
+          <div className="space-y-2">
+            <button onClick={() => { setMode("type"); setCreationPreview(""); }} className={`flex h-10 w-full items-center justify-center !rounded-full px-4 text-xs font-bold transition ${mode === "type" ? "bg-signature-ink text-signature-organic shadow-sm" : "border border-signature-ink/40 text-signature-ink"}`}>{ar ? "كتابة الاسم" : "Type name"}</button>
+            <button onClick={() => { setMode("draw"); setCreationPreview(""); }} className={`flex h-10 w-full items-center justify-center !rounded-full px-4 text-xs font-bold transition ${mode === "draw" ? "bg-signature-ink text-signature-organic shadow-sm" : "border border-signature-ink/40 text-signature-ink"}`}>{ar ? "رسم التوقيع" : "Draw signature"}</button>
+          </div>
+          {mode === "type" ? <TypedSignature ar={ar} defaultName={currentUser?.name || ""} onPreview={setCreationPreview} onSave={saveSignature} saving={saving} /> : <SignaturePad ar={ar} onPreview={setCreationPreview} onSave={saveSignature} saving={saving} />}
           {error && <p className="text-xs text-destructive font-body">{error}</p>}
         </div>
       )}
