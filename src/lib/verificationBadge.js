@@ -8,7 +8,7 @@ import { drawStampThemeFrame } from "@/lib/signatureStampThemes";
 // the platform's verification registry, so a badge copied onto another file
 // will always fail verification (hash mismatch).
 export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureImg = null, variant = "unique", theme = "heritage", themeIcon = null) {
-  const scale = 2;
+  const scale = 4;
   const typedLayout = Boolean(signatureImg && variant === "typed");
   const W = signatureImg ? 640 : 560;
   const H = signatureImg ? 150 : signerName ? 128 : 96;
