@@ -1,4 +1,5 @@
 import { POWERCARE_LOGO_URL } from "@/lib/brand";
+import { getReportVisualTheme } from "@/lib/reportVisualThemes";
 
 // Builds an elegant, print-ready (A4) HTML document from AI-generated content.
 // Used by Niro's "create_document" action — supports headings, paragraphs,
@@ -6,6 +7,7 @@ import { POWERCARE_LOGO_URL } from "@/lib/brand";
 export function buildDocumentHtml({ title, subtitle, sections = [], dir = "ltr", companyName = "", authorName = "", color = "#e0a43b", logoUrl = "" }) {
   const ar = dir === "rtl";
   const accent = String(color || "#e0a43b").toLowerCase() === "#b07d3f" ? "#e0a43b" : (color || "#e0a43b");
+  const visual = getReportVisualTheme(title);
   const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
   const sectionHtml = sections.map((sec, i) => `
@@ -26,8 +28,9 @@ export function buildDocumentHtml({ title, subtitle, sections = [], dir = "ltr",
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: ${ar ? "'IBM Plex Sans Arabic'" : "'IBM Plex Sans Arabic'"}, sans-serif; color: #13283d; background: #f1eadc; padding: 32px 16px; line-height: 1.9; }
-  .page { max-width: 800px; margin: 0 auto; background: #fff; padding: 56px 52px; border-top: 7px solid #e0a43b; box-shadow: 0 4px 30px rgba(19,40,61,.1); }
-  .head { text-align: center; border-bottom: 2px solid ${accent}; padding-bottom: 24px; margin-bottom: 32px; }
+  .page { position: relative; overflow: hidden; max-width: 800px; margin: 0 auto; background: #fff; padding: 56px 52px; border-top: 7px solid ${visual.accent}; box-shadow: 0 4px 30px rgba(19,40,61,.1); }
+  .page::before { content: ""; position: absolute; inset: 18px -54px auto auto; width: 210px; height: 120px; opacity: .1; border: 2px solid ${visual.accent}; transform: rotate(-12deg); background: repeating-linear-gradient(135deg, transparent 0 13px, ${visual.accent} 14px 15px); }
+  .head { position: relative; text-align: center; border-bottom: 2px solid ${visual.accent}; padding-bottom: 24px; margin-bottom: 32px; }
   .head img { height: 52px; margin-bottom: 12px; }
   .head .brand { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: ${accent}; margin-bottom: 10px; }
   h1 { font-family: 'Cormorant Garamond', serif; font-size: 34px; font-weight: 600; color: #13283d; }

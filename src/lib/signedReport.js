@@ -5,6 +5,7 @@ import { imageBlobToPdf } from "@/lib/signPdf";
 import { sha256HexOfBuffer } from "@/lib/fileHash";
 import { PDF_THEME } from "@/lib/pdfTheme";
 import { POWERCARE_LOGO_URL } from "@/lib/brand";
+import { getReportVisualTheme } from "@/lib/reportVisualThemes";
 
 // Draws the report DIRECTLY on canvas (title + table + signature + verification
 // badge) — fully deterministic, full Arabic/RTL support, no HTML rendering step
@@ -39,20 +40,32 @@ function drawReportCanvas({ title, companyName, dir, headers, rows }) {
   canvas.height = H;
   const ctx = canvas.getContext("2d");
   const rtl = dir === "rtl";
+  const visual = getReportVisualTheme(title);
 
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = PDF_THEME.ink;
   ctx.fillRect(0, 0, W * 0.72, 10);
-  ctx.fillStyle = PDF_THEME.gold;
+  ctx.fillStyle = visual.accent;
   ctx.fillRect(W * 0.72, 0, W * 0.28, 10);
+  ctx.save();
+  ctx.globalAlpha = 0.08;
+  ctx.strokeStyle = visual.accent;
+  ctx.lineWidth = 3;
+  for (let offset = 0; offset < 260; offset += 34) {
+    ctx.beginPath();
+    ctx.moveTo(W - 300 + offset, 12);
+    ctx.lineTo(W - 150 + offset, 162);
+    ctx.stroke();
+  }
+  ctx.restore();
   ctx.direction = rtl ? "rtl" : "ltr";
   ctx.textAlign = rtl ? "right" : "left";
   const xTitle = rtl ? W - 120 : 120;
 
   // PowerCare identity and report header
   ctx.textAlign = rtl ? "right" : "left";
-  ctx.fillStyle = PDF_THEME.gold;
+  ctx.fillStyle = visual.accent;
   ctx.font = "700 13px Tahoma, Arial, sans-serif";
   ctx.fillText("POWERCARE • SIGNED REPORT", xTitle, 46);
   ctx.fillStyle = PDF_THEME.ink;

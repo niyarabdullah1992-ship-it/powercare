@@ -1,9 +1,10 @@
 import { prepareManualPdfNode } from "@/lib/manualPdfSnapshot";
+import { drawPdfCorporateFrame } from "@/lib/pdfCorporateArt";
 
 const pageWidth = 210;
 const pageHeight = 297;
 
-function addCanvasPages(pdf, canvas, firstPage) {
+function addCanvasPages(pdf, canvas, firstPage, title) {
   const sliceHeight = Math.floor((canvas.width * pageHeight) / pageWidth);
   for (let offset = 0; offset < canvas.height; offset += sliceHeight) {
     if (!firstPage) pdf.addPage();
@@ -17,6 +18,7 @@ function addCanvasPages(pdf, canvas, firstPage) {
     context.fillRect(0, 0, slice.width, slice.height);
     context.drawImage(canvas, 0, offset, canvas.width, height, 0, 0, canvas.width, height);
     pdf.addImage(slice.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, pageWidth, (height * pageWidth) / canvas.width, undefined, "FAST");
+    drawPdfCorporateFrame(pdf, title, pdf.getNumberOfPages());
   }
   return firstPage;
 }
@@ -35,7 +37,7 @@ export async function downloadManualPdf(root, fileName) {
     const { node, cleanup } = await prepareManualPdfNode(source, html2canvas);
     const canvas = await html2canvas(node, { scale: 1.15, useCORS: true, backgroundColor: "#ffffff", logging: false, windowWidth: node.scrollWidth, windowHeight: node.scrollHeight, ignoreElements: (element) => element.classList?.contains("no-print") });
     cleanup();
-    firstPage = addCanvasPages(pdf, canvas, firstPage);
+    firstPage = addCanvasPages(pdf, canvas, firstPage, fileName);
   }
   pdf.save(fileName);
 }

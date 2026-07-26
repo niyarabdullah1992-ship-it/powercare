@@ -43,8 +43,12 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   @page { size: A4 ${isWide ? "landscape" : "portrait"}; margin: 14mm; }
-  body { font-family: Tahoma, "Segoe UI", Arial, sans-serif; color: ${PDF_THEME.ink}; background: #fff; padding: 36px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .top-rule { height: 7px; background: linear-gradient(90deg, ${PDF_THEME.ink} 0 72%, ${accent} 72% 100%); margin-bottom: 22px; }
+  body { position: relative; font-family: Tahoma, "Segoe UI", Arial, sans-serif; color: ${PDF_THEME.ink}; background: #fff; padding: 36px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .institutional-art { position: fixed; z-index: -1; inset: 8mm 7mm auto auto; width: 62mm; height: 38mm; opacity: .12; border: 1px solid ${visual.accent}; background-color: ${PDF_THEME.cream}; }
+  .report-grid .institutional-art, .report-blueprint .institutional-art { background-image: linear-gradient(${visual.accent} 1px, transparent 1px), linear-gradient(90deg, ${visual.accent} 1px, transparent 1px); background-size: 8px 8px; }
+  .report-shield .institutional-art, .report-timeline .institutional-art, .report-profile .institutional-art, .report-award .institutional-art { border-radius: 999px; box-shadow: 0 0 0 12px ${visual.accent}22, 0 0 0 24px ${visual.accent}11; }
+  .report-workflow .institutional-art, .report-ledger .institutional-art, .report-receipt .institutional-art, .report-certificate .institutional-art, .report-classic .institutional-art { transform: skewX(-18deg); background-image: repeating-linear-gradient(135deg, transparent 0 10px, ${visual.accent} 11px 12px); }
+  .top-rule { height: 7px; background: linear-gradient(90deg, ${PDF_THEME.ink} 0 72%, ${visual.accent} 72% 100%); margin-bottom: 22px; }
   .head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 18px; margin-bottom: 22px; border-bottom: 1px solid ${PDF_THEME.line}; }
   .identity { display: flex; align-items: center; gap: 14px; }
   .monogram { width: 52px; height: 52px; display: grid; place-items: center; border: 1px solid ${accent}; color: ${accent}; font: 700 17px Georgia, serif; letter-spacing: .12em; }
@@ -117,6 +121,7 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
 </style>
 </head>
 <body class="${isWide ? "wide" : "standard"} report-${visual.layout} ${theme === "executiveGold" ? "executive-gold" : ""}">
+  <div class="institutional-art" aria-hidden="true"></div>
   <div class="top-rule"></div>
   <div class="head">
     <div class="identity">

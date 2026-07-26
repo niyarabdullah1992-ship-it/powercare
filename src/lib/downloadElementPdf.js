@@ -1,3 +1,5 @@
+import { drawPdfCorporateFrame } from "@/lib/pdfCorporateArt";
+
 export async function downloadElementPdf(element, fileName) {
   if (!element) return;
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
@@ -27,6 +29,7 @@ export async function downloadElementPdf(element, fileName) {
     context.drawImage(canvas, 0, offset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
     const renderedHeight = (sliceHeight * pageWidth) / canvas.width;
     pdf.addImage(slice.toDataURL("image/jpeg", 0.94), "JPEG", 0, 0, pageWidth, renderedHeight, undefined, "FAST");
+    drawPdfCorporateFrame(pdf, fileName, page + 1);
   }
 
   pdf.save(fileName);
