@@ -3,7 +3,7 @@ export const SIGNATURE_STAMP_THEMES = [
   { id: "executive", ar: "الدوّامة", en: "Whorl Code", preview: "rounded-sm border-t-4 border-accent" },
   { id: "minimal", ar: "رمز القفل", en: "Lock Symbol", preview: "rounded-md border-s-4 border-accent" },
   { id: "certificate", ar: "رمز البصمة الإلكترونية", en: "E-Fingerprint", preview: "rounded-lg border-4 border-double border-accent" },
-  { id: "vault", ar: "الرمز العصري", en: "Modern Symbol", preview: "rounded-2xl border-2 border-accent shadow-inner" },
+  { id: "vault", ar: "رمز المفتاح", en: "Digital Key", preview: "rounded-2xl border-2 border-accent shadow-inner" },
   { id: "horizon", ar: "الرمز الخيالي", en: "Fantasy Symbol", preview: "rounded-full border-y-4 border-accent" },
 ];
 

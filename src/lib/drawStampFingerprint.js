@@ -68,22 +68,19 @@ function drawCertificate(ctx, cx, cy, size) {
 }
 
 function drawVault(ctx, cx, cy, size) {
-  ctx.save(); clipFingerprint(ctx, cx, cy, size); ctx.lineCap = "square";
-  for (let ring = 0; ring < 10; ring += 1) {
-    const rx = size * (.07 + ring * .038), ry = size * (.09 + ring * .047);
-    const gap = Math.PI * (.08 + (ring % 3) * .04);
-    ctx.strokeStyle = ring % 2 ? GOLD : GOLD_LIGHT; ctx.lineWidth = Math.max(1, size * .017);
-    for (let segment = 0; segment < 4; segment += 1) {
-      const start = segment * Math.PI / 2 + gap;
-      ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, .08, start, start + Math.PI / 2 - gap * 1.5); ctx.stroke();
-    }
+  ctx.save(); clipFingerprint(ctx, cx, cy, size); ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.strokeStyle = GOLD_LIGHT; ctx.lineWidth = Math.max(1.5, size * .025);
+  ctx.beginPath(); ctx.arc(cx - size * .2, cy - size * .08, size * .2, 0, Math.PI * 2); ctx.stroke();
+  for (let ridge = 0; ridge < 4; ridge += 1) {
+    ctx.beginPath(); ctx.ellipse(cx - size * .2, cy - size * .08, size * (.055 + ridge * .032), size * (.07 + ridge * .035), -.25, 0, Math.PI * 2);
+    ctx.strokeStyle = ridge % 2 ? GOLD : GOLD_LIGHT; ctx.lineWidth = Math.max(.8, size * .014); ctx.stroke();
   }
-  for (let bit = 0; bit < 12; bit += 1) {
-    const angle = bit * Math.PI * 2 / 12; const radius = size * (bit % 2 ? .34 : .43);
-    const x = cx + Math.cos(angle) * radius, y = cy + Math.sin(angle) * radius * 1.18;
-    ctx.fillStyle = bit % 3 ? GOLD : GOLD_LIGHT; ctx.fillRect(x - size * .018, y - size * .018, size * .036, size * .036);
-  }
-  ctx.fillStyle = GOLD_LIGHT; ctx.beginPath(); ctx.arc(cx, cy, size * .04, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = GOLD; ctx.lineWidth = Math.max(3, size * .055);
+  ctx.beginPath(); ctx.moveTo(cx - size * .04, cy + size * .02); ctx.lineTo(cx + size * .38, cy + size * .3); ctx.stroke();
+  ctx.lineWidth = Math.max(1.8, size * .032);
+  ctx.beginPath(); ctx.moveTo(cx + size * .18, cy + size * .17); ctx.lineTo(cx + size * .1, cy + size * .3); ctx.moveTo(cx + size * .3, cy + size * .25); ctx.lineTo(cx + size * .22, cy + size * .39); ctx.stroke();
+  ctx.strokeStyle = "#C7AD7677"; ctx.lineWidth = Math.max(.8, size * .012);
+  [[-.42,-.34],[-.02,-.4],[.18,-.24],[.4,-.06],[-.4,.26]].forEach(([x,y], index) => { ctx.beginPath(); ctx.moveTo(cx + x * size, cy + y * size); ctx.lineTo(cx + (x + .08) * size, cy + y * size); ctx.stroke(); ctx.fillStyle = index % 2 ? GOLD : GOLD_LIGHT; ctx.fillRect(cx + (x + .09) * size, cy + y * size - size * .015, size * .03, size * .03); });
   ctx.restore();
 }
 
