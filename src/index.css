@@ -946,19 +946,10 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 
 /* Keep the complete signing workspace visible on short desktop viewports. */
 @media (min-width: 1024px) and (max-height: 800px) {
-  .signature-fit-panel {
-    width: calc(100% / .82);
-    max-width: none;
-    zoom: .82;
-  }
   .self-sign-upload-zone { min-height: 260px; }
 }
 @media (min-width: 1024px) and (max-height: 700px) {
   .signing-page-header { display: none; }
-  .signature-fit-panel {
-    width: calc(100% / .72);
-    zoom: .72;
-  }
   .self-sign-document-header { padding: .75rem 1rem; }
   .self-sign-upload-zone {
     min-height: 190px;
@@ -973,34 +964,9 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   }
   .signing-page-tabs { padding-block: .25rem; }
   .powercare-shell:has(.signature-workspace) > div > header { display: none; }
-  .signature-workspace {
-    display: flex;
-    height: calc(100dvh - 100px);
-    min-height: 0;
-    flex-direction: column;
-    gap: .5rem;
-    overflow: hidden;
-  }
-  .signature-workspace > :not([hidden]) ~ :not([hidden]) { margin-top: 0; }
-  .signature-workspace-grid {
-    flex: 1;
-    min-height: 0;
-    align-items: stretch;
-    gap: .75rem;
-  }
-  .self-sign-document-card {
-    display: flex;
-    min-height: 0;
-    flex-direction: column;
-  }
-  .self-sign-document-preview {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-  }
+  .signature-workspace-grid { gap: .75rem; }
+  .self-sign-document-preview { overflow: auto; }
   .document-first-page-preview {
-    min-height: 0;
-    height: 100%;
     align-items: flex-start;
     padding: .5rem;
   }
@@ -1008,19 +974,10 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
     width: auto;
     height: auto;
     max-width: 100%;
-    max-height: 100%;
   }
-  .self-sign-actions {
-    flex: none;
-    padding: .65rem 1rem;
-  }
+  .self-sign-actions { padding: .65rem 1rem; }
   .self-sign-actions > div { gap: .35rem; }
   .self-sign-actions button { padding-block: .45rem; }
-  .signature-fit-panel {
-    height: 100%;
-    align-self: stretch;
-  }
-  .signature-workspace > :last-child { flex: none; }
 }
 
 /* Unified PowerCare identity for every authenticated section. */
