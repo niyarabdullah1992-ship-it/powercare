@@ -972,9 +972,35 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
     margin-bottom: .5rem;
   }
   .signing-page-tabs { padding-block: .25rem; }
+  .powercare-shell:has(.signature-workspace) > div > header { display: none; }
+  .signature-workspace {
+    display: flex;
+    height: calc(100dvh - 100px);
+    min-height: 0;
+    flex-direction: column;
+    gap: .5rem;
+    overflow: hidden;
+  }
+  .signature-workspace > :not([hidden]) ~ :not([hidden]) { margin-top: 0; }
+  .signature-workspace-grid {
+    flex: 1;
+    min-height: 0;
+    align-items: stretch;
+    gap: .75rem;
+  }
+  .self-sign-document-card {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+  .self-sign-document-preview {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
   .document-first-page-preview {
     min-height: 0;
-    height: 300px;
+    height: 100%;
     align-items: center;
     padding: .5rem;
   }
@@ -984,6 +1010,17 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
     max-width: 100%;
     max-height: 100%;
   }
+  .self-sign-actions {
+    flex: none;
+    padding: .65rem 1rem;
+  }
+  .self-sign-actions > div { gap: .35rem; }
+  .self-sign-actions button { padding-block: .45rem; }
+  .signature-fit-panel {
+    height: 100%;
+    align-self: stretch;
+  }
+  .signature-workspace > :last-child { flex: none; }
 }
 
 /* Unified PowerCare identity for every authenticated section. */
