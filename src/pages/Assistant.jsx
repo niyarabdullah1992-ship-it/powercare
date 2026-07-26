@@ -348,6 +348,11 @@ Answer the last user question.`,
     base44.entities.ProductFeedback.create({ companyId: company.id, role: currentUser.role, rating: value === "up" ? 5 : 1, message: "Niro assistant response rating", page: "/app/assistant" }).catch(() => {});
   };
 
+  const deleteMessage = (index) => {
+    stopSpeaking();
+    setMessages((previous) => previous.filter((_, messageIndex) => messageIndex !== index));
+  };
+
   return (
     <div className="max-w-3xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
       <div className="flex items-center gap-2 mb-4">
@@ -369,7 +374,7 @@ Answer the last user question.`,
           </div>
         )}
         {messages.map((m, i) => (
-          <AssistantMessage key={i} message={m} onFeedback={m.role === "assistant" ? (value) => rateMessage(i, value) : undefined} />
+          <AssistantMessage key={i} message={m} ar={lang === "ar"} onDelete={() => deleteMessage(i)} onFeedback={m.role === "assistant" ? (value) => rateMessage(i, value) : undefined} />
         ))}
         <AutomationApprovalCard actions={pendingActions} loading={approvalLoading} ar={lang === "ar"} onApprove={approvePending} onReject={rejectPending} />
         {loading && (
