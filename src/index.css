@@ -974,8 +974,9 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   .signing-page-tabs { padding-block: .25rem; }
   .document-first-page-preview {
     min-height: 0;
-    height: 240px;
+    height: 300px;
     align-items: center;
+    padding: .5rem;
   }
   .document-first-page-canvas {
     width: auto;
