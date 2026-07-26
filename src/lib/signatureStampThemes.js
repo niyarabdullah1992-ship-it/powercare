@@ -4,7 +4,7 @@ export const SIGNATURE_STAMP_THEMES = [
   { id: "minimal", ar: "رمز القفل", en: "Lock Symbol", preview: "rounded-md border-s-4 border-accent" },
   { id: "certificate", ar: "رمز البصمة الإلكترونية", en: "E-Fingerprint", preview: "rounded-lg border-4 border-double border-accent" },
   { id: "vault", ar: "رمز المفتاح", en: "Digital Key", preview: "rounded-2xl border-2 border-accent shadow-inner" },
-  { id: "horizon", ar: "الرمز الخيالي", en: "Fantasy Symbol", preview: "rounded-full border-y-4 border-accent" },
+  { id: "horizon", ar: "البطاقة الذكية", en: "Smart Card", preview: "rounded-full border-y-4 border-accent" },
 ];
 
 function baseFrame(ctx, width, height, radius = 14, fill = "#13283d", lineWidth = 2.5) {
