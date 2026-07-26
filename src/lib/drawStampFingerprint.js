@@ -40,48 +40,65 @@ function drawExecutive(ctx, cx, cy, size) {
 
 function drawMinimal(ctx, cx, cy, size) {
   ctx.save(); clipFingerprint(ctx, cx, cy, size); ctx.lineCap = "round";
-  for (let ridge = 0; ridge < 11; ridge += 1) {
-    const offset = ridge * size * .035;
-    ctx.beginPath();
-    ctx.moveTo(cx + size * .45, cy - size * .46 + offset * .3);
-    ctx.bezierCurveTo(cx - size * .1 + offset, cy - size * .55 + offset, cx - size * .42 + offset * .25, cy + size * .03, cx - size * .25 + offset * .35, cy + size * .5);
+  for (let ridge = 0; ridge < 9; ridge += 1) {
+    const offset = ridge * size * .038;
+    ctx.beginPath(); ctx.moveTo(cx + size * .46, cy - size * .45 + offset * .25);
+    ctx.bezierCurveTo(cx - size * .08 + offset, cy - size * .55 + offset, cx - size * .43 + offset * .22, cy + size * .02, cx - size * .24 + offset * .32, cy + size * .51);
     ctx.strokeStyle = ridge % 2 ? GOLD : GOLD_LIGHT; ctx.lineWidth = Math.max(.8, size * .015); ctx.stroke();
   }
+  const nodes = [[-.27,-.26],[-.13,-.05],[-.22,.2],[.02,.28],[.18,.08],[.29,-.18]];
+  ctx.strokeStyle = GOLD; ctx.lineWidth = Math.max(1, size * .018); ctx.beginPath();
+  nodes.forEach(([x,y], index) => { const px = cx + x * size, py = cy + y * size; if (!index) ctx.moveTo(px, py); else ctx.lineTo(px, py); }); ctx.stroke();
+  nodes.forEach(([x,y]) => { ctx.fillStyle = "#13283d"; ctx.beginPath(); ctx.arc(cx + x * size, cy + y * size, size * .035, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = GOLD_LIGHT; ctx.stroke(); });
   ctx.restore();
 }
 
 function drawCertificate(ctx, cx, cy, size) {
   ctx.save(); clipFingerprint(ctx, cx, cy, size); ctx.lineCap = "round";
-  for (let ridge = 0; ridge < 12; ridge += 1) {
-    const height = size * (.12 + ridge * .043);
-    ctx.beginPath(); ctx.moveTo(cx - size * .48, cy + size * .44 - ridge * size * .025);
-    ctx.quadraticCurveTo(cx, cy + size * .38 - height * 1.7, cx + size * .48, cy + size * .44 - ridge * size * .025);
-    ctx.strokeStyle = ridge % 2 ? GOLD : GOLD_LIGHT; ctx.lineWidth = Math.max(.8, size * .015); ctx.stroke();
+  for (let band = 0; band < 8; band += 1) {
+    const y = cy - size * .43 + band * size * .12;
+    ctx.beginPath(); ctx.moveTo(cx - size * .44, y); ctx.bezierCurveTo(cx - size * .2, y - size * .1, cx + size * .2, y + size * .1, cx + size * .44, y);
+    ctx.strokeStyle = band % 2 ? GOLD : GOLD_LIGHT; ctx.lineWidth = Math.max(.8, size * .014); ctx.stroke();
   }
+  for (let column = -3; column <= 3; column += 1) {
+    const x = cx + column * size * .12; ctx.strokeStyle = "#C7AD7666"; ctx.beginPath(); ctx.moveTo(x, cy - size * .48); ctx.lineTo(x + column * size * .018, cy + size * .48); ctx.stroke();
+  }
+  [[-2,-2],[1,-2],[-1,0],[2,1],[-2,2],[1,3]].forEach(([gx,gy]) => { ctx.fillStyle = GOLD; ctx.beginPath(); ctx.arc(cx + gx * size * .12, cy + gy * size * .1, size * .028, 0, Math.PI * 2); ctx.fill(); });
   ctx.restore();
 }
 
 function drawVault(ctx, cx, cy, size) {
   ctx.save(); clipFingerprint(ctx, cx, cy, size); ctx.lineCap = "round";
-  for (let ridge = 0; ridge < 9; ridge += 1) {
-    const rx = size * (.08 + ridge * .035); const ry = size * (.13 + ridge * .046);
-    ctx.strokeStyle = ridge % 2 ? GOLD : GOLD_LIGHT; ctx.lineWidth = Math.max(.8, size * .015);
-    ctx.beginPath(); ctx.ellipse(cx - size * .13, cy, rx, ry, -.25, Math.PI * .25, Math.PI * 1.82); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(cx + size * .13, cy, rx, ry, .25, Math.PI * 1.18, Math.PI * 2.75); ctx.stroke();
+  for (let ring = 0; ring < 10; ring += 1) {
+    const radiusX = size * (.08 + ring * .037); const radiusY = size * (.1 + ring * .048);
+    const phase = (ring % 3) * Math.PI * .14;
+    ctx.strokeStyle = ring % 2 ? GOLD : GOLD_LIGHT; ctx.lineWidth = Math.max(.8, size * .015);
+    ctx.beginPath(); ctx.ellipse(cx, cy, radiusX, radiusY, .1, phase, Math.PI * .72 + phase); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx, cy, radiusX, radiusY, .1, Math.PI + phase, Math.PI * 1.72 + phase); ctx.stroke();
   }
-  ctx.beginPath(); ctx.moveTo(cx - size * .43, cy + size * .46); ctx.bezierCurveTo(cx - size * .18, cy + size * .15, cx + size * .18, cy - size * .15, cx + size * .43, cy - size * .46); ctx.strokeStyle = GOLD; ctx.stroke();
+  for (let spoke = 0; spoke < 7; spoke += 1) {
+    const angle = spoke * Math.PI * 2 / 7 - Math.PI / 2;
+    const x1 = cx + Math.cos(angle) * size * .12, y1 = cy + Math.sin(angle) * size * .15;
+    const x2 = cx + Math.cos(angle) * size * .4, y2 = cy + Math.sin(angle) * size * .5;
+    ctx.strokeStyle = "#C7AD7688"; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.fillStyle = GOLD; ctx.beginPath(); ctx.arc(x2, y2, size * .025, 0, Math.PI * 2); ctx.fill();
+  }
   ctx.restore();
 }
 
 function drawHorizon(ctx, cx, cy, size) {
   ctx.save(); clipFingerprint(ctx, cx, cy, size); ctx.lineCap = "round";
-  for (let ridge = 0; ridge < 11; ridge += 1) {
-    const inset = ridge * size * .022;
-    ctx.beginPath(); ctx.moveTo(cx - size * .48 + inset, cy + size * .43 - inset);
-    ctx.lineTo(cx, cy - size * (.5 - ridge * .035));
-    ctx.lineTo(cx + size * .48 - inset, cy + size * .43 - inset);
-    ctx.strokeStyle = ridge % 2 ? GOLD : GOLD_LIGHT; ctx.lineWidth = Math.max(.8, size * .015); ctx.stroke();
+  for (let wave = 0; wave < 9; wave += 1) {
+    const y = cy - size * .42 + wave * size * .105;
+    ctx.beginPath(); ctx.moveTo(cx - size * .48, y);
+    ctx.bezierCurveTo(cx - size * .3, y - size * .16, cx - size * .12, y + size * .16, cx, y);
+    ctx.bezierCurveTo(cx + size * .13, y - size * .16, cx + size * .3, y + size * .16, cx + size * .48, y);
+    ctx.strokeStyle = wave % 2 ? GOLD : GOLD_LIGHT; ctx.lineWidth = Math.max(.8, size * .015); ctx.stroke();
   }
+  const pulse = [[-.38,.18],[-.25,.18],[-.18,-.02],[-.1,.3],[0,-.22],[.1,.12],[.2,-.1],[.29,.18],[.4,.18]];
+  ctx.strokeStyle = GOLD; ctx.lineWidth = Math.max(1.4, size * .025); ctx.beginPath();
+  pulse.forEach(([x,y], index) => { const px = cx + x * size, py = cy + y * size; if (!index) ctx.moveTo(px, py); else ctx.lineTo(px, py); }); ctx.stroke();
+  pulse.filter((_, index) => index % 2).forEach(([x,y]) => { ctx.fillStyle = GOLD_LIGHT; ctx.beginPath(); ctx.arc(cx + x * size, cy + y * size, size * .025, 0, Math.PI * 2); ctx.fill(); });
   ctx.restore();
 }
 

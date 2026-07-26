@@ -1,10 +1,10 @@
 export const SIGNATURE_STAMP_THEMES = [
   { id: "heritage", ar: "المسار الرقمي", en: "Digital Trace", preview: "rounded-xl border-2 border-accent" },
   { id: "executive", ar: "الدوّامة", en: "Whorl Code", preview: "rounded-sm border-t-4 border-accent" },
-  { id: "minimal", ar: "الحلقة الأحادية", en: "Single Loop", preview: "rounded-md border-s-4 border-accent" },
-  { id: "certificate", ar: "القوس", en: "Arch Code", preview: "rounded-lg border-4 border-double border-accent" },
-  { id: "vault", ar: "الحلقة المزدوجة", en: "Double Loop", preview: "rounded-2xl border-2 border-accent shadow-inner" },
-  { id: "horizon", ar: "القوس المرتفع", en: "Tented Arch", preview: "rounded-full border-y-4 border-accent" },
+  { id: "minimal", ar: "الشبكة العصبية", en: "Neural Mesh", preview: "rounded-md border-s-4 border-accent" },
+  { id: "certificate", ar: "المصفوفة الحيوية", en: "Bio Matrix", preview: "rounded-lg border-4 border-double border-accent" },
+  { id: "vault", ar: "التشفير الشعاعي", en: "Radial Cipher", preview: "rounded-2xl border-2 border-accent shadow-inner" },
+  { id: "horizon", ar: "الموجة الكمية", en: "Quantum Wave", preview: "rounded-full border-y-4 border-accent" },
 ];
 
 function baseFrame(ctx, width, height, radius = 14, fill = "#13283d", lineWidth = 2.5) {
