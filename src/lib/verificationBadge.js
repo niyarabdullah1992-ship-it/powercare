@@ -7,7 +7,7 @@ import { drawStampThemeFrame } from "@/lib/signatureStampThemes";
 // The QR encodes the verification ID; the file's SHA-256 hash is registered in
 // the platform's verification registry, so a badge copied onto another file
 // will always fail verification (hash mismatch).
-export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureImg = null, variant = "unique", theme = "heritage") {
+export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureImg = null, variant = "unique", theme = "heritage", themeIcon = null) {
   const scale = 2;
   const typedLayout = Boolean(signatureImg && variant === "typed");
   const W = signatureImg ? 640 : 560;
@@ -35,6 +35,14 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
   };
 
   drawStampThemeFrame(ctx, W, H, theme);
+  const drawThemeIcon = (x, y, size) => {
+    if (!themeIcon) return drawStampFingerprint(ctx, x, y, size, theme);
+    const side = size * .9;
+    ctx.save();
+    ctx.beginPath(); ctx.roundRect(x - side / 2, y - side / 2, side, side, side * .12); ctx.clip();
+    ctx.drawImage(themeIcon, x - side / 2, y - side / 2, side, side);
+    ctx.restore();
+  };
 
   if (signatureImg && typedLayout) {
     ctx.strokeStyle = "#C7AD7638";
@@ -42,7 +50,7 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.moveTo(112, 10); ctx.lineTo(112, H - 10);
     ctx.moveTo(492, 10); ctx.lineTo(492, H - 10);
     ctx.stroke();
-    drawStampFingerprint(ctx, 58, H / 2, 76, theme);
+    drawThemeIcon(58, H / 2, 76);
 
     const tx = 132;
     ctx.textAlign = "left";
@@ -70,7 +78,7 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.moveTo(112, 10); ctx.lineTo(112, H - 10);
     ctx.moveTo(492, 10); ctx.lineTo(492, H - 10);
     ctx.stroke();
-    drawStampFingerprint(ctx, 58, H / 2, 76, theme);
+    drawThemeIcon(58, H / 2, 76);
 
     const tx = 132;
     ctx.textAlign = "left";
@@ -95,7 +103,7 @@ export function makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureI
     ctx.textAlign = "left";
     ctx.fillText(sigId || "PENDING", tx, 130);
   } else {
-    drawStampFingerprint(ctx, 50, H / 2, signerName ? 62 : 54, theme);
+    drawThemeIcon(50, H / 2, signerName ? 62 : 54);
     ctx.textAlign = "left";
     ctx.fillStyle = "#F4EEE2";
     ctx.font = "500 13px sans-serif";

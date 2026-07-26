@@ -2,6 +2,8 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { base44 } from "@/api/base44Client";
 import { makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
 import { STAMP_WIDTH_PERCENT } from "@/lib/signatureStampGeometry";
+import loadExportableImage from "@/lib/loadExportableImage";
+import { getSignatureThemeIcon } from "@/lib/signatureStampThemes";
 
 // Renders the verification badge to PNG bytes using an ALREADY-LOADED QR image
 // (prefetched while the user was choosing the file) — no network wait here.
@@ -18,7 +20,8 @@ async function badgePngBytes(sigId, signerName, qrImg, sigUrl, signatureVariant,
       image.src = objectUrl;
     });
   }
-  const canvas = makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureImg, signatureVariant, signatureTheme);
+  const themeIcon = await loadExportableImage(getSignatureThemeIcon(signatureTheme));
+  const canvas = makeVerificationBadgeCanvas(sigId, signerName, qrImg, signatureImg, signatureVariant, signatureTheme, themeIcon);
   if (objectUrl) URL.revokeObjectURL(objectUrl);
   const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
   return { bytes: await blob.arrayBuffer(), ratio: canvas.height / canvas.width };

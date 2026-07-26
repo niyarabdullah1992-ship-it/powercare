@@ -1,11 +1,13 @@
 export const SIGNATURE_STAMP_THEMES = [
-  { id: "heritage", ar: "التوقيع الإلكتروني", en: "Electronic Signature", preview: "rounded-xl border-2 border-accent" },
-  { id: "executive", ar: "الأرقام المشفّرة", en: "Encrypted Numbers", preview: "rounded-sm border-t-4 border-accent" },
-  { id: "horizon", ar: "البطاقة الذكية", en: "Smart Card", preview: "rounded-full border-y-4 border-accent" },
-  { id: "certificate", ar: "البصمة", en: "Fingerprint", preview: "rounded-lg border-4 border-double border-accent" },
-  { id: "vault", ar: "التعرّف على العين", en: "Iris Recognition", preview: "rounded-2xl border-2 border-accent shadow-inner" },
-  { id: "minimal", ar: "كلمة سر / رمز سري", en: "Password / PIN", preview: "rounded-md border-s-4 border-accent" },
+  { id: "heritage", ar: "التوقيع الإلكتروني", en: "Electronic Signature", preview: "rounded-xl border-2 border-accent", iconUrl: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/52729a25f_generated_image.png" },
+  { id: "executive", ar: "الأرقام المشفّرة", en: "Encrypted Numbers", preview: "rounded-sm border-t-4 border-accent", iconUrl: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/996520fad_generated_image.png" },
+  { id: "horizon", ar: "البطاقة الذكية", en: "Smart Card", preview: "rounded-full border-y-4 border-accent", iconUrl: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/6bd34e226_generated_image.png" },
+  { id: "certificate", ar: "البصمة", en: "Fingerprint", preview: "rounded-lg border-4 border-double border-accent", iconUrl: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/b9d7338f6_generated_image.png" },
+  { id: "vault", ar: "التعرّف على العين", en: "Iris Recognition", preview: "rounded-2xl border-2 border-accent shadow-inner", iconUrl: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/4053caeb2_generated_image.png" },
+  { id: "minimal", ar: "كلمة سر / رمز سري", en: "Password / PIN", preview: "rounded-md border-s-4 border-accent", iconUrl: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/cbec3c1c8_generated_image.png" },
 ];
+
+export const getSignatureThemeIcon = (themeId) => SIGNATURE_STAMP_THEMES.find((theme) => theme.id === themeId)?.iconUrl || SIGNATURE_STAMP_THEMES[0].iconUrl;
 
 function baseFrame(ctx, width, height, radius = 14, fill = "#13283d", lineWidth = 2.5) {
   ctx.beginPath();
