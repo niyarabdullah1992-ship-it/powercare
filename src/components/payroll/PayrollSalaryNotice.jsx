@@ -7,12 +7,12 @@ export default function PayrollSalaryNotice({ ar }) {
       <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={1.75} />
       <div>
         <p className="font-semibold text-foreground">
-          {ar ? "الراتب الأساسي ثابت في مسير الرواتب" : "Base salary is fixed in payroll"}
+          {ar ? "الراتب الأساسي والبدلات مرتبطان بملف الموظف" : "Base salary and allowances are linked to the employee profile"}
         </p>
         <p className="mt-1 leading-relaxed text-muted-foreground">
           {ar
-            ? "يُسحب الراتب الأساسي تلقائيًا من الملف الشخصي للموظف. لتغييره، افتح ملف الموظف ثم تبويب «الراتب» واحفظ التعديل؛ وسيُحدَّث مسير الشهر الحالي تلقائيًا."
-            : "Base salary is pulled automatically from the employee profile. To change it, open the employee profile, select the Salary tab, and save; the current payroll run will update automatically."}
+            ? "تظهر القيم تلقائيًا من ملف الموظف، وأي تعديل عليها هنا يُحفظ مباشرة في ملفه ويظل ثابتًا للأشهر القادمة حتى يغيّره قسم الموارد البشرية."
+            : "Values appear automatically from the employee profile. Changes made here are saved back to the profile and remain fixed for future months until HR changes them."}
         </p>
       </div>
     </div>

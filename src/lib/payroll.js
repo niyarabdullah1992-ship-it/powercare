@@ -153,7 +153,17 @@ export function updatePayrollItem(companyId, month, itemId, updates) {
     for (const [field, value] of Object.entries(updates || {})) {
       if (!allowed.includes(field)) continue;
       if (field === "currency") item.currency = value;
-      else if (Number.isFinite(Number(value)) && Number(value) >= 0) item[field] = Number(value);
+      else if (Number.isFinite(Number(value)) && Number(value) >= 0) {
+        const amount = Number(value);
+        item[field] = amount;
+        if (["base", "allowances"].includes(field)) {
+          const employee = (d.employees || []).find((entry) => entry.id === item.employeeId);
+          if (employee) {
+            employee.profile = employee.profile || {};
+            employee.profile[field === "base" ? "baseSalary" : "allowances"] = amount;
+          }
+        }
+      }
     }
   });
 }

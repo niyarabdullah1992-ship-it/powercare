@@ -1,6 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { FileText, CheckCircle2, Circle, LockKeyhole } from "lucide-react";
+import { FileText, CheckCircle2, Circle } from "lucide-react";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import { netOf } from "@/lib/payroll";
 import { normalizeLocalizedNumber } from "@/lib/localizedNumber";
@@ -15,7 +14,7 @@ export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid,
       disabled={!editable || item.paid}
       onChange={(e) => onChange(field, Number(normalizeLocalizedNumber(e.target.value)) || 0)}
       aria-invalid={field === "base" && !item.isOwner && num(item.base) <= 0}
-      title={field === "base" ? (item.isOwner ? (ar ? "راتب المالك اختياري" : "Owner salary is optional") : (ar ? "يُعدَّل من الملف الشخصي للموظف" : "Edit from the employee profile")) : undefined}
+      title={["base", "allowances"].includes(field) ? (ar ? "يُحفظ التعديل تلقائيًا في ملف الموظف" : "Changes are saved automatically to the employee profile") : undefined}
       className={`h-8 w-full max-w-24 rounded-md border bg-background px-2 text-center text-sm font-body disabled:opacity-60 ${field === "base" && !item.isOwner && num(item.base) <= 0 ? "border-destructive/60" : "border-input"}`}
       dir="ltr"
     />
@@ -26,17 +25,7 @@ export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid,
         <EmployeeNameLink employeeId={employee?.role ? item.employeeId : null} employeeName={employee?.name || "—"} className="block text-center text-sm font-body font-medium" />
         <p className="text-[11px] text-muted-foreground font-body">{employee?.position || employee?.role || ""}</p>
       </td>
-      <td data-label={ar ? "الأساسي" : "Base"}>
-        <div className="relative flex items-center justify-center">
-          <span className="relative block w-24">
-            {cell("base", false)}
-            <LockKeyhole className="pointer-events-none absolute end-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-          </span>
-          <Link to={`/app/employees/${encodeURIComponent(item.employeeId)}`} className="absolute inset-x-0 top-full mt-1 text-center text-[10px] font-body font-semibold leading-tight text-accent hover:underline">
-            {ar ? "تغييره من الملف الشخصي" : "Change in profile"}
-          </Link>
-        </div>
-      </td>
+      <td data-label={ar ? "الأساسي" : "Base"}>{cell("base")}</td>
       <td data-label={ar ? "البدلات" : "Allowances"}>{cell("allowances")}</td>
       <td data-label={ar ? "مكافآت" : "Bonus"}>{cell("bonus")}</td>
       <td data-label={ar ? "خصومات" : "Deductions"}>{cell("deductions")}</td>
