@@ -134,6 +134,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
           title={`${t("monthlyAttendanceReport")} — ${allEmployeesSelected ? allEmployeesLabel : employees.find((e) => e.id === employeeId)?.name || ""}`}
           headers={exportHeaders}
           rows={exportRows}
+          compact
         />
       </div>
       </div>}
