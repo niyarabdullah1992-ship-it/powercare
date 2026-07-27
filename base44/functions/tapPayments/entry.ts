@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { sendSubscriptionInvoiceEmail } from '../../shared/subscriptionInvoiceEmail.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -82,6 +83,14 @@ Deno.serve(async (req) => {
         if (accounts[0]) {
           const end = new Date(); end.setDate(end.getDate() + (payment.billing === 'yearly' ? 365 : 30));
           await base44.asServiceRole.entities.CompanyAccount.update(accounts[0].id, { plan: payment.plan, subscriptionStart: new Date().toISOString().slice(0, 10), subscriptionEnd: end.toISOString().slice(0, 10), subscriptionExempt: false });
+        }
+      }
+      if (paid && !payment.invoiceEmailSentAt) {
+        try {
+          await sendSubscriptionInvoiceEmail(base44, { ...payment, ...update });
+          await base44.asServiceRole.entities.SubscriptionPayment.update(payment.id, { invoiceEmailSentAt: new Date().toISOString() });
+        } catch (emailError) {
+          console.error('Automatic invoice email failed:', emailError.message);
         }
       }
       return Response.json({ paid, plan: payment.plan, companyName: payment.companyName, ownerEmail: payment.email, authMethod: payment.authMethod, renewal: !!payment.companyId, companyId: payment.companyId || null });

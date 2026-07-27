@@ -91,6 +91,12 @@
         "null"
       ]
     },
+    "invoiceEmailSentAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "activities": {
       "type": "array",
       "items": {
