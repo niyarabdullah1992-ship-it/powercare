@@ -6,6 +6,7 @@ import ComparisonExportButtons from "@/components/reports/ComparisonExportButton
 import { useI18n } from "@/lib/i18n";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
+import { CalendarRange } from "lucide-react";
 
 const RANGES = [
   { val: "monthly", amount: 1, unit: "months" },
@@ -80,25 +81,24 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
   ]);
 
   return (
-    <div className="p-5 rounded-xl border border-border bg-card space-y-4">
-      <h3 className="font-heading text-lg font-semibold">{t("monthlyAttendanceReport")}</h3>
+    <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+        <CalendarRange className="w-3.5 h-3.5" /> {t("monthlyAttendanceReport")}
+      </p>
 
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="space-y-2">
         <MobileSelect
           value={employeeId}
           onChange={setEmployeeId}
           placeholder={t("employeeName")}
+          searchable
+          className="w-full sm:w-72"
           options={employees.map((e) => ({ value: e.id, label: e.name }))}
         />
-        <EmployeeNameLink employeeId={employeeId} employeeName={employees.find((e) => e.id === employeeId)?.name} className="text-sm font-body font-medium" />
-        <ComparisonExportButtons
-          title={`${t("monthlyAttendanceReport")} — ${employees.find((e) => e.id === employeeId)?.name || ""}`}
-          headers={exportHeaders}
-          rows={exportRows}
-        />
+        <EmployeeNameLink employeeId={employeeId} employeeName={employees.find((e) => e.id === employeeId)?.name} className="inline-flex text-sm font-body font-medium" />
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap gap-2">
         {RANGES.map((r) => (
           <button
             key={r.val}
@@ -108,13 +108,21 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
             {rangeLabel(r.val)}
           </button>
         ))}
-        {range === "custom" && (
-          <div className="flex items-center gap-2">
-            <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="px-2.5 py-1.5 rounded-md border border-input text-xs font-body" />
-            <span className="text-muted-foreground text-xs">—</span>
-            <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="px-2.5 py-1.5 rounded-md border border-input text-xs font-body" />
-          </div>
-        )}
+      </div>
+
+      {range === "custom" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+          <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2 pt-1">
+        <ComparisonExportButtons
+          title={`${t("monthlyAttendanceReport")} — ${employees.find((e) => e.id === employeeId)?.name || ""}`}
+          headers={exportHeaders}
+          rows={exportRows}
+        />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
