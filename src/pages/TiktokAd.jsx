@@ -11,12 +11,13 @@ const AD_VIDEOS = [
 ];
 const AD_LOGO = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/65a30b8a4_9a8843bf0_generated_image.png";
 const AD_AUDIO = "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/59e28a277_speech.mp3";
+const AD_POSTER = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/f70d7dfa4_generated_6460ea2a.png";
 
 export default function TiktokAd() {
   return (
     <main className="ad-page" dir="rtl">
       <section className="ad-phone" aria-label="إعلان PowerCare عن الموظفين والعمليات">
-        <GeneratedVideoAd urls={AD_VIDEOS} audioUrl={AD_AUDIO} logoUrl={AD_LOGO} />
+        <GeneratedVideoAd urls={AD_VIDEOS} audioUrl={AD_AUDIO} logoUrl={AD_LOGO} posterUrl={AD_POSTER} />
       </section>
     </main>
   );
