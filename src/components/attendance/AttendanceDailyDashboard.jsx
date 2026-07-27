@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Loader2, MapPin, PenLine } from "lucide-react";
+import { CalendarRange, FileText, Loader2, MapPin, PenLine } from "lucide-react";
 import LocationMapModal from "@/components/attendance/LocationMapModal";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { useI18n } from "@/lib/i18n";
@@ -30,6 +30,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
   const [checkoutEmployeeId, setCheckoutEmployeeId] = useState(null);
   const [checkoutReason, setCheckoutReason] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
 
   const load = () => {
     if (!employees.length) { setRows([]); setLoading(false); return; }
@@ -123,10 +124,19 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
   const isPastCheckoutMissing = (r) => r?.check_in_at && !r?.check_out_at && r?.status !== "absent";
 
   return (
-    <div className="p-5 rounded-xl border border-border bg-card space-y-3">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h3 className="font-heading text-lg font-semibold">{t("dailyAttendance")}</h3>
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={() => setReportOpen((value) => !value)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${reportOpen ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+      >
+        <FileText className="w-3.5 h-3.5" /> {lang === "ar" ? "تقرير الفريق (PDF / Excel)" : "Team report (PDF / Excel)"}
+      </button>
+
+      {reportOpen && <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <CalendarRange className="w-3.5 h-3.5" /> {lang === "ar" ? "تقرير حضور الفريق اليومي" : "Daily team attendance report"}
+        </p>
         <ComparisonExportButtons
           title={t("dailyAttendance")}
           headers={[t("employeeName"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("locationStatus"), lang === "ar" ? "التحضير" : "Attendance source"]}
@@ -134,9 +144,12 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
             const r = byEmployee[e.id];
             return [e.name, statusLabel(statusFor(e)), r?.check_in_at ? formatTime(r.check_in_at, format, lang) : "—", r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—", r?.work_hours ?? "—", r?.location_status || "—", (r?.manual_override || r?.location_status === "manual") ? `${lang === "ar" ? "يدوي" : "Manual"} — ${r.override_by || r.excused_by_name || "—"}` : "—"];
           })}
+          compact
         />
-        </div>
-      </div>
+      </div>}
+
+      <div className="p-5 rounded-xl border border-border bg-card space-y-3">
+        <h3 className="font-heading text-lg font-semibold">{t("dailyAttendance")}</h3>
       {!loading && employees.length > 0 && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-center"><strong className="block text-lg text-emerald-700">{counts.present}</strong><span className="text-xs text-emerald-700">{t("totalPresent")}</span></div>
@@ -274,6 +287,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
         </div>
       )}
       {mapRow && <LocationMapModal row={mapRow} t={t} onClose={() => setMapRow(null)} />}
+      </div>
     </div>
   );
 }
