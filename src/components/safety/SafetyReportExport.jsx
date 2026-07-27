@@ -4,6 +4,9 @@ import { printReport } from "@/lib/printReport";
 import { FileSpreadsheet, FileText, CalendarRange } from "lucide-react";
 import SafetyStationPicker from "@/components/safety/SafetyStationPicker";
 import { CHECKLIST_GROUPS, PERMIT_REQUIREMENTS, PERMIT_TYPES, checklistCompliance, safetyKpis } from "@/lib/safetyStandards";
+import { useAuth } from "@/lib/PowerCareAuth";
+import { canUsePlanFeature } from "@/lib/navVisibility";
+import PlanFeatureNotice from "@/components/subscription/PlanFeatureNotice";
 
 // تقرير السلامة (HSE): حالة كل محطة + سجل الحوادث خلال الفترة — PDF وExcel.
 const PRESETS = [
@@ -21,6 +24,8 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
   const [customDays, setCustomDays] = useState("");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+  const { company } = useAuth();
+  if (!canUsePlanFeature(company, "exports")) return <PlanFeatureNotice />;
   const ar = lang === "ar";
   const L = (a, e) => (ar ? a : e);
   const branding = data?.reportBranding || {};

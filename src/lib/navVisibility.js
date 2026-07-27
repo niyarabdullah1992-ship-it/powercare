@@ -9,8 +9,26 @@ const SMART_SECTION_ROUTES = {
   performance: "/app/performance", attendance: "/app/attendance",
   hr: "/app/hr", inventory: "/app/inventory",
 };
+const PLAN_ROUTE_SECTIONS = {
+  "/app/assistant": "assistant", "/app/daily-report": "reports", "/app/tasks": "tasks",
+  "/app/inventory": "inventory", "/app/attendance": "attendance", "/app/hr": "hr",
+  "/app/performance": "performance", "/app/expenses": "expenses", "/app/payroll": "payroll",
+  "/app/safety": "safety", "/app/complaints": "complaints", "/app/files": "files",
+  "/app/signing": "signing", "/app/chat": "chat",
+};
 
-export function allowedNavFor(user, data) {
+const routeSection = (pathname) => Object.entries(PLAN_ROUTE_SECTIONS).find(([route]) => pathname === route || pathname.startsWith(route + "/"))?.[1];
+export function canUsePlanFeature(company, feature) { return (company?.planConfig?.enabledFeatures || []).includes(feature); }
+export function canAccessPlanPath(pathname, company) {
+  const section = routeSection(pathname);
+  if (!section) return true;
+  if (!(company?.planConfig?.enabledSections || []).includes(section)) return false;
+  if (section === "assistant" && !canUsePlanFeature(company, "ai")) return false;
+  if (section === "signing" && !canUsePlanFeature(company, "signing")) return false;
+  return true;
+}
+
+export function allowedNavFor(user, data, company) {
   if (!user) return new Set(BASE);
   const allowed = new Set(BASE);
   const role = user.role;
@@ -36,10 +54,12 @@ export function allowedNavFor(user, data) {
       if (!smartPosition.permissions?.[department]) allowed.delete(route);
     });
   }
+  [...allowed].forEach((route) => { if (!canAccessPlanPath(route, company)) allowed.delete(route); });
   return allowed;
 }
 
-export function canAccessPath(pathname, user, data) {
+export function canAccessPath(pathname, user, data, company) {
+  if (!canAccessPlanPath(pathname, company)) return false;
   const route = Object.values(SMART_SECTION_ROUTES).find((item) => pathname === item || pathname.startsWith(item + "/"));
-  return !route || allowedNavFor(user, data).has(route);
+  return !route || allowedNavFor(user, data, company).has(route);
 }

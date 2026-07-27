@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   getSession, startLogin, completeLoginOtp, switchUser, clearSession, getCompanyData,
   subscribe, getCompanyMeta, hydrateEmployeesFromEntity, hydrateStationsFromEntity,
@@ -7,6 +7,7 @@ import {
   sendPresenceHeartbeat,
 } from "./store";
 import { base44 } from "@/api/base44Client";
+import { DEFAULT_SUBSCRIPTION_PLANS, planConfigForName } from "@/lib/subscriptionPlans";
 
 // Skip merging in cloud data if this browser wrote locally very recently —
 // gives the in-flight edit a moment to finish syncing before a poll/refresh
@@ -30,6 +31,8 @@ export function AuthProvider({ children }) {
   });
   const [tick, setTick] = useState(0); // force refresh on store changes
   const [isSyncing, setIsSyncing] = useState(false); // true while pulling the latest data from the cloud
+  const [planConfig, setPlanConfig] = useState(null);
+  const [planLoading, setPlanLoading] = useState(true);
   // Per-collection version stamps from the last successful pull — lets each poll skip
   // downloading collections that haven't changed on the server (delta sync).
   const lastVersionsRef = useRef({});
@@ -40,6 +43,15 @@ export function AuthProvider({ children }) {
     const unsub = subscribe(refresh);
     return unsub;
   }, []);
+
+  useEffect(() => {
+    if (!company?.plan) { setPlanConfig(planConfigForName(DEFAULT_SUBSCRIPTION_PLANS, "free")); setPlanLoading(false); return; }
+    let active = true;
+    const loadPlan = () => base44.entities.SubscriptionPlan.list("sortOrder", 50).then((plans) => { if (active) setPlanConfig(planConfigForName(plans.length ? plans : DEFAULT_SUBSCRIPTION_PLANS, company.plan)); }).finally(() => { if (active) setPlanLoading(false); });
+    setPlanLoading(true); loadPlan();
+    const unsubscribe = base44.entities.SubscriptionPlan.subscribe(() => loadPlan());
+    return () => { active = false; if (typeof unsubscribe === "function") unsubscribe(); };
+  }, [company?.plan]);
 
   const refresh = useCallback(() => {
     const s = getSession();
@@ -258,10 +270,11 @@ export function AuthProvider({ children }) {
   const currentUser = data && session?.userId
     ? data.employees.find((e) => e.id === session.userId)
     : null;
+  const companyWithPlan = useMemo(() => company ? { ...company, planConfig } : company, [company, planConfig]);
 
   return (
     <AuthContext.Provider
-      value={{ session, company, data, currentUser, login, loginWithGoogle, verifyOtp, switchUser: doSwitchUser, logout, refresh, tick, isSyncing }}
+      value={{ session, company: companyWithPlan, data, currentUser, login, loginWithGoogle, verifyOtp, switchUser: doSwitchUser, logout, refresh, tick, isSyncing, planConfig, planLoading }}
     >
       {children}
     </AuthContext.Provider>

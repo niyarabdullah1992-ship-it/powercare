@@ -3,14 +3,15 @@ import { Plus } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import PlanForm from "@/components/owner/PlanForm";
 import PlanCard from "@/components/owner/PlanCard";
+import { normalizePlanConfig } from "@/lib/subscriptionPlans";
 
-const emptyPlan = { slug: "", nameAr: "", nameEn: "", monthlyPrice: 0, yearlyPrice: 0, currency: "USD", featuresAr: [], featuresEn: [], active: true, freeNow: true, sortOrder: 99 };
+const emptyPlan = normalizePlanConfig({ slug: "", nameAr: "", nameEn: "", monthlyPrice: 0, yearlyPrice: 0, currency: "USD", featuresAr: [], featuresEn: [], active: true, freeNow: true, sortOrder: 99 });
 export default function PlanManagement({ ar }) {
   const [plans, setPlans] = useState([]);
   const [editing, setEditing] = useState(null);
-  const load = () => base44.entities.SubscriptionPlan.list("sortOrder", 50).then(setPlans);
+  const load = () => base44.entities.SubscriptionPlan.list("sortOrder", 50).then((items) => setPlans(items.map(normalizePlanConfig)));
   useEffect(() => { load(); }, []);
-  const save = async (event) => { event.preventDefault(); const { id, created_date, updated_date, created_by_id, ...payload } = editing; id ? await base44.entities.SubscriptionPlan.update(id, payload) : await base44.entities.SubscriptionPlan.create(payload); setEditing(null); load(); };
+  const save = async (event) => { event.preventDefault(); const { id, created_date, updated_date, created_by_id, created_by, ...payload } = editing; id ? await base44.entities.SubscriptionPlan.update(id, payload) : await base44.entities.SubscriptionPlan.create(payload); setEditing(null); load(); };
   const remove = async (plan) => { if (!window.confirm(ar ? `حذف باقة ${plan.nameAr}؟` : `Delete ${plan.nameEn}?`)) return; await base44.entities.SubscriptionPlan.delete(plan.id); load(); };
   const toggle = async (plan) => { await base44.entities.SubscriptionPlan.update(plan.id, { active: !plan.active }); load(); };
   return <div className="space-y-5">

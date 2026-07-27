@@ -39,6 +39,32 @@
         "type": "string"
       }
     },
+    "maxStations": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "maxEmployees": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "enabledSections": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "enabledFeatures": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "active": {
       "type": "boolean",
       "default": true

@@ -4,6 +4,8 @@ import { exportExcelColored } from "@/lib/exportExcelColored";
 import { printReport } from "@/lib/printReport";
 import { FileSpreadsheet, FileText, CalendarRange } from "lucide-react";
 import MobileSelect from "@/components/mobile/MobileSelect";
+import { canUsePlanFeature } from "@/lib/navVisibility";
+import PlanFeatureNotice from "@/components/subscription/PlanFeatureNotice";
 
 // تقرير زمني للمهام: شهر / ٣ أشهر / ٦ أشهر / سنة / عدد أيام / بين تاريخين — PDF وExcel.
 const PRESETS = [
@@ -16,7 +18,7 @@ const PRESETS = [
 ];
 
 export default function TaskReportExport({ targets, t, lang, dir, stationKeyOf, defaultStation }) {
-  const { data } = useAuth();
+  const { data, company } = useAuth();
   const [preset, setPreset] = useState("month");
   const [stationFilter, setStationFilter] = useState(defaultStation || "all");
   const [days, setDays] = useState("");
@@ -26,6 +28,7 @@ export default function TaskReportExport({ targets, t, lang, dir, stationKeyOf, 
   const L = (a, e) => (ar ? a : e);
   const branding = data?.reportBranding || {};
   const color = branding.color || "#b07d3f";
+  if (!canUsePlanFeature(company, "exports")) return <PlanFeatureNotice />;
 
   const presetLabel = (val) => ({
     month: L("شهر", "1 Month"),

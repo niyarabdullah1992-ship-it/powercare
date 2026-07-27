@@ -12,7 +12,7 @@ import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import TrialExpiryGate from '@/components/TrialExpiryGate';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
-import { canAccessPath } from '@/lib/navVisibility';
+import { canAccessPath, canAccessPlanPath } from '@/lib/navVisibility';
 
 import { lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -87,13 +87,13 @@ function PageLoader() {
 }
 
 function RequireAuth({ children }) {
-  const { session, company, data, currentUser } = usePowerCareAuth();
+  const { session, company, data, currentUser, planLoading } = usePowerCareAuth();
   const location = useLocation();
   if (!session) return <Navigate to="/" replace />;
   // While the workspace is still loading (fresh device / restored account),
   // show a spinner instead of the blank page that pages render without a user.
-  if (!data || (session.userId && !currentUser)) return <PageLoader />;
-  if (!canAccessPath(location.pathname, currentUser, data)) return <Navigate to="/app" replace />;
+  if (!data || planLoading || (session.userId && !currentUser)) return <PageLoader />;
+  if (!canAccessPath(location.pathname, currentUser, data, company)) return <Navigate to={canAccessPlanPath(location.pathname, company) ? "/app" : "/pricing"} replace />;
   return <TrialExpiryGate company={company}><Layout>{children}</Layout></TrialExpiryGate>;
 }
 

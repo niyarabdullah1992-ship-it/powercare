@@ -4,6 +4,9 @@ import MobileSelect from "@/components/mobile/MobileSelect";
 import { netOf } from "@/lib/payroll";
 import { exportExcelColored } from "@/lib/exportExcelColored";
 import { printReport } from "@/lib/printReport";
+import { useAuth } from "@/lib/PowerCareAuth";
+import { canUsePlanFeature } from "@/lib/navVisibility";
+import PlanFeatureNotice from "@/components/subscription/PlanFeatureNotice";
 
 const PRESETS = [{ id: "month", months: 1 }, { id: "3months", months: 3 }, { id: "6months", months: 6 }, { id: "year", months: 12 }, { id: "range", months: 0 }];
 const shiftMonth = (key, amount) => { const date = new Date(`${key}-01T00:00:00`); date.setMonth(date.getMonth() + amount); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`; };
@@ -12,6 +15,8 @@ export default function PayrollReportExport({ runs, employees, excludedEmployeeI
   const ar = lang === "ar"; const L = (a, e) => ar ? a : e;
   const [preset, setPreset] = useState("month"); const [stationId, setStationId] = useState("all");
   const [from, setFrom] = useState(shiftMonth(new Date().toISOString().slice(0, 7), -2)); const [to, setTo] = useState(new Date().toISOString().slice(0, 7));
+  const { company } = useAuth();
+  if (!canUsePlanFeature(company, "exports")) return <PlanFeatureNotice />;
   const currentMonth = new Date().toISOString().slice(0, 7);
   const labels = { month: L("شهر", "1 Month"), "3months": L("٣ أشهر", "3 Months"), "6months": L("٦ أشهر", "6 Months"), year: L("سنة", "1 Year"), range: L("بين شهرين", "Month Range") };
   const employeeFor = (item) => employees.find((employee) => employee.id === item.employeeId);

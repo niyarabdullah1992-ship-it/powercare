@@ -1,19 +1,11 @@
 import { ALL_PLANS_CURRENTLY_FREE } from "@/lib/pricingPolicy";
 
-// Plan limits — mirrors what each pricing tier advertises on the Pricing page.
-// null = unlimited.
-const PLAN_LIMITS = {
-  free: { stations: 1, employees: 5 },
-  starter: { stations: 5, employees: 30 },
-  professional: { stations: null, employees: null },
-  enterprise: { stations: null, employees: null },
-  custom: { stations: null, employees: null },
-  individual: { stations: null, employees: null },
-};
+import { normalizePlanConfig } from "@/lib/subscriptionPlans";
 
-export function getPlanLimits(plan) {
-  const key = String(plan || "free").toLowerCase();
-  return PLAN_LIMITS[key] || PLAN_LIMITS.free;
+export function getPlanLimits(planOrCompany) {
+  const company = typeof planOrCompany === "object" ? planOrCompany : { plan: planOrCompany };
+  const config = normalizePlanConfig(company.planConfig || { slug: String(company.plan || "free").toLowerCase() });
+  return { stations: config.maxStations, employees: config.maxEmployees };
 }
 
 function effectivePlan(company) {
@@ -24,13 +16,15 @@ function effectivePlan(company) {
 }
 
 export function canAddStation(company, data) {
-  const limit = getPlanLimits(effectivePlan(company)).stations;
+  const plan = effectivePlan(company);
+  const limit = getPlanLimits(plan === company?.plan ? company : plan).stations;
   if (limit == null) return true;
   return (data?.stations?.length || 0) < limit;
 }
 
 export function canAddEmployee(company, data) {
-  const limit = getPlanLimits(effectivePlan(company)).employees;
+  const plan = effectivePlan(company);
+  const limit = getPlanLimits(plan === company?.plan ? company : plan).employees;
   if (limit == null) return true;
   return (data?.employees?.length || 0) < limit;
 }
