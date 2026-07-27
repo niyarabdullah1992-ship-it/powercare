@@ -23,7 +23,7 @@ export default function StationInventoryReportExport({ reportData, ar }) {
   };
   const exportPdf = () => {
     const output = report();
-    printReport({ title: output.title, companyName: company?.name || "", periodLabel: new Date().toLocaleDateString(ar ? "ar-SA" : "en-GB"), dir: ar ? "rtl" : "ltr", stats: output.stats, sections: output.sections, logoUrl: branding.logoUrl || "", color });
+    printReport({ title: output.title, companyName: company?.name || "", periodLabel: new Date().toLocaleDateString(ar ? "ar-SA" : "en-GB"), dir: ar ? "rtl" : "ltr", stats: output.stats, sections: output.sections, logoUrl: branding.logoUrl || "", color, theme: "inventoryPowerCare" });
   };
   return <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
     <MobileSelect options={options} value={stationId} onChange={setStationId} placeholder={ar ? "اختر المحطة" : "Select station"} searchable className="min-w-44" />
