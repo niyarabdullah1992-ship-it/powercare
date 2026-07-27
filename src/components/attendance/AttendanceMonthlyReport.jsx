@@ -50,12 +50,16 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
 
   useEffect(() => {
     if (!employeeId) return;
+    const selectedEmployees = employeeId === "all" ? employees : employees.filter((employee) => employee.id === employeeId);
     setLoading(true);
-    base44.functions.invoke("supabaseAttendance", { action: "listRange", employeeId, ...dateWindow })
-      .then((res) => setRows(res?.data?.rows || []))
+    Promise.all(selectedEmployees.map((employee) =>
+      base44.functions.invoke("supabaseAttendance", { action: "listRange", employeeId: employee.id, ...dateWindow })
+        .then((res) => (res?.data?.rows || []).map((row) => ({ ...row, employeeId: employee.id, employeeName: employee.name })))
+    ))
+      .then((results) => setRows(results.flat()))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
-  }, [employeeId, dateWindow.startDate, dateWindow.endDate]);
+  }, [employeeId, dateWindow.startDate, dateWindow.endDate, employees.map((employee) => employee.id).join(",")]);
 
   const totals = rows.reduce(
     (acc, r) => {
@@ -71,8 +75,11 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
 
   const statusLabel = (r) => t(`attendanceStatus${r.status.charAt(0).toUpperCase()}${r.status.slice(1).replace(/_([a-z])/, (m, c) => c.toUpperCase())}`);
 
-  const exportHeaders = [t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("lateMinutesLabel"), lang === "ar" ? "تحضير يدوي" : "Manual attendance"];
+  const allEmployeesSelected = employeeId === "all";
+  const allEmployeesLabel = lang === "ar" ? "كل الموظفين" : "All employees";
+  const exportHeaders = [...(allEmployeesSelected ? [t("employeeName")] : []), t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("lateMinutesLabel"), lang === "ar" ? "تحضير يدوي" : "Manual attendance"];
   const exportRows = rows.map((r) => [
+    ...(allEmployeesSelected ? [r.employeeName || "—"] : []),
     r.date, statusLabel(r) + (r.excused ? ` (${t("excused")})` : ""),
     r.check_in_at ? formatTime(r.check_in_at, format, lang) : "—",
     r.check_out_at ? formatTime(r.check_out_at, format, lang) : "—",
@@ -100,7 +107,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
         placeholder={t("employeeName")}
         searchable
         className="w-full sm:w-72"
-        options={employees.map((e) => ({ value: e.id, label: e.name }))}
+        options={[{ value: "all", label: lang === "ar" ? "كل الموظفين" : "All employees" }, ...employees.map((e) => ({ value: e.id, label: e.name }))]}
       />
 
       <div className="flex flex-wrap gap-2">
@@ -124,7 +131,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
 
       <div className="flex flex-wrap gap-2 pt-1">
         <ComparisonExportButtons
-          title={`${t("monthlyAttendanceReport")} — ${employees.find((e) => e.id === employeeId)?.name || ""}`}
+          title={`${t("monthlyAttendanceReport")} — ${allEmployeesSelected ? allEmployeesLabel : employees.find((e) => e.id === employeeId)?.name || ""}`}
           headers={exportHeaders}
           rows={exportRows}
         />
@@ -162,6 +169,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
           <table className="w-full text-sm font-body mobile-cards">
             <thead>
               <tr className="text-start text-xs text-muted-foreground border-b border-border">
+                {allEmployeesSelected && <th className="py-2 pe-3 text-start">{t("employeeName")}</th>}
                 <th className="py-2 pe-3 text-start">{t("date")}</th>
                 <th className="py-2 pe-3 text-start">{t("status")}</th>
                 <th className="py-2 pe-3 text-start">{t("checkIn")}</th>
@@ -173,7 +181,8 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-b border-border/60">
+                <tr key={`${r.employeeId || employeeId}-${r.id}`} className="border-b border-border/60">
+                  {allEmployeesSelected && <td data-label={t("employeeName")} className="py-2 pe-3 font-medium">{r.employeeName || "—"}</td>}
                   <td data-label={t("date")} className="py-2 pe-3">{r.date}</td>
                   <td data-label={t("status")} className="py-2 pe-3 text-muted-foreground">
                     {statusLabel(r)}
