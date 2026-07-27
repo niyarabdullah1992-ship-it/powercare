@@ -1,5 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
-import Stripe from 'npm:stripe@17.4.0';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 
 // Maps Stripe price ids back to plan names (must mirror stripeCheckout).
 const MANUAL_PLAN_MONTHLY_PRICE = { Starter: 49, Professional: 149, Enterprise: 249 };
@@ -20,8 +19,6 @@ Deno.serve(async (req) => {
     if (!user || user.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
-
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'), { apiVersion: '2024-06-20' });
 
     // Optional admin actions (POST body with { action, ... }); no action → overview.
     let body: Record<string, unknown> = {};
@@ -51,37 +48,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'invoices') {
-      const accounts = await base44.asServiceRole.entities.CompanyAccount.list('-created_date', 500);
-      const byEmail = Object.fromEntries(accounts.map((account) => [String(account.ownerEmail || '').toLowerCase(), account]));
-      const invoices = []; let startingAfter;
-      while (invoices.length < 500) {
-        const page = await stripe.invoices.list({ limit: 100, expand: ['data.customer'], ...(startingAfter ? { starting_after: startingAfter } : {}) });
-        for (const invoice of page.data) {
-          const customer = typeof invoice.customer === 'object' ? invoice.customer : null;
-          const email = String(invoice.customer_email || customer?.email || '').toLowerCase();
-          const account = byEmail[email];
-          const transitions = invoice.status_transitions || {};
-          invoices.push({
-            id: invoice.id, number: invoice.number || `DRAFT-${invoice.id.slice(-8).toUpperCase()}`,
-            companyId: account?.companyId || null, companyName: account?.name || invoice.customer_name || email,
-            email, subscriptionId: typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id || null,
-            status: invoice.status || 'draft', currency: String(invoice.currency || 'usd').toUpperCase(),
-            subtotal: invoice.subtotal || 0, tax: (invoice.total_tax_amounts || []).reduce((sum, item) => sum + Number(item.amount || 0), 0),
-            total: invoice.total || 0, amountPaid: invoice.amount_paid || 0, amountDue: invoice.amount_due || 0,
-            createdAt: new Date(invoice.created * 1000).toISOString(), dueAt: invoice.due_date ? new Date(invoice.due_date * 1000).toISOString() : null,
-            periodStart: invoice.period_start ? new Date(invoice.period_start * 1000).toISOString() : null,
-            periodEnd: invoice.period_end ? new Date(invoice.period_end * 1000).toISOString() : null,
-            finalizedAt: transitions.finalized_at ? new Date(transitions.finalized_at * 1000).toISOString() : null,
-            paidAt: transitions.paid_at ? new Date(transitions.paid_at * 1000).toISOString() : null,
-            voidedAt: transitions.voided_at ? new Date(transitions.voided_at * 1000).toISOString() : null,
-            uncollectibleAt: transitions.marked_uncollectible_at ? new Date(transitions.marked_uncollectible_at * 1000).toISOString() : null,
-            hostedUrl: invoice.hosted_invoice_url || null, pdfUrl: invoice.invoice_pdf || null,
-          });
-        }
-        if (!page.has_more || !page.data.length) break;
-        startingAfter = page.data[page.data.length - 1].id;
-      }
-      return Response.json({ invoices });
+      const payments = await base44.asServiceRole.entities.SubscriptionPayment.list('-createdAt', 500);
+      return Response.json({ invoices: payments });
     }
     
     if (['freeze', 'unfreeze', 'extend', 'changePlan', 'updateAccount', 'activate', 'deactivate', 'addDays', 'exempt', 'removeExemption'].includes(action)) {
@@ -147,16 +115,10 @@ Deno.serve(async (req) => {
 
     if (['cancelAtPeriodEnd', 'reactivate', 'cancelNow'].includes(action)) {
       const account = await getAccount();
-      if (action === 'cancelAtPeriodEnd') {
-        await stripe.subscriptions.update(String(body.subscriptionId), { cancel_at_period_end: true });
-        await auditAction(account, 'subscription_cancel_scheduled', 'active', 'cancel at period end', body.reason);
-      } else if (action === 'reactivate') {
-        await stripe.subscriptions.update(String(body.subscriptionId), { cancel_at_period_end: false });
-        await auditAction(account, 'subscription_reactivated', 'cancel at period end', 'active', body.reason);
-      } else {
-        await stripe.subscriptions.cancel(String(body.subscriptionId));
-        await auditAction(account, 'subscription_canceled', 'active', 'canceled immediately', body.reason);
-      }
+      if (!account) return Response.json({ error: 'Company account not found' }, { status: 404 });
+      const end = action === 'reactivate' ? account.subscriptionEnd : new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      await base44.asServiceRole.entities.CompanyAccount.update(account.id, { subscriptionEnd: end });
+      await auditAction(account, action === 'reactivate' ? 'subscription_reactivated' : 'subscription_canceled', account.subscriptionEnd || 'active', end || 'active', body.reason);
       return Response.json({ ok: true });
     }
 
@@ -196,133 +158,33 @@ Deno.serve(async (req) => {
       return Response.json({ companies });
     }
 
-    // Registered companies (to match subscriptions to company names).
     const allAccounts = await base44.asServiceRole.entities.CompanyAccount.list('-created_date', 500);
-    // Preview/demo companies are excluded from the subscriptions view.
-    const accounts = allAccounts.filter((a) => !(a.ownerEmail || '').endsWith('@powercare-demo.com'));
-    const byEmail = {};
-    for (const a of accounts) {
-      const key = (a.ownerEmail || '').toLowerCase();
-      if (key && !byEmail[key]) byEmail[key] = a;
-    }
-
-    // All Stripe subscriptions (paginated).
-    const subs = [];
-    let startingAfter;
-    while (true) {
-      const page = await stripe.subscriptions.list({
-        status: 'all',
-        limit: 100,
-        expand: ['data.customer'],
-        ...(startingAfter ? { starting_after: startingAfter } : {}),
-      });
-      subs.push(...page.data);
-      if (!page.has_more) break;
-      startingAfter = page.data[page.data.length - 1].id;
-    }
-
+    const accounts = allAccounts.filter((account) => !(account.ownerEmail || '').endsWith('@powercare-demo.com'));
+    const [payments, planCatalog] = await Promise.all([base44.asServiceRole.entities.SubscriptionPayment.list('-createdAt', 500), base44.asServiceRole.entities.SubscriptionPlan.list('sortOrder', 50)]);
+    const promotionalFreePlans = new Set(planCatalog.filter((plan) => plan.freeNow === true).map((plan) => plan.nameEn));
     const now = Date.now();
-    const rows = subs.map((s) => {
-      const priceId = s.items?.data?.[0]?.price?.id;
-      const priceInfo = PRICE_TO_PLAN[priceId] || {};
-      const email = (typeof s.customer === 'object' ? s.customer?.email : '') || '';
-      const account = byEmail[email.toLowerCase()];
-      const endTs = (s.trial_end && s.status === 'trialing' ? s.trial_end : s.current_period_end) * 1000;
-      const accountEndTs = account?.subscriptionEnd ? Date.parse(account.subscriptionEnd) : null;
-      const manualActive = !!accountEndTs && accountEndTs > now && ['canceled', 'unpaid', 'past_due'].includes(s.status);
-      return {
-        id: s.id,
-        accountId: account?.id || null,
-        companyName: account?.name || s.metadata?.companyName || '',
-        email,
-        plan: account?.plan || priceInfo.plan || '—',
-        billing: priceInfo.billing || '',
-        status: account?.subscriptionExempt ? 'exempt' : (manualActive ? 'manual_active' : s.status),
-        cancelAtPeriodEnd: !!s.cancel_at_period_end,
-        startedAt: account?.subscriptionStart ? Date.parse(account.subscriptionStart) : (s.start_date ? s.start_date * 1000 : null),
-        endsAt: account?.subscriptionExempt ? null : (account?.subscriptionEnd ? Date.parse(account.subscriptionEnd) : (endTs || null)),
-        daysLeft: account?.subscriptionExempt ? null : (account?.subscriptionEnd ? Math.ceil((Date.parse(account.subscriptionEnd) - now) / 86400000) : (endTs ? Math.ceil((endTs - now) / 86400000) : null)),
-        amount: account?.subscriptionExempt ? 0 : (s.items?.data?.[0]?.price?.unit_amount != null ? s.items.data[0].price.unit_amount / 100 : null),
-        currency: (s.items?.data?.[0]?.price?.currency || 'usd').toUpperCase(),
-        exempt: account?.subscriptionExempt === true,
-        isFree: account?.subscriptionExempt === true || s.items?.data?.[0]?.price?.unit_amount === 0,
-        exemptReason: account?.exemptReason || null,
-        frozen: account?.frozen === true,
-        frozenAt: account?.frozenAt || null,
-        frozenReason: account?.frozenReason || null,
-      };
+    const latestByEmail = {};
+    for (const payment of payments) { const key = String(payment.email || '').toLowerCase(); if (key && !latestByEmail[key]) latestByEmail[key] = payment; }
+    const rows = accounts.map((account) => {
+      const payment = latestByEmail[String(account.ownerEmail || '').toLowerCase()];
+      const endTs = account.subscriptionEnd ? Date.parse(account.subscriptionEnd) : null;
+      const promotionalFree = promotionalFreePlans.has(account.plan || 'Free');
+      const active = promotionalFree || account.subscriptionExempt === true || (!!endTs && endTs > now && account.plan !== 'Free');
+      return { accountId: account.id, companyName: account.name || '', email: account.ownerEmail, plan: account.plan || 'Free', billing: payment?.billing || 'monthly', status: account.subscriptionExempt ? 'exempt' : active ? 'manual_active' : 'no_subscription', startedAt: account.subscriptionStart ? Date.parse(account.subscriptionStart) : null, endsAt: promotionalFree || account.subscriptionExempt ? null : endTs, daysLeft: promotionalFree || account.subscriptionExempt || !endTs ? null : Math.ceil((endTs - now) / 86400000), amount: promotionalFree || account.subscriptionExempt ? 0 : payment ? payment.subtotal / 100 : Math.max(0, Number(account.customPrice) || 0), customPrice: account.customPrice ?? null, currency: payment?.currency || 'SAR', exempt: account.subscriptionExempt === true, isFree: promotionalFree || account.subscriptionExempt === true || (!payment && !(Number(account.customPrice) > 0)), exemptReason: account.exemptReason || null, frozen: account.frozen === true, frozenAt: account.frozenAt || null, frozenReason: account.frozenReason || null };
     });
-
-    // Companies registered without any Stripe subscription (free/manual).
-    const subEmails = new Set(rows.map((r) => r.email.toLowerCase()).filter(Boolean));
-    const noSub = accounts
-      .filter((a) => a.ownerEmail && !subEmails.has(a.ownerEmail.toLowerCase()))
-      .map((a) => {
-        const startTs = a.subscriptionStart ? Date.parse(a.subscriptionStart) : null;
-        const endTs = a.subscriptionEnd ? Date.parse(a.subscriptionEnd) : null;
-        // A manually-managed subscription (e.g. Custom plan) with a future end date counts as active.
-        const manualActive = a.subscriptionExempt === true || (!!endTs && endTs > now && (a.plan || 'Free') !== 'Free');
-        return {
-          accountId: a.id,
-          companyName: a.name || '',
-          email: a.ownerEmail,
-          plan: a.plan || 'Free',
-          status: a.subscriptionExempt ? 'exempt' : (manualActive ? 'manual_active' : 'no_subscription'),
-          startedAt: startTs,
-          endsAt: a.subscriptionExempt ? null : endTs,
-          daysLeft: a.subscriptionExempt ? null : (endTs ? Math.ceil((endTs - now) / 86400000) : null),
-          amount: a.subscriptionExempt ? 0 : Math.max(0, Number(a.customPrice) || 0),
-          customPrice: a.subscriptionExempt ? 0 : (a.customPrice ?? null),
-          exempt: a.subscriptionExempt === true,
-          isFree: a.subscriptionExempt === true || !(Number(a.customPrice) > 0),
-          exemptReason: a.exemptReason || null,
-          frozen: a.frozen === true,
-          frozenAt: a.frozenAt || null,
-          frozenReason: a.frozenReason || null,
-        };
-      });
-
-    const active = rows.filter((r) => ['active', 'trialing', 'manual_active'].includes(r.status));
-    const summary = {
-      totalCompanies: accounts.length,
-      activeSubscriptions: active.length + noSub.filter((r) => r.status === 'manual_active').length,
-      trialing: rows.filter((r) => r.status === 'trialing').length,
-      pastDue: rows.filter((r) => r.status === 'past_due' || r.status === 'unpaid').length,
-      canceled: rows.filter((r) => r.status === 'canceled').length,
-      frozen: accounts.filter((account) => account.frozen === true).length,
-      expired: [...rows, ...noSub].filter((r) => r.endsAt && r.endsAt < now && !['active', 'trialing', 'manual_active'].includes(r.status)).length,
-      endingSoon: active.filter((r) => r.daysLeft != null && r.daysLeft <= 14 && (r.cancelAtPeriodEnd || r.status === 'trialing')).length,
-      byPlan: {
-        Free: accounts.filter((a) => !a.plan || a.plan === 'Free').length,
-        Starter: active.filter((r) => r.plan === 'Starter').length,
-        Professional: active.filter((r) => r.plan === 'Professional').length,
-        Enterprise: active.filter((r) => r.plan === 'Enterprise').length,
-        Custom: noSub.filter((r) => r.plan === 'Custom' && r.status === 'manual_active').length,
-      },
-    };
-
-    // Monthly recurring revenue from active/trialing subscriptions + manually-managed custom plans.
-    const manualMrr = noSub.filter((r) => r.status === 'manual_active' && !r.isFree).reduce((sum, r) => sum + (r.amount || 0), 0);
-    summary.mrr = Math.round((active.reduce((sum, r) => sum + (r.amount ? (r.billing === 'yearly' ? r.amount / 12 : r.amount) : 0), 0) + manualMrr) * 100) / 100;
+    const active = rows.filter((row) => ['manual_active', 'exempt'].includes(row.status));
+    const summary = { totalCompanies: accounts.length, activeSubscriptions: active.length, trialing: 0, pastDue: rows.filter((row) => row.status === 'no_subscription' && row.endsAt && row.endsAt < now).length, canceled: rows.filter((row) => row.status === 'no_subscription').length, frozen: accounts.filter((account) => account.frozen === true).length, expired: rows.filter((row) => row.endsAt && row.endsAt < now).length, endingSoon: active.filter((row) => row.daysLeft != null && row.daysLeft <= 14).length, byPlan: { Free: rows.filter((row) => row.plan === 'Free').length, Starter: active.filter((row) => row.plan === 'Starter').length, Professional: active.filter((row) => row.plan === 'Professional').length, Enterprise: active.filter((row) => row.plan === 'Enterprise').length, Custom: active.filter((row) => row.plan === 'Custom').length } };
+    summary.mrr = Math.round(active.reduce((sum, row) => sum + (row.amount ? (row.billing === 'yearly' ? row.amount / 12 : row.amount) : 0), 0) * 100) / 100;
     summary.arr = Math.round(summary.mrr * 12 * 100) / 100;
-    summary.manualActive = noSub.filter((r) => r.status === 'manual_active').length;
+    summary.manualActive = active.length;
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-    const [todaySessions, latestFeedback] = await Promise.all([
-      base44.asServiceRole.entities.CompanySession.list('-lastSeenAt', 500),
-      base44.asServiceRole.entities.ProductFeedback.list('-created_date', 5),
-    ]);
+    const [todaySessions, latestFeedback] = await Promise.all([base44.asServiceRole.entities.CompanySession.list('-lastSeenAt', 500), base44.asServiceRole.entities.ProductFeedback.list('-created_date', 5)]);
     summary.activeUsersToday = new Set(todaySessions.filter((session) => new Date(session.lastSeenAt || 0).getTime() >= todayStart.getTime()).map((session) => `${session.companyId}:${session.userId || 'owner'}`)).size;
-
-    // Company signups per month (growth chart).
-    const growthMap: Record<string, number> = {};
-    for (const a of accounts) {
-      const m = (a.created_date || '').slice(0, 7);
-      if (m) growthMap[m] = (growthMap[m] || 0) + 1;
-    }
-    const growth = Object.entries(growthMap).sort(([x], [y]) => x.localeCompare(y)).map(([month, count]) => ({ month, count }));
-
-    rows.sort((a, b) => (a.daysLeft ?? 99999) - (b.daysLeft ?? 99999));
-    return Response.json({ summary, subscriptions: rows, companiesWithoutSubscription: noSub, growth, latestFeedback });
+    const growthMap = {};
+    for (const account of accounts) { const month = (account.created_date || '').slice(0, 7); if (month) growthMap[month] = (growthMap[month] || 0) + 1; }
+    const growth = Object.entries(growthMap).sort(([left], [right]) => left.localeCompare(right)).map(([month, count]) => ({ month, count }));
+    rows.sort((left, right) => (left.daysLeft ?? 99999) - (right.daysLeft ?? 99999));
+    return Response.json({ summary, subscriptions: [], companiesWithoutSubscription: rows, growth, latestFeedback });
   } catch (error) {
     console.error('subscriptionOverview error:', error.message);
     return Response.json({ error: error.message }, { status: 500 });

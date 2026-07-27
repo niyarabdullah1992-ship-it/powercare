@@ -6,7 +6,7 @@ import GoogleIcon from "@/components/GoogleIcon";
 import { AppleIcon, MicrosoftIcon } from "@/components/ProviderIcons";
 import SignupOtpStep from "@/components/pricing/SignupOtpStep";
 
-export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, onMicrosoft, onApple, googleEmail, error }) {
+export default function SignupDialog({ plan, isFree, onClose, onSubmit, onGoogle, onMicrosoft, onApple, googleEmail, error }) {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
   const [companyName, setCompanyName] = useState("");
@@ -16,7 +16,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, onMicr
   const [pendingId, setPendingId] = useState("");
   const [otpCode, setOtpCode] = useState("");
 
-  const isTrial = true;
+  const isTrial = isFree;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,7 +41,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, onMicr
         </button>
         <h3 className="font-heading text-xl text-[#3a2f22] mb-1">{lang === "ar" ? plan.nameAr : plan.nameEn}</h3>
         <p className="text-sm text-[#3a2f22]/55 font-body mb-5">
-          {lang === "ar" ? "فعّل الباقة المختارة مجانًا الآن دون دفع أو تاريخ انتهاء." : "Activate the selected plan free now, with no payment or expiry date."}
+          {isTrial ? (lang === "ar" ? "فعّل الباقة المختارة مجانًا الآن دون دفع أو تاريخ انتهاء." : "Activate the selected plan free now, with no payment or expiry date.") : (lang === "ar" ? "أكمل بيانات الشركة للانتقال إلى صفحة الدفع الآمنة عبر Tap Payments." : "Complete your company details to continue to secure payment with Tap Payments.")}
         </p>
         {!googleEmail && (
           <>
@@ -91,7 +91,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, onMicr
             disabled={submitting}
             className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {submitting ? t("pleaseWaitBtn") : (lang === "ar" ? "تفعيل الباقة مجانًا" : "Activate plan free")}
+            {submitting ? t("pleaseWaitBtn") : isTrial ? (lang === "ar" ? "تفعيل الباقة مجانًا" : "Activate plan free") : (lang === "ar" ? "المتابعة إلى Tap Payments" : "Continue to Tap Payments")}
           </button>
         </form>}
         {!pendingId && <button

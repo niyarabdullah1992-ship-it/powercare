@@ -8,9 +8,9 @@ import { exportInvoiceLedgerExcel, printInvoiceLedger } from "@/lib/subscription
 const money = (value, currency, ar) => new Intl.NumberFormat(ar ? "ar-SA" : "en-US", { style: "currency", currency }).format((value || 0) / 100);
 export default function SubscriptionInvoicesDashboard({ ar }) {
   const [invoices, setInvoices] = useState(null); const [search, setSearch] = useState(""); const [status, setStatus] = useState("all"); const [selected, setSelected] = useState(null);
-  useEffect(() => { base44.functions.invoke("subscriptionOverview", { action: "invoices" }).then((res) => setInvoices(res.data.invoices || [])).catch(() => setInvoices([])); }, []);
+  useEffect(() => { base44.functions.invoke("tapPayments", { action: "listPayments" }).then((res) => setInvoices(res.data.invoices || [])).catch(() => setInvoices([])); }, []);
   const filtered = useMemo(() => (invoices || []).filter((invoice) => (status === "all" || invoice.status === status) && `${invoice.number} ${invoice.companyName} ${invoice.email}`.toLowerCase().includes(search.toLowerCase())), [invoices, search, status]);
-  const audit = (event, invoice = {}) => base44.functions.invoke("subscriptionOverview", { action: "recordInvoiceAudit", event, invoiceId: invoice.id || "bulk", invoiceNumber: invoice.number || "bulk", companyId: invoice.companyId || "platform" }).catch(() => {});
+  const audit = (event, invoice = {}) => base44.functions.invoke("tapPayments", { action: "recordInvoiceAudit", event, invoiceId: invoice.id || "bulk", invoiceNumber: invoice.number || "bulk", companyId: invoice.companyId || "platform" }).catch(() => {});
   const exportExcel = () => { audit("exported_excel"); exportInvoiceLedgerExcel(filtered, ar); }; const exportPdf = () => { audit("exported_pdf"); printInvoiceLedger(filtered, ar); };
   if (!invoices) return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>;
   const paid = invoices.filter((item) => item.status === "paid"); const due = invoices.filter((item) => item.status === "open"); const totalPaid = paid.reduce((sum, item) => sum + item.amountPaid, 0);

@@ -97,8 +97,15 @@ export default function Pricing() {
     setError("");
     try {
       const planName = plan.nameEn;
-      await updateCompanyPlan(company.id, planName, new Date().toISOString().slice(0, 10), null);
-      navigate("/app");
+      if (plan.freeNow || (billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice) === 0) {
+        await updateCompanyPlan(company.id, planName, new Date().toISOString().slice(0, 10), null);
+        navigate("/app");
+      } else {
+        if (window.self !== window.top) throw new Error(lang === "ar" ? "الدفع متاح من الموقع المنشور فقط." : "Payment is available from the published site only.");
+        const res = await base44.functions.invoke("tapPayments", { action: "createCharge", plan: plan.slug, billing, companyId: company.id, sessionToken: getCompanyToken(company.id), returnUrl: window.location.origin });
+        if (!res.data?.url) throw new Error(res.data?.error || "Tap checkout failed");
+        window.location.href = res.data.url;
+      }
     } catch (error) {
       setError(error?.message || (lang === "ar" ? "تعذرت ترقية الحساب. حاول مرة أخرى." : "Account upgrade failed. Please try again."));
     } finally { setLoading(false); }
@@ -112,8 +119,8 @@ export default function Pricing() {
     setLoading(true);
     setError("");
     try {
-      const res = await base44.functions.invoke("stripeCheckout", {
-        action: "createSession",
+      const res = await base44.functions.invoke("tapPayments", {
+        action: "createCharge",
         plan: activePlan.slug,
         billing,
         companyName,
@@ -154,7 +161,7 @@ export default function Pricing() {
 
         <div className="mb-8 flex flex-col items-center gap-4">
           <div className="flex rounded-full border border-accent/35 bg-card p-1 text-sm text-card-foreground"><button onClick={() => setBilling("monthly")} className={`rounded-full px-4 py-2 ${billing === "monthly" ? "bg-accent text-accent-foreground" : ""}`}>{lang === "ar" ? "شهري" : "Monthly"}</button><button onClick={() => setBilling("yearly")} className={`rounded-full px-4 py-2 ${billing === "yearly" ? "bg-accent text-accent-foreground" : ""}`}>{lang === "ar" ? "سنوي" : "Yearly"}</button></div>
-          <div className="w-fit rounded-full border border-accent/35 bg-accent/10 px-5 py-2 text-sm font-semibold text-accent shadow-sm">{lang === "ar" ? "عرض ترويجي: جميع الباقات مجانية حاليًا" : "Promotion: all plans are currently free"}</div>
+          <div className="w-fit rounded-full border border-accent/35 bg-accent/10 px-5 py-2 text-sm font-semibold text-accent shadow-sm">{plans.every((plan) => plan.freeNow || (billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice) === 0) ? (lang === "ar" ? "عرض ترويجي: جميع الباقات مجانية حاليًا" : "Promotion: all plans are currently free") : (lang === "ar" ? "دفع آمن عبر Tap Payments" : "Secure payment via Tap Payments")}</div>
         </div>
 
         <div className="grid md:grid-cols-4 gap-6">
@@ -163,7 +170,7 @@ export default function Pricing() {
               <h3 className="mb-1 font-heading text-2xl text-primary">{planDisplayName(plan, lang)}</h3>
               <p className="font-heading text-3xl text-accent">{billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice} {plan.currency}</p>
               <p className="mb-3 text-xs text-muted-foreground">{billing === "yearly" ? (lang === "ar" ? "سنويًا" : "per year") : (lang === "ar" ? "شهريًا" : "per month")}</p>
-              {plan.freeNow && <p className="mb-4 text-xs font-medium text-landing-gold">{lang === "ar" ? "متاحة مجانًا في الوقت الراهن" : "Available free for the time being"}</p>}
+              {plan.freeNow ? <p className="mb-4 text-xs font-medium text-landing-gold">{lang === "ar" ? "متاحة مجانًا في الوقت الراهن" : "Available free for the time being"}</p> : <p className="mb-4 text-xs text-muted-foreground">{lang === "ar" ? "تضاف ضريبة القيمة المضافة 15% عند الدفع" : "15% VAT is added at checkout"}</p>}
               <ul className="space-y-2 mb-6 flex-1">
                 {planFeatures(plan, lang).map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -177,7 +184,7 @@ export default function Pricing() {
                 disabled={loading}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-2.5 text-sm font-semibold text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
               >
-                {loading && activePlan?.slug === plan.slug ? <Loader2 className="w-4 h-4 animate-spin" /> : ownerUpgrade ? (lang === "ar" ? `ترقية إلى ${plan.nameAr}` : `Upgrade to ${plan.nameEn}`) : (lang === "ar" ? "ابدأ مجانًا" : "Start free")}
+                {loading && activePlan?.slug === plan.slug ? <Loader2 className="w-4 h-4 animate-spin" /> : ownerUpgrade ? (lang === "ar" ? `ترقية إلى ${plan.nameAr}` : `Upgrade to ${plan.nameEn}`) : (plan.freeNow || (billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice) === 0) ? (lang === "ar" ? "ابدأ مجانًا" : "Start free") : (lang === "ar" ? "اشترك الآن" : "Subscribe now")}
               </button>
             </div>
           ))}
@@ -189,8 +196,9 @@ export default function Pricing() {
         <SignupDialog
           key={`${activePlan.id}-${googleEmail}`}
           plan={activePlan}
+          isFree={activePlan.freeNow || (billing === "yearly" ? activePlan.yearlyPrice : activePlan.monthlyPrice) === 0}
           onClose={() => { pendingCompanyRef.current = null; setActivePlan(null); setError(""); }}
-          onSubmit={handleTrialSignup}
+          onSubmit={activePlan.freeNow || (billing === "yearly" ? activePlan.yearlyPrice : activePlan.monthlyPrice) === 0 ? handleTrialSignup : handlePaidSignup}
           onGoogle={handleGoogleSignup}
           onMicrosoft={handleMicrosoftSignup}
           onApple={handleAppleSignup}

@@ -11,6 +11,7 @@ export default function PlanForm({ value, onChange, onSave, onCancel, ar }) {
     <input required type="number" min="0" step="0.01" value={value.yearlyPrice} onChange={(e) => set("yearlyPrice", Number(e.target.value))} placeholder={ar ? "السعر السنوي" : "Yearly price"} className="rounded-md border border-input px-3 py-2 text-sm" />
     <textarea value={(value.featuresAr || []).join("\n")} onChange={(e) => set("featuresAr", e.target.value.split("\n").filter(Boolean))} placeholder="المزايا العربية — ميزة في كل سطر" className="min-h-28 rounded-md border border-input px-3 py-2 text-sm" />
     <textarea value={(value.featuresEn || []).join("\n")} onChange={(e) => set("featuresEn", e.target.value.split("\n").filter(Boolean))} placeholder="English features — one per line" className="min-h-28 rounded-md border border-input px-3 py-2 text-sm" />
+    <label className="flex items-center gap-2 text-sm md:col-span-2"><input type="checkbox" checked={value.freeNow === true} onChange={(e) => set("freeNow", e.target.checked)} />{ar ? "إتاحة الباقة مجانًا حاليًا" : "Offer this plan free for now"}</label>
     <div className="flex gap-2 md:col-span-2"><button className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground">{ar ? "حفظ الباقة" : "Save plan"}</button><button type="button" onClick={onCancel} className="rounded-md border border-border px-5 py-2 text-sm">{ar ? "إلغاء" : "Cancel"}</button></div>
   </form>;
 }

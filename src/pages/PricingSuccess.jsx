@@ -6,7 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import Logo from "@/components/Logo";
 
-const PLAN_LABELS = { starter: "Starter", professional: "Professional", enterprise: "Enterprise" };
+const PLAN_LABELS = { starter: "Starter", professional: "Professional", enterprise: "Enterprise", Free: "Free", Starter: "Starter", Professional: "Professional", Enterprise: "Enterprise" };
 
 export default function PricingSuccess() {
   const { t } = useI18n();
@@ -19,13 +19,13 @@ export default function PricingSuccess() {
   const pendingCompanyRef = useRef(null);
 
   useEffect(() => {
-    const sessionId = new URLSearchParams(window.location.search).get("session_id");
+    const sessionId = new URLSearchParams(window.location.search).get("tap_id");
     if (!sessionId) {
       setStatus("error");
       return;
     }
     base44.functions
-      .invoke("stripeCheckout", { action: "verifySession", sessionId })
+      .invoke("tapPayments", { action: "verifyCharge", chargeId: sessionId })
       .then((res) => {
         if (res.data?.paid) {
           if (res.data.renewal && res.data.companyId) {
