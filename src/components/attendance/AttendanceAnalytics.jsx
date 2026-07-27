@@ -3,6 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
+import { CalendarRange, FileText } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 function EmployeeAxisTick({ x, y, payload, employees }) {
   const employee = employees.find((item) => item.employeeId === payload.value);
@@ -17,9 +19,11 @@ function EmployeeAxisTick({ x, y, payload, employees }) {
 
 // Manager-only analytics: attendance rate and late frequency compared across the team.
 export default function AttendanceAnalytics({ employees, t }) {
+  const { lang } = useI18n();
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [stats, setStats] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     if (!employees.length || !month) return;
@@ -48,18 +52,30 @@ export default function AttendanceAnalytics({ employees, t }) {
     : 0;
 
   return (
-    <div className="p-5 rounded-xl border border-border bg-card space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={() => setReportOpen((value) => !value)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${reportOpen ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+      >
+        <FileText className="w-3.5 h-3.5" /> {lang === "ar" ? "تقرير التحليلات (PDF / Excel)" : "Analytics report (PDF / Excel)"}
+      </button>
+
+      {reportOpen && <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <CalendarRange className="w-3.5 h-3.5" /> {lang === "ar" ? "تقرير تحليلات الحضور حسب الشهر" : "Attendance analytics report by month"}
+        </p>
+        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="w-full sm:w-72 px-3 py-2 rounded-md border border-input text-sm font-body" />
+        <ComparisonExportButtons
+          title={`${t("employeeComparisonLabel")} — ${month}`}
+          headers={[t("employeeName"), t("attendanceRateLabel"), t("lateFrequencyLabel"), t("avgLateMinutes")]}
+          rows={chartData.map((r) => [r.name, `${r.attendanceRate}%`, r.lateCount, r.avgLateMinutes])}
+          compact
+        />
+      </div>}
+
+      <div className="p-5 rounded-xl border border-border bg-card space-y-5">
         <h3 className="font-heading text-lg font-semibold">{t("employeeComparisonLabel")}</h3>
-        <div className="flex items-center gap-2 flex-wrap">
-          <ComparisonExportButtons
-            title={`${t("employeeComparisonLabel")} — ${month}`}
-            headers={[t("employeeName"), t("attendanceRateLabel"), t("lateFrequencyLabel"), t("avgLateMinutes")]}
-            rows={chartData.map((r) => [r.name, `${r.attendanceRate}%`, r.lateCount, r.avgLateMinutes])}
-          />
-          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body" />
-        </div>
-      </div>
 
       <div className="p-3 rounded-lg border border-border bg-muted inline-block">
         <p className="text-lg font-semibold">{avgRate}%</p>
@@ -99,6 +115,7 @@ export default function AttendanceAnalytics({ employees, t }) {
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }
