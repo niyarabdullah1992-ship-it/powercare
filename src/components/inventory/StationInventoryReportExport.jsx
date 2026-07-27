@@ -11,7 +11,7 @@ export default function StationInventoryReportExport({ reportData, ar }) {
   const { data, company } = useAuth();
   const stations = reportData.stations || [];
   const [stationId, setStationId] = useState(stations[0]?.stationId || stations[0]?.id || "");
-  const [pdfTheme, setPdfTheme] = useState("inventoryOperations");
+  const [pdfTheme, setPdfTheme] = useState("inventorySimplified");
   const options = stations.map((station) => ({ value: station.stationId || station.id, label: station.name }));
   useEffect(() => {
     if (!stationId && stations.length) setStationId(stations[0].stationId || stations[0].id);

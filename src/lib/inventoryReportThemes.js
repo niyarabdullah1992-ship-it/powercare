@@ -1,5 +1,5 @@
 export const INVENTORY_REPORT_THEMES = [
-  { value: "inventoryOperations", labelAr: "شبكة العمليات", labelEn: "Operations Grid" },
+  { value: "inventorySimplified", labelAr: "بطاقات المؤشرات المبسطة", labelEn: "Simplified Metric Cards" },
   { value: "inventoryCommand", labelAr: "سجل القيادة", labelEn: "Command Ledger" },
   { value: "inventoryField", labelAr: "السجل الميداني", labelEn: "Field Register" },
 ];
@@ -35,7 +35,28 @@ export const INVENTORY_REPORT_CSS = `
   .inventory-powercare td { padding:6px; border:1px solid #e3e0d8; color:#13283d; }
   .inventory-powercare tr:nth-child(even) td { background:#faf8f2; }
   .inventory-powercare .foot { margin-top:20px; border-top:2px solid #e0a43b; color:#657383; font-size:9px; }
-  .inventory-operations .report-mark::after { content:" OPS"; font-size:8px; }
+  .inventory-simplified { background:#ffffff; padding:28px; }
+  .inventory-simplified .institutional-art,.inventory-simplified .top-rule { display:none; }
+  .inventory-simplified .head { direction:inherit; align-items:flex-start; margin:0 0 18px; padding:0; border:0; background:#ffffff; }
+  .inventory-simplified .identity { align-items:flex-start; }
+  .inventory-simplified .identity img,.inventory-simplified .document-label,.inventory-simplified .company-logo { display:none; }
+  .inventory-simplified .head h1 { color:#142442; font:700 24px Tahoma,"Segoe UI",Arial,sans-serif; }
+  .inventory-simplified .head .meta { margin-top:5px; color:#142442; font-size:11px; opacity:1; }
+  .inventory-simplified .report-mark { order:2; width:auto; min-width:0; height:auto; margin-inline-start:auto; border:0; background:transparent; color:#142442; font-size:0; }
+  .inventory-simplified .report-mark::before { content:"PowerCare"; font:700 29px Tahoma,"Segoe UI",Arial,sans-serif; letter-spacing:-.03em; }
+  .inventory-simplified .stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:0 0 16px; }
+  .inventory-simplified .stat { display:flex; min-width:0; min-height:112px; flex-direction:column; align-items:center; justify-content:center; padding:12px 8px; border:1px solid #bd8e18; border-top:8px solid #bd8e18; border-radius:8px; background:#ffffff; box-shadow:none; text-align:center; }
+  .inventory-simplified .stat .lbl { order:1; margin:0 0 12px; color:#111827; font-size:10px; line-height:1.4; }
+  .inventory-simplified .stat .val { order:2; color:#142442; font:700 23px Tahoma,"Segoe UI",Arial,sans-serif; }
+  .inventory-simplified h2 { margin:15px 0 6px; padding:0; border:0; background:transparent; color:#142442; font:700 16px Tahoma,"Segoe UI",Arial,sans-serif; text-align:start; }
+  .inventory-simplified .chart { display:none; }
+  .inventory-simplified table { margin-bottom:10px; border:0; border-collapse:separate; border-spacing:2px; background:#ffffff; box-shadow:none; table-layout:auto; font-size:9px; }
+  .inventory-simplified th { padding:7px 5px; border:0; border-radius:5px; background:#142442; color:#ffffff; font-size:8px; font-weight:500; letter-spacing:0; text-align:center; }
+  .inventory-simplified td,.inventory-simplified tr:nth-child(even) td { padding:6px 5px; border:0; border-radius:4px; background:#f5f0e4; color:#111827; text-align:center; }
+  .inventory-simplified .foot { justify-content:flex-start; margin-top:14px; padding:0; border:0; color:#142442; font-size:10px; font-weight:600; }
+  .inventory-simplified .foot span:first-child { display:none; }
+  html[dir="rtl"] .inventory-simplified .foot span:last-child::before { content:"تاريخ إنشاء التقرير: "; }
+  html[dir="ltr"] .inventory-simplified .foot span:last-child::before { content:"Report generated: "; }
   .inventory-command .top-rule { background:linear-gradient(90deg,#e0a43b 0 22%,#13283d 22% 100%); }
   .inventory-command .stat { border-top-color:#13283d; border-inline-start:3px solid #e0a43b; }
   .inventory-command h2 { color:#f0c56d; background:#13283d; }

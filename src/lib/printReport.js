@@ -13,7 +13,7 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const accent = String(color || PDF_THEME.gold).toLowerCase() === "#b07d3f" ? PDF_THEME.gold : (color || PDF_THEME.gold);
   const visual = getReportVisualTheme(title);
-  const isWide = theme === "executiveGold" || sections.some((section) => (section.headers || []).length > 8);
+  const isWide = theme === "inventorySimplified" ? false : theme === "executiveGold" || sections.some((section) => (section.headers || []).length > 8);
   const locale = dir === "rtl" ? "ar-SA" : "en-GB";
   const generatedAt = new Date().toLocaleString(locale);
   const sectionAnalytics = sections.map((section) => deriveReportAnalytics(section.headers, section.rows));

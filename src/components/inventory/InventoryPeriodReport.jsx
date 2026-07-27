@@ -12,7 +12,7 @@ export default function InventoryPeriodReport({ reportData, ar }) {
   const [open, setOpen] = useState(false);
   const [period, setPeriod] = useState("month");
   const [stationId, setStationId] = useState("all");
-  const [pdfTheme, setPdfTheme] = useState("inventoryOperations");
+  const [pdfTheme, setPdfTheme] = useState("inventorySimplified");
   const stations = reportData.stations || [];
   const stationOptions = [{ value: "all", label: ar ? "كل المحطات" : "All stations" }, ...stations.map((station) => ({ value: station.stationId || station.id, label: station.name }))];
   const periodOptions = [{ value: "month", label: ar ? "شهر" : "Month" }, { value: "3months", label: ar ? "٣ أشهر" : "3 months" }, { value: "6months", label: ar ? "٦ أشهر" : "6 months" }, { value: "year", label: ar ? "سنة" : "Year" }, { value: "2years", label: ar ? "سنتان" : "2 years" }];
