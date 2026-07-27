@@ -1,0 +1,8 @@
+import { exportExcelColored } from "@/lib/exportExcelColored";
+import { printReport } from "@/lib/printReport";
+
+const money = (value, currency, ar) => new Intl.NumberFormat(ar ? "ar-SA" : "en-US", { style: "currency", currency }).format((value || 0) / 100);
+const headers = (ar) => ar ? ["رقم الفاتورة", "الشركة", "الحالة", "تاريخ الإصدار", "العملة", "قبل الضريبة", "الضريبة", "الإجمالي", "المدفوع", "المتبقي"] : ["Invoice number", "Company", "Status", "Issue date", "Currency", "Subtotal", "Tax", "Total", "Paid", "Balance"];
+const row = (invoice, ar) => [invoice.number, invoice.companyName || invoice.email, invoice.status, new Date(invoice.createdAt).toLocaleDateString(ar ? "ar-SA" : "en-GB"), invoice.currency, money(invoice.subtotal, invoice.currency, ar), money(invoice.tax, invoice.currency, ar), money(invoice.total, invoice.currency, ar), money(invoice.amountPaid, invoice.currency, ar), money(invoice.amountDue, invoice.currency, ar)];
+export function exportInvoiceLedgerExcel(invoices, ar) { exportExcelColored({ filename: "subscription_invoice_ledger", title: ar ? "سجل فواتير الاشتراكات" : "Subscription invoice ledger", headers: headers(ar), rows: invoices.map((invoice) => row(invoice, ar)), dir: ar ? "rtl" : "ltr", theme: "executiveGold" }); }
+export function printInvoiceLedger(invoices, ar) { printReport({ title: ar ? "سجل فواتير الاشتراكات" : "Subscription invoice ledger", companyName: "PowerCare", periodLabel: new Date().toLocaleDateString(ar ? "ar-SA" : "en-GB"), dir: ar ? "rtl" : "ltr", sections: [{ heading: ar ? "الفواتير الرسمية" : "Official invoices", headers: headers(ar), rows: invoices.map((invoice) => row(invoice, ar)) }], theme: "executiveGold" }); }

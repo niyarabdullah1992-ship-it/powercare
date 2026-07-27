@@ -15,6 +15,7 @@ import ProductFeedbackDashboard from "@/components/owner/ProductFeedbackDashboar
 import PlatformReportDashboard from "@/components/owner/PlatformReportDashboard";
 import AuditLogDashboard from "@/components/owner/AuditLogDashboard";
 import PlanManagement from "@/components/owner/PlanManagement";
+import SubscriptionInvoicesDashboard from "@/components/owner/SubscriptionInvoicesDashboard";
 
 export default function OwnerPanel() {
   const { t, lang } = useI18n();
@@ -116,6 +117,7 @@ export default function OwnerPanel() {
             {[
               { key: "analytics", ar: "لوحة التحليلات", en: "Analytics" },
               { key: "subscriptions", ar: "إدارة الاشتراكات", en: "Subscriptions" },
+              { key: "invoices", ar: "فواتير الاشتراكات", en: "Invoices" },
               { key: "plans", ar: "إدارة الباقات", en: "Plans" },
               { key: "report", ar: "تقرير المنصة", en: "Platform report" },
               { key: "companies", ar: "الشركات", en: "Companies" },
@@ -141,6 +143,7 @@ export default function OwnerPanel() {
       <div className="owner-operations-content mx-auto max-w-[1600px] space-y-5 px-4 py-6 sm:px-6 lg:px-8">
         {tab === "analytics" && <SaasAnalyticsDashboard key={`analytics-${refreshKey}`} lang={lang} />}
         {tab === "subscriptions" && <SubscribersDashboard key={`subscriptions-${refreshKey}`} ar={lang === "ar"} />}
+        {tab === "invoices" && <SubscriptionInvoicesDashboard key={`invoices-${refreshKey}`} ar={lang === "ar"} />}
         {tab === "plans" && <PlanManagement ar={lang === "ar"} />}
         {tab === "report" && <PlatformReportDashboard key={`report-${refreshKey}`} ar={lang === "ar"} />}
         {tab === "roadmap" && <PlatformRoadmap ar={lang === "ar"} />}

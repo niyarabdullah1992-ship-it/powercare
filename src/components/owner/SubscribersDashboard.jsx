@@ -120,7 +120,7 @@ export default function SubscribersDashboard({ ar }) {
                   <th className="px-4 py-3 text-start">{ar ? "بداية الاشتراك" : "Start"}</th>
                   <th className="px-4 py-3 text-start">{ar ? "نهاية الاشتراك" : "End"}</th>
                   <th className="px-4 py-3 text-start">{ar ? "المتبقي" : "Left"}</th>
-                  <th className="px-4 py-3 text-start">{ar ? "الفاتورة" : "Invoice"}</th>
+                  <th className="px-4 py-3 text-start">{ar ? "بيان الاشتراك" : "Account statement"}</th>
                   <th className="px-4 py-3 text-start">{ar ? "إجراءات" : "Actions"}</th>
                 </tr>
               </thead>

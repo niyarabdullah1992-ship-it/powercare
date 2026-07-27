@@ -37,6 +37,53 @@ Deno.serve(async (req) => {
     };
     const getAccount = async () => body.accountId ? await base44.asServiceRole.entities.CompanyAccount.get(String(body.accountId)).catch(() => null) : null;
 
+    if (action === 'recordInvoiceAudit') {
+      const allowed = new Set(['viewed', 'exported_pdf', 'exported_excel', 'hosted_opened']);
+      const event = String(body.event || '');
+      if (!allowed.has(event)) return Response.json({ error: 'Invalid invoice audit event' }, { status: 400 });
+      await base44.asServiceRole.entities.AuditLog.create({
+        companyId: String(body.companyId || 'platform'), action: `invoice_${event}`,
+        performedBy: user.email || user.full_name || 'Platform owner',
+        details: `Invoice ${String(body.invoiceNumber || body.invoiceId || '—')} ${event.replaceAll('_', ' ')}`,
+        oldValue: null, newValue: String(body.invoiceId || ''), reason: null,
+      });
+      return Response.json({ ok: true });
+    }
+
+    if (action === 'invoices') {
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.list('-created_date', 500);
+      const byEmail = Object.fromEntries(accounts.map((account) => [String(account.ownerEmail || '').toLowerCase(), account]));
+      const invoices = []; let startingAfter;
+      while (invoices.length < 500) {
+        const page = await stripe.invoices.list({ limit: 100, expand: ['data.customer'], ...(startingAfter ? { starting_after: startingAfter } : {}) });
+        for (const invoice of page.data) {
+          const customer = typeof invoice.customer === 'object' ? invoice.customer : null;
+          const email = String(invoice.customer_email || customer?.email || '').toLowerCase();
+          const account = byEmail[email];
+          const transitions = invoice.status_transitions || {};
+          invoices.push({
+            id: invoice.id, number: invoice.number || `DRAFT-${invoice.id.slice(-8).toUpperCase()}`,
+            companyId: account?.companyId || null, companyName: account?.name || invoice.customer_name || email,
+            email, subscriptionId: typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription?.id || null,
+            status: invoice.status || 'draft', currency: String(invoice.currency || 'usd').toUpperCase(),
+            subtotal: invoice.subtotal || 0, tax: (invoice.total_tax_amounts || []).reduce((sum, item) => sum + Number(item.amount || 0), 0),
+            total: invoice.total || 0, amountPaid: invoice.amount_paid || 0, amountDue: invoice.amount_due || 0,
+            createdAt: new Date(invoice.created * 1000).toISOString(), dueAt: invoice.due_date ? new Date(invoice.due_date * 1000).toISOString() : null,
+            periodStart: invoice.period_start ? new Date(invoice.period_start * 1000).toISOString() : null,
+            periodEnd: invoice.period_end ? new Date(invoice.period_end * 1000).toISOString() : null,
+            finalizedAt: transitions.finalized_at ? new Date(transitions.finalized_at * 1000).toISOString() : null,
+            paidAt: transitions.paid_at ? new Date(transitions.paid_at * 1000).toISOString() : null,
+            voidedAt: transitions.voided_at ? new Date(transitions.voided_at * 1000).toISOString() : null,
+            uncollectibleAt: transitions.marked_uncollectible_at ? new Date(transitions.marked_uncollectible_at * 1000).toISOString() : null,
+            hostedUrl: invoice.hosted_invoice_url || null, pdfUrl: invoice.invoice_pdf || null,
+          });
+        }
+        if (!page.has_more || !page.data.length) break;
+        startingAfter = page.data[page.data.length - 1].id;
+      }
+      return Response.json({ invoices });
+    }
+    
     if (['freeze', 'unfreeze', 'extend', 'changePlan', 'updateAccount', 'activate', 'deactivate', 'addDays', 'exempt', 'removeExemption'].includes(action)) {
       const account = await getAccount();
       if (!account) return Response.json({ error: 'Company account not found' }, { status: 404 });
