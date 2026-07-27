@@ -1,15 +1,26 @@
 import React from "react";
-import { CalendarRange, RotateCcw } from "lucide-react";
+import { CalendarRange } from "lucide-react";
+
+const optionsFor = (ar) => [
+  ["all", ar ? "كل الأشهر" : "All months"],
+  ["current", ar ? "الشهر الحالي" : "Current month"],
+  ["3", ar ? "٣ أشهر" : "3 months"],
+  ["6", ar ? "٦ أشهر" : "6 months"],
+  ["12", ar ? "سنة" : "1 year"],
+  ["range", ar ? "بين تاريخين" : "Date range"],
+];
 
 export default function InvoicePeriodFilters({ period, onPeriodChange, from, to, onFromChange, onToChange, ar }) {
-  const reset = () => { onPeriodChange("all"); onFromChange(""); onToChange(""); };
-  return <section className="rounded-xl border border-accent/30 bg-card p-4 shadow-soft">
-    <div className="mb-3 flex items-center gap-2 text-primary"><CalendarRange className="h-4 w-4 text-accent" /><div><p className="text-xs font-semibold uppercase tracking-widest text-accent">{ar ? "الفترة المالية" : "Financial period"}</p><p className="text-xs text-muted-foreground">{ar ? "اختر عدة أشهر أو نطاقًا بين تاريخين" : "Choose multiple months or a custom date range"}</p></div></div>
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto]">
-      <label className="space-y-1"><span className="text-[11px] text-muted-foreground">{ar ? "الأشهر" : "Months"}</span><select value={period} onChange={(event) => onPeriodChange(event.target.value)} className="h-10 w-full rounded-md border border-input bg-card px-3 text-sm"><option value="all">{ar ? "كل الأشهر" : "All months"}</option><option value="current">{ar ? "الشهر الحالي" : "Current month"}</option><option value="3">{ar ? "آخر 3 أشهر" : "Last 3 months"}</option><option value="6">{ar ? "آخر 6 أشهر" : "Last 6 months"}</option><option value="12">{ar ? "آخر 12 شهرًا" : "Last 12 months"}</option></select></label>
-      <label className="space-y-1"><span className="text-[11px] text-muted-foreground">{ar ? "من تاريخ" : "From date"}</span><input type="date" value={from} max={to || undefined} onChange={(event) => onFromChange(event.target.value)} className="h-10 w-full rounded-md border border-input bg-card px-3 text-sm" /></label>
-      <label className="space-y-1"><span className="text-[11px] text-muted-foreground">{ar ? "إلى تاريخ" : "To date"}</span><input type="date" value={to} min={from || undefined} onChange={(event) => onToChange(event.target.value)} className="h-10 w-full rounded-md border border-input bg-card px-3 text-sm" /></label>
-      <button type="button" onClick={reset} className="mt-auto flex h-10 items-center justify-center gap-2 rounded-md border border-accent/40 px-3 text-xs font-semibold text-primary hover:bg-secondary"><RotateCcw className="h-4 w-4 text-accent" />{ar ? "إعادة" : "Reset"}</button>
-    </div>
-  </section>;
+  return (
+    <section className="space-y-3 rounded-xl border border-border bg-card p-4">
+      <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground"><CalendarRange className="h-3.5 w-3.5" />{ar ? "فواتير الاشتراكات حسب الفترة" : "Subscription invoices by period"}</p>
+      <div className="flex flex-wrap gap-2">
+        {optionsFor(ar).map(([value, label]) => <button key={value} type="button" onClick={() => onPeriodChange(value)} className={`rounded-full border px-3 py-1.5 text-xs font-body transition ${period === value ? "border-foreground bg-foreground text-background" : "border-border hover:bg-muted"}`}>{label}</button>)}
+      </div>
+      {period === "range" && <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label><span className="mb-1 block text-xs text-muted-foreground">{ar ? "من تاريخ" : "From date"}</span><input type="date" value={from} max={to || undefined} onChange={(event) => onFromChange(event.target.value)} className="w-full rounded-md border border-input px-3 py-2 text-sm" /></label>
+        <label><span className="mb-1 block text-xs text-muted-foreground">{ar ? "إلى تاريخ" : "To date"}</span><input type="date" value={to} min={from || undefined} onChange={(event) => onToChange(event.target.value)} className="w-full rounded-md border border-input px-3 py-2 text-sm" /></label>
+      </div>}
+    </section>
+  );
 }
