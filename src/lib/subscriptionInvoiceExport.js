@@ -26,7 +26,7 @@ const rowsWithTotal = (rows, ar) => {
 };
 
 export function exportSubscriptionInvoicesExcel(rows, ar, filename = "subscription_invoices") {
-  exportExcelColored({ filename, title: ar ? "فواتير الاشتراكات" : "Subscription invoices", headers: headers(ar), rows: rowsWithTotal(rows, ar), dir: ar ? "rtl" : "ltr", theme: "executiveGold" });
+  exportExcelColored({ filename, title: ar ? "فواتير الاشتراكات" : "Subscription invoices", headers: headers(ar), rows: rowsWithTotal(rows, ar), dir: ar ? "rtl" : "ltr", theme: "ownerGlass" });
 }
 
 export function printSubscriptionInvoices(rows, ar, title) {
