@@ -136,6 +136,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
           rows={exportRows}
         />
       </div>
+      </div>}
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div className="p-3 rounded-lg border border-emerald-300 bg-emerald-50 text-center">
@@ -199,7 +200,6 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
           </table>
         </div>
       )}
-      </div>}
     </div>
   );
 }
