@@ -5,8 +5,7 @@ import MobileSelect from "@/components/mobile/MobileSelect";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { useI18n } from "@/lib/i18n";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
-import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
-import { CalendarRange } from "lucide-react";
+import { CalendarRange, FileText } from "lucide-react";
 
 const RANGES = [
   { val: "monthly", amount: 1, unit: "months" },
@@ -27,6 +26,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
   const [customEnd, setCustomEnd] = useState("");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const rangeLabel = (val) => ({
     monthly: t("rangeMonthly"),
@@ -81,22 +81,27 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
   ]);
 
   return (
-    <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${open ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+      >
+        <FileText className="w-3.5 h-3.5" /> {lang === "ar" ? "تقرير الحضور والانصراف (PDF / Excel)" : "Attendance report (PDF / Excel)"}
+      </button>
+      {open && <div className="p-4 rounded-xl border border-border bg-card space-y-3">
       <p className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
         <CalendarRange className="w-3.5 h-3.5" /> {t("monthlyAttendanceReport")}
       </p>
 
-      <div className="space-y-2">
-        <MobileSelect
-          value={employeeId}
-          onChange={setEmployeeId}
-          placeholder={t("employeeName")}
-          searchable
-          className="w-full sm:w-72"
-          options={employees.map((e) => ({ value: e.id, label: e.name }))}
-        />
-        <EmployeeNameLink employeeId={employeeId} employeeName={employees.find((e) => e.id === employeeId)?.name} className="inline-flex text-sm font-body font-medium" />
-      </div>
+      <MobileSelect
+        value={employeeId}
+        onChange={setEmployeeId}
+        placeholder={t("employeeName")}
+        searchable
+        className="w-full sm:w-72"
+        options={employees.map((e) => ({ value: e.id, label: e.name }))}
+      />
 
       <div className="flex flex-wrap gap-2">
         {RANGES.map((r) => (
@@ -185,6 +190,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
           </table>
         </div>
       )}
+      </div>}
     </div>
   );
 }
