@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { activateCompanySession, createCompany, deleteCompany, syncCompanyAccount, getCompanyToken, updateCompanyPlan } from "@/lib/store";
 import { useAuth as usePowerCareAuth } from "@/lib/PowerCareAuth";
@@ -7,6 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { Check, Loader2, ArrowLeft } from "lucide-react";
 import Logo from "@/components/Logo";
 import SignupDialog from "@/components/pricing/SignupDialog";
+import { DEFAULT_SUBSCRIPTION_PLANS, planDisplayName, planFeatures } from "@/lib/subscriptionPlans";
 
 export default function Pricing() {
   const { t, lang } = useI18n();
@@ -19,13 +20,14 @@ export default function Pricing() {
   const [billing, setBilling] = useState("monthly");
   const [googleEmail, setGoogleEmail] = useState("");
   const pendingCompanyRef = useRef(null);
+  const [plans, setPlans] = useState(DEFAULT_SUBSCRIPTION_PLANS);
 
-  const PLANS = [
-    { id: "free", nameKey: "plan_free", price: 0, features: [t("freeF1"), t("freeF2"), t("freeF3")] },
-    { id: "starter", nameKey: "plan_starter", price: 49, features: [t("starterF1"), t("starterF2"), t("starterF3")] },
-    { id: "professional", nameKey: "plan_pro", price: 149, features: [t("proF1"), t("proF2"), t("proF3"), t("proF4")] },
-    { id: "enterprise", nameKey: "plan_ent", price: 249, features: [t("entF1"), t("entF2"), t("entF3")] },
-  ];
+  useEffect(() => {
+    base44.entities.SubscriptionPlan.list("sortOrder", 50).then((items) => {
+      const active = items.filter((plan) => plan.active);
+      if (active.length) setPlans(active);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -35,11 +37,11 @@ export default function Pricing() {
     sessionStorage.removeItem("powercare_social_signup");
     if (!saved) return;
     setBilling(saved.billing || "monthly");
-    setActivePlan(PLANS.find((plan) => plan.id === saved.planId) || null);
+    setActivePlan(plans.find((plan) => plan.slug === saved.planId) || null);
     base44.auth.me().then((user) => setGoogleEmail(user.email || "")).catch(() => setError(lang === "ar" ? `تعذر التسجيل باستخدام ${provider}.` : `${provider} sign-up could not be completed.`));
   }, []);
 
-  const saveSocialSignup = () => sessionStorage.setItem("powercare_social_signup", JSON.stringify({ planId: activePlan.id, billing }));
+  const saveSocialSignup = () => sessionStorage.setItem("powercare_social_signup", JSON.stringify({ planId: activePlan.slug, billing }));
   const handleGoogleSignup = () => {
     saveSocialSignup();
     base44.auth.loginWithProvider("sso", "/pricing?google_signup=1");
@@ -57,7 +59,7 @@ export default function Pricing() {
     setError("");
     if (!pendingId) {
       try {
-        const response = await base44.functions.invoke("companyDirectory", { action: "startSignupOtp", email: ownerEmail, plan: activePlan.id });
+        const response = await base44.functions.invoke("companyDirectory", { action: "startSignupOtp", email: ownerEmail, plan: activePlan.slug });
         return response.data;
       } catch (error) {
         setError(error?.response?.data?.error === "email_exists" ? (lang === "ar" ? "هذا البريد مسجل مسبقًا." : "This email is already registered.") : (lang === "ar" ? "تعذر إرسال رمز التحقق." : "Could not send the verification code."));
@@ -66,7 +68,7 @@ export default function Pricing() {
     }
     const activationDate = new Date().toISOString().slice(0, 10);
     const company = pendingCompanyRef.current || createCompany(
-      { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: activePlan.id === "free" ? "Free" : (activePlan.id === "professional" ? "Professional" : activePlan.id === "enterprise" ? "Enterprise" : "Starter"), subscriptionStart: activationDate, subscriptionEnd: null },
+      { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: activePlan.nameEn, subscriptionStart: activationDate, subscriptionEnd: null },
       { sync: false }
     );
     pendingCompanyRef.current = company;
@@ -94,7 +96,7 @@ export default function Pricing() {
     setLoading(true);
     setError("");
     try {
-      const planName = plan.id === "professional" ? "Professional" : plan.id === "enterprise" ? "Enterprise" : plan.id === "starter" ? "Starter" : "Free";
+      const planName = plan.nameEn;
       await updateCompanyPlan(company.id, planName, new Date().toISOString().slice(0, 10), null);
       navigate("/app");
     } catch (error) {
@@ -112,7 +114,7 @@ export default function Pricing() {
     try {
       const res = await base44.functions.invoke("stripeCheckout", {
         action: "createSession",
-        plan: activePlan.id,
+        plan: activePlan.slug,
         billing,
         companyName,
         ownerEmail,
@@ -150,20 +152,20 @@ export default function Pricing() {
 
         {error && <p className="text-center text-sm text-red-500 font-body mb-6">{error}</p>}
 
-        <div className="mx-auto mb-10 w-fit rounded-full border border-accent/35 bg-accent/10 px-5 py-2 text-sm font-semibold text-accent shadow-sm">
-          {lang === "ar" ? "جميع الخطط مجانية في الوقت الراهن" : "All plans are currently free"}
+        <div className="mb-8 flex flex-col items-center gap-4">
+          <div className="flex rounded-full border border-accent/35 bg-card p-1 text-sm text-card-foreground"><button onClick={() => setBilling("monthly")} className={`rounded-full px-4 py-2 ${billing === "monthly" ? "bg-accent text-accent-foreground" : ""}`}>{lang === "ar" ? "شهري" : "Monthly"}</button><button onClick={() => setBilling("yearly")} className={`rounded-full px-4 py-2 ${billing === "yearly" ? "bg-accent text-accent-foreground" : ""}`}>{lang === "ar" ? "سنوي" : "Yearly"}</button></div>
+          <div className="w-fit rounded-full border border-accent/35 bg-accent/10 px-5 py-2 text-sm font-semibold text-accent shadow-sm">{lang === "ar" ? "عرض ترويجي: جميع الباقات مجانية حاليًا" : "Promotion: all plans are currently free"}</div>
         </div>
 
         <div className="grid md:grid-cols-4 gap-6">
-          {PLANS.map((plan) => (
-            <div key={plan.id} className="flex flex-col rounded-2xl border border-accent/20 bg-card p-6 text-card-foreground shadow-xl shadow-accent/5">
-              <h3 className="mb-1 font-heading text-2xl text-primary">{t(plan.nameKey)}</h3>
-              <p className="mb-1 font-heading text-3xl text-accent">
-                {lang === "ar" ? "مجاني حاليًا" : "Free for now"}
-              </p>
-              <p className="text-xs text-landing-gold font-body font-medium mb-4">{lang === "ar" ? "متاحة مجانًا في الوقت الراهن" : "Available free for the time being"}</p>
+          {plans.map((plan) => (
+            <div key={plan.id || plan.slug} className="flex flex-col rounded-2xl border border-accent/20 bg-card p-6 text-card-foreground shadow-xl shadow-accent/5">
+              <h3 className="mb-1 font-heading text-2xl text-primary">{planDisplayName(plan, lang)}</h3>
+              <p className="font-heading text-3xl text-accent">{billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice} {plan.currency}</p>
+              <p className="mb-3 text-xs text-muted-foreground">{billing === "yearly" ? (lang === "ar" ? "سنويًا" : "per year") : (lang === "ar" ? "شهريًا" : "per month")}</p>
+              {plan.freeNow && <p className="mb-4 text-xs font-medium text-landing-gold">{lang === "ar" ? "متاحة مجانًا في الوقت الراهن" : "Available free for the time being"}</p>}
               <ul className="space-y-2 mb-6 flex-1">
-                {plan.features.map((f) => (
+                {planFeatures(plan, lang).map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
                     <Check className="w-4 h-4 text-landing-gold shrink-0 mt-0.5" strokeWidth={2} />
                     {f}
@@ -175,11 +177,12 @@ export default function Pricing() {
                 disabled={loading}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-2.5 text-sm font-semibold text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
               >
-                {loading && activePlan?.id === plan.id ? <Loader2 className="w-4 h-4 animate-spin" /> : ownerUpgrade ? (lang === "ar" ? `ترقية إلى ${t(plan.nameKey)}` : `Upgrade to ${t(plan.nameKey)}`) : (lang === "ar" ? "ابدأ مجانًا" : "Start free")}
+                {loading && activePlan?.slug === plan.slug ? <Loader2 className="w-4 h-4 animate-spin" /> : ownerUpgrade ? (lang === "ar" ? `ترقية إلى ${plan.nameAr}` : `Upgrade to ${plan.nameEn}`) : (lang === "ar" ? "ابدأ مجانًا" : "Start free")}
               </button>
             </div>
           ))}
         </div>
+        <div className="mt-10 flex flex-wrap justify-center gap-5 text-xs text-white/55"><Link to="/privacy" className="hover:text-accent">{lang === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}</Link><Link to="/terms" className="hover:text-accent">{lang === "ar" ? "الشروط والأحكام" : "Terms & Conditions"}</Link><Link to="/refund-policy" className="hover:text-accent">{lang === "ar" ? "سياسة الاسترجاع" : "Refund Policy"}</Link></div>
       </div>
 
       {activePlan && (

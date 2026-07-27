@@ -12,11 +12,13 @@ export default function Terms() {
         </Link>
         <h1 className="font-heading text-3xl mb-6">شروط الاستخدام — Terms of Service</h1>
         <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
-          <p>آخر تحديث: 14 يوليو 2026</p>
+          <p>آخر تحديث: 27 يوليو 2026</p>
           <h2 className="font-heading text-xl text-primary pt-2">الخدمة</h2>
           <p>PowerCare منصة لإدارة الموارد البشرية والحضور والمهام للشركات. باستخدامك للمنصة فأنت توافق على هذه الشروط.</p>
           <h2 className="font-heading text-xl text-primary pt-2">الحسابات والاشتراكات</h2>
           <p>مالك الشركة مسؤول عن دقة البيانات المُدخلة وعن إدارة صلاحيات موظفيه. تُقدَّم الخدمة وفق خطة الاشتراك المختارة، ويمكن الترقية أو الإلغاء في أي وقت.</p>
+          <h2 className="font-heading text-xl text-primary pt-2">الدفع والإلغاء والاسترجاع</h2>
+          <p>تظهر أسعار الاشتراكات ومددها بوضوح في صفحة الباقات قبل إتمام الطلب. يمكن إلغاء التجديد في أي وقت، وتخضع طلبات الاسترداد إلى <Link to="/refund-policy" className="text-accent underline">سياسة الاسترجاع والاسترداد</Link> المنشورة، والتي تتيح طلب استرداد أول دفعة خلال ثلاثة أيام من الدفع.</p>
           <h2 className="font-heading text-xl text-primary pt-2">الاستخدام المقبول</h2>
           <p>يُمنع استخدام المنصة لأي غرض غير قانوني، أو محاولة الوصول إلى بيانات شركات أخرى، أو إساءة استخدام أنظمة البلاغات.</p>
           <h2 className="font-heading text-xl text-primary pt-2">المسؤولية</h2>

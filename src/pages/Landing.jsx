@@ -102,7 +102,7 @@ export default function Landing() {
           <div>
             <h4 className="font-heading text-lg text-white">{t("footerBenefitsHeading")}</h4>
             <ul className="mt-3 space-y-2 text-sm text-white/55">
-              <li><Link to="/about" className="hover:text-accent">{t("footerAbout")}</Link></li><li><Link to="/security" className="hover:text-accent">{lang === "ar" ? "الأمان والامتثال" : "Security & Compliance"}</Link></li><li><Link to="/terms" className="hover:text-accent">{t("footerTerms")}</Link></li><li><Link to="/privacy" className="hover:text-accent">{lang === "ar" ? "الخصوصية" : "Privacy"}</Link></li><li><a href="mailto:niyar@powercares.pro" className="hover:text-accent">{t("footerContact")}</a></li>
+              <li><Link to="/about" className="hover:text-accent">{t("footerAbout")}</Link></li><li><Link to="/security" className="hover:text-accent">{lang === "ar" ? "الأمان والامتثال" : "Security & Compliance"}</Link></li><li><Link to="/terms" className="hover:text-accent">{t("footerTerms")}</Link></li><li><Link to="/privacy" className="hover:text-accent">{lang === "ar" ? "الخصوصية" : "Privacy"}</Link></li><li><Link to="/refund-policy" className="hover:text-accent">{lang === "ar" ? "سياسة الاسترجاع" : "Refund Policy"}</Link></li><li><a href="mailto:niyar@powercares.pro" className="hover:text-accent">{t("footerContact")}</a></li>
             </ul>
           </div>
           <div>

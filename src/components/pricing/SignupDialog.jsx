@@ -39,7 +39,7 @@ export default function SignupDialog({ plan, onClose, onSubmit, onGoogle, onMicr
         <button onClick={onClose} className="absolute top-4 end-4 text-[#3a2f22]/40 hover:text-[#3a2f22]">
           <X className="w-4 h-4" />
         </button>
-        <h3 className="font-heading text-xl text-[#3a2f22] mb-1">{plan.name || t(plan.nameKey)}</h3>
+        <h3 className="font-heading text-xl text-[#3a2f22] mb-1">{lang === "ar" ? plan.nameAr : plan.nameEn}</h3>
         <p className="text-sm text-[#3a2f22]/55 font-body mb-5">
           {lang === "ar" ? "فعّل الباقة المختارة مجانًا الآن دون دفع أو تاريخ انتهاء." : "Activate the selected plan free now, with no payment or expiry date."}
         </p>

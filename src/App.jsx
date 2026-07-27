@@ -49,6 +49,7 @@ const PublicSign = lazy(() => import('./pages/PublicSign'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Security = lazy(() => import('./pages/Security'));
 const Terms = lazy(() => import('./pages/Terms'));
+const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
 const PowerCarePresentation = lazy(() => import('./pages/PowerCarePresentation'));
 const PowerCareProfile = lazy(() => import('./pages/PowerCareProfile'));
 const PowerCareSapComparison = lazy(() => import('./pages/PowerCareSapComparison'));
@@ -113,6 +114,7 @@ function AppRoutes() {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/security" element={<Security />} />
       <Route path="/terms" element={<Terms />} />
+      <Route path="/refund-policy" element={<RefundPolicy />} />
       <Route path="/powercare-presentation" element={<PowerCarePresentation />} />
       <Route path="/powercare-profile" element={<PowerCareProfile />} />
       <Route path="/powercare-sap-comparison" element={<PowerCareSapComparison />} />
