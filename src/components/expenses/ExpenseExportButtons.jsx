@@ -23,5 +23,5 @@ export default function ExpenseExportButtons({ claims, stations, ar, title }) {
     claim.currency,
     STATUSES[claim.status]?.[ar ? 1 : 0] || claim.status,
   ]);
-  return <ComparisonExportButtons title={title || (ar ? "تقرير المصروفات" : "Expense Report")} headers={headers} rows={rows} />;
+  return <ComparisonExportButtons title={title || (ar ? "تقرير المصروفات" : "Expense Report")} headers={headers} rows={rows} compact />;
 }
