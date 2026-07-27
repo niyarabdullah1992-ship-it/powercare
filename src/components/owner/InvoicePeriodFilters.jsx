@@ -12,7 +12,7 @@ const optionsFor = (ar) => [
 
 export default function InvoicePeriodFilters({ period, onPeriodChange, from, to, onFromChange, onToChange, ar }) {
   return (
-    <section className="space-y-3 rounded-xl border border-border bg-card p-4">
+    <section className="space-y-3">
       <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground"><CalendarRange className="h-3.5 w-3.5" />{ar ? "فواتير الاشتراكات حسب الفترة" : "Subscription invoices by period"}</p>
       <div className="flex flex-wrap gap-2">
         {optionsFor(ar).map(([value, label]) => <button key={value} type="button" onClick={() => onPeriodChange(value)} className={`rounded-full border px-3 py-1.5 text-xs font-body transition ${period === value ? "border-foreground bg-foreground text-background" : "border-border hover:bg-muted"}`}>{label}</button>)}
