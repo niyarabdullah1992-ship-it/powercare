@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import moment from "moment";
 import { base44 } from "@/api/base44Client";
 import { CalendarRange, FileText, Loader2, MapPin, PenLine } from "lucide-react";
 import LocationMapModal from "@/components/attendance/LocationMapModal";
@@ -7,6 +8,9 @@ import { useI18n } from "@/lib/i18n";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 import { getAttendanceStatus } from "@/lib/attendance";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
+import MobileSelect from "@/components/mobile/MobileSelect";
+
+const REPORT_RANGES = ["monthly", "3months", "6months", "yearly", "custom"];
 
 const STATUS_STYLE = {
   present: "bg-emerald-100 text-emerald-700 border-emerald-300",
@@ -31,6 +35,21 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
   const [checkoutReason, setCheckoutReason] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
+  const [reportEmployeeId, setReportEmployeeId] = useState("all");
+  const [reportRange, setReportRange] = useState("monthly");
+  const [reportStart, setReportStart] = useState("");
+  const [reportEnd, setReportEnd] = useState("");
+  const [reportRows, setReportRows] = useState([]);
+
+  const reportWindow = useMemo(() => {
+    const end = reportRange === "custom" && reportEnd ? moment(reportEnd) : moment();
+    let start = moment().subtract(1, "month");
+    if (reportRange === "3months") start = moment().subtract(3, "months");
+    if (reportRange === "6months") start = moment().subtract(6, "months");
+    if (reportRange === "yearly") start = moment().subtract(1, "year");
+    if (reportRange === "custom" && reportStart) start = moment(reportStart);
+    return { startDate: start.format("YYYY-MM-DD"), endDate: end.format("YYYY-MM-DD") };
+  }, [reportRange, reportStart, reportEnd]);
 
   const load = () => {
     if (!employees.length) { setRows([]); setLoading(false); return; }
@@ -45,6 +64,16 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employees.map((e) => e.id).join(",")]);
+
+  useEffect(() => {
+    if (!reportOpen) return;
+    const selected = reportEmployeeId === "all" ? employees : employees.filter((employee) => employee.id === reportEmployeeId);
+    Promise.all(selected.map((employee) => base44.functions.invoke("supabaseAttendance", {
+      action: "listRange", employeeId: employee.id, ...reportWindow,
+    }).then((response) => (response?.data?.rows || []).map((row) => ({ ...row, employeeName: employee.name })))))
+      .then((results) => setReportRows(results.flat()))
+      .catch(() => setReportRows([]));
+  }, [reportOpen, reportEmployeeId, reportWindow.startDate, reportWindow.endDate, employees.map((e) => e.id).join(",")]);
 
   const isManager = currentUser?.id === data?.ownerId || ["station_manager", "ops_manager", "director"].includes(currentUser?.role);
 
@@ -135,15 +164,31 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
 
       {reportOpen && <div className="p-4 rounded-xl border border-border bg-card space-y-3">
         <p className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-          <CalendarRange className="w-3.5 h-3.5" /> {lang === "ar" ? "تقرير حضور الفريق اليومي" : "Daily team attendance report"}
+          <CalendarRange className="w-3.5 h-3.5" /> {lang === "ar" ? "تقرير حضور الفريق حسب الفترة" : "Team attendance report by period"}
         </p>
+        <MobileSelect
+          value={reportEmployeeId}
+          onChange={setReportEmployeeId}
+          placeholder={t("employeeName")}
+          searchable
+          className="w-full sm:w-72"
+          options={[{ value: "all", label: lang === "ar" ? "كل الموظفين" : "All employees" }, ...employees.map((employee) => ({ value: employee.id, label: employee.name }))]}
+        />
+        <div className="flex flex-wrap gap-2">
+          {REPORT_RANGES.map((value) => (
+            <button key={value} type="button" onClick={() => setReportRange(value)} className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${reportRange === value ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>
+              {({ monthly: t("rangeMonthly"), "3months": t("range3Months"), "6months": t("preset6Months"), yearly: t("rangeYearly"), custom: t("rangeCustom") })[value]}
+            </button>
+          ))}
+        </div>
+        {reportRange === "custom" && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input type="date" value={reportStart} onChange={(event) => setReportStart(event.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+          <input type="date" value={reportEnd} onChange={(event) => setReportEnd(event.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+        </div>}
         <ComparisonExportButtons
-          title={t("dailyAttendance")}
-          headers={[t("employeeName"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("locationStatus"), lang === "ar" ? "التحضير" : "Attendance source"]}
-          rows={employees.map((e) => {
-            const r = byEmployee[e.id];
-            return [e.name, statusLabel(statusFor(e)), r?.check_in_at ? formatTime(r.check_in_at, format, lang) : "—", r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—", r?.work_hours ?? "—", r?.location_status || "—", (r?.manual_override || r?.location_status === "manual") ? `${lang === "ar" ? "يدوي" : "Manual"} — ${r.override_by || r.excused_by_name || "—"}` : "—"];
-          })}
+          title={`${lang === "ar" ? "تقرير حضور الفريق" : "Team attendance report"} — ${reportWindow.startDate} → ${reportWindow.endDate}`}
+          headers={[t("employeeName"), t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("locationStatus"), lang === "ar" ? "التحضير" : "Attendance source"]}
+          rows={reportRows.map((row) => [row.employeeName || "—", row.date || "—", statusLabel(row.status), row.check_in_at ? formatTime(row.check_in_at, format, lang) : "—", row.check_out_at ? formatTime(row.check_out_at, format, lang) : "—", row.work_hours ?? "—", row.location_status || "—", (row.manual_override || row.location_status === "manual") ? `${lang === "ar" ? "يدوي" : "Manual"} — ${row.override_by || row.excused_by_name || "—"}` : "—"])}
           compact
         />
       </div>}
