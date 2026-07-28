@@ -1005,6 +1005,25 @@ export function updateEmployeeProfile(companyId, employeeId, profile) {
   });
 }
 
+export function saveEmployeeOffboarding(companyId, employeeId, offboarding) {
+  updateEmployeeProfile(companyId, employeeId, { offboarding });
+}
+
+export async function completeEmployeeOffboarding(companyId, employeeId, offboarding) {
+  const res = await invokeDirectory({ action: "disableEmployeeAccess", companyId, employeeId });
+  if (!res?.data?.ok) throw new Error("OFFBOARDING_FAILED");
+  const next = { ...offboarding, status: "completed", completedAt: new Date().toISOString() };
+  updateCompany(companyId, (d) => {
+    const emp = d.employees.find((e) => e.id === employeeId);
+    if (!emp) return;
+    emp.profile = { ...(emp.profile || {}), employmentStatus: "terminated", offboarding: next };
+    emp.stationId = null; emp.managedStations = []; emp.hrLevelId = null; emp.hrStationId = null; emp.hrClusterId = null;
+    d.stations.forEach((station) => { if (station.managerId === employeeId) station.managerId = null; });
+    (d.schedules || []).forEach((schedule) => Object.values(schedule.assignments || {}).forEach((day) => Object.keys(day).forEach((shift) => { day[shift] = (day[shift] || []).filter((id) => id !== employeeId); })));
+  });
+  return next;
+}
+
 // Manual presence status the employee sets for themself (online/away/busy/call).
 export function setPresenceStatus(companyId, employeeId, status) {
   updateCompany(companyId, (d) => {

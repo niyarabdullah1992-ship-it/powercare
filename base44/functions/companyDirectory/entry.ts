@@ -653,6 +653,26 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true });
     }
 
+    // Offboarding keeps the employee record and history, but permanently revokes login credentials and active sessions.
+    if (action === 'disableEmployeeAccess') {
+      const { employeeId } = body;
+      if (!employeeId || (auth.userId && auth.userId === employeeId)) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const context = await getActorContext();
+      if (!context.senior && !context.permissions.has('manage_employees')) return Response.json({ error: 'HR employee-management access required' }, { status: 403 });
+      const targets = await base44.asServiceRole.entities.Employee.filter({ companyId, employeeId });
+      if (!targets[0]) return Response.json({ error: 'Employee not found' }, { status: 404 });
+      if (!context.senior && context.scope !== null && !context.scope.includes(targets[0].stationId)) return Response.json({ error: 'Employee is outside your station scope' }, { status: 403 });
+      const meta = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: 'companyMeta' });
+      if (meta[0]?.payload?.[0]?.ownerId === employeeId) return Response.json({ error: 'Company owner cannot be offboarded' }, { status: 403 });
+      const credentials = await base44.asServiceRole.entities.EmployeeCredential.filter({ companyId, employeeId });
+      const sessions = await base44.asServiceRole.entities.CompanySession.filter({ companyId, userId: employeeId });
+      for (const credential of credentials) await base44.asServiceRole.entities.EmployeeCredential.delete(credential.id);
+      for (const session of sessions) await base44.asServiceRole.entities.CompanySession.delete(session.id);
+      await base44.asServiceRole.entities.AuditLog.create({ companyId, action: 'employee_offboarded', performedBy: context.actor?.name || 'Company owner', details: `Employee access disabled and profile retained: ${targets[0].name || employeeId}.` });
+      await bumpSignal(base44, companyId);
+      return Response.json({ ok: true });
+    }
+
     // Employee account deletion is available to the company owner and assigned HR staff.
     // It also revokes credentials and active sessions so the removed employee cannot sign in again.
     if (action === 'deleteEmployeeAccount') {

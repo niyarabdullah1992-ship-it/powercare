@@ -4,7 +4,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { canManageEmployees, hasHRPermission, canViewEmployeeProfile, isCompanyOwner, canAdjustPayroll, canManageEmployeeHR, canManageEmployeeContract, canManageEmployeeCommunication } from "@/lib/permissions";
 import { getRoleLabel } from "@/lib/roles";
-import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle, Lock, FileSignature } from "lucide-react";
+import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle, Lock, FileSignature, UserMinus } from "lucide-react";
 import ProfileHero from "@/components/employees/ProfileHero";
 import ProfessionalInfoTab from "@/components/employees/ProfessionalInfoTab";
 import CertificatesTab from "@/components/employees/CertificatesTab";
@@ -16,6 +16,7 @@ import LoginAccessCard from "@/components/employees/LoginAccessCard";
 import AccountSettingsCard from "@/components/employees/AccountSettingsCard";
 import DeleteEmployeeAccountCard from "@/components/employees/DeleteEmployeeAccountCard";
 import ProfileCompletionCard from "@/components/employees/ProfileCompletionCard";
+import OffboardingTab from "@/components/employees/OffboardingTab";
 import { employeeJobGrade, orderedJobGrades } from "@/lib/jobGrades";
 
 const TABS = [
@@ -25,6 +26,7 @@ const TABS = [
   { key: "leave", icon: CalendarDays },
   { key: "communications", icon: MessageCircle },
   { key: "contract", icon: FileSignature },
+  { key: "offboarding", icon: UserMinus },
 ];
 
 export default function EmployeeProfile() {
@@ -79,7 +81,7 @@ export default function EmployeeProfile() {
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
           <main className="space-y-5 lg:col-start-1 lg:row-start-1">
-            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-2 sm:grid-cols-6">
+            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-2 sm:grid-cols-4 xl:grid-cols-7">
               {TABS.map(({ key, icon: Icon }) => (
                 <button
                   key={key}
@@ -88,7 +90,7 @@ export default function EmployeeProfile() {
                     tab === key ? "bg-accent text-accent-foreground shadow-lg" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                   }`}
                 >
-                  <Icon className="h-4 w-4" /> {key === "contract" ? (dir === "rtl" ? "العقد" : "Contract") : key === "communications" ? (dir === "rtl" ? "التواصل" : "Communications") : t(key)}
+                  <Icon className="h-4 w-4" /> {key === "offboarding" ? (dir === "rtl" ? "إنهاء الخدمة" : "Offboarding") : key === "contract" ? (dir === "rtl" ? "العقد" : "Contract") : key === "communications" ? (dir === "rtl" ? "التواصل" : "Communications") : t(key)}
                 </button>
               ))}
             </div>
@@ -100,6 +102,7 @@ export default function EmployeeProfile() {
               {tab === "leave" && <LeaveTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canApprove={canApproveLeave} />}
               {tab === "communications" && <HRCommunicationsTab employee={employee} companyId={company.id} currentUser={currentUser} isSelf={isSelf} canReply={canReplyCommunication} data={data} />}
               {tab === "contract" && <ContractTab employee={employee} companyId={company.id} canEdit={canEditContract} />}
+              {tab === "offboarding" && <OffboardingTab employee={employee} companyId={company.id} currentUser={currentUser} canManage={canManage && !isSelf} />}
             </section>
           </main>
 
