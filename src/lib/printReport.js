@@ -13,7 +13,7 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const accent = String(color || PDF_THEME.gold).toLowerCase() === "#b07d3f" ? PDF_THEME.gold : (color || PDF_THEME.gold);
   const visual = getReportVisualTheme(title);
-  const isWide = theme === "inventorySimplified" ? false : theme === "executiveGold" || sections.some((section) => (section.headers || []).length > 8);
+  const isWide = theme === "inventorySimplified" ? false : theme === "attendanceModern" || theme === "executiveGold" || sections.some((section) => (section.headers || []).length > 8);
   const locale = dir === "rtl" ? "ar-SA" : "en-GB";
   const generatedAt = new Date().toLocaleString(locale);
   const sectionAnalytics = sections.map((section) => deriveReportAnalytics(section.headers, section.rows));
@@ -23,6 +23,24 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   const statsHtml = displayedStats.length
     ? `<div class="stats">${displayedStats.map((s) => `<div class="stat"><p class="val">${esc(s.value)}</p><p class="lbl">${esc(s.label)}</p></div>`).join("")}</div>`
     : "";
+
+  const attendanceRows = sections.flatMap((section) => section.rows || []);
+  const attendanceHeaders = sections[0]?.headers || [];
+  const attendanceStatusIndex = attendanceHeaders.findIndex((header) => /status|الحالة/i.test(String(header)));
+  const attendanceGroups = attendanceRows.reduce((groups, row) => {
+    const label = String(row[attendanceStatusIndex] || "—");
+    groups[label] = (groups[label] || 0) + 1;
+    return groups;
+  }, {});
+  const attendanceEntries = Object.entries(attendanceGroups);
+  const attendanceTotal = Math.max(attendanceRows.length, 1);
+  const attendancePalette = ["#2f8f83", "#e0a43b", "#c74f4f", "#55768f", "#9aa5af"];
+  let attendanceOffset = 0;
+  const attendanceGradient = attendanceEntries.map(([, value], index) => {
+    const start = attendanceOffset; attendanceOffset += (value / attendanceTotal) * 100;
+    return `${attendancePalette[index % attendancePalette.length]} ${start}% ${attendanceOffset}%`;
+  }).join(", ");
+  const attendanceAnalyticsHtml = theme === "attendanceModern" && attendanceEntries.length ? `<section class="attendance-analysis"><div class="analysis-title"><small>${dir === "rtl" ? "التحليل التشغيلي" : "OPERATIONAL ANALYTICS"}</small><h2>${dir === "rtl" ? "تحليل الحضور" : "Attendance analysis"}</h2></div><div class="analysis-grid"><div class="donut-card"><div class="donut" style="background:conic-gradient(${attendanceGradient})"><div><strong>${attendanceRows.length}</strong><span>${dir === "rtl" ? "سجل" : "records"}</span></div></div><div class="legend">${attendanceEntries.map(([label, value], index) => `<p><i style="background:${attendancePalette[index % attendancePalette.length]}"></i><span>${esc(label)}</span><b>${value}</b></p>`).join("")}</div></div><div class="bars-card">${attendanceEntries.map(([label, value], index) => `<div class="attendance-bar"><span>${esc(label)}</span><i><b style="width:${Math.max(4, (value / attendanceTotal) * 100)}%;background:${attendancePalette[index % attendancePalette.length]}"></b></i><strong>${value}</strong></div>`).join("")}</div></div></section>` : "";
 
   const sectionsHtml = sections
     .map((sec, index) => `
@@ -118,11 +136,33 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   .executive-gold td { border: 1px solid #e3e0d8; }
   .executive-gold tr:nth-child(even) td { background: #faf8f2; }
   .executive-gold .foot { border-top: 2px solid #e0a43b; color: #657383; }
+  .attendance-modern { background: #f7f5ef; color: #13283d; }
+  .attendance-modern .top-rule { height: 10px; border-radius: 0 0 8px 8px; background: linear-gradient(90deg,#13283d 0 70%,#e0a43b 70% 100%); }
+  .attendance-modern .head { padding: 14px 18px 20px; border: 1px solid #d8d5cc; border-inline-start: 7px solid #e0a43b; border-radius: 14px; background: linear-gradient(135deg,#fff,#faf8f2); box-shadow: 0 8px 24px rgba(19,40,61,.08); }
+  .attendance-modern .monogram,.attendance-modern .report-mark { border-radius: 14px; background:#13283d; color:#f0c56d; border-color:#e0a43b; }
+  .attendance-modern .stats { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+  .attendance-modern .stat { min-width:0; border:1px solid #d8d5cc; border-top:4px solid #e0a43b; border-radius:10px; background:#fff; text-align:center; box-shadow:0 4px 12px rgba(19,40,61,.06); }
+  .attendance-modern .stat .val { font-size:21px; }
+  .attendance-modern h2 { border:0; border-inline-start:5px solid #e0a43b; border-radius:7px; padding:9px 12px; background:#f1eadc; }
+  .attendance-modern h2::before { display:none; }
+  .attendance-modern table { overflow:hidden; border:1px solid #d8d5cc; border-radius:10px; box-shadow:0 4px 14px rgba(19,40,61,.06); }
+  .attendance-modern th { background:#13283d; color:#f0c56d; padding:9px 7px; }
+  .attendance-modern td { border-bottom:1px solid #e4e0d6; padding:8px 7px; }
+  .attendance-modern tr:nth-child(even) td { background:#faf8f2; }
+  .attendance-analysis { margin-top:22px; break-inside:avoid; }
+  .analysis-title small { color:#b57b16; font-size:8px; font-weight:700; letter-spacing:.16em; }
+  .analysis-grid { display:grid; grid-template-columns:1fr 1.35fr; gap:12px; }
+  .donut-card,.bars-card { display:flex; align-items:center; gap:16px; min-height:150px; padding:16px; border:1px solid #d8d5cc; border-radius:12px; background:#fff; }
+  .donut { width:112px; height:112px; flex:0 0 auto; padding:18px; border-radius:50%; }
+  .donut>div { width:100%; height:100%; display:grid; place-content:center; text-align:center; border-radius:50%; background:#fff; }
+  .donut strong { font:700 23px Georgia,serif; }.donut span { display:block; color:#657383; font-size:8px; }
+  .legend { flex:1; }.legend p { display:grid; grid-template-columns:8px 1fr auto; gap:7px; align-items:center; margin:7px 0; font-size:9px; }.legend i { width:7px; height:7px; border-radius:50%; }
+  .bars-card { display:block; }.attendance-bar { display:grid; grid-template-columns:75px 1fr 28px; gap:8px; align-items:center; margin:10px 0; font-size:9px; }.attendance-bar>i { height:11px; overflow:hidden; border-radius:6px; background:#f1eadc; }.attendance-bar>i b { display:block; height:100%; border-radius:6px; }.attendance-bar strong { text-align:end; }
   ${INVENTORY_REPORT_CSS}
   @media print { body { padding: 0; } .top-rule { margin-top: 0; } .inventory-powercare { background: #faf7f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style>
 </head>
-<body class="${isWide ? "wide" : "standard"} report-${visual.layout} ${theme === "executiveGold" ? "executive-gold" : ""} ${inventoryThemeClass(theme)}">
+<body class="${isWide ? "wide" : "standard"} report-${visual.layout} ${theme === "executiveGold" ? "executive-gold" : ""} ${theme === "attendanceModern" ? "attendance-modern" : ""} ${inventoryThemeClass(theme)}">
   <div class="institutional-art" aria-hidden="true"></div>
   <div class="top-rule"></div>
   <div class="head">
@@ -139,6 +179,7 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   </div>
   ${statsHtml}
   ${sectionsHtml}
+  ${attendanceAnalyticsHtml}
   <div class="foot">
     <span>PowerCare • ${esc(companyName)}</span>
     <span>${esc(generatedAt)}</span>

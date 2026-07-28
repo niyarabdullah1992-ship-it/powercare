@@ -8,7 +8,7 @@ import { canUsePlanFeature } from "@/lib/navVisibility";
 import PlanFeatureNotice from "@/components/subscription/PlanFeatureNotice";
 
 // Colored Excel + branded PDF export for any comparison table.
-export default function ComparisonExportButtons({ title, headers, rows, pdfHeaders = headers, pdfRows = rows, compact = false }) {
+export default function ComparisonExportButtons({ title, headers, rows, pdfHeaders = headers, pdfRows = rows, compact = false, stats = [], theme = "default" }) {
   const { t, dir } = useI18n();
   const pdfLabel = dir === "rtl" ? "تصدير PDF" : "Export PDF";
   const { data, company } = useAuth();
@@ -26,10 +26,11 @@ export default function ComparisonExportButtons({ title, headers, rows, pdfHeade
       companyName: company?.name || "",
       periodLabel: new Date().toLocaleDateString(),
       dir,
-      stats: [],
+      stats,
       sections: [{ heading: title, headers: pdfHeaders, rows: pdfRows }],
       logoUrl: branding.logoUrl || "",
       color,
+      theme,
     });
 
   return (

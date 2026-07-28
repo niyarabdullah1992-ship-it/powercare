@@ -9,8 +9,9 @@ import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 import { getAttendanceStatus } from "@/lib/attendance";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import MobileSelect from "@/components/mobile/MobileSelect";
+import AttendanceDailyCharts from "@/components/attendance/AttendanceDailyCharts";
 
-const REPORT_RANGES = ["monthly", "3months", "6months", "yearly", "custom"];
+const REPORT_RANGES = ["daily", "weekly", "monthly", "custom"];
 
 const STATUS_STYLE = {
   present: "bg-emerald-100 text-emerald-700 border-emerald-300",
@@ -36,17 +37,16 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
   const [checkoutError, setCheckoutError] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
   const [reportEmployeeId, setReportEmployeeId] = useState("all");
-  const [reportRange, setReportRange] = useState("monthly");
+  const [reportRange, setReportRange] = useState("daily");
   const [reportStart, setReportStart] = useState("");
   const [reportEnd, setReportEnd] = useState("");
   const [reportRows, setReportRows] = useState([]);
 
   const reportWindow = useMemo(() => {
     const end = reportRange === "custom" && reportEnd ? moment(reportEnd) : moment();
-    let start = moment().subtract(1, "month");
-    if (reportRange === "3months") start = moment().subtract(3, "months");
-    if (reportRange === "6months") start = moment().subtract(6, "months");
-    if (reportRange === "yearly") start = moment().subtract(1, "year");
+    let start = moment();
+    if (reportRange === "weekly") start = moment().subtract(6, "days");
+    if (reportRange === "monthly") start = moment().startOf("month");
     if (reportRange === "custom" && reportStart) start = moment(reportStart);
     return { startDate: start.format("YYYY-MM-DD"), endDate: end.format("YYYY-MM-DD") };
   }, [reportRange, reportStart, reportEnd]);
@@ -151,6 +151,21 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
     return t(`attendanceStatus${status.charAt(0).toUpperCase()}${status.slice(1).replace(/_([a-z])/, (match, char) => char.toUpperCase())}`);
   };
   const isPastCheckoutMissing = (r) => r?.check_in_at && !r?.check_out_at && r?.status !== "absent";
+  const dailyWorkHours = rows.reduce((sum, row) => sum + (Number(row.work_hours) || 0), 0);
+  const reportStatusCounts = reportRows.reduce((total, row) => {
+    const key = row.status === "on_leave" ? "onLeave" : row.status === "not_scheduled" ? "notScheduled" : row.status;
+    if (key in total) total[key] += 1;
+    return total;
+  }, { present: 0, late: 0, absent: 0, onLeave: 0, notScheduled: 0 });
+  const reportHours = reportRows.reduce((sum, row) => sum + (Number(row.work_hours) || 0), 0);
+  const reportStats = [
+    { label: t("totalPresent"), value: reportStatusCounts.present },
+    { label: t("totalLate"), value: reportStatusCounts.late },
+    { label: t("totalAbsent"), value: reportStatusCounts.absent },
+    { label: lang === "ar" ? "في إجازة" : "On leave", value: reportStatusCounts.onLeave },
+    { label: lang === "ar" ? "غير مجدول" : "Not scheduled", value: reportStatusCounts.notScheduled },
+    { label: t("totalWorkHours"), value: reportHours.toFixed(1) },
+  ];
 
   return (
     <div className="space-y-3">
@@ -177,7 +192,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
         <div className="flex flex-wrap gap-2">
           {REPORT_RANGES.map((value) => (
             <button key={value} type="button" onClick={() => setReportRange(value)} className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${reportRange === value ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>
-              {({ monthly: t("rangeMonthly"), "3months": t("range3Months"), "6months": t("preset6Months"), yearly: t("rangeYearly"), custom: t("rangeCustom") })[value]}
+              {({ daily: lang === "ar" ? "يومي" : "Daily", weekly: lang === "ar" ? "أسبوعي" : "Weekly", monthly: t("rangeMonthly"), custom: t("rangeCustom") })[value]}
             </button>
           ))}
         </div>
@@ -189,6 +204,8 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
           title={`${lang === "ar" ? "تقرير حضور الفريق" : "Team attendance report"} — ${reportWindow.startDate} → ${reportWindow.endDate}`}
           headers={[t("employeeName"), t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("locationStatus"), lang === "ar" ? "التحضير" : "Attendance source"]}
           rows={reportRows.map((row) => [row.employeeName || "—", row.date || "—", statusLabel(row.status), row.check_in_at ? formatTime(row.check_in_at, format, lang) : "—", row.check_out_at ? formatTime(row.check_out_at, format, lang) : "—", row.work_hours ?? "—", row.location_status || "—", (row.manual_override || row.location_status === "manual") ? `${lang === "ar" ? "يدوي" : "Manual"} — ${row.override_by || row.excused_by_name || "—"}` : "—"])}
+          stats={reportStats}
+          theme="attendanceModern"
           compact
         />
       </div>}
@@ -331,6 +348,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
           </table>
         </div>
       )}
+      {!loading && employees.length > 0 && <AttendanceDailyCharts counts={counts} totalHours={dailyWorkHours} lang={lang} />}
       {mapRow && <LocationMapModal row={mapRow} t={t} onClose={() => setMapRow(null)} />}
       </div>
     </div>
