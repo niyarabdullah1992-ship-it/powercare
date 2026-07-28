@@ -210,7 +210,10 @@ export default function Dashboard() {
           reports: reports.length, pendingReports, payroll: data.payroll?.length || 0,
           attendanceRate, checkedIn: checkedInCount, signing: data.signatureRequests?.length || data.signedDocuments?.length || 0,
           performance: tasks.length ? Math.round((completed / tasks.length) * 100) : 0,
-          employees: teamEmployees.length, activeMembers: activeMembersCount, safety: safetyRecs.length, hazards: openHazards,
+          employees: teamEmployees.length, activeMembers: activeMembersCount,
+          pendingLeave: teamEmployees.reduce((sum, employee) => sum + (employee.leaveRequests || []).filter((request) => request.status === "pending").length, 0),
+          offboarding: teamEmployees.filter((employee) => employee.profile?.offboarding?.status === "in_progress").length,
+          safety: safetyRecs.length, hazards: openHazards,
           expenses: data.expenses?.length || 0, inventory: data.inventory?.length || data.inventoryItems?.length || 0,
           files: data.files?.length || 0, messages: data.messages?.length || 0,
         }}

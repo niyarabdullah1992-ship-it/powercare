@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Banknote, Bot, CalendarCheck2, CircleHelp, FileBarChart, FolderOpen, ListTodo, MapPin, MessageCircle, MessagesSquare, Package, PenTool, ReceiptText, ShieldCheck, TrendingUp, Users } from "lucide-react";
+import { Banknote, Bot, CalendarCheck2, CalendarOff, CircleHelp, FileBarChart, FolderOpen, ListTodo, MapPin, MessageCircle, MessagesSquare, Package, PenTool, ReceiptText, ShieldCheck, TrendingUp, UserMinus, Users } from "lucide-react";
 import { canAccessPath } from "@/lib/navVisibility";
 
 export default function OperationsModuleGrid({ metrics, lang, user, data, company }) {
@@ -16,6 +16,8 @@ export default function OperationsModuleGrid({ metrics, lang, user, data, compan
     { icon: Bot, title: ar ? "المساعد الذكي" : "AI assistant", note: ar ? "نيرو جاهز للمساعدة" : "Niro is ready", value: ar ? "جاهز" : "Ready", to: "/app/assistant" },
     { icon: TrendingUp, title: ar ? "الأداء الوظيفي" : "Performance", note: ar ? "معدل إنجاز المهام" : "task completion rate", value: `${metrics.performance}%`, to: "/app/performance" },
     { icon: Users, title: ar ? "دليل الموظفين" : "Employees", note: ar ? `${metrics.activeMembers} نشط اليوم` : `${metrics.activeMembers} active today`, value: metrics.employees, to: "/app/hr" },
+    { icon: CalendarOff, title: ar ? "الإجازات" : "Leave requests", note: ar ? "طلبات بانتظار المراجعة" : "requests awaiting review", value: metrics.pendingLeave, to: "/app/attendance" },
+    { icon: UserMinus, title: ar ? "إنهاء الخدمة" : "Offboarding", note: ar ? "ملفات قيد إنهاء الخدمة" : "offboarding cases in progress", value: metrics.offboarding, to: "/app/hr" },
     { icon: ShieldCheck, title: ar ? "السلامة" : "Safety", note: ar ? `${metrics.hazards} مخاطر مفتوحة` : `${metrics.hazards} open hazards`, value: metrics.safety, to: "/app/safety" },
     { icon: ReceiptText, title: ar ? "المصروفات" : "Expenses", note: ar ? "مطالبات المصروفات" : "expense claims", value: metrics.expenses, to: "/app/expenses" },
     { icon: Package, title: ar ? "المخزون" : "Inventory", note: ar ? "مواد ووحدات مخزون" : "stock items and units", value: metrics.inventory, to: "/app/inventory" },
