@@ -258,8 +258,6 @@ export default function Dashboard() {
       {/* Numbered stat cards (WorkForce style) */}
       <DashboardStatCards
         attendanceRate={attendanceRate}
-        completed={completed}
-        total={tasks.length}
         activeMembers={activeMembersCount}
         totalMembers={teamEmployees.length}
         t={t}

@@ -1,11 +1,11 @@
 import React from "react";
 import { TrendingUp, Users } from "lucide-react";
 
-// WorkForce-style numbered stat cards: attendance rate, tasks completed, team members.
+// WorkForce-style numbered stat cards for attendance and team members.
 // Memoized — props are primitives, so unrelated dashboard re-renders skip this tree.
-function DashboardStatCards({ attendanceRate, completed, total, activeMembers, totalMembers, t }) {
+function DashboardStatCards({ attendanceRate, activeMembers, totalMembers, t }) {
   return (
-    <div className="ops-kpi-grid grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div className="ops-kpi-grid grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className="ops-kpi-card rounded-2xl border border-border bg-card p-4 shadow-sm">
         <p className="text-xs font-body font-semibold text-foreground/80 mb-3">1. {t("attendanceRateLabel")}</p>
         <div className="flex items-center gap-3">
@@ -16,13 +16,7 @@ function DashboardStatCards({ attendanceRate, completed, total, activeMembers, t
         </div>
       </div>
       <div className="ops-kpi-card rounded-2xl border border-border bg-card p-4 shadow-sm">
-        <p className="text-xs font-body font-semibold text-foreground/80 mb-3">2. {t("completedTasks")}</p>
-        <p className="hero-title text-3xl">
-          {completed} <span className="text-muted-foreground/50 text-2xl">/ {total}</span>
-        </p>
-      </div>
-      <div className="ops-kpi-card rounded-2xl border border-border bg-card p-4 shadow-sm">
-        <p className="text-xs font-body font-semibold text-foreground/80 mb-3">3. {t("employees")}</p>
+        <p className="text-xs font-body font-semibold text-foreground/80 mb-3">2. {t("employees")}</p>
         <div className="flex items-center gap-3">
           <p className="hero-title text-3xl">{totalMembers}</p>
           <span className="rounded-full bg-accent/15 px-2.5 py-1 text-xs font-body font-semibold text-accent">
