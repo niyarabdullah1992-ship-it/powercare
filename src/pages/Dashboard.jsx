@@ -24,6 +24,7 @@ import { isOnLeaveToday } from "@/lib/leaveTypes";
 import useProactiveAlerts from "@/hooks/useProactiveAlerts";
 import OperationalAlerts from "@/components/dashboard/OperationalAlerts";
 import SigningStatusPanel from "@/components/dashboard/SigningStatusPanel";
+import OperationsModuleGrid from "@/components/dashboard/OperationsModuleGrid";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -203,6 +204,7 @@ export default function Dashboard() {
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="ops-command-dashboard space-y-4">
       <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
+      <OperationsModuleGrid metrics={{ stations: stations.length, tasks: tasks.length, completedTasks: completed, complaints: anonOpenCount, reports: reports.length, pendingReports, attendanceRate, checkedIn: checkedInCount, employees: teamEmployees.length, activeMembers: activeMembersCount }} lang={lang} />
       <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
       <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
       {["ops_manager", "director"].includes(currentUser.role) && <ExecutiveDashboard embedded />}
