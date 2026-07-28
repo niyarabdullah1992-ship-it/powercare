@@ -135,6 +135,16 @@ export default function TaskReportExport({ targets, t, lang, dir, stationKeyOf, 
     if (!report) return;
     const done = report.rows.filter((x) => x.status === "completed").length;
     const overdue = report.rows.filter((x) => x.status === "overdue").length;
+    const makeChart = (title, values) => {
+      const entries = Object.entries(values).sort((a, b) => b[1] - a[1]).slice(0, 8);
+      const max = Math.max(...entries.map(([, value]) => value), 1);
+      return { title, entries: entries.map(([label, value]) => ({ label, value, display: String(value), percent: Math.round((value / max) * 100) })) };
+    };
+    const countBy = (keyOf) => report.rows.reduce((counts, task) => {
+      const key = keyOf(task) || "—";
+      counts[key] = (counts[key] || 0) + 1;
+      return counts;
+    }, {});
     printReport({
       title: L("تقرير المهام", "Tasks Report"),
       companyName: data?.name || "",
@@ -148,7 +158,13 @@ export default function TaskReportExport({ targets, t, lang, dir, stationKeyOf, 
         { value: overdue, label: t("overdue") },
         { value: report.rows.length - done - overdue, label: L("قيد التنفيذ", "In progress") },
       ],
+      charts: [
+        makeChart(L("تحليل حالة المهام", "Task status analysis"), countBy((task) => statusLabel(task.status))),
+        makeChart(L("تحليل الأولويات", "Priority analysis"), countBy((task) => ({ urgent: t("urgent"), high: t("high"), medium: t("medium"), low: t("low") })[task.priority] || task.priority)),
+        makeChart(L("المهام حسب المحطة", "Tasks by station"), countBy((task) => stationName(task.assignment_type === "hq_team" ? firstStationId : (task.station_id || task.assignment_id)))),
+      ],
       sections: [{ heading: L("تفاصيل المهام", "Task details"), headers, rows: report.rows.map(toRow) }],
+      theme: "executiveGold",
     });
   };
 

@@ -9,7 +9,7 @@ import { INVENTORY_REPORT_CSS, inventoryThemeClass } from "@/lib/inventoryReport
 // it renders real HTML instead of drawing glyphs into a PDF canvas.
 // Each company can supply its own logo and brand color; the color drives all
 // accents in the document, with light tints derived via hex-alpha.
-export function printReport({ title, companyName, periodLabel, dir = "ltr", stats = [], sections = [], logoUrl = "", color = "#e0a43b", theme = "default" }) {
+export function printReport({ title, companyName, periodLabel, dir = "ltr", stats = [], charts = [], sections = [], logoUrl = "", color = "#e0a43b", theme = "default" }) {
   const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const accent = String(color || PDF_THEME.gold).toLowerCase() === "#b07d3f" ? PDF_THEME.gold : (color || PDF_THEME.gold);
   const visual = getReportVisualTheme(title);
@@ -23,6 +23,7 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   const statsHtml = displayedStats.length
     ? `<div class="stats">${displayedStats.map((s) => theme === "attendanceModern" ? `<div class="stat"><span class="stat-icon">${esc(s.label).slice(0, 1)}</span><p class="lbl">${esc(s.label)}</p><p class="val">${esc(s.value)}</p><svg viewBox="0 0 100 28" aria-hidden="true"><path d="${Number(String(s.value).replace(/[^0-9.-]/g, "")) > 0 ? "M0 22 L68 22 L100 6" : "M0 22 L100 22"}" /></svg></div>` : `<div class="stat"><p class="val">${esc(s.value)}</p><p class="lbl">${esc(s.label)}</p></div>`).join("")}</div>`
     : "";
+  const explicitChartsHtml = charts.length ? `<section class="report-charts">${charts.map(chartHtml).join("")}</section>` : "";
 
   const attendanceRows = sections.flatMap((section) => section.rows || []);
   const attendanceHeaders = sections[0]?.headers || [];
@@ -83,6 +84,8 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   .stat { flex: 1; min-width: 110px; border: 1px solid ${PDF_THEME.line}; border-top: 3px solid ${accent}; padding: 13px 14px; background: ${PDF_THEME.cream}; }
   .stat .val { font: 700 23px Georgia, Tahoma, serif; color: ${PDF_THEME.ink}; }
   .stat .lbl { font-size: 10px; color: ${PDF_THEME.muted}; margin-top: 4px; }
+  .report-charts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 4px 0 20px; break-inside: avoid; }
+  .report-charts .chart { margin: 0; }
   .chart { margin: 12px 0 20px; padding: 14px; border: 1px solid ${PDF_THEME.line}; background: ${PDF_THEME.cream}; break-inside: avoid; }
   .chart h3 { color: ${PDF_THEME.ink}; font: 700 12px Tahoma, sans-serif; margin-bottom: 10px; }
   .bar-row { display: grid; grid-template-columns: minmax(80px, 1fr) 3fr 58px; gap: 8px; align-items: center; margin: 6px 0; font-size: 9px; }
@@ -169,6 +172,7 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   <div class="top-rule"></div>
   ${headHtml}
   ${statsHtml}
+  ${explicitChartsHtml}
   ${sectionsHtml}
   ${attendanceAnalyticsHtml}
   <div class="foot">
