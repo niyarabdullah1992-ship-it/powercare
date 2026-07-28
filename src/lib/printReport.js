@@ -21,7 +21,7 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   const chartHtml = (chart) => `<div class="chart"><h3>${esc(chart.title)}</h3>${chart.entries.map((entry) => `<div class="bar-row"><span>${esc(entry.label)}</span><i><b style="width:${entry.percent}%"></b></i><strong>${esc(entry.display)}</strong></div>`).join("")}</div>`;
 
   const statsHtml = displayedStats.length
-    ? `<div class="stats">${displayedStats.map((s) => theme === "attendanceModern" ? `<div class="stat"><span class="stat-icon">${esc(s.label).slice(0, 1)}</span><p class="lbl">${esc(s.label)}</p><p class="val">${esc(s.value)}</p><svg viewBox="0 0 100 28" aria-hidden="true"><path d="M0 20 L22 23 L50 10 L76 24 L100 13" /></svg></div>` : `<div class="stat"><p class="val">${esc(s.value)}</p><p class="lbl">${esc(s.label)}</p></div>`).join("")}</div>`
+    ? `<div class="stats">${displayedStats.map((s) => theme === "attendanceModern" ? `<div class="stat"><span class="stat-icon">${esc(s.label).slice(0, 1)}</span><p class="lbl">${esc(s.label)}</p><p class="val">${esc(s.value)}</p><svg viewBox="0 0 100 28" aria-hidden="true"><path d="${Number(String(s.value).replace(/[^0-9.-]/g, "")) > 0 ? "M0 20 L22 23 L50 10 L76 24 L100 13" : "M0 22 L100 22"}" /></svg></div>` : `<div class="stat"><p class="val">${esc(s.value)}</p><p class="lbl">${esc(s.label)}</p></div>`).join("")}</div>`
     : "";
 
   const attendanceRows = sections.flatMap((section) => section.rows || []);
