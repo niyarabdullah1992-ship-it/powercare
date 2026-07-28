@@ -25,6 +25,7 @@ import useProactiveAlerts from "@/hooks/useProactiveAlerts";
 import OperationalAlerts from "@/components/dashboard/OperationalAlerts";
 import SigningStatusPanel from "@/components/dashboard/SigningStatusPanel";
 import OperationsModuleGrid from "@/components/dashboard/OperationsModuleGrid";
+import QuickOverviewStrip from "@/components/dashboard/QuickOverviewStrip";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -192,6 +193,8 @@ export default function Dashboard() {
     };
   });
 
+  const satisfactionScores = teamEmployees.map((employee) => Number(employee.profile?.satisfactionScore)).filter((score) => Number.isFinite(score) && score >= 0 && score <= 100);
+  const satisfactionRate = satisfactionScores.length ? Math.round(satisfactionScores.reduce((sum, score) => sum + score, 0) / satisfactionScores.length) : null;
   const recent = [
     ...tasks.map((tk) => ({ type: "task", text: `${tk.title} — ${t(tk.status)}`, at: tk.createdAt || tk.created_at })),
     ...reports.map((r) => ({ type: "report", text: `${r.title} — ${t(r.status)}`, at: r.createdAt })),
@@ -219,6 +222,7 @@ export default function Dashboard() {
         }}
         lang={lang} user={currentUser} data={data} company={company}
       />
+      <div className="overflow-x-auto no-scrollbar"><QuickOverviewStrip lang={lang} employees={teamEmployees.length} attendance={attendanceRate} completedTasks={completed} satisfaction={satisfactionRate} updates={recent.length} /></div>
       <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
       <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
       {["ops_manager", "director"].includes(currentUser.role) && <ExecutiveDashboard embedded />}
