@@ -21,7 +21,7 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   const chartHtml = (chart) => `<div class="chart"><h3>${esc(chart.title)}</h3>${chart.entries.map((entry) => `<div class="bar-row"><span>${esc(entry.label)}</span><i><b style="width:${entry.percent}%"></b></i><strong>${esc(entry.display)}</strong></div>`).join("")}</div>`;
 
   const statsHtml = displayedStats.length
-    ? `<div class="stats">${displayedStats.map((s) => `<div class="stat"><p class="val">${esc(s.value)}</p><p class="lbl">${esc(s.label)}</p></div>`).join("")}</div>`
+    ? `<div class="stats">${displayedStats.map((s) => theme === "attendanceModern" ? `<div class="stat"><span class="stat-icon">${esc(s.label).slice(0, 1)}</span><p class="lbl">${esc(s.label)}</p><p class="val">${esc(s.value)}</p><svg viewBox="0 0 100 28" aria-hidden="true"><path d="M0 20 L22 23 L50 10 L76 24 L100 13" /></svg></div>` : `<div class="stat"><p class="val">${esc(s.value)}</p><p class="lbl">${esc(s.label)}</p></div>`).join("")}</div>`
     : "";
 
   const attendanceRows = sections.flatMap((section) => section.rows || []);
@@ -40,12 +40,16 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
     const start = attendanceOffset; attendanceOffset += (value / attendanceTotal) * 100;
     return `${attendancePalette[index % attendancePalette.length]} ${start}% ${attendanceOffset}%`;
   }).join(", ");
-  const attendanceAnalyticsHtml = theme === "attendanceModern" && attendanceEntries.length ? `<section class="attendance-analysis"><div class="analysis-title"><small>${dir === "rtl" ? "التحليل التشغيلي" : "OPERATIONAL ANALYTICS"}</small><h2>${dir === "rtl" ? "تحليل الحضور" : "Attendance analysis"}</h2></div><div class="analysis-grid"><div class="donut-card"><div class="donut" style="background:conic-gradient(${attendanceGradient})"><div><strong>${attendanceRows.length}</strong><span>${dir === "rtl" ? "سجل" : "records"}</span></div></div><div class="legend">${attendanceEntries.map(([label, value], index) => `<p><i style="background:${attendancePalette[index % attendancePalette.length]}"></i><span>${esc(label)}</span><b>${value}</b></p>`).join("")}</div></div><div class="bars-card">${attendanceEntries.map(([label, value], index) => `<div class="attendance-bar"><span>${esc(label)}</span><i><b style="width:${Math.max(4, (value / attendanceTotal) * 100)}%;background:${attendancePalette[index % attendancePalette.length]}"></b></i><strong>${value}</strong></div>`).join("")}</div></div></section>` : "";
+  const attendanceNameIndex = attendanceHeaders.findIndex((header) => /employee|الموظف/i.test(String(header)));
+  const attendanceHoursIndex = attendanceHeaders.findIndex((header) => /work hours|ساعات العمل/i.test(String(header)));
+  const employeeHours = attendanceRows.slice(0, 10).map((row) => ({ name: row[attendanceNameIndex] || "—", hours: Number(row[attendanceHoursIndex]) || 0 }));
+  const maxEmployeeHours = Math.max(...employeeHours.map((item) => item.hours), 1);
+  const attendanceAnalyticsHtml = theme === "attendanceModern" && attendanceEntries.length ? `<section class="attendance-analysis"><div class="analysis-grid"><div class="hours-card"><h3>${dir === "rtl" ? "متوسط ساعات العمل" : "Work hours"}</h3><div class="vertical-chart">${employeeHours.map((item) => `<div class="vertical-item"><strong>${item.hours.toFixed(1)}</strong><i><b style="height:${Math.max(5, (item.hours / maxEmployeeHours) * 100)}%"></b></i><span>${esc(item.name)}</span></div>`).join("")}</div></div><div class="donut-card"><div class="analysis-copy"><h3>${dir === "rtl" ? "تحليل الحضور" : "Attendance analysis"}</h3><p>${dir === "rtl" ? "إجمالي الموظفين" : "Total records"}</p><div class="legend">${attendanceEntries.map(([label, value], index) => `<p><i style="background:${attendancePalette[index % attendancePalette.length]}"></i><span>${esc(label)}</span><b>${value}</b></p>`).join("")}</div></div><div class="donut" style="background:conic-gradient(${attendanceGradient})"><div><strong>${attendanceRows.length}</strong><span>${dir === "rtl" ? "سجل" : "records"}</span></div></div></div></div></section>` : "";
 
   const sectionsHtml = sections
     .map((sec, index) => `
       <h2>${esc(sec.heading)}</h2>
-      ${sectionAnalytics[index].charts.map(chartHtml).join("")}
+      ${theme === "attendanceModern" ? "" : sectionAnalytics[index].charts.map(chartHtml).join("")}
       ${sec.rows.length === 0 ? `<p class="empty">—</p>` : `
       <table>
         <thead><tr>${sec.headers.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead>
@@ -53,6 +57,7 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
       </table>`}`
     )
     .join("");
+  const headHtml = theme === "attendanceModern" ? `<div class="head attendance-head"><div class="attendance-brand"><img src="${POWERCARE_LOGO_URL}" alt="PowerCare" /><p><b>POWERCARE</b> • TIME REGISTER</p></div><div class="attendance-title" dir="${dir}"><h1>${esc(title)}</h1><p class="period"><b>${dir === "rtl" ? "الفترة:" : "Period:"}</b><span>${esc(periodLabel || "—")}</span></p></div></div>` : `<div class="head"><div class="identity"><img src="${POWERCARE_LOGO_URL}" alt="PowerCare" /><div><p class="document-label">PowerCare • ${esc(visual.label)}</p><h1>${esc(title)}</h1><p class="meta">${esc(companyName)}${periodLabel ? " — " + esc(periodLabel) : ""}</p></div></div><div class="report-mark">${esc(visual.mark)}</div>${logoUrl ? `<img class="company-logo" src="${logoUrl}" alt="${esc(companyName)}" />` : ""}</div>`;
 
   const html = `<!DOCTYPE html>
 <html dir="${dir}" lang="${dir === "rtl" ? "ar" : "en"}">
@@ -136,28 +141,25 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   .executive-gold td { border: 1px solid #e3e0d8; }
   .executive-gold tr:nth-child(even) td { background: #faf8f2; }
   .executive-gold .foot { border-top: 2px solid #e0a43b; color: #657383; }
-  .attendance-modern { background: #f7f5ef; color: #13283d; }
-  .attendance-modern .top-rule { height: 10px; border-radius: 0 0 8px 8px; background: linear-gradient(90deg,#13283d 0 70%,#e0a43b 70% 100%); }
-  .attendance-modern .head { padding: 14px 18px 20px; border: 1px solid #d8d5cc; border-inline-start: 7px solid #e0a43b; border-radius: 14px; background: linear-gradient(135deg,#fff,#faf8f2); box-shadow: 0 8px 24px rgba(19,40,61,.08); }
-  .attendance-modern .monogram,.attendance-modern .report-mark { border-radius: 14px; background:#13283d; color:#f0c56d; border-color:#e0a43b; }
-  .attendance-modern .stats { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
-  .attendance-modern .stat { min-width:0; border:1px solid #d8d5cc; border-top:4px solid #e0a43b; border-radius:10px; background:#fff; text-align:center; box-shadow:0 4px 12px rgba(19,40,61,.06); }
-  .attendance-modern .stat .val { font-size:21px; }
-  .attendance-modern h2 { border:0; border-inline-start:5px solid #e0a43b; border-radius:7px; padding:9px 12px; background:#f1eadc; }
-  .attendance-modern h2::before { display:none; }
-  .attendance-modern table { overflow:hidden; border:1px solid #d8d5cc; border-radius:10px; box-shadow:0 4px 14px rgba(19,40,61,.06); }
-  .attendance-modern th { background:#13283d; color:#f0c56d; padding:9px 7px; }
-  .attendance-modern td { border-bottom:1px solid #e4e0d6; padding:8px 7px; }
-  .attendance-modern tr:nth-child(even) td { background:#faf8f2; }
-  .attendance-analysis { margin-top:22px; break-inside:avoid; }
-  .analysis-title small { color:#b57b16; font-size:8px; font-weight:700; letter-spacing:.16em; }
-  .analysis-grid { display:grid; grid-template-columns:1fr 1.35fr; gap:12px; }
-  .donut-card,.bars-card { display:flex; align-items:center; gap:16px; min-height:150px; padding:16px; border:1px solid #d8d5cc; border-radius:12px; background:#fff; }
-  .donut { width:112px; height:112px; flex:0 0 auto; padding:18px; border-radius:50%; }
-  .donut>div { width:100%; height:100%; display:grid; place-content:center; text-align:center; border-radius:50%; background:#fff; }
-  .donut strong { font:700 23px Georgia,serif; }.donut span { display:block; color:#657383; font-size:8px; }
-  .legend { flex:1; }.legend p { display:grid; grid-template-columns:8px 1fr auto; gap:7px; align-items:center; margin:7px 0; font-size:9px; }.legend i { width:7px; height:7px; border-radius:50%; }
-  .bars-card { display:block; }.attendance-bar { display:grid; grid-template-columns:75px 1fr 28px; gap:8px; align-items:center; margin:10px 0; font-size:9px; }.attendance-bar>i { height:11px; overflow:hidden; border-radius:6px; background:#f1eadc; }.attendance-bar>i b { display:block; height:100%; border-radius:6px; }.attendance-bar strong { text-align:end; }
+  .attendance-modern { padding:22px; border-radius:14px; background:#fbf8ef; color:#0f2548; box-shadow:0 12px 30px rgba(15,37,72,.16); }
+  .attendance-modern .institutional-art,.attendance-modern .top-rule { display:none; }
+  .attendance-modern .attendance-head { direction:ltr; min-height:132px; margin:0 0 -42px; padding:22px 26px 58px; border:0; border-radius:12px 12px 0 0; background:#0f2548; box-shadow:0 10px 24px rgba(15,37,72,.18); color:#fff; }
+  .attendance-brand { display:flex; align-items:center; gap:9px; direction:ltr; color:#d0ab5c; font-size:10px; letter-spacing:.04em; }.attendance-brand img { width:30px; height:30px; }.attendance-brand b { color:#fff; font-size:12px; }
+  .attendance-title { min-width:46%; text-align:start; }.attendance-modern .attendance-title h1 { color:#fff; font:700 27px Tahoma,sans-serif; }
+  .period { display:grid; grid-template-columns:auto 1fr; overflow:hidden; margin-top:12px; border:1px solid #c69b42; border-radius:7px; background:#fff; color:#111; font-size:11px; }.period b { padding:7px 10px; background:#c69b42; color:#fff; }.period span { padding:7px 10px; }
+  .attendance-modern .stats { position:relative; z-index:2; direction:ltr; display:grid; grid-template-columns:repeat(6,1fr); gap:9px; margin:0 24px 15px; }
+  .attendance-modern .stat { position:relative; direction:rtl; min-width:0; height:92px; padding:10px; overflow:hidden; border:1px solid #c69b42; border-radius:9px; background:#fffdf8; box-shadow:0 5px 12px rgba(15,37,72,.13); text-align:start; }
+  .attendance-modern .stat-icon { position:absolute; inset-inline-end:9px; top:9px; display:grid; width:23px; height:23px; place-items:center; border-radius:7px; background:#d9efe2; color:#168552; font-weight:700; }.attendance-modern .stat:nth-child(2) .stat-icon { background:#fff0d5;color:#d98a16; }.attendance-modern .stat:nth-child(3) .stat-icon { background:#f4d9d4;color:#a72f2f; }.attendance-modern .stat:nth-child(4) .stat-icon { background:#efe8ce;color:#9c792f; }.attendance-modern .stat:nth-child(5) .stat-icon { background:#dce3ee;color:#0f2548; }
+  .attendance-modern .stat .lbl { width:72%; color:#111; font-size:10px; font-weight:700; }.attendance-modern .stat .val { margin-top:3px; color:#111; font:700 15px Tahoma,sans-serif; }
+  .attendance-modern .stat svg { position:absolute; inset-inline:9px; bottom:8px; width:calc(100% - 18px); height:28px; }.attendance-modern .stat svg path { fill:none; stroke:#1d8d58; stroke-width:2; }.attendance-modern .stat:nth-child(2) svg path { stroke:#dc8b19; }.attendance-modern .stat:nth-child(3) svg path { stroke:#a72f2f; }.attendance-modern .stat:nth-child(4) svg path { stroke:#557f93; }.attendance-modern .stat:nth-child(5) svg path { stroke:#0f2548; }.attendance-modern .stat:nth-child(6) svg path { stroke:#b28a3e; }
+  .attendance-modern h2 { margin:0; padding:9px 13px; border:0; border-bottom:1px solid #d6c08c; background:#fffdf8; color:#111; font:700 13px Tahoma,sans-serif; }.attendance-modern h2::before { display:none; }
+  .attendance-modern table { margin:0 0 12px; overflow:hidden; border:1px solid #c69b42; border-radius:9px; background:#fff; box-shadow:0 5px 12px rgba(15,37,72,.12); }
+  .attendance-modern th { padding:8px 6px; border-color:#d8c99f; background:#f4efdf; color:#111; font-size:8px; }.attendance-modern td { padding:7px 6px; border:1px solid #e5dcc5; color:#111; font-size:8px; }.attendance-modern tr:nth-child(even) td { background:#fffaf0; }
+  .attendance-analysis { margin-top:10px; break-inside:avoid; }.analysis-grid { display:grid; grid-template-columns:1.1fr 1fr; gap:10px; }
+  .donut-card,.hours-card { min-height:142px; padding:12px 14px; border:1px solid #c69b42; border-radius:9px; background:#fff; box-shadow:0 5px 12px rgba(15,37,72,.1); }.donut-card { display:flex; align-items:center; justify-content:center; gap:20px; }.hours-card h3,.analysis-copy h3 { margin-bottom:8px; color:#111; font-size:12px; }.analysis-copy>p { color:#657383; font-size:8px; }
+  .donut { width:95px; height:95px; flex:0 0 auto; padding:17px; border-radius:50%; }.donut>div { width:100%; height:100%; display:grid; place-content:center; text-align:center; border-radius:50%; background:#fff; }.donut strong { font:700 19px Georgia,serif; }.donut span { display:block; color:#657383; font-size:7px; }
+  .legend p { display:grid; grid-template-columns:7px 1fr auto; gap:6px; align-items:center; margin:5px 0; font-size:8px; }.legend i { width:6px; height:6px; border-radius:50%; }
+  .vertical-chart { display:flex; align-items:end; gap:8px; height:103px; padding-top:5px; border-bottom:1px solid #d8d5cc; background:#fff; }.vertical-item { display:grid; grid-template-rows:12px 72px 15px; flex:1; min-width:0; text-align:center; font-size:6px; }.vertical-item>i { position:relative; display:block; align-self:end; height:72px; }.vertical-item>i b { position:absolute; inset-inline:20%; bottom:0; display:block; background:#0f2548; border-top:4px solid #c69b42; }.vertical-item span { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
   ${INVENTORY_REPORT_CSS}
   @media print { body { padding: 0; } .top-rule { margin-top: 0; } .inventory-powercare { background: #faf7f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style>
@@ -165,18 +167,7 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
 <body class="${isWide ? "wide" : "standard"} report-${visual.layout} ${theme === "executiveGold" ? "executive-gold" : ""} ${theme === "attendanceModern" ? "attendance-modern" : ""} ${inventoryThemeClass(theme)}">
   <div class="institutional-art" aria-hidden="true"></div>
   <div class="top-rule"></div>
-  <div class="head">
-    <div class="identity">
-      <img src="${POWERCARE_LOGO_URL}" alt="PowerCare" />
-      <div>
-        <p class="document-label">PowerCare • ${esc(visual.label)}</p>
-        <h1>${esc(title)}</h1>
-        <p class="meta">${esc(companyName)}${periodLabel ? " — " + esc(periodLabel) : ""}</p>
-      </div>
-    </div>
-    <div class="report-mark">${esc(visual.mark)}</div>
-    ${logoUrl ? `<img class="company-logo" src="${logoUrl}" alt="${esc(companyName)}" />` : ""}
-  </div>
+  ${headHtml}
   ${statsHtml}
   ${sectionsHtml}
   ${attendanceAnalyticsHtml}
