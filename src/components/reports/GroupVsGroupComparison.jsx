@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import GroupPicker from "@/components/reports/GroupPicker";
 import ReportCard from "@/components/reports/ReportCard";
-import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
+import PerformanceReportButton from "@/components/performance/PerformanceReportButton";
 
 // Aggregate comparison between two freely-defined groups of employees — each
 // group can hold a single employee (1-vs-1) or many (team-vs-team).
@@ -56,7 +56,7 @@ export default function GroupVsGroupComparison({ rows, employees, t }) {
       </ReportCard>
 
       <div className="flex justify-end">
-        <ComparisonExportButtons
+        <PerformanceReportButton
           title={t("groupVsGroup")}
           headers={[t("category"), t("groupA"), t("groupB")]}
           rows={groupA.length > 0 && groupB.length > 0 ? metrics.map((m) => [m.label, m.va, m.vb]) : []}
