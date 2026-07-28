@@ -204,7 +204,18 @@ export default function Dashboard() {
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="ops-command-dashboard space-y-4">
       <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
-      <OperationsModuleGrid metrics={{ stations: stations.length, tasks: tasks.length, completedTasks: completed, complaints: anonOpenCount, reports: reports.length, pendingReports, attendanceRate, checkedIn: checkedInCount, employees: teamEmployees.length, activeMembers: activeMembersCount }} lang={lang} />
+      <OperationsModuleGrid
+        metrics={{
+          stations: stations.length, tasks: tasks.length, completedTasks: completed, complaints: anonOpenCount,
+          reports: reports.length, pendingReports, payroll: data.payroll?.length || 0,
+          attendanceRate, checkedIn: checkedInCount, signing: data.signatureRequests?.length || data.signedDocuments?.length || 0,
+          performance: tasks.length ? Math.round((completed / tasks.length) * 100) : 0,
+          employees: teamEmployees.length, activeMembers: activeMembersCount, safety: safetyRecs.length, hazards: openHazards,
+          expenses: data.expenses?.length || 0, inventory: data.inventory?.length || data.inventoryItems?.length || 0,
+          files: data.files?.length || 0, messages: data.messages?.length || 0,
+        }}
+        lang={lang} user={currentUser} data={data} company={company}
+      />
       <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
       <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
       {["ops_manager", "director"].includes(currentUser.role) && <ExecutiveDashboard embedded />}
