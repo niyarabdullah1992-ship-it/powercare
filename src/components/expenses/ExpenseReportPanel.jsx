@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { CalendarDays, FileText } from "lucide-react";
+import { CalendarDays } from "lucide-react";
+import ReportPanelToggle from "@/components/reports/ReportPanelToggle";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import ExpenseExportButtons from "@/components/expenses/ExpenseExportButtons";
 import ExpensePeriodControls from "@/components/expenses/ExpensePeriodControls";
@@ -25,9 +26,7 @@ export default function ExpenseReportPanel({ claims, stations, ar }) {
     return stationMatch && dateMatch;
   }), [claims, stationId, period, days, from, to]);
   return <div className="space-y-3">
-    <button type="button" onClick={() => setOpen((value) => !value)} className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-body transition ${open ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-muted"}`}>
-      <FileText className="h-3.5 w-3.5" /> {ar ? "تقرير المصروفات (PDF / Excel)" : "Expense report (PDF / Excel)"}
-    </button>
+    <ReportPanelToggle open={open} onClick={() => setOpen((value) => !value)} label={ar ? "تقرير المصروفات (PDF / Excel)" : "Expense report (PDF / Excel)"} />
     {open && <section className="space-y-3 rounded-xl border border-border bg-card p-4">
       <p className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground"><CalendarDays className="h-3.5 w-3.5" />{ar ? "تقرير المصروفات حسب الفترة" : "Expense report by period"}</p>
       <MobileSelect value={stationId} onChange={setStationId} placeholder={ar ? "المحطة" : "Station"} className="w-full sm:w-72" options={[{ value: "all", label: ar ? "كل المحطات" : "All stations" }, ...stations.map((station) => ({ value: station.stationId, label: station.name }))]} />

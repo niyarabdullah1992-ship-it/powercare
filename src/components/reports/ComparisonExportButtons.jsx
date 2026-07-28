@@ -1,6 +1,6 @@
 import React from "react";
-import { FileSpreadsheet, FileText, Printer } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import ReportExportMenu from "@/components/reports/ReportExportMenu";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { exportExcelColored } from "@/lib/exportExcelColored";
 import { printReport } from "@/lib/printReport";
@@ -9,8 +9,7 @@ import PlanFeatureNotice from "@/components/subscription/PlanFeatureNotice";
 
 // Colored Excel + branded PDF export for any comparison table.
 export default function ComparisonExportButtons({ title, headers, rows, pdfHeaders = headers, pdfRows = rows, compact = false, stats = [], theme = "default" }) {
-  const { t, dir } = useI18n();
-  const pdfLabel = dir === "rtl" ? "تصدير PDF" : "Export PDF";
+  const { dir, lang } = useI18n();
   const { data, company } = useAuth();
   const hasRows = Array.isArray(rows) && rows.length > 0;
   const branding = data?.reportBranding || {};
@@ -33,14 +32,5 @@ export default function ComparisonExportButtons({ title, headers, rows, pdfHeade
       theme,
     });
 
-  return (
-    <div className="flex items-center gap-2">
-      <button disabled={!hasRows} onClick={onExcel} className={compact ? "flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-emerald-300 text-emerald-700 text-xs font-body hover:bg-emerald-50 transition disabled:opacity-40 disabled:cursor-not-allowed" : "flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"}>
-        <FileSpreadsheet className={compact ? "w-4 h-4" : "w-3.5 h-3.5 text-emerald-600"} /> {compact ? "Excel" : t("exportExcel")}
-      </button>
-      <button disabled={!hasRows} onClick={onPdf} className={compact ? "flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-border text-xs font-body hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed" : "flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"}>
-        {compact ? <FileText className="w-4 h-4" /> : <Printer className="w-3.5 h-3.5" />} {compact ? "PDF" : pdfLabel}
-      </button>
-    </div>
-  );
+  return <ReportExportMenu label={title} onPdf={onPdf} onExcel={onExcel} disabled={!hasRows} lang={lang} />;
 }

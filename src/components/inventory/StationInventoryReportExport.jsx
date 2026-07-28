@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FileSpreadsheet, Printer } from "lucide-react";
+import ReportExportMenu from "@/components/reports/ReportExportMenu";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { exportExcelColored } from "@/lib/exportExcelColored";
@@ -30,7 +30,6 @@ export default function StationInventoryReportExport({ reportData, ar }) {
   return <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
     <MobileSelect options={options} value={stationId} onChange={setStationId} placeholder={ar ? "اختر المحطة" : "Select station"} searchable className="min-w-44" />
     <InventoryReportThemeSelect value={pdfTheme} onChange={setPdfTheme} ar={ar} />
-    <button disabled={!stationId} onClick={exportExcel} className="flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs hover:bg-muted disabled:opacity-40"><FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />{ar ? "Excel شامل" : "Full Excel"}</button>
-    <button disabled={!stationId} onClick={exportPdf} className="flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs hover:bg-muted disabled:opacity-40"><Printer className="h-3.5 w-3.5" />{ar ? "PDF شامل" : "Full PDF"}</button>
+    <ReportExportMenu label={ar ? "تقرير مخزون المحطة" : "Station inventory report"} onPdf={exportPdf} onExcel={exportExcel} disabled={!stationId} lang={ar ? "ar" : "en"} />
   </div>;
 }

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { exportExcelColored } from "@/lib/exportExcelColored";
 import { printReport } from "@/lib/printReport";
-import { FileSpreadsheet, FileText, CalendarRange } from "lucide-react";
+import { CalendarRange } from "lucide-react";
+import ReportExportMenu from "@/components/reports/ReportExportMenu";
 import SafetyStationPicker from "@/components/safety/SafetyStationPicker";
 import { CHECKLIST_GROUPS, PERMIT_REQUIREMENTS, PERMIT_TYPES, checklistCompliance, safetyKpis } from "@/lib/safetyStandards";
 import { useAuth } from "@/lib/PowerCareAuth";
@@ -203,20 +204,7 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
 
       {!selectedApproved && <p className="text-[11px] text-amber-700 font-body">{L("تنبيه: سيتضمن التقرير محطات غير معتمدة، وستظهر حالة الاعتماد بوضوح داخله.", "Notice: the report includes unapproved stations and clearly identifies their approval status.")}</p>}
       {!periodValid && <p className="text-[11px] text-red-600 font-body">{L("أدخل فترة زمنية صحيحة.", "Enter a valid date period.")}</p>}
-      <div className="flex flex-wrap gap-2 pt-1">
-        <button
-          type="button" disabled={!canExport} onClick={exportExcel}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-emerald-300 text-emerald-700 text-xs font-body hover:bg-emerald-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <FileSpreadsheet className="w-4 h-4" /> Excel
-        </button>
-        <button
-          type="button" disabled={!canExport} onClick={exportPdf}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-border text-xs font-body hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <FileText className="w-4 h-4" /> PDF
-        </button>
-      </div>
+      <ReportExportMenu label={L("تقرير السلامة", "Safety report")} onPdf={exportPdf} onExcel={exportExcel} disabled={!canExport} lang={lang} />
     </div>
   );
 }
