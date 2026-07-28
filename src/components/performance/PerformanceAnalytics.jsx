@@ -9,7 +9,7 @@ import {
 import { Calendar, TrendingUp, Users, Building2, BarChart3 } from "lucide-react";
 import moment from "moment";
 import IssuesList from "@/components/performance/IssuesList";
-import PerformanceReportButton from "@/components/performance/PerformanceReportButton";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 function EmployeeAxisTick({ x, y, payload, employees }) {
@@ -187,7 +187,7 @@ export default function PerformanceAnalytics() {
       </div>
 
       <div className="flex justify-end">
-        <PerformanceReportButton
+        <ComparisonExportButtons
           title={t("analytics")}
           headers={[t("category"), t("title"), t("completedTasks")]}
           rows={[

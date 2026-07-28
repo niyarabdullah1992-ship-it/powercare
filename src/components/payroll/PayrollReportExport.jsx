@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { CalendarRange } from "lucide-react";
-import ReportExportMenu from "@/components/reports/ReportExportMenu";
+import { CalendarRange, FileSpreadsheet, FileText } from "lucide-react";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import { netOf } from "@/lib/payroll";
 import { exportExcelColored } from "@/lib/exportExcelColored";
@@ -47,6 +46,6 @@ export default function PayrollReportExport({ runs, employees, excludedEmployeeI
     <MobileSelect value={stationId} onChange={setStationId} searchable placeholder={L("كل المحطات", "All stations")} options={[{ value: "all", label: L("كل المحطات", "All stations") }, ...stations.map((station) => ({ value: station.id, label: station.name }))]} />
     <div className="flex flex-wrap gap-2">{PRESETS.map((item) => <button key={item.id} type="button" onClick={() => setPreset(item.id)} className={`rounded-full border px-3 py-1.5 text-xs ${preset === item.id ? "border-foreground bg-foreground text-background" : "border-border hover:bg-muted"}`}>{labels[item.id]}</button>)}</div>
     {preset === "range" && <div className="grid gap-3 sm:grid-cols-2"><input type="month" value={from} onChange={(event) => setFrom(event.target.value)} className="rounded-md border border-input px-3 py-2 text-sm" /><input type="month" value={to} onChange={(event) => setTo(event.target.value)} className="rounded-md border border-input px-3 py-2 text-sm" /></div>}
-    <ReportExportMenu label={L("تقرير الرواتب", "Payroll report")} onPdf={() => exportReport("pdf")} onExcel={() => exportReport("excel")} lang={lang} />
+    <div className="flex flex-wrap gap-2"><button type="button" onClick={() => exportReport("pdf")} className="flex items-center gap-1.5 rounded-md border border-border px-3.5 py-2 text-xs hover:bg-muted"><FileText className="h-4 w-4" />PDF</button><button type="button" onClick={() => exportReport("excel")} className="flex items-center gap-1.5 rounded-md border border-emerald-300 px-3.5 py-2 text-xs text-emerald-700 hover:bg-emerald-50"><FileSpreadsheet className="h-4 w-4" />Excel</button></div>
   </div>;
 }

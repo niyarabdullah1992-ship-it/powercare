@@ -7,7 +7,7 @@ import { CheckCircle2, Triangle, Square, AlertOctagon } from "lucide-react";
 import StationFilterDropdown from "@/components/reports/StationFilterDropdown";
 import ReportCard from "@/components/reports/ReportCard";
 import ReportTableHead from "@/components/reports/ReportTableHead";
-import PerformanceReportButton from "@/components/performance/PerformanceReportButton";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 
 const COLOR_COMPLETED = "#10b981"; // emerald-500
 const COLOR_ONTRACK = "#3b82f6"; // blue-500
@@ -108,7 +108,7 @@ export default function StationComparison() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm text-muted-foreground font-body">{t("compareStationsNote")}</p>
         <div className="flex items-center gap-2 flex-wrap">
-          <PerformanceReportButton
+          <ComparisonExportButtons
             title={t("stationComparison")}
             headers={[t("stations"), t("team"), t("completed"), t("inProgress"), t("overdue"), t("points"), t("safetyLevel"), t("incidents")]}
             rows={compared.map((c) => [

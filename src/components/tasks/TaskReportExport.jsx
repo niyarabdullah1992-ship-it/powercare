@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { exportExcelColored } from "@/lib/exportExcelColored";
 import { printReport } from "@/lib/printReport";
-import { CalendarRange } from "lucide-react";
-import ReportExportMenu from "@/components/reports/ReportExportMenu";
+import { FileSpreadsheet, FileText, CalendarRange } from "lucide-react";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import { canUsePlanFeature } from "@/lib/navVisibility";
 import PlanFeatureNotice from "@/components/subscription/PlanFeatureNotice";
@@ -211,7 +210,20 @@ export default function TaskReportExport({ targets, t, lang, dir, stationKeyOf, 
         </div>
       )}
 
-      <ReportExportMenu label={L("تقرير المهام", "Tasks report")} onPdf={exportPdf} onExcel={exportExcel} lang={lang} />
+      <div className="flex flex-wrap gap-2 pt-1">
+        <button
+          type="button" onClick={exportExcel}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-emerald-300 text-emerald-700 text-xs font-body hover:bg-emerald-50 transition"
+        >
+          <FileSpreadsheet className="w-4 h-4" /> Excel
+        </button>
+        <button
+          type="button" onClick={exportPdf}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-border text-xs font-body hover:bg-muted transition"
+        >
+          <FileText className="w-4 h-4" /> PDF
+        </button>
+      </div>
     </div>
   );
 }

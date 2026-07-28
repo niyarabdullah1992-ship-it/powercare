@@ -10,7 +10,7 @@ import BadgeLegend from "@/components/performance/BadgeLegend";
 import StationComparison from "@/components/performance/StationComparison";
 import EmployeeComparisonView from "@/components/performance/EmployeeComparisonView";
 import EmployeeSingleReport from "@/components/performance/EmployeeSingleReport";
-import PerformanceReportButton from "@/components/performance/PerformanceReportButton";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 export default function Performance() {
@@ -122,7 +122,7 @@ export default function Performance() {
 
       {(view === "individual" || view === "achievements") && (
         <div className="flex justify-end">
-          <PerformanceReportButton
+          <ComparisonExportButtons
             title={view === "achievements" ? t("achievementsBoard") : t("individualRanking")}
             headers={["#", t("employeeName"), t("station"), t("points")]}
             rows={ranked.map((e, i) => [i + 1, e.name, stationName(e.stationId || defaultStationId), e.points])}
@@ -131,7 +131,7 @@ export default function Performance() {
       )}
       {view === "station" && (
         <div className="flex justify-end">
-          <PerformanceReportButton
+          <ComparisonExportButtons
             title={t("stationRanking")}
             headers={["#", t("stations"), t("members"), t("points")]}
             rows={stationTotals.map((s, i) => [i + 1, s.name, s.memberCount, s.points])}

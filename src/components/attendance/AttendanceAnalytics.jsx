@@ -4,8 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
-import { CalendarRange } from "lucide-react";
-import ReportPanelToggle from "@/components/reports/ReportPanelToggle";
+import { CalendarRange, FileText } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import MobileSelect from "@/components/mobile/MobileSelect";
 
@@ -81,11 +80,13 @@ export default function AttendanceAnalytics({ employees, t }) {
 
   return (
     <div className="space-y-3">
-      <ReportPanelToggle
-        open={reportOpen}
+      <button
+        type="button"
         onClick={() => setReportOpen((value) => !value)}
-        label={lang === "ar" ? "تقرير التحليلات (PDF / Excel)" : "Analytics report (PDF / Excel)"}
-      />
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${reportOpen ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+      >
+        <FileText className="w-3.5 h-3.5" /> {lang === "ar" ? "تقرير التحليلات (PDF / Excel)" : "Analytics report (PDF / Excel)"}
+      </button>
 
       {reportOpen && <div className="p-4 rounded-xl border border-border bg-card space-y-3">
         <p className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">

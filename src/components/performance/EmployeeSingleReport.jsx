@@ -6,7 +6,7 @@ import { getRoleLabel } from "@/lib/roles";
 import { Search, Award, CheckCircle2, Clock, FileBadge, CalendarDays } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import moment from "moment";
-import PerformanceReportButton from "@/components/performance/PerformanceReportButton";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 // Full performance report for a single selected employee — points, badge, tasks,
@@ -124,7 +124,7 @@ export default function EmployeeSingleReport({ t }) {
       </div>
 
       <div className="flex justify-end">
-        <PerformanceReportButton
+        <ComparisonExportButtons
           title={`${t("individualReport")} — ${emp.name}`}
           headers={[t("category"), t("title"), t("status")]}
           rows={[

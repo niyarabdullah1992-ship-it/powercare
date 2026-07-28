@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import moment from "moment";
 import { base44 } from "@/api/base44Client";
-import { CalendarRange, Loader2, MapPin, PenLine } from "lucide-react";
-import ReportPanelToggle from "@/components/reports/ReportPanelToggle";
+import { CalendarRange, FileText, Loader2, MapPin, PenLine } from "lucide-react";
 import LocationMapModal from "@/components/attendance/LocationMapModal";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { useI18n } from "@/lib/i18n";
@@ -170,11 +169,13 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
 
   return (
     <div className="space-y-3">
-      <ReportPanelToggle
-        open={reportOpen}
+      <button
+        type="button"
         onClick={() => setReportOpen((value) => !value)}
-        label={lang === "ar" ? "تقرير الفريق (PDF / Excel)" : "Team report (PDF / Excel)"}
-      />
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${reportOpen ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+      >
+        <FileText className="w-3.5 h-3.5" /> {lang === "ar" ? "تقرير الفريق (PDF / Excel)" : "Team report (PDF / Excel)"}
+      </button>
 
       {reportOpen && <div className="p-4 rounded-xl border border-border bg-card space-y-3">
         <p className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
