@@ -52,7 +52,7 @@ const Terms = lazy(() => import('./pages/Terms'));
 const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
 const PowerCarePresentation = lazy(() => import('./pages/PowerCarePresentation'));
 const PowerCareProfile = lazy(() => import('./pages/PowerCareProfile'));
-const PowerCareSapComparison = lazy(() => import('./pages/PowerCareSapComparison'));
+const PowerCareSapComparisonV2 = lazy(() => import('./pages/PowerCareSapComparisonV2'));
 const AcwaComprehensiveProposal = lazy(() => import('./pages/AcwaComprehensiveProposal'));
 const AdAudio = lazy(() => import('./pages/AdAudio'));
 const CopyrightDoc = lazy(() => import('./pages/CopyrightDoc'));
@@ -117,7 +117,8 @@ function AppRoutes() {
       <Route path="/refund-policy" element={<RefundPolicy />} />
       <Route path="/powercare-presentation" element={<PowerCarePresentation />} />
       <Route path="/powercare-profile" element={<PowerCareProfile />} />
-      <Route path="/powercare-sap-comparison" element={<PowerCareSapComparison />} />
+      <Route path="/powercare-sap-comparison" element={<PowerCareSapComparisonV2 />} />
+      <Route path="/powercare-sap-comparison-v2" element={<PowerCareSapComparisonV2 />} />
       <Route path="/acwa-powercare-proposal" element={<AcwaComprehensiveProposal />} />
       <Route path="/acwa-executive-brief" element={<Navigate to="/acwa-powercare-proposal" replace />} />
       <Route path="/acwa-pilot-proposal" element={<Navigate to="/acwa-powercare-proposal" replace />} />
