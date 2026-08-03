@@ -14,19 +14,19 @@ const VIDEO_URLS = [
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/d26ad44d9__.mp4",
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/ea168e01b__.mp4",
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/c0a9d83d6__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/2d9384c30_NiroVera_Film.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/d71a84e57__.mp4",
 ];
 
 const NARRATION_URLS = {
-  ar: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/074f54976_speech.mp3",
-  en: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/33609ca50_speech.mp3",
-  de: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/b5d20a1c5_speech.mp3",
-  fr: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/5f89dcba0_speech.mp3",
-  es: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/5d0fb6198_speech.mp3",
-  pt: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/a130726f3_speech.mp3",
-  ru: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/fe94a81a5_speech.mp3",
-  ja: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/a82142529_speech.mp3",
-  ko: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/1877423df_speech.mp3",
+  ar: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/bb9ebd74b_speech.mp3",
+  en: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/eccab74ca_speech.mp3",
+  de: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/b4e1957d7_speech.mp3",
+  fr: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/58ec7594d_speech.mp3",
+  es: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/97c561747_speech.mp3",
+  pt: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/470ba127d_speech.mp3",
+  ru: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/d5b733af9_speech.mp3",
+  ja: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/f84abb0c8_speech.mp3",
+  ko: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/de9d23cae_speech.mp3",
 };
 
 export default function VideoIntro() {
@@ -96,7 +96,7 @@ export default function VideoIntro() {
             <p className="mt-3 max-w-5xl text-sm leading-6 text-foreground md:text-base md:leading-6">{t("videoText")}</p>
           </div>
         </div>
-        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" onEnded={resetPlayback} />
+        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" />
       </div>
     </section>
   );
