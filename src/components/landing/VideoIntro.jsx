@@ -11,6 +11,9 @@ const VIDEO_URLS = [
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/9a24b6bf3__.mp4",
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/d2a2ee186__.mp4",
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/01c189d36__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/d26ad44d9__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/ea168e01b__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/c0a9d83d6__.mp4",
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/2d9384c30_NiroVera_Film.mp4",
 ];
 
@@ -77,6 +80,7 @@ export default function VideoIntro() {
                 <div className={`absolute inset-0 transition-opacity ${playing ? "opacity-100" : "opacity-0"}`}>
                   <SeamlessVideoPlaylist ref={playerRef} urls={VIDEO_URLS} playing={playing} onClick={togglePlay} onPlaylistEnd={handlePlaylistEnd} />
                 </div>
+                <div className="pointer-events-none absolute bottom-5 start-5 z-10 border-s-2 border-accent bg-primary/80 px-3 py-1.5 font-heading text-lg font-semibold tracking-wide text-primary-foreground backdrop-blur-sm">NiroVera</div>
                 <div className="pointer-events-none absolute inset-0 bg-primary/5" />
                 <button onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} className={`absolute inset-0 flex items-center justify-center transition-opacity ${playing ? "opacity-0 group-hover:opacity-100" : "opacity-100"}`}>
                   <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/70 text-landing-gold-light shadow-xl backdrop-blur-sm">
