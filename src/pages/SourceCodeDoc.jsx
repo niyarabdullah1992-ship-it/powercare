@@ -18,15 +18,15 @@ const FILE_MODULES = import.meta.glob(
 
 const TEXTS = {
   ar: {
-    bar: "مستند الكود المصدري الكامل — للتسجيل في حقوق الملكية الفكرية",
+    bar: "مستند الكود المصدري الكامل — مقدّم إلى الهيئة السعودية للملكية الفكرية",
     authorPh: "اسم المؤلف / المبرمج (كما في الطلب)",
     print: "طباعة / حفظ PDF",
     collecting: "جاري تجميع كل ملفات الكود…",
     deposit: "SOURCE CODE DEPOSIT — نسخة إيداع الكود المصدري",
-    title: "منصة PowerCare",
-    subtitle: "نظام سحابي متكامل لإدارة المحطات، الموارد البشرية، الحضور بالموقع الجغرافي، المهام، السلامة، والتوقيع الرقمي للمستندات.",
+    title: "منصة NiroVera",
+    subtitle: "وثيقة إيداع الكود المصدري المقدّمة إلى الهيئة السعودية للملكية الفكرية لمصنف برمجي سحابي متكامل لإدارة المحطات، الموارد البشرية، الحضور، المهام، السلامة، والتوقيع الرقمي للمستندات.",
     rows: {
-      workName: ["اسم المصنف", "PowerCare — منصة إدارة المحطات والقوى العاملة"],
+      workName: ["اسم المصنف", "NiroVera — منصة إدارة المحطات والقوى العاملة"],
       author: "اسم المؤلف / المبرمج",
       langs: ["لغة/لغات البرمجة المستخدمة", "JavaScript (React JSX)، TypeScript، HTML، CSS (Tailwind)، JSON"],
       os: ["نظام التشغيل", "مستقل عن نظام التشغيل — يعمل عبر المتصفح على Windows، macOS، Linux، Android، iOS"],
@@ -43,15 +43,15 @@ const TEXTS = {
     end: "نهاية الكود المصدري",
   },
   en: {
-    bar: "Complete Source Code Document — Intellectual Property Registration",
+    bar: "Complete Source Code Document — Submitted to the Saudi Authority for Intellectual Property",
     authorPh: "Author / Programmer name (as in the application)",
     print: "Print / Save PDF",
     collecting: "Collecting all source files…",
     deposit: "SOURCE CODE DEPOSIT",
-    title: "PowerCare Platform",
-    subtitle: "An integrated cloud system for station management, HR, GPS-based attendance, tasks, safety (HSE), and digital document signing.",
+    title: "NiroVera Platform",
+    subtitle: "Source-code deposit document submitted to the Saudi Authority for Intellectual Property for an integrated cloud platform covering station management, HR, attendance, tasks, safety (HSE), and digital document signing.",
     rows: {
-      workName: ["Work title", "PowerCare — Station & Workforce Management Platform"],
+      workName: ["Work title", "NiroVera — Station & Workforce Management Platform"],
       author: "Author / Programmer",
       langs: ["Programming language(s)", "JavaScript (React JSX), TypeScript, HTML, CSS (Tailwind), JSON"],
       os: ["Operating system", "OS-independent — runs in the browser on Windows, macOS, Linux, Android, iOS"],
@@ -77,7 +77,7 @@ export default function SourceCodeDoc() {
   const isAr = docLang === "ar";
 
   useEffect(() => {
-    document.title = "PowerCare — Source Code / الكود المصدري الكامل";
+    document.title = "NiroVera — Source Code / الكود المصدري الكامل";
     (async () => {
       const paths = Object.keys(FILE_MODULES).sort();
       const loaded = await Promise.all(
@@ -196,7 +196,7 @@ export default function SourceCodeDoc() {
 
         {files && (
           <div className="border-t-2 border-black pt-4 mt-10 text-xs text-gray-600 flex justify-between">
-            <span>PowerCare — {T.end} ({files.length} {T.rows.filesUnit} • {totalLines.toLocaleString("en-US")} {T.rows.linesUnit})</span>
+            <span>NiroVera — {T.end} ({files.length} {T.rows.filesUnit} • {totalLines.toLocaleString("en-US")} {T.rows.linesUnit})</span>
             <span>{new Date().toLocaleDateString(isAr ? "ar-SA" : "en-GB")}</span>
           </div>
         )}
