@@ -29,7 +29,7 @@ export default function OperationsModuleGrid({ metrics, lang, user, data, compan
   return (
     <section aria-label={ar ? "ملخص أقسام المنصة" : "Platform sections overview"}>
       <div className="mb-3 flex items-end justify-between gap-3">
-        <div><p className="ops-eyebrow">PowerCare Operations</p><h2 className="font-heading text-2xl">{ar ? "لوحة التحكم الرئيسية" : "Main control dashboard"}</h2></div>
+        <div><p className="ops-eyebrow">NiroVera Operations</p><h2 className="font-heading text-2xl">{ar ? "لوحة التحكم الرئيسية" : "Main control dashboard"}</h2></div>
         <p className="hidden text-xs text-muted-foreground sm:block">{ar ? "بيانات حية حسب صلاحياتك" : "Live data within your access"}</p>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">

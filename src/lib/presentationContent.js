@@ -1,7 +1,7 @@
 export const presentationSlides = [
   {
     eyebrow: "01 — الغلاف | Cover",
-    titleAr: "PowerCare",
+    titleAr: "NiroVera",
     titleEn: "Integrated Workforce Operations Platform",
     summaryAr: "منصة رقمية متكاملة لإدارة القوى العاملة والعمليات اليومية والموارد البشرية ضمن بيئة موحّدة وآمنة.",
     summaryEn: "A unified and secure digital platform for workforce, daily operations, and human-resources management.",
@@ -11,8 +11,8 @@ export const presentationSlides = [
     eyebrow: "02 — الملخص التنفيذي | Executive Summary",
     titleAr: "منصة واحدة لإدارة دورة العمل كاملة",
     titleEn: "One platform for the complete work cycle",
-    summaryAr: "تربط PowerCare الإدارة والموظفين والمحطات في منظومة واحدة تبدأ من الحضور والمهام، وتمتد إلى الموارد البشرية والتقارير والتواصل والتوقيع الإلكتروني.",
-    summaryEn: "PowerCare connects management, employees, and workstations in one system spanning attendance, tasks, HR, reporting, communication, and e-signatures.",
+    summaryAr: "تربط NiroVera الإدارة والموظفين والمحطات في منظومة واحدة تبدأ من الحضور والمهام، وتمتد إلى الموارد البشرية والتقارير والتواصل والتوقيع الإلكتروني.",
+    summaryEn: "NiroVera connects management, employees, and workstations in one system spanning attendance, tasks, HR, reporting, communication, and e-signatures.",
     points: [
       ["بنية متعددة المستأجرين بعزل تام — تدعم مئات المحطات وآلاف الموظفين", "Multi-tenant architecture with strict isolation — scales to hundreds of stations and thousands of employees"],
       ["تجربة متجاوبة للويب والجوال مع دعم العربية والاتجاه من اليمين", "Responsive web and mobile experience with Arabic RTL support"],
@@ -38,7 +38,7 @@ export const presentationSlides = [
     titleAr: "من التسجيل حتى القرار الإداري",
     titleEn: "From data capture to management decision",
     summaryAr: "يسجّل المستخدم الحدث من الهاتف أو الويب، تتحقق المنصة من الصلاحية والسياق، تحفظ البيانات ضمن نطاق الشركة، ثم تعرضها في اللوحات والتقارير مع تنبيهات وإجراءات متابعة.",
-    summaryEn: "Users capture events on mobile or web; PowerCare validates context and permissions, stores company-scoped data, then turns it into dashboards, reports, alerts, and actions.",
+    summaryEn: "Users capture events on mobile or web; NiroVera validates context and permissions, stores company-scoped data, then turns it into dashboards, reports, alerts, and actions.",
     steps: [
       ["01", "إدخال الحدث", "Capture"],
       ["02", "التحقق والصلاحيات", "Validate"],
@@ -53,7 +53,7 @@ export const presentationSlides = [
     titleAr: "حضور موثوق مرتبط بالموقع والجدول",
     titleEn: "Trusted attendance linked to location and schedule",
     summaryAr: "تتحقق المنصة من موقع الموظف مقارنة بنطاق العمل المحدد، وتربط تسجيل الدخول والخروج بالوردية، ثم تعرض التأخير والغياب وساعات العمل في تقارير يومية وشهرية.",
-    summaryEn: "PowerCare validates employee location against the approved work radius, links check-in/out to shifts, and reports lateness, absence, and worked hours.",
+    summaryEn: "NiroVera validates employee location against the approved work radius, links check-in/out to shifts, and reports lateness, absence, and worked hours.",
     points: [
       ["نطاق جغرافي قابل للضبط لكل محطة", "Configurable geofence for every workstation"],
       ["جداول وورديات وصيغ وقت 12/24 ساعة", "Schedules, shifts, and 12/24-hour formats"],
@@ -104,8 +104,8 @@ export const presentationSlides = [
     eyebrow: "09 — التواصل | Communication",
     titleAr: "تواصل داخلي منظم وقابل للرجوع",
     titleEn: "Structured, searchable internal communication",
-    summaryAr: "توفر PowerCare محادثات للمحطات والفرق، رسائل مباشرة، مشاركة وسائط، بحثًا داخل المحادثات، وإرسال بريد إلكتروني عند الحاجة، مع تقارير مجهولة تحمي هوية المرسل.",
-    summaryEn: "PowerCare provides station and team chats, direct messages, media sharing, conversation search, email delivery, and identity-protected anonymous reporting.",
+    summaryAr: "توفر NiroVera محادثات للمحطات والفرق، رسائل مباشرة، مشاركة وسائط، بحثًا داخل المحادثات، وإرسال بريد إلكتروني عند الحاجة، مع تقارير مجهولة تحمي هوية المرسل.",
+    summaryEn: "NiroVera provides station and team chats, direct messages, media sharing, conversation search, email delivery, and identity-protected anonymous reporting.",
     points: [
       ["محادثات فرق ومحطات ومجموعات مخصصة", "Team, station, and custom group chats"],
       ["مشاركة ملفات وصوت وصور", "File, voice, and image sharing"],
@@ -157,10 +157,10 @@ export const presentationSlides = [
     eyebrow: "13 — الملكية الفكرية | Intellectual Property",
     titleAr: "منظومة مترابطة بهوية وتجربة أصلية",
     titleEn: "A connected system with an original identity and experience",
-    summaryAr: "تتمثل القيمة الإبداعية في جمع الوظائف التشغيلية ضمن تجربة موحدة، وتصميم مسارات مترابطة للحضور والمهام والموارد البشرية والتقارير والتوقيع، مع هوية PowerCare البصرية ودعم متعدد اللغات.",
-    summaryEn: "The original value lies in unifying operational functions and designing connected flows across attendance, tasks, HR, reporting, and signing under the PowerCare identity.",
+    summaryAr: "تتمثل القيمة الإبداعية في جمع الوظائف التشغيلية ضمن تجربة موحدة، وتصميم مسارات مترابطة للحضور والمهام والموارد البشرية والتقارير والتوقيع، مع هوية NiroVera البصرية ودعم متعدد اللغات.",
+    summaryEn: "The original value lies in unifying operational functions and designing connected flows across attendance, tasks, HR, reporting, and signing under the NiroVera identity.",
     points: [
-      ["اسم وهوية وواجهات PowerCare", "PowerCare name, identity, and interfaces"],
+      ["اسم وهوية وواجهات NiroVera", "NiroVera name, identity, and interfaces"],
       ["تسلسل شاشات ومسارات استخدام مترابطة", "Connected screen sequences and user journeys"],
       ["هيكلة مخصصة للبيانات والصلاحيات والتقارير", "Custom data, permissions, and reporting structure"],
     ],
@@ -170,10 +170,10 @@ export const presentationSlides = [
     eyebrow: "14 — بيانات الإيداع | Submission Details",
     titleAr: "وثيقة تعريف بالمصنف البرمجي",
     titleEn: "Software Work Identification Document",
-    summaryAr: "أُعد هذا العرض لتوثيق فكرة PowerCare، مكوناته، طريقة تشغيله، وتجربته البصرية بوصفه مصنفًا برمجيًا متكاملًا.",
-    summaryEn: "This presentation documents the PowerCare concept, components, operating method, and visual experience as an integrated software work.",
+    summaryAr: "أُعد هذا العرض لتوثيق فكرة NiroVera، مكوناته، طريقة تشغيله، وتجربته البصرية بوصفه مصنفًا برمجيًا متكاملًا.",
+    summaryEn: "This presentation documents the NiroVera concept, components, operating method, and visual experience as an integrated software work.",
     details: [
-      ["اسم المصنف | Work title", "PowerCare"],
+      ["اسم المصنف | Work title", "NiroVera"],
       ["نوع المصنف | Work type", "منصة ويب وتطبيق أعمال | Web-based business platform"],
       ["صاحب الحقوق | Rights holder", "____________________________"],
       ["الإصدار | Version", "1.0"],

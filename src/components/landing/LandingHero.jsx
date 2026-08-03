@@ -17,14 +17,14 @@ export default function LandingHero({ lang, t }) {
             <div className="absolute inset-0 bg-gradient-to-t from-primary via-primary/10 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6 text-primary-foreground sm:p-10 lg:p-12">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-landing-gold-light">{t("heroEyebrow")}</p>
-              <h1 className="mt-3 font-heading text-5xl font-semibold leading-none tracking-[-0.04em] sm:text-7xl">PowerCare</h1>
+              <h1 className="mt-3 font-heading text-5xl font-semibold leading-none tracking-[-0.04em] sm:text-7xl">NiroVera</h1>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-primary-foreground/80 sm:text-lg sm:leading-7">{t("heroSubtitle")}</p>
             </div>
           </div>
 
           <aside className="flex flex-col justify-between border-t border-landing-gold/30 bg-card p-6 lg:border-s lg:border-t-0 lg:p-8">
             <div>
-              <div className="flex items-center gap-3 border-b border-border pb-5"><Logo size={36} /><div><p className="font-heading text-xl font-semibold">PowerCare</p><p className="text-xs text-muted-foreground">{t("heroEyebrow")}</p></div></div>
+              <div className="flex items-center gap-3 border-b border-border pb-5"><Logo size={36} /><div><p className="font-heading text-xl font-semibold">NiroVera</p><p className="text-xs text-muted-foreground">{t("heroEyebrow")}</p></div></div>
               <h2 className="mt-7 text-center font-heading text-2xl font-semibold">{t("chooseLoginType")}</h2>
               <div className="mt-5"><PowerCareLoginPanel showTypeSelector returnPath="/" /></div>
             </div>

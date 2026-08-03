@@ -58,7 +58,7 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
       </table>`}`
     )
     .join("");
-  const headHtml = theme === "attendanceModern" ? `<div class="head attendance-head"><div class="attendance-brand"><img src="${POWERCARE_LOGO_URL}" alt="PowerCare" /><p><b>POWERCARE</b> • TIME REGISTER</p></div><div class="attendance-title" dir="${dir}"><h1>${esc(title)}</h1><p class="period"><b>${dir === "rtl" ? "الفترة:" : "Period:"}</b><span>${esc(periodLabel || "—")}</span></p></div></div>` : `<div class="head"><div class="identity"><img src="${POWERCARE_LOGO_URL}" alt="PowerCare" /><div><p class="document-label">PowerCare • ${esc(visual.label)}</p><h1>${esc(title)}</h1><p class="meta">${esc(companyName)}${periodLabel ? " — " + esc(periodLabel) : ""}</p></div></div><div class="report-mark">${esc(visual.mark)}</div>${logoUrl ? `<img class="company-logo" src="${logoUrl}" alt="${esc(companyName)}" />` : ""}</div>`;
+  const headHtml = theme === "attendanceModern" ? `<div class="head attendance-head"><div class="attendance-brand"><img src="${POWERCARE_LOGO_URL}" alt="NiroVera" /><p><b>POWERCARE</b> • TIME REGISTER</p></div><div class="attendance-title" dir="${dir}"><h1>${esc(title)}</h1><p class="period"><b>${dir === "rtl" ? "الفترة:" : "Period:"}</b><span>${esc(periodLabel || "—")}</span></p></div></div>` : `<div class="head"><div class="identity"><img src="${POWERCARE_LOGO_URL}" alt="NiroVera" /><div><p class="document-label">NiroVera • ${esc(visual.label)}</p><h1>${esc(title)}</h1><p class="meta">${esc(companyName)}${periodLabel ? " — " + esc(periodLabel) : ""}</p></div></div><div class="report-mark">${esc(visual.mark)}</div>${logoUrl ? `<img class="company-logo" src="${logoUrl}" alt="${esc(companyName)}" />` : ""}</div>`;
 
   const html = `<!DOCTYPE html>
 <html dir="${dir}" lang="${dir === "rtl" ? "ar" : "en"}">
@@ -176,7 +176,7 @@ export function printReport({ title, companyName, periodLabel, dir = "ltr", stat
   ${sectionsHtml}
   ${attendanceAnalyticsHtml}
   <div class="foot">
-    <span>PowerCare • ${esc(companyName)}</span>
+    <span>NiroVera • ${esc(companyName)}</span>
     <span>${esc(generatedAt)}</span>
   </div>
   <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 350); };</script>

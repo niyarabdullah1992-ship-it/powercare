@@ -4,7 +4,7 @@ import { MapPin, ListTodo, MessageSquare, Megaphone, Sparkles, PartyPopper, Chev
 
 // جولة تعريفية تظهر مرة واحدة للموظف الجديد عند أول دخول — تشرح أهم أقسام التطبيق.
 const STEPS = [
-  { icon: PartyPopper, ar: { title: "أهلًا بك في PowerCare!", desc: "هذه جولة سريعة (دقيقة واحدة) تعرّفك على أهم ما تحتاجه في يومك. يمكنك تخطيها في أي وقت." }, en: { title: "Welcome to PowerCare!", desc: "A quick one-minute tour of everything you need day to day. You can skip anytime." } },
+  { icon: PartyPopper, ar: { title: "أهلًا بك في NiroVera!", desc: "هذه جولة سريعة (دقيقة واحدة) تعرّفك على أهم ما تحتاجه في يومك. يمكنك تخطيها في أي وقت." }, en: { title: "Welcome to NiroVera!", desc: "A quick one-minute tour of everything you need day to day. You can skip anytime." } },
   { icon: MapPin, ar: { title: "تسجيل الحضور", desc: "أول شيء في يومك: بطاقة تسجيل الحضور أعلى الصفحة الرئيسية — ضغطة واحدة وسيتم التحقق من موقعك تلقائيًا داخل نطاق المحطة." }, en: { title: "Check-in", desc: "First thing each day: the check-in card at the top of your home page — one tap, and your GPS location is verified automatically." } },
   { icon: ListTodo, ar: { title: "مهامي", desc: "من قسم «المهام» تتابع كل مهمة مسندة إليك: سجّل تقدمك، أرفق إثبات الإنجاز عند الاكتمال، وبلّغ عن أي معوّق يوقف العمل." }, en: { title: "My Tasks", desc: "In the Tasks section you track every task assigned to you: log progress, attach completion proof, and report blocking issues." } },
   { icon: MessageSquare, ar: { title: "المحادثات", desc: "تواصل مع فريق محطتك في المحادثة الجماعية، أو راسل أي زميل مباشرة — مع إمكانية إرفاق صور وملفات." }, en: { title: "Chat", desc: "Talk with your station's team group chat, or message any colleague directly — with photos and file attachments." } },

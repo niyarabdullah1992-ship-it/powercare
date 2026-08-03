@@ -9,7 +9,7 @@ export default class AppErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    console.error("PowerCare interface error:", error, info);
+    console.error("NiroVera interface error:", error, info);
   }
 
   render() {

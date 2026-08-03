@@ -35,7 +35,7 @@ export default function Verify() {
               {ar ? "التحقق من توقيع المستندات" : "Document Signature Verification"}
             </h1>
             <p className="text-xs text-muted-foreground font-body">
-              {ar ? "منصة PowerCare للتوثيق الرقمي" : "PowerCare digital verification"}
+              {ar ? "منصة NiroVera للتوثيق الرقمي" : "NiroVera digital verification"}
             </p>
           </div>
         </div>

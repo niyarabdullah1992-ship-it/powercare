@@ -18,7 +18,7 @@ export default function ProjectGuideDoc() {
 
   const downloadPdf = async () => {
     setDownloading(true);
-    await downloadElementPdf(documentRef.current, "PowerCare-Booklet-Niyar-Alraniawi.pdf");
+    await downloadElementPdf(documentRef.current, "NiroVera-Booklet-Niyar-Alraniawi.pdf");
     setDownloading(false);
   };
 

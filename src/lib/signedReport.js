@@ -63,7 +63,7 @@ function drawReportCanvas({ title, companyName, dir, headers, rows }) {
   ctx.textAlign = rtl ? "right" : "left";
   const xTitle = rtl ? W - 120 : 120;
 
-  // PowerCare identity and report header
+  // NiroVera identity and report header
   ctx.textAlign = rtl ? "right" : "left";
   ctx.fillStyle = visual.accent;
   ctx.font = "700 13px Tahoma, Arial, sans-serif";
@@ -111,7 +111,7 @@ function drawReportCanvas({ title, companyName, dir, headers, rows }) {
   ctx.fillStyle = PDF_THEME.muted;
   ctx.font = "13px Tahoma, Arial, sans-serif";
   ctx.textAlign = rtl ? "right" : "left";
-  ctx.fillText("PowerCare • Secure verified document", rtl ? W - 48 : 48, H - 24);
+  ctx.fillText("NiroVera • Secure verified document", rtl ? W - 48 : 48, H - 24);
 
   return canvas;
 }
@@ -120,7 +120,7 @@ export async function generateSignedReport({ title, companyName, dir, headers, r
   const canvas = drawReportCanvas({ title, companyName, dir, headers, rows });
   const ctx = canvas.getContext("2d");
 
-  // Add the company logo to the report header without replacing PowerCare's verification identity.
+  // Add the company logo to the report header without replacing NiroVera's verification identity.
   const sigId = generateVerificationId();
   const [qr, sigImg, logoImg, platformLogo] = await Promise.all([loadBadgeQr(sigId), loadImage(signatureUrl), loadImage(logoUrl), loadImage(POWERCARE_LOGO_URL)]);
   if (platformLogo) {

@@ -5,7 +5,7 @@ import Logo from "@/components/Logo";
 export default function RefundPolicy() {
   return <div className="powercare-public min-h-screen bg-landing-cinema px-4 py-10 font-body" dir="rtl">
     <div className="mx-auto max-w-3xl rounded-2xl border border-accent/20 bg-card px-6 py-10 text-card-foreground shadow-2xl shadow-accent/10 md:px-10">
-      <Link to="/" className="mb-8 flex items-center gap-2"><Logo size={32} /><span className="font-heading text-lg font-semibold">PowerCare</span></Link>
+      <Link to="/" className="mb-8 flex items-center gap-2"><Logo size={32} /><span className="font-heading text-lg font-semibold">NiroVera</span></Link>
       <h1 className="mb-6 font-heading text-3xl">سياسة الاسترجاع والاسترداد — Refund Policy</h1>
       <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
         <p>آخر تحديث: 27 يوليو 2026</p>

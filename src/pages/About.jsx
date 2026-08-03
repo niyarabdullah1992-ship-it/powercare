@@ -9,7 +9,7 @@ const CONTENT = {
     back: "العودة للرئيسية",
     title: "من نحن",
     intro:
-      "PowerCare هي منصة إدارة مؤسسية متكاملة صُممت لمساعدة الشركات على إدارة محطاتها وفرقها اليومية بكفاءة واحترافية. نجمع بين إدارة المهام، الحضور والانصراف بتقنية GPS، التواصل الداخلي، وإدارة الموارد البشرية في مكان واحد.",
+      "NiroVera هي منصة إدارة مؤسسية متكاملة صُممت لمساعدة الشركات على إدارة محطاتها وفرقها اليومية بكفاءة واحترافية. نجمع بين إدارة المهام، الحضور والانصراف بتقنية GPS، التواصل الداخلي، وإدارة الموارد البشرية في مكان واحد.",
     missionTitle: "رسالتنا",
     mission:
       "تمكين الشركات من إدارة عملياتها الميدانية بشفافية ودقة، مع تجربة استخدام راقية وبسيطة تناسب جميع أفراد الفريق — من الموظف الميداني إلى مدير الشركة.",
@@ -25,7 +25,7 @@ const CONTENT = {
     back: "Back to home",
     title: "About Us",
     intro:
-      "PowerCare is an integrated corporate management platform built to help companies run their stations and daily teams with efficiency and professionalism. We combine task management, GPS-verified attendance, internal communication, and HR management in one place.",
+      "NiroVera is an integrated corporate management platform built to help companies run their stations and daily teams with efficiency and professionalism. We combine task management, GPS-verified attendance, internal communication, and HR management in one place.",
     missionTitle: "Our Mission",
     mission:
       "Empowering companies to manage their field operations with transparency and precision, through a refined and simple experience that fits every team member — from field employee to company director.",
@@ -48,7 +48,7 @@ export default function About() {
       <div className="flex items-center justify-between border-b border-accent/20 px-6 py-4 md:px-10">
         <div className="flex items-center gap-2">
           <Logo size={30} />
-          <span className="font-heading font-semibold text-lg">PowerCare</span>
+          <span className="font-heading font-semibold text-lg">NiroVera</span>
         </div>
         <Link to="/" className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10">
           <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} strokeWidth={1.75} /> {c.back}

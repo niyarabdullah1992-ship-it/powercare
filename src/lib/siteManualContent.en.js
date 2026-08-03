@@ -1,5 +1,5 @@
 export const MANUAL_META = {
-  title: "PowerCare Comprehensive Operations Manual",
+  title: "NiroVera Comprehensive Operations Manual",
   subtitle: "Practical step-by-step guidance for owners, managers, and employees — 2026 edition",
   notice: "Visible tools depend on your role, permissions, station scope, and company plan.",
 };

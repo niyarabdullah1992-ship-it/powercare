@@ -32,7 +32,7 @@ export default function GeneratedVideoAd({ urls, audioUrl, logoUrl, posterUrl })
     <audio ref={audio} src={audioUrl} preload="auto" />
     {started && !ended && <VideoTechHud index={index} logoUrl={logoUrl} />}
     {started && !ended && <div className="ad-progress">{urls.map((_, item) => <i key={item} className={item <= index ? "is-active" : ""} />)}</div>}
-    {!started && <div className="ad-story-poster"><Image src={posterUrl} alt="قصص موظفي PowerCare في مواقع الطاقة والتقنية" className="h-full w-full" fittingType="fill" /><button onClick={start} className="ad-story-start" aria-label="تشغيل الإعلان" /></div>}
+    {!started && <div className="ad-story-poster"><Image src={posterUrl} alt="قصص موظفي NiroVera في مواقع الطاقة والتقنية" className="h-full w-full" fittingType="fill" /><button onClick={start} className="ad-story-start" aria-label="تشغيل الإعلان" /></div>}
     {ended && <div className="absolute inset-0 z-20 flex items-center justify-center bg-landing-cinema/55 backdrop-blur-sm"><button className="ad-replay" onClick={replay}><RotateCcw /> إعادة التشغيل</button></div>}
   </>;
 }

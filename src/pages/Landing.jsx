@@ -7,7 +7,7 @@ import LandingHero from "@/components/landing/LandingHero";
 import VideoIntro from "@/components/landing/VideoIntro";
 import StatsBand from "@/components/landing/StatsBand";
 import { trackVisit } from "@/lib/trackVisit";
-import WhyPowerCare from "@/components/landing/WhyPowerCare";
+import WhyNiroVera from "@/components/landing/WhyPowerCare";
 import IpCertificateBadge from "@/components/landing/IpCertificateBadge";
 import PlatformServices from "@/components/landing/PlatformServices";
 
@@ -36,7 +36,7 @@ export default function Landing() {
         <div className="mx-auto flex h-14 max-w-[1440px] flex-row-reverse items-center justify-between px-4 sm:px-6 md:px-8">
           <div className="flex items-center gap-2">
             <Logo size={26} />
-            <span className="font-heading text-base font-semibold text-foreground">PowerCare</span>
+            <span className="font-heading text-base font-semibold text-foreground">NiroVera</span>
           </div>
           <div className="flex items-center gap-2">
             <Link to="/pricing" className="rounded-md bg-accent px-4 py-2 text-xs font-semibold text-accent-foreground hover:bg-accent/90">
@@ -73,10 +73,10 @@ export default function Landing() {
         <div className="mx-auto max-w-[1380px]">
           <div className="mb-8 flex flex-col items-center text-center">
             <Logo size={36} />
-            <h2 className="mt-4 font-heading text-4xl font-semibold tracking-[-0.03em] text-foreground md:text-5xl">{lang === "ar" ? "لماذا PowerCare؟" : "Why PowerCare?"}</h2>
+            <h2 className="mt-4 font-heading text-4xl font-semibold tracking-[-0.03em] text-foreground md:text-5xl">{lang === "ar" ? "لماذا NiroVera؟" : "Why NiroVera?"}</h2>
           </div>
 
-          <WhyPowerCare lang={lang} />
+          <WhyNiroVera lang={lang} />
 
           <div className="mx-auto mb-7 flex max-w-3xl items-center justify-center gap-3 rounded-full border border-border bg-card px-6 py-3 text-center text-xs">
             <Sparkles className="h-4 w-4 shrink-0 text-accent" strokeWidth={1.75} />

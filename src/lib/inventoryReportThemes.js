@@ -43,7 +43,7 @@ export const INVENTORY_REPORT_CSS = `
   .inventory-simplified .head h1 { color:#142442; font:700 24px Tahoma,"Segoe UI",Arial,sans-serif; }
   .inventory-simplified .head .meta { margin-top:5px; color:#142442; font-size:11px; opacity:1; }
   .inventory-simplified .report-mark { order:2; width:auto; min-width:0; height:auto; margin-inline-start:auto; border:0; background:transparent; color:#142442; font-size:0; }
-  .inventory-simplified .report-mark::before { content:"PowerCare"; font:700 29px Tahoma,"Segoe UI",Arial,sans-serif; letter-spacing:-.03em; }
+  .inventory-simplified .report-mark::before { content:"NiroVera"; font:700 29px Tahoma,"Segoe UI",Arial,sans-serif; letter-spacing:-.03em; }
   .inventory-simplified .stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:0 0 16px; }
   .inventory-simplified .stat { display:flex; min-width:0; min-height:112px; flex-direction:column; align-items:center; justify-content:center; padding:12px 8px; border:1px solid #bd8e18; border-top:8px solid #bd8e18; border-radius:8px; background:#ffffff; box-shadow:none; text-align:center; }
   .inventory-simplified .stat .lbl { order:1; margin:0 0 12px; color:#111827; font-size:10px; line-height:1.4; }

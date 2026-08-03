@@ -6,7 +6,7 @@ import { IP_CERTIFICATE_URL, ipCertificateTranslations } from "@/lib/ipCertifica
 export default function IpCertificateBadge({ lang }) {
   const copy = ipCertificateTranslations[lang] || ipCertificateTranslations.en;
   const details = [
-    [copy.registration, "26-12-92957462"], [copy.work, "PowerCare"],
+    [copy.registration, "26-12-92957462"], [copy.work, "NiroVera"],
     [copy.category, copy.categoryValue], [copy.author, lang === "ar" ? "نيار عبدالله سويلم الرنياوي" : "Niyar Abdullah Sweilem Al-Raniawi"],
     [copy.date, "20/07/2026"],
   ];
@@ -14,7 +14,7 @@ export default function IpCertificateBadge({ lang }) {
     <DialogTrigger asChild>
       <button type="button" className="mx-auto mt-8 flex max-w-xl items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-start text-sm text-white hover:bg-white/10">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent"><ShieldCheck className="h-5 w-5" /></span>
-        <span><strong className="block font-semibold">PowerCare</strong><span className="text-xs text-white/55">{copy.badge}</span></span>
+        <span><strong className="block font-semibold">NiroVera</strong><span className="text-xs text-white/55">{copy.badge}</span></span>
       </button>
     </DialogTrigger>
     <DialogContent dir={lang === "ar" ? "rtl" : "ltr"} className="max-h-[90vh] overflow-y-auto border-landing-gold/30 bg-landing-bg sm:max-w-xl">

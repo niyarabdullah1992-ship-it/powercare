@@ -69,7 +69,7 @@ export default function SiteManual() {
         };
         setTimeout(wait, 250);
       });
-      await downloadManualPdf(manualRef.current, `PowerCare-Manual-${manualLang}.pdf`);
+      await downloadManualPdf(manualRef.current, `NiroVera-Manual-${manualLang}.pdf`);
     } finally {
       setExporting(false);
     }
@@ -85,7 +85,7 @@ export default function SiteManual() {
           <ManualToc chapters={chapters} labels={labels} />
           <main className="space-y-6">{chapters.map((chapter) => <ManualChapter key={chapter.id} chapter={chapter} labels={labels} lang={manualLang} exportMode={exporting} />)}</main>
         </div>
-        <footer className="py-6 text-center text-xs text-muted-foreground">PowerCare — {labels.footer} · {labels.updated} {new Date().toLocaleDateString(manualLang)}</footer>
+        <footer className="py-6 text-center text-xs text-muted-foreground">NiroVera — {labels.footer} · {labels.updated} {new Date().toLocaleDateString(manualLang)}</footer>
       </div>
     </div>
   );

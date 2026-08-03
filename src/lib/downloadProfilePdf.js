@@ -1,6 +1,6 @@
 import { drawPdfCorporateFrame } from "@/lib/pdfCorporateArt";
 
-export async function downloadProfilePdf(container, onProgress, fileName = "PowerCare-Corporate-Profile-AR-EN-2026.pdf") {
+export async function downloadProfilePdf(container, onProgress, fileName = "NiroVera-Corporate-Profile-AR-EN-2026.pdf") {
   if (!container) return;
   const pages = [...container.querySelectorAll("[data-pdf-page]")];
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([

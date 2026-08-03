@@ -5,11 +5,11 @@ import PresentationSlide from "@/components/presentation/PresentationSlide";
 import { presentationSlides } from "@/lib/presentationContent";
 import "@/pages/powercare-presentation.css";
 
-export default function PowerCarePresentation() {
+export default function NiroVeraPresentation() {
   return <div className="pc-presentation-page">
     <nav className="pc-deck-toolbar">
       <Link to="/" className="pc-toolbar-link"><ArrowLeft /> العودة | Back</Link>
-      <div><b>PowerCare</b><span>عرض الملكية الفكرية | IP Presentation</span></div>
+      <div><b>NiroVera</b><span>عرض الملكية الفكرية | IP Presentation</span></div>
       <button onClick={() => window.print()}><Download /> حفظ PDF | Save PDF</button>
     </nav>
     <main className="pc-deck">

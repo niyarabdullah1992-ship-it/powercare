@@ -12,7 +12,7 @@ export default function Login() {
     <AuthLayout
       icon={LogIn}
       title={ar ? "مرحباً بعودتك" : "Welcome back"}
-      subtitle={ar ? "سجّل الدخول إلى PowerCare" : "Log in to PowerCare"}
+      subtitle={ar ? "سجّل الدخول إلى NiroVera" : "Log in to NiroVera"}
       footer={
         <span className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
           <span>

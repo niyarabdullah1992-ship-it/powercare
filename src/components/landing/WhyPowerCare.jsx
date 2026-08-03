@@ -1,8 +1,8 @@
 import React from "react";
 import { Building2, Users, Globe2, ShieldCheck } from "lucide-react";
 
-// "Why PowerCare?" — achievement numbers + trust icons, shown right above the benefits.
-export default function WhyPowerCare({ lang }) {
+// "Why NiroVera?" — achievement numbers + trust icons, shown right above the benefits.
+export default function WhyNiroVera({ lang }) {
   const ar = lang === "ar";
   const stats = [
     { icon: Building2, value: "+120", label: ar ? "شركة مشتركة" : "Companies onboard" },

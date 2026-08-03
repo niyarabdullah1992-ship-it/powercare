@@ -27,6 +27,6 @@ export function drawPdfCorporateFrame(pdf, title = "", pageNumber) {
   pdf.line(10, height - 8, width - 10, height - 8);
   pdf.setTextColor(101, 115, 131);
   pdf.setFontSize(7);
-  pdf.text(`PowerCare • ${visual.label}`, 10, height - 4.5);
+  pdf.text(`NiroVera • ${visual.label}`, 10, height - 4.5);
   pdf.text(String(pageNumber || pdf.getNumberOfPages()), width - 10, height - 4.5, { align: "right" });
 }

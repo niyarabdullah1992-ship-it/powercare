@@ -8,7 +8,7 @@ export default function AcwaDocumentPage({ page, total, documentType }) {
   return <article data-pdf-page className="relative mx-auto flex h-[1123px] w-[794px] shrink-0 flex-col overflow-hidden bg-background text-foreground shadow-elevated">
     <div className="h-3 bg-accent" />
     <header className="flex items-center justify-between border-b border-border px-12 py-7">
-      <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-full border border-accent bg-primary text-accent"><ShieldCheck className="h-5 w-5" /></span><div><p className="font-heading text-xl font-bold">PowerCare</p><p className="font-mono text-[8px] tracking-[.2em] text-muted-foreground">PROPOSAL FOR ACWA POWER</p></div></div>
+      <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-full border border-accent bg-primary text-accent"><ShieldCheck className="h-5 w-5" /></span><div><p className="font-heading text-xl font-bold">NiroVera</p><p className="font-mono text-[8px] tracking-[.2em] text-muted-foreground">PROPOSAL FOR ACWA POWER</p></div></div>
       <div className="text-right"><p className="font-mono text-[9px] text-accent">{page.number} / {String(total).padStart(2, "0")}</p><p className="mt-1 text-[8px] text-muted-foreground">{documentType}</p></div>
     </header>
     <div className="relative overflow-hidden bg-primary px-12 py-12 text-primary-foreground">

@@ -261,7 +261,7 @@ export default function Layout({ children }) {
         <div className={`relative flex items-center border-b border-white/10 py-4 ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-5"}`}>
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-landing-gold/30 bg-white/95 shadow-sm"><Logo size={31} /></span>
           {!sidebarCollapsed && <div className="min-w-0 pe-5">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-landing-gold-light">PowerCare</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-landing-gold-light">NiroVera</p>
             <p className="mt-0.5 truncate font-heading text-lg font-semibold text-white">{company.name || t("appName")}</p>
             <p className="truncate text-[9px] uppercase tracking-[0.12em] text-white/35">{lang === "ar" ? "منصة العمليات المؤسسية" : "Enterprise Operations"}</p>
           </div>}
@@ -368,7 +368,7 @@ export default function Layout({ children }) {
               </span>
               <span className="h-9 w-px shrink-0 bg-border" />
               <div className="min-w-0">
-                <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-accent">PowerCare</p>
+                <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-accent">NiroVera</p>
                 <CompanyNameEditor company={company} data={data} currentUser={currentUser} lang={lang} />
                 <p className="mt-1 truncate text-[11px] font-medium text-muted-foreground">{t("welcome")}, {currentUser.name}</p>
               </div>

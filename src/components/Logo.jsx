@@ -6,7 +6,7 @@ export default function Logo({ size = 36, className = "" }) {
   return (
     <Image
       src={POWERCARE_LOGO_URL}
-      alt="PowerCare"
+      alt="NiroVera"
       originWidth={1024}
       originHeight={1024}
       fittingType="fit"

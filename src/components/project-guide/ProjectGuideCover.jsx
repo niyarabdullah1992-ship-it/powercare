@@ -4,7 +4,7 @@ import Logo from "@/components/Logo";
 
 export default function ProjectGuideCover({ program, author, dateAr, dateEn, image }) {
   return <article className="relative flex min-h-[1123px] flex-col overflow-hidden bg-primary text-primary-foreground print:min-h-[277mm]">
-    <Image src={image} alt="PowerCare industrial operations" fittingType="fill" focalPointY={0.45} className="absolute inset-0 h-full w-full" />
+    <Image src={image} alt="NiroVera industrial operations" fittingType="fill" focalPointY={0.45} className="absolute inset-0 h-full w-full" />
     <div className="absolute inset-0 bg-primary/65" />
     <div className="relative flex h-full min-h-[1123px] flex-col items-center justify-center px-16 text-center print:min-h-[277mm]">
       <div className="mb-10 flex h-24 w-24 items-center justify-center rounded-full border border-accent/60 bg-primary/80"><Logo size={62} /></div>

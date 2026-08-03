@@ -11,7 +11,7 @@ export async function prepareManualPdfNode(source, html2canvas) {
     const canvas = await html2canvas(originalShots[index], { scale: 1.35, useCORS: true, backgroundColor: "#f5efe5", logging: false });
     const image = document.createElement("img");
     image.src = canvas.toDataURL("image/jpeg", 0.94);
-    image.alt = "PowerCare section illustration";
+    image.alt = "NiroVera section illustration";
     Object.assign(image.style, { display: "block", width: "100%", height: "auto", borderRadius: "16px" });
     clonedShots[index]?.replaceWith(image);
     if (image.decode) await image.decode().catch(() => undefined);

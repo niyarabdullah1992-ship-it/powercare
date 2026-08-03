@@ -9,7 +9,7 @@ export default function PlatformRoadmap({ ar }) {
   return (
     <section className="space-y-6">
       <div className="rounded-xl border border-accent/35 bg-primary p-6 text-primary-foreground shadow-elevated sm:p-8">
-        <div className="flex items-center gap-2 text-accent"><GitBranch className="h-5 w-5" /><span className="text-xs font-semibold uppercase tracking-widest">{ar ? "PowerCare 2026 · تحديث يوليو" : "PowerCare 2026 · July update"}</span></div>
+        <div className="flex items-center gap-2 text-accent"><GitBranch className="h-5 w-5" /><span className="text-xs font-semibold uppercase tracking-widest">{ar ? "NiroVera 2026 · تحديث يوليو" : "NiroVera 2026 · July update"}</span></div>
         <h1 className="mt-4 font-heading text-3xl font-semibold sm:text-4xl">{ar ? "خارطة التطور المحدثة" : "Updated development roadmap"}</h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-primary-foreground/70">{ar ? "عرض محدث لما تم إنجازه، وما نعمل عليه الآن، وخطوات التوسع المؤسسي التالية." : "A current view of delivered capabilities, active priorities, and the next stage of enterprise expansion."}</p>
       </div>

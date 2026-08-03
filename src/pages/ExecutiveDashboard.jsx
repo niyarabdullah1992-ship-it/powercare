@@ -57,7 +57,7 @@ export default function ExecutiveDashboard({ embedded = false }) {
     <section className="ops-command-dashboard space-y-5">
       {embedded ? (
         <header className="relative overflow-hidden rounded-2xl border border-accent/25 bg-card p-5 shadow-soft before:absolute before:inset-y-0 before:start-0 before:w-1 before:bg-accent">
-          <p className="ops-eyebrow text-accent">PowerCare / {ar ? "القيادة التنفيذية" : "Executive Command"}</p>
+          <p className="ops-eyebrow text-accent">NiroVera / {ar ? "القيادة التنفيذية" : "Executive Command"}</p>
           <div className="mt-2 flex items-center gap-3">
             <span className="relative flex h-2.5 w-2.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-40" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-accent" /></span>
             <h2 className="font-heading text-2xl font-semibold md:text-3xl">{ar ? "الرؤية التنفيذية الموحدة" : "Unified Executive View"}</h2>
@@ -66,7 +66,7 @@ export default function ExecutiveDashboard({ embedded = false }) {
         </header>
       ) : (
         <header className="ops-command-header">
-          <p className="ops-eyebrow">PowerCare / {ar ? "القيادة التنفيذية" : "Executive Command"}</p>
+          <p className="ops-eyebrow">NiroVera / {ar ? "القيادة التنفيذية" : "Executive Command"}</p>
           <h1 className="mt-2 font-heading text-3xl font-semibold md:text-4xl">{ar ? "اللوحة التنفيذية" : "Executive Dashboard"}</h1>
           <p className="mt-2 max-w-2xl text-sm font-body text-white/60">{ar ? "نظرة شاملة لحظية على جميع المحطات والفرق ومؤشرات الأداء" : "A live, company-wide view of every station, team and KPI"}</p>
         </header>

@@ -75,7 +75,7 @@ export default function Security() {
       <div className="sticky top-0 z-50 flex items-center justify-between border-b border-accent/20 bg-landing-cinema/90 px-4 py-3 backdrop-blur-xl sm:px-6 md:px-10">
         <Link to="/" className="flex items-center gap-2">
           <Logo size={30} />
-          <span className="font-heading text-lg font-semibold text-white">PowerCare</span>
+          <span className="font-heading text-lg font-semibold text-white">NiroVera</span>
         </Link>
         <Link to="/" className="flex items-center gap-1.5 text-sm font-body font-semibold text-landing-gold hover:underline">
           <ArrowLeft className={`h-4 w-4 ${ar ? "rotate-180" : ""}`} strokeWidth={1.75} />
@@ -93,8 +93,8 @@ export default function Security() {
           </h1>
           <p className="mt-5 text-base leading-relaxed text-white/60">
             {ar
-              ? "الأمان ليس ميزة إضافية في PowerCare — إنه الأساس. كل طبقة من المنصة مبنية لحماية بيانات شركتك وموظفيك."
-              : "Security isn't an add-on in PowerCare — it's the foundation. Every layer of the platform is built to protect your company and your people."}
+              ? "الأمان ليس ميزة إضافية في NiroVera — إنه الأساس. كل طبقة من المنصة مبنية لحماية بيانات شركتك وموظفيك."
+              : "Security isn't an add-on in NiroVera — it's the foundation. Every layer of the platform is built to protect your company and your people."}
           </p>
         </div>
 

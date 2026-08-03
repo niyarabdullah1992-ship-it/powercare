@@ -11,7 +11,7 @@ export default function PowerCareSapComparison() {
   const download = async () => {
     setDownloading(true);
     await document.fonts.ready;
-    await downloadProfilePdf(reportRef.current, (current) => setProgress(current), "PowerCare-vs-SAP-Comparison-AR-2026.pdf");
+    await downloadProfilePdf(reportRef.current, (current) => setProgress(current), "NiroVera-vs-SAP-Comparison-AR-2026.pdf");
     setDownloading(false);
     setProgress(0);
   };

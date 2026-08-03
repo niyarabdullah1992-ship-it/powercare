@@ -65,7 +65,7 @@ export default function SignedDocActions({ signed, currentUser, companyName, ar 
       // Send to every recipient at the same moment.
       await Promise.all(
         emails.map((addr) =>
-          base44.integrations.Core.SendEmail({ from_name: companyName || "PowerCare", to: addr, subject: subject.trim() || signed.name, body })
+          base44.integrations.Core.SendEmail({ from_name: companyName || "NiroVera", to: addr, subject: subject.trim() || signed.name, body })
         )
       );
       setSentTo(emails.join(", "));

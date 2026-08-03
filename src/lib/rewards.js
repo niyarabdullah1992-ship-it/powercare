@@ -1,4 +1,4 @@
-// Points & badges system for PowerCare task gamification.
+// Points & badges system for NiroVera task gamification.
 
 export const DEFAULT_PRIORITY_POINTS = {
   urgent: 150,

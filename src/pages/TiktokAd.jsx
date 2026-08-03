@@ -16,7 +16,7 @@ const AD_POSTER = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d
 export default function TiktokAd() {
   return (
     <main className="ad-page" dir="rtl">
-      <section className="ad-phone" aria-label="إعلان PowerCare عن الموظفين والعمليات">
+      <section className="ad-phone" aria-label="إعلان NiroVera عن الموظفين والعمليات">
         <GeneratedVideoAd urls={AD_VIDEOS} audioUrl={AD_AUDIO} logoUrl={AD_LOGO} posterUrl={AD_POSTER} />
       </section>
     </main>

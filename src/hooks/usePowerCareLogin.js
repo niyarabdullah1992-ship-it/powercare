@@ -39,8 +39,8 @@ export default function usePowerCareLogin(returnPath = "/login") {
         setAccounts([]);
         setGoogleOtpAccountKey(result.accountKey || null);
       } else if (!result) setError(lang === "ar"
-        ? `أنت لا تملك حسابًا مرتبطًا بـ ${provider} في PowerCare. استخدم البريد المسجل أو أنشئ حسابًا جديدًا.`
-        : `You do not have a PowerCare account linked to ${provider}. Use your registered email or create a new account.`);
+        ? `أنت لا تملك حسابًا مرتبطًا بـ ${provider} في NiroVera. استخدم البريد المسجل أو أنشئ حسابًا جديدًا.`
+        : `You do not have a NiroVera account linked to ${provider}. Use your registered email or create a new account.`);
     }).catch((error) => {
       const message = error.message || `${provider} login failed`;
       setError(provider === "Google" ? message : message.replaceAll("Google", provider));

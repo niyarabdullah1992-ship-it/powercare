@@ -30,7 +30,7 @@ export default function SaasAnalyticsDashboard({ lang }) {
 
   return <div className="space-y-5">
     <div className="rounded-2xl bg-gradient-to-br from-[#3a2f22] to-[#654b2d] p-6 text-white shadow-xl">
-      <p className="text-xs font-semibold uppercase tracking-widest text-landing-gold-light">PowerCare SaaS</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-landing-gold-light">NiroVera SaaS</p>
       <h2 className="mt-2 font-heading text-3xl font-semibold">{ar ? "مركز أداء المنصة" : "Platform performance center"}</h2>
       <p className="mt-2 text-sm text-white/60">{ar ? "متابعة النمو والاشتراكات والإيرادات وزوار الموقع." : "Track growth, subscriptions, revenue, and website visitors."}</p>
     </div>

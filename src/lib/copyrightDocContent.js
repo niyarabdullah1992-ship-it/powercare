@@ -7,14 +7,14 @@ export const AUTHOR = {
 };
 
 export const PROGRAM = {
-  nameAr: "باور كير — PowerCare",
-  nameEn: "PowerCare",
+  nameAr: "NiroVera — NiroVera",
+  nameEn: "NiroVera",
 };
 
 export const DESCRIPTION_SECTIONS = [
   {
     title: "فكرة البرنامج",
-    body: "«باور كير» (PowerCare) منصة رقمية سحابية متكاملة لإدارة الشركات والموارد البشرية، صُممت لتمكين المؤسسات من إدارة موظفيها ومحطات عملها ومهامها اليومية من مكان واحد. يقوم البرنامج على فكرة ربط الحضور الوظيفي بالموقع الجغرافي الفعلي للموظف: فلا يُقبل تسجيل الحضور إلا إذا كان الموظف داخل النطاق الجغرافي المحدد لمقر عمله، مع تحديد نطاق المسافة المسموح لكل محطة عمل على الخريطة. كما تدعم المنصة نمط «المساحة الشخصية» للأفراد، بأدوات إنتاجية شخصية وتجربة توقيع رقمي مستقلة.",
+    body: "«NiroVera» (NiroVera) منصة رقمية سحابية متكاملة لإدارة الشركات والموارد البشرية، صُممت لتمكين المؤسسات من إدارة موظفيها ومحطات عملها ومهامها اليومية من مكان واحد. يقوم البرنامج على فكرة ربط الحضور الوظيفي بالموقع الجغرافي الفعلي للموظف: فلا يُقبل تسجيل الحضور إلا إذا كان الموظف داخل النطاق الجغرافي المحدد لمقر عمله، مع تحديد نطاق المسافة المسموح لكل محطة عمل على الخريطة. كما تدعم المنصة نمط «المساحة الشخصية» للأفراد، بأدوات إنتاجية شخصية وتجربة توقيع رقمي مستقلة.",
   },
   {
     title: "أولاً: نظام الحضور والانصراف الجغرافي",
@@ -58,11 +58,11 @@ export const FILE_TREE = [
   },
   {
     group: "الصفحات الرئيسية (Pages)",
-    files: ["src/pages/Landing.jsx", "src/pages/Login.jsx", "src/pages/Register.jsx", "src/pages/ForgotPassword.jsx", "src/pages/ResetPassword.jsx", "src/pages/Dashboard.jsx", "src/pages/ExecutiveDashboard.jsx", "src/pages/MyTasks.jsx", "src/pages/StationChat.jsx", "src/pages/Complaints.jsx", "src/pages/Stations.jsx", "src/pages/Employees.jsx", "src/pages/EmployeeProfile.jsx", "src/pages/HR.jsx", "src/pages/Payroll.jsx", "src/pages/Performance.jsx", "src/pages/Safety.jsx", "src/pages/DailyReport.jsx", "src/pages/Attendance.jsx", "src/pages/Files.jsx", "src/pages/FileSigning.jsx", "src/pages/Assistant.jsx", "src/pages/OwnerPanel.jsx", "src/pages/Pricing.jsx", "src/pages/PricingSuccess.jsx", "src/pages/Verify.jsx", "src/pages/PublicSign.jsx", "src/pages/About.jsx", "src/pages/Help.jsx", "src/pages/Privacy.jsx", "src/pages/Security.jsx", "src/pages/Terms.jsx", "src/pages/PowerCarePresentation.jsx", "src/pages/CopyrightDoc.jsx", "src/pages/ProjectGuideDoc.jsx"],
+    files: ["src/pages/Landing.jsx", "src/pages/Login.jsx", "src/pages/Register.jsx", "src/pages/ForgotPassword.jsx", "src/pages/ResetPassword.jsx", "src/pages/Dashboard.jsx", "src/pages/ExecutiveDashboard.jsx", "src/pages/MyTasks.jsx", "src/pages/StationChat.jsx", "src/pages/Complaints.jsx", "src/pages/Stations.jsx", "src/pages/Employees.jsx", "src/pages/EmployeeProfile.jsx", "src/pages/HR.jsx", "src/pages/Payroll.jsx", "src/pages/Performance.jsx", "src/pages/Safety.jsx", "src/pages/DailyReport.jsx", "src/pages/Attendance.jsx", "src/pages/Files.jsx", "src/pages/FileSigning.jsx", "src/pages/Assistant.jsx", "src/pages/OwnerPanel.jsx", "src/pages/Pricing.jsx", "src/pages/PricingSuccess.jsx", "src/pages/Verify.jsx", "src/pages/PublicSign.jsx", "src/pages/About.jsx", "src/pages/Help.jsx", "src/pages/Privacy.jsx", "src/pages/Security.jsx", "src/pages/Terms.jsx", "src/pages/NiroVeraPresentation.jsx", "src/pages/CopyrightDoc.jsx", "src/pages/ProjectGuideDoc.jsx"],
   },
   {
     group: "المنطق والمكتبات (Libraries)",
-    files: ["src/lib/PowerCareAuth.jsx", "src/lib/store.js", "src/lib/i18n.jsx", "src/lib/i18nExtra.js", "src/lib/permissions.js", "src/lib/hrPermissions.js", "src/lib/hrLevels.js", "src/lib/roles.js", "src/lib/escalation.js", "src/lib/attendance.js", "src/lib/geo.js", "src/lib/geocodeStations.js", "src/lib/leaveTypes.js", "src/lib/payroll.js", "src/lib/payrollTemplate.js", "src/lib/salaryImport.js", "src/lib/riskWeights.js", "src/lib/rewards.js", "src/lib/signPdf.js", "src/lib/multiSignStamp.js", "src/lib/verificationBadge.js", "src/lib/fileHash.js", "src/lib/detectSignatureSpot.js", "src/lib/signedReport.js", "src/lib/exportReport.js", "src/lib/exportExcelColored.js", "src/lib/printReport.js", "src/lib/printDocument.js", "src/lib/pdfTheme.js", "src/lib/icsExport.js", "src/lib/taskFolders.js", "src/lib/taskTimeScope.js", "src/lib/smartDefaults.js", "src/lib/assistantActions.js", "src/lib/assistantContext.js", "src/lib/auditLog.js", "src/lib/emailAlerts.js", "src/lib/notificationRoute.js", "src/lib/notificationFilters.js", "src/lib/planLimits.js", "src/lib/sectionGuides.js", "src/lib/trackVisit.js", "src/lib/dateFormat.js", "src/lib/mediaAccess.js", "src/lib/navVisibility.js"],
+    files: ["src/lib/NiroVeraAuth.jsx", "src/lib/store.js", "src/lib/i18n.jsx", "src/lib/i18nExtra.js", "src/lib/permissions.js", "src/lib/hrPermissions.js", "src/lib/hrLevels.js", "src/lib/roles.js", "src/lib/escalation.js", "src/lib/attendance.js", "src/lib/geo.js", "src/lib/geocodeStations.js", "src/lib/leaveTypes.js", "src/lib/payroll.js", "src/lib/payrollTemplate.js", "src/lib/salaryImport.js", "src/lib/riskWeights.js", "src/lib/rewards.js", "src/lib/signPdf.js", "src/lib/multiSignStamp.js", "src/lib/verificationBadge.js", "src/lib/fileHash.js", "src/lib/detectSignatureSpot.js", "src/lib/signedReport.js", "src/lib/exportReport.js", "src/lib/exportExcelColored.js", "src/lib/printReport.js", "src/lib/printDocument.js", "src/lib/pdfTheme.js", "src/lib/icsExport.js", "src/lib/taskFolders.js", "src/lib/taskTimeScope.js", "src/lib/smartDefaults.js", "src/lib/assistantActions.js", "src/lib/assistantContext.js", "src/lib/auditLog.js", "src/lib/emailAlerts.js", "src/lib/notificationRoute.js", "src/lib/notificationFilters.js", "src/lib/planLimits.js", "src/lib/sectionGuides.js", "src/lib/trackVisit.js", "src/lib/dateFormat.js", "src/lib/mediaAccess.js", "src/lib/navVisibility.js"],
   },
   {
     group: "مكونات لوحة التحكم ومركز القيادة",
@@ -117,7 +117,7 @@ const FileSigning = lazy(() => import('./pages/FileSigning'));
 const HR = lazy(() => import('./pages/HR'));
 
 function RequireAuth({ children }) {
-  const { session } = usePowerCareAuth();
+  const { session } = useNiroVeraAuth();
   if (!session) return <Navigate to="/" replace />;
   return <Layout>{children}</Layout>;
 }

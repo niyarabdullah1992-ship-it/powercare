@@ -11,7 +11,7 @@ export default function InventoryHeader({ ar }) {
         </span>
         <div>
           <p className="font-mono text-[10px] uppercase tracking-widest text-accent">
-            PowerCare · Inventory Control
+            NiroVera · Inventory Control
           </p>
           <h1 className="mt-1 font-heading text-3xl font-semibold !text-primary-foreground">
             {ar ? "المخزن" : "Inventory"}

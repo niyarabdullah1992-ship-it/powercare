@@ -20,7 +20,7 @@ export default function PlatformServices({ lang }) {
         <div className="absolute -end-20 -top-20 h-64 w-64 rounded-full border border-white/10" />
         <div className="absolute -end-8 -top-8 h-40 w-40 rounded-full border border-accent/40" />
         <div className="relative">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-landing-gold-light">{ar ? "منظومة PowerCare" : "PowerCare Ecosystem"}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-landing-gold-light">{ar ? "منظومة NiroVera" : "NiroVera Ecosystem"}</p>
           <h2 className="mt-3 max-w-xl font-heading text-3xl font-semibold leading-[1.08] tracking-[-0.04em]">{ar ? "وحدات تعمل بتناغم واحد" : "One platform. Every operation."}</h2>
         </div>
         <p className="relative mt-8 max-w-sm border-s-2 border-accent ps-5 text-sm leading-6 text-white/65 md:mt-0">{ar ? "أدوات مترابطة تمنح شركتك رؤية موحدة وتحكماً أدق في كل مستوى." : "Connected modules give your company unified visibility and precise control at every level."}</p>

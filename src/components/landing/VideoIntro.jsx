@@ -5,14 +5,7 @@ import SeamlessVideoPlaylist from "@/components/landing/SeamlessVideoPlaylist";
 import { Image } from "@/components/ui/image";
 
 const VIDEO_URLS = [
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/b97771131_Executive_Video.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/5e65c5959_Workforce_Scene.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/865833689_Operations_Scene.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/2ba05263e_Safety_Scene.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/fb96dad3b_Analytics_Scene.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/92f5fded8_Attendance_Scene.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/52e910bfa_Finance_Scene.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/5c4171cae_Signing_Scene.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/2d9384c30_NiroVera_Film.mp4",
 ];
 
 const NARRATION_URLS = {
@@ -66,7 +59,7 @@ export default function VideoIntro() {
         <div className="min-w-0">
           <div className="grid border-b border-accent/50 lg:grid-cols-[54px_minmax(0,1fr)]">
             <div className="order-2 flex min-h-14 items-center justify-between border-y border-accent/45 bg-primary px-5 text-primary-foreground lg:order-none lg:min-h-[390px] lg:flex-col lg:border-y-0 lg:border-x lg:px-0 lg:py-4">
-              <span className="font-heading text-lg tracking-wide lg:vertical-text">PowerCare</span>
+              <span className="font-heading text-lg tracking-wide lg:vertical-text">NiroVera</span>
               <button type="button" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"} className="flex h-10 w-10 items-center justify-center border-t border-accent/45 text-landing-gold-light lg:h-14 lg:w-full">
                 {playing ? <Pause className="h-5 w-5" strokeWidth={1.5} /> : <Play className="h-5 w-5" strokeWidth={1.5} />}
               </button>
@@ -74,7 +67,7 @@ export default function VideoIntro() {
 
             <div className="group relative order-1 aspect-video overflow-hidden bg-card p-3 lg:order-none lg:aspect-auto lg:min-h-[460px]">
               <div className="absolute inset-3 overflow-hidden border border-accent/55">
-                <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/e03e45e6f_generated_image.png" alt="Executive leadership team reviewing PowerCare operations" originWidth={1536} originHeight={864} fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full" />
+                <Image src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/e03e45e6f_generated_image.png" alt="Executive leadership team reviewing NiroVera operations" originWidth={1536} originHeight={864} fittingType="fill" focalPointX={0.5} focalPointY={0.5} className="absolute inset-0 h-full w-full" />
                 <div className={`absolute inset-0 transition-opacity ${playing ? "opacity-100" : "opacity-0"}`}>
                   <SeamlessVideoPlaylist ref={playerRef} urls={VIDEO_URLS} playing={playing} onClick={togglePlay} onPlaylistEnd={handlePlaylistEnd} />
                 </div>
@@ -93,7 +86,7 @@ export default function VideoIntro() {
             <p className="mt-3 max-w-5xl text-sm leading-6 text-foreground md:text-base md:leading-6">{t("videoText")}</p>
           </div>
         </div>
-        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" onEnded={resetPlayback} />
+        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" muted onEnded={resetPlayback} />
       </div>
     </section>
   );
