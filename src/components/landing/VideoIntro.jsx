@@ -5,26 +5,17 @@ import SeamlessVideoPlaylist from "@/components/landing/SeamlessVideoPlaylist";
 import { Image } from "@/components/ui/image";
 
 const VIDEO_URLS = [
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/3686c4614___.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/fa715ab9c___.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/39ee81e87___.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/b06084ace___.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/8feb12d7f___.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/7bbac0d36___.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/01c189d36__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/9dcfae718__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/d26ad44d9__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/5a2b27584__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/ea168e01b__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/292493c59__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/c0a9d83d6__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/b9d1686a1__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/d71a84e57__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/9a53e8ba5__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/072957920__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/62241ee82__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/a5007daa4__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/3211aae88__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/5fd14220f__.mp4",
 ];
 
 const NARRATION_URLS = {
-  ar: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/553bc6fec_speech.mp3",
-  en: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/eccab74ca_speech.mp3",
+  ar: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/b119ff57f_speech.mp3",
+  en: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/d8d52d31c_speech.mp3",
   de: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/b4e1957d7_speech.mp3",
   fr: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/58ec7594d_speech.mp3",
   es: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/97c561747_speech.mp3",
