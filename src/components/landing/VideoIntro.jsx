@@ -5,12 +5,12 @@ import SeamlessVideoPlaylist from "@/components/landing/SeamlessVideoPlaylist";
 import { Image } from "@/components/ui/image";
 
 const VIDEO_URLS = [
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/9f950d7c2__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/018e15f94__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/c48bb700c__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/80c588892__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/9a24b6bf3__.mp4",
-  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/d2a2ee186__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/3686c4614___.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/fa715ab9c___.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/39ee81e87___.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/b06084ace___.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/8feb12d7f___.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/7bbac0d36___.mp4",
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/01c189d36__.mp4",
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/9dcfae718__.mp4",
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/d26ad44d9__.mp4",
