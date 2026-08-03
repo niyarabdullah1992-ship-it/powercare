@@ -5,6 +5,12 @@ import SeamlessVideoPlaylist from "@/components/landing/SeamlessVideoPlaylist";
 import { Image } from "@/components/ui/image";
 
 const VIDEO_URLS = [
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/58bfeba3f__NiroVera.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/fefc49702__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/b2e7418ff__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/9a24b6bf3__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/d2a2ee186__.mp4",
+  "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/01c189d36__.mp4",
   "https://media.base44.com/videos/public/6a4f617bd7360a0ae9581d2a/2d9384c30_NiroVera_Film.mp4",
 ];
 
@@ -86,7 +92,7 @@ export default function VideoIntro() {
             <p className="mt-3 max-w-5xl text-sm leading-6 text-foreground md:text-base md:leading-6">{t("videoText")}</p>
           </div>
         </div>
-        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" muted onEnded={resetPlayback} />
+        <audio key={narrationUrl} ref={audioRef} src={narrationUrl} preload="auto" onEnded={resetPlayback} />
       </div>
     </section>
   );
