@@ -72,7 +72,7 @@ const TEXTS = {
 export default function SourceCodeDoc() {
   const [files, setFiles] = useState(null);
   const [author, setAuthor] = useState("");
-  const [docLang, setDocLang] = useState("ar");
+  const [docLang, setDocLang] = useState("en");
   const T = TEXTS[docLang];
   const isAr = docLang === "ar";
 
