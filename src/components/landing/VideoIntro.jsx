@@ -20,7 +20,7 @@ const VIDEO_URLS = [
 ];
 
 const NARRATION_URLS = {
-  ar: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/8d27dd536_speech.mp3",
+  ar: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/553bc6fec_speech.mp3",
   en: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/eccab74ca_speech.mp3",
   de: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/b4e1957d7_speech.mp3",
   fr: "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/58ec7594d_speech.mp3",
