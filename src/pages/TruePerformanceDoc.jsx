@@ -10,7 +10,8 @@ import TruePerfComparison from "@/components/true-performance/TruePerfComparison
 import TruePerfLayers from "@/components/true-performance/TruePerfLayers";
 import TruePerfSteps from "@/components/true-performance/TruePerfSteps";
 import TruePerfSaip from "@/components/true-performance/TruePerfSaip";
-import { TP_META, TP_INTRO, TP_PILLARS, TP_ADVANTAGES, TP_FLOW, TP_CLOSING, TP_EQUATION, TP_LAYERS, TP_CHART, TP_COMPARISON, TP_STRENGTH, TP_MODERN_STEPS, TP_SAIP } from "@/lib/truePerformanceDocContent";
+import TruePerfOwnership from "@/components/true-performance/TruePerfOwnership";
+import { TP_META, TP_INTRO, TP_PILLARS, TP_ADVANTAGES, TP_FLOW, TP_CLOSING, TP_EQUATION, TP_LAYERS, TP_CHART, TP_COMPARISON, TP_STRENGTH, TP_MODERN_STEPS, TP_SAIP, TP_OWNERSHIP } from "@/lib/truePerformanceDocContent";
 
 // ملف توثيقي A4 يشرح ربط الحضور والمهام بقسم الأداء — قابل للتحميل PDF.
 export default function TruePerformanceDoc() {
@@ -132,6 +133,16 @@ export default function TruePerformanceDoc() {
           <h2 className="font-heading text-3xl font-semibold leading-tight text-primary">{TP_SAIP.titleAr}</h2>
           <p className="mb-5 text-[11px] uppercase tracking-widest text-accent">{TP_SAIP.titleEn}</p>
           <TruePerfSaip saip={TP_SAIP} />
+        </TruePerfPage>
+
+        {/* صفحة إقرار الملكية والأسبقية */}
+        <TruePerfPage footerAr={todayAr}>
+          <h2 className="font-heading text-3xl font-semibold text-primary">{TP_OWNERSHIP.titleAr}</h2>
+          <p className="mb-5 text-[11px] uppercase tracking-widest text-accent">{TP_OWNERSHIP.titleEn}</p>
+          <TruePerfOwnership
+            ownership={{ ...TP_OWNERSHIP, dateAr: todayAr }}
+            fingerprintSource={JSON.stringify([TP_META, TP_INTRO, TP_PILLARS, TP_ADVANTAGES, TP_FLOW, TP_CLOSING, TP_STRENGTH, TP_SAIP, TP_OWNERSHIP])}
+          />
         </TruePerfPage>
 
         {/* صفحة الدورة اليومية + الخلاصة */}
