@@ -120,7 +120,8 @@ export default function TruePerformanceDoc() {
               </div>
             ))}
           </div>
-          <h2 className="mt-9 font-heading text-2xl font-semibold text-primary">{TP_MODERN_STEPS.titleAr}</h2>
+          <p className="mt-4 rounded-lg border border-border bg-secondary/60 p-4 text-[12px] leading-6 text-muted-foreground">{TP_STRENGTH.disclaimerAr}</p>
+          <h2 className="mt-7 font-heading text-2xl font-semibold text-primary">{TP_MODERN_STEPS.titleAr}</h2>
           <p className="mb-4 text-[11px] uppercase tracking-widest text-accent">{TP_MODERN_STEPS.titleEn}</p>
           <TruePerfSteps steps={TP_MODERN_STEPS} />
         </TruePerfPage>
