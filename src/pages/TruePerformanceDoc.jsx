@@ -9,7 +9,8 @@ import TruePerfChart from "@/components/true-performance/TruePerfChart";
 import TruePerfComparison from "@/components/true-performance/TruePerfComparison";
 import TruePerfLayers from "@/components/true-performance/TruePerfLayers";
 import TruePerfSteps from "@/components/true-performance/TruePerfSteps";
-import { TP_META, TP_INTRO, TP_PILLARS, TP_ADVANTAGES, TP_FLOW, TP_CLOSING, TP_EQUATION, TP_LAYERS, TP_CHART, TP_COMPARISON, TP_STRENGTH, TP_MODERN_STEPS } from "@/lib/truePerformanceDocContent";
+import TruePerfSaip from "@/components/true-performance/TruePerfSaip";
+import { TP_META, TP_INTRO, TP_PILLARS, TP_ADVANTAGES, TP_FLOW, TP_CLOSING, TP_EQUATION, TP_LAYERS, TP_CHART, TP_COMPARISON, TP_STRENGTH, TP_MODERN_STEPS, TP_SAIP } from "@/lib/truePerformanceDocContent";
 
 // ملف توثيقي A4 يشرح ربط الحضور والمهام بقسم الأداء — قابل للتحميل PDF.
 export default function TruePerformanceDoc() {
@@ -124,6 +125,13 @@ export default function TruePerformanceDoc() {
           <h2 className="mt-7 font-heading text-2xl font-semibold text-primary">{TP_MODERN_STEPS.titleAr}</h2>
           <p className="mb-4 text-[11px] uppercase tracking-widest text-accent">{TP_MODERN_STEPS.titleEn}</p>
           <TruePerfSteps steps={TP_MODERN_STEPS} />
+        </TruePerfPage>
+
+        {/* صفحة البيان الموجَّه للهيئة السعودية للملكية الفكرية */}
+        <TruePerfPage footerAr={todayAr}>
+          <h2 className="font-heading text-3xl font-semibold leading-tight text-primary">{TP_SAIP.titleAr}</h2>
+          <p className="mb-5 text-[11px] uppercase tracking-widest text-accent">{TP_SAIP.titleEn}</p>
+          <TruePerfSaip saip={TP_SAIP} />
         </TruePerfPage>
 
         {/* صفحة الدورة اليومية + الخلاصة */}
