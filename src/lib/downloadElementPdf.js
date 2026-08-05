@@ -9,7 +9,16 @@ export async function downloadElementPdf(element, fileName) {
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = 210;
   const pageHeight = 297;
-  const renderOptions = { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false };
+  // html2canvas draws each glyph separately when letter-spacing is set, which
+  // disconnects Arabic letters. Neutralize letter-spacing on any element that
+  // contains Arabic text inside the cloned document only (screen is untouched).
+  const fixArabicLetterSpacing = (clonedDoc) => {
+    const arabic = /[\u0600-\u06FF]/;
+    clonedDoc.querySelectorAll("*").forEach((node) => {
+      if (arabic.test(node.textContent || "")) node.style.letterSpacing = "0";
+    });
+  };
+  const renderOptions = { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false, onclone: fixArabicLetterSpacing };
 
   // Each document sheet is captured on its own so no text line is ever sliced
   // in half between two PDF pages.
