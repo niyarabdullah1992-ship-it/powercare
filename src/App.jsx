@@ -59,6 +59,7 @@ const CopyrightDoc = lazy(() => import('./pages/CopyrightDoc'));
 const SourceCodeDoc = lazy(() => import('./pages/SourceCodeDoc'));
 const ProjectGuideDoc = lazy(() => import('./pages/ProjectGuideDoc'));
 const TiktokAd = lazy(() => import('./pages/TiktokAd'));
+const TruePerformanceDoc = lazy(() => import('./pages/TruePerformanceDoc'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const Expenses = lazy(() => import('./pages/Expenses'));
 const StationExpenses = lazy(() => import('./pages/StationExpenses'));
@@ -128,6 +129,7 @@ function AppRoutes() {
       <Route path="/project-guide" element={<ProjectGuideDoc />} />
       <Route path="/manual" element={<ProjectGuideDoc />} />
       <Route path="/tiktok-ad" element={<TiktokAd />} />
+      <Route path="/true-performance" element={<TruePerformanceDoc />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/owner-panel" element={<OwnerPanel />} />
       </Route>
