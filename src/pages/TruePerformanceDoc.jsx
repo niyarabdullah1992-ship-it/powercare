@@ -4,7 +4,12 @@ import Logo from "@/components/Logo";
 import { downloadElementPdf } from "@/lib/downloadElementPdf";
 import TruePerfPage from "@/components/true-performance/TruePerfPage";
 import TruePerfPillar from "@/components/true-performance/TruePerfPillar";
-import { TP_META, TP_INTRO, TP_PILLARS, TP_ADVANTAGES, TP_FLOW, TP_CLOSING } from "@/lib/truePerformanceDocContent";
+import TruePerfEquation from "@/components/true-performance/TruePerfEquation";
+import TruePerfChart from "@/components/true-performance/TruePerfChart";
+import TruePerfComparison from "@/components/true-performance/TruePerfComparison";
+import TruePerfLayers from "@/components/true-performance/TruePerfLayers";
+import TruePerfSteps from "@/components/true-performance/TruePerfSteps";
+import { TP_META, TP_INTRO, TP_PILLARS, TP_ADVANTAGES, TP_FLOW, TP_CLOSING, TP_EQUATION, TP_LAYERS, TP_CHART, TP_COMPARISON, TP_STRENGTH, TP_MODERN_STEPS } from "@/lib/truePerformanceDocContent";
 
 // ملف توثيقي A4 يشرح ربط الحضور والمهام بقسم الأداء — قابل للتحميل PDF.
 export default function TruePerformanceDoc() {
@@ -80,6 +85,44 @@ export default function TruePerformanceDoc() {
               </div>
             ))}
           </div>
+        </TruePerfPage>
+
+        {/* صفحة الرسوم التوضيحية — المعادلة وطبقات النظام */}
+        <TruePerfPage footerAr={todayAr}>
+          <h2 className="font-heading text-3xl font-semibold text-primary">{TP_EQUATION.titleAr}</h2>
+          <p className="mb-5 text-[11px] uppercase tracking-widest text-accent">{TP_EQUATION.titleEn}</p>
+          <TruePerfEquation equation={TP_EQUATION} />
+          <h2 className="mt-9 font-heading text-2xl font-semibold text-primary">{TP_LAYERS.titleAr}</h2>
+          <p className="mb-4 text-[11px] uppercase tracking-widest text-accent">{TP_LAYERS.titleEn}</p>
+          <TruePerfLayers layers={TP_LAYERS} />
+        </TruePerfPage>
+
+        {/* صفحة الرسم البياني وجدول المقارنة */}
+        <TruePerfPage footerAr={todayAr}>
+          <h2 className="font-heading text-3xl font-semibold text-primary">{TP_CHART.titleAr}</h2>
+          <p className="mb-5 text-[11px] uppercase tracking-widest text-accent">{TP_CHART.titleEn}</p>
+          <TruePerfChart chart={TP_CHART} />
+          <h2 className="mt-9 font-heading text-2xl font-semibold text-primary">{TP_COMPARISON.titleAr}</h2>
+          <p className="mb-4 text-[11px] uppercase tracking-widest text-accent">{TP_COMPARISON.titleEn}</p>
+          <TruePerfComparison comparison={TP_COMPARISON} />
+        </TruePerfPage>
+
+        {/* صفحة قوة الفكرة والخطوات العصرية */}
+        <TruePerfPage footerAr={todayAr}>
+          <h2 className="font-heading text-3xl font-semibold text-primary">{TP_STRENGTH.titleAr}</h2>
+          <p className="mb-4 text-[11px] uppercase tracking-widest text-accent">{TP_STRENGTH.titleEn}</p>
+          <p className="mb-5 text-sm leading-7 text-foreground">{TP_STRENGTH.introAr}</p>
+          <div className="grid grid-cols-2 gap-3">
+            {TP_STRENGTH.items.map((item) => (
+              <div key={item.titleAr} className="rounded-lg border border-accent/30 bg-card p-4">
+                <h3 className="font-heading text-base font-semibold text-primary">{item.titleAr}</h3>
+                <p className="mt-1.5 text-[12px] leading-6 text-muted-foreground">{item.textAr}</p>
+              </div>
+            ))}
+          </div>
+          <h2 className="mt-9 font-heading text-2xl font-semibold text-primary">{TP_MODERN_STEPS.titleAr}</h2>
+          <p className="mb-4 text-[11px] uppercase tracking-widest text-accent">{TP_MODERN_STEPS.titleEn}</p>
+          <TruePerfSteps steps={TP_MODERN_STEPS} />
         </TruePerfPage>
 
         {/* صفحة الدورة اليومية + الخلاصة */}
