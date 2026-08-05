@@ -6,15 +6,27 @@ export async function downloadElementPdf(element, fileName) {
     import("html2canvas"),
     import("jspdf"),
   ]);
-  const canvas = await html2canvas(element, {
-    scale: 1.2,
-    useCORS: true,
-    backgroundColor: "#ffffff",
-    logging: false,
-  });
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = 210;
   const pageHeight = 297;
+  const renderOptions = { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false };
+
+  // Each document sheet is captured on its own so no text line is ever sliced
+  // in half between two PDF pages.
+  const sheets = Array.from(element.querySelectorAll(".guide-page"));
+  if (sheets.length) {
+    for (let index = 0; index < sheets.length; index += 1) {
+      if (index) pdf.addPage();
+      const sheetCanvas = await html2canvas(sheets[index], renderOptions);
+      const renderedHeight = Math.min((sheetCanvas.height * pageWidth) / sheetCanvas.width, pageHeight);
+      pdf.addImage(sheetCanvas.toDataURL("image/jpeg", 0.94), "JPEG", 0, 0, pageWidth, renderedHeight, undefined, "FAST");
+      drawPdfCorporateFrame(pdf, fileName, index + 1);
+    }
+    pdf.save(fileName);
+    return;
+  }
+
+  const canvas = await html2canvas(element, renderOptions);
   const pageHeightPx = Math.floor((canvas.width * pageHeight) / pageWidth);
 
   for (let offset = 0, page = 0; offset < canvas.height; offset += pageHeightPx, page += 1) {
