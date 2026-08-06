@@ -17,7 +17,7 @@ export default function PerformanceTabs({ view, setView, isManager, t, lang, sup
     { key: "individualReport", label: t("individualReport") },
   ];
   const lastManagerTabs = [
-    { key: "analytics", label: t("analytics") },
+    { key: "analytics", label: lang === "ar" ? "تحليلات المهام" : "Task analytics" },
     { key: "trends", label: lang === "ar" ? "الاتجاهات الشهرية" : "Monthly trends" },
     { key: "supervision", label: lang === "ar" ? "الإشراف والعدالة" : "Supervision & fairness", alert: supervisionAlert },
   ];
