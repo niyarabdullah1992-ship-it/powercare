@@ -27,10 +27,17 @@ export default function ReportToolbar({
           <PeriodPicker showDaily={showDaily} showWeekly={showWeekly} />
         </div>
       </div>
-      <p className="text-sm text-muted-foreground font-body">
-        {shownLabel}: {resolved.label}
-        {contextNote ? ` · ${contextNote}` : ""}
-      </p>
+      {/* Never print a fallback range as if it were applied. */}
+      {resolved.valid ? (
+        <p className="text-sm text-muted-foreground font-body">
+          {shownLabel}: {resolved.label}
+          {contextNote ? ` · ${contextNote}` : ""}
+        </p>
+      ) : (
+        <p className="text-sm text-destructive font-body">
+          {lang === "ar" ? "لم يُطبَّق نطاق — أكمل اختيار التاريخين" : "No range applied — finish selecting both dates"}
+        </p>
+      )}
     </div>
   );
 }

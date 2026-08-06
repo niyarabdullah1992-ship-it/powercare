@@ -7,13 +7,14 @@ import { PERIODS, SHORT_PERIODS, periodLabel } from "@/lib/periods";
 // The one period bar used by every section. daily/weekly are opt-in.
 export default function PeriodPicker({ showDaily = false, showWeekly = false }) {
   const { lang } = useI18n();
-  const { period, from, to, setPeriod } = usePeriod();
+  const { period, from, to, setPeriod, resolved } = usePeriod();
 
   const options = [
     ...SHORT_PERIODS.filter((p) => (p.id === "daily" && showDaily) || (p.id === "weekly" && showWeekly)),
     ...PERIODS,
   ];
-  const invalidRange = period === "custom" && from && to && new Date(to) < new Date(from);
+  // One source of truth for validity — a half-filled range is invalid too.
+  const invalidRange = period === "custom" && !resolved.valid;
 
   return (
     <div className="flex flex-col gap-2">
@@ -37,6 +38,8 @@ export default function PeriodPicker({ showDaily = false, showWeekly = false }) 
         <div className="flex items-center gap-2 flex-wrap">
           <input
             type="date"
+            aria-label={lang === "ar" ? "من تاريخ" : "From date"}
+            max={to ? to.slice(0, 10) : undefined}
             value={from ? from.slice(0, 10) : ""}
             onChange={(e) => setPeriod("custom", { from: e.target.value, to })}
             className="px-2.5 min-h-[40px] rounded-lg border border-input text-sm font-body"
@@ -44,13 +47,15 @@ export default function PeriodPicker({ showDaily = false, showWeekly = false }) 
           <span className="text-muted-foreground text-xs">—</span>
           <input
             type="date"
+            aria-label={lang === "ar" ? "إلى تاريخ" : "To date"}
+            min={from ? from.slice(0, 10) : undefined}
             value={to ? to.slice(0, 10) : ""}
             onChange={(e) => setPeriod("custom", { from, to: e.target.value })}
             className="px-2.5 min-h-[40px] rounded-lg border border-input text-sm font-body"
           />
           {invalidRange && (
             <span className="text-xs text-destructive font-body">
-              {lang === "ar" ? "تاريخ النهاية يجب أن يكون بعد البداية" : "End date must be after the start date"}
+              {lang === "ar" ? "أكمل اختيار التاريخين — النهاية بعد البداية" : "Select both dates — end after start"}
             </span>
           )}
         </div>

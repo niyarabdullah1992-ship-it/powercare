@@ -83,7 +83,7 @@ export function resolvePeriod(id, { from, to, lang = "en" } = {}) {
 
   const config = ALL_PERIODS.find((p) => p.id === id) || PERIODS[0];
   const start = config.days
-    ? new Date(now.getTime() - (config.days - 1) * 86400000)
+    ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - (config.days - 1))
     : new Date(now.getFullYear(), now.getMonth() - (config.months || 1), now.getDate());
 
   return build(config.id, startOfDay(start), endOfDay(now), lang);
