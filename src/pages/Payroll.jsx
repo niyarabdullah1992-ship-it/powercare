@@ -14,6 +14,8 @@ import { canAdjustPayroll, hrScopeStations } from "@/lib/permissions";
 import { toast } from "@/components/ui/use-toast";
 import { stationIdForTreeEmployee } from "@/lib/orgTree";
 import PageHeader from "@/components/PageHeader";
+import DeductionLinesDialog from "@/components/payroll/DeductionLinesDialog";
+import { addDeductionLine, removeDeductionLine, resolveDeductionDispute, backfillLegacyDeduction } from "@/lib/payrollDeductions";
 
 const UNASSIGNED_STATION_ID = "__unassigned__";
 
@@ -25,6 +27,7 @@ export default function Payroll() {
   const [stationFilter, setStationFilter] = useState([]);
   const [showReport, setShowReport] = useState(false);
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
+  const [deductionItemId, setDeductionItemId] = useState(null);
 
   const canView = canAdjustPayroll(currentUser, data);
   const includeOwner = data?.settings?.includeOwnerInPayroll === true;
@@ -190,11 +193,29 @@ export default function Payroll() {
                   setItemPaid(company.id, month, item.id, paid);
                 }}
                 onPayslip={exportPayslip}
+                onDeductions={(item) => { backfillLegacyDeduction(company.id, month, item); setDeductionItemId(item.id); }}
               />
             </tbody>
           </table>
         )}
       </div>
+
+      {(() => {
+        const item = visible.find((entry) => entry.id === deductionItemId) || null;
+        return (
+          <DeductionLinesDialog
+            open={Boolean(item)}
+            onOpenChange={(open) => !open && setDeductionItemId(null)}
+            item={item}
+            employeeName={item ? employeeForItem(item)?.name || "" : ""}
+            ar={ar}
+            canEdit
+            onAdd={(line) => addDeductionLine(company.id, month, item, line, currentUser)}
+            onRemove={(lineId) => removeDeductionLine(company.id, month, item, lineId, currentUser)}
+            onResolve={(lineId, status) => resolveDeductionDispute(company.id, month, item, lineId, status, currentUser)}
+          />
+        );
+      })()}
     </div>
   );
 }

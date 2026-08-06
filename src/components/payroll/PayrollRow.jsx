@@ -1,10 +1,10 @@
 import React from "react";
-import { FileText, CheckCircle2, Circle } from "lucide-react";
+import { FileText, CheckCircle2, Circle, ListChecks } from "lucide-react";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import { netOf } from "@/lib/payroll";
 import { normalizeLocalizedNumber } from "@/lib/localizedNumber";
 
-export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid, onPayslip }) {
+export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid, onPayslip, onDeductions }) {
   const num = (v) => Number(v) || 0;
   const cell = (field, editable = true) => (
     <input
@@ -28,7 +28,18 @@ export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid,
       <td data-label={ar ? "الأساسي" : "Base"}>{cell("base")}</td>
       <td data-label={ar ? "البدلات" : "Allowances"}>{cell("allowances")}</td>
       <td data-label={ar ? "مكافآت" : "Bonus"}>{cell("bonus")}</td>
-      <td data-label={ar ? "خصومات" : "Deductions"}>{cell("deductions")}</td>
+      {/* Deductions are never typed freely — the total is the sum of documented lines. */}
+      <td data-label={ar ? "خصومات" : "Deductions"}>
+        <button
+          type="button"
+          onClick={onDeductions}
+          title={ar ? "عرض بنود الخصم الموثّقة" : "View documented deduction lines"}
+          className="mx-auto flex h-8 w-full max-w-24 items-center justify-center gap-1 rounded-md border border-input bg-background px-2 text-sm font-body hover:bg-muted"
+        >
+          <span dir="ltr">{num(item.deductions).toLocaleString()}</span>
+          <ListChecks className="h-3.5 w-3.5 text-accent" />
+        </button>
+      </td>
       <td data-label={ar ? "الصافي" : "Net"}>
         <span className="text-sm font-body font-semibold text-accent" dir="ltr">
           {netOf(item).toLocaleString()} {item.currency}
