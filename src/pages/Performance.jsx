@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { badgeFor, nextBadge, getBadges } from "@/lib/rewards";
+import { badgeFor, getBadges } from "@/lib/rewards";
 import { getRoleLabel } from "@/lib/roles";
 import { Trophy, Medal, Crown, Users, Award } from "lucide-react";
 import PerformanceAnalytics from "@/components/performance/PerformanceAnalytics";
@@ -17,7 +17,9 @@ import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 export default function Performance() {
   const { t, dir, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
-  const [view, setView] = useState("individual");
+  // The achievements board replaced the older individual-ranking list (same data,
+  // same export) — the old "individual" value still resolves to it.
+  const [view, setView] = useState("achievements");
 
   if (!data || !currentUser) return null;
 
@@ -66,12 +68,6 @@ export default function Performance() {
           )}
         </div>
         <div className="performance-hub-tabs flex items-center gap-1.5">
-          <button
-            onClick={() => setView("individual")}
-            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "individual" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-          >
-            {t("individualRanking")}
-          </button>
           {isManager && (<>
           <button
             onClick={() => setView("station")}
@@ -130,7 +126,7 @@ export default function Performance() {
       {(view === "individual" || view === "achievements") && (
         <div className="flex justify-end">
           <ComparisonExportButtons
-            title={view === "achievements" ? t("achievementsBoard") : t("individualRanking")}
+            title={t("achievementsBoard")}
             headers={["#", t("employeeName"), t("station"), t("points")]}
             rows={ranked.map((e, i) => [i + 1, e.name, stationName(e.stationId || defaultStationId), e.points])}
           />
@@ -152,58 +148,6 @@ export default function Performance() {
 
       {/* Badge tiers legend */}
       {view !== "comparison" && view !== "employeeComparison" && view !== "individualReport" && view !== "trends" && view !== "supervision" && <BadgeLegend />}
-
-      {view === "individual" && (
-        <div className="space-y-2">
-          {ranked.every((e) => e.points === 0) ? (
-            <p className="text-sm text-muted-foreground font-body">{t("noPoints")}</p>
-          ) : (
-            ranked.map((e, i) => {
-              const badge = badgeFor(e.points, badges);
-              const next = nextBadge(e.points, badges);
-              const pct = next ? Math.min(Math.round((e.points / next.min) * 100), 100) : 100;
-              return (
-                <div
-                  key={e.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border ${e.id === currentUser.id ? "border-accent bg-accent/5" : "border-border bg-card"}`}
-                >
-                  <div className="w-7 flex justify-center shrink-0">{rankIcon(i)}</div>
-                  <div className="w-9 h-9 rounded-full bg-foreground text-background flex items-center justify-center text-sm font-medium shrink-0">
-                    {e.name.charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <EmployeeNameLink employeeId={e.id} employeeName={e.name} className="block text-sm font-medium font-body truncate" />
-                      <span className="text-[10px] text-muted-foreground">{roleLabel(e)}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground font-body">
-                      {stationName(e.stationId || defaultStationId)}
-                    </p>
-                    {next && (
-                      <div className="mt-1.5">
-                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                          <div className="h-full bg-accent transition-all duration-500" style={{ width: `${pct}%` }} />
-                        </div>
-                        <p className="text-[10px] text-muted-foreground mt-0.5 font-body">
-                          {t("nextBadge")}: {next.icon} {t(next.key)} ({next.min - e.points} {t("points")})
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-end shrink-0">
-                    <span className="inline-flex items-center gap-1 text-xs font-body">
-                      {badge.icon} {t(badge.key)}
-                    </span>
-                    <p className="text-lg font-heading font-semibold">
-                      {e.points} <span className="text-xs text-muted-foreground font-body">{t("points")}</span>
-                    </p>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      )}
 
       {view === "station" && (
         <div className="space-y-5">
@@ -286,7 +230,7 @@ export default function Performance() {
 
 
 
-      {view === "achievements" && (
+      {(view === "achievements" || view === "individual") && (
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground font-body">
             <Award className="w-4 h-4" /> {t("achievementsBoardNote")}
