@@ -1,5 +1,5 @@
 // Single source of truth for report time periods across every section.
-// Ids are canonical: month / 3months / 6months / year / custom (+ optional daily, weekly).
+// Canonical ids: month / 3months / 6months / year / custom (+ optional daily, weekly).
 export const PERIODS = [
   { id: "month", months: 1 },
   { id: "3months", months: 3 },
@@ -31,31 +31,60 @@ export function periodLabel(id, lang) {
   return lang === "ar" ? entry.ar : entry.en;
 }
 
-const iso = (d) => d.toISOString();
-
-function formatRange(startDate, endDate, lang) {
-  const fmt = new Intl.DateTimeFormat(lang === "ar" ? "ar" : "en", { day: "numeric", month: "long", year: "numeric" });
-  return `${fmt.format(new Date(startDate))} – ${fmt.format(new Date(endDate))}`;
+// "2026-08-06" is parsed as UTC midnight by the standard — always build the
+// date from its parts so every boundary in this file is local time.
+function parseLocalDay(value) {
+  if (!value) return null;
+  const [y, m, d] = String(value).slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const date = new Date(y, m - 1, d);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
-// Resolves a period id (plus custom from/to) into an absolute ISO range + label.
+const startOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+// The chosen end day is included in full — otherwise "until today" returns yesterday.
+const endOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+
+const dayString = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+function formatRange(start, end, lang) {
+  const fmt = new Intl.DateTimeFormat(lang === "ar" ? "ar" : "en", { day: "numeric", month: "long", year: "numeric" });
+  return `${fmt.format(start)} – ${fmt.format(end)}`;
+}
+
+function build(id, start, end, lang, valid = true) {
+  return {
+    id,
+    valid,
+    start,
+    end,
+    startDay: dayString(start),
+    endDay: dayString(end),
+    startDate: start.toISOString(),
+    endDate: end.toISOString(),
+    label: formatRange(start, end, lang),
+  };
+}
+
+// Resolves a period id (plus custom from/to) into an absolute local range.
+// An invalid custom range is reported with valid:false instead of silently
+// falling back — an export must never carry a range the user did not choose.
 export function resolvePeriod(id, { from, to, lang = "en" } = {}) {
-  const endDate = new Date();
-  let startDate = new Date();
+  const now = new Date();
 
   if (id === "custom") {
-    const start = from ? new Date(from) : null;
-    const end = to ? new Date(to) : new Date();
-    if (start && !Number.isNaN(start.getTime()) && end >= start) {
-      return { id, startDate: iso(start), endDate: iso(end), label: formatRange(start, end, lang) };
-    }
-    startDate = new Date(endDate.getFullYear(), endDate.getMonth() - 1, endDate.getDate());
-    return { id, startDate: iso(startDate), endDate: iso(endDate), label: formatRange(startDate, endDate, lang) };
+    const start = parseLocalDay(from);
+    const end = parseLocalDay(to) || now;
+    const valid = Boolean(start) && endOfDay(end) >= startOfDay(start);
+    const safeStart = start || new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    return build("custom", startOfDay(valid ? start : safeStart), endOfDay(valid ? end : now), lang, valid);
   }
 
   const config = ALL_PERIODS.find((p) => p.id === id) || PERIODS[0];
-  if (config.days) startDate = new Date(endDate.getTime() - (config.days - 1) * 86400000);
-  else startDate = new Date(endDate.getFullYear(), endDate.getMonth() - (config.months || 1), endDate.getDate());
+  const start = config.days
+    ? new Date(now.getTime() - (config.days - 1) * 86400000)
+    : new Date(now.getFullYear(), now.getMonth() - (config.months || 1), now.getDate());
 
-  return { id: config.id, startDate: iso(startDate), endDate: iso(endDate), label: formatRange(startDate, endDate, lang) };
+  return build(config.id, startOfDay(start), endOfDay(now), lang);
 }
