@@ -162,6 +162,35 @@ Deno.serve(async (req) => {
       }
       return next;
     };
+    // ---- Points ledger ----
+    // Every award/deduction is written as an immutable entry BEFORE the employee's
+    // running total changes, so each point can be traced back to its task, its
+    // evidence, its approver and its moment. Entries are never edited or deleted;
+    // a correction is a new negative entry pointing at the same targetId.
+    const recordPoints = async ({ employeeId, points, target, awardedBy, reason }) => {
+      const delta = Number(points);
+      if (!employeeId || !Number.isFinite(delta) || delta === 0) return null;
+      const evidenceUrls = (Array.isArray(target?.completion_proof) ? target.completion_proof : [])
+        .map((item) => item?.url).filter(Boolean);
+      const entry = await base44.asServiceRole.entities.PointsLedger.create({
+        companyId: auth.companyId,
+        employeeId,
+        points: delta,
+        targetId: target?.id || null,
+        taskTitle: target?.title || "",
+        priority: target?.priority || null,
+        effortWeight: Number(target?.effortWeight) || 1,
+        stationId: target ? targetStationId(target) : null,
+        awardedBy: awardedBy || "system",
+        awardedAt: new Date().toISOString(),
+        reason: reason || "",
+        evidenceUrls,
+      });
+      const records = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId });
+      if (records[0]) await base44.asServiceRole.entities.Employee.update(records[0].id, { points: (Number(records[0].points) || 0) + delta });
+      return entry;
+    };
+
     // Fetches one target and verifies it belongs to the caller's company.
     const getScopedTarget = async (targetId) => {
       const getRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, { headers });
@@ -379,8 +408,10 @@ Deno.serve(async (req) => {
             recipientIds = emps.filter((e) => (e.stationId || stations[0]?.stationId || null) === stationKey).map((e) => e.employeeId);
           }
           for (const rid of recipientIds) {
-            const recs = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId: rid });
-            if (recs[0]) await base44.asServiceRole.entities.Employee.update(recs[0].id, { points: (Number(recs[0].points) || 0) + pts });
+            await recordPoints({
+              employeeId: rid, points: pts, target: tg, awardedBy: "system",
+              reason: `اعتماد تلقائي بانقضاء مهلة ${deadlineHours} ساعة — Auto-approved after the ${deadlineHours}h review deadline.`,
+            });
             await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
               method: "POST", headers,
               body: JSON.stringify({ user_id: rid, message: `🎉 "${tg.title || "Untitled"}" — اعتماد تلقائي بانقضاء المهلة (+${pts} نقطة)` }),
@@ -838,6 +869,26 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ user_id: recipient.employeeId, message }),
       })));
       return Response.json({ target: await withTaskMetadata(target) });
+    }
+
+    if (action === "getPointsLedger") {
+      // Everyone may audit their OWN score. Supervisors may audit only the
+      // employees inside their management scope — never the whole company.
+      const requestedId = String(body.employeeId || auth?.userId || "");
+      if (!requestedId) return Response.json({ error: "Missing employeeId" }, { status: 400 });
+      const isSelf = auth?.userId === requestedId;
+      if (!isSelf) {
+        if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
+        const records = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId: requestedId });
+        const subject = records[0];
+        if (!subject) return Response.json({ error: "Employee not found" }, { status: 404 });
+        if (!canManageStation(subject.stationId)) return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const entries = await base44.asServiceRole.entities.PointsLedger.filter(
+        { companyId: auth.companyId, employeeId: requestedId }, "-awardedAt", 200
+      );
+      const total = entries.reduce((sum, entry) => sum + (Number(entry.points) || 0), 0);
+      return Response.json({ entries, total });
     }
 
     if (action === "listNotifications") {
