@@ -865,18 +865,6 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--sidebar-background)));
   box-shadow: 0 16px 42px hsl(var(--foreground) / .14), inset 3px 0 hsl(var(--accent));
 }
-.performance-hub-header::after {
-  content: "";
-  position: absolute;
-  inset-inline-end: -5rem;
-  top: -7rem;
-  width: 16rem;
-  height: 16rem;
-  border: 1px solid hsl(var(--accent) / .18);
-  border-radius: 999px;
-  box-shadow: 0 0 0 2rem hsl(var(--accent) / .035), 0 0 0 4rem hsl(var(--accent) / .025);
-  pointer-events: none;
-}
 .performance-hub-title,
 .performance-hub-tabs { position: relative; z-index: 1; }
 .powercare-shell main .performance-hub-header h1 { color: hsl(var(--primary-foreground)); }
@@ -888,20 +876,12 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   justify-content: flex-end;
 }
 .performance-hub-tabs button {
-  border-color: hsl(var(--primary-foreground) / .2);
-  color: hsl(var(--primary-foreground) / .78);
-  background: hsl(var(--primary-foreground) / .035);
+  border: none;
+  background: none;
 }
-.performance-hub-tabs button:hover {
-  border-color: hsl(var(--accent) / .62);
-  color: hsl(var(--primary-foreground));
-  background: hsl(var(--accent) / .12);
-}
-.performance-hub-tabs button.bg-foreground {
-  border-color: hsl(var(--accent));
-  color: hsl(var(--accent-foreground));
-  background: hsl(var(--accent));
-  box-shadow: 0 5px 16px hsl(var(--accent) / .24);
+.perf-tab-indicator { transition: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .perf-tab-indicator { transition: transform 180ms ease-out, width 180ms ease-out; }
 }
 .performance-hub > .flex.justify-end {
   padding-inline: .125rem;
