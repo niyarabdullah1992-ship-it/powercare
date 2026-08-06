@@ -139,6 +139,12 @@ Deno.serve(async (req) => {
         completionMode: metadata?.completionMode || "onsite",
         remoteConvertedBy: metadata?.remoteConvertedBy || null,
         remoteConvertedAt: metadata?.remoteConvertedAt || null,
+        effortWeight: Number(metadata?.effortWeight) || 1,
+        evidenceType: metadata?.evidenceType || null,
+        pendingReviewAt: metadata?.pendingReviewAt || null,
+        reviewedAt: metadata?.reviewedAt || null,
+        reviewedBy: metadata?.reviewedBy || null,
+        autoApproved: !!metadata?.autoApproved,
       };
     };
     const saveTaskMetadata = async (target, updates) => {
@@ -339,6 +345,53 @@ Deno.serve(async (req) => {
           tg.status = "overdue";
         }
       }
+      // Auto-approval by deadline: a pending review older than the company's approval
+      // deadline is approved automatically — stalling approvals can't be used as a
+      // silent weapon against the employee's score.
+      if (auth.companyId) {
+        const meta = await getCompanyMeta().catch(() => ({}));
+        const deadlineHours = Number(meta.approvalDeadlineHours) > 0 ? Number(meta.approvalDeadlineHours) : 48;
+        const defaultPts = { urgent: 150, high: 100, medium: 75, low: 50 };
+        for (const tg of rows) {
+          if (tg.status !== "pending_review" || !tg.pendingReviewAt) continue;
+          if ((now - new Date(tg.pendingReviewAt).getTime()) / 3600000 < deadlineHours) continue;
+          const comments = Array.isArray(tg.comments) ? tg.comments : [];
+          comments.push({
+            id: crypto.randomUUID(), user_id: "system", user_name: "System",
+            content: "✅ اعتماد تلقائي بانقضاء مهلة المراجعة — Auto-approved: review deadline passed.",
+            files: [], is_issue: false, is_auto_approval: true, created_at: new Date().toISOString(),
+          });
+          await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(tg.id)}`, {
+            method: "PATCH", headers, body: JSON.stringify({ status: "completed", comments }),
+          });
+          await saveTaskMetadata(tg, { autoApproved: true, reviewedAt: new Date().toISOString(), reviewedBy: "system" });
+          tg.status = "completed"; tg.comments = comments; tg.autoApproved = true;
+          // Weighted points awarded server-side (mirrors the client approval flow).
+          const pts = (Number(meta.rewardPoints?.[tg.priority]) || defaultPts[tg.priority] || 75) * (Number(tg.effortWeight) || 1);
+          let recipientIds = [];
+          if (tg.assignment_type === "member" && tg.employee_id) recipientIds = [tg.employee_id];
+          else {
+            const [emps, stations] = await Promise.all([
+              base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId }),
+              base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId }),
+            ]);
+            const stationKey = tg.assignment_type === "hq_team" ? (stations[0]?.stationId || null) : tg.assignment_id;
+            recipientIds = emps.filter((e) => (e.stationId || stations[0]?.stationId || null) === stationKey).map((e) => e.employeeId);
+          }
+          for (const rid of recipientIds) {
+            const recs = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId: rid });
+            if (recs[0]) await base44.asServiceRole.entities.Employee.update(recs[0].id, { points: (Number(recs[0].points) || 0) + pts });
+            await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+              method: "POST", headers,
+              body: JSON.stringify({ user_id: rid, message: `🎉 "${tg.title || "Untitled"}" — اعتماد تلقائي بانقضاء المهلة (+${pts} نقطة)` }),
+            });
+          }
+          await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+            method: "POST", headers,
+            body: JSON.stringify({ user_id: tg.manager_id, message: `⏱️ "${tg.title || "Untitled"}" was auto-approved — the ${deadlineHours}h review deadline passed.` }),
+          });
+        }
+      }
       if (isManager) {
         // PGM sees only managed stations; station_manager sees only their station
         if (auth.role === "pgm") {
@@ -379,7 +432,8 @@ Deno.serve(async (req) => {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can create targets" }, { status: 403 });
       }
-      const { managerId, taskTarget, days, title, description, steps, fileUrl, fileUrls, assignmentType, assignmentId, employeeId, stationId, priority, startDate: customStart, endDate: customEnd, section, taskType, completionMode = "onsite" } = body;
+      const { managerId, taskTarget, days, title, description, steps, fileUrl, fileUrls, assignmentType, assignmentId, employeeId, stationId, priority, startDate: customStart, endDate: customEnd, section, taskType, completionMode = "onsite", effortWeight } = body;
+      const weight = Math.min(5, Math.max(1, Number(effortWeight) || 1));
       const targetAmount = Number(taskTarget);
       if (!(title || "").trim() || !Number.isFinite(targetAmount) || targetAmount <= 0) {
         return Response.json({ error: "A title and positive task target are required" }, { status: 400 });
@@ -440,7 +494,7 @@ Deno.serve(async (req) => {
         return Response.json({ error: created?.message || "Failed to create target — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS section text; ALTER TABLE targets ADD COLUMN IF NOT EXISTS task_type text;" }, { status: 400 });
       }
       const createdTarget = Array.isArray(created) ? created[0] : created;
-      await saveTaskMetadata(createdTarget, { completionMode });
+      await saveTaskMetadata(createdTarget, { completionMode, effortWeight: weight });
       // Notify the assigned employee (member only)
       if (aType === "member" && employeeId) {
         await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
@@ -480,7 +534,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "updateProgress") {
-      const { targetId, amount, managerId, employeeName, proofFiles } = body;
+      const { targetId, amount, managerId, employeeName, proofFiles, attestation } = body;
       const progressAmount = Number(amount);
       if (!targetId || !Number.isFinite(progressAmount) || progressAmount <= 0) {
         return Response.json({ error: "Progress must be a positive number" }, { status: 400 });
@@ -508,15 +562,16 @@ Deno.serve(async (req) => {
       const cleanProof = Array.isArray(proofFiles)
         ? proofFiles.filter((f) => f && f.url).map((f) => ({ url: f.url, name: f.name || "file", type: f.type || "file" }))
         : [];
-      // Reaching the quota requires attached proof (photo/file) — completion then
-      // waits for manager review instead of closing automatically.
-      if (reachesTarget && cleanProof.length === 0) {
+      // Reaching the quota requires evidence — a field proof (photo/file) or a
+      // written non-photographed attestation ("لا نقطة بلا أثر") — then waits for review.
+      const attestationText = String(attestation || "").trim();
+      if (reachesTarget && cleanProof.length === 0 && !attestationText) {
         return Response.json({ error: "PROOF_REQUIRED" }, { status: 400 });
       }
       const status = reachesTarget ? "pending_review" : "active";
       const patch: Record<string, unknown> = { completed_tasks: newCompleted, status };
       if (reachesTarget) {
-        patch.completion_proof = cleanProof;
+        patch.completion_proof = cleanProof.length ? cleanProof : [{ url: "", name: "attestation", type: "attestation", text: attestationText }];
         // Remember the count before this submission so a rejection can restore it
         // instead of leaving completed_tasks stuck at the target (looking "100% done").
         patch.pre_review_completed = tg.completed_tasks;
@@ -534,6 +589,10 @@ Deno.serve(async (req) => {
       const updated = await patchRes.json();
       if (!patchRes.ok) {
         return Response.json({ error: updated?.message || "Failed to update progress — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS completion_proof jsonb; ALTER TABLE targets ADD COLUMN IF NOT EXISTS pre_review_completed integer;" }, { status: 400 });
+      }
+      if (reachesTarget) {
+        // Review-deadline clock starts now; evidence path is recorded for auditing.
+        await saveTaskMetadata(tg, { pendingReviewAt: new Date().toISOString(), evidenceType: cleanProof.length ? "field" : "attestation" });
       }
       if (reachesTarget && tg.completionMode === "remote") {
         const recipients = await taskVisibilityRecipients(tg);
@@ -598,6 +657,8 @@ Deno.serve(async (req) => {
       if (!patchRes.ok) {
         return Response.json({ error: updated?.message || "Failed to review completion" }, { status: 400 });
       }
+      // Supervisor accountability: record who reviewed and when (feeds supervisor metrics).
+      await saveTaskMetadata(tg, { reviewedAt: new Date().toISOString(), reviewedBy: auth?.userId || null, autoApproved: false });
       if (tg.assignment_type === "member" && tg.employee_id) {
         await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
           method: "POST",
@@ -708,7 +769,7 @@ Deno.serve(async (req) => {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can edit targets" }, { status: 403 });
       }
-      const { targetId, title, description, steps, priority, endDate, taskTarget, section, taskType, completionMode } = body;
+      const { targetId, title, description, steps, priority, endDate, taskTarget, section, taskType, completionMode, effortWeight } = body;
       if (!targetId) return Response.json({ error: "Missing targetId" }, { status: 400 });
       const existingTg = await getScopedTarget(targetId);
       if (!existingTg) return Response.json({ error: "Target not found" }, { status: 404 });
@@ -752,6 +813,9 @@ Deno.serve(async (req) => {
           ? { completionMode, remoteConvertedBy: auth?.userId || auth?.name || "owner", remoteConvertedAt: new Date().toISOString() }
           : { completionMode };
         await saveTaskMetadata(updatedTarget, conversion);
+      }
+      if (effortWeight !== undefined && effortWeight !== null && effortWeight !== "") {
+        await saveTaskMetadata(updatedTarget, { effortWeight: Math.min(5, Math.max(1, Number(effortWeight) || 1)) });
       }
       return Response.json({ target: await withTaskMetadata(updatedTarget) });
     }

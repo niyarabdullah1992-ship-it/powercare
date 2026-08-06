@@ -14,6 +14,7 @@ export default function TaskCard({
   tg, t, dir, lang, assignmentLabel, canManage, canLog,
   logTarget, logAmount, setLogTarget, setLogAmount, logCompleted,
   logProofFiles, setLogProofFiles, reviewTarget, disputeRejection,
+  logAttestation, setLogAttestation,
   escalationSteps,
   commentsOpen, setCommentsOpen, commentText, setCommentText, commentFiles, setCommentFiles, submitComment,
   markIssue, setMarkIssue,
@@ -78,6 +79,9 @@ export default function TaskCard({
             <p className="text-sm font-medium font-body">{tg.title || t("setTarget")}</p>
             <span className={`rounded-full border px-2 py-0.5 text-[10px] font-body ${completionMode === "remote" ? "border-border bg-muted text-muted-foreground" : "border-accent/40 bg-accent/10 text-accent"}`}>
               {completionMode === "remote" ? (lang === "ar" ? "🌐 عن بُعد" : "🌐 Remote") : (lang === "ar" ? "🏢 حضوري" : "🏢 On-site")}
+            </span>
+            <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] font-body text-accent" title={lang === "ar" ? "وزن الجهد المعياري" : "Standard effort weight"}>
+              ⚖️ ×{Number(tg.effortWeight) || 1}
             </span>
           </div>
           {tg.description && <p className="text-xs text-muted-foreground font-body mt-0.5">{tg.description}</p>}
@@ -144,7 +148,7 @@ export default function TaskCard({
       )}
       <div className="flex items-center gap-1.5 text-xs font-body">
         {done ? (
-          <span className="text-emerald-600 font-medium">{t("targetDone")}</span>
+          <span className="text-emerald-600 font-medium">{t("targetDone")}{tg.autoApproved ? (lang === "ar" ? " — اعتماد تلقائي بانقضاء المهلة" : " — auto-approved after deadline") : ""}</span>
         ) : overdue ? (
           <span className="text-red-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t("overdue")}</span>
         ) : atRisk ? (
@@ -174,13 +178,26 @@ export default function TaskCard({
           </div>
           <CommentFiles files={logTarget === tg.id ? logProofFiles : []} setFiles={(arr) => { setLogTarget(tg.id); setLogProofFiles(arr); }} />
           <p className="text-[11px] text-muted-foreground font-body">{t("proofRequired")}</p>
+          <textarea
+            value={logTarget === tg.id ? logAttestation : ""}
+            onChange={(e) => { setLogTarget(tg.id); setLogAttestation(e.target.value); }}
+            rows={2}
+            placeholder={lang === "ar" ? "أثر غير مصوَّر (بديل عن الصورة): شهادة مشرف / إفادة زميل / إقرار مستفيد — اذكر من يشهد وماذا أُنجز" : "Non-photographed evidence (instead of a photo): supervisor/colleague/beneficiary attestation — who attests and what was done"}
+            className="w-full px-2 py-1.5 rounded-md border border-input text-xs font-body resize-y"
+          />
+          <p className="text-[10px] text-muted-foreground font-body">{lang === "ar" ? "القاعدة: لا نقطة بلا أثر — الدليل الميداني أعلى درجات الأثر لا وحيدها." : "Rule: no point without a trace — field proof is the strongest trace, not the only one."}</p>
         </div>
       )}
 
       {pendingReview && (
         <div className="pt-1 space-y-2">
-          {Array.isArray(tg.completion_proof) && tg.completion_proof.length > 0 && (
-            <CommentAttachments files={tg.completion_proof} />
+          {Array.isArray(tg.completion_proof) && tg.completion_proof.filter((p) => p.type === "attestation").map((p, i) => (
+            <div key={i} className="rounded-md border border-accent/40 bg-accent/5 p-2.5 text-xs font-body">
+              <span className="font-medium text-accent">📝 {lang === "ar" ? "أثر غير مصوَّر" : "Attestation"}:</span> {p.text}
+            </div>
+          ))}
+          {Array.isArray(tg.completion_proof) && tg.completion_proof.some((p) => p.url) && (
+            <CommentAttachments files={tg.completion_proof.filter((p) => p.url)} />
           )}
           {canManage ? (
             rejecting ? (

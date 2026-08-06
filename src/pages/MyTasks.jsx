@@ -83,6 +83,8 @@ export default function MyTasks() {
   const [showReport, setShowReport] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
   const [completionMode, setCompletionMode] = useState("onsite");
+  const [effortWeight, setEffortWeight] = useState(1);
+  const [logAttestation, setLogAttestation] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const creatingRef = useRef(false);
 
@@ -454,6 +456,7 @@ export default function MyTasks() {
         employeeId,
         stationId,
         priority,
+        effortWeight,
         completionMode: canSetCompletionMode ? completionMode : "onsite",
         startDate,
         endDate,
@@ -479,6 +482,7 @@ export default function MyTasks() {
       setCustomDays("");
       setTaskFiles([]);
       setPriority("medium");
+      setEffortWeight(1);
       setCompletionMode("onsite");
       setSectionValue("");
       fetchTargets();
@@ -505,10 +509,12 @@ export default function MyTasks() {
     // Optimistic update: reflect the new progress immediately, roll back on failure.
     const prevSnapshot = tg ? { ...tg } : null;
     const proofFiles = logProofFiles;
+    const attestation = logAttestation.trim();
     setTargets((prev) => prev.map((x) => (x.id === targetId ? { ...x, completed_tasks: (x.completed_tasks || 0) + amt } : x)));
     setLogTarget(null);
     setLogAmount(1);
     setLogProofFiles([]);
+    setLogAttestation("");
     try {
       const res = await targetsCall({
         action: "updateProgress",
@@ -518,6 +524,7 @@ export default function MyTasks() {
         managerId: data.directorId,
         employeeName: currentUser.name,
         proofFiles,
+        attestation,
       });
       const updatedTarget = res?.data?.target;
       const mgrId = tg?.manager_id || data.directorId;
@@ -538,6 +545,7 @@ export default function MyTasks() {
       setLogTarget(targetId);
       setLogAmount(amt);
       setLogProofFiles(proofFiles);
+      setLogAttestation(attestation);
       const code = err?.response?.data?.error;
       alert(code === "PROOF_REQUIRED" ? t("proofRequired") : code === "CHECK_IN_REQUIRED" ? t("mustCheckInFirst") : (code || "Failed to update progress"));
     }
@@ -567,7 +575,8 @@ export default function MyTasks() {
         logAudit(company.id, "task_completion_rejected", currentUser.name, `${t("reject")} "${tg.title || ""}": ${reason}`);
       }
       if (approve) {
-        const pts = PRIORITY_POINTS[tg.priority] || 75;
+        // Score is computed on the task's standard effort weight, not raw count.
+        const pts = (PRIORITY_POINTS[tg.priority] || 75) * (Number(tg.effortWeight) || 1);
         let recipients = [];
         if (tg.assignment_type === "member" && tg.employee_id) {
           recipients = [tg.employee_id];
@@ -717,6 +726,7 @@ export default function MyTasks() {
         priority: fd.get("priority"),
         endDate: fd.get("endDate"),
         taskTarget: fd.get("totalTasks"),
+        effortWeight: fd.get("effortWeight"),
         completionMode: canSetCompletionMode ? (fd.get("completionMode") || "onsite") : undefined,
         });
       const updated = res?.data?.target;
@@ -821,6 +831,7 @@ export default function MyTasks() {
       canLog={canLog(tg)}
       logTarget={logTarget} logAmount={logAmount} setLogTarget={setLogTarget} setLogAmount={setLogAmount} logCompleted={logCompleted}
       logProofFiles={logProofFiles} setLogProofFiles={setLogProofFiles} reviewTarget={reviewTarget} disputeRejection={disputeRejection}
+      logAttestation={logAttestation} setLogAttestation={setLogAttestation}
       escalationSteps={escalationStepsFor(tg)}
       commentsOpen={commentsOpen} setCommentsOpen={setCommentsOpen} commentText={commentText} setCommentText={setCommentText} commentFiles={commentFiles} setCommentFiles={setCommentFiles} submitComment={submitComment}
       markIssue={markIssue} setMarkIssue={setMarkIssue}
@@ -979,6 +990,23 @@ export default function MyTasks() {
                   className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${priority === val ? "bg-foreground text-background border-foreground" : val === "urgent" ? "border-red-400 text-red-700 hover:bg-red-50" : "border-border hover:bg-muted"}`}
                 >
                   {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Effort weight — performance is scored on weight, not task count */}
+          <div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">⚖️ {lang === "ar" ? "وزن الجهد — يُحتسب الأداء على الوزن لا العدد" : "Effort weight — score counts weight, not count"}</p>
+            <div className="flex flex-wrap gap-2">
+              {[1, 2, 3, 4, 5].map((w) => (
+                <button
+                  key={w}
+                  type="button"
+                  onClick={() => setEffortWeight(w)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-body border transition ${effortWeight === w ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+                >
+                  ×{w}
                 </button>
               ))}
             </div>
@@ -1254,6 +1282,16 @@ export default function MyTasks() {
               <div>
                 <label className="text-xs text-muted-foreground font-body block mb-1">{t("totalTasks")}</label>
                 <input name="totalTasks" type="number" min="1" defaultValue={editTarget.task_target || 1} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground font-body block mb-1">⚖️ {lang === "ar" ? "وزن الجهد" : "Effort weight"}</label>
+                <MobileSelect
+                  key={`weight-${editTarget.id}`}
+                  name="effortWeight"
+                  defaultValue={String(editTarget.effortWeight || 1)}
+                  placeholder="×1"
+                  options={[1, 2, 3, 4, 5].map((w) => ({ value: String(w), label: `×${w}` }))}
+                />
               </div>
             </div>
             <div>

@@ -10,6 +10,7 @@ import BadgeLegend from "@/components/performance/BadgeLegend";
 import StationComparison from "@/components/performance/StationComparison";
 import EmployeeComparisonView from "@/components/performance/EmployeeComparisonView";
 import EmployeeSingleReport from "@/components/performance/EmployeeSingleReport";
+import SupervisionFairness from "@/components/performance/SupervisionFairness";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
@@ -116,6 +117,12 @@ export default function Performance() {
           >
             {lang === "ar" ? "الاتجاهات الشهرية" : "Monthly trends"}
           </button>
+          <button
+            onClick={() => setView("supervision")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "supervision" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {lang === "ar" ? "الإشراف والعدالة" : "Supervision & fairness"}
+          </button>
           </>)}
         </div>
       </div>
@@ -144,7 +151,7 @@ export default function Performance() {
       {view === "individualReport" && <EmployeeSingleReport t={t} />}
 
       {/* Badge tiers legend */}
-      {view !== "comparison" && view !== "employeeComparison" && view !== "individualReport" && view !== "trends" && <BadgeLegend />}
+      {view !== "comparison" && view !== "employeeComparison" && view !== "individualReport" && view !== "trends" && view !== "supervision" && <BadgeLegend />}
 
       {view === "individual" && (
         <div className="space-y-2">
@@ -274,6 +281,8 @@ export default function Performance() {
       {view === "analytics" && <PerformanceAnalytics />}
 
       {view === "trends" && isManager && <MonthlyTrends />}
+
+      {view === "supervision" && isManager && <SupervisionFairness />}
 
 
 
