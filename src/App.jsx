@@ -8,6 +8,7 @@ import ScrollToTop from './components/ScrollToTop';
 import PlatformMusicButton from '@/components/PlatformMusicButton';
 import SyncFailureAlerts from '@/components/SyncFailureAlerts';
 import { I18nProvider } from '@/lib/i18n';
+import { PeriodProvider } from '@/lib/PeriodContext';
 import { AuthProvider as PowerCareAuthProvider, useAuth as usePowerCareAuth } from '@/lib/PowerCareAuth';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -171,7 +172,9 @@ function App() {
           <I18nProvider>
             <PowerCareAuthProvider>
               <SyncFailureAlerts />
-              <AppErrorBoundary><AppRoutes /></AppErrorBoundary>
+              <PeriodProvider>
+                <AppErrorBoundary><AppRoutes /></AppErrorBoundary>
+              </PeriodProvider>
             </PowerCareAuthProvider>
           </I18nProvider>
         </Router>
