@@ -2,7 +2,7 @@ import React from "react";
 import { Check } from "lucide-react";
 
 // شريط مراحل تفاعلي: يبرز المرحلة الحالية ويسمح بالتنقل بينها.
-export default function TaskWizardStepper({ lang, steps, active = 0, onSelect }) {
+export default function TaskWizardStepper({ lang, steps, active = 0, onSelect, canSelect }) {
   const labels = steps || (lang === "ar"
     ? ["تفاصيل المهمة", "الإسناد", "الأولوية والمدة", "المراجعة"]
     : ["Task details", "Assignment", "Priority & duration", "Review"]);
@@ -18,7 +18,7 @@ export default function TaskWizardStepper({ lang, steps, active = 0, onSelect })
             <button
               key={step}
               type="button"
-              onClick={() => onSelect?.(index)}
+              onClick={() => { if (canSelect && canSelect(index) === false) return; onSelect?.(index); }}
               className="relative z-10 flex min-w-0 flex-1 flex-col items-center gap-2 text-center"
             >
               <span className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${current ? "border-accent bg-accent shadow-sm" : done ? "border-accent bg-accent/80" : "border-accent/55 bg-secondary"}`}>

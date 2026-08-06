@@ -91,6 +91,8 @@ export default function MyTasks() {
   const [logAttestation, setLogAttestation] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const creatingRef = useRef(false);
+  const createFormRef = useRef(null);
+  const editFormRef = useRef(null);
 
   // Smart form memory — opening the create form pre-fills the user's usual choices.
   const openCreateForm = (stationId = null, sectionPath = null) => {
@@ -408,6 +410,51 @@ export default function MyTasks() {
     const end = new Date(start);
     end.setMonth(end.getMonth() + months);
     return { startDate: start.toISOString(), endDate: end.toISOString() };
+  };
+
+  // Per-step validation. The browser's own `required` can't be used here: hidden
+  // steps stay mounted (so their values survive), and a hidden required field makes
+  // the browser refuse to submit with no visible message at all.
+  const validateCreateStep = (index) => {
+    const fd = new FormData(createFormRef.current);
+    const fail = (message) => { toast({ description: message, variant: "destructive" }); return false; };
+    if (index === 0 && !String(fd.get("title") || "").trim()) return fail(t("taskTitle"));
+    if (index === 1) {
+      if (!isIndividual && assignType === "member" && !fd.get("assignedTo")) return fail(t("selectEmployee"));
+      if (!fd.get("section")) return fail(t("sectionName"));
+    }
+    if (index === 2) {
+      const total = Number(fd.get("totalTasks"));
+      if (!Number.isFinite(total) || total < 1) return fail(t("totalTasks"));
+      if (datePreset === "days" && !(Number(customDays) >= 1)) return fail(t("numberOfDays"));
+      if (datePreset === "custom" && (!customStart || !customEnd || customEnd < customStart)) return fail(t("selectDate"));
+    }
+    return true;
+  };
+
+  // Jumping back is always allowed; jumping forward must pass every step in between.
+  const canJumpCreate = (target) => {
+    if (target <= createStep) return true;
+    for (let i = createStep; i < target; i++) if (!validateCreateStep(i)) { setCreateStep(i); return false; }
+    return true;
+  };
+
+  const validateEditStep = (index) => {
+    const fd = new FormData(editFormRef.current);
+    const fail = (message) => { toast({ description: message, variant: "destructive" }); return false; };
+    if (index === 0 && !String(fd.get("title") || "").trim()) return fail(t("taskTitle"));
+    if (index === 1) {
+      const total = Number(fd.get("totalTasks"));
+      if (!Number.isFinite(total) || total < 1) return fail(t("totalTasks"));
+      if (!fd.get("endDate")) return fail(t("endDate"));
+    }
+    return true;
+  };
+
+  const canJumpEdit = (target) => {
+    if (target <= editStep) return true;
+    for (let i = editStep; i < target; i++) if (!validateEditStep(i)) { setEditStep(i); return false; }
+    return true;
   };
 
   const createTarget = async (e) => {
@@ -891,8 +938,8 @@ export default function MyTasks() {
 
       {/* Unified Target form */}
       {showCreate && canCreateTasks(currentUser) && (
-        <form id="task-create-form" onSubmit={createTarget} className="mx-auto w-full max-w-3xl scroll-mt-6 rounded-2xl border border-accent/50 bg-secondary/60 p-3 shadow-soft sm:p-4">
-          <TaskWizardStepper lang={lang} active={createStep} onSelect={setCreateStep} />
+        <form id="task-create-form" ref={createFormRef} onSubmit={createTarget} className="mx-auto w-full max-w-3xl scroll-mt-6 rounded-2xl border border-accent/50 bg-secondary/60 p-3 shadow-soft sm:p-4">
+          <TaskWizardStepper lang={lang} active={createStep} onSelect={setCreateStep} canSelect={canJumpCreate} />
           <div className="space-y-5 rounded-xl border border-accent/40 bg-card p-4 sm:p-6">
           <TaskFormStep index={0} active={createStep}>
           {prefilled && (
@@ -903,7 +950,7 @@ export default function MyTasks() {
           <div className="space-y-4">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-foreground">{t("taskTitle")}</label>
-              <input name="title" placeholder={t("taskTitle")} required className="w-full rounded-lg border border-input px-3 py-2.5 text-sm font-body focus:border-accent focus:ring-1 focus:ring-accent" />
+              <input name="title" placeholder={t("taskTitle")} className="w-full rounded-lg border border-input px-3 py-2.5 text-sm font-body focus:border-accent focus:ring-1 focus:ring-accent" />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-foreground">{t("taskDescription")}</label>
@@ -1028,7 +1075,7 @@ export default function MyTasks() {
           {/* Target quota */}
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{t("totalTasks")}</p>
-            <input name="totalTasks" type="number" min="1" defaultValue="50" required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <input name="totalTasks" type="number" min="1" defaultValue="50" className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
           </div>
 
           {/* Date preset selector */}
@@ -1085,7 +1132,8 @@ export default function MyTasks() {
             step={createStep}
             lastStep={3}
             setStep={setCreateStep}
-            onCancel={() => { setShowCreate(false); setSectionValue(""); }}
+            onNext={validateCreateStep}
+            onCancel={() => { setShowCreate(false); setSectionValue(""); setCreateStep(0); }}
             lang={lang}
             dir={dir}
             submitting={isCreating}
@@ -1262,7 +1310,7 @@ export default function MyTasks() {
       {/* Edit modal */}
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setEditTarget(null)}>
-          <form onClick={(e) => e.stopPropagation()} onSubmit={saveEdit} className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-accent/50 bg-secondary/60 p-3 shadow-elevated sm:p-4">
+          <form ref={editFormRef} onClick={(e) => e.stopPropagation()} onSubmit={saveEdit} className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-accent/50 bg-secondary/60 p-3 shadow-elevated sm:p-4">
             <div className="flex items-center justify-between px-2 pb-1">
               <h3 className="flex items-center gap-2 font-heading text-lg font-semibold"><Pencil className="h-4 w-4 text-accent" /> {t("editTask")}</h3>
               <button type="button" onClick={() => setEditTarget(null)} className="rounded-full border border-accent/30 bg-card p-1.5 hover:bg-secondary"><X className="h-4 w-4" /></button>
@@ -1271,13 +1319,14 @@ export default function MyTasks() {
               lang={lang}
               active={editStep}
               onSelect={setEditStep}
+              canSelect={canJumpEdit}
               steps={lang === "ar" ? ["تفاصيل المهمة", "الأولوية والمدة", "المراجعة"] : ["Task details", "Priority & duration", "Review"]}
             />
             <div className="space-y-5 rounded-xl border border-accent/40 bg-card p-4 sm:p-6">
             <TaskFormStep index={0} active={editStep}>
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-foreground">{t("taskTitle")}</label>
-              <input name="title" defaultValue={editTarget.title || ""} placeholder={t("taskTitle")} required className="w-full rounded-lg border border-input px-3 py-2.5 text-sm font-body focus:border-accent focus:ring-1 focus:ring-accent" />
+              <input name="title" defaultValue={editTarget.title || ""} placeholder={t("taskTitle")} className="w-full rounded-lg border border-input px-3 py-2.5 text-sm font-body focus:border-accent focus:ring-1 focus:ring-accent" />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-foreground">{t("taskDescription")}</label>
@@ -1322,7 +1371,7 @@ export default function MyTasks() {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground font-body block mb-1">{t("totalTasks")}</label>
-                <input name="totalTasks" type="number" min="1" defaultValue={editTarget.task_target || 1} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+                <input name="totalTasks" type="number" min="1" defaultValue={editTarget.task_target || 1} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground font-body block mb-1">⚖️ {lang === "ar" ? "وزن الجهد" : "Effort weight"}</label>
@@ -1337,7 +1386,7 @@ export default function MyTasks() {
             </div>
             <div>
               <label className="text-xs text-muted-foreground font-body block mb-1">{t("endDate")}</label>
-              <input name="endDate" type="date" defaultValue={editTarget.end_date ? new Date(editTarget.end_date).toISOString().slice(0, 10) : ""} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+              <input name="endDate" type="date" defaultValue={editTarget.end_date ? new Date(editTarget.end_date).toISOString().slice(0, 10) : ""} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             </div>
             </TaskFormStep>
 
@@ -1354,6 +1403,7 @@ export default function MyTasks() {
               step={editStep}
               lastStep={2}
               setStep={setEditStep}
+              onNext={validateEditStep}
               onCancel={() => setEditTarget(null)}
               lang={lang}
               dir={dir}

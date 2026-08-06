@@ -2,7 +2,7 @@ import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 // أزرار التنقل بين مراحل النموذج — يظهر زر الحفظ في المرحلة الأخيرة فقط.
-export default function TaskStepNav({ step, lastStep, setStep, onCancel, lang, dir, submitLabel, submitting }) {
+export default function TaskStepNav({ step, lastStep, setStep, onCancel, lang, dir, submitLabel, submitting, onNext }) {
   const Prev = dir === "rtl" ? ChevronRight : ChevronLeft;
   const Next = dir === "rtl" ? ChevronLeft : ChevronRight;
 
@@ -18,7 +18,7 @@ export default function TaskStepNav({ step, lastStep, setStep, onCancel, lang, d
       {step < lastStep ? (
         <button
           type="button"
-          onClick={() => setStep(step + 1)}
+          onClick={() => { if (onNext && onNext(step) === false) return; setStep(step + 1); }}
           className="flex items-center gap-1.5 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-accent-foreground hover:bg-accent/90"
         >
           {lang === "ar" ? "التالي" : "Next"} <Next className="h-4 w-4" />
