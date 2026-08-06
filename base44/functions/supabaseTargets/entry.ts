@@ -191,6 +191,34 @@ Deno.serve(async (req) => {
       return entry;
     };
 
+    // The ONE scoring equation for the whole system: the company's configured
+    // priority value × the task's effort weight. Both approval paths (a supervisor
+    // approving, and the deadline auto-approval) call this — so the same task can
+    // never be worth two different amounts depending on who closed it.
+    const DEFAULT_PRIORITY_POINTS = { urgent: 150, high: 100, medium: 75, low: 50 };
+    const taskPointsFor = async (target) => {
+      const meta = await getCompanyMeta().catch(() => ({}));
+      const configured = Number(meta.rewardPoints?.[target.priority]);
+      const base = Number.isFinite(configured) && configured > 0 ? configured : (DEFAULT_PRIORITY_POINTS[target.priority] || 75);
+      return base * (Number(target.effortWeight) || 1);
+    };
+    const pointRecipientsFor = async (target) => {
+      if (target.assignment_type === "member" && target.employee_id) return [target.employee_id];
+      const [emps, stations] = await Promise.all([
+        base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId }),
+        base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId }),
+      ]);
+      const fallbackStation = stations[0]?.stationId || null;
+      const stationKey = target.assignment_type === "hq_team" ? fallbackStation : target.assignment_id;
+      return emps.filter((e) => (e.stationId || fallbackStation) === stationKey).map((e) => e.employeeId);
+    };
+    const awardTargetPoints = async (target, awardedBy, reason) => {
+      const points = await taskPointsFor(target);
+      const recipientIds = await pointRecipientsFor(target);
+      for (const rid of recipientIds) await recordPoints({ employeeId: rid, points, target, awardedBy, reason });
+      return { points, recipientIds };
+    };
+
     // Fetches one target and verifies it belongs to the caller's company.
     const getScopedTarget = async (targetId) => {
       const getRes = await fetch(`${SUPABASE_URL}/rest/v1/targets?id=eq.${encodeURIComponent(targetId)}`, { headers });
@@ -380,7 +408,6 @@ Deno.serve(async (req) => {
       if (auth.companyId) {
         const meta = await getCompanyMeta().catch(() => ({}));
         const deadlineHours = Number(meta.approvalDeadlineHours) > 0 ? Number(meta.approvalDeadlineHours) : 48;
-        const defaultPts = { urgent: 150, high: 100, medium: 75, low: 50 };
         for (const tg of rows) {
           if (tg.status !== "pending_review" || !tg.pendingReviewAt) continue;
           if ((now - new Date(tg.pendingReviewAt).getTime()) / 3600000 < deadlineHours) continue;
@@ -395,23 +422,12 @@ Deno.serve(async (req) => {
           });
           await saveTaskMetadata(tg, { autoApproved: true, reviewedAt: new Date().toISOString(), reviewedBy: "system" });
           tg.status = "completed"; tg.comments = comments; tg.autoApproved = true;
-          // Weighted points awarded server-side (mirrors the client approval flow).
-          const pts = (Number(meta.rewardPoints?.[tg.priority]) || defaultPts[tg.priority] || 75) * (Number(tg.effortWeight) || 1);
-          let recipientIds = [];
-          if (tg.assignment_type === "member" && tg.employee_id) recipientIds = [tg.employee_id];
-          else {
-            const [emps, stations] = await Promise.all([
-              base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId }),
-              base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId }),
-            ]);
-            const stationKey = tg.assignment_type === "hq_team" ? (stations[0]?.stationId || null) : tg.assignment_id;
-            recipientIds = emps.filter((e) => (e.stationId || stations[0]?.stationId || null) === stationKey).map((e) => e.employeeId);
-          }
+          // Single scoring equation, shared with the supervisor approval path.
+          const { points: pts, recipientIds } = await awardTargetPoints(
+            tg, "system",
+            `اعتماد تلقائي بانقضاء مهلة ${deadlineHours} ساعة — Auto-approved after the ${deadlineHours}h review deadline.`
+          );
           for (const rid of recipientIds) {
-            await recordPoints({
-              employeeId: rid, points: pts, target: tg, awardedBy: "system",
-              reason: `اعتماد تلقائي بانقضاء مهلة ${deadlineHours} ساعة — Auto-approved after the ${deadlineHours}h review deadline.`,
-            });
             await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
               method: "POST", headers,
               body: JSON.stringify({ user_id: rid, message: `🎉 "${tg.title || "Untitled"}" — اعتماد تلقائي بانقضاء المهلة (+${pts} نقطة)` }),
@@ -690,6 +706,12 @@ Deno.serve(async (req) => {
       }
       // Supervisor accountability: record who reviewed and when (feeds supervisor metrics).
       await saveTaskMetadata(tg, { reviewedAt: new Date().toISOString(), reviewedBy: auth?.userId || null, autoApproved: false });
+      // Points are computed and granted here — never on the client — so the value
+      // is identical whichever path approved the task, and every point gets a ledger entry.
+      let awarded = null;
+      if (approve) {
+        awarded = await awardTargetPoints(tg, auth?.userId || "manager", `اعتماد إنجاز — approved by ${auth?.name || "manager"}`);
+      }
       if (tg.assignment_type === "member" && tg.employee_id) {
         await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
           method: "POST",
@@ -697,12 +719,12 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             user_id: tg.employee_id,
             message: approve
-              ? `🎉 Target "${tg.title || "Untitled"}" COMPLETED! Your proof was approved (${tg.task_target} tasks).`
+              ? `Target "${tg.title || "Untitled"}" COMPLETED — proof approved (+${awarded?.points || 0} points).`
               : `Your completion proof for "${tg.title || "Untitled"}" was rejected: ${reason.trim()}. Please resubmit with new proof.`,
           }),
         });
       }
-      return Response.json({ target: await withTaskMetadata(updated[0]) });
+      return Response.json({ target: await withTaskMetadata(updated[0]), awardedPoints: awarded?.points || 0 });
     }
 
     if (action === "managerComplete") {

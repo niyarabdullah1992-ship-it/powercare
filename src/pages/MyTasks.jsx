@@ -3,9 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { addNotification, addPoints, getCompanyToken } from "@/lib/store";
+import { addNotification, getCompanyToken } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
-import { PRIORITY_POINTS } from "@/lib/rewards";
 import { handlersForLevel, hasHandlerAtLevel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
 import { base44 } from "@/api/base44Client";
 import { getLeafName, getParentPath, NO_SECTION } from "@/lib/taskFolders";
@@ -627,21 +626,9 @@ export default function MyTasks() {
       if (!approve) {
         logAudit(company.id, "task_completion_rejected", currentUser.name, `${t("reject")} "${tg.title || ""}": ${reason}`);
       }
-      if (approve) {
-        // Score is computed on the task's standard effort weight, not raw count.
-        const pts = (PRIORITY_POINTS[tg.priority] || 75) * (Number(tg.effortWeight) || 1);
-        let recipients = [];
-        if (tg.assignment_type === "member" && tg.employee_id) {
-          recipients = [tg.employee_id];
-        } else if (tg.assignment_type === "station_team") {
-          recipients = data.employees.filter((e) => (e.stationId || firstStationId) === tg.assignment_id).map((e) => e.id);
-          } else if (tg.assignment_type === "hq_team") {
-          recipients = data.employees.filter((e) => (e.stationId || firstStationId) === firstStationId).map((e) => e.id);
-        }
-        for (const rid of recipients) {
-          addPoints(company.id, rid, pts, `${t("taskCompleted")}: ${tg.title || ""}`);
-        }
-      }
+      // Points are computed and granted by the server (one equation, one ledger
+      // entry per recipient). The client only re-reads the updated scores.
+      if (approve) refresh();
     } catch (err) {
       // Roll back the optimistic status change.
       setTargets((prev) => prev.map((x) => (x.id === tg.id ? prevSnapshot : x)));
