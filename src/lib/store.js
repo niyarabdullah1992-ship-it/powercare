@@ -1185,6 +1185,22 @@ export function addPoints(companyId, employeeId, points, reason) {
   });
 }
 
+// Points are awarded server-side (task approval writes a PointsLedger entry and updates
+// the Employee record). The local cache is what the UI reads, so it must be refreshed
+// from the server after an award — otherwise the local copy keeps the old total and
+// even pushes it back, erasing the award.
+export async function syncPointsFromCloud(companyId) {
+  const remote = await hydrateEmployeesFromEntity(companyId);
+  if (!remote) return false;
+  const points = new Map(remote.map((employee) => [employee.id, Number(employee.points) || 0]));
+  updateCompany(companyId, (d) => {
+    d.employees.forEach((employee) => {
+      if (points.has(employee.id)) employee.points = points.get(employee.id);
+    });
+  });
+  return true;
+}
+
 /* ----------------------------- anonymous rate limit ----------------------------- */
 export function getAnonUsage(companyId, employeeId, legacyAnonymousId) {
   const data = getCompanyData(companyId);

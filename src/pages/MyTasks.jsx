@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { addNotification, getCompanyToken } from "@/lib/store";
+import { addNotification, getCompanyToken, syncPointsFromCloud } from "@/lib/store";
 import { canCreateTasks, canSeeAllStations, visibleStations } from "@/lib/permissions";
 import { handlersForLevel, hasHandlerAtLevel, buildEscalationSteps, escalationStageCount } from "@/lib/escalation";
 import { base44 } from "@/api/base44Client";
@@ -628,7 +628,10 @@ export default function MyTasks() {
       }
       // Points are computed and granted by the server (one equation, one ledger
       // entry per recipient). The client only re-reads the updated scores.
-      if (approve) refresh();
+      if (approve) {
+        await syncPointsFromCloud(company.id);
+        refresh();
+      }
     } catch (err) {
       // Roll back the optimistic status change.
       setTargets((prev) => prev.map((x) => (x.id === tg.id ? prevSnapshot : x)));
