@@ -124,8 +124,8 @@ export default function Performance() {
       {view === "employeeComparison" && <EmployeeComparisonView t={t} />}
       {view === "individualReport" && <EmployeeSingleReport t={t} />}
 
-      {/* Badge tiers legend */}
-      {view !== "comparison" && view !== "employeeComparison" && view !== "individualReport" && view !== "trends" && view !== "supervision" && <BadgeLegend />}
+      {/* Badge tiers legend — irrelevant in analytics, which opens with the stoppage issues list. */}
+      {view !== "comparison" && view !== "employeeComparison" && view !== "individualReport" && view !== "trends" && view !== "supervision" && view !== "analytics" && <BadgeLegend />}
 
       {view === "station" && (
         <div className="space-y-5">
