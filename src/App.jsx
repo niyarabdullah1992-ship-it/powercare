@@ -6,6 +6,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider } from '@/lib/AuthContext';
 import ScrollToTop from './components/ScrollToTop';
 import PlatformMusicButton from '@/components/PlatformMusicButton';
+import SyncFailureAlerts from '@/components/SyncFailureAlerts';
 import { I18nProvider } from '@/lib/i18n';
 import { AuthProvider as PowerCareAuthProvider, useAuth as usePowerCareAuth } from '@/lib/PowerCareAuth';
 import Layout from '@/components/Layout';
@@ -169,6 +170,7 @@ function App() {
           <ScrollToTop />
           <I18nProvider>
             <PowerCareAuthProvider>
+              <SyncFailureAlerts />
               <AppErrorBoundary><AppRoutes /></AppErrorBoundary>
             </PowerCareAuthProvider>
           </I18nProvider>

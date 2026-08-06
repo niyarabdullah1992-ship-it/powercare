@@ -22,8 +22,23 @@ function read(key, fallback) {
     return fallback;
   }
 }
+// Local cache writes must never throw: a full localStorage quota would otherwise
+// bubble a raw exception into React and lose the user's work with no message.
 function write(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    // Quota exceeded — drop the oldest cached company workspaces, then retry once.
+    const stale = Object.keys(localStorage).filter((item) => item.startsWith(COMPANY_PREFIX) && item !== key);
+    for (const item of stale.slice(0, Math.max(1, stale.length - 1))) localStorage.removeItem(item);
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("powercare:storage-full", { detail: error?.name || "QuotaExceededError" }));
+      }
+    }
+  }
   notify();
 }
 function uid(prefix = "id") {
@@ -472,7 +487,15 @@ async function syncBlobToEntity(companyId, category, payload) {
   try {
     await invokeDirectory({ action: "syncBlob", companyId, category, payload: payload || [] });
     markSynced(companyId);
-  } catch {
+  } catch (error) {
+    // A rejected write (403) is a permission problem, not a network blip: surface it
+    // to the user instead of retrying forever — silent failure is worse than failure.
+    if (error?.response?.status === 403) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("powercare:sync-rejected", { detail: category }));
+      }
+      return;
+    }
     // failed cloud write — clear the dedupe marker and let the retry loop re-push it
     lastSyncedBlobJSON[key] = undefined;
     scheduleResync(companyId);

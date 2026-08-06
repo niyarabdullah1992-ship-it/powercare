@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
 import { fetchWithRetry } from '../../shared/fetchRetry.ts';
+import { filterBlobPayload, redactEmployee, APPEND_ONLY_CATEGORIES, mergeAppendOnly } from '../../shared/blobVisibility.ts';
 
 // System emails (OTP codes, welcome messages) go out through the app's connected
 // Gmail account, because the built-in email service refuses recipients who are
@@ -799,7 +800,18 @@ Deno.serve(async (req) => {
 
     if (action === 'getEmployees') {
       const records = await base44.asServiceRole.entities.Employee.filter({ companyId });
-      return Response.json({ employees: records });
+      const context = await getActorContext();
+      // Deny by default: HR messages, leave, certificates and profile/salary data are
+      // returned only for the caller themself, or to HR/managers inside their scope.
+      if (context.senior) return Response.json({ employees: records });
+      const canSeeFull = context.permissions.has('manage_employees');
+      const stations = context.scope === null ? null : new Set(context.scope || []);
+      const employees = records.map((record) => {
+        if (record.employeeId === auth.userId) return record;
+        const inScope = canSeeFull && (stations === null || stations.has(record.stationId));
+        return inScope ? record : redactEmployee(record);
+      });
+      return Response.json({ employees });
     }
 
     if (action === 'syncStations') {
@@ -859,9 +871,33 @@ Deno.serve(async (req) => {
       else if (category === 'safety') allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole);
       else if (['plans', 'templates', 'targets'].includes(category)) allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole);
       else if (['tasks', 'reports', 'anonymousReports', 'publicReports', 'notifications', 'personalPlaces', 'personalAttendance', 'plannerItems', 'journalEntries'].includes(category)) allowed = privilege === 'full';
-      if (!allowed) return Response.json({ ok: true, ignored: true });
+      // Regular employees may write their OWN records in these categories — their
+      // reports and personal entries must never be silently dropped.
+      const SELF_WRITABLE = ['anonymousReports', 'publicReports', 'notifications', 'personalPlaces', 'personalAttendance', 'plannerItems', 'journalEntries'];
+      const selfWrite = !allowed && privilege === 'self' && SELF_WRITABLE.includes(category);
+      // Never fail silently: a rejected write returns 403 so the UI can tell the user.
+      if (!allowed && !selfWrite) return Response.json({ error: 'Forbidden: this data cannot be written by your role' }, { status: 403 });
       const existing = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
-      const data = Array.isArray(payload) ? payload : [];
+      let data = Array.isArray(payload) ? payload : [];
+      const ownerOf = (item) => item.userId || item.employeeId || item.ownerId || item.createdBy || null;
+      if (selfWrite) {
+        // Merge: the employee's own records come from the client, everyone else's stay untouched.
+        const mine = data.filter((item) => ownerOf(item) === auth.userId || !ownerOf(item));
+        const others = (existing[0]?.payload || []).filter((item) => ownerOf(item) !== auth.userId);
+        data = [...mine, ...others];
+      }
+      if (APPEND_ONLY_CATEGORIES.includes(category)) {
+        // Evidence is never deletable: removed records are kept and marked archived.
+        const actorName = context.actor?.name || (auth.role === 'owner' ? 'Company owner' : 'User');
+        const merged = mergeAppendOnly(existing[0]?.payload || [], data, actorName);
+        data = merged.payload;
+        if (merged.archived > 0) {
+          await base44.asServiceRole.entities.AuditLog.create({
+            companyId, action: `${category}_records_archived`, performedBy: actorName,
+            details: `${merged.archived} record(s) in "${category}" were removed by a client sync and archived instead of deleted.`,
+          });
+        }
+      }
       if (existing.length) {
         await base44.asServiceRole.entities.CompanyDataBlob.update(existing[0].id, { payload: data });
         for (const extra of existing.slice(1)) {
@@ -878,16 +914,19 @@ Deno.serve(async (req) => {
       const { category } = body;
       if (!category) return Response.json({ error: 'Missing category' }, { status: 400 });
       const context = await getActorContext();
-      if (category === 'payrollRuns' && !context.senior && !context.permissions.has('manage_payroll')) {
-        return Response.json({ payload: [] });
-      }
-      if (category === 'files' && !context.senior) {
-        const existing = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
-        const allowed = new Set(context.scope || []);
-        return Response.json({ payload: (existing[0]?.payload || []).filter((node) => node.stationId && allowed.has(node.stationId)) });
-      }
       const existing = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
-      return Response.json({ payload: existing[0]?.payload || [] });
+      if (context.senior || String(category).startsWith('niroMemory:')) {
+        return Response.json({ payload: existing[0]?.payload || [] });
+      }
+      // Complaint handlers are the escalation chain; a reporter still sees their own reports.
+      const receipts = await base44.asServiceRole.entities.AnonymousReportReceipt.filter({ companyId, employeeId: auth.userId || '__none__' });
+      const visibilityContext = {
+        ...context,
+        userId: auth.userId,
+        isComplaintHandler: ['pgm', 'station_manager'].includes(context.actor?.role),
+        ownReportIds: new Set(receipts.map((receipt) => receipt.reportId)),
+      };
+      return Response.json({ payload: filterBlobPayload(category, existing[0]?.payload || [], visibilityContext) });
     }
 
     // Owner-only permanent purge: removes the company account and every related

@@ -434,9 +434,12 @@ Deno.serve(async (req) => {
       const nowMinutes = riyadhMinutes();
       const lateMinutes = Math.max(0, nowMinutes - startMinutes);
       const timelyStatus = lateMinutes > (settings.late_threshold_minutes || 0) ? "late" : "present";
-      const status = inZone ? timelyStatus : "absent";
+      // «لا يُحسب غياب بلا سجل»: تعذّر تحديد الموقع (خارج النطاق أو قياس غير حاسم)
+      // لا يُنتج غياباً موثّقاً، بل حالة معلّقة تنتظر مراجعة المشرف.
+      const inconclusiveAccuracy = Number(accuracy) > 100;
+      const status = inZone && !inconclusiveAccuracy ? timelyStatus : "pending_review";
       const distMeters = recordedWorkplace?.dist ?? nearestDist;
-      const locationStatus = emergency?.active ? "emergency" : (!locationRequired ? "disabled" : (inZone ? "inside" : "outside"));
+      const locationStatus = emergency?.active ? "emergency" : (!locationRequired ? "disabled" : (inconclusiveAccuracy ? "inconclusive" : (inZone ? "inside" : "outside")));
       const payload = {
         company_id: companyId,
         employee_id: employeeId,
@@ -485,8 +488,8 @@ Deno.serve(async (req) => {
         saved = await res.json();
       }
       if (!res.ok) {
-        console.error("checkIn failed:", saved?.message || saved);
-        return Response.json({ error: saved?.message || "Failed to check in — run: ALTER TABLE attendance ADD COLUMN IF NOT EXISTS in_zone boolean DEFAULT false, ADD COLUMN IF NOT EXISTS manual_override boolean DEFAULT false, ADD COLUMN IF NOT EXISTS override_by text;" }, { status: 400 });
+        console.error("checkIn failed:", saved?.message || saved, "hint: ALTER TABLE attendance ADD COLUMN IF NOT EXISTS in_zone boolean DEFAULT false, ADD COLUMN IF NOT EXISTS manual_override boolean DEFAULT false, ADD COLUMN IF NOT EXISTS override_by text;");
+        return Response.json({ error: "CHECK_IN_FAILED" }, { status: 400 });
       }
       await fetch(`${SUPABASE_URL}/rest/v1/employees_directory`, {
         method: "POST",
@@ -701,6 +704,8 @@ Deno.serve(async (req) => {
       for (const r of rows) {
         const bucket = byEmployee[r.employee_id];
         if (!bucket) continue;
+        // pending_review لا يُحسب حضوراً ولا غياباً حتى يراجعه المشرف.
+        if (r.status === "pending_review") continue;
         if (r.status === "present") bucket.present++;
         else if (r.status === "late") {
           if (r.excused) bucket.excusedLate++;
