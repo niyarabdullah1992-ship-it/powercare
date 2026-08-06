@@ -29,6 +29,8 @@ import { toast } from "@/components/ui/use-toast";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import CompletionModeToggle from "@/components/tasks/CompletionModeToggle";
 import TaskWizardStepper from "@/components/tasks/TaskWizardStepper";
+import TaskFormStep from "@/components/tasks/TaskFormStep";
+import TaskStepNav from "@/components/tasks/TaskStepNav";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -84,6 +86,8 @@ export default function MyTasks() {
   const [prefilled, setPrefilled] = useState(false);
   const [completionMode, setCompletionMode] = useState("onsite");
   const [effortWeight, setEffortWeight] = useState(1);
+  const [createStep, setCreateStep] = useState(0);
+  const [editStep, setEditStep] = useState(0);
   const [logAttestation, setLogAttestation] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const creatingRef = useRef(false);
@@ -106,6 +110,7 @@ export default function MyTasks() {
       if (sectionPath) setSectionValue(sectionPath);
     }
     setShowCreate(opening);
+    setCreateStep(0);
     if (opening) requestAnimationFrame(() => document.getElementById("task-create-form")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
@@ -485,6 +490,7 @@ export default function MyTasks() {
       setEffortWeight(1);
       setCompletionMode("onsite");
       setSectionValue("");
+      setCreateStep(0);
       fetchTargets();
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to create");
@@ -835,7 +841,7 @@ export default function MyTasks() {
       escalationSteps={escalationStepsFor(tg)}
       commentsOpen={commentsOpen} setCommentsOpen={setCommentsOpen} commentText={commentText} setCommentText={setCommentText} commentFiles={commentFiles} setCommentFiles={setCommentFiles} submitComment={submitComment}
       markIssue={markIssue} setMarkIssue={setMarkIssue}
-      allSectionFolders={allSectionFolders} moveTaskToSection={moveTaskToSection} setEditTarget={setEditTarget} deleteTarget={deleteTarget}
+      allSectionFolders={allSectionFolders} moveTaskToSection={moveTaskToSection} setEditTarget={(next) => { setEditStep(0); setEditTarget(next); }} deleteTarget={deleteTarget}
       taskLocked={!canManage(tg) && !isIndividual && (tg.completionMode || "onsite") === "onsite" && !checkedInToday}
       convertToRemote={convertToRemote}
       canChangeCompletionMode={canSetCompletionMode}
@@ -886,8 +892,9 @@ export default function MyTasks() {
       {/* Unified Target form */}
       {showCreate && canCreateTasks(currentUser) && (
         <form id="task-create-form" onSubmit={createTarget} className="mx-auto w-full max-w-3xl scroll-mt-6 rounded-2xl border border-accent/50 bg-secondary/60 p-3 shadow-soft sm:p-4">
-          <TaskWizardStepper lang={lang} />
+          <TaskWizardStepper lang={lang} active={createStep} onSelect={setCreateStep} />
           <div className="space-y-5 rounded-xl border border-accent/40 bg-card p-4 sm:p-6">
+          <TaskFormStep index={0} active={createStep}>
           {prefilled && (
             <p className="text-[11px] font-body text-accent flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5" /> {t("smartPrefill")}
@@ -920,6 +927,9 @@ export default function MyTasks() {
             </div>
           </div>
 
+          </TaskFormStep>
+
+          <TaskFormStep index={1} active={createStep}>
           {/* Assignment type selector — hidden for individuals (tasks are self-assigned) */}
           {!isIndividual && (
           <div>
@@ -995,6 +1005,9 @@ export default function MyTasks() {
             </div>
           </div>
 
+          </TaskFormStep>
+
+          <TaskFormStep index={2} active={createStep}>
           {/* Effort weight — performance is scored on weight, not task count */}
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">⚖️ {lang === "ar" ? "وزن الجهد — يُحتسب الأداء على الوزن لا العدد" : "Effort weight — score counts weight, not count"}</p>
@@ -1055,10 +1068,29 @@ export default function MyTasks() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3 border-t border-border pt-4">
-            <button type="submit" disabled={isCreating} className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50">{isCreating ? (lang === "ar" ? "جارٍ الحفظ..." : "Saving...") : t("save")}</button>
-            <button type="button" onClick={() => { setShowCreate(false); setSectionValue(""); }} className="rounded-lg border border-accent/60 bg-secondary/60 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary">{t("cancel")}</button>
-          </div>
+          </TaskFormStep>
+
+          <TaskFormStep index={3} active={createStep}>
+            <div className="space-y-2 rounded-lg border border-accent/30 bg-secondary/40 p-4 text-sm font-body">
+              <p className="text-xs uppercase tracking-wider text-accent">{lang === "ar" ? "مراجعة قبل الحفظ" : "Review before saving"}</p>
+              <p>{lang === "ar" ? "القسم" : "Section"}: <span className="font-medium">{getLeafName(sectionValue) || "—"}</span></p>
+              <p>{t("assignTo")}: <span className="font-medium">{assignType === "station_team" ? `${t("stationTeam")} — ${stationName(formStation)}` : t("member")}</span></p>
+              <p>{t("priority")}: <span className="font-medium">{presetLabel(datePreset)} · {priority}</span></p>
+              <p>{lang === "ar" ? "وزن الجهد" : "Effort weight"}: <span className="font-medium">×{effortWeight}</span></p>
+              <p className="text-xs text-muted-foreground">{lang === "ar" ? "راجع الحقول في المراحل السابقة ثم احفظ." : "Check the earlier steps, then save."}</p>
+            </div>
+          </TaskFormStep>
+
+          <TaskStepNav
+            step={createStep}
+            lastStep={3}
+            setStep={setCreateStep}
+            onCancel={() => { setShowCreate(false); setSectionValue(""); }}
+            lang={lang}
+            dir={dir}
+            submitting={isCreating}
+            submitLabel={isCreating ? (lang === "ar" ? "جارٍ الحفظ..." : "Saving...") : t("save")}
+          />
           </div>
         </form>
       )}
@@ -1235,8 +1267,14 @@ export default function MyTasks() {
               <h3 className="flex items-center gap-2 font-heading text-lg font-semibold"><Pencil className="h-4 w-4 text-accent" /> {t("editTask")}</h3>
               <button type="button" onClick={() => setEditTarget(null)} className="rounded-full border border-accent/30 bg-card p-1.5 hover:bg-secondary"><X className="h-4 w-4" /></button>
             </div>
-            <TaskWizardStepper lang={lang} />
+            <TaskWizardStepper
+              lang={lang}
+              active={editStep}
+              onSelect={setEditStep}
+              steps={lang === "ar" ? ["تفاصيل المهمة", "الأولوية والمدة", "المراجعة"] : ["Task details", "Priority & duration", "Review"]}
+            />
             <div className="space-y-5 rounded-xl border border-accent/40 bg-card p-4 sm:p-6">
+            <TaskFormStep index={0} active={editStep}>
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-foreground">{t("taskTitle")}</label>
               <input name="title" defaultValue={editTarget.title || ""} placeholder={t("taskTitle")} required className="w-full rounded-lg border border-input px-3 py-2.5 text-sm font-body focus:border-accent focus:ring-1 focus:ring-accent" />
@@ -1262,6 +1300,9 @@ export default function MyTasks() {
                 lang={lang}
               />
             )}
+            </TaskFormStep>
+
+            <TaskFormStep index={1} active={editStep}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground font-body block mb-1">{t("priority")}</label>
@@ -1298,10 +1339,26 @@ export default function MyTasks() {
               <label className="text-xs text-muted-foreground font-body block mb-1">{t("endDate")}</label>
               <input name="endDate" type="date" defaultValue={editTarget.end_date ? new Date(editTarget.end_date).toISOString().slice(0, 10) : ""} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
             </div>
-            <div className="grid grid-cols-2 gap-3 border-t border-border pt-4">
-              <button type="submit" className="rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground hover:bg-accent/90">{t("update")}</button>
-              <button type="button" onClick={() => setEditTarget(null)} className="rounded-lg border border-accent/60 bg-secondary/60 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary">{t("cancel")}</button>
-            </div>
+            </TaskFormStep>
+
+            <TaskFormStep index={2} active={editStep}>
+              <div className="space-y-2 rounded-lg border border-accent/30 bg-secondary/40 p-4 text-sm font-body">
+                <p className="text-xs uppercase tracking-wider text-accent">{lang === "ar" ? "مراجعة قبل التحديث" : "Review before updating"}</p>
+                <p>{t("taskTitle")}: <span className="font-medium">{editTarget.title || "—"}</span></p>
+                <p>{t("section")}: <span className="font-medium">{getLeafName(editTarget.section || "") || "—"}</span></p>
+                <p className="text-xs text-muted-foreground">{lang === "ar" ? "راجع الحقول في المراحل السابقة ثم حدّث." : "Check the earlier steps, then update."}</p>
+              </div>
+            </TaskFormStep>
+
+            <TaskStepNav
+              step={editStep}
+              lastStep={2}
+              setStep={setEditStep}
+              onCancel={() => setEditTarget(null)}
+              lang={lang}
+              dir={dir}
+              submitLabel={t("update")}
+            />
             </div>
           </form>
         </div>
