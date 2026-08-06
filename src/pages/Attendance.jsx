@@ -90,7 +90,7 @@ export default function Attendance() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-    <div className="space-y-6">
+    <div className="attendance-hub space-y-6">
       <PageHeader title={t("attendanceScheduling")} icon={ClipboardCheck} actions={<TimeFormatToggle lang={lang} />} />
 
       <CheckInOutCard currentUser={currentUser} company={company} t={t} />

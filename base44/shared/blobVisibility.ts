@@ -76,18 +76,22 @@ export function filterBlobPayload(category, payload, context) {
 // الفئات التي لا يجوز حذف سجلاتها — الدليل لا يُمحى، يُؤرشَف بسبب.
 export const APPEND_ONLY_CATEGORIES = ["anonymousReports", "publicReports", "reports", "safety"];
 
-// يدمج اللقطة الواردة مع الموجود: التعديل مسموح، والحذف يُستبدل بأرشفة معلَّلة.
-export function mergeAppendOnly(existingRows, incomingRows, actorName) {
+// يفحص لقطة append-only: الحذف مرفوض تماماً، والأرشفة تتطلب مُؤرشِفاً وسبباً.
+// missing        = سجلات اختفت من الوارد → يجب رفض الطلب بـ409
+// invalidArchive = سجلات أُرشفت بلا archivedBy أو archivedReason → 400
+// archived       = السجلات التي أُرشفت في هذه العملية (للتقييد في AuditLog)
+export function inspectAppendOnly(existingRows, incomingRows) {
+  const existing = Array.isArray(existingRows) ? existingRows : [];
   const incoming = Array.isArray(incomingRows) ? incomingRows : [];
-  const incomingIds = new Set(incoming.map((item) => item.id).filter(Boolean));
-  const preserved = (Array.isArray(existingRows) ? existingRows : [])
-    .filter((item) => item.id && !incomingIds.has(item.id))
-    .map((item) => ({
-      ...item,
-      status: "archived",
-      archivedBy: item.archivedBy || actorName || "unknown",
-      archivedAt: item.archivedAt || new Date().toISOString(),
-      archivedReason: item.archivedReason || "removed_by_client_sync",
-    }));
-  return { payload: [...incoming, ...preserved], archived: preserved.length };
+  const incomingById = new Map(incoming.filter((item) => item.id).map((item) => [item.id, item]));
+  const missing = existing.filter((item) => item.id && !incomingById.has(item.id)).map((item) => item.id);
+  const invalidArchive = [];
+  const archived = [];
+  for (const before of existing) {
+    const after = before.id ? incomingById.get(before.id) : null;
+    if (!after || after.status !== "archived" || before.status === "archived") continue;
+    if (!String(after.archivedBy || "").trim() || !String(after.archivedReason || "").trim()) invalidArchive.push(before.id);
+    else archived.push(after);
+  }
+  return { missing, invalidArchive, archived };
 }

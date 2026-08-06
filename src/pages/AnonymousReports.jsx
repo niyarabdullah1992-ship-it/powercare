@@ -19,7 +19,8 @@ const PRIORITIES = ["high", "medium", "low"];
 
 export default function AnonymousReports() {
   const { t, dir, lang } = useI18n();
-  const { data, currentUser, company } = useAuth();
+  const { data, currentUser, company, refresh } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
   const [type, setType] = useState("complaint");
   const [priority, setPriority] = useState("medium");
   const [message, setMessage] = useState("");
@@ -111,9 +112,9 @@ export default function AnonymousReports() {
     });
   };
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    if (!message.trim()) return;
+    if (!message.trim() || submitting) return;
     const assignedStation = assignedStations.find((station) => station.id === effectiveReportStationId);
     if (!assignedStation) {
       alert(lang === "ar" ? "يجب تعيين محطة للموظف قبل إرسال شكوى سرية." : "The employee must have an assigned station before filing an anonymous complaint.");
@@ -126,33 +127,33 @@ export default function AnonymousReports() {
       alert(t("noHandlerAssigned"));
       return;
     }
-    const reportId = "anr_" + Math.random().toString(36).slice(2, 9);
-    const anonymousId = "ANON-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase();
-    updateCompany(company.id, (d) => {
-      d.anonymousReports.unshift({
-        id: reportId,
-        anonymousId,
-        stationId: assignedStation.id,
-        type, priority, message,
-        files,
-        status: "open",
-        escalationLevel: initialLevel,
-        replies: [],
-        createdAt: new Date().toISOString(),
+    // Filed through its own server action: one appended record, server-side rate
+    // limits, and a private receipt — never a full-array replacement that could be
+    // rejected or overwritten and silently lose the report.
+    setSubmitting(true);
+    try {
+      const res = await base44.functions.invoke("companyDirectory", {
+        action: "createAnonymousReport",
+        companyId: company.id,
+        sessionToken: getCompanyToken(company.id),
+        report: { stationId: assignedStation.id, type, priority, message, files, escalationLevel: initialLevel },
       });
-    });
-    setOwnReportIds((ids) => [reportId, ...ids]);
-    base44.functions.invoke("companyDirectory", {
-      action: "registerAnonymousReceipt",
-      companyId: company.id,
-      reportId,
-      sessionToken: getCompanyToken(company.id),
-    });
-    const station = assignedStation;
-    const initialHandlers = complaintHandlersForLevel(initialLevel, draft, data);
-    for (const handler of initialHandlers) addNotification(company.id, handler.id, `New ${t(type)} report at ${station?.name || ""} (${t(priority)}).`);
-    setMessage("");
-    setFiles([]);
+      const created = res?.data?.report;
+      if (!created?.id) throw new Error("REPORT_NOT_SAVED");
+      setOwnReportIds((ids) => [created.id, ...ids]);
+      const initialHandlers = complaintHandlersForLevel(initialLevel, draft, data);
+      for (const handler of initialHandlers) addNotification(company.id, handler.id, `New ${t(type)} report at ${assignedStation.name || ""} (${t(priority)}).`);
+      setMessage("");
+      setFiles([]);
+      refresh();
+    } catch (error) {
+      const code = error?.response?.data?.error || error?.message;
+      alert(code === "RATE_LIMIT_REACHED"
+        ? (lang === "ar" ? "بلغت الحد المسموح من البلاغات لهذه الفترة." : "You've reached the report limit for this period.")
+        : (lang === "ar" ? "لم يُحفظ البلاغ. حاول مرة أخرى." : "The report was not saved. Please try again."));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const decide = (id, decision) => {
@@ -305,7 +306,7 @@ export default function AnonymousReports() {
               <p className="text-xs text-muted-foreground font-body">
                 {usage.dayLimit - usage.day} {t("remaining")} · {usage.weekLimit - usage.week} {t("weekRemaining")} · {usage.monthLimit - usage.month} {t("monthRemaining")}
               </p>
-              <button type="submit" disabled={!effectiveReportStationId || usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-40">
+              <button type="submit" disabled={submitting || !effectiveReportStationId || usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-40">
                 <Send className="w-4 h-4" /> {t("fileReport")}
               </button>
             </div>

@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
 import { fetchWithRetry } from '../../shared/fetchRetry.ts';
-import { filterBlobPayload, redactEmployee, APPEND_ONLY_CATEGORIES, mergeAppendOnly } from '../../shared/blobVisibility.ts';
+import { filterBlobPayload, redactEmployee, APPEND_ONLY_CATEGORIES, inspectAppendOnly } from '../../shared/blobVisibility.ts';
 
 // System emails (OTP codes, welcome messages) go out through the app's connected
 // Gmail account, because the built-in email service refuses recipients who are
@@ -887,14 +887,23 @@ Deno.serve(async (req) => {
         data = [...mine, ...others];
       }
       if (APPEND_ONLY_CATEGORIES.includes(category)) {
-        // Evidence is never deletable: removed records are kept and marked archived.
+        // Evidence is never deletable. Records may only be archived — with an
+        // archiver and a reason — and every archival is written to the audit trail.
         const actorName = context.actor?.name || (auth.role === 'owner' ? 'Company owner' : 'User');
-        const merged = mergeAppendOnly(existing[0]?.payload || [], data, actorName);
-        data = merged.payload;
-        if (merged.archived > 0) {
+        const check = inspectAppendOnly(existing[0]?.payload || [], data);
+        if (check.missing.length) {
+          return Response.json({
+            error: `Evidence cannot be deleted. ${check.missing.length} record(s) in "${category}" are missing from this update — archive them instead (status: "archived" with archivedBy and archivedReason).`,
+          }, { status: 409 });
+        }
+        if (check.invalidArchive.length) {
+          return Response.json({ error: `Archiving a record in "${category}" requires both archivedBy and archivedReason.` }, { status: 400 });
+        }
+        for (const record of check.archived) {
           await base44.asServiceRole.entities.AuditLog.create({
-            companyId, action: `${category}_records_archived`, performedBy: actorName,
-            details: `${merged.archived} record(s) in "${category}" were removed by a client sync and archived instead of deleted.`,
+            companyId, action: `${category}_record_archived`, performedBy: actorName,
+            reason: String(record.archivedReason).slice(0, 500),
+            details: `Record ${record.id} in "${category}" archived by ${record.archivedBy}.`,
           });
         }
       }
@@ -908,6 +917,59 @@ Deno.serve(async (req) => {
       }
       await bumpSignal(base44, companyId);
       return Response.json({ ok: true });
+    }
+
+    // Independent, append-only path for filing an anonymous report: any valid
+    // employee session may add exactly ONE record — no full-array replacement, so a
+    // report can never be lost to a stale client snapshot or a permission rejection.
+    if (action === 'createAnonymousReport') {
+      if (!auth.userId) return Response.json({ error: 'Employee session required' }, { status: 403 });
+      const { report } = body;
+      const message = String(report?.message || '').trim();
+      if (!message) return Response.json({ error: 'Report message is required' }, { status: 400 });
+
+      const [blobs, metaBlobs] = await Promise.all([
+        base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: 'anonymousReports' }),
+        base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: 'companyMeta' }),
+      ]);
+      const rows = blobs[0]?.payload || [];
+      const settings = metaBlobs[0]?.payload?.[0]?.settings || {};
+
+      // Server-side rate limits — the client's counters are advisory only.
+      const receipts = await base44.asServiceRole.entities.AnonymousReportReceipt.filter({ companyId, employeeId: auth.userId });
+      const mine = new Set(receipts.map((receipt) => receipt.reportId));
+      const now = Date.now();
+      const filedWithin = (ms) => rows.filter((row) => mine.has(row.id) && now - new Date(row.createdAt).getTime() < ms).length;
+      const limits = [
+        [filedWithin(86400000), Number(settings.rateLimitDaily ?? 3)],
+        [filedWithin(86400000 * 7), Number(settings.rateLimitWeekly ?? 10)],
+        [filedWithin(86400000 * 30), Number(settings.rateLimitMonthly ?? 30)],
+      ];
+      if (limits.some(([used, limit]) => used >= limit)) {
+        return Response.json({ error: 'RATE_LIMIT_REACHED' }, { status: 429 });
+      }
+
+      const reportId = 'anr_' + crypto.randomUUID().replace(/-/g, '').slice(0, 10);
+      const record = {
+        id: reportId,
+        anonymousId: 'ANON-' + crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase(),
+        stationId: report.stationId || null,
+        type: report.type === 'suggestion' ? 'suggestion' : 'complaint',
+        priority: ['high', 'medium', 'low'].includes(report.priority) ? report.priority : 'medium',
+        message: message.slice(0, 5000),
+        files: Array.isArray(report.files) ? report.files : [],
+        status: 'open',
+        escalationLevel: Number(report.escalationLevel) || 0,
+        replies: [],
+        createdAt: new Date().toISOString(),
+      };
+      const nextRows = [record, ...rows];
+      if (blobs.length) await base44.asServiceRole.entities.CompanyDataBlob.update(blobs[0].id, { payload: nextRows });
+      else await base44.asServiceRole.entities.CompanyDataBlob.create({ companyId, category: 'anonymousReports', payload: nextRows });
+      // Private receipt: lets only the sender follow their own report later.
+      await base44.asServiceRole.entities.AnonymousReportReceipt.create({ companyId, reportId, employeeId: auth.userId });
+      await bumpSignal(base44, companyId);
+      return Response.json({ ok: true, report: record });
     }
 
     if (action === 'getBlob') {

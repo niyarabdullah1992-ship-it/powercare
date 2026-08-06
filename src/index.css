@@ -20,6 +20,8 @@
     --muted-foreground: 211 13% 42%;
     --accent: 38 43% 56%;
     --accent-foreground: 211 46% 15%;
+    /* Readable text version of the gold accent — the accent itself fails contrast as text. */
+    --accent-text: 32 42% 27%;
     --destructive: 0 62% 44%;
     --destructive-foreground: 0 0% 100%;
     --border: 37 20% 82%;
@@ -87,6 +89,7 @@
     --muted-foreground: 38 16% 68%;
     --accent: 38 48% 64%;
     --accent-foreground: 211 50% 10%;
+    --accent-text: 39 52% 78%;
     --destructive: 0 58% 50%;
     --destructive-foreground: 0 0% 100%;
     --border: 211 20% 25%;
@@ -978,6 +981,27 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   .self-sign-actions { padding: .65rem 1rem; }
   .self-sign-actions > div { gap: .35rem; }
   .self-sign-actions button { padding-block: .45rem; }
+}
+
+/* Field-facing pages (tasks, attendance, daily report): readable label contrast and
+   thumb-sized controls. Gold stays as-is on borders, fills and icons; only accent
+   TEXT switches to the darker --accent-text so labels pass contrast outdoors. */
+:is(.tasks-hub, .attendance-hub, .reports-hub) :is(p, span, label, small, li, div, h1, h2, h3, a).text-accent:not(.bg-accent),
+:is(.tasks-hub, .attendance-hub, .reports-hub) .text-accent > :is(p, span, label, small) {
+  color: hsl(var(--accent-text));
+}
+:is(.tasks-hub, .attendance-hub, .reports-hub) :is(button, [role="button"], a.rounded-md, a.rounded-lg, a.rounded-full):not(.tech-floating-icon) {
+  min-height: 48px;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+:is(.tasks-hub, .attendance-hub, .reports-hub) :is(button, [role="button"]) :is(span, p) {
+  font-size: 0.875rem;
+}
+/* Icon-only affordances stay compact — a 48px row-action button would break the cards. */
+:is(.tasks-hub, .attendance-hub, .reports-hub) :is(button, [role="button"]):has(> svg:only-child) {
+  min-height: 40px;
+  min-width: 40px;
 }
 
 /* Unified PowerCare identity for every authenticated section. */
