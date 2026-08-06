@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
-import { ShieldCheck, Globe, ChevronDown, Check, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail, Sparkles, BookOpen } from "lucide-react";
+import { ShieldCheck, Globe, ChevronDown, Check, Facebook, Twitter, X as XIcon, Send, MapPin, Lock, Factory, Phone, Mail } from "lucide-react";
 import Logo from "@/components/Logo";
 import LandingHero from "@/components/landing/LandingHero";
 import VideoIntro from "@/components/landing/VideoIntro";
-import StatsBand from "@/components/landing/StatsBand";
 import { trackVisit } from "@/lib/trackVisit";
-import WhyNiroVera from "@/components/landing/WhyPowerCare";
+import EvidenceClaim from "@/components/landing/EvidenceClaim";
+import RequestDemoCta from "@/components/landing/RequestDemoCta";
 import IpCertificateBadge from "@/components/landing/IpCertificateBadge";
 import PlatformServices from "@/components/landing/PlatformServices";
 
@@ -39,9 +39,7 @@ export default function Landing() {
             <span className="font-heading text-base font-semibold text-foreground">NiroVera</span>
           </div>
           <div className="flex items-center gap-2">
-            <Link to="/pricing" className="rounded-md bg-accent px-4 py-2 text-xs font-semibold text-accent-foreground hover:bg-accent/90">
-              {t("viewPlans")}
-            </Link>
+            <RequestDemoCta lang={lang} />
             <div className="relative">
               <button onClick={(e) => { e.stopPropagation(); setLangOpen((v) => !v); }} className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-xs text-foreground hover:bg-muted">
                 <Globe className="h-4 w-4" strokeWidth={1.75} />
@@ -65,7 +63,6 @@ export default function Landing() {
 
       <LandingHero lang={lang} t={t} />
 
-      <StatsBand lang={lang} />
       <PlatformServices lang={lang} />
       <VideoIntro />
 
@@ -76,17 +73,16 @@ export default function Landing() {
             <h2 className="mt-4 font-heading text-4xl font-semibold tracking-[-0.03em] text-foreground md:text-5xl">{lang === "ar" ? "لماذا NiroVera؟" : "Why NiroVera?"}</h2>
           </div>
 
-          <WhyNiroVera lang={lang} />
-
-          <div className="mx-auto mb-7 flex max-w-3xl items-center justify-center gap-3 rounded-full border border-border bg-card px-6 py-3 text-center text-xs">
-            <Sparkles className="h-4 w-4 shrink-0 text-accent" strokeWidth={1.75} />
-            <p><span className="font-semibold text-primary">{t("benefitAnnounce")}</span>{" "}<span className="text-muted-foreground">{t("benefitAnnounceText")}</span></p>
-          </div>
+          <EvidenceClaim lang={lang} />
 
           <div className="grid gap-4 md:grid-cols-3">
             <BenefitCard icon={MapPin} title={t("benefit1Title")} text={t("benefit1Text")} />
             <BenefitCard icon={Lock} title={t("benefit2Title")} text={t("benefit2Text")} />
             <BenefitCard icon={Factory} title={t("benefit3Title")} text={t("benefit3Text")} />
+          </div>
+
+          <div className="mt-9 flex justify-center">
+            <RequestDemoCta lang={lang} variant="outline" />
           </div>
         </div>
       </section>
@@ -96,7 +92,6 @@ export default function Landing() {
           <div>
             <h3 className="font-heading text-2xl text-white">{t("appName")}</h3>
             <p className="mt-3 text-sm leading-relaxed text-white/50">{t("footerDescription")}</p>
-            <Link to="/manual" className="mt-4 inline-flex items-center gap-2 rounded-lg border border-accent/40 px-4 py-2 text-sm font-semibold text-accent hover:bg-accent hover:text-accent-foreground"><BookOpen className="h-3.5 w-3.5" />{lang === "ar" ? "كتيب المستخدم" : "User Handbook"}</Link>
             <div className="mt-5 flex items-center gap-4 text-white/45"><Facebook className="h-4 w-4" /><Twitter className="h-4 w-4" /><XIcon className="h-4 w-4" /><Send className="h-4 w-4" /></div>
           </div>
           <div>
