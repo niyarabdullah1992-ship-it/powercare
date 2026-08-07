@@ -172,7 +172,8 @@ export default function ClientProof() {
     loadProofs();
   };
 
-  const canIssue = stationId && clientCards.length > 0 && selectedIds.length > 0 && resolved.valid && !issuing;
+  // البطاقات وحدها كافية للإصدار — اختيار المهام المكتملة إضافة اختيارية.
+  const canIssue = stationId && clientCards.length > 0 && resolved.valid && !issuing;
   // سبب تعطّل زر الإصدار يظهر للمستخدم بدل بقاء الزر معطّلًا بلا تفسير.
   const blockedReason = !stationId
     ? (ar ? "اختر المحطة أولًا." : "Select a station first.")
@@ -180,8 +181,6 @@ export default function ClientProof() {
     ? (ar ? "أضف بطاقة عميل واحدة على الأقل لهذه المحطة." : "Add at least one client card for this station.")
     : !resolved.valid
     ? (ar ? "حدّد فترة زمنية صحيحة." : "Choose a valid period.")
-    : selectedIds.length === 0
-    ? (ar ? "اختر عملًا مكتملًا واحدًا على الأقل من قائمة الأعمال." : "Select at least one completed work item.")
     : "";
   const stationProofs = useMemo(() => proofs.filter((proof) => proof.stationId === stationId), [proofs, stationId]);
 
