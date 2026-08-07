@@ -76,7 +76,7 @@ export default function InviteManagement() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="font-heading text-3xl font-semibold flex items-center gap-2"><MailPlus className="w-7 h-7 text-accent" />{ar ? "التوظيف والدعوات" : "Hiring & invites"}</h1>
+        <h1 className="font-heading text-3xl font-semibold flex items-center gap-2"><MailPlus className="w-7 h-7 text-accent" />{ar ? "دعوات التوظيف" : "Hiring invites"}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{ar ? "أنشئ دعوات صالحة 7 أيام، ولا يُفعَّل أي حساب إلا بعد الاعتماد وربطه بمقعد وظيفي شاغر." : "Create 7-day invites. Accounts activate only after HR approval and linkage to a vacant job seat."}</p>
       </div>
 

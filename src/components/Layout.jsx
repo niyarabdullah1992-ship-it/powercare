@@ -151,7 +151,7 @@ export default function Layout({ children }) {
     { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling"), category: "workforce" },
     { to: "/app/employees", icon: Users, label: lang === "ar" ? "الموظفون" : "Employees", category: "workforce" },
     { to: "/app/hr", icon: UserCog, label: t("hr"), category: "workforce" },
-    { to: "/app/hr/invites", icon: MailPlus, label: lang === "ar" ? "التوظيف والدعوات" : "Hiring & invites", category: "workforce" },
+    { to: "/app/hr/invites", icon: MailPlus, label: lang === "ar" ? "دعوات التوظيف" : "Hiring invites", category: "workforce" },
     { to: "/app/hr/catalog", icon: BookOpenCheck, label: lang === "ar" ? "كتالوج المسميات" : "Job catalog", category: "workforce" },
     { to: "/app/hr/requests", icon: CalendarDays, label: lang === "ar" ? "الإجازات والطلبات" : "Leave & requests", category: "workforce" },
     { to: "/app/chain", icon: Network, label: lang === "ar" ? "التسلسل الإداري" : "Management chain", category: "workforce" },
