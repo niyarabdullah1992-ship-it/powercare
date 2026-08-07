@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Plus, X, Paperclip, PenLine, Clock, FileText, Trash2, Loader2, Package } from "lucide-react";
+import { Plus, X, Paperclip, PenLine, Clock, FileText, Trash2, Loader2, Package, Users } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
-const EMPTY = { clientName: "", companyName: "", contractNumber: "", projectName: "", notes: "", materials: "" };
+const EMPTY = { clientName: "", companyName: "", contractNumber: "", projectName: "", crewCount: "", notes: "", materials: "" };
 
 // بطاقات العميل: بيانات الجهة والعقد والمشروع، المواد المصروفة (اختيارية)،
 // مرفقاتها، وتوقيع رقمي للموظف الذي اعتمدها مع التاريخ والوقت.
@@ -84,6 +84,11 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
           </div>
 
           <label className="block text-xs text-muted-foreground font-body">
+            <span className="inline-flex items-center gap-1.5"><Users className="h-3 w-3" /> {ar ? "عدد الموظفين الذين دخلوا لدى الجهة" : "Employees who entered the client site"}</span>
+            <input type="number" min="0" value={form.crewCount} onChange={set("crewCount")} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" dir="ltr" />
+          </label>
+
+          <label className="block text-xs text-muted-foreground font-body">
             {ar ? "ملاحظات" : "Notes"}
             <input value={form.notes} onChange={set("notes")} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
           </label>
@@ -142,6 +147,11 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
                 {card.projectName ? ` · ${card.projectName}` : ""}
                 {card.contractNumber ? ` · ${ar ? "عقد" : "contract"} ${card.contractNumber}` : ""}
               </p>
+              {card.crewCount !== "" && card.crewCount != null && (
+                <p className="inline-flex items-center gap-1.5 text-xs text-foreground font-body">
+                  <Users className="h-3 w-3 text-muted-foreground" /> {ar ? `عدد الموظفين الداخلين: ${card.crewCount}` : `Employees entered: ${card.crewCount}`}
+                </p>
+              )}
               {card.notes && <p className="text-xs text-foreground font-body">{card.notes}</p>}
               {card.materials && (
                 <p className="whitespace-pre-line rounded border border-dashed border-border bg-muted/30 p-2 text-[11px] text-foreground font-body">
