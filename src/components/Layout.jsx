@@ -152,7 +152,6 @@ export default function Layout({ children }) {
     { to: "/app/hr", icon: UserCog, label: t("hr"), category: "workforce" },
     { to: "/app/hr/invites", icon: MailPlus, label: lang === "ar" ? "التوظيف والدعوات" : "Hiring & invites", category: "workforce" },
     { to: "/app/hr/catalog", icon: BookOpenCheck, label: lang === "ar" ? "كتالوج المسميات" : "Job catalog", category: "workforce" },
-    { to: "/app/structure", icon: ListTree, label: lang === "ar" ? "الهيكل التنظيمي" : "Org structure", category: "workforce" },
     { to: "/app/chain", icon: Network, label: lang === "ar" ? "التسلسل الإداري" : "Management chain", category: "workforce" },
     { to: "/app/performance", icon: Trophy, label: t("performance"), category: "workforce" },
     { to: "/app/expenses", icon: ReceiptText, label: t("expenses"), category: "finance" },

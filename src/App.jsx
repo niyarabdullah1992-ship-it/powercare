@@ -71,7 +71,6 @@ const ProofVerify = lazy(() => import('./pages/ProofVerify'));
 const InviteManagement = lazy(() => import('./pages/InviteManagement'));
 const InviteAccept = lazy(() => import('./pages/InviteAccept'));
 const JobCatalog = lazy(() => import('./pages/JobCatalog'));
-const OrgStructure = lazy(() => import('./pages/OrgStructure'));
 const Correspondence = lazy(() => import('./pages/Correspondence'));
 
 // After the first page is interactive, quietly download the most-used pages in
@@ -155,7 +154,6 @@ function AppRoutes() {
       <Route path="/app/hr" element={<RequireAuth><HRStructureManagement /></RequireAuth>} />
       <Route path="/app/hr/invites" element={<RequireAuth><InviteManagement /></RequireAuth>} />
       <Route path="/app/hr/catalog" element={<RequireAuth><JobCatalog /></RequireAuth>} />
-      <Route path="/app/structure" element={<RequireAuth><OrgStructure /></RequireAuth>} />
       <Route path="/app/correspondence" element={<RequireAuth><Correspondence /></RequireAuth>} />
       <Route path="/app/chain" element={<RequireAuth><MyChain /></RequireAuth>} />
       <Route path="/app/payroll" element={<RequireAuth><Payroll /></RequireAuth>} />

@@ -41,10 +41,6 @@ export function allowedNavFor(user, data, company) {
   if (["ops_manager", "director"].includes(role) || user.id === data?.ownerId) {
     EXEC_EXTRA.forEach((p) => allowed.add(p));
   }
-  // الهيكل التنظيمي: للمديرين والموارد البشرية — الموظف العادي يرى تسلسله فقط (/app/chain).
-  if (["station_manager", "pgm", "ops_manager", "director"].includes(role) || user.id === data?.ownerId || user.hrLevelId) {
-    allowed.add("/app/structure");
-  }
   // كتالوج المسميات وإدارة الدعوات: مالك الحساب والمدير العام وموظفو HR المخوّلون فقط.
   if (user.id === data?.ownerId || role === "director" || hrPermissions.has("manage_employees")) {
     allowed.add("/app/hr/invites");
