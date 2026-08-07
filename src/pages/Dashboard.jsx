@@ -5,7 +5,7 @@ import { visibleStations, canSeeAllStations, visibleEmployees, canApproveReports
 import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
 import WelcomeHero from "@/components/dashboard/WelcomeHero";
 import { AlertTriangle, FileText, Bell, Megaphone, Palette } from "lucide-react";
-import DashboardStatCards from "@/components/dashboard/DashboardStatCards";
+import HrKpiRow from "@/components/dashboard/HrKpiRow";
 import PendingActionsPanel from "@/components/dashboard/PendingActionsPanel";
 import ExecutiveDashboard from "@/pages/ExecutiveDashboard";
 import { formatDate } from "@/lib/dateFormat";
@@ -138,6 +138,7 @@ export default function Dashboard() {
   const completed = tasks.filter((tk) => tk.status === "completed").length;
 
   const teamEmployees = visibleEmployees(currentUser, data);
+  const pendingLeaveCount = teamEmployees.reduce((sum, employee) => sum + (employee.leaveRequests || []).filter((request) => request.status === "pending").length, 0);
   const scheduledEmployees = teamEmployees.filter((employee) => isScheduledToday(employee, data) && !isOnLeaveToday(employee));
   const scheduledIds = new Set(scheduledEmployees.map((employee) => employee.id));
   const checkedInCount = attendanceRows.filter((row) => isActiveAttendance(row) && scheduledIds.has(row.employee_id)).length;
@@ -255,12 +256,13 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Numbered stat cards (WorkForce style) */}
-      <DashboardStatCards
-        attendanceRate={attendanceRate}
-        activeMembers={activeMembersCount}
-        totalMembers={teamEmployees.length}
-        t={t}
+      <HrKpiRow
+        items={[
+          { label: lang === "ar" ? "إجمالي الموظفين" : "Total employees", value: teamEmployees.length, note: `${activeMembersCount} ${lang === "ar" ? "نشط اليوم" : "active today"}` },
+          { label: lang === "ar" ? "نسبة الحضور اليوم" : "Attendance today", value: `${attendanceRate}%`, note: `${checkedInCount}/${scheduledEmployees.length} ${lang === "ar" ? "حضور" : "checked in"}` },
+          { label: lang === "ar" ? "طلبات معلّقة" : "Pending requests", value: pendingLeaveCount + pendingReports, note: lang === "ar" ? "إجازات وتقارير بانتظار الاعتماد" : "Leave and reports awaiting approval" },
+          { label: lang === "ar" ? "إنجاز المهام" : "Task completion", value: `${tasks.length ? Math.round((completed / tasks.length) * 100) : 0}%`, note: `${completed}/${tasks.length} ${lang === "ar" ? "مهمة" : "tasks"}` },
+        ]}
       />
 
       {/* Main analytics grid: big trend chart + map & pending actions column */}
