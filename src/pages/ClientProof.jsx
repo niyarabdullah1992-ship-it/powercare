@@ -50,9 +50,10 @@ export default function ClientProof() {
     completedTasks.forEach((task) => {
       const proof = Array.isArray(task.completion_proof) ? task.completion_proof : [];
       const photos = proof.filter((entry) => entry.url).length;
-      const onSite = (task.completionMode || "onsite") === "onsite";
-      if (photos > 0 && onSite) eligible.push(task);
-      else excluded.push({ task, reason: photos === 0 ? (ar ? "بلا صورة بعد التنفيذ" : "no post-work photo") : (ar ? "أُغلقت خارج نطاق المحطة" : "closed outside the station zone") });
+      // Field evidence is a photo/file OR a written attestation — both are documented proof.
+      const attestations = proof.filter((entry) => !entry.url && entry.text).length;
+      if (photos + attestations > 0) eligible.push(task);
+      else excluded.push({ task, reason: ar ? "أُغلقت بقرار مشرف بلا دليل ميداني" : "closed by a supervisor with no field evidence" });
     });
     return { eligible, excluded };
   }, [completedTasks, ar]);
