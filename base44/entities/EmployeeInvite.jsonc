@@ -1,0 +1,123 @@
+{
+  "name": "EmployeeInvite",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company this invite belongs to."
+    },
+    "inviteId": {
+      "type": "string",
+      "description": "Stable client-side invite id (inv_xxx)."
+    },
+    "name": {
+      "type": "string"
+    },
+    "jobNumber": {
+      "type": "string",
+      "description": "Employee job number entered by HR."
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "description": "Lowercased email the invite was sent to / confirmed at accept."
+    },
+    "tokenHash": {
+      "type": "string",
+      "description": "SHA-256 of the raw invite token \u2014 the token itself is never stored."
+    },
+    "passwordHash": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "PBKDF2 hash set by the employee at accept; moved to EmployeeCredential on HR approval then cleared."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "awaiting_approval",
+        "approved",
+        "revoked"
+      ],
+      "default": "pending"
+    },
+    "expiresAt": {
+      "type": "string",
+      "description": "ISO timestamp \u2014 invites are valid for 7 days."
+    },
+    "acceptedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "approvedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "approvedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "seatId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Job seat the account was linked to on approval."
+    },
+    "employeeId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Employee record created on approval."
+    },
+    "createdBy": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "companyId",
+    "inviteId",
+    "name",
+    "jobNumber",
+    "tokenHash",
+    "status",
+    "expiresAt"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

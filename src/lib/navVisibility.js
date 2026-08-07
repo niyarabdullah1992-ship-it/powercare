@@ -38,8 +38,17 @@ export function allowedNavFor(user, data, company) {
     MANAGER_EXTRA.forEach((p) => allowed.add(p));
   }
   if (["employee", "safety_officer"].includes(role)) allowed.add("/app/safety");
-  if (["ops_manager", "director"].includes(role)) {
+  if (["ops_manager", "director"].includes(role) || user.id === data?.ownerId) {
     EXEC_EXTRA.forEach((p) => allowed.add(p));
+  }
+  // الهيكل التنظيمي: للمديرين والموارد البشرية — الموظف العادي يرى تسلسله فقط (/app/chain).
+  if (["station_manager", "pgm", "ops_manager", "director"].includes(role) || user.id === data?.ownerId || user.hrLevelId) {
+    allowed.add("/app/structure");
+  }
+  // كتالوج المسميات وإدارة الدعوات: مالك الحساب والمدير العام وموظفو HR المخوّلون فقط.
+  if (user.id === data?.ownerId || role === "director" || hrPermissions.has("manage_employees")) {
+    allowed.add("/app/hr/invites");
+    allowed.add("/app/hr/catalog");
   }
   if (role === "pgm") allowed.add("/app/payroll");
   // Employees holding an HR position access workforce management through HR.
