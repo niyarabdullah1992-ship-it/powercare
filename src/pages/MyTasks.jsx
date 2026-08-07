@@ -356,7 +356,7 @@ export default function MyTasks() {
   // Auto-escalation: notify higher-level managers when an urgent task is at risk
   useEffect(() => {
     if (!data || !currentUser || !company) return;
-    if (!canCreateTasks(currentUser)) return;
+    if (!canCreateTasks(currentUser, data)) return;
     const now = Date.now();
     for (const tg of targets) {
       if (tg.priority !== "urgent" || tg.status !== "active") continue;
@@ -794,7 +794,7 @@ export default function MyTasks() {
   };
 
   const canManage = (tg) =>
-    canCreateTasks(currentUser) &&
+    canCreateTasks(currentUser, data) &&
     (tg.manager_id === currentUser.id ||
       canSeeAllStations(currentUser) ||
       (currentUser.role === "station_manager" && targetStationKey(tg) === (currentUser.stationId || firstStationId)) ||
@@ -934,7 +934,7 @@ export default function MyTasks() {
       )}
 
       {/* Unified Target form */}
-      {showCreate && canCreateTasks(currentUser) && (
+      {showCreate && canCreateTasks(currentUser, data) && (
         <form id="task-create-form" ref={createFormRef} onSubmit={createTarget} className="mx-auto w-full max-w-3xl scroll-mt-6 rounded-2xl border border-accent/50 bg-secondary/60 p-3 shadow-soft sm:p-4">
           <TaskWizardStepper lang={lang} active={createStep} onSelect={setCreateStep} canSelect={canJumpCreate} />
           <div className="space-y-5 rounded-xl border border-accent/40 bg-card p-4 sm:p-6">
@@ -1278,7 +1278,7 @@ export default function MyTasks() {
               </div>
             )}
 
-            {!hasAnyContent && !canCreateTasks(currentUser) ? (
+            {!hasAnyContent && !canCreateTasks(currentUser, data) ? (
               <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
             ) : (
               <DragDropContext onDragEnd={handleTreeDragEnd}>
@@ -1288,7 +1288,7 @@ export default function MyTasks() {
                   onNavigate={(path) => { setFolderPath(path); if (!path) setShowCreate(false); }}
                   folders={folders}
                   tasksAll={stationTargetsAll}
-                  canManage={canCreateTasks(currentUser)}
+                  canManage={canCreateTasks(currentUser, data)}
                   renderTask={renderTask}
                   filterTasks={filterTasks}
                   onAddFolder={addFolderAt}

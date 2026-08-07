@@ -60,7 +60,10 @@ export function canReplyAnon(user) {
 }
 
 // Can the user create tasks / templates / plans?
-export function canCreateTasks(user) {
+export function canCreateTasks(user, data) {
+  if (!user) return false;
+  // The company owner can always create tasks in any station branch, whatever role label they hold.
+  if (user.role === "owner" || user.isOwner || (data?.ownerId && user.id === data.ownerId)) return true;
   return ["director", "ops_manager", "pgm", "station_manager"].includes(user.role);
 }
 
