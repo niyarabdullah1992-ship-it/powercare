@@ -3,14 +3,13 @@ import moment from "moment";
 import { base44 } from "@/api/base44Client";
 import { CalendarRange, FileText, Loader2, MapPin, PenLine } from "lucide-react";
 import LocationMapModal from "@/components/attendance/LocationMapModal";
-import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
+import AttendanceReportExportButtons from "@/components/attendance/AttendanceReportExportButtons";
 import { useI18n } from "@/lib/i18n";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 import { getAttendanceStatus } from "@/lib/attendance";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import AttendanceDailyCharts from "@/components/attendance/AttendanceDailyCharts";
-import { printTeamAttendanceReport } from "@/lib/teamAttendanceReport";
 
 const REPORT_RANGES = ["daily", "weekly", "monthly", "custom"];
 
@@ -205,33 +204,28 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
           <input type="date" value={reportStart} onChange={(event) => setReportStart(event.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
           <input type="date" value={reportEnd} onChange={(event) => setReportEnd(event.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
         </div>}
-        <ComparisonExportButtons
-          title={`${lang === "ar" ? "تقرير حضور الفريق" : "Team attendance report"} — ${reportWindow.startDate} → ${reportWindow.endDate}`}
-          headers={[t("employeeName"), t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("locationStatus"), lang === "ar" ? "التحضير" : "Attendance source"]}
-          rows={reportRows.map((row) => [row.employeeName || "—", row.date || "—", statusLabel(row.status), row.check_in_at ? formatTime(row.check_in_at, format, lang) : "—", row.check_out_at ? formatTime(row.check_out_at, format, lang) : "—", row.work_hours ?? "—", row.location_status || "—", (row.manual_override || row.location_status === "manual") ? `${lang === "ar" ? "يدوي" : "Manual"} — ${row.override_by || row.excused_by_name || "—"}` : "—"])}
-          stats={reportStats}
-          theme="attendanceModern"
-          onPdf={() => printTeamAttendanceReport({
-            title: lang === "ar" ? "تقرير حضور الفريق" : "Team attendance report",
-            subtitle: `${reportEmployeeId === "all" ? (lang === "ar" ? "كل الموظفين" : "All employees") : (employees.find((employee) => employee.id === reportEmployeeId)?.name || "")} · ${reportWindow.startDate} → ${reportWindow.endDate}`,
-            companyName: company?.name || "",
-            dir: lang === "ar" ? "rtl" : "ltr",
-            rows: reportRows.map((row) => ({
-              name: row.employeeName || "—",
-              date: row.date || "—",
-              statusKey: row.status || "not_scheduled",
-              statusLabel: statusLabel(row.status),
-              checkIn: row.check_in_at ? formatTime(row.check_in_at, format, lang) : "—",
-              checkOut: row.check_out_at ? formatTime(row.check_out_at, format, lang) : "—",
-              hours: row.work_hours ?? "—",
-              site: row.stationName || "—",
-              source: (row.manual_override || row.location_status === "manual")
-                ? `${lang === "ar" ? "يدوي" : "Manual"} · ${row.override_by || row.excused_by_name || "—"}`
-                : row.location_status === "inside" ? (lang === "ar" ? "GPS متحقّق" : "GPS verified")
-                : row.location_status === "outside" ? (lang === "ar" ? "خارج النطاق" : "Outside range") : "—",
-            })),
-          })}
-          compact
+        <AttendanceReportExportButtons
+          title={lang === "ar" ? "تقرير حضور الفريق" : "Team attendance report"}
+          period={`${reportWindow.startDate} → ${reportWindow.endDate} · ${reportEmployeeId === "all" ? (lang === "ar" ? "كل الموظفين" : "All employees") : (employees.find((employee) => employee.id === reportEmployeeId)?.name || "")}`}
+          companyName={company?.name || ""}
+          headers={[t("employeeName"), t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), lang === "ar" ? "الموقع" : "Site", lang === "ar" ? "التحضير" : "Attendance source"]}
+          rows={reportRows.map((row) => [
+            row.employeeName || "—",
+            row.date || "—",
+            statusLabel(row.status),
+            row.check_in_at ? formatTime(row.check_in_at, format, lang) : "—",
+            row.check_out_at ? formatTime(row.check_out_at, format, lang) : "—",
+            row.work_hours == null ? "—" : Number(row.work_hours).toFixed(1),
+            row.stationName || "—",
+            (row.manual_override || row.location_status === "manual")
+              ? `${lang === "ar" ? "يدوي" : "Manual"} · ${row.override_by || row.excused_by_name || "—"}`
+              : row.location_status === "inside" ? (lang === "ar" ? "GPS متحقَّق" : "GPS verified")
+              : row.location_status === "outside" ? (lang === "ar" ? "خارج النطاق" : "Outside range") : "—",
+          ])}
+          counts={reportStatusCounts}
+          totalHours={reportHours}
+          endDate={reportWindow.endDate}
+          lang={lang}
         />
       </div>}
 
