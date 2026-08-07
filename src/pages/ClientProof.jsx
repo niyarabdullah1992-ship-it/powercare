@@ -14,7 +14,6 @@ import ProofClientCards from "@/components/proof/ProofClientCards";
 import ProofStep from "@/components/proof/ProofStep";
 import ProofArchive from "@/components/proof/ProofArchive";
 import ProofTaskPicker from "@/components/proof/ProofTaskPicker";
-import ProofDisclosurePanel from "@/components/proof/ProofDisclosurePanel";
 import ProofPreviewCard from "@/components/proof/ProofPreviewCard";
 import ProofIssuedCard from "@/components/proof/ProofIssuedCard";
 import { newProofId, proofItemFromTask, proofContentHash } from "@/lib/clientProof";
@@ -28,7 +27,7 @@ export default function ClientProof() {
   const { company, data, currentUser } = useAuth();
   const { resolved } = usePeriod();
   const [selectedIds, setSelectedIds] = useState([]);
-  const [disclosure, setDisclosure] = useState({ photos: true, locationTime: true, safetyApproval: true, materials: false });
+  const disclosure = { photos: true, locationTime: true, safetyApproval: true, materials: true };
   const [proofId, setProofId] = useState(newProofId);
   const [issuing, setIssuing] = useState(false);
   const [issued, setIssued] = useState(null);
@@ -213,7 +212,6 @@ export default function ClientProof() {
                 ? <div className="flex items-center justify-center rounded-xl border border-border bg-card p-10"><Loader2 className="h-5 w-5 animate-spin text-accent" /></div>
                 : <ProofTaskPicker eligible={eligible} excluded={excluded} selectedIds={selectedIds} onToggle={toggle} stationNameOf={stationNameOf} ar={ar} />}
               <div className="space-y-4">
-                <ProofDisclosurePanel value={disclosure} onChange={setDisclosure} ar={ar} />
                 <ProofPreviewCard taskCount={selectedIds.length} evidenceCount={evidenceCount} proofId={proofId} canIssue={canIssue} issuing={issuing} onIssue={issue} ar={ar} />
               </div>
             </div>
