@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Plus, X, Paperclip, PenLine, Clock, FileText, Trash2, Loader2, Package, Users, Target } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import ProofCrewEditor from "@/components/proof/ProofCrewEditor";
+import ProofCompletionApproval from "@/components/proof/ProofCompletionApproval";
 
 const EMPTY = { companyName: "", contractNumber: "", projectName: "", purpose: "", crew: [], notes: "", materials: "" };
 
@@ -184,6 +185,12 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
                   ))}
                 </div>
               )}
+              <ProofCompletionApproval
+                card={card}
+                employees={employees}
+                ar={ar}
+                onChange={(patch) => onChange(cards.map((entry) => (entry.id === card.id ? { ...entry, ...patch } : entry)))}
+              />
               <p className="flex flex-wrap items-center gap-3 text-[11px] text-accent font-body">
                 <span className="inline-flex items-center gap-1"><PenLine className="h-3 w-3" /> {ar ? "اعتماد:" : "Approved by:"} {card.approvedByName || card.signedByName || "—"}</span>
                 <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {stamp(card.signedAt)}</span>
