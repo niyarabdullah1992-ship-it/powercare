@@ -3,7 +3,6 @@ import { updateCompany } from "@/lib/store";
 export const SMART_DEPARTMENTS = [
   { id: "complaints", ar: "شكاوى", en: "Complaints", badge: "bg-rose-100 text-rose-700 border-rose-200" },
   { id: "safety", ar: "سلامة", en: "Safety", badge: "bg-amber-100 text-amber-800 border-amber-200" },
-  { id: "cameras", ar: "كاميرات", en: "Cameras", badge: "bg-slate-100 text-slate-700 border-slate-200" },
   { id: "payroll", ar: "رواتب", en: "Payroll", badge: "bg-emerald-100 text-emerald-700 border-emerald-200" },
   { id: "employees", ar: "موظفين", en: "Employees", badge: "bg-violet-100 text-violet-700 border-violet-200" },
   { id: "performance", ar: "أداء", en: "Performance", badge: "bg-cyan-100 text-cyan-700 border-cyan-200" },
