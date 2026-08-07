@@ -88,6 +88,13 @@ export default function ProofCompletionApproval({ card, employees = [], onChange
       >
         {ar ? "اعتماد الإنهاء" : "Approve completion"}
       </button>
+      {(!files.length || !approver.trim()) && (
+        <p className="text-muted-foreground">
+          {!files.length
+            ? (ar ? "ارفع صورة واحدة على الأقل لتفعيل الاعتماد." : "Upload at least one photo to enable approval.")
+            : (ar ? "اكتب اسم الموظف المعتمد لتفعيل الاعتماد." : "Enter the approving employee to enable approval.")}
+        </p>
+      )}
     </div>
   );
 }
