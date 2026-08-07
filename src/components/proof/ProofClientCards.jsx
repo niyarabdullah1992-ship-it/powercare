@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Plus, X, Paperclip, PenLine, Clock, FileText, Trash2, Loader2, Package, Users, Target, Camera } from "lucide-react";
+import { Plus, X, Paperclip, PenLine, Clock, FileText, Trash2, Loader2, Package, Users, Target, Camera, Pencil } from "lucide-react";
+import ProofCardInlineEdit, { canEditCard } from "@/components/proof/ProofCardInlineEdit";
 import { base44 } from "@/api/base44Client";
 import ProofCrewEditor from "@/components/proof/ProofCrewEditor";
 import ProofCompletionApproval from "@/components/proof/ProofCompletionApproval";
@@ -17,6 +18,7 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
   const [approvedBy, setApprovedBy] = useState(signerName || "");
   const [uploading, setUploading] = useState(false);
   const [uploadingBefore, setUploadingBefore] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
 
@@ -180,9 +182,24 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
         <div className="grid gap-2 md:grid-cols-2">
           {cards.map((card) => (
             <article key={card.id} className="space-y-1.5 rounded-lg border border-border p-3">
+              {editingId === card.id ? (
+                <ProofCardInlineEdit
+                  card={card}
+                  employees={employees}
+                  ar={ar}
+                  onCancel={() => setEditingId(null)}
+                  onSave={(next) => { onChange(cards.map((entry) => (entry.id === card.id ? next : entry))); setEditingId(null); }}
+                />
+              ) : (
+              <>
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-semibold text-foreground">{card.companyName}</p>
-                <button type="button" onClick={() => onChange(cards.filter((entry) => entry.id !== card.id))} className="text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                <span className="flex items-center gap-2">
+                  {canEditCard(card) && (
+                    <button type="button" onClick={() => setEditingId(card.id)} className="text-accent" title={ar ? "التعديل متاح خلال 24 ساعة من الحفظ" : "Editing allowed within 24 hours of saving"}><Pencil className="h-3.5 w-3.5" /></button>
+                  )}
+                  <button type="button" onClick={() => onChange(cards.filter((entry) => entry.id !== card.id))} className="text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                </span>
               </div>
               <p className="text-xs text-muted-foreground font-body">
                 {card.projectName || ""}
@@ -244,7 +261,10 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
               <p className="flex flex-wrap items-center gap-3 text-[11px] text-accent font-body">
                 <span className="inline-flex items-center gap-1"><PenLine className="h-3 w-3" /> {ar ? "اعتماد:" : "Approved by:"} {card.approvedByName || card.signedByName || "—"}</span>
                 <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {stamp(card.signedAt)}</span>
+                {card.editedAt && <span className="text-muted-foreground">{ar ? `عُدّلت: ${stamp(card.editedAt)}` : `Edited: ${stamp(card.editedAt)}`}</span>}
               </p>
+              </>
+              )}
             </article>
           ))}
         </div>
