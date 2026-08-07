@@ -1033,3 +1033,29 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 .dark .powercare-interior-page [class~="bg-white"] {
   background-color: hsl(var(--card));
 }
+
+/* Design-system pass applied to every authenticated screen. */
+.powercare-interior-page :is(h1, h2, h3) {
+  font-family: var(--font-heading);
+  letter-spacing: -.015em;
+}
+.powercare-interior-page :is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl):not(.rounded-full) {
+  border-radius: .75rem;
+}
+.powercare-interior-page :is(section, .bg-card).border {
+  border-color: hsl(var(--border));
+  box-shadow: 0 1px 2px hsl(var(--foreground) / .04), 0 8px 24px hsl(var(--foreground) / .04);
+}
+.powercare-interior-page table thead th {
+  color: hsl(var(--muted-foreground));
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.powercare-interior-page :is(button, a).bg-accent {
+  box-shadow: 0 4px 12px hsl(var(--accent) / .22);
+}
+.powercare-interior-page :is(button, a).border-border:hover {
+  border-color: hsl(var(--accent) / .45);
+}
