@@ -2,10 +2,11 @@ import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Trash2, ShieldCheck, AlertTriangle } from "lucide-react";
 import DeductionLineForm from "@/components/payroll/DeductionLineForm";
+import DeductionDisputeForm from "@/components/payroll/DeductionDisputeForm";
 import { deductionLines, deductionsTotal, sourceLabel } from "@/lib/payrollDeductions";
 
 // The deduction breakdown: every line carries its source, reason, author and dispute state.
-export default function DeductionLinesDialog({ open, onOpenChange, item, employeeName, ar, canEdit, onAdd, onRemove, onResolve }) {
+export default function DeductionLinesDialog({ open, onOpenChange, item, employeeName, ar, canEdit, onAdd, onRemove, onResolve, currentUserId, onDispute }) {
   if (!item) return null;
   const lines = deductionLines(item);
   const total = deductionsTotal(item);
@@ -47,7 +48,14 @@ export default function DeductionLinesDialog({ open, onOpenChange, item, employe
                   {line.disputeStatus === "open" && (
                     <p className="mt-1 flex items-center gap-1 text-[11px] font-body text-destructive">
                       <AlertTriangle className="h-3 w-3" /> {ar ? "اعتراض مفتوح" : "Dispute open"}
+                      {line.disputeNote && <span className="text-muted-foreground">— {line.disputeNote}</span>}
                     </p>
+                  )}
+                  {line.disputeStatus === "accepted" && (
+                    <p className="mt-1 text-[11px] font-body text-emerald-600">{ar ? "اعتراض مقبول — أُلغي الخصم" : "Dispute accepted — deduction cancelled"}</p>
+                  )}
+                  {line.disputeStatus === "rejected" && (
+                    <p className="mt-1 text-[11px] font-body text-muted-foreground">{ar ? "اعتراض مرفوض" : "Dispute rejected"}</p>
                   )}
                 </div>
                 {canEdit && (
@@ -66,6 +74,9 @@ export default function DeductionLinesDialog({ open, onOpenChange, item, employe
                     {ar ? "رفض الاعتراض" : "Reject dispute"}
                   </button>
                 </div>
+              )}
+              {onDispute && item.employeeId === currentUserId && !item.paid && line.disputeStatus === "none" && Number(line.amount) > 0 && (
+                <DeductionDisputeForm ar={ar} onSubmit={(note) => onDispute(line.id, note)} />
               )}
             </div>
           ))}

@@ -10,7 +10,7 @@ const RULES = [
   { route: "/app/hr", keywords: ["leave request", "leave ", "vacation", "إجازة", "طلب إجازة"] },
   { route: "/app/tasks", keywords: ["escalat", "overdue", "تصعيد", "متأخر"] },
   { route: "/app/daily-report", keywords: ["daily report", "تقرير يومي"] },
-  { route: "/app/planner", keywords: ["reminder", "planner", "تذكير", "مخطط"] },
+  { route: "/app/tasks", keywords: ["reminder", "planner", "تذكير", "مخطط"] },
   { route: "/app/tasks", keywords: ["target", "task", "progress", "مهمة", "مهام", "هدف", "تقدم", "إنجاز"] },
 ];
 

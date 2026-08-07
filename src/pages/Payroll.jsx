@@ -15,7 +15,8 @@ import { toast } from "@/components/ui/use-toast";
 import { stationIdForTreeEmployee } from "@/lib/orgTree";
 import PageHeader from "@/components/PageHeader";
 import DeductionLinesDialog from "@/components/payroll/DeductionLinesDialog";
-import { addDeductionLine, removeDeductionLine, resolveDeductionDispute, backfillLegacyDeduction } from "@/lib/payrollDeductions";
+import { addDeductionLine, removeDeductionLine, resolveDeductionDispute, backfillLegacyDeduction, disputeDeductionLine, deductionLines } from "@/lib/payrollDeductions";
+import { addNotification } from "@/lib/store";
 
 const UNASSIGNED_STATION_ID = "__unassigned__";
 
@@ -213,6 +214,16 @@ export default function Payroll() {
             onAdd={(line) => addDeductionLine(company.id, month, item, line, currentUser)}
             onRemove={(lineId) => removeDeductionLine(company.id, month, item, lineId, currentUser)}
             onResolve={(lineId, status) => resolveDeductionDispute(company.id, month, item, lineId, status, currentUser)}
+            currentUserId={currentUser?.id}
+            onDispute={(lineId, note) => {
+              disputeDeductionLine(company.id, month, item, lineId, note, currentUser);
+              const line = deductionLines(item).find((entry) => entry.id === lineId);
+              if (line?.createdBy && !["system", "unknown"].includes(line.createdBy)) {
+                addNotification(company.id, line.createdBy, ar
+                  ? `اعتراض جديد على بند خصم — ${employeeForItem(item)?.name || ""}: ${note}`
+                  : `New deduction dispute — ${employeeForItem(item)?.name || ""}: ${note}`);
+              }
+            }}
           />
         );
       })()}

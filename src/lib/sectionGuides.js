@@ -21,10 +21,6 @@ const GUIDES = {
     ar: ["سجّل حضورك بزر «تسجيل حضور» — قد يُطلب تحديد موقعك للتحقق من وجودك في المقر.", "المدير يتابع حضور الفريق اليومي والتقرير الشهري من التبويبات بالأعلى.", "من «الإعدادات» حدد مواقع المقرات على الخريطة ونطاق المسافة المسموح ووقت الدوام.", "تبويب «خريطة المواقع» يعرض أماكن تسجيل الحضور على الخريطة."],
     en: ["Check in with the “Check In” button — GPS may be requested to verify you're on site.", "Managers track daily attendance and monthly reports from the tabs above.", "In Settings, set workplace locations, allowed radius and work hours.", "The Location Map tab shows where check-ins happened."],
   },
-  "/app/planner": {
-    ar: ["أضف عناصر يومك مع وقت لكل عنصر، وعلّم عليها عند الإنجاز.", "اكتب يومك بجملة واحدة في مربع «خطط يومك مع نيرو» وسيبني لك جدولًا كاملاً.", "ستصلك تذكيرات قبل موعد كل عنصر."],
-    en: ["Add your day's items with a time for each, and tick them off as you finish.", "Describe your day in one sentence in the Niro box and it builds your schedule.", "You'll get reminders before each item starts."],
-  },
   "/app/journal": {
     ar: ["اكتب تقرير يومك بحرية واختر حالتك المزاجية.", "احفظ التقرير ليُضاف إلى سجل حياتك بالأسفل.", "صدّر سجلك كاملًا PDF أو Excel من أزرار التصدير."],
     en: ["Write freely about your day and pick your mood.", "Save it to add it to your life log below.", "Export your full log as PDF or Excel."],
