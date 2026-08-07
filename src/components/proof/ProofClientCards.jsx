@@ -159,8 +159,7 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
                     <p key={crew.id} className="text-foreground">
                       {crew.name}
                       {crew.idNumber ? ` · ${crew.idNumber}` : ""}
-                      {crew.vehicleType ? ` · ${crew.vehicleType}` : ""}
-                      {crew.plate ? ` (${crew.plate})` : ""}
+                      {(crew.vehicles?.length ? crew.vehicles : []).map((vehicle) => ` · ${vehicle.type}${vehicle.plate ? ` (${vehicle.plate})` : ""}`).join("")}
                     </p>
                   ))}
                 </div>

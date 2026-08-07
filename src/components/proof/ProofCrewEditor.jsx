@@ -1,18 +1,31 @@
 import React, { useState } from "react";
-import { Users, Plus, Trash2, IdCard, Car } from "lucide-react";
+import { Users, Plus, Trash2, IdCard, Car, X } from "lucide-react";
 
-const EMPTY = { name: "", idNumber: "", vehicleType: "", plate: "" };
+const EMPTY_VEHICLE = { type: "", plate: "" };
+const EMPTY = { name: "", idNumber: "", vehicles: [{ ...EMPTY_VEHICLE }] };
 
-// الموظفون الذين دخلوا لدى الجهة: الاسم، رقم الهوية، نوع السيارة ولوحتها.
+// الموظفون الذين دخلوا لدى الجهة: الاسم، رقم الهوية، وسيارة أو أكثر لكل موظف.
 export default function ProofCrewEditor({ value = [], onChange, employees = [], ar }) {
   const [row, setRow] = useState(EMPTY);
   const set = (key) => (event) => setRow((current) => ({ ...current, [key]: event.target.value }));
 
+  const setVehicle = (index, key) => (event) =>
+    setRow((current) => ({
+      ...current,
+      vehicles: current.vehicles.map((vehicle, i) => (i === index ? { ...vehicle, [key]: event.target.value } : vehicle)),
+    }));
+
+  const addVehicle = () => setRow((current) => ({ ...current, vehicles: [...current.vehicles, { ...EMPTY_VEHICLE }] }));
+  const removeVehicle = (index) => setRow((current) => ({ ...current, vehicles: current.vehicles.filter((_, i) => i !== index) }));
+
   const add = () => {
     if (!row.name.trim()) return;
-    onChange([...value, { ...row, id: `crew_${Date.now()}` }]);
-    setRow(EMPTY);
+    const vehicles = row.vehicles.filter((vehicle) => vehicle.type.trim() || vehicle.plate.trim());
+    onChange([...value, { ...row, vehicles, id: `crew_${Date.now()}` }]);
+    setRow({ ...EMPTY, vehicles: [{ ...EMPTY_VEHICLE }] });
   };
+
+  const vehiclesOf = (crew) => (crew.vehicles?.length ? crew.vehicles : crew.vehicleType || crew.plate ? [{ type: crew.vehicleType, plate: crew.plate }] : []);
 
   return (
     <div className="space-y-2 rounded-lg border border-border bg-card p-3">
@@ -23,14 +36,16 @@ export default function ProofCrewEditor({ value = [], onChange, employees = [], 
 
       {value.map((crew) => (
         <div key={crew.id} className="flex items-start justify-between gap-2 rounded-md border border-border p-2 text-xs font-body">
-          <div className="min-w-0">
+          <div className="min-w-0 space-y-0.5">
             <p className="font-medium text-foreground">{crew.name}</p>
-            <p className="flex flex-wrap items-center gap-2.5 text-muted-foreground">
-              {crew.idNumber && <span className="inline-flex items-center gap-1"><IdCard className="h-3 w-3" /><span dir="ltr">{crew.idNumber}</span></span>}
-              {(crew.vehicleType || crew.plate) && (
-                <span className="inline-flex items-center gap-1"><Car className="h-3 w-3" />{crew.vehicleType}{crew.plate ? ` · ${crew.plate}` : ""}</span>
-              )}
-            </p>
+            {crew.idNumber && (
+              <p className="inline-flex items-center gap-1 text-muted-foreground"><IdCard className="h-3 w-3" /><span dir="ltr">{crew.idNumber}</span></p>
+            )}
+            {vehiclesOf(crew).map((vehicle, index) => (
+              <p key={index} className="inline-flex items-center gap-1 text-muted-foreground">
+                <Car className="h-3 w-3" />{vehicle.type}{vehicle.plate ? ` · ${vehicle.plate}` : ""}
+              </p>
+            ))}
           </div>
           <button type="button" onClick={() => onChange(value.filter((entry) => entry.id !== crew.id))} className="text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
         </div>
@@ -42,9 +57,23 @@ export default function ProofCrewEditor({ value = [], onChange, employees = [], 
           {employees.map((employee) => <option key={employee.id} value={employee.name} />)}
         </datalist>
         <input value={row.idNumber} onChange={set("idNumber")} placeholder={ar ? "رقم الهوية" : "ID number"} dir="ltr" className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-        <input value={row.vehicleType} onChange={set("vehicleType")} placeholder={ar ? "نوع السيارة" : "Vehicle type"} className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-        <input value={row.plate} onChange={set("plate")} placeholder={ar ? "رقم اللوحة" : "Plate number"} dir="ltr" className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
       </div>
+
+      <div className="space-y-2">
+        {row.vehicles.map((vehicle, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <input value={vehicle.type} onChange={setVehicle(index, "type")} placeholder={ar ? "نوع السيارة" : "Vehicle type"} className="min-w-0 flex-1 rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+            <input value={vehicle.plate} onChange={setVehicle(index, "plate")} placeholder={ar ? "رقم اللوحة" : "Plate number"} dir="ltr" className="min-w-0 flex-1 rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+            {row.vehicles.length > 1 && (
+              <button type="button" onClick={() => removeVehicle(index)} className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+            )}
+          </div>
+        ))}
+        <button type="button" onClick={addVehicle} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-body text-muted-foreground hover:border-accent/40 hover:text-accent">
+          <Car className="h-3.5 w-3.5" /><Plus className="h-3 w-3" /> {ar ? "سيارة أخرى" : "Another vehicle"}
+        </button>
+      </div>
+
       <button type="button" onClick={add} className="inline-flex items-center gap-1.5 rounded-md border border-accent/40 px-3 py-2 text-xs font-body text-accent hover:bg-accent/5">
         <Plus className="h-3.5 w-3.5" /> {ar ? "إضافة موظف" : "Add employee"}
       </button>
