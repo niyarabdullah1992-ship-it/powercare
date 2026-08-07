@@ -12,11 +12,11 @@ import ProofClientFilter from "@/components/proof/ProofClientFilter";
 import ProofStationPicker from "@/components/proof/ProofStationPicker";
 import ProofClientCards from "@/components/proof/ProofClientCards";
 import ProofStep from "@/components/proof/ProofStep";
+import ProofArchive from "@/components/proof/ProofArchive";
 import ProofTaskPicker from "@/components/proof/ProofTaskPicker";
 import ProofDisclosurePanel from "@/components/proof/ProofDisclosurePanel";
 import ProofPreviewCard from "@/components/proof/ProofPreviewCard";
 import ProofIssuedCard from "@/components/proof/ProofIssuedCard";
-import IssuedProofList from "@/components/proof/IssuedProofList";
 import { newProofId, proofItemFromTask, proofContentHash } from "@/lib/clientProof";
 import { toast } from "@/components/ui/use-toast";
 
@@ -27,16 +27,18 @@ export default function ClientProof() {
   const ar = lang === "ar";
   const { company, data, currentUser } = useAuth();
   const { resolved } = usePeriod();
-  const [clientName, setClientName] = useState("");
-  const [projectName, setProjectName] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
-  const [disclosure, setDisclosure] = useState({ photos: true, locationTime: true, safetyApproval: true });
+  const [disclosure, setDisclosure] = useState({ photos: true, locationTime: true, safetyApproval: true, materials: false });
   const [proofId, setProofId] = useState(newProofId);
   const [issuing, setIssuing] = useState(false);
   const [issued, setIssued] = useState(null);
   const [proofs, setProofs] = useState([]);
   const [clientFilter, setClientFilter] = useState("all");
   const [clientCards, setClientCards] = useState([]);
+  // اسم العميل والمشروع صارا داخل البطاقة — البطاقة الأولى هي هوية الإثبات.
+  const primaryCard = clientCards[0] || {};
+  const clientName = primaryCard.clientName || primaryCard.companyName || "";
+  const projectName = primaryCard.projectName || "";
   const stations = data?.stations || [];
   const [stationId, setStationId] = useState("");
   const station = stations.find((entry) => entry.id === stationId);
@@ -107,7 +109,8 @@ export default function ClientProof() {
       periodStart: resolved.startDate,
       periodEnd: resolved.endDate,
       disclosure,
-      clientCards,
+      // المواد المصروفة تُرسل فقط عند تشغيل الخيار — وإلا لا تُرسل أصلًا.
+      clientCards: clientCards.map(({ materials, ...card }) => (disclosure.materials ? { ...card, materials } : card)),
       items,
     };
     setIssuing(true);
@@ -149,7 +152,7 @@ export default function ClientProof() {
     loadProofs();
   };
 
-  const canIssue = stationId && clientName.trim() && selectedIds.length > 0 && resolved.valid && !issuing;
+  const canIssue = stationId && clientCards.length > 0 && selectedIds.length > 0 && resolved.valid && !issuing;
   const stationProofs = useMemo(() => proofs.filter((proof) => proof.stationId === stationId), [proofs, stationId]);
 
   return (
@@ -181,33 +184,21 @@ export default function ClientProof() {
         <>
           <ProofStep number="2" title={ar ? "بيانات العميل والفترة" : "Client details & period"} hint={ar ? "اسم العميل والعقد ثم الفترة الزمنية للأعمال." : "Client and contract, then the work period."}>
             <div className="space-y-4 rounded-xl border border-border bg-card p-4 md:p-5">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-xs text-muted-foreground font-body">
-                  {ar ? "اسم العميل / الجهة" : "Client / authority"}
-                  <input value={clientName} onChange={(event) => setClientName(event.target.value)} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-                </label>
-                <label className="text-xs text-muted-foreground font-body">
-                  {ar ? "اسم المشروع / العقد" : "Project / contract"}
-                  <input value={projectName} onChange={(event) => setProjectName(event.target.value)} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-                </label>
-              </div>
               <PeriodPicker showDaily showWeekly />
               <ProofClientFilter
                 clients={clients}
                 value={clientFilter}
-                onChange={(next) => {
-                  setClientFilter(next);
-                  setSelectedIds([]);
-                  if (next !== "all") {
-                    setClientName(next);
-                    const project = periodTasks.find((task) => task.clientCompany === next)?.clientProject;
-                    if (project) setProjectName(project);
-                  }
-                }}
+                onChange={(next) => { setClientFilter(next); setSelectedIds([]); }}
                 ar={ar}
               />
             </div>
-            <ProofClientCards cards={clientCards} onChange={setClientCards} signerName={currentUser?.name} ar={ar} />
+            <ProofClientCards
+              cards={clientCards}
+              onChange={setClientCards}
+              employees={data?.employees || []}
+              signerName={currentUser?.name}
+              ar={ar}
+            />
           </ProofStep>
 
           <ProofStep
@@ -231,7 +222,7 @@ export default function ClientProof() {
           <ProofStep number="4" title={ar ? "أرشيف المحطة" : "Station archive"} hint={station?.name || ""}>
             {stationProofs.length === 0
               ? <p className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground font-body">{ar ? "لا توجد إثباتات صادرة لهذه المحطة بعد." : "No proofs issued for this station yet."}</p>
-              : <IssuedProofList proofs={stationProofs} onRevoke={revoke} ar={ar} />}
+              : <ProofArchive proofs={stationProofs} onRevoke={revoke} ar={ar} />}
           </ProofStep>
         </>
       )}

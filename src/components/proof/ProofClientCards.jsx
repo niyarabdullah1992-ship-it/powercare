@@ -1,12 +1,16 @@
 import React, { useState } from "react";
-import { Plus, X, Paperclip, PenLine, Clock, FileText, Trash2, Loader2 } from "lucide-react";
+import { Plus, X, Paperclip, PenLine, Clock, FileText, Trash2, Loader2, Package } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
-// بطاقات العميل: بيانات الجهة ورقم العقد ومرفقاتها، موقّعة رقمياً باسم مُدخِلها.
-export default function ProofClientCards({ cards, onChange, signerName, ar }) {
+const EMPTY = { clientName: "", companyName: "", contractNumber: "", projectName: "", notes: "", materials: "" };
+
+// بطاقات العميل: بيانات الجهة والعقد والمشروع، المواد المصروفة (اختيارية)،
+// مرفقاتها، وتوقيع رقمي للموظف الذي اعتمدها مع التاريخ والوقت.
+export default function ProofClientCards({ cards, onChange, employees = [], signerName, ar }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ clientName: "", companyName: "", contractNumber: "", notes: "" });
+  const [form, setForm] = useState(EMPTY);
   const [files, setFiles] = useState([]);
+  const [approvedBy, setApprovedBy] = useState(signerName || "");
   const [uploading, setUploading] = useState(false);
 
   const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
@@ -36,12 +40,14 @@ export default function ProofClientCards({ cards, onChange, signerName, ar }) {
         id: `card_${Date.now()}`,
         ...form,
         files,
-        signedByName: signerName || "",
+        enteredByName: signerName || "",
+        approvedByName: approvedBy || signerName || "",
         signedAt: new Date().toISOString(),
       },
     ]);
-    setForm({ clientName: "", companyName: "", contractNumber: "", notes: "" });
+    setForm(EMPTY);
     setFiles([]);
+    setApprovedBy(signerName || "");
     setOpen(false);
   };
 
@@ -60,7 +66,7 @@ export default function ProofClientCards({ cards, onChange, signerName, ar }) {
         <div className="space-y-3 rounded-lg border border-accent/30 bg-secondary/40 p-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-xs text-muted-foreground font-body">
-              {ar ? "اسم العميل" : "Client name"}
+              {ar ? "اسم العميل / الجهة" : "Client / authority"}
               <input value={form.clientName} onChange={set("clientName")} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
             </label>
             <label className="text-xs text-muted-foreground font-body">
@@ -68,14 +74,24 @@ export default function ProofClientCards({ cards, onChange, signerName, ar }) {
               <input value={form.companyName} onChange={set("companyName")} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
             </label>
             <label className="text-xs text-muted-foreground font-body">
+              {ar ? "اسم المشروع" : "Project name"}
+              <input value={form.projectName} onChange={set("projectName")} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+            </label>
+            <label className="text-xs text-muted-foreground font-body">
               {ar ? "رقم العقد" : "Contract number"}
               <input value={form.contractNumber} onChange={set("contractNumber")} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" dir="ltr" />
             </label>
-            <label className="text-xs text-muted-foreground font-body">
-              {ar ? "ملاحظات" : "Notes"}
-              <input value={form.notes} onChange={set("notes")} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-            </label>
           </div>
+
+          <label className="block text-xs text-muted-foreground font-body">
+            {ar ? "ملاحظات" : "Notes"}
+            <input value={form.notes} onChange={set("notes")} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+          </label>
+
+          <label className="block text-xs text-muted-foreground font-body">
+            <span className="inline-flex items-center gap-1.5"><Package className="h-3 w-3" /> {ar ? "المواد المصروفة (اختياري — بلا تكاليف)" : "Materials issued (optional — no costs)"}</span>
+            <textarea value={form.materials} onChange={set("materials")} rows={2} placeholder={ar ? "كل مادة في سطر: الاسم والكمية" : "One material per line: name and quantity"} className="mt-1 w-full resize-y rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+          </label>
 
           <div className="flex flex-wrap items-center gap-2">
             <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-body hover:bg-muted">
@@ -90,10 +106,20 @@ export default function ProofClientCards({ cards, onChange, signerName, ar }) {
             ))}
           </div>
 
-          <p className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground font-body">
-            <span className="inline-flex items-center gap-1"><PenLine className="h-3 w-3" /> {ar ? "توقيع رقمي:" : "Digital signature:"} {signerName || "—"}</span>
-            <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {stamp(new Date().toISOString())}</span>
-          </p>
+          <div className="space-y-2 rounded-lg border border-border bg-card p-3">
+            <p className="text-xs font-semibold text-foreground">{ar ? "الاعتماد والتوقيع الرقمي" : "Approval & digital signature"}</p>
+            <label className="block text-xs text-muted-foreground font-body">
+              {ar ? "الموظف الذي اعتمد البطاقة" : "Employee approving this card"}
+              <input list="proof-approvers" value={approvedBy} onChange={(event) => setApprovedBy(event.target.value)} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+              <datalist id="proof-approvers">
+                {employees.map((employee) => <option key={employee.id} value={employee.name} />)}
+              </datalist>
+            </label>
+            <p className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground font-body">
+              <span className="inline-flex items-center gap-1"><PenLine className="h-3 w-3" /> {ar ? "أدخلها:" : "Entered by:"} {signerName || "—"}</span>
+              <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {stamp(new Date().toISOString())}</span>
+            </p>
+          </div>
 
           <button type="button" onClick={save} className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-body text-primary-foreground hover:bg-accent">
             {ar ? "حفظ البطاقة" : "Save card"}
@@ -111,8 +137,18 @@ export default function ProofClientCards({ cards, onChange, signerName, ar }) {
                 <p className="text-sm font-semibold text-foreground">{card.companyName || card.clientName}</p>
                 <button type="button" onClick={() => onChange(cards.filter((entry) => entry.id !== card.id))} className="text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
-              <p className="text-xs text-muted-foreground font-body">{card.clientName}{card.contractNumber ? ` · ${ar ? "عقد" : "contract"} ${card.contractNumber}` : ""}</p>
+              <p className="text-xs text-muted-foreground font-body">
+                {card.clientName}
+                {card.projectName ? ` · ${card.projectName}` : ""}
+                {card.contractNumber ? ` · ${ar ? "عقد" : "contract"} ${card.contractNumber}` : ""}
+              </p>
               {card.notes && <p className="text-xs text-foreground font-body">{card.notes}</p>}
+              {card.materials && (
+                <p className="whitespace-pre-line rounded border border-dashed border-border bg-muted/30 p-2 text-[11px] text-foreground font-body">
+                  <span className="inline-flex items-center gap-1 text-muted-foreground"><Package className="h-3 w-3" /> {ar ? "المواد المصروفة" : "Materials issued"}</span>
+                  {"\n"}{card.materials}
+                </p>
+              )}
               {card.files?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {card.files.map((file) => (
@@ -123,7 +159,7 @@ export default function ProofClientCards({ cards, onChange, signerName, ar }) {
                 </div>
               )}
               <p className="flex flex-wrap items-center gap-3 text-[11px] text-accent font-body">
-                <span className="inline-flex items-center gap-1"><PenLine className="h-3 w-3" /> {card.signedByName || "—"}</span>
+                <span className="inline-flex items-center gap-1"><PenLine className="h-3 w-3" /> {ar ? "اعتماد:" : "Approved by:"} {card.approvedByName || card.signedByName || "—"}</span>
                 <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {stamp(card.signedAt)}</span>
               </p>
             </article>

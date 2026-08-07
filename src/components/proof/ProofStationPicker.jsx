@@ -1,13 +1,27 @@
-import React from "react";
-import { Building2, FileCheck2 } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Building2, FileCheck2, Search } from "lucide-react";
 
-// Each station gets its own proof workspace: issue new proofs and browse its archive.
+// كل محطة لها مساحة إثبات وأرشيف خاص — مع بحث ذكي فوري بين المحطات.
 export default function ProofStationPicker({ stations, value, onChange, countFor, ar }) {
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return term ? stations.filter((station) => (station.name || "").toLowerCase().includes(term)) : stations;
+  }, [stations, query]);
+
   return (
-    <section className="rounded-xl border border-border bg-card p-4">
-      <p className="mb-3 text-xs uppercase tracking-wider text-muted-foreground">{ar ? "اختر المحطة" : "Select a station"}</p>
+    <section className="space-y-3 rounded-xl border border-border bg-card p-4">
+      <div className="relative">
+        <Search className="absolute top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground start-3" />
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={ar ? "ابحث عن محطة" : "Search a station"}
+          className="w-full rounded-md border border-input py-2 pe-3 ps-9 text-sm text-foreground"
+        />
+      </div>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {stations.map((station) => (
+        {filtered.map((station) => (
           <button
             key={station.id}
             type="button"
@@ -23,7 +37,7 @@ export default function ProofStationPicker({ stations, value, onChange, countFor
             </span>
           </button>
         ))}
-        {stations.length === 0 && <p className="text-sm text-muted-foreground">{ar ? "لا توجد محطات" : "No stations"}</p>}
+        {filtered.length === 0 && <p className="text-sm text-muted-foreground">{ar ? "لا توجد محطات مطابقة" : "No matching stations"}</p>}
       </div>
     </section>
   );

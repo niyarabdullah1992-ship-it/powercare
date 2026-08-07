@@ -5,6 +5,7 @@ const ROWS = [
   { id: "photos", ar: "صور قبل وبعد التنفيذ", en: "Before / after photos" },
   { id: "locationTime", ar: "الموقع والوقت الموثّقان", en: "Verified location & time" },
   { id: "safetyApproval", ar: "اعتماد مسؤول السلامة", en: "Safety officer attestation" },
+  { id: "materials", ar: "المواد المصروفة (بلا تكاليف)", en: "Materials issued (no costs)" },
 ];
 const LOCKED = [
   { id: "names", ar: "أسماء المنفّذين", en: "Executor names" },
