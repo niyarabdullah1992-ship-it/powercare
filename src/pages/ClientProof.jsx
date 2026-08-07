@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
@@ -34,25 +34,29 @@ export default function ClientProof() {
   const [issued, setIssued] = useState(null);
   const [proofs, setProofs] = useState([]);
   const [clientFilter, setClientFilter] = useState("all");
-  const [clientCards, setClientCards] = useState([]);
-  // اسم العميل والمشروع صارا داخل البطاقة — البطاقة الأولى هي هوية الإثبات.
-  const primaryCard = clientCards[0] || {};
-  const clientName = primaryCard.clientName || primaryCard.companyName || "";
-  const projectName = primaryCard.projectName || "";
+
   const stations = data?.stations || [];
   const [stationId, setStationId] = useState(() => localStorage.getItem("powercare_proof_station") || "");
   const station = stations.find((entry) => entry.id === stationId);
 
-  // استرجاع مسودة بطاقات المحطة وحفظ أي تغيير عليها بعد التحميل فقط.
-  const loadedKey = useRef(null);
+  // بطاقات العميل مرتبطة دائمًا بمحطة محدّدة: المفتاح والبطاقات يتغيّران معًا
+  // في نفس الحالة، فلا تُحفظ بطاقات محطة تحت محطة أخرى ولا تضيع عند التبديل.
+  const cardsKey = `${company?.id}|${stationId}`;
+  const [cardsState, setCardsState] = useState(() => ({ key: cardsKey, cards: loadProofCards(company?.id, stationId) }));
+  if (cardsState.key !== cardsKey) setCardsState({ key: cardsKey, cards: loadProofCards(company?.id, stationId) });
+  const clientCards = cardsState.cards;
+  const setClientCards = (next) =>
+    setCardsState((prev) => ({ key: prev.key, cards: typeof next === "function" ? next(prev.cards) : next }));
+
   useEffect(() => {
-    setClientCards(loadProofCards(company?.id, stationId));
-    loadedKey.current = `${company?.id}|${stationId}`;
-  }, [company?.id, stationId]);
-  useEffect(() => {
-    if (loadedKey.current !== `${company?.id}|${stationId}`) return;
-    saveProofCards(company?.id, stationId, clientCards);
-  }, [company?.id, stationId, clientCards]);
+    const [companyPart, stationPart] = cardsState.key.split("|");
+    saveProofCards(companyPart, stationPart, cardsState.cards);
+  }, [cardsState]);
+
+  // اسم العميل والمشروع صارا داخل البطاقة — البطاقة الأولى هي هوية الإثبات.
+  const primaryCard = clientCards[0] || {};
+  const clientName = primaryCard.clientName || primaryCard.companyName || "";
+  const projectName = primaryCard.projectName || "";
 
   const stationNameOf = (task) => (data?.stations || []).find((station) => station.id === (task.station_id || task.assignment_id))?.name || "—";
 
