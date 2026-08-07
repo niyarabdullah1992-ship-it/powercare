@@ -159,7 +159,7 @@ export function initializeOrgTree(companyId, data) {
   });
 }
 
-export function saveOrgNode(companyId, node, permissions = {}) {
+export function saveOrgNode(companyId, node, permissions = {}, templateId = "") {
   updateCompany(companyId, (data) => {
     data.orgTree = data.orgTree || [];
     const index = data.orgTree.findIndex((item) => item.id === node.id);
@@ -182,7 +182,7 @@ export function saveOrgNode(companyId, node, permissions = {}) {
       data.smartPositions = data.smartPositions || [];
       const savedIndex = data.smartPositions.findIndex((item) => item.employeeId === node.refId);
       const score = scorePermissions(permissions);
-      const record = { employeeId: node.refId, title: node.title, titleManual: true, permissions, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() };
+      const record = { employeeId: node.refId, title: node.title, titleManual: true, permissions, templateId, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() };
       if (savedIndex >= 0) data.smartPositions[savedIndex] = { ...data.smartPositions[savedIndex], ...record }; else data.smartPositions.push(record);
     }
     syncEmployeeStationsFromTree(data);
@@ -207,7 +207,7 @@ export function createOrgRecord(companyId, record, permissions = {}) {
     data.orgTree.push({ id: `org_${id}`, type: "employee", refId: id, title: record.title, parentId, order });
     const score = scorePermissions(permissions);
     data.smartPositions = data.smartPositions || [];
-    data.smartPositions.push({ employeeId: id, title: record.title, titleManual: true, permissions, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() });
+    data.smartPositions.push({ employeeId: id, title: record.title, titleManual: true, permissions, templateId: record.templateId || "", score, rank: rankFromScore(score), updatedAt: new Date().toISOString() });
     syncEmployeeStationsFromTree(data);
   });
   return createdStationId;
