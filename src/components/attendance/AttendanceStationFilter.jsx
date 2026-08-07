@@ -1,7 +1,8 @@
 import React from "react";
+import { Building2 } from "lucide-react";
 import MobileSelect from "@/components/mobile/MobileSelect";
 
-// نفس شكل محدّد السلامة: قائمة واحدة لاختيار المحطة، وكل محطة تعرض حضورها فقط.
+// نفس تنظيم بطاقة السلامة: عنوان أعلى البطاقة وقائمة اختيار المحطة داخلها.
 export default function AttendanceStationFilter({ stations, value, onChange, countFor, lang }) {
   const ar = lang === "ar";
   const allLabel = ar ? "كل المحطات" : "All stations";
@@ -14,14 +15,19 @@ export default function AttendanceStationFilter({ stations, value, onChange, cou
   ];
 
   return (
-    <MobileSelect
-      value={value}
-      onChange={onChange}
-      options={options}
-      placeholder={allLabel}
-      searchable
-      searchPlaceholder={ar ? "ابحث عن محطة..." : "Search stations..."}
-      className="w-full"
-    />
+    <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+      <p className="flex items-center gap-1.5 text-sm font-body text-accent">
+        <Building2 className="h-4 w-4" /> {ar ? "الحضور حسب المحطة" : "Attendance by station"}
+      </p>
+      <MobileSelect
+        value={value}
+        onChange={onChange}
+        options={options}
+        placeholder={allLabel}
+        searchable
+        searchPlaceholder={ar ? "ابحث عن محطة..." : "Search stations..."}
+        className="w-full"
+      />
+    </div>
   );
 }
