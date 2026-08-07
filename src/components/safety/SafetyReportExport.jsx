@@ -3,42 +3,24 @@ import { exportExcelColored } from "@/lib/exportExcelColored";
 import { printReport } from "@/lib/printReport";
 import { FileSpreadsheet, FileText, CalendarRange } from "lucide-react";
 import SafetyStationPicker from "@/components/safety/SafetyStationPicker";
+import PeriodPicker from "@/components/shared/PeriodPicker";
+import { usePeriod } from "@/lib/PeriodContext";
 import { CHECKLIST_GROUPS, PERMIT_REQUIREMENTS, PERMIT_TYPES, checklistCompliance, safetyKpis } from "@/lib/safetyStandards";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { canUsePlanFeature } from "@/lib/navVisibility";
 import PlanFeatureNotice from "@/components/subscription/PlanFeatureNotice";
 
 // تقرير السلامة (HSE): حالة كل محطة + سجل الحوادث خلال الفترة — PDF وExcel.
-const PRESETS = [
-  { val: "month", months: 1 },
-  { val: "3months", months: 3 },
-  { val: "6months", months: 6 },
-  { val: "year", months: 12 },
-  { val: "days", months: 0 },
-  { val: "custom", months: 0 },
-];
-
+// The period comes from the unified global period system (PeriodContext).
 export default function SafetyReportExport({ stations, safety, data, t, lang, dir }) {
-  const [preset, setPreset] = useState("month");
   const [stationFilter, setStationFilter] = useState("all");
-  const [customDays, setCustomDays] = useState("");
-  const [customStart, setCustomStart] = useState("");
-  const [customEnd, setCustomEnd] = useState("");
   const { company } = useAuth();
+  const { resolved } = usePeriod();
   if (!canUsePlanFeature(company, "exports")) return <PlanFeatureNotice />;
   const ar = lang === "ar";
   const L = (a, e) => (ar ? a : e);
   const branding = data?.reportBranding || {};
   const color = branding.color || "#b07d3f";
-
-  const presetLabel = (val) => ({
-    month: L("شهر", "1 Month"),
-    "3months": L("٣ أشهر", "3 Months"),
-    "6months": L("٦ أشهر", "6 Months"),
-    year: L("سنة", "1 Year"),
-    days: L("أيام محددة", "Specific days"),
-    custom: L("بين تاريخين", "Date range"),
-  })[val];
 
   const levelLabel = (lv) => ({
     green: L("آمن", "Safe"),
@@ -51,26 +33,11 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
 
   const scopedStations = stationFilter === "all" ? stations : stations.filter((s) => s.id === stationFilter);
   const selectedApproved = scopedStations.length > 0 && scopedStations.every((station) => !!recFor(station.id)?.approvedBy);
-  const periodValid = preset === "days"
-    ? Number(customDays) > 0
-    : preset === "custom"
-      ? !!customStart && !!customEnd && new Date(customStart) <= new Date(customEnd)
-      : true;
-  const canExport = periodValid;
+  const canExport = resolved.valid;
 
   const buildReport = () => {
-    let start = new Date();
-    let end = new Date();
-    if (preset === "days") {
-      start.setDate(start.getDate() - Number(customDays || 1));
-    } else if (preset === "custom") {
-      if (customStart) start = new Date(customStart);
-      if (customEnd) { end = new Date(customEnd); end.setHours(23, 59, 59, 999); }
-    } else {
-      const months = PRESETS.find((p) => p.val === preset)?.months || 1;
-      start.setMonth(start.getMonth() - months);
-    }
-    start.setHours(0, 0, 0, 0);
+    const start = resolved.start;
+    const end = resolved.end;
 
     const statusHeaders = [
       L("المحطة", "Station"), L("مستوى السلامة", "Safety level"), L("المخاطر المفتوحة", "Open hazards"),
@@ -104,14 +71,14 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
     const permitHeaders = [L("المحطة", "Station"), L("النوع", "Type"), L("الوصف", "Description"), L("الفريق", "Team"), L("الاشتراطات", "Requirements"), L("الحالة", "Status"), L("الصلاحية حتى", "Valid until"), L("المعتمد", "Signed by")];
     const permitRows = scopedStations.flatMap((st) => (recFor(st.id)?.permits || []).map((p) => { const status = p.status === "cancelled" ? "cancelled" : new Date(p.validUntil).getTime() < Date.now() ? "expired" : "open"; return [st.name, PERMIT_TYPES.find(([id]) => id === p.type)?.[ar ? 1 : 2] || p.type, p.description, p.team, (p.requirements || []).map((id) => PERMIT_REQUIREMENTS.find(([key]) => key === id)?.[ar ? 1 : 2] || id).join(", "), status, fmt(p.validUntil), `${p.signedBy || "—"} — ${fmt(p.signedAt)}`]; }));
     const stationLabel = stationFilter === "all" ? L("كل المحطات", "All stations") : scopedStations[0]?.name || "";
-    const periodLabel = `${stationLabel} • ${fmt(start)} → ${fmt(end)}`;
+    const periodLabel = `${stationLabel} • ${resolved.label}`;
     return { statusHeaders, statusRows, incidentHeaders, incidentRows, riskHeaders, riskRows, kpiHeaders, kpiRows, checklistHeaders, checklistRows, permitHeaders, permitRows, periodLabel };
   };
 
   const exportExcel = () => {
     const r = buildReport();
     exportExcelColored({
-      filename: `safety_report_${new Date().toISOString().slice(0, 10)}`,
+      filename: `safety_report_${resolved.startDay}_${resolved.endDay}`,
       title: `${L("تقرير السلامة", "Safety Report")} — ${r.periodLabel}`,
       headers: r.statusHeaders,
       rows: [
@@ -166,43 +133,13 @@ export default function SafetyReportExport({ stations, safety, data, t, lang, di
 
       <SafetyStationPicker stations={stations} value={stationFilter} onChange={setStationFilter} lang={lang} />
 
-      <div className="flex flex-wrap gap-2">
-        {PRESETS.map(({ val }) => (
-          <button
-            key={val}
-            type="button"
-            onClick={() => setPreset(val)}
-            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${preset === val ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-          >
-            {presetLabel(val)}
-          </button>
-        ))}
-      </div>
-
-      {preset === "days" && (
-        <input
-          type="number" min="1" value={customDays}
-          onChange={(e) => setCustomDays(e.target.value)}
-          placeholder={L("عدد الأيام", "Number of days")}
-          className="w-40 px-3 py-2 rounded-md border border-input text-sm font-body"
-        />
-      )}
-
-      {preset === "custom" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-muted-foreground font-body block mb-1">{L("من تاريخ", "From date")}</label>
-            <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground font-body block mb-1">{L("إلى تاريخ", "To date")}</label>
-            <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-          </div>
-        </div>
+      <PeriodPicker showDaily showWeekly />
+      {resolved.valid && (
+        <p className="text-xs text-muted-foreground font-body">{L("معروض", "Showing")}: {resolved.label}</p>
       )}
 
       {!selectedApproved && <p className="text-[11px] text-amber-700 font-body">{L("تنبيه: سيتضمن التقرير محطات غير معتمدة، وستظهر حالة الاعتماد بوضوح داخله.", "Notice: the report includes unapproved stations and clearly identifies their approval status.")}</p>}
-      {!periodValid && <p className="text-[11px] text-red-600 font-body">{L("أدخل فترة زمنية صحيحة.", "Enter a valid date period.")}</p>}
+      {!resolved.valid && <p className="text-[11px] text-red-600 font-body">{L("لم يُطبَّق نطاق — أكمل اختيار التاريخين.", "No range applied — finish selecting both dates.")}</p>}
       <div className="flex flex-wrap gap-2 pt-1">
         <button
           type="button" disabled={!canExport} onClick={exportExcel}
