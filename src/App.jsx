@@ -72,6 +72,7 @@ const InviteManagement = lazy(() => import('./pages/InviteManagement'));
 const InviteAccept = lazy(() => import('./pages/InviteAccept'));
 const JobCatalog = lazy(() => import('./pages/JobCatalog'));
 const Correspondence = lazy(() => import('./pages/Correspondence'));
+const Employees = lazy(() => import('./pages/Employees'));
 
 // After the first page is interactive, quietly download the most-used pages in
 // the background so navigating to them later is instant.
@@ -150,6 +151,7 @@ function AppRoutes() {
       <Route path="/app/chat" element={<RequireAuth><StationChat /></RequireAuth>} />
 
       <Route path="/app/complaints" element={<RequireAuth><Complaints /></RequireAuth>} />
+      <Route path="/app/employees" element={<RequireAuth><Employees /></RequireAuth>} />
       <Route path="/app/employees/:employeeId" element={<RequireAuth><EmployeeProfile /></RequireAuth>} />
       <Route path="/app/hr" element={<RequireAuth><HRStructureManagement /></RequireAuth>} />
       <Route path="/app/hr/invites" element={<RequireAuth><InviteManagement /></RequireAuth>} />
