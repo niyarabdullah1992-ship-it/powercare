@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, X, Paperclip, PenLine, Clock, FileText, Trash2, Loader2, Package, Users, Target } from "lucide-react";
+import { Plus, X, Paperclip, PenLine, Clock, FileText, Trash2, Loader2, Package, Users, Target, Camera } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import ProofCrewEditor from "@/components/proof/ProofCrewEditor";
 import ProofCompletionApproval from "@/components/proof/ProofCompletionApproval";
@@ -12,8 +12,10 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [files, setFiles] = useState([]);
+  const [beforeFiles, setBeforeFiles] = useState([]);
   const [approvedBy, setApprovedBy] = useState(signerName || "");
   const [uploading, setUploading] = useState(false);
+  const [uploadingBefore, setUploadingBefore] = useState(false);
 
   const set = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.value }));
 
@@ -34,6 +36,23 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
     }
   };
 
+  const uploadBefore = async (event) => {
+    const picked = Array.from(event.target.files || []);
+    if (!picked.length) return;
+    setUploadingBefore(true);
+    try {
+      const uploaded = [];
+      for (const file of picked) {
+        const res = await base44.integrations.Core.UploadFile({ file });
+        uploaded.push({ url: res.file_url, name: file.name });
+      }
+      setBeforeFiles((current) => [...current, ...uploaded]);
+    } finally {
+      setUploadingBefore(false);
+      event.target.value = "";
+    }
+  };
+
   const save = () => {
     if (!form.companyName.trim()) return;
     onChange([
@@ -42,6 +61,7 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
         id: `card_${Date.now()}`,
         ...form,
         files,
+        beforeFiles,
         enteredByName: signerName || "",
         approvedByName: approvedBy || signerName || "",
         signedAt: new Date().toISOString(),
@@ -49,6 +69,7 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
     ]);
     setForm(EMPTY);
     setFiles([]);
+    setBeforeFiles([]);
     setApprovedBy(signerName || "");
     setOpen(false);
   };
@@ -101,6 +122,22 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
             <span className="inline-flex items-center gap-1.5"><Package className="h-3 w-3" /> {ar ? "المواد المصروفة (اختياري — بلا تكاليف)" : "Materials issued (optional — no costs)"}</span>
             <textarea value={form.materials} onChange={set("materials")} rows={2} placeholder={ar ? "كل مادة في سطر: الاسم والكمية" : "One material per line: name and quantity"} className="mt-1 w-full resize-y rounded-md border border-input px-3 py-2 text-sm text-foreground" />
           </label>
+
+          <div className="space-y-2 rounded-lg border border-dashed border-border bg-card p-3">
+            <p className="text-xs text-muted-foreground font-body">{ar ? "صور قبل بدء العمل" : "Photos before starting work"}</p>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-body hover:bg-muted">
+                {uploadingBefore ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />} {ar ? "رفع صور قبل" : "Upload before photos"}
+                <input type="file" accept="image/*" multiple className="hidden" onChange={uploadBefore} />
+              </label>
+              {beforeFiles.map((file) => (
+                <span key={file.url} className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-[11px] font-body">
+                  <Camera className="h-3 w-3" /> {file.name}
+                  <button type="button" onClick={() => setBeforeFiles((current) => current.filter((entry) => entry.url !== file.url))}><X className="h-3 w-3" /></button>
+                </span>
+              ))}
+            </div>
+          </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-body hover:bg-muted">
@@ -183,6 +220,18 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
                       <FileText className="h-3 w-3" /> {file.name}
                     </a>
                   ))}
+                </div>
+              )}
+              {card.beforeFiles?.length > 0 && (
+                <div className="space-y-1 rounded border border-dashed border-border bg-muted/30 p-2 text-[11px] font-body">
+                  <p className="inline-flex items-center gap-1 text-muted-foreground"><Camera className="h-3 w-3" /> {ar ? "صور قبل العمل" : "Before photos"}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {card.beforeFiles.map((file) => (
+                      <a key={file.url} href={file.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-0.5 hover:bg-muted">
+                        <Camera className="h-3 w-3" /> {file.name}
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
               <ProofCompletionApproval

@@ -51,6 +51,18 @@ export default function ProofCardsSummary({ cards = [], ar }) {
                 {"\n"}{card.materials}
               </p>
             )}
+            {card.beforeFiles?.length > 0 && (
+              <div className="space-y-1 rounded border border-dashed border-border bg-muted/30 p-2 text-[11px] font-body">
+                <p className="text-muted-foreground">{ar ? "صور قبل العمل" : "Before photos"}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {card.beforeFiles.map((file) => (
+                    <a key={file.url} href={file.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-0.5 hover:bg-muted">
+                      <FileText className="h-3 w-3" /> {file.name}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
             {card.completion && (
               <div className="space-y-1 rounded border border-accent/40 bg-accent/5 p-2 text-[11px] font-body">
                 <p className="text-accent">
