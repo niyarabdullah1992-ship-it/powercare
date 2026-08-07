@@ -14,7 +14,6 @@ import ProofClientCards from "@/components/proof/ProofClientCards";
 import ProofStep from "@/components/proof/ProofStep";
 import ProofArchive from "@/components/proof/ProofArchive";
 import ProofTaskPicker from "@/components/proof/ProofTaskPicker";
-import ProofPreviewCard from "@/components/proof/ProofPreviewCard";
 import ProofIssuedCard from "@/components/proof/ProofIssuedCard";
 import { newProofId, proofItemFromTask, proofContentHash } from "@/lib/clientProof";
 import { loadProofCards, saveProofCards } from "@/lib/proofCardDrafts";
@@ -212,13 +211,18 @@ export default function ClientProof() {
               ? `${selectedIds.length} من ${eligible.length} مهمة · ${evidenceCount} قطعة إثبات`
               : `${selectedIds.length} of ${eligible.length} tasks · ${evidenceCount} evidence pieces`}
           >
-            <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="space-y-4">
               {targets === null
                 ? <div className="flex items-center justify-center rounded-xl border border-border bg-card p-10"><Loader2 className="h-5 w-5 animate-spin text-accent" /></div>
                 : <ProofTaskPicker eligible={eligible} excluded={excluded} selectedIds={selectedIds} onToggle={toggle} stationNameOf={stationNameOf} ar={ar} />}
-              <div className="space-y-4">
-                <ProofPreviewCard taskCount={selectedIds.length} evidenceCount={evidenceCount} proofId={proofId} canIssue={canIssue} issuing={issuing} onIssue={issue} ar={ar} />
-              </div>
+              <button
+                type="button"
+                onClick={issue}
+                disabled={!canIssue}
+                className="w-full rounded-md bg-primary px-4 py-3 text-sm font-body text-primary-foreground hover:bg-accent disabled:opacity-50"
+              >
+                {issuing ? (ar ? "جارٍ الإصدار…" : "Issuing…") : (ar ? "توقيع وإصدار الرابط" : "Sign & issue the link")}
+              </button>
             </div>
           </ProofStep>
 
