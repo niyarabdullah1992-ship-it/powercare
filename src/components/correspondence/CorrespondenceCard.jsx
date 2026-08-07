@@ -9,7 +9,8 @@ const SLA_STYLE = {
   none: "bg-muted text-muted-foreground",
 };
 
-export default function CorrespondenceCard({ record, employees, lang, onRefer, onClose }) {
+export default function CorrespondenceCard({ record, employees, stations = [], lang, onRefer, onClose }) {
+  const stationName = (id) => stations.find((station) => station.id === id)?.name;
   const ar = lang === "ar";
   const [referTo, setReferTo] = useState("");
   const [note, setNote] = useState("");
@@ -39,6 +40,11 @@ export default function CorrespondenceCard({ record, employees, lang, onRefer, o
       <div>
         <p className="font-heading text-base font-semibold">{record.subject}</p>
         {record.counterparty && <p className="text-xs text-muted-foreground">{ar ? "الجهة:" : "Counterparty:"} {record.counterparty}</p>}
+        {(record.fromStationId || record.toStationId) && (
+          <p className="text-xs text-muted-foreground">
+            {ar ? "المسار:" : "Route:"} {stationName(record.fromStationId) || "—"} → {stationName(record.toStationId) || "—"}
+          </p>
+        )}
         {record.summary && <p className="mt-1 text-sm">{record.summary}</p>}
       </div>
 

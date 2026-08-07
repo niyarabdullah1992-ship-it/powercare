@@ -45,7 +45,13 @@ export default function Correspondence() {
         </p>
       </div>
 
-      <CorrespondenceForm lang={lang} employees={employees} onCreate={(form) => createCorrespondence(company.id, form, currentUser)} />
+      <CorrespondenceForm
+        lang={lang}
+        employees={employees}
+        stations={data.stations || []}
+        defaultStationId={currentUser.stationId || ""}
+        onCreate={(form) => createCorrespondence(company.id, form, currentUser)}
+      />
 
       <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1">
         {filters.map((item) => (
@@ -64,6 +70,7 @@ export default function Correspondence() {
               key={record.id}
               record={record}
               employees={employees}
+              stations={data.stations || []}
               lang={lang}
               onRefer={(id, payload) => referCorrespondence(company.id, id, payload, currentUser)}
               onClose={(id, decision) => closeCorrespondence(company.id, id, decision, currentUser)}

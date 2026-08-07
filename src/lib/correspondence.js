@@ -40,6 +40,9 @@ export function createCorrespondence(companyId, payload, actor) {
       counterparty: payload.counterparty || "",
       summary: payload.summary || "",
       dueDate: payload.dueDate || null,
+      // مسار المراسلة بين الفروع: من فرع إلى فرع.
+      fromStationId: payload.fromStationId || null,
+      toStationId: payload.toStationId || null,
       status: "open",
       ownerId: payload.ownerId || actor?.id || null,
       referrals: [],
