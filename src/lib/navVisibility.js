@@ -2,7 +2,7 @@
 // used by the sidebar/mobile nav and the dashboards' quick-access shortcuts.
 
 const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/inventory", "/app/expenses", "/app/signing", "/app/client-proof", "/app/assistant", "/app/complaints", "/app/performance", "/app/chain", "/app/manual"];
-const MANAGER_EXTRA = ["/app/safety"];
+const MANAGER_EXTRA = ["/app/safety", "/app/correspondence"];
 const EXEC_EXTRA = ["/app/hr", "/app/payroll"];
 const SMART_SECTION_ROUTES = {
   complaints: "/app/complaints", safety: "/app/safety", payroll: "/app/payroll",

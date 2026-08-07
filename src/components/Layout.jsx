@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio, Search,
-  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck, Network, MailPlus, BookOpenCheck, ListTree,
+  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck, Network, MailPlus, BookOpenCheck, ListTree, Mails,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -159,6 +159,7 @@ export default function Layout({ children }) {
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "finance" },
     { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)", category: "governance" },
     { to: "/app/complaints", icon: Megaphone, label: t("allComplaints"), category: "governance" },
+    { to: "/app/correspondence", icon: Mails, label: lang === "ar" ? "المعاملات والمراسلات" : "Correspondence", category: "governance" },
     { to: "/app/files", icon: FolderOpen, label: t("files"), category: "documents" },
     { to: "/app/signing", icon: PenLine, label: t("fileSigning"), category: "documents" },
     { to: "/app/client-proof", icon: ShieldCheck, label: lang === "ar" ? "إثبات العمل للعميل" : "Client work proof", category: "documents" },
