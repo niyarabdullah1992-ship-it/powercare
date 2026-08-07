@@ -10,6 +10,7 @@ import { usePeriod } from "@/lib/PeriodContext";
 import usePerformanceTargets from "@/hooks/usePerformanceTargets";
 import ProofClientFilter from "@/components/proof/ProofClientFilter";
 import ProofStationPicker from "@/components/proof/ProofStationPicker";
+import ProofClientCards from "@/components/proof/ProofClientCards";
 import ProofTaskPicker from "@/components/proof/ProofTaskPicker";
 import ProofDisclosurePanel from "@/components/proof/ProofDisclosurePanel";
 import ProofPreviewCard from "@/components/proof/ProofPreviewCard";
@@ -34,6 +35,7 @@ export default function ClientProof() {
   const [issued, setIssued] = useState(null);
   const [proofs, setProofs] = useState([]);
   const [clientFilter, setClientFilter] = useState("all");
+  const [clientCards, setClientCards] = useState([]);
   const stations = data?.stations || [];
   const [stationId, setStationId] = useState("");
   const station = stations.find((entry) => entry.id === stationId);
@@ -104,6 +106,7 @@ export default function ClientProof() {
       periodStart: resolved.startDate,
       periodEnd: resolved.endDate,
       disclosure,
+      clientCards,
       items,
     };
     setIssuing(true);
@@ -129,6 +132,7 @@ export default function ClientProof() {
       if (res.data?.ok) {
         setIssued({ proofId, contentHash });
         setSelectedIds([]);
+        setClientCards([]);
         setProofId(newProofId());
         loadProofs();
       } else {
@@ -168,6 +172,8 @@ export default function ClientProof() {
       {issued && <ProofIssuedCard proofId={issued.proofId} contentHash={issued.contentHash} ar={ar} />}
 
       {stationId && (<>
+      <ProofClientCards cards={clientCards} onChange={setClientCards} signerName={currentUser?.name} ar={ar} />
+
       <section className="space-y-4 rounded-xl border border-border bg-card p-4 md:p-5">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-xs text-muted-foreground font-body">
