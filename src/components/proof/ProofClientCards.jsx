@@ -3,6 +3,7 @@ import { Plus, X, Paperclip, PenLine, Clock, FileText, Trash2, Loader2, Package,
 import { base44 } from "@/api/base44Client";
 import ProofCrewEditor from "@/components/proof/ProofCrewEditor";
 import ProofCompletionApproval from "@/components/proof/ProofCompletionApproval";
+import { vehicleLabel } from "@/lib/proofVehicle";
 
 const EMPTY = { companyName: "", contractNumber: "", projectName: "", purpose: "", crew: [], notes: "", materials: "" };
 
@@ -201,7 +202,7 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
                     <p key={crew.id} className="text-foreground">
                       {crew.name}
                       {crew.idNumber ? ` · ${crew.idNumber}` : ""}
-                      {(crew.vehicles?.length ? crew.vehicles : []).map((vehicle) => ` · ${vehicle.type}${vehicle.plate ? ` (${vehicle.plate})` : ""}`).join("")}
+                      {(crew.vehicles?.length ? crew.vehicles : []).map((vehicle) => ` · ${vehicleLabel(vehicle)}`).join("")}
                     </p>
                   ))}
                 </div>

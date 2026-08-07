@@ -1,5 +1,6 @@
 import React from "react";
 import { Users, Package, FileText, Target } from "lucide-react";
+import { vehicleLabel } from "@/lib/proofVehicle";
 
 // بطاقات العميل كما تظهر في التقرير المُصدَر: العقد، عدد الموظفين الداخلين، والمواد.
 export default function ProofCardsSummary({ cards = [], ar }) {
@@ -39,7 +40,7 @@ export default function ProofCardsSummary({ cards = [], ar }) {
                   <p key={crew.id || crewIndex}>
                     {crew.name}
                     {crew.idNumber ? ` · ${crew.idNumber}` : ""}
-                    {(crew.vehicles?.length ? crew.vehicles : []).map((vehicle) => ` · ${vehicle.type}${vehicle.plate ? ` (${vehicle.plate})` : ""}`).join("")}
+                    {(crew.vehicles?.length ? crew.vehicles : []).map((vehicle) => ` · ${vehicleLabel(vehicle)}`).join("")}
                   </p>
                 ))}
               </div>

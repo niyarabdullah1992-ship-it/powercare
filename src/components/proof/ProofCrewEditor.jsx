@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Users, Plus, Trash2, IdCard, Car, X } from "lucide-react";
+import { vehicleLabel } from "@/lib/proofVehicle";
 
-const EMPTY_VEHICLE = { type: "", plate: "" };
+const EMPTY_VEHICLE = { maker: "", model: "", type: "", year: "", plateLetters: "", plateNumbers: "" };
 const EMPTY = { name: "", idNumber: "", vehicles: [{ ...EMPTY_VEHICLE }] };
 
 // الموظفون الذين دخلوا لدى الجهة: الاسم، رقم الهوية، وسيارة أو أكثر لكل موظف.
@@ -20,12 +21,13 @@ export default function ProofCrewEditor({ value = [], onChange, employees = [], 
 
   const add = () => {
     if (!row.name.trim()) return;
-    const vehicles = row.vehicles.filter((vehicle) => vehicle.type.trim() || vehicle.plate.trim());
+    const vehicles = row.vehicles.filter((vehicle) => Object.values(vehicle).some((entry) => String(entry).trim()));
     onChange([...value, { ...row, vehicles, id: `crew_${Date.now()}` }]);
     setRow({ ...EMPTY, vehicles: [{ ...EMPTY_VEHICLE }] });
   };
 
   const vehiclesOf = (crew) => (crew.vehicles?.length ? crew.vehicles : crew.vehicleType || crew.plate ? [{ type: crew.vehicleType, plate: crew.plate }] : []);
+  const label = vehicleLabel;
 
   return (
     <div className="space-y-2 rounded-lg border border-border bg-card p-3">
@@ -43,7 +45,7 @@ export default function ProofCrewEditor({ value = [], onChange, employees = [], 
             )}
             {vehiclesOf(crew).map((vehicle, index) => (
               <p key={index} className="inline-flex items-center gap-1 text-muted-foreground">
-                <Car className="h-3 w-3" />{vehicle.type}{vehicle.plate ? ` · ${vehicle.plate}` : ""}
+                <Car className="h-3 w-3" />{label(vehicle)}
               </p>
             ))}
           </div>
@@ -61,12 +63,21 @@ export default function ProofCrewEditor({ value = [], onChange, employees = [], 
 
       <div className="space-y-2">
         {row.vehicles.map((vehicle, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <input value={vehicle.type} onChange={setVehicle(index, "type")} placeholder={ar ? "نوع السيارة" : "Vehicle type"} className="min-w-0 flex-1 rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-            <input value={vehicle.plate} onChange={setVehicle(index, "plate")} placeholder={ar ? "رقم اللوحة" : "Plate number"} dir="ltr" className="min-w-0 flex-1 rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-            {row.vehicles.length > 1 && (
-              <button type="button" onClick={() => removeVehicle(index)} className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
-            )}
+          <div key={index} className="space-y-2 rounded-md border border-dashed border-border p-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="inline-flex items-center gap-1 text-[11px] text-muted-foreground font-body"><Car className="h-3 w-3" /> {ar ? `سيارة ${index + 1}` : `Vehicle ${index + 1}`}</p>
+              {row.vehicles.length > 1 && (
+                <button type="button" onClick={() => removeVehicle(index)} className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+              )}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <input value={vehicle.maker} onChange={setVehicle(index, "maker")} placeholder={ar ? "الشركة المصنعة" : "Manufacturer"} className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+              <input value={vehicle.model} onChange={setVehicle(index, "model")} placeholder={ar ? "الموديل" : "Model"} className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+              <input value={vehicle.type} onChange={setVehicle(index, "type")} placeholder={ar ? "نوع السيارة" : "Vehicle type"} className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+              <input value={vehicle.year} onChange={setVehicle(index, "year")} placeholder={ar ? "سنة الصنع" : "Year of manufacture"} dir="ltr" className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+              <input value={vehicle.plateLetters} onChange={setVehicle(index, "plateLetters")} placeholder={ar ? "حروف اللوحة" : "Plate letters"} className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+              <input value={vehicle.plateNumbers} onChange={setVehicle(index, "plateNumbers")} placeholder={ar ? "أرقام اللوحة" : "Plate numbers"} dir="ltr" className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+            </div>
           </div>
         ))}
         <button type="button" onClick={addVehicle} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-body text-muted-foreground hover:border-accent/40 hover:text-accent">
