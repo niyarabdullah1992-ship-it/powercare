@@ -3,7 +3,7 @@ import { Plus, X, Paperclip, PenLine, Clock, FileText, Trash2, Loader2, Package,
 import { base44 } from "@/api/base44Client";
 import ProofCrewEditor from "@/components/proof/ProofCrewEditor";
 
-const EMPTY = { clientName: "", companyName: "", contractNumber: "", projectName: "", crew: [], notes: "", materials: "" };
+const EMPTY = { companyName: "", contractNumber: "", projectName: "", crew: [], notes: "", materials: "" };
 
 // بطاقات العميل: بيانات الجهة والعقد والمشروع، المواد المصروفة (اختيارية)،
 // مرفقاتها، وتوقيع رقمي للموظف الذي اعتمدها مع التاريخ والوقت.
@@ -34,7 +34,7 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
   };
 
   const save = () => {
-    if (!form.clientName.trim() && !form.companyName.trim()) return;
+    if (!form.companyName.trim()) return;
     onChange([
       ...cards,
       {
@@ -66,10 +66,6 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
       {open && (
         <div className="space-y-3 rounded-lg border border-accent/30 bg-secondary/40 p-3">
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="text-xs text-muted-foreground font-body">
-              {ar ? "اسم العميل / الجهة" : "Client / authority"}
-              <input value={form.clientName} onChange={set("clientName")} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-            </label>
             <label className="text-xs text-muted-foreground font-body">
               {ar ? "اسم الشركة" : "Company name"}
               <input value={form.companyName} onChange={set("companyName")} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
@@ -142,12 +138,11 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
           {cards.map((card) => (
             <article key={card.id} className="space-y-1.5 rounded-lg border border-border p-3">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-semibold text-foreground">{card.companyName || card.clientName}</p>
+                <p className="text-sm font-semibold text-foreground">{card.companyName}</p>
                 <button type="button" onClick={() => onChange(cards.filter((entry) => entry.id !== card.id))} className="text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
               <p className="text-xs text-muted-foreground font-body">
-                {card.clientName}
-                {card.projectName ? ` · ${card.projectName}` : ""}
+                {card.projectName || ""}
                 {card.contractNumber ? ` · ${ar ? "عقد" : "contract"} ${card.contractNumber}` : ""}
               </p>
               {card.crew?.length > 0 && (
