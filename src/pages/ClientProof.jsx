@@ -7,6 +7,7 @@ import { getCompanyToken } from "@/lib/store";
 import PageHeader from "@/components/PageHeader";
 import PeriodPicker from "@/components/shared/PeriodPicker";
 import { usePeriod } from "@/lib/PeriodContext";
+import usePerformanceTargets from "@/hooks/usePerformanceTargets";
 import ProofTaskPicker from "@/components/proof/ProofTaskPicker";
 import ProofDisclosurePanel from "@/components/proof/ProofDisclosurePanel";
 import ProofPreviewCard from "@/components/proof/ProofPreviewCard";
@@ -33,14 +34,14 @@ export default function ClientProof() {
 
   const stationNameOf = (task) => (data?.stations || []).find((station) => station.id === (task.station_id || task.assignment_id))?.name || "—";
 
-  const completedTasks = useMemo(() => {
-    const all = data?.targets || [];
-    return all.filter((task) => {
-      if (task.status !== "completed") return false;
-      const when = new Date(task.end_date || task.start_date || task.created_at || Date.now());
-      return resolved.valid && when >= resolved.start && when <= resolved.end;
-    });
-  }, [data?.targets, resolved]);
+  // Tasks live on the server — the same scope-filtered list the performance pages use.
+  const targets = usePerformanceTargets(company, currentUser);
+
+  const completedTasks = useMemo(() => (targets || []).filter((task) => {
+    if (task.status !== "completed") return false;
+    const when = new Date(task.end_date || task.start_date || task.created_at || Date.now());
+    return resolved.valid && when >= resolved.start && when <= resolved.end;
+  }), [targets, resolved]);
 
   // Only tasks closed with complete field evidence qualify for a client proof.
   const { eligible, excluded } = useMemo(() => {
@@ -157,7 +158,9 @@ export default function ClientProof() {
       </section>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <ProofTaskPicker eligible={eligible} excluded={excluded} selectedIds={selectedIds} onToggle={toggle} stationNameOf={stationNameOf} ar={ar} />
+        {targets === null
+          ? <div className="flex items-center justify-center rounded-xl border border-border bg-card p-10"><Loader2 className="h-5 w-5 animate-spin text-accent" /></div>
+          : <ProofTaskPicker eligible={eligible} excluded={excluded} selectedIds={selectedIds} onToggle={toggle} stationNameOf={stationNameOf} ar={ar} />}
         <div className="space-y-4">
           <ProofDisclosurePanel value={disclosure} onChange={setDisclosure} ar={ar} />
           <ProofPreviewCard taskCount={selectedIds.length} evidenceCount={evidenceCount} proofId={proofId} canIssue={canIssue} issuing={issuing} onIssue={issue} ar={ar} />
