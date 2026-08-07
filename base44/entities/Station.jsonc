@@ -1,0 +1,89 @@
+{
+  "name": "Station",
+  "type": "object",
+  "properties": {
+    "stationId": {
+      "type": "string",
+      "description": "Stable client-side id used as the unified station reference across the app."
+    },
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company (tenant) this station belongs to."
+    },
+    "name": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "managerId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "lat": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Workplace GPS latitude used to verify check-ins."
+    },
+    "lng": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Workplace GPS longitude used to verify check-ins."
+    },
+    "radiusMeters": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Allowed check-in radius around the workplace location, in meters."
+    },
+    "isCentralWarehouse": {
+      "type": "boolean",
+      "default": false,
+      "description": "Marks the single station used as the company's central warehouse."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "stationId",
+    "companyId",
+    "name"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

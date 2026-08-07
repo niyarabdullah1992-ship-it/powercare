@@ -1,0 +1,120 @@
+{
+  "name": "SignatureRequest",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company this request belongs to."
+    },
+    "creatorId": {
+      "type": "string"
+    },
+    "creatorName": {
+      "type": "string"
+    },
+    "creatorEmail": {
+      "type": "string"
+    },
+    "stationId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "fileName": {
+      "type": "string"
+    },
+    "docUrl": {
+      "type": "string",
+      "description": "URL of the latest immutable signed version."
+    },
+    "appUrl": {
+      "type": "string"
+    },
+    "verificationId": {
+      "type": "string"
+    },
+    "finalHash": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "SHA-256 of the fully-signed final file."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "rejected"
+      ]
+    },
+    "signingMode": {
+      "type": "string",
+      "enum": [
+        "sequential",
+        "parallel"
+      ],
+      "default": "parallel"
+    },
+    "currentSignerIndex": {
+      "type": "number",
+      "minimum": 0,
+      "default": 0
+    },
+    "expiresAt": {
+      "type": "string"
+    },
+    "lastActivityAt": {
+      "type": "string"
+    },
+    "rejectionReason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "signers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Independent signing parties, HR identity snapshots, fields, and statuses."
+    },
+    "auditTrail": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "description": "Immutable chronological signing events with actor, time, document hash, and location."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "companyId",
+    "creatorId",
+    "fileName",
+    "docUrl",
+    "status",
+    "signers"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": false,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": false
+  }
+}

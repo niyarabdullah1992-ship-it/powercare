@@ -1,0 +1,45 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "weekly_owner_summary",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "send_weekly_digest": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "weeklySummary",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "\u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u0645\u0644\u062e\u0635 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a \u0644\u0644\u0645\u0644\u0627\u0643",
+            "description": "\u0645\u0647\u0627\u0645 \u0648\u062a\u0642\u0627\u0631\u064a\u0631 \u0648\u0634\u0643\u0627\u0648\u0649 \u0627\u0644\u0623\u0633\u0628\u0648\u0639"
+          }
+        }
+      }
+    ]
+  },
+  "description": "Every Sunday at 8am (Riyadh) emails each company owner an Arabic weekly digest: tasks, daily reports, and complaints.",
+  "name": "Weekly Owner Summary",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 8 * * 0",
+      "one_time_date": null,
+      "timezone": "Asia/Riyadh",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  }
+}

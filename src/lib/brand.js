@@ -1,0 +1,1 @@
+export const POWERCARE_LOGO_URL = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/846c1f393_generated_image.png";

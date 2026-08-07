@@ -1,0 +1,15 @@
+import React from "react";
+import { AlertTriangle } from "lucide-react";
+import OrgTreeUnassignedEmployeeCard from "@/components/hr/OrgTreeUnassignedEmployeeCard";
+
+export default function OrgTreeUnassignedEmployees({ employees, canManage, dropActive, actions, ar }) {
+  if (!employees.length && !dropActive) return null;
+  return (
+    <aside data-org-drop={dropActive ? "true" : undefined} data-target-id="unassigned" data-drop-mode="unassign" className={`border-b px-3 py-2 transition-colors ${dropActive ? "border-amber-500 bg-amber-100 ring-2 ring-inset ring-amber-500 dark:bg-amber-950/40" : "border-amber-300 bg-amber-50/70 dark:border-amber-800 dark:bg-amber-950/20"}`}>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5"><AlertTriangle className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400" /><div><p className="text-xs font-semibold">{ar ? "موظفون غير مخصصين" : "Unassigned employees"} <span className="text-muted-foreground">({employees.length})</span></p><p className="text-[9px] leading-tight text-muted-foreground">{dropActive ? (ar ? "أفلت هنا لإلغاء تخصيصه" : "Drop here to unassign") : canManage ? (ar ? "اسحب الموظف من القائمة أو إليها" : "Drag employees from or into this list") : (ar ? "غير مرتبطين بمحطة" : "Not linked to a station")}</p></div></div>
+      </div>
+      {employees.length > 0 && <div className="flex gap-2 overflow-x-auto">{employees.map((employee) => <OrgTreeUnassignedEmployeeCard key={employee.id} employee={employee} nodeId={`unassigned:${employee.id}`} canManage={canManage} actions={actions} ar={ar} />)}</div>}
+    </aside>
+  );
+}

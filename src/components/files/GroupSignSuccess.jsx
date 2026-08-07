@@ -1,0 +1,8 @@
+import React, { useState } from "react";
+import { Check, CheckCircle2, Copy } from "lucide-react";
+
+export default function GroupSignSuccess({ ar, result, onReset }) {
+  const [copied, setCopied] = useState("");
+  const copy = (email, link) => { navigator.clipboard.writeText(link).catch(() => {}); setCopied(email); setTimeout(() => setCopied(""), 1500); };
+  return <div className="rounded-2xl border border-emerald-200 bg-card p-6 shadow-sm"><div className="mb-4 flex items-center gap-3 text-emerald-700"><CheckCircle2 className="h-6 w-6" /><h2 className="font-heading text-xl font-semibold">{ar ? "أُرسل طلب التوقيع" : "Signature request sent"}</h2></div><p className="mb-4 text-sm text-muted-foreground">{ar ? "تم إرسال رابط مستقل وآمن إلى كل موقّع." : "A separate secure link was sent to every signer."}</p><div className="space-y-2">{Object.entries(result.links || {}).map(([email, link]) => <div key={email} className="flex items-center gap-2 rounded-lg bg-muted p-2"><span dir="ltr" className="min-w-0 flex-1 truncate text-xs">{email}</span><button type="button" onClick={() => copy(email, link)} className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-xs">{copied === email ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}{ar ? "نسخ" : "Copy"}</button></div>)}</div><button type="button" onClick={onReset} className="mt-5 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">{ar ? "طلب جديد" : "New request"}</button></div>;
+}

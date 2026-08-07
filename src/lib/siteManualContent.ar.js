@@ -1,0 +1,1 @@
+export { MANUAL_META, MANUAL_CHAPTERS } from "@/lib/siteManualContent";

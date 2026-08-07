@@ -1,0 +1,93 @@
+{
+  "name": "PurchaseOrder",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "orderNumber": {
+      "type": "string"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "stationId": {
+      "type": "string"
+    },
+    "supplierName": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "totalCost": {
+      "type": "number",
+      "minimum": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "issued",
+        "received"
+      ]
+    },
+    "issuedBy": {
+      "type": "string"
+    },
+    "issuedAt": {
+      "type": "string"
+    },
+    "receivedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "receivedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "companyId",
+    "orderNumber",
+    "requestId",
+    "stationId",
+    "supplierName",
+    "items",
+    "totalCost",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

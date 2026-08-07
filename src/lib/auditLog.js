@@ -1,0 +1,38 @@
+// Thin client for the sensitive-actions audit trail. Writes/reads always go through
+// the companyDirectory backend function (service role) since AuditLog has no public RLS.
+import { base44 } from "@/api/base44Client";
+import { getCompanyToken } from "@/lib/store";
+
+export async function logAudit(companyId, action, performedBy, details) {
+  try {
+    const safeDetails = String(details || "").slice(0, 1000);
+    await base44.functions.invoke("companyDirectory", {
+      action: "logAudit",
+      companyId: companyId || "platform",
+      sessionToken: getCompanyToken(companyId),
+      auditAction: action,
+      performedBy: performedBy || "unknown",
+      details: safeDetails,
+    });
+  } catch {
+    // best-effort — never block the actual operation on logging failure
+  }
+}
+
+export async function fetchAuditLog(companyId) {
+  try {
+    const res = await base44.functions.invoke("companyDirectory", { action: "getAuditLog", companyId, sessionToken: getCompanyToken(companyId) });
+    return res?.data?.logs || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchAllAuditLog() {
+  try {
+    const res = await base44.functions.invoke("companyDirectory", { action: "getAllAuditLog", companyId: "platform" });
+    return res?.data?.logs || [];
+  } catch {
+    return [];
+  }
+}

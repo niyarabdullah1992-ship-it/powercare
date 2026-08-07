@@ -1,0 +1,79 @@
+#0 len=0
+
+---
+#1 len=63926
+
+const GROUPS = [
+  { title: "الأساسية", items: [
+    ["dashboard", "لوحة المعلومات"],
+    ["employees", "الموظفون"],
+    ["structure", "الهيكل التنظيمي"],
+    ["attendance", "الحضور والانصراف"],
+    ["requests", "الإجازات والطلبات"],
+    ["payroll", "مسير الرواتب"],
+    ["performance", "إدارة الأداء"],
+    ["hiring", "التوظيف"],
+  ]},
+  { title: "العمليات", items: [
+    ["tasks", "المهام"],
+    ["daily", "التقرير اليومي"],
+    ["inventory", "المخزون والعهد"],
+    ["expenses", "المصروفات"],
+    ["safety", "السلامة والامتثال"],
+  ]},
+  { title: "الحوكمة والوثائق", items: [
+    ["documents", "المستندات"],
+    ["signing", "التوقيع الرقمي"],
+    ["clientProof", "إثبات العمل للعميل"],
+    ["proof", "إثبات التنفيذ"],
+    ["anonymous", "البلاغات المجهولة"],
+    ["complaints", "الشكاوى"],
+  ]},
+  { title: "الإدارة", items: [
+    ["myChain", "التسلسل الإداري"],
+    ["executive", "اللوحة التنفيذية"],
+    ["assistant", "المساعد الذكي"],
+    ["reports", "التقارير"],
+    ["owner", "لوحة المالك"],
+    ["settings", "الإعدادات"],
+  ]},
+];
+const EMP_GROUPS = [
+  { title: "يومي", items: [
+    ["myTasks", "مهامي"],
+    ["myAttendance", "حضوري"],
+    ["myRequests", "طلباتي"],
+  ]},
+  { title: "ملفي", items: [
+    ["myProfile", "ملفي الشامل"],
+    ["myChain", "تسلسلي الإداري"],
+    ["myPerformance", "أدائي ونقاطي"],
+    ["myPayslip", "راتبي"],
+    ["myDocs", "مستنداتي"],
+  ]},
+  { title: "الدعم", items: [
+    ["assistant", "المساعد الذكي"],
+    ["myVoice", "صوت الموظف"],
+  ]},
+];
+const MGR_GROUPS = [
+  { title: "فريقي", items: [
+    ["tasks", "مهام الفريق ومراجعتها"],
+    ["employees", "فريقي"],
+    ["attendance", "حضور الفريق"],
+    ["requests", "طلبات فريقي"],
+    ["performance", "أداء الفريق"],
+  ]},
+  { title: "تشغيل المحطة", items: [
+    ["daily", "التقرير اليومي"],
+    ["safety", "السلامة"],
+    ["inventory", "عهد الفريق"],
+  ]},
+  { title: "الدعم", items: [
+    ["myChain", "التسلسل الإداري"],
+    ["assistant", "المساعد الذكي"],
+    ["reports", "تقاريري"],
+  ]},
+];
+
+const EXEC_GRO

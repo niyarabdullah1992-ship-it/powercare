@@ -1,0 +1,15 @@
+import React, { useState } from "react";
+import { Plus } from "lucide-react";
+import { CHECKLIST_GROUPS, checklistCompliance } from "@/lib/safetyStandards";
+
+function ChecklistRow({ id, label, result, canEdit, onSet, L }) {
+  return <div className="rounded-lg border border-border p-2.5 space-y-2"><p className="text-xs font-medium">{label}</p><div className="flex gap-1.5">{[["yes", `✓ ${L("نعم", "Yes")}`, "text-emerald-700"], ["no", `✕ ${L("لا", "No")}`, "text-red-700"], ["note", `⚠ ${L("ملاحظة", "Note")}`, "text-amber-700"]].map(([value, icon, tone]) => <button key={value} disabled={!canEdit} onClick={() => onSet(id, { ...result, status: value })} className={`rounded-md border px-2 py-1 text-xs ${result?.status === value ? `bg-muted ${tone} border-accent` : "border-border"}`}>{icon}</button>)}</div><input disabled={!canEdit} value={result?.comment || ""} onChange={(e) => onSet(id, { ...result, comment: e.target.value })} placeholder={L("تعليق اختياري", "Optional comment")} className="w-full rounded-md border border-input px-2 py-1 text-[11px]" /></div>;
+}
+
+export default function SafetyChecklistTab({ results = {}, canEdit, lang, onChange }) {
+  const ar = lang === "ar"; const L = (a, e) => ar ? a : e; const [custom, setCustom] = useState("");
+  const set = (id, value) => onChange({ ...results, [id]: value });
+  const customRows = Object.entries(results).filter(([id]) => id.startsWith("custom_"));
+  const add = () => { if (!custom.trim()) return; set(`custom_${Date.now()}`, { label: custom.trim(), status: "", comment: "" }); setCustom(""); };
+  return <div className="space-y-4"><div className="flex items-center justify-between rounded-lg bg-muted p-3"><span className="text-xs">{L("نسبة المطابقة", "Overall compliance")}</span><strong className="text-xl text-accent">{checklistCompliance(results)}%</strong></div>{CHECKLIST_GROUPS.map((group) => <section key={group.id} className="space-y-2"><h4 className="text-xs font-semibold text-accent">{ar ? group.ar : group.en}</h4>{group.items.map(([id, a, e]) => <ChecklistRow key={id} id={id} label={ar ? a : e} result={results[id]} canEdit={canEdit} onSet={set} L={L} />)}</section>)}{customRows.length > 0 && <section className="space-y-2"><h4 className="text-xs font-semibold text-accent">{L("بنود مخصصة", "Custom items")}</h4>{customRows.map(([id, result]) => <ChecklistRow key={id} id={id} label={result.label} result={result} canEdit={canEdit} onSet={set} L={L} />)}</section>}{canEdit && <div className="flex gap-2"><input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder={L("بند تحقق مخصص", "Custom checklist item")} className="min-w-0 flex-1 rounded-md border border-input px-2 py-1.5 text-xs" /><button onClick={add} className="rounded-md border border-border p-2"><Plus className="h-4 w-4" /></button></div>}</div>;
+}

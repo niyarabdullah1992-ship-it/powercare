@@ -1,0 +1,7 @@
+import React from "react";
+import { CheckCircle2, ShieldCheck } from "lucide-react";
+
+export default function ManualActions({ actions = [], title }) {
+  if (!actions.length) return null;
+  return <div className="mt-7"><h3 className="mb-4 text-sm font-bold text-accent">{title}</h3><div className="grid gap-4">{actions.map((action, actionIndex) => <article key={`${action.title}-${actionIndex}`} className="rounded-2xl border border-accent/25 bg-background/70 p-4 shadow-sm md:p-5"><h3 className="flex items-center gap-2 font-heading text-xl font-semibold text-primary"><CheckCircle2 className="h-5 w-5 shrink-0 text-accent" />{action.title}</h3><ol className="mt-4 space-y-3">{action.steps.map((step, stepIndex) => <li key={stepIndex} className="flex gap-3 text-sm leading-7"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{stepIndex + 1}</span><span>{step}</span></li>)}</ol>{action.note && <p className="mt-4 flex gap-2 rounded-xl border border-accent/20 bg-accent/5 p-3 text-xs leading-6 text-foreground/75"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" /><span>{action.note}</span></p>}</article>)}</div></div>;
+}

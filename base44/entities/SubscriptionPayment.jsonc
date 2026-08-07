@@ -1,0 +1,148 @@
+{
+  "name": "SubscriptionPayment",
+  "type": "object",
+  "properties": {
+    "chargeId": {
+      "type": "string"
+    },
+    "invoiceNumber": {
+      "type": "string"
+    },
+    "companyId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "companyName": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "plan": {
+      "type": "string"
+    },
+    "billing": {
+      "type": "string",
+      "enum": [
+        "monthly",
+        "yearly"
+      ]
+    },
+    "authMethod": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "failed",
+        "void",
+        "refunded"
+      ]
+    },
+    "subtotal": {
+      "type": "number",
+      "minimum": 0
+    },
+    "tax": {
+      "type": "number",
+      "minimum": 0
+    },
+    "total": {
+      "type": "number",
+      "minimum": 0
+    },
+    "currency": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "paidAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "receiptId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "paymentReference": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cardLastFour": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cardBrand": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "invoiceEmailSentAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "activities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "chargeId",
+    "invoiceNumber",
+    "companyName",
+    "email",
+    "plan",
+    "billing",
+    "status",
+    "subtotal",
+    "tax",
+    "total",
+    "currency",
+    "createdAt"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

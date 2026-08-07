@@ -1,0 +1,107 @@
+{
+  "name": "SubscriptionPlan",
+  "type": "object",
+  "properties": {
+    "slug": {
+      "type": "string"
+    },
+    "nameAr": {
+      "type": "string"
+    },
+    "nameEn": {
+      "type": "string"
+    },
+    "monthlyPrice": {
+      "type": "number",
+      "minimum": 0
+    },
+    "yearlyPrice": {
+      "type": "number",
+      "minimum": 0
+    },
+    "currency": {
+      "type": "string",
+      "enum": [
+        "USD",
+        "SAR"
+      ],
+      "default": "USD"
+    },
+    "featuresAr": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "featuresEn": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "maxStations": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "maxEmployees": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "enabledSections": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "enabledFeatures": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    },
+    "freeNow": {
+      "type": "boolean",
+      "default": true
+    },
+    "sortOrder": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "slug",
+    "nameAr",
+    "nameEn",
+    "monthlyPrice",
+    "yearlyPrice",
+    "currency"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

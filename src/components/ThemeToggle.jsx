@@ -1,0 +1,33 @@
+import React, { useState, useEffect } from "react";
+import { Moon, Sun } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
+
+const KEY = "powercare_theme";
+
+// Dark-mode switch — applies the .dark class while the app layout is mounted,
+// and removes it on unmount so the public landing pages always stay light.
+export default function ThemeToggle() {
+  const { t } = useI18n();
+  const [dark, setDark] = useState(() => {
+    // Saved preference wins; on first launch fall back to the Android/OS system theme.
+    const saved = localStorage.getItem(KEY);
+    if (saved) return saved === "dark";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem(KEY, dark ? "dark" : "light");
+    return () => document.documentElement.classList.remove("dark");
+  }, [dark]);
+
+  return (
+    <button
+      onClick={() => setDark((d) => !d)}
+      className="p-2 rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      aria-label={t("toggleTheme")}
+    >
+      {dark ? <Sun className="w-4 h-4" strokeWidth={1.75} /> : <Moon className="w-4 h-4" strokeWidth={1.75} />}
+    </button>
+  );
+}

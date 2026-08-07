@@ -1,0 +1,18 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { History, Loader2 } from "lucide-react";
+import OwnerExportButtons from "@/components/owner/OwnerExportButtons";
+
+export default function AuditLogDashboard({ ar, companies = [] }) {
+  const [logs, setLogs] = useState(null);
+  const [accounts, setAccounts] = useState([]);
+  const [error, setError] = useState(false);
+  useEffect(() => { Promise.all([base44.functions.invoke("companyDirectory", { action: "getAllAuditLog", companyId: "platform" }), base44.entities.CompanyAccount.list("-created_date", 500)]).then(([res, companyAccounts]) => { setLogs(res.data.logs || []); setAccounts(companyAccounts); }).catch(() => { setLogs([]); setError(true); }); }, []);
+  const names = useMemo(() => Object.fromEntries([...companies.map((company) => [company.id, company.name]), ...accounts.map((account) => [account.companyId, account.name])]), [companies, accounts]);
+  if (!logs) return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-landing-gold" /></div>;
+  if (error) return <div className="rounded-2xl border border-destructive/20 bg-card p-8 text-center text-sm text-destructive">{ar ? "تعذر تحميل سجل التدقيق. يرجى المحاولة لاحقًا." : "Unable to load the audit log. Please try again later."}</div>;
+  const subscriptionLogs = logs.filter((log) => log.action?.startsWith("subscription_") || log.action?.startsWith("invoice_"));
+  const reportHeaders = ar ? ["الشركة", "الإجراء", "القيمة السابقة", "القيمة الجديدة", "التفاصيل", "التاريخ"] : ["Company", "Action", "Old value", "New value", "Details", "Date"];
+  const reportRows = subscriptionLogs.map((log) => [names[log.companyId] || log.companyId, log.action, log.oldValue || "—", log.newValue || "—", log.reason || log.details || "—", new Date(log.created_date).toLocaleString(ar ? "ar-SA" : "en-GB")]);
+  return <div className="space-y-5"><OwnerExportButtons filename="powercare_audit_ledger" title={ar ? "سجل المراقبة والتدقيق" : "Monitoring and audit ledger"} headers={reportHeaders} rows={reportRows} ar={ar} /><div className="grid grid-cols-2 gap-3"><div className="rounded-2xl bg-card p-5 shadow-sm"><p className="text-3xl font-semibold">{subscriptionLogs.length}</p><p className="text-xs text-muted-foreground">{ar ? "إجراءات الاشتراك" : "Subscription actions"}</p></div><div className="rounded-2xl bg-card p-5 shadow-sm"><p className="text-3xl font-semibold">{new Set(subscriptionLogs.map((log) => log.companyId)).size}</p><p className="text-xs text-muted-foreground">{ar ? "شركات متأثرة" : "Companies affected"}</p></div></div><section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"><div className="flex items-center gap-2 border-b border-border p-4 font-semibold"><History className="h-5 w-5 text-landing-gold" />{ar ? "سجل المراقبة والتدقيق" : "Monitoring & audit log"}</div><div className="divide-y divide-border">{subscriptionLogs.map((log) => <article key={log.id} className="grid gap-2 p-4 text-sm md:grid-cols-[1fr_1fr_1fr_auto]"><div><p className="font-semibold">{names[log.companyId] || log.companyId}</p><p className="text-xs text-muted-foreground">{log.action}</p></div><p className="text-muted-foreground">{log.oldValue || "—"} → <span className="text-foreground">{log.newValue || "—"}</span></p><p className="text-muted-foreground">{log.reason || log.details || "—"}</p><p className="text-xs text-muted-foreground">{new Date(log.created_date).toLocaleString(ar ? "ar-SA" : "en-GB")}</p></article>)}{!subscriptionLogs.length && <p className="p-10 text-center text-sm text-muted-foreground">{ar ? "لا توجد إجراءات بعد." : "No actions yet."}</p>}</div></section></div>;
+}
