@@ -196,7 +196,13 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
                 <p className="text-sm font-semibold text-foreground">{card.companyName}</p>
                 <span className="flex items-center gap-2">
                   {canEditCard(card) && (
-                    <button type="button" onClick={() => setEditingId(card.id)} className="text-accent" title={ar ? "التعديل متاح خلال 24 ساعة من الحفظ" : "Editing allowed within 24 hours of saving"}><Pencil className="h-3.5 w-3.5" /></button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(card.id)}
+                      className="inline-flex items-center gap-1 rounded-md border border-accent/40 px-2 py-1 text-[11px] font-body text-accent hover:bg-accent/5"
+                    >
+                      <Pencil className="h-3 w-3" /> {ar ? "تعديل البيانات" : "Edit details"}
+                    </button>
                   )}
                   <button type="button" onClick={() => onChange(cards.filter((entry) => entry.id !== card.id))} className="text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
                 </span>
@@ -262,6 +268,11 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
                 <span className="inline-flex items-center gap-1"><PenLine className="h-3 w-3" /> {ar ? "اعتماد:" : "Approved by:"} {card.approvedByName || card.signedByName || "—"}</span>
                 <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {stamp(card.signedAt)}</span>
                 {card.editedAt && <span className="text-muted-foreground">{ar ? `عُدّلت: ${stamp(card.editedAt)}` : `Edited: ${stamp(card.editedAt)}`}</span>}
+                <span className="text-muted-foreground">
+                  {canEditCard(card)
+                    ? (ar ? "التعديل متاح خلال 24 ساعة من الحفظ" : "Editable within 24 hours of saving")
+                    : (ar ? "انتهت مهلة التعديل (24 ساعة)" : "Edit window closed (24 hours)")}
+                </span>
               </p>
               </>
               )}
