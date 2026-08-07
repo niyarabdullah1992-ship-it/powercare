@@ -17,6 +17,7 @@ import ProofTaskPicker from "@/components/proof/ProofTaskPicker";
 import ProofPreviewCard from "@/components/proof/ProofPreviewCard";
 import ProofIssuedCard from "@/components/proof/ProofIssuedCard";
 import { newProofId, proofItemFromTask, proofContentHash } from "@/lib/clientProof";
+import { loadProofCards, saveProofCards } from "@/lib/proofCardDrafts";
 import { toast } from "@/components/ui/use-toast";
 
 // "NiroVera Proof" — turns completed, evidence-backed field work into a
@@ -39,8 +40,12 @@ export default function ClientProof() {
   const clientName = primaryCard.clientName || primaryCard.companyName || "";
   const projectName = primaryCard.projectName || "";
   const stations = data?.stations || [];
-  const [stationId, setStationId] = useState("");
+  const [stationId, setStationId] = useState(() => localStorage.getItem("powercare_proof_station") || "");
   const station = stations.find((entry) => entry.id === stationId);
+
+  // استرجاع مسودة بطاقات المحطة وحفظ أي تغيير عليها.
+  useEffect(() => { setClientCards(loadProofCards(company?.id, stationId)); }, [company?.id, stationId]);
+  useEffect(() => { saveProofCards(company?.id, stationId, clientCards); }, [company?.id, stationId, clientCards]);
 
   const stationNameOf = (task) => (data?.stations || []).find((station) => station.id === (task.station_id || task.assignment_id))?.name || "—";
 
@@ -168,7 +173,7 @@ export default function ClientProof() {
         <ProofStationPicker
           stations={stations}
           value={stationId}
-          onChange={(id) => { setStationId(id); setSelectedIds([]); setClientFilter("all"); }}
+          onChange={(id) => { setStationId(id); localStorage.setItem("powercare_proof_station", id); setSelectedIds([]); setClientFilter("all"); }}
           countFor={(id) => proofs.filter((proof) => proof.stationId === id).length}
           ar={ar}
         />
