@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
@@ -43,9 +43,16 @@ export default function ClientProof() {
   const [stationId, setStationId] = useState(() => localStorage.getItem("powercare_proof_station") || "");
   const station = stations.find((entry) => entry.id === stationId);
 
-  // استرجاع مسودة بطاقات المحطة وحفظ أي تغيير عليها.
-  useEffect(() => { setClientCards(loadProofCards(company?.id, stationId)); }, [company?.id, stationId]);
-  useEffect(() => { saveProofCards(company?.id, stationId, clientCards); }, [company?.id, stationId, clientCards]);
+  // استرجاع مسودة بطاقات المحطة وحفظ أي تغيير عليها بعد التحميل فقط.
+  const loadedKey = useRef(null);
+  useEffect(() => {
+    setClientCards(loadProofCards(company?.id, stationId));
+    loadedKey.current = `${company?.id}|${stationId}`;
+  }, [company?.id, stationId]);
+  useEffect(() => {
+    if (loadedKey.current !== `${company?.id}|${stationId}`) return;
+    saveProofCards(company?.id, stationId, clientCards);
+  }, [company?.id, stationId, clientCards]);
 
   const stationNameOf = (task) => (data?.stations || []).find((station) => station.id === (task.station_id || task.assignment_id))?.name || "—";
 
