@@ -109,7 +109,7 @@ export default function MyTasks() {
         setPrefilled(false);
       }
       if (stationId) setFormStation(stationId);
-      if (sectionPath) setSectionValue(sectionPath);
+      setSectionValue(sectionPath && sectionPath !== NO_SECTION ? sectionPath : "");
     }
     setShowCreate(opening);
     setCreateStep(0);
@@ -421,7 +421,6 @@ export default function MyTasks() {
     if (index === 0 && !String(fd.get("title") || "").trim()) return fail(t("taskTitle"));
     if (index === 1) {
       if (!isIndividual && assignType === "member" && !fd.get("assignedTo")) return fail(t("selectEmployee"));
-      if (!fd.get("section")) return fail(t("sectionName"));
     }
     if (index === 2) {
       const total = Number(fd.get("totalTasks"));
@@ -464,7 +463,6 @@ export default function MyTasks() {
     const description = fd.get("description") || "";
     const steps = fd.get("steps") || "";
     const section = fd.get("section") || "";
-    if (!section) { alert(t("sectionName")); return; }
     const total = Number(fd.get("totalTasks") || 1);
     const aType = fd.get("assignType") || "member";
 
@@ -1026,7 +1024,7 @@ export default function MyTasks() {
           <div>
             <p className="mb-2 flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground"><FileText className="h-3.5 w-3.5" /> {t("section")}</p>
             <input type="hidden" name="section" value={sectionValue} />
-            <div className="rounded-lg border border-accent/30 bg-secondary/50 px-3 py-2 text-sm font-medium">{getLeafName(sectionValue)}</div>
+            <div className="rounded-lg border border-accent/30 bg-secondary/50 px-3 py-2 text-sm font-medium">{getLeafName(sectionValue) || t("noSection")}</div>
           </div>
 
           {/* Priority */}
