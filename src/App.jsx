@@ -65,6 +65,8 @@ const TruePerformanceDoc = lazy(() => import('./pages/TruePerformanceDoc'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const Expenses = lazy(() => import('./pages/Expenses'));
 const StationExpenses = lazy(() => import('./pages/StationExpenses'));
+const ClientProof = lazy(() => import('./pages/ClientProof'));
+const ProofVerify = lazy(() => import('./pages/ProofVerify'));
 
 // After the first page is interactive, quietly download the most-used pages in
 // the background so navigating to them later is instant.
@@ -114,6 +116,7 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/verify" element={<Verify />} />
       <Route path="/sign" element={<PublicSign />} />
+      <Route path="/proof" element={<ProofVerify />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/security" element={<Security />} />
       <Route path="/terms" element={<Terms />} />
@@ -153,6 +156,7 @@ function AppRoutes() {
       <Route path="/app/expenses" element={<RequireAuth><Expenses /></RequireAuth>} />
       <Route path="/app/stations/:stationId/expenses" element={<RequireAuth><StationExpenses /></RequireAuth>} />
       <Route path="/app/signing" element={<RequireAuth><FileSigning /></RequireAuth>} />
+      <Route path="/app/client-proof" element={<RequireAuth><ClientProof /></RequireAuth>} />
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
       <Route path="/app/help" element={<RequireAuth><Help /></RequireAuth>} />
       <Route path="/app/manual" element={<RequireAuth><ProjectGuideDoc /></RequireAuth>} />
