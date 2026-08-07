@@ -4,6 +4,8 @@ import { Network, Search } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { canManageJobCatalog } from "@/lib/jobCatalogApi";
+import { orgTerms } from "@/lib/orgTerms";
+import OrgTypeToggle from "@/components/hr/orgstructure/OrgTypeToggle";
 import OrgStructureTree from "@/components/hr/orgstructure/OrgStructureTree";
 import StationsView from "@/components/hr/orgstructure/StationsView";
 import TitlesView from "@/components/hr/orgstructure/TitlesView";
@@ -11,7 +13,7 @@ import TitlesView from "@/components/hr/orgstructure/TitlesView";
 export default function OrgStructure() {
   const { lang } = useI18n();
   const ar = lang === "ar";
-  const { data, currentUser } = useAuth();
+  const { data, currentUser, company } = useAuth();
   const [tab, setTab] = useState("departments");
   const [query, setQuery] = useState("");
   const [manualExpanded, setManualExpanded] = useState(() => new Set());
@@ -60,9 +62,10 @@ export default function OrgStructure() {
   const expanded = new Set([...manualExpanded, ...searchExpanded]);
   const toggle = (id) => setManualExpanded((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
+  const terms = orgTerms(data, lang);
   const tabs = [
-    { id: "departments", label: ar ? "حسب الإدارات" : "By departments" },
-    { id: "stations", label: ar ? "حسب المقرات" : "By sites" },
+    { id: "departments", label: terms.byUnits },
+    { id: "stations", label: terms.bySites },
     { id: "titles", label: ar ? "المسميات الوظيفية" : "Job titles" },
   ];
 
@@ -70,8 +73,16 @@ export default function OrgStructure() {
     <div className="space-y-5">
       <div>
         <h1 className="font-heading text-3xl font-semibold flex items-center gap-2"><Network className="w-7 h-7 text-accent" />{ar ? "الهيكل التنظيمي" : "Organizational structure"}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{ar ? "شجرة كاملة من بيانات المقرات والإدارات والموظفين — حتى مستوى الموظف الفرد." : "A full tree built from sites, departments and employees — down to the individual employee."}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{ar ? `شجرة كاملة من بيانات ${terms.sites} والإدارات والموظفين — حتى مستوى الموظف الفرد.` : `A full tree built from ${terms.sites.toLowerCase()}, departments and employees — down to the individual employee.`}</p>
       </div>
+
+      {canManageJobCatalog(currentUser, data) && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
+          <p className="text-sm font-medium">{ar ? "نوع الجهة" : "Organization type"}</p>
+          <OrgTypeToggle companyId={company.id} data={data} lang={lang} />
+          <p className="text-xs text-muted-foreground">{ar ? `رأس الهيكل: ${terms.head} · الوحدة: ${terms.unit}` : `Structure head: ${terms.head} · Unit: ${terms.unit}`}</p>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
