@@ -12,10 +12,26 @@ import GoogleAccountPicker from "@/components/landing/GoogleAccountPicker";
 export default function PowerCareLoginPanel({ showTypeSelector = false, returnPath = "/login" }) {
   const { t, lang } = useI18n();
   const flow = usePowerCareLogin(returnPath);
+  // القطاع مقسّم في الواجهة: الشركات والجهات الحكومية تدخلان بحساب المنشأة، والأفراد بحسابهم.
+  const [sector, setSector] = React.useState(() => localStorage.getItem("powercare_login_sector") || "company");
+  const chooseSector = (value) => {
+    setSector(value);
+    localStorage.setItem("powercare_login_sector", value);
+    flow.setKind(value === "individual" ? "individual" : "company");
+  };
   if (flow.googleAccounts.length) return <GoogleAccountPicker accounts={flow.googleAccounts} onSelect={flow.chooseGoogleAccount} onBack={() => flow.setGoogleAccounts([])} loading={flow.loading} lang={lang} />;
   if (flow.pendingId) return <OtpStep email={flow.email} accounts={flow.accounts} onVerify={flow.verify} onResend={flow.resend} onBack={flow.backFromOtp} />;
   return <div className="space-y-2">
-    {showTypeSelector && <LoginTypeSelector value={flow.kind} onChange={flow.setKind} lang={lang} />}
+    {showTypeSelector && <>
+      <LoginTypeSelector value={flow.kind === "individual" ? "individual" : sector} onChange={chooseSector} lang={lang} />
+      <p className="text-center text-[11px] text-muted-foreground">
+        {flow.kind === "individual"
+          ? (lang === "ar" ? "ادخل ببريدك الوظيفي وكلمة مرورك." : "Sign in with your work email and password.")
+          : sector === "gov"
+            ? (lang === "ar" ? "دخول حساب الجهة الحكومية (المقر والدوائر)." : "Government entity account (headquarters and directorates).")
+            : (lang === "ar" ? "دخول حساب الشركة (الفروع والمحطات)." : "Company account (branches and stations).")}
+      </p>
+    </>}
     <div className="space-y-2">
       <button type="button" onClick={flow.google} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-md border border-border py-2 text-xs font-semibold hover:bg-muted disabled:opacity-50"><GoogleIcon className="h-5 w-5" />Continue with Google</button>
       <button type="button" onClick={flow.microsoft} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-md border border-border py-2 text-xs font-semibold hover:bg-muted disabled:opacity-50"><MicrosoftIcon className="h-5 w-5" />Continue with Microsoft</button>
