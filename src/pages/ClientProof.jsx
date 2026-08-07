@@ -11,6 +11,7 @@ import usePerformanceTargets from "@/hooks/usePerformanceTargets";
 import ProofClientFilter from "@/components/proof/ProofClientFilter";
 import ProofStationPicker from "@/components/proof/ProofStationPicker";
 import ProofClientCards from "@/components/proof/ProofClientCards";
+import ProofCardsSummary from "@/components/proof/ProofCardsSummary";
 import ProofStep from "@/components/proof/ProofStep";
 import ProofArchive from "@/components/proof/ProofArchive";
 import ProofTaskPicker from "@/components/proof/ProofTaskPicker";
@@ -212,6 +213,7 @@ export default function ClientProof() {
               : `${selectedIds.length} of ${eligible.length} tasks · ${evidenceCount} evidence pieces`}
           >
             <div className="space-y-4">
+              <ProofCardsSummary cards={clientCards} ar={ar} />
               {targets === null
                 ? <div className="flex items-center justify-center rounded-xl border border-border bg-card p-10"><Loader2 className="h-5 w-5 animate-spin text-accent" /></div>
                 : <ProofTaskPicker eligible={eligible} excluded={excluded} selectedIds={selectedIds} onToggle={toggle} stationNameOf={stationNameOf} ar={ar} />}
