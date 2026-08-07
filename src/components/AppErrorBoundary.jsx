@@ -10,6 +10,17 @@ export default class AppErrorBoundary extends React.Component {
 
   componentDidCatch(error, info) {
     console.error("NiroVera interface error:", error, info);
+    // A stale session after an app update can no longer fetch the old page
+    // files — one automatic reload picks up the fresh version.
+    const message = String(error?.message || "");
+    if (/Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(message)) {
+      const key = "powercare_chunk_reload_at";
+      const last = Number(sessionStorage.getItem(key) || 0);
+      if (Date.now() - last > 60000) {
+        sessionStorage.setItem(key, String(Date.now()));
+        window.location.reload();
+      }
+    }
   }
 
   render() {
