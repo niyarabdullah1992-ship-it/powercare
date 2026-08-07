@@ -5,6 +5,15 @@ import { vehicleLabel } from "@/lib/proofVehicle";
 const EMPTY_VEHICLE = { maker: "", model: "", type: "", year: "", plateLetters: "", plateNumbers: "" };
 const EMPTY = { name: "", idNumber: "", vehicles: [{ ...EMPTY_VEHICLE }] };
 
+const VEHICLE_FIELDS = [
+  { key: "maker", ar: "الشركة المصنعة", en: "Manufacturer" },
+  { key: "model", ar: "الموديل", en: "Model" },
+  { key: "type", ar: "نوع السيارة", en: "Vehicle type" },
+  { key: "year", ar: "سنة الصنع", en: "Year of manufacture", ltr: true },
+  { key: "plateLetters", ar: "حروف اللوحة", en: "Plate letters" },
+  { key: "plateNumbers", ar: "أرقام اللوحة", en: "Plate numbers", ltr: true },
+];
+
 // الموظفون الذين دخلوا لدى الجهة: الاسم، رقم الهوية، وسيارة أو أكثر لكل موظف.
 export default function ProofCrewEditor({ value = [], onChange, employees = [], ar }) {
   const [row, setRow] = useState(EMPTY);
@@ -54,11 +63,17 @@ export default function ProofCrewEditor({ value = [], onChange, employees = [], 
       ))}
 
       <div className="grid gap-2 sm:grid-cols-2">
-        <input list="proof-crew-names" value={row.name} onChange={set("name")} placeholder={ar ? "اسم الموظف" : "Employee name"} className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+        <label className="text-[11px] text-muted-foreground font-body">
+          {ar ? "اسم الموظف" : "Employee name"}
+          <input list="proof-crew-names" value={row.name} onChange={set("name")} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+        </label>
         <datalist id="proof-crew-names">
           {employees.map((employee) => <option key={employee.id} value={employee.name} />)}
         </datalist>
-        <input value={row.idNumber} onChange={set("idNumber")} placeholder={ar ? "رقم الهوية" : "ID number"} dir="ltr" className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+        <label className="text-[11px] text-muted-foreground font-body">
+          {ar ? "رقم الهوية" : "ID number"}
+          <input value={row.idNumber} onChange={set("idNumber")} dir="ltr" className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+        </label>
       </div>
 
       <div className="space-y-2">
@@ -71,12 +86,17 @@ export default function ProofCrewEditor({ value = [], onChange, employees = [], 
               )}
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
-              <input value={vehicle.maker} onChange={setVehicle(index, "maker")} placeholder={ar ? "الشركة المصنعة" : "Manufacturer"} className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-              <input value={vehicle.model} onChange={setVehicle(index, "model")} placeholder={ar ? "الموديل" : "Model"} className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-              <input value={vehicle.type} onChange={setVehicle(index, "type")} placeholder={ar ? "نوع السيارة" : "Vehicle type"} className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-              <input value={vehicle.year} onChange={setVehicle(index, "year")} placeholder={ar ? "سنة الصنع" : "Year of manufacture"} dir="ltr" className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-              <input value={vehicle.plateLetters} onChange={setVehicle(index, "plateLetters")} placeholder={ar ? "حروف اللوحة" : "Plate letters"} className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-              <input value={vehicle.plateNumbers} onChange={setVehicle(index, "plateNumbers")} placeholder={ar ? "أرقام اللوحة" : "Plate numbers"} dir="ltr" className="rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+              {VEHICLE_FIELDS.map((field) => (
+                <label key={field.key} className="text-[11px] text-muted-foreground font-body">
+                  {ar ? field.ar : field.en}
+                  <input
+                    value={vehicle[field.key] || ""}
+                    onChange={setVehicle(index, field.key)}
+                    dir={field.ltr ? "ltr" : undefined}
+                    className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground"
+                  />
+                </label>
+              ))}
             </div>
           </div>
         ))}
