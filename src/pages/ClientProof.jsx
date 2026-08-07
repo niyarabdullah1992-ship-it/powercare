@@ -9,6 +9,7 @@ import PeriodPicker from "@/components/shared/PeriodPicker";
 import { usePeriod } from "@/lib/PeriodContext";
 import usePerformanceTargets from "@/hooks/usePerformanceTargets";
 import ProofClientFilter from "@/components/proof/ProofClientFilter";
+import ProofStationPicker from "@/components/proof/ProofStationPicker";
 import ProofTaskPicker from "@/components/proof/ProofTaskPicker";
 import ProofDisclosurePanel from "@/components/proof/ProofDisclosurePanel";
 import ProofPreviewCard from "@/components/proof/ProofPreviewCard";
@@ -33,6 +34,9 @@ export default function ClientProof() {
   const [issued, setIssued] = useState(null);
   const [proofs, setProofs] = useState([]);
   const [clientFilter, setClientFilter] = useState("all");
+  const stations = data?.stations || [];
+  const [stationId, setStationId] = useState("");
+  const station = stations.find((entry) => entry.id === stationId);
 
   const stationNameOf = (task) => (data?.stations || []).find((station) => station.id === (task.station_id || task.assignment_id))?.name || "—";
 
@@ -41,9 +45,10 @@ export default function ClientProof() {
 
   const periodTasks = useMemo(() => (targets || []).filter((task) => {
     if (task.status !== "completed") return false;
+    if (stationId && (task.station_id || task.assignment_id) !== stationId) return false;
     const when = new Date(task.end_date || task.start_date || task.created_at || Date.now());
     return resolved.valid && when >= resolved.start && when <= resolved.end;
-  }), [targets, resolved]);
+  }), [targets, resolved, stationId]);
 
   // العملاء المكلِّفون المسجّلون على المهام عند إنشائها في قسم المهام.
   const clients = useMemo(() => [...new Set(periodTasks.map((task) => task.clientCompany).filter(Boolean))], [periodTasks]);
@@ -117,6 +122,8 @@ export default function ClientProof() {
         periodEnd: payload.periodEnd,
         issuedById: currentUser?.id || "",
         issuedByName: currentUser?.name || "",
+        stationId,
+        stationName: station?.name || "",
         payload,
       });
       if (res.data?.ok) {
@@ -137,7 +144,8 @@ export default function ClientProof() {
     loadProofs();
   };
 
-  const canIssue = clientName.trim() && selectedIds.length > 0 && resolved.valid && !issuing;
+  const canIssue = stationId && clientName.trim() && selectedIds.length > 0 && resolved.valid && !issuing;
+  const stationProofs = useMemo(() => proofs.filter((proof) => proof.stationId === stationId), [proofs, stationId]);
 
   return (
     <div className="space-y-6">
@@ -147,8 +155,19 @@ export default function ClientProof() {
         icon={ShieldCheck}
       />
 
+      <ProofStationPicker
+        stations={stations}
+        value={stationId}
+        onChange={(id) => { setStationId(id); setSelectedIds([]); setClientFilter("all"); }}
+        countFor={(id) => proofs.filter((proof) => proof.stationId === id).length}
+        ar={ar}
+      />
+
+      {!stationId && <p className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground font-body">{ar ? "اختر محطة لرفع إثبات عمل جديد ومشاهدة أرشيفها." : "Select a station to issue a new work proof and browse its archive."}</p>}
+
       {issued && <ProofIssuedCard proofId={issued.proofId} contentHash={issued.contentHash} ar={ar} />}
 
+      {stationId && (<>
       <section className="space-y-4 rounded-xl border border-border bg-card p-4 md:p-5">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-xs text-muted-foreground font-body">
@@ -192,7 +211,8 @@ export default function ClientProof() {
         </div>
       </div>
 
-      <IssuedProofList proofs={proofs} onRevoke={revoke} ar={ar} />
+      <IssuedProofList proofs={stationProofs} onRevoke={revoke} ar={ar} />
+      </>)}
     </div>
   );
 }

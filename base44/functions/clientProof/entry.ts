@@ -67,6 +67,8 @@ Deno.serve(async (req) => {
         contentHash,
         companyId,
         companyName: String(body.companyName || '').slice(0, 160),
+        stationId: body.stationId ? String(body.stationId).slice(0, 64) : null,
+        stationName: body.stationName ? String(body.stationName).slice(0, 160) : null,
         clientName: String(body.clientName || '').slice(0, 160),
         projectName: String(body.projectName || '').slice(0, 160),
         periodStart: body.periodStart || null,
@@ -86,6 +88,7 @@ Deno.serve(async (req) => {
       return Response.json({
         proofs: rows.map((r: any) => ({
           proofId: r.proofId, contentHash: r.contentHash, clientName: r.clientName,
+          stationId: r.stationId || null, stationName: r.stationName || null,
           projectName: r.projectName, issuedAt: r.issuedAt, issuedByName: r.issuedByName,
           revoked: !!r.revoked, itemCount: (r.payload?.items || []).length,
         })),

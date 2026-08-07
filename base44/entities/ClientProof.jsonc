@@ -16,6 +16,19 @@
     "companyName": {
       "type": "string"
     },
+    "stationId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Station this proof belongs to \u2014 each station keeps its own proof archive."
+    },
+    "stationName": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "clientName": {
       "type": "string",
       "description": "The customer/authority the proof is shared with."
