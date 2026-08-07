@@ -18,11 +18,7 @@ function TaskMeta({ task, stationNameOf, ar }) {
 // Only tasks closed with complete field evidence are selectable; the rest are
 // listed disabled with the exclusion reason, so nothing weak reaches the client.
 export default function ProofTaskPicker({ eligible, excluded, selectedIds, onToggle, stationNameOf, ar }) {
-  if (eligible.length === 0 && excluded.length === 0) {
-    return <p className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground font-body">
-      {ar ? "لا توجد أعمال مكتملة ضمن الفترة المختارة." : "No completed work in the selected period."}
-    </p>;
-  }
+  if (eligible.length === 0 && excluded.length === 0) return null;
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
