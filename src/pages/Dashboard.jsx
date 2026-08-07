@@ -208,6 +208,21 @@ export default function Dashboard() {
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="ops-command-dashboard space-y-4">
       <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
+
+      <HrKpiRow
+        items={[
+          { label: lang === "ar" ? "إجمالي الموظفين" : "Total employees", value: teamEmployees.length, note: `${activeMembersCount} ${lang === "ar" ? "نشط اليوم" : "active today"}` },
+          { label: lang === "ar" ? "نسبة الحضور اليوم" : "Attendance today", value: `${attendanceRate}%`, note: `${checkedInCount}/${scheduledEmployees.length} ${lang === "ar" ? "حضور" : "checked in"}` },
+          { label: lang === "ar" ? "طلبات معلّقة" : "Pending requests", value: pendingLeaveCount + pendingReports, note: lang === "ar" ? "إجازات وتقارير بانتظار الاعتماد" : "Leave and reports awaiting approval" },
+          { label: lang === "ar" ? "إنجاز المهام" : "Task completion", value: `${tasks.length ? Math.round((completed / tasks.length) * 100) : 0}%`, note: `${completed}/${tasks.length} ${lang === "ar" ? "مهمة" : "tasks"}` },
+        ]}
+      />
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <PendingActionsPanel items={pendingActionItems} t={t} />
+        <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
+      </div>
+
       <OperationsModuleGrid
         metrics={{
           stations: stations.length, tasks: tasks.length, completedTasks: completed, complaints: anonOpenCount,
@@ -224,7 +239,6 @@ export default function Dashboard() {
         lang={lang} user={currentUser} data={data} company={company}
       />
       <div className="overflow-x-auto no-scrollbar"><QuickOverviewStrip lang={lang} employees={teamEmployees.length} attendance={attendanceRate} completedTasks={completed} satisfaction={satisfactionRate} updates={recent.length} /></div>
-      <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
       <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
       {["ops_manager", "director"].includes(currentUser.role) && <ExecutiveDashboard embedded />}
       {canEditBranding && (
@@ -254,24 +268,6 @@ export default function Dashboard() {
           alerts={proactiveAlerts}
           lang={lang}
         />
-      </div>
-
-      <HrKpiRow
-        items={[
-          { label: lang === "ar" ? "إجمالي الموظفين" : "Total employees", value: teamEmployees.length, note: `${activeMembersCount} ${lang === "ar" ? "نشط اليوم" : "active today"}` },
-          { label: lang === "ar" ? "نسبة الحضور اليوم" : "Attendance today", value: `${attendanceRate}%`, note: `${checkedInCount}/${scheduledEmployees.length} ${lang === "ar" ? "حضور" : "checked in"}` },
-          { label: lang === "ar" ? "طلبات معلّقة" : "Pending requests", value: pendingLeaveCount + pendingReports, note: lang === "ar" ? "إجازات وتقارير بانتظار الاعتماد" : "Leave and reports awaiting approval" },
-          { label: lang === "ar" ? "إنجاز المهام" : "Task completion", value: `${tasks.length ? Math.round((completed / tasks.length) * 100) : 0}%`, note: `${completed}/${tasks.length} ${lang === "ar" ? "مهمة" : "tasks"}` },
-        ]}
-      />
-
-      {/* Main analytics grid: big trend chart + map & pending actions column */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-            </div>
-        <div className="space-y-4">
-          <PendingActionsPanel items={pendingActionItems} t={t} />
-        </div>
       </div>
 
       <TeamStatusPanel employees={teamEmployees} companyId={company.id} t={t} lang={lang} />
