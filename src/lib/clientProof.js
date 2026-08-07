@@ -33,6 +33,9 @@ export function canonicalPayload(payload) {
     projectName: payload.projectName,
     periodStart: payload.periodStart,
     periodEnd: payload.periodEnd,
+    // Present only on proofs issued with disclosure controls — older proofs
+    // hash without this key (undefined is dropped by JSON.stringify).
+    disclosure: payload.disclosure,
     items: payload.items.map((item) => [
       item.title, item.station, item.status, item.completed, item.target,
       item.startDate, item.endDate, item.photoEvidence, item.attestations, item.verifiedOnSite,

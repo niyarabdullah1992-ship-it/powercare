@@ -8,6 +8,8 @@ import PageHeader from "@/components/PageHeader";
 import PeriodPicker from "@/components/shared/PeriodPicker";
 import { usePeriod } from "@/lib/PeriodContext";
 import ProofTaskPicker from "@/components/proof/ProofTaskPicker";
+import ProofDisclosurePanel from "@/components/proof/ProofDisclosurePanel";
+import ProofPreviewCard from "@/components/proof/ProofPreviewCard";
 import ProofIssuedCard from "@/components/proof/ProofIssuedCard";
 import IssuedProofList from "@/components/proof/IssuedProofList";
 import { newProofId, proofItemFromTask, proofContentHash } from "@/lib/clientProof";
@@ -23,6 +25,8 @@ export default function ClientProof() {
   const [clientName, setClientName] = useState("");
   const [projectName, setProjectName] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
+  const [disclosure, setDisclosure] = useState({ photos: true, locationTime: true, safetyApproval: true });
+  const [proofId, setProofId] = useState(newProofId);
   const [issuing, setIssuing] = useState(false);
   const [issued, setIssued] = useState(null);
   const [proofs, setProofs] = useState([]);
@@ -38,6 +42,24 @@ export default function ClientProof() {
     });
   }, [data?.targets, resolved]);
 
+  // Only tasks closed with complete field evidence qualify for a client proof.
+  const { eligible, excluded } = useMemo(() => {
+    const eligible = [];
+    const excluded = [];
+    completedTasks.forEach((task) => {
+      const proof = Array.isArray(task.completion_proof) ? task.completion_proof : [];
+      const photos = proof.filter((entry) => entry.url).length;
+      const onSite = (task.completionMode || "onsite") === "onsite";
+      if (photos > 0 && onSite) eligible.push(task);
+      else excluded.push({ task, reason: photos === 0 ? (ar ? "بلا صورة بعد التنفيذ" : "no post-work photo") : (ar ? "أُغلقت خارج نطاق المحطة" : "closed outside the station zone") });
+    });
+    return { eligible, excluded };
+  }, [completedTasks, ar]);
+
+  const evidenceCount = useMemo(() => eligible
+    .filter((task) => selectedIds.includes(task.id))
+    .reduce((sum, task) => sum + (Array.isArray(task.completion_proof) ? task.completion_proof.length : 0), 0), [eligible, selectedIds]);
+
   const loadProofs = () => {
     if (!company) return;
     base44.functions
@@ -51,18 +73,25 @@ export default function ClientProof() {
   const toggle = (id) => setSelectedIds((ids) => (ids.includes(id) ? ids.filter((entry) => entry !== id) : [...ids, id]));
 
   const issue = async () => {
-    const items = completedTasks.filter((task) => selectedIds.includes(task.id)).map((task) => proofItemFromTask(task, stationNameOf(task)));
+    // Toggled-off fields are stripped before hashing — never sent, not hidden.
+    const items = eligible.filter((task) => selectedIds.includes(task.id)).map((task) => {
+      const item = proofItemFromTask(task, stationNameOf(task));
+      if (!disclosure.photos) item.photoEvidence = null;
+      if (!disclosure.safetyApproval) item.attestations = null;
+      if (!disclosure.locationTime) { item.verifiedOnSite = null; item.station = ""; }
+      return item;
+    });
     const payload = {
       clientName: clientName.trim(),
       projectName: projectName.trim(),
       periodStart: resolved.startDate,
       periodEnd: resolved.endDate,
+      disclosure,
       items,
     };
     setIssuing(true);
     try {
       const contentHash = await proofContentHash(payload);
-      const proofId = newProofId();
       const res = await base44.functions.invoke("clientProof", {
         action: "issue",
         companyId: company.id,
@@ -81,6 +110,7 @@ export default function ClientProof() {
       if (res.data?.ok) {
         setIssued({ proofId, contentHash });
         setSelectedIds([]);
+        setProofId(newProofId());
         loadProofs();
       } else {
         toast({ title: ar ? "تعذّر إصدار الإثبات" : "Could not issue the proof", description: res.data?.error || "" });
@@ -119,17 +149,20 @@ export default function ClientProof() {
           </label>
         </div>
         <PeriodPicker showDaily showWeekly />
-        <ProofTaskPicker tasks={completedTasks} selectedIds={selectedIds} onToggle={toggle} stationNameOf={stationNameOf} ar={ar} />
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground font-body">
-            {ar ? `${selectedIds.length} بند مختار — لن تُشارَك أي بيانات تعريفية عن الموظفين.` : `${selectedIds.length} items selected — no employee identifying data is shared.`}
-          </p>
-          <button type="button" disabled={!canIssue} onClick={issue} className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground disabled:opacity-40">
-            {issuing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-            {ar ? "إصدار إثبات ومشاركته" : "Issue & share proof"}
-          </button>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground font-body">
+          <span>{ar ? `${selectedIds.length} من ${eligible.length} مهام مختارة` : `${selectedIds.length} of ${eligible.length} tasks selected`}</span>
+          <span className="h-3 w-px bg-border" />
+          <span>{ar ? `${evidenceCount} قطعة إثبات` : `${evidenceCount} evidence pieces`}</span>
         </div>
       </section>
+
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <ProofTaskPicker eligible={eligible} excluded={excluded} selectedIds={selectedIds} onToggle={toggle} stationNameOf={stationNameOf} ar={ar} />
+        <div className="space-y-4">
+          <ProofDisclosurePanel value={disclosure} onChange={setDisclosure} ar={ar} />
+          <ProofPreviewCard taskCount={selectedIds.length} evidenceCount={evidenceCount} proofId={proofId} canIssue={canIssue} issuing={issuing} onIssue={issue} ar={ar} />
+        </div>
+      </div>
 
       <IssuedProofList proofs={proofs} onRevoke={revoke} ar={ar} />
     </div>
