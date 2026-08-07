@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Plus, X, Paperclip, PenLine, Clock, FileText, Trash2, Loader2, Package, Users } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import ProofCrewEditor from "@/components/proof/ProofCrewEditor";
 
-const EMPTY = { clientName: "", companyName: "", contractNumber: "", projectName: "", crewCount: "", notes: "", materials: "" };
+const EMPTY = { clientName: "", companyName: "", contractNumber: "", projectName: "", crew: [], notes: "", materials: "" };
 
 // بطاقات العميل: بيانات الجهة والعقد والمشروع، المواد المصروفة (اختيارية)،
 // مرفقاتها، وتوقيع رقمي للموظف الذي اعتمدها مع التاريخ والوقت.
@@ -83,10 +84,12 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
             </label>
           </div>
 
-          <label className="block text-xs text-muted-foreground font-body">
-            <span className="inline-flex items-center gap-1.5"><Users className="h-3 w-3" /> {ar ? "عدد الموظفين الذين دخلوا لدى الجهة" : "Employees who entered the client site"}</span>
-            <input type="number" min="0" value={form.crewCount} onChange={set("crewCount")} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" dir="ltr" />
-          </label>
+          <ProofCrewEditor
+            value={form.crew}
+            onChange={(crew) => setForm((current) => ({ ...current, crew }))}
+            employees={employees}
+            ar={ar}
+          />
 
           <label className="block text-xs text-muted-foreground font-body">
             {ar ? "ملاحظات" : "Notes"}
@@ -147,10 +150,20 @@ export default function ProofClientCards({ cards, onChange, employees = [], sign
                 {card.projectName ? ` · ${card.projectName}` : ""}
                 {card.contractNumber ? ` · ${ar ? "عقد" : "contract"} ${card.contractNumber}` : ""}
               </p>
-              {card.crewCount !== "" && card.crewCount != null && (
-                <p className="inline-flex items-center gap-1.5 text-xs text-foreground font-body">
-                  <Users className="h-3 w-3 text-muted-foreground" /> {ar ? `عدد الموظفين الداخلين: ${card.crewCount}` : `Employees entered: ${card.crewCount}`}
-                </p>
+              {card.crew?.length > 0 && (
+                <div className="space-y-1 rounded border border-dashed border-border bg-muted/30 p-2 text-[11px] font-body">
+                  <p className="inline-flex items-center gap-1 text-muted-foreground">
+                    <Users className="h-3 w-3" /> {ar ? `الموظفون الداخلون (${card.crew.length})` : `Employees entered (${card.crew.length})`}
+                  </p>
+                  {card.crew.map((crew) => (
+                    <p key={crew.id} className="text-foreground">
+                      {crew.name}
+                      {crew.idNumber ? ` · ${crew.idNumber}` : ""}
+                      {crew.vehicleType ? ` · ${crew.vehicleType}` : ""}
+                      {crew.plate ? ` (${crew.plate})` : ""}
+                    </p>
+                  ))}
+                </div>
               )}
               {card.notes && <p className="text-xs text-foreground font-body">{card.notes}</p>}
               {card.materials && (

@@ -4,7 +4,7 @@ import { Users, Package, FileText } from "lucide-react";
 // بطاقات العميل كما تظهر في التقرير المُصدَر: العقد، عدد الموظفين الداخلين، والمواد.
 export default function ProofCardsSummary({ cards = [], ar }) {
   if (!cards.length) return null;
-  const totalCrew = cards.reduce((sum, card) => sum + (Number(card.crewCount) || 0), 0);
+  const totalCrew = cards.reduce((sum, card) => sum + (card.crew?.length || 0), 0);
 
   return (
     <section className="space-y-2">
@@ -25,11 +25,20 @@ export default function ProofCardsSummary({ cards = [], ar }) {
               {card.projectName || ""}
               {card.contractNumber ? ` · ${ar ? "عقد" : "contract"} ${card.contractNumber}` : ""}
             </p>
-            {Number(card.crewCount) > 0 && (
-              <p className="inline-flex items-center gap-1.5 text-xs font-body">
-                <Users className="h-3 w-3 text-muted-foreground" />
-                {ar ? `عدد الموظفين الذين دخلوا: ${card.crewCount}` : `Employees entered: ${card.crewCount}`}
-              </p>
+            {card.crew?.length > 0 && (
+              <div className="space-y-1 rounded border border-dashed border-border bg-muted/30 p-2 text-[11px] font-body">
+                <p className="inline-flex items-center gap-1 text-muted-foreground">
+                  <Users className="h-3 w-3" /> {ar ? `الموظفون الذين دخلوا (${card.crew.length})` : `Employees entered (${card.crew.length})`}
+                </p>
+                {card.crew.map((crew, crewIndex) => (
+                  <p key={crew.id || crewIndex}>
+                    {crew.name}
+                    {crew.idNumber ? ` · ${crew.idNumber}` : ""}
+                    {crew.vehicleType ? ` · ${crew.vehicleType}` : ""}
+                    {crew.plate ? ` (${crew.plate})` : ""}
+                  </p>
+                ))}
+              </div>
             )}
             {card.notes && <p className="text-xs font-body">{card.notes}</p>}
             {card.materials && (
