@@ -30,6 +30,7 @@ import CompletionModeToggle from "@/components/tasks/CompletionModeToggle";
 import TaskWizardStepper from "@/components/tasks/TaskWizardStepper";
 import TaskFormStep from "@/components/tasks/TaskFormStep";
 import TaskStepNav from "@/components/tasks/TaskStepNav";
+import TaskClientFields from "@/components/tasks/TaskClientFields";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -508,6 +509,12 @@ export default function MyTasks() {
         stationId,
         priority,
         effortWeight,
+        client: {
+          clientCompany: fd.get("clientCompany") || "",
+          clientProject: fd.get("clientProject") || "",
+          clientContact: fd.get("clientContact") || "",
+          clientPhone: fd.get("clientPhone") || "",
+        },
         completionMode: canSetCompletionMode ? completionMode : "onsite",
         startDate,
         endDate,
@@ -947,6 +954,8 @@ export default function MyTasks() {
               <textarea name="description" rows={3} placeholder={t("taskDescription")} className="w-full resize-y rounded-lg border border-input px-3 py-2.5 text-sm font-body focus:border-accent focus:ring-1 focus:ring-accent" />
             </div>
           </div>
+
+          <TaskClientFields lang={lang} />
 
           {canSetCompletionMode && <CompletionModeToggle value={completionMode} onChange={setCompletionMode} lang={lang} />}
 

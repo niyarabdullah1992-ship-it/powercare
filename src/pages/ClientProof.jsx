@@ -8,6 +8,7 @@ import PageHeader from "@/components/PageHeader";
 import PeriodPicker from "@/components/shared/PeriodPicker";
 import { usePeriod } from "@/lib/PeriodContext";
 import usePerformanceTargets from "@/hooks/usePerformanceTargets";
+import ProofClientFilter from "@/components/proof/ProofClientFilter";
 import ProofTaskPicker from "@/components/proof/ProofTaskPicker";
 import ProofDisclosurePanel from "@/components/proof/ProofDisclosurePanel";
 import ProofPreviewCard from "@/components/proof/ProofPreviewCard";
@@ -31,17 +32,26 @@ export default function ClientProof() {
   const [issuing, setIssuing] = useState(false);
   const [issued, setIssued] = useState(null);
   const [proofs, setProofs] = useState([]);
+  const [clientFilter, setClientFilter] = useState("all");
 
   const stationNameOf = (task) => (data?.stations || []).find((station) => station.id === (task.station_id || task.assignment_id))?.name || "—";
 
   // Tasks live on the server — the same scope-filtered list the performance pages use.
   const targets = usePerformanceTargets(company, currentUser);
 
-  const completedTasks = useMemo(() => (targets || []).filter((task) => {
+  const periodTasks = useMemo(() => (targets || []).filter((task) => {
     if (task.status !== "completed") return false;
     const when = new Date(task.end_date || task.start_date || task.created_at || Date.now());
     return resolved.valid && when >= resolved.start && when <= resolved.end;
   }), [targets, resolved]);
+
+  // العملاء المكلِّفون المسجّلون على المهام عند إنشائها في قسم المهام.
+  const clients = useMemo(() => [...new Set(periodTasks.map((task) => task.clientCompany).filter(Boolean))], [periodTasks]);
+
+  const completedTasks = useMemo(
+    () => (clientFilter === "all" ? periodTasks : periodTasks.filter((task) => task.clientCompany === clientFilter)),
+    [periodTasks, clientFilter]
+  );
 
   // Only tasks closed with complete field evidence qualify for a client proof.
   const { eligible, excluded } = useMemo(() => {
@@ -151,6 +161,20 @@ export default function ClientProof() {
           </label>
         </div>
         <PeriodPicker showDaily showWeekly />
+        <ProofClientFilter
+          clients={clients}
+          value={clientFilter}
+          onChange={(next) => {
+            setClientFilter(next);
+            setSelectedIds([]);
+            if (next !== "all") {
+              setClientName(next);
+              const project = periodTasks.find((task) => task.clientCompany === next)?.clientProject;
+              if (project) setProjectName(project);
+            }
+          }}
+          ar={ar}
+        />
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground font-body">
           <span>{ar ? `${selectedIds.length} من ${eligible.length} مهام مختارة` : `${selectedIds.length} of ${eligible.length} tasks selected`}</span>
           <span className="h-3 w-px bg-border" />

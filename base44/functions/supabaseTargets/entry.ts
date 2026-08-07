@@ -141,6 +141,10 @@ Deno.serve(async (req) => {
         remoteConvertedAt: metadata?.remoteConvertedAt || null,
         effortWeight: Number(metadata?.effortWeight) || 1,
         evidenceType: metadata?.evidenceType || null,
+        clientCompany: metadata?.clientCompany || "",
+        clientProject: metadata?.clientProject || "",
+        clientContact: metadata?.clientContact || "",
+        clientPhone: metadata?.clientPhone || "",
         pendingReviewAt: metadata?.pendingReviewAt || null,
         reviewedAt: metadata?.reviewedAt || null,
         reviewedBy: metadata?.reviewedBy || null,
@@ -479,7 +483,7 @@ Deno.serve(async (req) => {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can create targets" }, { status: 403 });
       }
-      const { managerId, taskTarget, days, title, description, steps, fileUrl, fileUrls, assignmentType, assignmentId, employeeId, stationId, priority, startDate: customStart, endDate: customEnd, section, taskType, completionMode = "onsite", effortWeight } = body;
+      const { managerId, taskTarget, days, title, description, steps, fileUrl, fileUrls, assignmentType, assignmentId, employeeId, stationId, priority, startDate: customStart, endDate: customEnd, section, taskType, completionMode = "onsite", effortWeight, client } = body;
       const weight = Math.min(5, Math.max(1, Number(effortWeight) || 1));
       const targetAmount = Number(taskTarget);
       if (!(title || "").trim() || !Number.isFinite(targetAmount) || targetAmount <= 0) {
@@ -541,7 +545,13 @@ Deno.serve(async (req) => {
         return Response.json({ error: created?.message || "Failed to create target — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS section text; ALTER TABLE targets ADD COLUMN IF NOT EXISTS task_type text;" }, { status: 400 });
       }
       const createdTarget = Array.isArray(created) ? created[0] : created;
-      await saveTaskMetadata(createdTarget, { completionMode, effortWeight: weight });
+      const clientFields = {
+        clientCompany: String(client?.clientCompany || "").trim().slice(0, 120),
+        clientProject: String(client?.clientProject || "").trim().slice(0, 120),
+        clientContact: String(client?.clientContact || "").trim().slice(0, 120),
+        clientPhone: String(client?.clientPhone || "").trim().slice(0, 80),
+      };
+      await saveTaskMetadata(createdTarget, { completionMode, effortWeight: weight, ...clientFields });
       // Notify the assigned employee (member only)
       if (aType === "member" && employeeId) {
         await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
