@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Allura&family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Caveat:wght@400..700&family=Cormorant+Garamond:wght@500;600;700&family=Dancing+Script:wght@400..700&family=Great+Vibes&family=Inter+Tight:wght@400;500;600;700&family=Lateef:wght@400;500;600;700&family=Marck+Script&family=Noto+Kufi+Arabic:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400..700&family=Pacifico&family=Parisienne&family=Rakkas&family=Reem+Kufi:wght@400..700&family=Sacramento&family=Satisfy&family=Tangerine:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Allura&family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Caveat:wght@400..700&family=Cormorant+Garamond:wght@500;600;700&family=Dancing+Script:wght@400..700&family=Great+Vibes&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter+Tight:wght@400;500;600;700&family=Lateef:wght@400;500;600;700&family=Marck+Script&family=Noto+Kufi+Arabic:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400..700&family=Pacifico&family=Parisienne&family=Rakkas&family=Reem+Kufi:wght@400..700&family=Sacramento&family=Satisfy&family=Tangerine:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,26 +7,26 @@
 @layer base {
   :root {
     /* NiroVera identity: deep navy (discipline), Saudi green (growth), light grey (clarity). */
-    --background: 214 33% 97%;
-    --foreground: 218 55% 17%;
+    --background: 220 20% 97%;
+    --foreground: 222 43% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 218 55% 17%;
+    --card-foreground: 222 43% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 218 55% 17%;
-    --primary: 219 62% 21%;
+    --popover-foreground: 222 43% 11%;
+    --primary: 223 70% 15%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 214 30% 93%;
-    --secondary-foreground: 219 55% 20%;
-    --muted: 214 28% 95%;
-    --muted-foreground: 216 14% 42%;
+    --secondary: 220 20% 96%;
+    --secondary-foreground: 223 55% 18%;
+    --muted: 220 20% 96%;
+    --muted-foreground: 221 13% 46%;
     --accent: 154 76% 27%;
     --accent-foreground: 0 0% 100%;
     /* Readable text version of the accent. */
     --accent-text: 154 74% 22%;
     --destructive: 0 62% 44%;
     --destructive-foreground: 0 0% 100%;
-    --border: 215 24% 87%;
-    --input: 215 22% 82%;
+    --border: 218 15% 91%;
+    --input: 218 15% 86%;
     --ring: 154 76% 27%;
     --chart-1: 219 62% 21%;
     --chart-2: 154 76% 27%;
@@ -34,9 +34,9 @@
     --chart-4: 154 45% 45%;
     --chart-5: 219 30% 45%;
     --radius: 1rem;
-    --font-heading: 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
-    --font-body: 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
+    --font-heading: 'IBM Plex Sans Arabic', 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
+    --font-body: 'IBM Plex Sans Arabic', 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'IBM Plex Sans Arabic', 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --sidebar-background: 219 62% 15%;
     --sidebar-foreground: 210 40% 98%;
@@ -168,11 +168,11 @@
   }
 
   .font-display {
-    font-family: 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'IBM Plex Sans Arabic', 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
   }
 
   .hero-title {
-    font-family: 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'IBM Plex Sans Arabic', 'Inter Tight', 'Noto Kufi Arabic', ui-sans-serif, system-ui, sans-serif;
     line-height: 1.08;
     letter-spacing: -0.03em;
     font-weight: 700;
@@ -448,20 +448,20 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 
 /* Warm executive identity — ivory, deep navy and restrained gold. */
 .powercare-public {
-  --background: 214 33% 97%;
-  --foreground: 218 55% 17%;
+  --background: 220 20% 97%;
+  --foreground: 222 43% 11%;
   --card: 0 0% 100%;
-  --card-foreground: 218 55% 17%;
-  --primary: 219 62% 21%;
+  --card-foreground: 222 43% 11%;
+  --primary: 223 70% 15%;
   --primary-foreground: 210 40% 98%;
-  --secondary: 214 30% 93%;
-  --secondary-foreground: 219 55% 20%;
-  --muted: 214 28% 95%;
-  --muted-foreground: 216 14% 42%;
-  --accent: 154 76% 27%;
+  --secondary: 220 20% 96%;
+  --secondary-foreground: 223 55% 18%;
+  --muted: 220 20% 96%;
+  --muted-foreground: 221 13% 46%;
+  --accent: 154 79% 27%;
   --accent-foreground: 0 0% 100%;
-  --border: 215 24% 87%;
-  --input: 215 22% 82%;
+  --border: 218 15% 91%;
+  --input: 218 15% 86%;
   --ring: 154 76% 27%;
   --landing-bg: 214 33% 97%;
   --landing-olive: 219 62% 21%;
@@ -490,24 +490,24 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 
 /* Warm executive identity — scoped to the authenticated platform. */
 .powercare-shell {
-  --background: 214 33% 97%;
-  --foreground: 218 55% 17%;
+  --background: 220 20% 97%;
+  --foreground: 222 43% 11%;
   --card: 0 0% 100%;
-  --card-foreground: 218 55% 17%;
+  --card-foreground: 222 43% 11%;
   --popover: 0 0% 100%;
-  --popover-foreground: 218 55% 17%;
-  --primary: 219 62% 21%;
+  --popover-foreground: 222 43% 11%;
+  --primary: 223 70% 15%;
   --primary-foreground: 210 40% 98%;
-  --secondary: 214 30% 93%;
-  --secondary-foreground: 219 55% 20%;
-  --muted: 214 28% 95%;
-  --muted-foreground: 216 14% 42%;
-  --accent: 154 76% 27%;
+  --secondary: 220 20% 96%;
+  --secondary-foreground: 223 55% 18%;
+  --muted: 220 20% 96%;
+  --muted-foreground: 221 13% 46%;
+  --accent: 154 79% 27%;
   --accent-foreground: 0 0% 100%;
-  --border: 215 24% 87%;
-  --input: 215 22% 82%;
-  --ring: 154 76% 27%;
-  --sidebar-background: 219 62% 15%;
+  --border: 218 15% 91%;
+  --input: 218 15% 86%;
+  --ring: 154 79% 27%;
+  --sidebar-background: 223 70% 12%;
   --sidebar-foreground: 210 40% 98%;
   --sidebar-accent: 219 45% 26%;
   --sidebar-accent-foreground: 210 40% 98%;
