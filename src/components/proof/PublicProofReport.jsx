@@ -1,5 +1,6 @@
 import React from "react";
 import { Camera, FileSignature, MapPin, ShieldCheck, ShieldAlert } from "lucide-react";
+import ProofCardsSummary from "@/components/proof/ProofCardsSummary";
 
 // What the company's client sees: the redacted work record plus the integrity check.
 export default function PublicProofReport({ info, hashMatches, ar }) {
@@ -46,6 +47,8 @@ export default function PublicProofReport({ info, hashMatches, ar }) {
           </div>
         ))}
       </div>
+
+      <ProofCardsSummary cards={info.payload?.clientCards || []} ar={ar} />
 
       <div className="space-y-2">
         {items.map((item, index) => (
