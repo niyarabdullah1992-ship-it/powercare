@@ -11,6 +11,7 @@ import usePerformanceTargets from "@/hooks/usePerformanceTargets";
 import ProofClientFilter from "@/components/proof/ProofClientFilter";
 import ProofStationPicker from "@/components/proof/ProofStationPicker";
 import ProofClientCards from "@/components/proof/ProofClientCards";
+import ProofStep from "@/components/proof/ProofStep";
 import ProofTaskPicker from "@/components/proof/ProofTaskPicker";
 import ProofDisclosurePanel from "@/components/proof/ProofDisclosurePanel";
 import ProofPreviewCard from "@/components/proof/ProofPreviewCard";
@@ -159,66 +160,81 @@ export default function ClientProof() {
         icon={ShieldCheck}
       />
 
-      <ProofStationPicker
-        stations={stations}
-        value={stationId}
-        onChange={(id) => { setStationId(id); setSelectedIds([]); setClientFilter("all"); }}
-        countFor={(id) => proofs.filter((proof) => proof.stationId === id).length}
-        ar={ar}
-      />
-
-      {!stationId && <p className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground font-body">{ar ? "اختر محطة لرفع إثبات عمل جديد ومشاهدة أرشيفها." : "Select a station to issue a new work proof and browse its archive."}</p>}
-
       {issued && <ProofIssuedCard proofId={issued.proofId} contentHash={issued.contentHash} ar={ar} />}
 
-      {stationId && (<>
-      <ProofClientCards cards={clientCards} onChange={setClientCards} signerName={currentUser?.name} ar={ar} />
-
-      <section className="space-y-4 rounded-xl border border-border bg-card p-4 md:p-5">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-xs text-muted-foreground font-body">
-            {ar ? "اسم العميل / الجهة" : "Client / authority"}
-            <input value={clientName} onChange={(event) => setClientName(event.target.value)} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-          </label>
-          <label className="text-xs text-muted-foreground font-body">
-            {ar ? "اسم المشروع / العقد" : "Project / contract"}
-            <input value={projectName} onChange={(event) => setProjectName(event.target.value)} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
-          </label>
-        </div>
-        <PeriodPicker showDaily showWeekly />
-        <ProofClientFilter
-          clients={clients}
-          value={clientFilter}
-          onChange={(next) => {
-            setClientFilter(next);
-            setSelectedIds([]);
-            if (next !== "all") {
-              setClientName(next);
-              const project = periodTasks.find((task) => task.clientCompany === next)?.clientProject;
-              if (project) setProjectName(project);
-            }
-          }}
+      <ProofStep number="1" title={ar ? "المحطة" : "Station"} hint={ar ? "كل محطة لها أرشيف إثباتات خاص بها." : "Each station keeps its own proof archive."}>
+        <ProofStationPicker
+          stations={stations}
+          value={stationId}
+          onChange={(id) => { setStationId(id); setSelectedIds([]); setClientFilter("all"); }}
+          countFor={(id) => proofs.filter((proof) => proof.stationId === id).length}
           ar={ar}
         />
-        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground font-body">
-          <span>{ar ? `${selectedIds.length} من ${eligible.length} مهام مختارة` : `${selectedIds.length} of ${eligible.length} tasks selected`}</span>
-          <span className="h-3 w-px bg-border" />
-          <span>{ar ? `${evidenceCount} قطعة إثبات` : `${evidenceCount} evidence pieces`}</span>
-        </div>
-      </section>
+        {!stationId && (
+          <p className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground font-body">
+            {ar ? "اختر محطة لإصدار إثبات عمل جديد ومشاهدة أرشيفها." : "Select a station to issue a new work proof and browse its archive."}
+          </p>
+        )}
+      </ProofStep>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-        {targets === null
-          ? <div className="flex items-center justify-center rounded-xl border border-border bg-card p-10"><Loader2 className="h-5 w-5 animate-spin text-accent" /></div>
-          : <ProofTaskPicker eligible={eligible} excluded={excluded} selectedIds={selectedIds} onToggle={toggle} stationNameOf={stationNameOf} ar={ar} />}
-        <div className="space-y-4">
-          <ProofDisclosurePanel value={disclosure} onChange={setDisclosure} ar={ar} />
-          <ProofPreviewCard taskCount={selectedIds.length} evidenceCount={evidenceCount} proofId={proofId} canIssue={canIssue} issuing={issuing} onIssue={issue} ar={ar} />
-        </div>
-      </div>
+      {stationId && (
+        <>
+          <ProofStep number="2" title={ar ? "بيانات العميل والفترة" : "Client details & period"} hint={ar ? "اسم العميل والعقد ثم الفترة الزمنية للأعمال." : "Client and contract, then the work period."}>
+            <div className="space-y-4 rounded-xl border border-border bg-card p-4 md:p-5">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-xs text-muted-foreground font-body">
+                  {ar ? "اسم العميل / الجهة" : "Client / authority"}
+                  <input value={clientName} onChange={(event) => setClientName(event.target.value)} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+                </label>
+                <label className="text-xs text-muted-foreground font-body">
+                  {ar ? "اسم المشروع / العقد" : "Project / contract"}
+                  <input value={projectName} onChange={(event) => setProjectName(event.target.value)} className="mt-1 w-full rounded-md border border-input px-3 py-2 text-sm text-foreground" />
+                </label>
+              </div>
+              <PeriodPicker showDaily showWeekly />
+              <ProofClientFilter
+                clients={clients}
+                value={clientFilter}
+                onChange={(next) => {
+                  setClientFilter(next);
+                  setSelectedIds([]);
+                  if (next !== "all") {
+                    setClientName(next);
+                    const project = periodTasks.find((task) => task.clientCompany === next)?.clientProject;
+                    if (project) setProjectName(project);
+                  }
+                }}
+                ar={ar}
+              />
+            </div>
+            <ProofClientCards cards={clientCards} onChange={setClientCards} signerName={currentUser?.name} ar={ar} />
+          </ProofStep>
 
-      <IssuedProofList proofs={stationProofs} onRevoke={revoke} ar={ar} />
-      </>)}
+          <ProofStep
+            number="3"
+            title={ar ? "اختيار الأعمال وإصدار الإثبات" : "Select work & issue the proof"}
+            hint={ar
+              ? `${selectedIds.length} من ${eligible.length} مهمة · ${evidenceCount} قطعة إثبات`
+              : `${selectedIds.length} of ${eligible.length} tasks · ${evidenceCount} evidence pieces`}
+          >
+            <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+              {targets === null
+                ? <div className="flex items-center justify-center rounded-xl border border-border bg-card p-10"><Loader2 className="h-5 w-5 animate-spin text-accent" /></div>
+                : <ProofTaskPicker eligible={eligible} excluded={excluded} selectedIds={selectedIds} onToggle={toggle} stationNameOf={stationNameOf} ar={ar} />}
+              <div className="space-y-4">
+                <ProofDisclosurePanel value={disclosure} onChange={setDisclosure} ar={ar} />
+                <ProofPreviewCard taskCount={selectedIds.length} evidenceCount={evidenceCount} proofId={proofId} canIssue={canIssue} issuing={issuing} onIssue={issue} ar={ar} />
+              </div>
+            </div>
+          </ProofStep>
+
+          <ProofStep number="4" title={ar ? "أرشيف المحطة" : "Station archive"} hint={station?.name || ""}>
+            {stationProofs.length === 0
+              ? <p className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground font-body">{ar ? "لا توجد إثباتات صادرة لهذه المحطة بعد." : "No proofs issued for this station yet."}</p>
+              : <IssuedProofList proofs={stationProofs} onRevoke={revoke} ar={ar} />}
+          </ProofStep>
+        </>
+      )}
     </div>
   );
 }
