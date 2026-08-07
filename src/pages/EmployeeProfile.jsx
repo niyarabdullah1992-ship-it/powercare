@@ -98,7 +98,7 @@ export default function EmployeeProfile() {
             </div>
 
             <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-              {tab === "overview" && <ProfileOverviewTab employee={employee} managerName={data.employees.find((item) => item.id === employee.managerId)?.name} showSalary={isSelf || canEditSalary} ar={dir === "rtl"} t={t} />}
+              {tab === "overview" && <ProfileOverviewTab employee={employee} data={data} company={company} currentUser={currentUser} managerName={data.employees.find((item) => item.id === employee.managerId)?.name} showSalary={isSelf || canEditSalary} ar={dir === "rtl"} t={t} />}
               {tab === "professionalInfo" && <ProfessionalInfoTab employee={employee} companyId={company.id} canEdit={canManage} isSelf={isSelf} canEditGrade={canEditGrade} grades={orderedJobGrades(data)} fallbackPosition={fallbackPosition} />}
               {tab === "certificates" && <CertificatesTab employee={employee} companyId={company.id} canEdit={isSelf || canManage} canApprove={canApproveCerts} currentUser={currentUser} />}
               {tab === "salary" && <SalaryTab employee={employee} companyId={company.id} canEdit={canEditSalary} />}
