@@ -872,10 +872,17 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 .performance-hub-header h1 svg { color: hsl(var(--accent)); }
 .performance-hub-header .text-muted-foreground { color: hsl(var(--primary-foreground) / .68); }
 .performance-hub-tabs {
+  width: 100%;
   max-width: 100%;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-top: 1px solid hsl(var(--primary-foreground) / .12);
+  padding-top: .25rem;
 }
+.performance-hub-tabs::-webkit-scrollbar { display: none; }
+.performance-hub-tabs button { flex: 0 0 auto; white-space: nowrap; }
 .performance-hub-tabs button {
   border: none;
   background: none;

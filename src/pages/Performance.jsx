@@ -73,7 +73,7 @@ export default function Performance() {
 
   return (
     <div className="performance-hub space-y-6">
-      <div className="performance-hub-header flex items-center justify-between flex-wrap gap-5">
+      <div className="performance-hub-header space-y-4">
         <div className="performance-hub-title">
           <h1 className="font-heading text-3xl font-semibold flex items-center gap-2">
             <Trophy className="w-6 h-6" /> {t("performance")}
