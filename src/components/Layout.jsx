@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio, Search,
-  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck, Network, MailPlus, BookOpenCheck, ListTree, Mails, Users,
+  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck, Network, MailPlus, BookOpenCheck, ListTree, Mails, Users, CalendarDays,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -153,6 +153,7 @@ export default function Layout({ children }) {
     { to: "/app/hr", icon: UserCog, label: t("hr"), category: "workforce" },
     { to: "/app/hr/invites", icon: MailPlus, label: lang === "ar" ? "التوظيف والدعوات" : "Hiring & invites", category: "workforce" },
     { to: "/app/hr/catalog", icon: BookOpenCheck, label: lang === "ar" ? "كتالوج المسميات" : "Job catalog", category: "workforce" },
+    { to: "/app/hr/requests", icon: CalendarDays, label: lang === "ar" ? "الإجازات والطلبات" : "Leave & requests", category: "workforce" },
     { to: "/app/chain", icon: Network, label: lang === "ar" ? "التسلسل الإداري" : "Management chain", category: "workforce" },
     { to: "/app/performance", icon: Trophy, label: t("performance"), category: "workforce" },
     { to: "/app/expenses", icon: ReceiptText, label: t("expenses"), category: "finance" },

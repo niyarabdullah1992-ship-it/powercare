@@ -46,6 +46,9 @@ export function allowedNavFor(user, data, company) {
     allowed.add("/app/hr/invites");
     allowed.add("/app/hr/catalog");
   }
+  if (user.id === data?.ownerId || role === "director" || hrPermissions.has("manage_leave") || hrPermissions.has("manage_employees")) {
+    allowed.add("/app/hr/requests");
+  }
   if (role === "pgm") allowed.add("/app/payroll");
   // Employees holding an HR position access workforce management through HR.
   if (user.hrLevelId) {
