@@ -121,6 +121,9 @@ export default function ClientProof() {
     const payload = {
       clientName: clientName.trim(),
       projectName: projectName.trim(),
+      // البطاقة تُختم بالمحطة المختارة حتى تدخل أرشيف تلك المحطة تحديدًا.
+      stationId,
+      stationName: station?.name || "",
       periodStart: resolved.startDate,
       periodEnd: resolved.endDate,
       disclosure,
@@ -157,6 +160,8 @@ export default function ClientProof() {
       } else {
         toast({ title: ar ? "تعذّر إصدار الإثبات" : "Could not issue the proof", description: res.data?.error || "" });
       }
+    } catch (error) {
+      toast({ title: ar ? "تعذّر إصدار الإثبات" : "Could not issue the proof", description: error?.message || "" });
     } finally {
       setIssuing(false);
     }
@@ -168,6 +173,16 @@ export default function ClientProof() {
   };
 
   const canIssue = stationId && clientCards.length > 0 && selectedIds.length > 0 && resolved.valid && !issuing;
+  // سبب تعطّل زر الإصدار يظهر للمستخدم بدل بقاء الزر معطّلًا بلا تفسير.
+  const blockedReason = !stationId
+    ? (ar ? "اختر المحطة أولًا." : "Select a station first.")
+    : clientCards.length === 0
+    ? (ar ? "أضف بطاقة عميل واحدة على الأقل لهذه المحطة." : "Add at least one client card for this station.")
+    : !resolved.valid
+    ? (ar ? "حدّد فترة زمنية صحيحة." : "Choose a valid period.")
+    : selectedIds.length === 0
+    ? (ar ? "اختر عملًا مكتملًا واحدًا على الأقل من قائمة الأعمال." : "Select at least one completed work item.")
+    : "";
   const stationProofs = useMemo(() => proofs.filter((proof) => proof.stationId === stationId), [proofs, stationId]);
 
   return (
@@ -236,6 +251,16 @@ export default function ClientProof() {
               >
                 {issuing ? (ar ? "جارٍ الإصدار…" : "Issuing…") : (ar ? "توقيع وإصدار الرابط" : "Sign & issue the link")}
               </button>
+              {blockedReason && !issuing && (
+                <p className="rounded-lg border border-dashed border-accent/40 bg-accent/5 p-3 text-center text-xs text-accent font-body">
+                  {blockedReason}
+                </p>
+              )}
+              {stationId && (
+                <p className="text-center text-[11px] text-muted-foreground font-body">
+                  {ar ? `سيُصدر هذا الإثبات ضمن محطة: ${station?.name || "—"}` : `This proof will be filed under station: ${station?.name || "—"}`}
+                </p>
+              )}
             </div>
           </ProofStep>
 
