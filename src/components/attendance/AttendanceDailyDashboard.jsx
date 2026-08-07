@@ -10,6 +10,7 @@ import { getAttendanceStatus } from "@/lib/attendance";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import AttendanceDailyCharts from "@/components/attendance/AttendanceDailyCharts";
+import { printTeamAttendanceReport } from "@/lib/teamAttendanceReport";
 
 const REPORT_RANGES = ["daily", "weekly", "monthly", "custom"];
 
@@ -70,7 +71,11 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
     const selected = reportEmployeeId === "all" ? employees : employees.filter((employee) => employee.id === reportEmployeeId);
     Promise.all(selected.map((employee) => base44.functions.invoke("supabaseAttendance", {
       action: "listRange", employeeId: employee.id, ...reportWindow,
-    }).then((response) => (response?.data?.rows || []).map((row) => ({ ...row, employeeName: employee.name })))))
+    }).then((response) => (response?.data?.rows || []).map((row) => ({
+      ...row,
+      employeeName: employee.name,
+      stationName: (data?.stations || []).find((station) => station.id === employee.stationId)?.name || "—",
+    })))))
       .then((results) => setReportRows(results.flat()))
       .catch(() => setReportRows([]));
   }, [reportOpen, reportEmployeeId, reportWindow.startDate, reportWindow.endDate, employees.map((e) => e.id).join(",")]);
@@ -206,6 +211,26 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
           rows={reportRows.map((row) => [row.employeeName || "—", row.date || "—", statusLabel(row.status), row.check_in_at ? formatTime(row.check_in_at, format, lang) : "—", row.check_out_at ? formatTime(row.check_out_at, format, lang) : "—", row.work_hours ?? "—", row.location_status || "—", (row.manual_override || row.location_status === "manual") ? `${lang === "ar" ? "يدوي" : "Manual"} — ${row.override_by || row.excused_by_name || "—"}` : "—"])}
           stats={reportStats}
           theme="attendanceModern"
+          onPdf={() => printTeamAttendanceReport({
+            title: lang === "ar" ? "تقرير حضور الفريق" : "Team attendance report",
+            subtitle: `${reportEmployeeId === "all" ? (lang === "ar" ? "كل الموظفين" : "All employees") : (employees.find((employee) => employee.id === reportEmployeeId)?.name || "")} · ${reportWindow.startDate} → ${reportWindow.endDate}`,
+            companyName: company?.name || "",
+            dir: lang === "ar" ? "rtl" : "ltr",
+            rows: reportRows.map((row) => ({
+              name: row.employeeName || "—",
+              date: row.date || "—",
+              statusKey: row.status || "not_scheduled",
+              statusLabel: statusLabel(row.status),
+              checkIn: row.check_in_at ? formatTime(row.check_in_at, format, lang) : "—",
+              checkOut: row.check_out_at ? formatTime(row.check_out_at, format, lang) : "—",
+              hours: row.work_hours ?? "—",
+              site: row.stationName || "—",
+              source: (row.manual_override || row.location_status === "manual")
+                ? `${lang === "ar" ? "يدوي" : "Manual"} · ${row.override_by || row.excused_by_name || "—"}`
+                : row.location_status === "inside" ? (lang === "ar" ? "GPS متحقّق" : "GPS verified")
+                : row.location_status === "outside" ? (lang === "ar" ? "خارج النطاق" : "Outside range") : "—",
+            })),
+          })}
           compact
         />
       </div>}
