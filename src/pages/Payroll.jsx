@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { Banknote, Users, CheckCircle2, Wallet, RefreshCw, FileText } from "lucide-react";
+import { Banknote, RefreshCw, FileText } from "lucide-react";
 import { ensurePayrollRun, getRun, isPayrollEmployee, monthKey, netOf, payrollItemIssues, setOwnerPayrollEnabled, updatePayrollItem, setItemPaid, syncPayrollFromProfiles } from "@/lib/payroll";
 import { printReport } from "@/lib/printReport";
 import PayrollTableRows from "@/components/payroll/PayrollTableRows";
@@ -17,6 +17,8 @@ import PageHeader from "@/components/PageHeader";
 import DeductionLinesDialog from "@/components/payroll/DeductionLinesDialog";
 import { addDeductionLine, removeDeductionLine, resolveDeductionDispute, backfillLegacyDeduction, disputeDeductionLine, deductionLines } from "@/lib/payrollDeductions";
 import { addNotification } from "@/lib/store";
+import PayrollRunSummaryCard from "@/components/payroll/PayrollRunSummaryCard";
+import PayrollSourceChips from "@/components/payroll/PayrollSourceChips";
 
 const UNASSIGNED_STATION_ID = "__unassigned__";
 
@@ -71,6 +73,7 @@ export default function Payroll() {
   const currency = visible[0]?.currency || "SAR";
   const totalNet = visible.reduce((s, i) => s + netOf(i), 0);
   const paidCount = visible.filter((i) => i.paid).length;
+  const totalDeductions = visible.reduce((sum, item) => sum + Number(item.deductions || 0), 0);
   const branding = data.reportBranding || {};
   const monthLabel = new Date(`${month}-01T00:00:00`).toLocaleDateString(ar ? "ar-SA" : "en-GB", { month: "long", year: "numeric" });
 
@@ -84,6 +87,36 @@ export default function Payroll() {
       title: ar ? "تم تحديث بيانات الرواتب" : "Payroll data refreshed",
       description: ar ? `تم تحديث بيانات ${count} موظف.` : `${count} employee profiles were updated.`,
     });
+  };
+
+  // اعتماد المسير: كل بند مكتمل البيانات يُعلَّم مدفوعًا ويُبلَّغ صاحبه.
+  const approveRun = () => {
+    const blocked = visible.filter((item) => !item.paid && payrollItemIssues(item).length);
+    if (blocked.length) {
+      toast({ title: ar ? "تعذّر اعتماد المسير" : "Run cannot be approved", description: ar ? `${blocked.length} بند غير مكتمل البيانات.` : `${blocked.length} rows have incomplete data.` });
+      return;
+    }
+    const pending = visible.filter((item) => !item.paid);
+    pending.forEach((item) => setItemPaid(company.id, month, item.id, true));
+    toast({ title: ar ? "تم اعتماد المسير" : "Payroll run approved", description: ar ? `تم اعتماد ${pending.length} بند وإتاحة ملف البنك.` : `${pending.length} rows approved; bank file is ready.` });
+  };
+
+  // ملف WPS: تصدير CSV بصيغة حماية الأجور لرفعه إلى البنك.
+  const exportWpsFile = () => {
+    const rows = [
+      ["EmployeeId", "EmployeeName", "IBAN", "BasicSalary", "Allowances", "Deductions", "NetSalary", "Currency", "Month"],
+      ...visible.map((item) => {
+        const employee = employeeForItem(item);
+        return [item.employeeId, employee?.name || "", employee?.profile?.iban || "", item.base, item.allowances, item.deductions, netOf(item), item.currency, month];
+      }),
+    ];
+    const csv = "\uFEFF" + rows.map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `WPS-${company.name}-${month}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const exportPayslip = (item) => {
@@ -136,25 +169,20 @@ export default function Payroll() {
         {showReport && <PayrollReportExport runs={data.payrollRuns || []} employees={payrollEmployees} excludedEmployeeIds={ownerIds} stations={allowedStations} companyName={company.name} branding={branding} lang={lang} dir={dir} />}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[
-          [Users, visible.length, ar ? "الموظفون" : "Employees"],
-          [Wallet, `${totalNet.toLocaleString()} ${currency}`, ar ? "إجمالي الصافي" : "Total net"],
-          [CheckCircle2, `${paidCount}/${visible.length}`, ar ? "تم الدفع" : "Paid"],
-        ].map(([Icon, value, label]) => (
-          <div key={label} className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-lg bg-accent/10 text-accent flex items-center justify-center shrink-0">
-              <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
-            </span>
-            <div className="min-w-0">
-              <p className="font-heading text-lg font-semibold truncate" dir="ltr">{value}</p>
-              <p className="text-[11px] text-muted-foreground font-body">{label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      <PayrollRunSummaryCard
+        monthLabel={monthLabel}
+        currency={currency}
+        totalNet={totalNet}
+        totalDeductions={totalDeductions}
+        employeeCount={visible.length}
+        paidCount={paidCount}
+        onApprove={approveRun}
+        onWps={exportWpsFile}
+        ar={ar}
+      />
 
       <div className="rounded-xl border border-border bg-card p-4 md:p-5 overflow-x-auto">
+        <div className="mb-4"><PayrollSourceChips ar={ar} /></div>
         {visible.length === 0 ? (
           <p className="text-sm text-muted-foreground font-body py-8 text-center">
             {ar ? "لا يوجد موظفون بعد — أضف موظفين وحدّد رواتبهم من ملفاتهم الشخصية (تبويب الراتب)." : "No employees yet — add employees and set their salaries from their profiles (Salary tab)."}
