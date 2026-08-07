@@ -30,7 +30,6 @@ import CompletionModeToggle from "@/components/tasks/CompletionModeToggle";
 import TaskWizardStepper from "@/components/tasks/TaskWizardStepper";
 import TaskFormStep from "@/components/tasks/TaskFormStep";
 import TaskStepNav from "@/components/tasks/TaskStepNav";
-import TaskClientFields from "@/components/tasks/TaskClientFields";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -953,7 +952,6 @@ export default function MyTasks() {
             </div>
           </div>
 
-          <TaskClientFields lang={lang} />
 
           {canSetCompletionMode && <CompletionModeToggle value={completionMode} onChange={setCompletionMode} lang={lang} />}
 
