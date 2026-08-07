@@ -13,6 +13,7 @@ import SafetyDashboard from "@/components/safety/SafetyDashboard";
 import SafetyIncidentReportForm from "@/components/safety/SafetyIncidentReportForm";
 import { toast } from "@/components/ui/use-toast";
 import RecordSmartArchive from "@/components/RecordSmartArchive";
+import SectionToolbar from "@/components/shared/SectionToolbar";
 
 // HSE management section: safety data is entered and approved per station here,
 // then the HSE reports (inside Comprehensive Reports) are calculated from it.
@@ -63,30 +64,21 @@ export default function Safety() {
         <SafetyDashboard safety={data.safety || []} stations={stations} lang={lang} />
       )}
 
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-1.5">
-          {[
-            { key: "manage", icon: ClipboardCheck, label: ar ? "إدارة السلامة" : "Manage" },
-            { key: "archive", icon: Archive, label: ar ? "الأرشيف الذكي" : "Smart Archive" },
-          ].map((tb) => (
-            <button
-              key={tb.key}
-              onClick={() => setTab(tb.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${tab === tb.key ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-            >
-              <tb.icon className="w-3.5 h-3.5" /> {tb.label}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowReport(!showReport)}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${showReport ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-        >
-          <FileText className="w-3.5 h-3.5" />
-          {ar ? "تقرير السلامة (PDF / Excel)" : "Safety report (PDF / Excel)"}
-        </button>
-      </div>
+      <SectionToolbar
+        tabs={[
+          { key: "manage", icon: ClipboardCheck, label: ar ? "إدارة السلامة" : "Manage" },
+          { key: "archive", icon: Archive, label: ar ? "الأرشيف الذكي" : "Smart Archive" },
+        ]}
+        activeTab={tab}
+        onTabChange={setTab}
+        actions={[{
+          key: "report",
+          icon: FileText,
+          label: ar ? "تقرير السلامة (PDF / Excel)" : "Safety report (PDF / Excel)",
+          active: showReport,
+          onClick: () => setShowReport(!showReport),
+        }]}
+      />
 
       {showReport && (
         <SafetyReportExport stations={stations} safety={data.safety || []} data={data} t={(k) => k} lang={lang} dir={dir} />
