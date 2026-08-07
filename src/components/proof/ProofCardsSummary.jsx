@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, Package, FileText } from "lucide-react";
+import { Users, Package, FileText, Target } from "lucide-react";
 
 // بطاقات العميل كما تظهر في التقرير المُصدَر: العقد، عدد الموظفين الداخلين، والمواد.
 export default function ProofCardsSummary({ cards = [], ar }) {
@@ -25,6 +25,11 @@ export default function ProofCardsSummary({ cards = [], ar }) {
               {card.projectName || ""}
               {card.contractNumber ? ` · ${ar ? "عقد" : "contract"} ${card.contractNumber}` : ""}
             </p>
+            {card.purpose && (
+              <p className="inline-flex items-center gap-1.5 text-xs font-body">
+                <Target className="h-3 w-3 text-muted-foreground" /> {ar ? "الغرض من الدخول:" : "Purpose of entry:"} {card.purpose}
+              </p>
+            )}
             {card.crew?.length > 0 && (
               <div className="space-y-1 rounded border border-dashed border-border bg-muted/30 p-2 text-[11px] font-body">
                 <p className="inline-flex items-center gap-1 text-muted-foreground">
