@@ -22,6 +22,7 @@ export default function Correspondence() {
     { id: "all", label: ar ? "الكل" : "All" },
     { id: "incoming", label: ar ? "وارد" : "Incoming" },
     { id: "outgoing", label: ar ? "صادر" : "Outgoing" },
+    { id: "internal", label: ar ? "داخلي" : "Internal" },
     { id: "breached", label: ar ? "متجاوزة المهلة" : "SLA breached" },
     { id: "closed", label: ar ? "مغلقة" : "Closed" },
   ];
@@ -44,7 +45,7 @@ export default function Correspondence() {
         </p>
       </div>
 
-      <CorrespondenceForm lang={lang} onCreate={(form) => createCorrespondence(company.id, form, currentUser)} />
+      <CorrespondenceForm lang={lang} employees={employees} onCreate={(form) => createCorrespondence(company.id, form, currentUser)} />
 
       <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1">
         {filters.map((item) => (

@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
 
-export default function CorrespondenceForm({ lang, onCreate }) {
+export default function CorrespondenceForm({ lang, onCreate, employees = [] }) {
   const ar = lang === "ar";
-  const [form, setForm] = useState({ direction: "incoming", subject: "", counterparty: "", summary: "", dueDate: "" });
+  const [form, setForm] = useState({ direction: "incoming", subject: "", counterparty: "", summary: "", dueDate: "", ownerId: "" });
 
   const set = (key, value) => setForm((state) => ({ ...state, [key]: value }));
 
@@ -11,7 +11,7 @@ export default function CorrespondenceForm({ lang, onCreate }) {
     event.preventDefault();
     if (!form.subject.trim()) return;
     onCreate(form);
-    setForm({ direction: "incoming", subject: "", counterparty: "", summary: "", dueDate: "" });
+    setForm({ direction: "incoming", subject: "", counterparty: "", summary: "", dueDate: "", ownerId: "" });
   };
 
   const field = "w-full rounded-md border border-input bg-card px-3 py-2 text-sm";
@@ -25,6 +25,7 @@ export default function CorrespondenceForm({ lang, onCreate }) {
           <select value={form.direction} onChange={(e) => set("direction", e.target.value)} className={field}>
             <option value="incoming">{ar ? "وارد" : "Incoming"}</option>
             <option value="outgoing">{ar ? "صادر" : "Outgoing"}</option>
+            <option value="internal">{ar ? "داخلي (بين الموظفين)" : "Internal (between employees)"}</option>
           </select>
         </div>
         <div>
@@ -32,8 +33,25 @@ export default function CorrespondenceForm({ lang, onCreate }) {
           <input value={form.subject} onChange={(e) => set("subject", e.target.value)} className={field} />
         </div>
         <div>
-          <label className={labelClass}>{ar ? "الجهة" : "Counterparty"}</label>
-          <input value={form.counterparty} onChange={(e) => set("counterparty", e.target.value)} className={field} />
+          <label className={labelClass}>{form.direction === "internal" ? (ar ? "الموظف المستلم" : "Recipient employee") : (ar ? "الجهة" : "Counterparty")}</label>
+          {form.direction === "internal" ? (
+            // المراسلة الداخلية تُوجَّه لموظف محدّد فتظهر باسمه وتُسند إليه مباشرة.
+            <select
+              value={form.ownerId}
+              onChange={(e) => {
+                const employee = employees.find((item) => item.id === e.target.value);
+                setForm((state) => ({ ...state, ownerId: e.target.value, counterparty: employee?.name || "" }));
+              }}
+              className={field}
+            >
+              <option value="">{ar ? "اختر موظفًا" : "Select an employee"}</option>
+              {employees.map((employee) => (
+                <option key={employee.id} value={employee.id}>{employee.name}</option>
+              ))}
+            </select>
+          ) : (
+            <input value={form.counterparty} onChange={(e) => set("counterparty", e.target.value)} className={field} />
+          )}
         </div>
         <div>
           <label className={labelClass}>{ar ? "المهلة النظامية" : "Statutory due date"}</label>

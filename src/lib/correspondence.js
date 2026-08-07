@@ -1,18 +1,20 @@
 // المعاملات والمراسلات: وارد/صادر برقم نظامي ومهلة وسلسلة إحالات.
 import { updateCompany, logAudit } from "@/lib/store";
 
-export const DIRECTIONS = ["incoming", "outgoing"];
+export const DIRECTIONS = ["incoming", "outgoing", "internal"];
 export const STATUSES = ["open", "referred", "closed"];
 
 export const directionLabel = (direction, ar) =>
-  direction === "outgoing" ? (ar ? "صادر" : "Outgoing") : (ar ? "وارد" : "Incoming");
+  direction === "outgoing" ? (ar ? "صادر" : "Outgoing")
+  : direction === "internal" ? (ar ? "داخلي" : "Internal")
+  : (ar ? "وارد" : "Incoming");
 
 export const statusLabel = (status, ar) =>
   ({ open: ar ? "مفتوحة" : "Open", referred: ar ? "محالة" : "Referred", closed: ar ? "مغلقة" : "Closed" })[status] || status;
 
 export function nextNumber(list, direction) {
   const year = new Date().getFullYear();
-  const prefix = direction === "outgoing" ? "OUT" : "IN";
+  const prefix = direction === "outgoing" ? "OUT" : direction === "internal" ? "INT" : "IN";
   const count = list.filter((item) => item.direction === direction && String(item.number || "").includes(`-${year}-`)).length;
   return `${prefix}-${year}-${String(count + 1).padStart(4, "0")}`;
 }
