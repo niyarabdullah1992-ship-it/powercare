@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { BadgeCheck, CalendarDays, Car, CheckCircle2, Clock, Mail, MapPin, PenLine, User, Users } from "lucide-react";
+import { BadgeCheck, CalendarDays, Car, CheckCircle2, Clock, FileText, Mail, MapPin, PenLine, User, Users } from "lucide-react";
+import ProofCertificateDialog from "@/components/workproof/ProofCertificateDialog";
 import SendSignLinkDialog from "@/components/workproof/SendSignLinkDialog";
 import { Image } from "@/components/ui/image";
 import ClientSignDialog from "@/components/workproof/ClientSignDialog";
@@ -11,6 +12,7 @@ export default function WorkProofCard({ proof, stationName, ar, onSign, onClose,
   const [signOpen, setSignOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
+  const [certOpen, setCertOpen] = useState(false);
   const signed = proof.status === "signed";
   const inProgress = proof.status === "in_progress";
 
@@ -83,7 +85,10 @@ export default function WorkProofCard({ proof, stationName, ar, onSign, onClose,
         </div>
       </div>
 
-      <footer className="border-t border-border bg-secondary/40 p-4">
+      <footer className="space-y-2 border-t border-border bg-secondary/40 p-4">
+        <button onClick={() => setCertOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-accent/50 bg-card px-4 py-2.5 text-sm font-semibold hover:bg-muted">
+          <FileText className="h-4 w-4" />{ar ? "شهادة إثبات العمل (PDF)" : "Work proof certificate (PDF)"}
+        </button>
         {signed ? (
           <div className="flex items-center justify-between gap-3 rounded-lg border border-accent/30 bg-card p-3">
             <div className="min-w-0">
@@ -111,6 +116,7 @@ export default function WorkProofCard({ proof, stationName, ar, onSign, onClose,
         )}
       </footer>
 
+      {certOpen && <ProofCertificateDialog proof={proof} stationName={stationName} companyName={proof.companyName || ""} ar={ar} onClose={() => setCertOpen(false)} />}
       {closeOpen && <CloseJobDialog proof={proof} ar={ar} onClose={() => setCloseOpen(false)} onSubmit={async (payload) => { const ok = await onClose(payload); if (ok) setCloseOpen(false); }} />}
       {linkOpen && <SendSignLinkDialog proof={proof} ar={ar} onClose={() => setLinkOpen(false)} onSend={async (payload) => { const ok = await onSendLink(payload); if (ok) setLinkOpen(false); }} />}
       {signOpen && <ClientSignDialog ar={ar} onClose={() => setSignOpen(false)} onSign={async (payload) => { const ok = await onSign(payload); if (ok) setSignOpen(false); }} />}

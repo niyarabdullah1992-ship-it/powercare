@@ -3,6 +3,8 @@ import { BadgeCheck, CalendarDays, Loader2, PenLine, User } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { Image } from "@/components/ui/image";
 import ClientSignDialog from "@/components/workproof/ClientSignDialog";
+import ProofCertificateDialog from "@/components/workproof/ProofCertificateDialog";
+import { FileText } from "lucide-react";
 
 // Public page opened by the client from the emailed signature link.
 export default function WorkProofSign() {
@@ -11,6 +13,7 @@ export default function WorkProofSign() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [signOpen, setSignOpen] = useState(false);
+  const [certOpen, setCertOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -87,9 +90,14 @@ export default function WorkProofSign() {
             ))}
 
             {proof.status === "signed" ? (
-              <div className="flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm font-body">
-                <BadgeCheck className="h-5 w-5 text-emerald-600" />
-                تم التوقيع بواسطة {proof.clientName} — {new Date(proof.signedAt).toLocaleString("ar")}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm font-body">
+                  <BadgeCheck className="h-5 w-5 text-emerald-600" />
+                  تم التوقيع بواسطة {proof.clientName} — {new Date(proof.signedAt).toLocaleString("ar")}
+                </div>
+                <button onClick={() => setCertOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-accent/50 bg-card px-4 py-3 text-sm font-semibold font-body">
+                  <FileText className="h-4 w-4" />تحميل شهادة إثبات العمل (PDF)
+                </button>
               </div>
             ) : (
               <button onClick={() => setSignOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-6 py-3 text-sm font-bold text-accent-foreground">
@@ -102,6 +110,7 @@ export default function WorkProofSign() {
       </div>
 
       {signOpen && <ClientSignDialog ar onClose={() => setSignOpen(false)} onSign={sign} />}
+      {certOpen && proof && <ProofCertificateDialog proof={proof} stationName={proof.stationName || ""} companyName="" ar onClose={() => setCertOpen(false)} />}
     </div>
   );
 }
