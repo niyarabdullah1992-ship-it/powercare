@@ -16,6 +16,7 @@ import LoginAccessCard from "@/components/employees/LoginAccessCard";
 import AccountSettingsCard from "@/components/employees/AccountSettingsCard";
 import DeleteEmployeeAccountCard from "@/components/employees/DeleteEmployeeAccountCard";
 import ProfileCompletionCard from "@/components/employees/ProfileCompletionCard";
+import EmployeeFileCard from "@/components/employees/EmployeeFileCard";
 import OffboardingTab from "@/components/employees/OffboardingTab";
 import { employeeJobGrade, orderedJobGrades } from "@/lib/jobGrades";
 
@@ -116,6 +117,7 @@ export default function EmployeeProfile() {
               stationName={stationName}
             />
             <ProfileCompletionCard employee={employee} isSelf={isSelf} ar={dir === "rtl"} />
+            <EmployeeFileCard employee={employee} company={company} data={data} stationName={stationName} gradeLabel={grade ? `${grade.gradeNumber} · ${grade.title}` : ""} ar={dir === "rtl"} />
             {isSelf && <AccountSettingsCard employee={employee} company={company} />}
             {canManage && !isSelf && <LoginAccessCard employee={employee} companyId={company.id} />}
             {canDeleteAccount && <DeleteEmployeeAccountCard employee={employee} companyId={company.id} />}
