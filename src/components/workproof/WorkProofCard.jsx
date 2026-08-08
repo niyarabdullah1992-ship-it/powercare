@@ -96,9 +96,6 @@ export default function WorkProofCard({ proof, stationName, ar, onSign, onClose,
             <Image src={proof.employeeSignatureUrl} alt="employee signature" fittingType="fit" className="h-14 w-32 shrink-0 rounded-md border border-border bg-white" />
           </div>
         )}
-        <button onClick={() => setCertOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-accent/50 bg-card px-4 py-2.5 text-sm font-semibold hover:bg-muted">
-          <FileText className="h-4 w-4" />{ar ? "شهادة إثبات العمل (PDF)" : "Work proof certificate (PDF)"}
-        </button>
         {signed ? (
           <div className="flex items-center justify-between gap-3 rounded-lg border border-accent/30 bg-card p-3">
             <div className="min-w-0">
@@ -110,7 +107,13 @@ export default function WorkProofCard({ proof, stationName, ar, onSign, onClose,
               <Image src={proof.clientSignatureUrl} alt="signature" fittingType="fit" className="h-14 w-32 shrink-0 rounded-md border border-border bg-white" />
             )}
           </div>
-        ) : inProgress ? (
+        ) : null}
+        {signed && proof.employeeSignatureUrl && (
+          <button onClick={() => setCertOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-accent/50 bg-card px-4 py-2.5 text-sm font-semibold hover:bg-muted">
+            <FileText className="h-4 w-4" />{ar ? "شهادة إثبات العمل (PDF)" : "Work proof certificate (PDF)"}
+          </button>
+        )}
+        {inProgress ? (
           <button onClick={() => setCloseOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-95">
             <CheckCircle2 className="h-4 w-4" />{ar ? "إغلاق المهمة" : "Close job"}
           </button>
