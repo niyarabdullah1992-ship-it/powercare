@@ -149,9 +149,7 @@ export function updatePayrollItem(companyId, month, itemId, updates) {
     const run = (d.payrollRuns || []).find((r) => r.month === month);
     const item = run?.items.find((i) => i.id === itemId);
     if (!item || item.paid) return;
-    // "deductions" is intentionally excluded: it is computed from documented
-    // deduction lines (see lib/payrollDeductions.js), never typed in directly.
-    const allowed = ["base", "allowances", "bonus", "currency"];
+    const allowed = ["base", "allowances", "bonus", "deductions", "currency"];
     for (const [field, value] of Object.entries(updates || {})) {
       if (!allowed.includes(field)) continue;
       if (field === "currency") item.currency = value;

@@ -1,8 +1,8 @@
 // Single source of truth for which sections each role can see —
 // used by the sidebar/mobile nav and the dashboards' quick-access shortcuts.
 
-const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/inventory", "/app/expenses", "/app/signing", "/app/client-proof", "/app/assistant", "/app/complaints", "/app/performance", "/app/employees", "/app/manual"];
-const MANAGER_EXTRA = ["/app/safety", "/app/correspondence"];
+const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/inventory", "/app/expenses", "/app/signing", "/app/assistant", "/app/complaints", "/app/performance", "/app/manual"];
+const MANAGER_EXTRA = ["/app/safety"];
 const EXEC_EXTRA = ["/app/hr", "/app/payroll"];
 const SMART_SECTION_ROUTES = {
   complaints: "/app/complaints", safety: "/app/safety", payroll: "/app/payroll",
@@ -38,16 +38,8 @@ export function allowedNavFor(user, data, company) {
     MANAGER_EXTRA.forEach((p) => allowed.add(p));
   }
   if (["employee", "safety_officer"].includes(role)) allowed.add("/app/safety");
-  if (["ops_manager", "director"].includes(role) || user.id === data?.ownerId) {
+  if (["ops_manager", "director"].includes(role)) {
     EXEC_EXTRA.forEach((p) => allowed.add(p));
-  }
-  // كتالوج المسميات وإدارة الدعوات: مالك الحساب والمدير العام وموظفو HR المخوّلون فقط.
-  if (user.id === data?.ownerId || role === "director" || hrPermissions.has("manage_employees")) {
-    allowed.add("/app/hr/invites");
-    allowed.add("/app/hr/catalog");
-  }
-  if (user.id === data?.ownerId || role === "director" || hrPermissions.has("manage_leave") || hrPermissions.has("manage_employees")) {
-    allowed.add("/app/hr/requests");
   }
   if (role === "pgm") allowed.add("/app/payroll");
   // Employees holding an HR position access workforce management through HR.

@@ -11,10 +11,6 @@ import StationComparison from "@/components/performance/StationComparison";
 import EmployeeComparisonView from "@/components/performance/EmployeeComparisonView";
 import EmployeeSingleReport from "@/components/performance/EmployeeSingleReport";
 import SupervisionFairness from "@/components/performance/SupervisionFairness";
-import PerformanceTabs from "@/components/performance/PerformanceTabs";
-import PerformanceHeaderStats from "@/components/performance/PerformanceHeaderStats";
-import usePerformanceTargets from "@/hooks/usePerformanceTargets";
-import { buildSupervisionModel } from "@/lib/supervisionModel";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
@@ -24,21 +20,8 @@ export default function Performance() {
   // The achievements board replaced the older individual-ranking list (same data,
   // same export) — the old "individual" value still resolves to it.
   const [view, setView] = useState("achievements");
-  const targets = usePerformanceTargets(company, currentUser);
 
   if (!data || !currentUser) return null;
-
-  const scopedTargets = targets || [];
-  const approvedEvidence = scopedTargets.filter(
-    (tg) => tg.status === "completed" && Array.isArray(tg.completion_proof) && tg.completion_proof.length > 0
-  ).length;
-  const completedCount = scopedTargets.filter((tg) => tg.status === "completed").length;
-  const overallPct = scopedTargets.length ? Math.round((completedCount / scopedTargets.length) * 100) : 0;
-  const periodLabel = new Intl.DateTimeFormat(lang === "ar" ? "ar" : "en", { month: "long", year: "numeric" }).format(new Date());
-  const supervisionModel = buildSupervisionModel(scopedTargets, data);
-  const supervisionAlert = supervisionModel.supervisors.some(
-    (s) => s.rejections >= 3 && s.rejectionRate > Math.max(supervisionModel.peerAvgRejection * 1.5, 0.25)
-  );
 
   const badges = getBadges(company);
   const defaultStationId = data.stations?.[0]?.id || null;
@@ -73,7 +56,7 @@ export default function Performance() {
 
   return (
     <div className="performance-hub space-y-6">
-      <div className="performance-hub-header space-y-4">
+      <div className="performance-hub-header flex items-center justify-between flex-wrap gap-5">
         <div className="performance-hub-title">
           <h1 className="font-heading text-3xl font-semibold flex items-center gap-2">
             <Trophy className="w-6 h-6" /> {t("performance")}
@@ -83,22 +66,61 @@ export default function Performance() {
               {t("myStation")}: {stationName(currentUser.stationId || defaultStationId)}
             </p>
           )}
-          <PerformanceHeaderStats
-            items={[
-              { label: lang === "ar" ? "نسبة الأداء العامة" : "Overall performance", value: `${overallPct}%` },
-              { label: lang === "ar" ? "الفترة" : "Period", value: periodLabel },
-              { label: lang === "ar" ? "الأدلة المعتمدة" : "Approved evidence", value: approvedEvidence },
-            ]}
-          />
         </div>
-        <PerformanceTabs
-          view={view}
-          setView={setView}
-          isManager={isManager}
-          t={t}
-          lang={lang}
-          supervisionAlert={supervisionAlert}
-        />
+        <div className="performance-hub-tabs flex items-center gap-1.5">
+          {isManager && (<>
+          <button
+            onClick={() => setView("station")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "station" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {t("stationRanking")}
+          </button>
+          <button
+            onClick={() => setView("comparison")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "comparison" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {t("stationComparison")}
+          </button>
+          <button
+            onClick={() => setView("individualReport")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "individualReport" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {t("individualReport")}
+          </button>
+          </>)}
+          <button
+            onClick={() => setView("employeeComparison")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "employeeComparison" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {t("employeeComparison")}
+          </button>
+          <button
+            onClick={() => setView("achievements")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "achievements" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {t("achievementsBoard")}
+          </button>
+          {isManager && (<>
+          <button
+            onClick={() => setView("analytics")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "analytics" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {t("analytics")}
+          </button>
+          <button
+            onClick={() => setView("trends")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "trends" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {lang === "ar" ? "الاتجاهات الشهرية" : "Monthly trends"}
+          </button>
+          <button
+            onClick={() => setView("supervision")}
+            className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${view === "supervision" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+          >
+            {lang === "ar" ? "الإشراف والعدالة" : "Supervision & fairness"}
+          </button>
+          </>)}
+        </div>
       </div>
 
       {(view === "individual" || view === "achievements") && (
@@ -124,8 +146,8 @@ export default function Performance() {
       {view === "employeeComparison" && <EmployeeComparisonView t={t} />}
       {view === "individualReport" && <EmployeeSingleReport t={t} />}
 
-      {/* Badge tiers legend — irrelevant in analytics, which opens with the stoppage issues list. */}
-      {view !== "comparison" && view !== "employeeComparison" && view !== "individualReport" && view !== "trends" && view !== "supervision" && view !== "analytics" && <BadgeLegend />}
+      {/* Badge tiers legend */}
+      {view !== "comparison" && view !== "employeeComparison" && view !== "individualReport" && view !== "trends" && view !== "supervision" && <BadgeLegend />}
 
       {view === "station" && (
         <div className="space-y-5">

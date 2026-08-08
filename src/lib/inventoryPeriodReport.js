@@ -8,17 +8,12 @@ const periodStart = (period) => {
   return date;
 };
 
-export function buildInventoryPeriodReport({ items = [], purchases = [], movements = [], stations = [], stationId = "all", period = "month", from = null, to = null, ar = false }) {
-  // Explicit range (unified period system) wins; the legacy period id stays as fallback.
-  const rangeStart = from ? new Date(from) : periodStart(period);
-  const rangeEnd = to ? new Date(to) : null;
+export function buildInventoryPeriodReport({ items = [], purchases = [], movements = [], stations = [], stationId = "all", period = "month", ar = false }) {
+  const from = periodStart(period);
   const stationName = (id) => stations.find((station) => stationIdOf(station) === id)?.name || "—";
   const itemName = (id) => items.find((item) => item.id === id)?.name || "—";
   const inStation = (id) => stationId === "all" || id === stationId;
-  const inPeriod = (entry, field) => {
-    const when = new Date(entry[field] || entry.created_date);
-    return when >= rangeStart && (!rangeEnd || when <= rangeEnd);
-  };
+  const inPeriod = (entry, field) => new Date(entry[field] || entry.created_date) >= from;
   const balances = items.flatMap((item) => {
     const rows = item.locationBalances?.length ? item.locationBalances : [{ locationId: item.currentLocationId, quantity: item.quantity }];
     return rows.filter((balance) => inStation(balance.locationId)).map((balance) => ({ ...item, locationId: balance.locationId, balance: Number(balance.quantity) || 0 }));

@@ -57,6 +57,6 @@ export default function FlexOrgTree({ data, company, currentUser, lang }) {
     <OrgTreeUnassignedEmployees employees={unassignedEmployees} canManage={canManage} dropActive={canDropToUnassigned} actions={actions} ar={ar} />
     <div ref={viewportRef} {...gestures} className={`${fullscreen ? "min-h-0 flex-1" : "h-[70vh] min-h-[420px] max-h-[760px]"} cursor-grab overflow-hidden p-6 active:cursor-grabbing`} style={{ touchAction: "none" }}><div ref={treeRef} className="mx-auto flex min-w-max origin-top items-start justify-center gap-10" style={{ zoom, transform: `translate3d(${offset.x}px, ${offset.y}px, 0)` }}>{roots.length ? roots.map((root) => <FlexOrgBranch key={root.id} node={root} nodes={nodes} data={data} escalationChain={escalationChain} canManage={canManage} dragging={dragging} actions={actions} ar={ar} />) : <div className="py-12 text-center"><Network className="mx-auto h-8 w-8 text-accent" /><p className="mt-3 text-sm font-semibold">{ar ? "ابدأ بإضافة أول عقدة" : "Add the first node to begin"}</p></div>}</div></div>
     <OrgTreeDragCancel active={Boolean(dragging)} ar={ar} />
-    {editing !== undefined && <OrgTreeNodeModal initial={editing} data={data} company={company} companyId={company.id} currentUser={currentUser} lang={lang} onClose={() => setEditing(undefined)} />}
+    {editing !== undefined && <OrgTreeNodeModal initial={editing} data={data} company={company} companyId={company.id} lang={lang} onClose={() => setEditing(undefined)} />}
   </section>;
 }

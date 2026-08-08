@@ -8,7 +8,6 @@ import ScrollToTop from './components/ScrollToTop';
 import PlatformMusicButton from '@/components/PlatformMusicButton';
 import SyncFailureAlerts from '@/components/SyncFailureAlerts';
 import { I18nProvider } from '@/lib/i18n';
-import { PeriodProvider } from '@/lib/PeriodContext';
 import { AuthProvider as PowerCareAuthProvider, useAuth as usePowerCareAuth } from '@/lib/PowerCareAuth';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -65,14 +64,6 @@ const TruePerformanceDoc = lazy(() => import('./pages/TruePerformanceDoc'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const Expenses = lazy(() => import('./pages/Expenses'));
 const StationExpenses = lazy(() => import('./pages/StationExpenses'));
-const ClientProof = lazy(() => import('./pages/ClientProof'));
-const ProofVerify = lazy(() => import('./pages/ProofVerify'));
-const InviteManagement = lazy(() => import('./pages/InviteManagement'));
-const InviteAccept = lazy(() => import('./pages/InviteAccept'));
-const JobCatalog = lazy(() => import('./pages/JobCatalog'));
-const Correspondence = lazy(() => import('./pages/Correspondence'));
-const Employees = lazy(() => import('./pages/Employees'));
-const LeaveRequests = lazy(() => import('./pages/LeaveRequests'));
 
 // After the first page is interactive, quietly download the most-used pages in
 // the background so navigating to them later is instant.
@@ -122,8 +113,6 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/verify" element={<Verify />} />
       <Route path="/sign" element={<PublicSign />} />
-      <Route path="/proof" element={<ProofVerify />} />
-      <Route path="/invite" element={<InviteAccept />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/security" element={<Security />} />
       <Route path="/terms" element={<Terms />} />
@@ -151,13 +140,8 @@ function AppRoutes() {
       <Route path="/app/chat" element={<RequireAuth><StationChat /></RequireAuth>} />
 
       <Route path="/app/complaints" element={<RequireAuth><Complaints /></RequireAuth>} />
-      <Route path="/app/employees" element={<RequireAuth><Employees /></RequireAuth>} />
       <Route path="/app/employees/:employeeId" element={<RequireAuth><EmployeeProfile /></RequireAuth>} />
       <Route path="/app/hr" element={<RequireAuth><HRStructureManagement /></RequireAuth>} />
-      <Route path="/app/hr/invites" element={<RequireAuth><InviteManagement /></RequireAuth>} />
-      <Route path="/app/hr/catalog" element={<RequireAuth><JobCatalog /></RequireAuth>} />
-      <Route path="/app/hr/requests" element={<RequireAuth><LeaveRequests /></RequireAuth>} />
-      <Route path="/app/correspondence" element={<RequireAuth><Correspondence /></RequireAuth>} />
       <Route path="/app/payroll" element={<RequireAuth><Payroll /></RequireAuth>} />
       <Route path="/app/performance" element={<RequireAuth><Performance /></RequireAuth>} />
       <Route path="/app/safety" element={<RequireAuth><Safety /></RequireAuth>} />
@@ -168,7 +152,6 @@ function AppRoutes() {
       <Route path="/app/expenses" element={<RequireAuth><Expenses /></RequireAuth>} />
       <Route path="/app/stations/:stationId/expenses" element={<RequireAuth><StationExpenses /></RequireAuth>} />
       <Route path="/app/signing" element={<RequireAuth><FileSigning /></RequireAuth>} />
-      <Route path="/app/client-proof" element={<RequireAuth><ClientProof /></RequireAuth>} />
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
       <Route path="/app/help" element={<RequireAuth><Help /></RequireAuth>} />
       <Route path="/app/manual" element={<RequireAuth><ProjectGuideDoc /></RequireAuth>} />
@@ -188,9 +171,7 @@ function App() {
           <I18nProvider>
             <PowerCareAuthProvider>
               <SyncFailureAlerts />
-              <PeriodProvider>
-                <AppErrorBoundary><AppRoutes /></AppErrorBoundary>
-              </PeriodProvider>
+              <AppErrorBoundary><AppRoutes /></AppErrorBoundary>
             </PowerCareAuthProvider>
           </I18nProvider>
         </Router>

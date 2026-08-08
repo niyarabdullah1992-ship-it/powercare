@@ -42,10 +42,7 @@ export default function StationSections({ stationId, currentPath, onNavigate, fo
           <button type="button" onClick={() => setAdding(false)} className="rounded-md border border-border px-2.5 py-1.5 text-xs">{t("cancel")}</button>
         </div>
       ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1.5 rounded-lg border border-dashed border-accent/50 px-3.5 py-2 text-xs font-medium text-accent hover:bg-accent/10"><Plus className="h-3.5 w-3.5" /> {t("addSection")}</button>
-          <button type="button" onClick={() => onCreateTask(NO_SECTION)} className="flex items-center gap-1.5 rounded-lg bg-accent px-3.5 py-2 text-xs font-medium text-accent-foreground hover:bg-accent/90"><Plus className="h-3.5 w-3.5" /> {t("newTaskTarget")}</button>
-        </div>
+        <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1.5 rounded-lg border border-dashed border-accent/50 px-3.5 py-2 text-xs font-medium text-accent hover:bg-accent/10"><Plus className="h-3.5 w-3.5" /> {t("addSection")}</button>
       ))}
 
       <Droppable droppableId="folders-root" type="FOLDER">
@@ -94,7 +91,7 @@ export default function StationSections({ stationId, currentPath, onNavigate, fo
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/20 bg-secondary/30 p-3">
         <button type="button" onClick={() => onNavigate(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className={`h-4 w-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}</button>
         <h4 className="font-heading text-lg font-semibold">{currentPath === NO_SECTION ? t("noSection") : getLeafName(currentPath)}</h4>
-        {canManage && <button type="button" onClick={() => onCreateTask(currentPath)} className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"><Plus className="h-4 w-4" /> {t("newTaskTarget")}</button>}
+        {canManage && currentPath !== NO_SECTION && <button type="button" onClick={() => onCreateTask(currentPath)} className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"><Plus className="h-4 w-4" /> {t("newTaskTarget")}</button>}
       </div>
       <Droppable droppableId={`tasks-${currentPath}`} type="TASK">
         {(provided, snapshot) => (

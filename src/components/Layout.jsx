@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio, Search,
-  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck, Network, MailPlus, BookOpenCheck, ListTree, Mails, Users, CalendarDays,
+  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -71,13 +71,8 @@ export default function Layout({ children }) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setSearchOpen(true); }
       if (event.key === "Escape") setSearchOpen(false);
     };
-    const openFromEvent = () => setSearchOpen(true);
     window.addEventListener("keydown", openSearch);
-    window.addEventListener("powercare:open-search", openFromEvent);
-    return () => {
-      window.removeEventListener("keydown", openSearch);
-      window.removeEventListener("powercare:open-search", openFromEvent);
-    };
+    return () => window.removeEventListener("keydown", openSearch);
   }, []);
 
   useEffect(() => {
@@ -154,20 +149,14 @@ export default function Layout({ children }) {
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks"), category: "operations" },
     { to: "/app/inventory", icon: Warehouse, label: t("inventory"), category: "operations" },
     { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling"), category: "workforce" },
-    { to: "/app/employees", icon: Users, label: lang === "ar" ? "الموظفون" : "Employees", category: "workforce" },
     { to: "/app/hr", icon: UserCog, label: t("hr"), category: "workforce" },
-    { to: "/app/hr/invites", icon: MailPlus, label: lang === "ar" ? "دعوات التوظيف" : "Hiring invites", category: "workforce" },
-    { to: "/app/hr/catalog", icon: BookOpenCheck, label: lang === "ar" ? "كتالوج المسميات" : "Job catalog", category: "workforce" },
-    { to: "/app/hr/requests", icon: CalendarDays, label: lang === "ar" ? "الإجازات والطلبات" : "Leave & requests", category: "workforce" },
     { to: "/app/performance", icon: Trophy, label: t("performance"), category: "workforce" },
     { to: "/app/expenses", icon: ReceiptText, label: t("expenses"), category: "finance" },
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "finance" },
     { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)", category: "governance" },
     { to: "/app/complaints", icon: Megaphone, label: t("allComplaints"), category: "governance" },
-    { to: "/app/correspondence", icon: Mails, label: lang === "ar" ? "المعاملات والمراسلات" : "Correspondence", category: "governance" },
     { to: "/app/files", icon: FolderOpen, label: t("files"), category: "documents" },
     { to: "/app/signing", icon: PenLine, label: t("fileSigning"), category: "documents" },
-    { to: "/app/client-proof", icon: ShieldCheck, label: lang === "ar" ? "إثبات العمل للعميل" : "Client work proof", category: "documents" },
     { to: "/app/chat", icon: MessageSquare, label: t("chat"), category: "communication" },
     { to: "/app/manual", icon: HelpCircle, label: t("userGuide"), category: "support" },
   ];

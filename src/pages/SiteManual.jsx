@@ -9,11 +9,25 @@ import { MANUAL_SECTIONS } from "@/lib/siteManualBuilder";
 import { downloadManualPdf } from "@/lib/downloadManualPdf";
 import * as ar from "@/lib/siteManualContent.ar";
 import * as en from "@/lib/siteManualContent.en";
+import * as de from "@/lib/siteManualContent.de";
+import * as fr from "@/lib/siteManualContent.fr";
+import * as es from "@/lib/siteManualContent.es";
+import * as pt from "@/lib/siteManualContent.pt";
+import * as ru from "@/lib/siteManualContent.ru";
+import * as ja from "@/lib/siteManualContent.ja";
+import * as ko from "@/lib/siteManualContent.ko";
 
-const CONTENT = { en, ar };
+const CONTENT = { en, ar, de, fr, es, pt, ru, ja, ko };
 const MANUAL_LANGUAGES = [
   { code: "en", label: "English", flag: "🇬🇧" },
   { code: "ar", label: "العربية", flag: "🇸🇦" },
+  { code: "de", label: "Deutsch", flag: "🇩🇪" },
+  { code: "fr", label: "Français", flag: "🇫🇷" },
+  { code: "es", label: "Español", flag: "🇪🇸" },
+  { code: "pt", label: "Português", flag: "🇵🇹" },
+  { code: "ru", label: "Русский", flag: "🇷🇺" },
+  { code: "ja", label: "日本語", flag: "🇯🇵" },
+  { code: "ko", label: "한국어", flag: "🇰🇷" },
 ];
 const ROUTES = Object.fromEntries(MANUAL_SECTIONS);
 

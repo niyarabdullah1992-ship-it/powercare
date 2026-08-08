@@ -4,8 +4,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { canManageEmployees, hasHRPermission, canViewEmployeeProfile, isCompanyOwner, canAdjustPayroll, canManageEmployeeHR, canManageEmployeeContract, canManageEmployeeCommunication } from "@/lib/permissions";
 import { getRoleLabel } from "@/lib/roles";
-import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle, Lock, FileSignature, UserMinus, LayoutDashboard } from "lucide-react";
-import ProfileOverviewTab from "@/components/employees/ProfileOverviewTab";
+import { ArrowLeft, Briefcase, Award, Wallet, CalendarDays, MessageCircle, Lock, FileSignature, UserMinus } from "lucide-react";
 import ProfileHero from "@/components/employees/ProfileHero";
 import ProfessionalInfoTab from "@/components/employees/ProfessionalInfoTab";
 import CertificatesTab from "@/components/employees/CertificatesTab";
@@ -19,11 +18,8 @@ import DeleteEmployeeAccountCard from "@/components/employees/DeleteEmployeeAcco
 import ProfileCompletionCard from "@/components/employees/ProfileCompletionCard";
 import OffboardingTab from "@/components/employees/OffboardingTab";
 import { employeeJobGrade, orderedJobGrades } from "@/lib/jobGrades";
-import ProfileTopBar from "@/components/employees/ProfileTopBar";
-import ProfileLinkedRecords from "@/components/employees/ProfileLinkedRecords";
 
 const TABS = [
-  { key: "overview", icon: LayoutDashboard },
   { key: "professionalInfo", icon: Briefcase },
   { key: "certificates", icon: Award },
   { key: "salary", icon: Wallet },
@@ -38,7 +34,7 @@ export default function EmployeeProfile() {
   const navigate = useNavigate();
   const { t, dir } = useI18n();
   const { data, currentUser, company } = useAuth();
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState("professionalInfo");
 
   if (!data || !currentUser) return null;
   const employee = data.employees.find((e) => e.id === employeeId);
@@ -83,20 +79,9 @@ export default function EmployeeProfile() {
           <ArrowLeft className={`h-4 w-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
         </button>
 
-        <ProfileTopBar
-          employee={employee}
-          companyName={data.name || company?.name || ""}
-          roleLabel={employee.profile?.position || fallbackPosition}
-          stationName={stationName}
-          ar={dir === "rtl"}
-          canEdit={isSelf || canManage}
-          onEdit={() => setTab("professionalInfo")}
-        />
-        <ProfileLinkedRecords ar={dir === "rtl"} showPayroll={isSelf || canEditSalary} />
-
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
           <main className="space-y-5 lg:col-start-1 lg:row-start-1">
-            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-2 sm:grid-cols-4 xl:grid-cols-8">
+            <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card p-2 sm:grid-cols-4 xl:grid-cols-7">
               {TABS.map(({ key, icon: Icon }) => (
                 <button
                   key={key}
@@ -105,13 +90,12 @@ export default function EmployeeProfile() {
                     tab === key ? "bg-accent text-accent-foreground shadow-lg" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                   }`}
                 >
-                  <Icon className="h-4 w-4" /> {key === "overview" ? (dir === "rtl" ? "نظرة عامة" : "Overview") : key === "offboarding" ? (dir === "rtl" ? "إنهاء الخدمة" : "Offboarding") : key === "contract" ? (dir === "rtl" ? "العقد" : "Contract") : key === "communications" ? (dir === "rtl" ? "التواصل" : "Communications") : t(key)}
+                  <Icon className="h-4 w-4" /> {key === "offboarding" ? (dir === "rtl" ? "إنهاء الخدمة" : "Offboarding") : key === "contract" ? (dir === "rtl" ? "العقد" : "Contract") : key === "communications" ? (dir === "rtl" ? "التواصل" : "Communications") : t(key)}
                 </button>
               ))}
             </div>
 
             <section className="rounded-2xl border border-border bg-card p-4 md:p-6">
-              {tab === "overview" && <ProfileOverviewTab employee={employee} data={data} company={company} currentUser={currentUser} managerName={data.employees.find((item) => item.id === employee.managerId)?.name} showSalary={isSelf || canEditSalary} ar={dir === "rtl"} t={t} />}
               {tab === "professionalInfo" && <ProfessionalInfoTab employee={employee} companyId={company.id} canEdit={canManage} isSelf={isSelf} canEditGrade={canEditGrade} grades={orderedJobGrades(data)} fallbackPosition={fallbackPosition} />}
               {tab === "certificates" && <CertificatesTab employee={employee} companyId={company.id} canEdit={isSelf || canManage} canApprove={canApproveCerts} currentUser={currentUser} />}
               {tab === "salary" && <SalaryTab employee={employee} companyId={company.id} canEdit={canEditSalary} />}

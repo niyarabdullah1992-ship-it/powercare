@@ -11,7 +11,6 @@ import PullToRefresh from "@/components/mobile/PullToRefresh";
 import TimeFormatToggle from "@/components/attendance/TimeFormatToggle";
 import { queryClientInstance } from "@/lib/query-client";
 import PageHeader from "@/components/PageHeader";
-import AttendanceStationFilter from "@/components/attendance/AttendanceStationFilter";
 
 // Heavy tabs (maps/charts) load only when their tab is actually opened —
 // the page itself now appears instantly with the check-in card + team list.
@@ -33,7 +32,6 @@ export default function Attendance() {
   const { t, lang } = useI18n();
   const { data, currentUser, company, refresh } = useAuth();
   const [tab, setTab] = useState("team");
-  const [stationFilter, setStationFilter] = useState("all");
 
   const isManager = data && currentUser && canCreateTasks(currentUser);
   const canManageLeave = data && currentUser && (isManager || hasHRPermission(currentUser, data, "manage_leave"));
@@ -44,17 +42,12 @@ export default function Attendance() {
   const stations = data && currentUser ? visibleStations(currentUser, data) : [];
   const leaveScope = data && currentUser?.hrLevelId ? hrScopeStations(currentUser, data) : null;
   const defaultStationId = data?.stations?.[0]?.id || null;
-  const scopedEmployees = canManageLeave && currentUser?.hrLevelId
+  const employees = canManageLeave && currentUser?.hrLevelId
     ? (data.employees || []).filter((employee) => leaveScope === null || leaveScope.includes(employee.stationId || defaultStationId))
     : defaultEmployees;
-  // كل محطة مستقلة: تبويبات الحضور والانصراف والتقارير تعمل على موظفي المحطة المختارة فقط.
-  const countForStation = (id) => (id === "all" ? scopedEmployees.length : scopedEmployees.filter((employee) => (employee.stationId || defaultStationId) === id).length);
-  const employees = stationFilter === "all"
-    ? scopedEmployees
-    : scopedEmployees.filter((employee) => (employee.stationId || defaultStationId) === stationFilter);
 
   const syncRoster = () => {
-    if (!isManager || !company || scopedEmployees.length === 0) return Promise.resolve();
+    if (!isManager || !company || employees.length === 0) return Promise.resolve();
     const director = data.employees.find((e) => e.role === "director")?.id || null;
     const managerFor = (e) => {
       const station = data.stations.find((s) => s.id === (e.stationId || defaultStationId));
@@ -63,14 +56,14 @@ export default function Attendance() {
     return base44.functions.invoke("supabaseAttendance", {
       action: "syncRoster",
       companyId: company.id,
-      employees: scopedEmployees.map((e) => ({ id: e.id, name: e.name, stationId: e.stationId || defaultStationId, managerId: managerFor(e) })),
+      employees: employees.map((e) => ({ id: e.id, name: e.name, stationId: e.stationId || defaultStationId, managerId: managerFor(e) })),
     }).catch(() => {});
   };
 
   useEffect(() => {
     syncRoster();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isManager, company?.id, scopedEmployees.length]);
+  }, [isManager, company?.id, employees.length]);
 
   // Pull-to-refresh: full state reload — roster sync, tanstack-query caches,
   // and the AuthContext offline/online store sync.
@@ -111,15 +104,6 @@ export default function Attendance() {
       )}
 
       <div className="space-y-4">
-          {(isManager || canManageLeave) && stations.length > 1 && (
-            <AttendanceStationFilter
-              stations={stations}
-              value={stationFilter}
-              onChange={setStationFilter}
-              countFor={countForStation}
-              lang={lang}
-            />
-          )}
           <div className="flex gap-2 border-b border-border overflow-x-auto no-scrollbar">
             {tabs.map((tb) => (
               <button
@@ -139,7 +123,7 @@ export default function Attendance() {
             {activeTab === "schedule" && <ScheduleTab />}
             {activeTab === "report" && <AttendanceMonthlyReport employees={employees} defaultEmployeeId={currentUser.id} t={t} />}
             {activeTab === "analytics" && <AttendanceAnalytics employees={employees} t={t} />}
-            {activeTab === "leaves" && <AttendanceLeaveRequests employees={employees} stations={stationFilter === "all" ? stations : stations.filter((station) => station.id === stationFilter)} t={t} lang={lang} />}
+            {activeTab === "leaves" && <AttendanceLeaveRequests employees={employees} stations={stations} t={t} lang={lang} />}
             {activeTab === "settings" && canManageEmergency && (
               <div className="space-y-4">
                 <AttendanceEmergencyPanel company={company} currentUser={currentUser} />

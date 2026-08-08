@@ -2,7 +2,7 @@ import React from "react";
 import { AlertCircle, MapPin } from "lucide-react";
 import PayrollRow from "@/components/payroll/PayrollRow";
 
-export default function PayrollTableRows({ items, stations, getStationId, employeeForItem, ar, onChange, onTogglePaid, onPayslip, onDeductions }) {
+export default function PayrollTableRows({ items, stations, getStationId, employeeForItem, ar, onChange, onTogglePaid, onPayslip }) {
   const groups = stations.map((station) => ({
     id: station.id,
     name: station.name,
@@ -21,7 +21,7 @@ export default function PayrollTableRows({ items, stations, getStationId, employ
           </div>
         </td>
       </tr>
-      {group.items.map((item) => <PayrollRow key={item.id} item={item} employee={employeeForItem(item)} ar={ar} onChange={(field, value) => onChange(item.id, field, value)} onTogglePaid={(paid) => onTogglePaid(item, paid)} onPayslip={() => onPayslip(item)} onDeductions={() => onDeductions(item)} />)}
+      {group.items.map((item) => <PayrollRow key={item.id} item={item} employee={employeeForItem(item)} ar={ar} onChange={(field, value) => onChange(item.id, field, value)} onTogglePaid={(paid) => onTogglePaid(item, paid)} onPayslip={() => onPayslip(item)} />)}
     </React.Fragment>
   ));
 }

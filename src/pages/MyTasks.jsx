@@ -108,7 +108,7 @@ export default function MyTasks() {
         setPrefilled(false);
       }
       if (stationId) setFormStation(stationId);
-      setSectionValue(sectionPath && sectionPath !== NO_SECTION ? sectionPath : "");
+      if (sectionPath) setSectionValue(sectionPath);
     }
     setShowCreate(opening);
     setCreateStep(0);
@@ -355,7 +355,7 @@ export default function MyTasks() {
   // Auto-escalation: notify higher-level managers when an urgent task is at risk
   useEffect(() => {
     if (!data || !currentUser || !company) return;
-    if (!canCreateTasks(currentUser, data)) return;
+    if (!canCreateTasks(currentUser)) return;
     const now = Date.now();
     for (const tg of targets) {
       if (tg.priority !== "urgent" || tg.status !== "active") continue;
@@ -420,6 +420,7 @@ export default function MyTasks() {
     if (index === 0 && !String(fd.get("title") || "").trim()) return fail(t("taskTitle"));
     if (index === 1) {
       if (!isIndividual && assignType === "member" && !fd.get("assignedTo")) return fail(t("selectEmployee"));
+      if (!fd.get("section")) return fail(t("sectionName"));
     }
     if (index === 2) {
       const total = Number(fd.get("totalTasks"));
@@ -462,6 +463,7 @@ export default function MyTasks() {
     const description = fd.get("description") || "";
     const steps = fd.get("steps") || "";
     const section = fd.get("section") || "";
+    if (!section) { alert(t("sectionName")); return; }
     const total = Number(fd.get("totalTasks") || 1);
     const aType = fd.get("assignType") || "member";
 
@@ -506,12 +508,6 @@ export default function MyTasks() {
         stationId,
         priority,
         effortWeight,
-        client: {
-          clientCompany: fd.get("clientCompany") || "",
-          clientProject: fd.get("clientProject") || "",
-          clientContact: fd.get("clientContact") || "",
-          clientPhone: fd.get("clientPhone") || "",
-        },
         completionMode: canSetCompletionMode ? completionMode : "onsite",
         startDate,
         endDate,
@@ -791,7 +787,7 @@ export default function MyTasks() {
   };
 
   const canManage = (tg) =>
-    canCreateTasks(currentUser, data) &&
+    canCreateTasks(currentUser) &&
     (tg.manager_id === currentUser.id ||
       canSeeAllStations(currentUser) ||
       (currentUser.role === "station_manager" && targetStationKey(tg) === (currentUser.stationId || firstStationId)) ||
@@ -931,7 +927,7 @@ export default function MyTasks() {
       )}
 
       {/* Unified Target form */}
-      {showCreate && canCreateTasks(currentUser, data) && (
+      {showCreate && canCreateTasks(currentUser) && (
         <form id="task-create-form" ref={createFormRef} onSubmit={createTarget} className="mx-auto w-full max-w-3xl scroll-mt-6 rounded-2xl border border-accent/50 bg-secondary/60 p-3 shadow-soft sm:p-4">
           <TaskWizardStepper lang={lang} active={createStep} onSelect={setCreateStep} canSelect={canJumpCreate} />
           <div className="space-y-5 rounded-xl border border-accent/40 bg-card p-4 sm:p-6">
@@ -951,7 +947,6 @@ export default function MyTasks() {
               <textarea name="description" rows={3} placeholder={t("taskDescription")} className="w-full resize-y rounded-lg border border-input px-3 py-2.5 text-sm font-body focus:border-accent focus:ring-1 focus:ring-accent" />
             </div>
           </div>
-
 
           {canSetCompletionMode && <CompletionModeToggle value={completionMode} onChange={setCompletionMode} lang={lang} />}
 
@@ -1022,7 +1017,7 @@ export default function MyTasks() {
           <div>
             <p className="mb-2 flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground"><FileText className="h-3.5 w-3.5" /> {t("section")}</p>
             <input type="hidden" name="section" value={sectionValue} />
-            <div className="rounded-lg border border-accent/30 bg-secondary/50 px-3 py-2 text-sm font-medium">{getLeafName(sectionValue) || t("noSection")}</div>
+            <div className="rounded-lg border border-accent/30 bg-secondary/50 px-3 py-2 text-sm font-medium">{getLeafName(sectionValue)}</div>
           </div>
 
           {/* Priority */}
@@ -1274,7 +1269,7 @@ export default function MyTasks() {
               </div>
             )}
 
-            {!hasAnyContent && !canCreateTasks(currentUser, data) ? (
+            {!hasAnyContent && !canCreateTasks(currentUser) ? (
               <p className="text-sm text-muted-foreground font-body">{t("noTargets")}</p>
             ) : (
               <DragDropContext onDragEnd={handleTreeDragEnd}>
@@ -1284,7 +1279,7 @@ export default function MyTasks() {
                   onNavigate={(path) => { setFolderPath(path); if (!path) setShowCreate(false); }}
                   folders={folders}
                   tasksAll={stationTargetsAll}
-                  canManage={canCreateTasks(currentUser, data)}
+                  canManage={canCreateTasks(currentUser)}
                   renderTask={renderTask}
                   filterTasks={filterTasks}
                   onAddFolder={addFolderAt}

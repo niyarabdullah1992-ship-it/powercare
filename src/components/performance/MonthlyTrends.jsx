@@ -5,7 +5,6 @@ import { base44 } from "@/api/base44Client";
 import { getCompanyToken } from "@/lib/store";
 import { TrendingUp, Loader2 } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
-import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 
 // لوحة التحليلات الزمنية (للمدراء): مقارنة الحضور والمهام شهرًا بشهر لآخر ٦ أشهر.
 function lastMonths(n) {
@@ -85,22 +84,9 @@ export default function MonthlyTrends() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-accent" />
-          <h3 className="font-heading text-lg font-semibold">{L("التحليلات الزمنية — آخر ٦ أشهر", "Monthly Trends — Last 6 Months")}</h3>
-        </div>
-        <ComparisonExportButtons
-          title={L("التحليلات الزمنية — آخر ٦ أشهر", "Monthly Trends — Last 6 Months")}
-          headers={[
-            L("الشهر", "Month"),
-            L("متوسط نسبة الحضور %", "Avg Attendance Rate %"),
-            L("حالات التأخير", "Late Check-ins"),
-            L("مهام جديدة", "Created"),
-            L("منجزة", "Completed"),
-          ]}
-          rows={rows.map((r) => [r.month, r.avgRate ?? "—", r.lateCount, r.created, r.completed])}
-        />
+      <div className="flex items-center gap-2">
+        <TrendingUp className="w-5 h-5 text-accent" />
+        <h3 className="font-heading text-lg font-semibold">{L("التحليلات الزمنية — آخر ٦ أشهر", "Monthly Trends — Last 6 Months")}</h3>
       </div>
 
       {!hasAttendance && !hasTasks ? (

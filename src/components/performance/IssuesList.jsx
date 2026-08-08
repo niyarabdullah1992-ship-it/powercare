@@ -43,14 +43,11 @@ export default function IssuesList() {
   }, [currentUser?.id]);
 
   return (
-    <div className="p-4 rounded-xl border border-border bg-card">
-      <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
-        <div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground font-body mb-1">
-            <AlertTriangle className="w-3.5 h-3.5" /> {t("stoppageIssues")}
-          </div>
-          <p className="text-2xl font-heading font-semibold">{loading ? "—" : issues.length}</p>
-        </div>
+    <div className="p-5 rounded-xl border border-border bg-card">
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+        <h3 className="font-heading text-base font-semibold flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4" /> {t("stoppageIssues")}
+        </h3>
         <ComparisonExportButtons
           title={t("stoppageIssues")}
           headers={[t("employeeName"), t("title"), t("date"), t("description")]}

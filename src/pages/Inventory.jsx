@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { FileText } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
@@ -28,7 +27,6 @@ export default function Inventory() {
   const { lang } = useI18n();
   const ar = lang === "ar";
   const [active, setActive] = useState("overview");
-  const [showReport, setShowReport] = useState(false);
   const [state, setState] = useState(emptyData);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -98,13 +96,8 @@ export default function Inventory() {
       <InventoryWorkflow ar={ar} onNavigate={(key) => setActive(tabFromWorkflow[key])} />
       <InventoryItemScanner items={state.items} stationIds={selectedInventoryStations} onOpen={setSelectedItem} ar={ar} />
       <GlobalInventorySearch items={state.items} stations={state.stations} stationIds={selectedInventoryStations} onStationIdsChange={setSelectedInventoryStations} onOpen={(item, stationId) => setSelectedItem({ ...item, quantity: Number(item.locationBalances?.find((balance) => balance.locationId === stationId)?.quantity || 0), currentLocationId: stationId })} ar={ar} />
-      <InventoryTabs
-        active={active}
-        onChange={setActive}
-        actions={[{ key: "report", icon: FileText, label: ar ? "تقرير المخزون (PDF / Excel)" : "Inventory report (PDF / Excel)", active: showReport, onClick: () => setShowReport(!showReport) }]}
-        ar={ar}
-      />
-      {showReport && <InventoryPeriodReport reportData={{ items: state.items, purchases: state.purchases, movements: state.movements, stations: state.stations }} ar={ar} />}
+      <InventoryTabs active={active} onChange={setActive} ar={ar} />
+      <InventoryPeriodReport reportData={{ items: state.items, purchases: state.purchases, movements: state.movements, stations: state.stations }} ar={ar} />
       {active === "overview" && <InventoryStats items={stationItems} requests={state.requests} movements={state.movements} ar={ar} />}
       {active === "purchases" && <div className="space-y-4">
         {state.canPurchase && <ItemForm stations={state.locations} defaultStationId={allStationsSelected ? "" : activeStation} onSubmit={(payload) => run("createItem", payload)} ar={ar} />}

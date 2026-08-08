@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { updateEmployeeProfile } from "@/lib/store";
-import { Pencil, Check, Briefcase, Building2, CalendarDays, IdCard, MapPin, FileText, Heart, Flag, GraduationCap, PhoneCall, User, Landmark, Layers3, MapPinned, Smile, Users, ShieldPlus, HeartPulse } from "lucide-react";
+import { Pencil, Check, Briefcase, Building2, CalendarDays, IdCard, MapPin, FileText, Heart, Flag, GraduationCap, PhoneCall, User, Landmark, Layers3, MapPinned } from "lucide-react";
 import MobileSelect from "@/components/mobile/MobileSelect";
 
 // Field groups: label = i18n key for original groups; ar/en = inline labels for
@@ -12,10 +12,6 @@ export const PROFILE_GROUPS = [
     { key: "department", icon: Building2 },
     { key: "hireDate", icon: CalendarDays, type: "date" },
   ] },
-  { ar: "بيانات التعاقد", en: "Contract details", fields: [
-    { key: "jobNumber", icon: IdCard, ar: "الرقم الوظيفي", en: "Job number", dir: "ltr" },
-    { key: "contractType", icon: FileText, ar: "نوع التعاقد", en: "Contract type" },
-  ] },
   { label: "personalInfo", fields: [
     { key: "nationalId", icon: IdCard },
     { key: "address", icon: MapPin },
@@ -25,14 +21,10 @@ export const PROFILE_GROUPS = [
     { key: "birthDate", icon: CalendarDays, type: "date", ar: "تاريخ الميلاد", en: "Birth date" },
     { key: "nationality", icon: Flag, ar: "الجنسية", en: "Nationality" },
     { key: "maritalStatus", icon: Heart, ar: "الحالة الاجتماعية", en: "Marital status" },
-    { key: "dependents", icon: Users, type: "number", ar: "عدد الأبناء", en: "Dependents", dir: "ltr" },
     { key: "qualification", icon: GraduationCap, ar: "المؤهل العلمي", en: "Qualification" },
     { key: "emergencyName", icon: User, ar: "جهة اتصال الطوارئ", en: "Emergency contact" },
     { key: "emergencyPhone", icon: PhoneCall, ar: "هاتف الطوارئ", en: "Emergency phone", dir: "ltr" },
-    { key: "gosiNumber", icon: ShieldPlus, ar: "رقم التأمينات (GOSI)", en: "GOSI number", dir: "ltr" },
-    { key: "medicalInsurance", icon: HeartPulse, ar: "التأمين الطبي", en: "Medical insurance" },
     { key: "iban", icon: Landmark, ar: "الحساب البنكي (IBAN)", en: "Bank account (IBAN)", dir: "ltr" },
-    { key: "satisfactionScore", icon: Smile, type: "number", ar: "درجة الرضا الوظيفي (0–100)", en: "Job satisfaction score (0–100)", dir: "ltr" },
   ] },
 ];
 
@@ -97,7 +89,7 @@ export default function ProfessionalInfoTab({ employee, companyId, canEdit, isSe
                     area ? (
                       <textarea value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} rows={3} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
                     ) : (
-                      <input type={type || "text"} dir={field.dir} min={type === "number" ? 0 : undefined} max={type === "number" ? 100 : undefined} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+                      <input type={type || "text"} dir={field.dir} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
                     )
                   ) : (
                     <p className="min-h-[42px] rounded-lg border border-border bg-background px-3 py-2 text-sm font-body" dir={profile[key] ? field.dir : undefined}>{profile[key] || (key === "position" ? fallbackPosition : "") || "—"}</p>

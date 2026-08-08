@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ReceiptText, FileText } from "lucide-react";
-import SectionToolbar from "@/components/shared/SectionToolbar";
+import { ReceiptText } from "lucide-react";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { expensesCall } from "@/lib/expensesApi";
@@ -16,7 +15,6 @@ const empty = { claims: [], stations: [], canManagerReview: false, canFinanceRev
 export default function Expenses() {
   const { session, currentUser, data } = useAuth(); const { lang } = useI18n(); const ar = lang === "ar";
   const [state, setState] = useState(empty); const [loading, setLoading] = useState(true);
-  const [showReport, setShowReport] = useState(false);
   const canonicalStations = (data?.stations || []).map((station) => ({ ...station, stationId: station.id }));
   const stationVersion = canonicalStations.map((station) => station.stationId).sort().join("|");
   const load = async () => {
@@ -37,10 +35,7 @@ export default function Expenses() {
     <PageHeader title={ar ? "إدارة المصروفات" : "Expense Management"} description={ar ? "رفع الإيصالات واعتماد المصروفات ومراجعتها ماليًا." : "Submit receipts, approve expenses and complete finance review."} icon={ReceiptText} />
     <ExpenseForm stations={state.stations} canPickStations={state.canPickStations} onSubmit={submit} ar={ar} />
     <ExpenseStats claims={state.claims} ar={ar} />
-    <SectionToolbar
-      actions={[{ key: "report", icon: FileText, label: ar ? "تقرير المصروفات (PDF / Excel)" : "Expense report (PDF / Excel)", active: showReport, onClick: () => setShowReport(!showReport) }]}
-    />
-    {showReport && <ExpenseReportPanel claims={state.claims} stations={state.stations} ar={ar} />}
+    <ExpenseReportPanel claims={state.claims} stations={state.stations} ar={ar} />
     {loading ? <div className="h-40 animate-pulse rounded-xl bg-muted" /> : <ExpenseList claims={state.claims} stations={state.stations} canManagerReview={state.canManagerReview} canFinanceReview={state.canFinanceReview} onManagerReview={(claimId, decision) => run("managerReview", { claimId, decision })} onFinanceReview={(claimId, decision) => run("financeReview", { claimId, decision })} ar={ar} />}
   </div>;
 }
