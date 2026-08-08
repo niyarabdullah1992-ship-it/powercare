@@ -93,6 +93,160 @@
             "null"
           ],
           "description": "Employee-managed free-form position title."
+        },
+        "department": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hireDate": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "jobNumber": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "contractType": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nationalId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "address": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "birthDate": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nationality": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "maritalStatus": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dependents": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ]
+        },
+        "qualification": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "emergencyName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "emergencyPhone": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gosiNumber": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "medicalInsurance": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "iban": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "satisfactionScore": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ]
+        },
+        "baseSalary": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ]
+        },
+        "allowances": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ]
+        },
+        "currency": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "avatarUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bannerUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "salaryCertificateUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "salaryCertificateName": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "additionalProperties": true
