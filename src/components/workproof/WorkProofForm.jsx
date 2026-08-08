@@ -7,7 +7,9 @@ import VehicleEditor from "@/components/workproof/VehicleEditor";
 
 export default function WorkProofForm({ stations, ar, onSubmit }) {
   const today = new Date().toISOString().slice(0, 10);
-  const blank = { stationId: "", workTitle: "", workDescription: "", workDate: today, plannedDays: "" };
+  // When the user already entered a single station, its id is locked into the form.
+  const lockedStationId = stations.length === 1 ? stations[0].stationId : "";
+  const blank = { stationId: lockedStationId, workTitle: "", workDescription: "", workDate: today, plannedDays: "" };
   const [form, setForm] = useState(blank);
   const [workers, setWorkers] = useState([{ name: "", idType: "iqama", idNumber: "", phone: "" }]);
   const [vehicles, setVehicles] = useState([]);
@@ -42,11 +44,13 @@ export default function WorkProofForm({ stations, ar, onSubmit }) {
   return (
     <form onSubmit={submit} className="space-y-4 rounded-xl border border-border bg-card p-5">
       <h2 className="font-heading text-lg font-semibold">{ar ? "فتح مهمة وتوثيق بياناتها" : "Open a job & document its details"}</h2>
-      <div className="grid gap-3 sm:grid-cols-4">
-        <select value={form.stationId} onChange={set("stationId")} required className="rounded-md border px-3 py-2 text-sm font-body">
-          <option value="">{ar ? "اختر المحطة" : "Select station"}</option>
-          {stations.map((s) => <option key={s.stationId} value={s.stationId}>{s.name}</option>)}
-        </select>
+      <div className={`grid gap-3 ${lockedStationId ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}>
+        {!lockedStationId && (
+          <select value={form.stationId} onChange={set("stationId")} required className="rounded-md border px-3 py-2 text-sm font-body">
+            <option value="">{ar ? "اختر المحطة" : "Select station"}</option>
+            {stations.map((s) => <option key={s.stationId} value={s.stationId}>{s.name}</option>)}
+          </select>
+        )}
         <input value={form.workTitle} onChange={set("workTitle")} required placeholder={ar ? "عنوان العمل" : "Work title"} className="rounded-md border px-3 py-2 text-sm font-body" />
         <input type="date" value={form.workDate} onChange={set("workDate")} required className="rounded-md border px-3 py-2 text-sm font-body" />
         <input type="number" min="0" step="0.5" value={form.plannedDays} onChange={set("plannedDays")} placeholder={ar ? "أيام العمل المخططة" : "Planned working days"} className="rounded-md border px-3 py-2 text-sm font-body" />
