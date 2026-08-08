@@ -42,7 +42,7 @@ export default function LeaveTab({ employee, companyId, currentUser, isSelf, can
       <LeaveBalanceCard profile={employee.profile} requests={requests} />
       {canApprove && <LeaveTotalsEditor employee={employee} companyId={companyId} />}
 
-      {isSelf && (
+      {(isSelf || canApprove) && (
         <form onSubmit={submit} className="space-y-3 rounded-xl border border-border bg-card p-5">
           <h3 className="font-heading font-semibold">{t("submitRequest")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
