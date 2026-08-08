@@ -26,6 +26,8 @@ import OperationalAlerts from "@/components/dashboard/OperationalAlerts";
 import SigningStatusPanel from "@/components/dashboard/SigningStatusPanel";
 import OperationsModuleGrid from "@/components/dashboard/OperationsModuleGrid";
 import QuickOverviewStrip from "@/components/dashboard/QuickOverviewStrip";
+import WeeklyAttendanceCard from "@/components/dashboard/WeeklyAttendanceCard";
+import { getRun, monthKey, netOf, isPayrollEmployee } from "@/lib/payroll";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -165,6 +167,16 @@ export default function Dashboard() {
     (recentIncidents * riskWeights.incidents) + (openHazards * riskWeights.hazards)
   ));
 
+  // مسير رواتب الشهر الحالي — من مسير الرواتب إن وُجد، وإلا من ملفات الرواتب في ملفات الموظفين.
+  const currentRun = getRun(data, monthKey());
+  const includeOwner = data.settings?.includeOwnerInPayroll === true;
+  const payrollTotal = currentRun?.items?.length
+    ? currentRun.items.reduce((sum, item) => sum + netOf(item), 0)
+    : teamEmployees.filter((employee) => isPayrollEmployee(employee, includeOwner))
+        .reduce((sum, employee) => sum + (Number(employee.profile?.baseSalary) || 0) + (Number(employee.profile?.allowances) || 0), 0);
+  const payrollLabel = new Intl.DateTimeFormat(lang === "ar" ? "ar" : "en", { month: "long" }).format(new Date());
+  const payrollValue = new Intl.NumberFormat(lang === "ar" ? "ar" : "en", { notation: "compact", maximumFractionDigits: 1 }).format(payrollTotal);
+
   const pendingActionItems = [
     { key: "reports", icon: FileText, label: t("pendingReports"), count: pendingReports, to: "/app/daily-report" },
     { key: "stoppage", icon: AlertTriangle, label: t("stoppageIssues"), count: stoppageCount, to: "/app/performance" },
@@ -214,14 +226,16 @@ export default function Dashboard() {
           { label: lang === "ar" ? "إجمالي الموظفين" : "Total employees", value: teamEmployees.length, note: `${activeMembersCount} ${lang === "ar" ? "نشط اليوم" : "active today"}` },
           { label: lang === "ar" ? "نسبة الحضور اليوم" : "Attendance today", value: `${attendanceRate}%`, note: `${checkedInCount}/${scheduledEmployees.length} ${lang === "ar" ? "حضور" : "checked in"}` },
           { label: lang === "ar" ? "طلبات معلّقة" : "Pending requests", value: pendingLeaveCount + pendingReports, note: lang === "ar" ? "إجازات وتقارير بانتظار الاعتماد" : "Leave and reports awaiting approval" },
+          { label: lang === "ar" ? `مسير رواتب ${payrollLabel}` : `${payrollLabel} payroll`, value: payrollValue, note: lang === "ar" ? "ريال · جاهز للمراجعة" : "SAR · ready for review" },
           { label: lang === "ar" ? "إنجاز المهام" : "Task completion", value: `${tasks.length ? Math.round((completed / tasks.length) * 100) : 0}%`, note: `${completed}/${tasks.length} ${lang === "ar" ? "مهمة" : "tasks"}` },
         ]}
       />
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <WeeklyAttendanceCard companyId={company.id} employeeIds={teamEmployees.map((e) => e.id)} lang={lang} />
         <PendingActionsPanel items={pendingActionItems} t={t} />
-        <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
       </div>
+      <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
 
       <OperationsModuleGrid
         metrics={{
