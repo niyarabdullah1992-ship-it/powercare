@@ -1,61 +1,69 @@
 import React, { useState } from "react";
-import { Users, ArrowRight } from "lucide-react";
+import { Users } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { stationIdForTreeEmployee } from "@/lib/orgTree";
+import { isOnLeaveToday } from "@/lib/leaveTypes";
 import PageHeader from "@/components/PageHeader";
-import StationBranchCard from "@/components/employees/StationBranchCard";
-import StationEmployeeCards from "@/components/employees/StationEmployeeCards";
-
-const UNASSIGNED = "__unassigned__";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
+import EmployeeDirectoryFilters from "@/components/employees/EmployeeDirectoryFilters";
+import EmployeeDirectoryTable from "@/components/employees/EmployeeDirectoryTable";
 
 export default function Employees() {
   const { lang } = useI18n();
   const ar = lang === "ar";
   const { data } = useAuth();
-  const [selectedId, setSelectedId] = useState(null);
+  const [filters, setFilters] = useState({ department: "", branch: "", status: "" });
 
-  const employeesOf = (stationId) =>
-    (data?.employees || []).filter((employee) => (stationIdForTreeEmployee(data, employee.id) || employee.stationId || UNASSIGNED) === stationId);
+  const stations = data?.stations || [];
+  const branchName = (id) => stations.find((station) => station.id === id)?.name || "";
 
-  const branches = [
-    ...(data?.stations || []).map((station) => ({ id: station.id, name: station.name, location: station.location })),
-    { id: UNASSIGNED, name: ar ? "غير مخصص لفرع" : "Unassigned" },
-  ]
-    .map((branch) => ({ ...branch, employees: employeesOf(branch.id) }))
-    .filter((branch) => branch.id !== UNASSIGNED || branch.employees.length > 0);
+  const allRows = (data?.employees || []).map((employee) => {
+    const profile = employee.profile || {};
+    const stationId = stationIdForTreeEmployee(data, employee.id) || employee.stationId || "";
+    const statusKey = profile.offboarding || employee.offboarding ? "notice" : isOnLeaveToday(employee) ? "leave" : "active";
+    return {
+      id: employee.id,
+      name: employee.name,
+      avatarUrl: profile.avatarUrl,
+      jobNumber: profile.jobNumber,
+      department: profile.department,
+      position: profile.position,
+      stationId,
+      branch: branchName(stationId),
+      statusKey,
+      statusLabel: ar
+        ? { active: "على رأس العمل", leave: "إجازة", notice: "تحت الإشعار" }[statusKey]
+        : { active: "Active", leave: "On leave", notice: "Under notice" }[statusKey],
+    };
+  });
 
-  const selected = branches.find((branch) => branch.id === selectedId) || null;
+  const rows = allRows.filter((row) =>
+    (!filters.department || row.department === filters.department) &&
+    (!filters.branch || row.stationId === filters.branch) &&
+    (!filters.status || row.statusKey === filters.status)
+  );
+
+  const departments = [...new Set(allRows.map((row) => row.department).filter(Boolean))];
 
   return (
     <div className="space-y-5">
       <PageHeader
         title={ar ? "الموظفون" : "Employees"}
-        description={selected ? selected.name : (ar ? "اختر الفرع لعرض موظفيه" : "Choose a branch to view its employees")}
+        description={`${rows.length} ${ar ? "موظف" : "employees"}`}
         icon={Users}
-        actions={selected && (
-          <button onClick={() => setSelectedId(null)} className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3.5 py-2 text-sm hover:bg-muted">
-            <ArrowRight className="h-4 w-4 ltr:rotate-180" /> {ar ? "كل الفروع" : "All branches"}
-          </button>
-        )}
+        actions={
+          <ComparisonExportButtons
+            title={ar ? "الموظفون" : "Employees"}
+            headers={[ar ? "الموظف" : "Employee", ar ? "الرقم الوظيفي" : "Job number", ar ? "القسم" : "Department", ar ? "المسمى الوظيفي" : "Job title", ar ? "الفرع" : "Branch", ar ? "الحالة" : "Status"]}
+            rows={rows.map((row) => [row.name, row.jobNumber || "—", row.department || "—", row.position || "—", row.branch || "—", row.statusLabel])}
+          />
+        }
       />
 
-      {selected ? (
-        <StationEmployeeCards employees={selected.employees} ar={ar} />
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {branches.map((branch) => (
-            <StationBranchCard
-              key={branch.id}
-              name={branch.name}
-              location={branch.location}
-              count={branch.employees.length}
-              ar={ar}
-              onClick={() => setSelectedId(branch.id)}
-            />
-          ))}
-        </div>
-      )}
+      <EmployeeDirectoryFilters ar={ar} departments={departments} branches={stations} value={filters} onChange={setFilters} />
+
+      <EmployeeDirectoryTable rows={rows} ar={ar} />
     </div>
   );
 }
