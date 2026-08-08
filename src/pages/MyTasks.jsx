@@ -1076,7 +1076,7 @@ export default function MyTasks() {
                   className={`px-3.5 py-1.5 rounded-full text-xs font-body border transition ${effortWeight === w ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
                   title={EFFORT_WEIGHT_LABELS[w][lang === "ar" ? "ar" : "en"]}
                 >
-                  ×{w} · {EFFORT_WEIGHT_LABELS[w][lang === "ar" ? "ar" : "en"]}
+                  ×{w}
                 </button>
               ))}
             </div>
