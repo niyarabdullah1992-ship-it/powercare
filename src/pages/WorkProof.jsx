@@ -133,6 +133,7 @@ export default function WorkProof() {
                   ar={ar}
                   onClose={(payload) => run("close", { proofId: proof.id, ...payload }, ar ? "تم إغلاق المهمة." : "Job closed.")}
                   onSign={(payload) => run("sign", { proofId: proof.id, ...payload }, ar ? "تم اعتماد الإثبات بتوقيع العميل." : "Proof sealed with the client's signature.")}
+                  onAddAfterEvidence={(payload) => run("addAfterEvidence", { proofId: proof.id, ...payload }, ar ? "تم حفظ إثبات بعد العمل." : "After-work evidence saved.")}
                   onSendLink={(payload) => run("sendSignLink", { proofId: proof.id, ...payload }, ar ? "تم إرسال رابط التوقيع للعميل." : "Signature link emailed to the client.")}
                 />
               ))}

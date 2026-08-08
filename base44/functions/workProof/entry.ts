@@ -143,6 +143,18 @@ export default async function(req) {
       return Response.json({ ok: true });
     }
 
+    // Adding after-work evidence is still allowed while the proof awaits the client's signature.
+    if (body.action === "addAfterEvidence") {
+      const proofs = await base44.asServiceRole.entities.WorkProof.filter({ id: body.proofId, companyId: auth.companyId });
+      const proof = proofs[0];
+      if (!proof || proof.status !== "pending_signature") return Response.json({ error: "Evidence can no longer be added" }, { status: 400 });
+      if (!visibleStationIds.includes(proof.stationId) && proof.performedById !== auth.userId) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const after = Array.isArray(body.afterImageUrls) ? body.afterImageUrls.filter((u) => typeof u === "string" && u.startsWith("http")).slice(0, 10) : [];
+      const afterFiles = Array.isArray(body.afterFiles) ? body.afterFiles.filter((f) => typeof f?.url === "string" && f.url.startsWith("http")).slice(0, 10).map((f) => ({ url: f.url, name: String(f.name || "file") })) : [];
+      await base44.asServiceRole.entities.WorkProof.update(proof.id, { afterImageUrls: after, afterFiles });
+      return Response.json({ ok: true });
+    }
+
     if (body.action === "sendSignLink") {
       const clientEmail = String(body.clientEmail || "").trim().toLowerCase();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)) return Response.json({ error: "A valid client email is required" }, { status: 400 });
