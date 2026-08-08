@@ -1,16 +1,14 @@
 import React, { useState } from "react";
-import { BadgeCheck, CalendarDays, Car, CheckCircle2, Clock, FileText, ImagePlus, Mail, MapPin, User, Users } from "lucide-react";
+import { BadgeCheck, CalendarDays, Car, CheckCircle2, Clock, FileText, Mail, MapPin, User, Users } from "lucide-react";
 import ProofCertificateDialog from "@/components/workproof/ProofCertificateDialog";
 import SendSignLinkDialog from "@/components/workproof/SendSignLinkDialog";
 import { Image } from "@/components/ui/image";
 import CloseJobDialog from "@/components/workproof/CloseJobDialog";
-import AfterEvidenceDialog from "@/components/workproof/AfterEvidenceDialog";
 import { idTypeLabel } from "@/components/workproof/CrewEditor";
 import { PhotoRow, FileRow, DetailList } from "@/components/workproof/ProofSections";
 
-export default function WorkProofCard({ proof, stationName, ar, onClose, onSendLink, onAddAfterEvidence }) {
+export default function WorkProofCard({ proof, stationName, ar, onClose, onSendLink }) {
   const [closeOpen, setCloseOpen] = useState(false);
-  const [afterOpen, setAfterOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [certOpen, setCertOpen] = useState(false);
   const signed = proof.status === "signed";
@@ -118,20 +116,14 @@ export default function WorkProofCard({ proof, stationName, ar, onClose, onSendL
             <CheckCircle2 className="h-4 w-4" />{ar ? "إغلاق المهمة" : "Close job"}
           </button>
         ) : signed ? null : (
-          <>
-            <button onClick={() => setAfterOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-accent/50 bg-card px-4 py-2.5 text-sm font-semibold hover:bg-muted">
-              <ImagePlus className="h-4 w-4" />{ar ? "إضافة إثبات بعد العمل" : "Add after-work evidence"}
-            </button>
-            <button onClick={() => setLinkOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-95">
-              <Mail className="h-4 w-4" />{ar ? "إرسال رابط التوقيع للعميل" : "Email sign link to client"}
-            </button>
-          </>
+          <button onClick={() => setLinkOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-95">
+            <Mail className="h-4 w-4" />{ar ? "إرسال رابط التوقيع للعميل" : "Email sign link to client"}
+          </button>
         )}
       </footer>
 
       {certOpen && <ProofCertificateDialog proof={proof} stationName={stationName} companyName={proof.companyName || ""} ar={ar} onClose={() => setCertOpen(false)} />}
       {closeOpen && <CloseJobDialog proof={proof} ar={ar} onClose={() => setCloseOpen(false)} onSubmit={async (payload) => { const ok = await onClose(payload); if (ok) setCloseOpen(false); }} />}
-      {afterOpen && <AfterEvidenceDialog proof={proof} ar={ar} onClose={() => setAfterOpen(false)} onSubmit={async (payload) => { const ok = await onAddAfterEvidence(payload); if (ok) setAfterOpen(false); }} />}
       {linkOpen && <SendSignLinkDialog proof={proof} ar={ar} onClose={() => setLinkOpen(false)} onSend={async (payload) => { const ok = await onSendLink(payload); if (ok) setLinkOpen(false); }} />}
     </article>
   );
