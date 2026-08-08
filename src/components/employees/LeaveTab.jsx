@@ -46,11 +46,20 @@ export default function LeaveTab({ employee, companyId, currentUser, isSelf, can
         <form onSubmit={submit} className="space-y-3 rounded-xl border border-border bg-card p-5">
           <h3 className="font-heading font-semibold">{t("submitRequest")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <select value={type} onChange={(e) => setType(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body">
-              {visibleLeaveTypes(employee.profile).map((ty) => <option key={ty.key} value={ty.key}>{t(ty.key)}</option>)}
-            </select>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <label className="space-y-1">
+              <span className="block text-xs text-muted-foreground font-body">{t("leaveType")}</span>
+              <select value={type} onChange={(e) => setType(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
+                {visibleLeaveTypes(employee.profile).map((ty) => <option key={ty.key} value={ty.key}>{t(ty.key)}</option>)}
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="block text-xs text-muted-foreground font-body">{t("startDate")}</span>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            </label>
+            <label className="space-y-1">
+              <span className="block text-xs text-muted-foreground font-body">{t("endDate")}</span>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            </label>
           </div>
           {days > 0 && (
             <p className="text-xs text-muted-foreground font-body">{t("daysRequested")}: {days}</p>
