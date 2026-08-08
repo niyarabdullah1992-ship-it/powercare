@@ -18,6 +18,7 @@ export default function WorkProof() {
   const [stations, setStations] = useState([]);
   const [stationId, setStationId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [formOpen, setFormOpen] = useState(false);
@@ -30,8 +31,11 @@ export default function WorkProof() {
       const names = new Map((data?.stations || []).map((s) => [s.id, s.name]));
       setProofs(res.proofs || []);
       setStations((res.stations || []).map((s) => ({ ...s, name: names.get(s.stationId) || s.name })));
+      setLoadError("");
     } catch (error) {
-      toast({ description: error?.response?.data?.error || error.message, variant: "destructive" });
+      const msg = error?.response?.data?.error || error.message;
+      setLoadError(msg);
+      toast({ description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -88,6 +92,11 @@ export default function WorkProof() {
 
       {loading ? (
         <div className="h-40 animate-pulse rounded-xl bg-muted" />
+      ) : loadError ? (
+        <div className="space-y-3 rounded-xl border border-border bg-card p-6 text-center">
+          <p className="text-sm text-muted-foreground font-body">{ar ? "تعذّر تحميل المحطات. حاول مرة أخرى." : "Couldn't load stations. Please try again."}</p>
+          <button onClick={load} className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">{ar ? "إعادة المحاولة" : "Retry"}</button>
+        </div>
       ) : !station ? (
         <WorkProofStationPicker stations={stations} counts={counts} ar={ar} onSelect={setStationId} />
       ) : (
