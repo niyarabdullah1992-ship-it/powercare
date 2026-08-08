@@ -27,6 +27,10 @@ import SigningStatusPanel from "@/components/dashboard/SigningStatusPanel";
 import OperationsModuleGrid from "@/components/dashboard/OperationsModuleGrid";
 import QuickOverviewStrip from "@/components/dashboard/QuickOverviewStrip";
 import WeeklyAttendanceCard from "@/components/dashboard/WeeklyAttendanceCard";
+import NiroDashboardHeader from "@/components/dashboard/NiroDashboardHeader";
+import PendingApprovalsTable from "@/components/dashboard/PendingApprovalsTable";
+import ComplianceAlertsCard from "@/components/dashboard/ComplianceAlertsCard";
+import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { getRun, monthKey, netOf, isPayrollEmployee } from "@/lib/payroll";
 
 export default function Dashboard() {
@@ -177,6 +181,22 @@ export default function Dashboard() {
   const payrollLabel = new Intl.DateTimeFormat(lang === "ar" ? "ar" : "en", { month: "long" }).format(new Date());
   const payrollValue = new Intl.NumberFormat(lang === "ar" ? "ar" : "en", { notation: "compact", maximumFractionDigits: 1 }).format(payrollTotal);
 
+  // بيانات التصميم الجديد — كلها حية من سجلات الشركة.
+  const ar = lang === "ar";
+  const periodLabel = new Intl.DateTimeFormat(ar ? "ar" : "en", { month: "long", year: "numeric" }).format(new Date());
+  const taskPct = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
+  const compliancePct = Math.round((attendanceRate + taskPct) / 2);
+  const leaveTypeLabel = (type) => ar
+    ? ({ annual: "إجازة سنوية", sick: "إجازة مرضية", exam: "إجازة اختبارات", marriage: "إجازة زواج", bereavement: "إجازة وفاة", maternity: "إجازة أمومة", paternity: "إجازة أبوة", unpaid: "إجازة بدون راتب" }[type] || type)
+    : type;
+  const approvalRows = [
+    ...teamEmployees.flatMap((employee) => (employee.leaveRequests || [])
+      .filter((request) => request.status === "pending")
+      .map((request) => ({ name: employee.name, type: leaveTypeLabel(request.type), date: request.startDate || request.createdAt, status: ar ? "بانتظار المدير" : "Awaiting manager", badge: "manager" }))),
+    ...reports.filter((r) => r.status === "pending")
+      .map((r) => ({ name: r.createdByName || r.title, type: ar ? "تقرير يومي" : "Daily report", date: r.createdAt, status: ar ? "بانتظار الاعتماد" : "Awaiting approval", badge: "hr" })),
+  ].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0, 6);
+
   const pendingActionItems = [
     { key: "reports", icon: FileText, label: t("pendingReports"), count: pendingReports, to: "/app/daily-report" },
     { key: "stoppage", icon: AlertTriangle, label: t("stoppageIssues"), count: stoppageCount, to: "/app/performance" },
@@ -219,7 +239,23 @@ export default function Dashboard() {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="ops-command-dashboard space-y-4">
-      <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
+      <NiroDashboardHeader lang={lang} companyName={data.name || company.name} periodLabel={periodLabel} compliancePct={compliancePct} />
+
+      {/* شريط التصدير — تقرير حي بمؤشرات اللوحة */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3">
+        <ComparisonExportButtons
+          title={ar ? "لوحة المعلومات" : "Dashboard"}
+          headers={[ar ? "المؤشر" : "Metric", ar ? "القيمة" : "Value"]}
+          rows={[
+            [ar ? "إجمالي الموظفين" : "Total employees", teamEmployees.length],
+            [ar ? "نسبة الحضور اليوم" : "Attendance today", `${attendanceRate}%`],
+            [ar ? "طلبات معلّقة" : "Pending requests", pendingLeaveCount + pendingReports],
+            [ar ? `مسير رواتب ${payrollLabel}` : `${payrollLabel} payroll`, payrollValue],
+            [ar ? "إنجاز المهام" : "Task completion", `${taskPct}%`],
+          ]}
+        />
+        <p className="text-xs text-muted-foreground font-body">{ar ? "التصدير:" : "Export:"} {periodLabel}</p>
+      </div>
 
       <HrKpiRow
         items={[
@@ -227,15 +263,35 @@ export default function Dashboard() {
           { label: lang === "ar" ? "نسبة الحضور اليوم" : "Attendance today", value: `${attendanceRate}%`, note: `${checkedInCount}/${scheduledEmployees.length} ${lang === "ar" ? "حضور" : "checked in"}` },
           { label: lang === "ar" ? "طلبات معلّقة" : "Pending requests", value: pendingLeaveCount + pendingReports, note: lang === "ar" ? "إجازات وتقارير بانتظار الاعتماد" : "Leave and reports awaiting approval" },
           { label: lang === "ar" ? `مسير رواتب ${payrollLabel}` : `${payrollLabel} payroll`, value: payrollValue, note: lang === "ar" ? "ريال · جاهز للمراجعة" : "SAR · ready for review" },
-          { label: lang === "ar" ? "إنجاز المهام" : "Task completion", value: `${tasks.length ? Math.round((completed / tasks.length) * 100) : 0}%`, note: `${completed}/${tasks.length} ${lang === "ar" ? "مهمة" : "tasks"}` },
         ]}
       />
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <WeeklyAttendanceCard companyId={company.id} employeeIds={teamEmployees.map((e) => e.id)} lang={lang} />
-        <PendingActionsPanel items={pendingActionItems} t={t} />
+      {/* طلبات الاعتماد + الحضور الأسبوعي + تنبيهات الامتثال */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <PendingApprovalsTable rows={approvalRows} lang={lang} />
+        </div>
+        <div className="space-y-3">
+          <WeeklyAttendanceCard companyId={company.id} employeeIds={teamEmployees.map((e) => e.id)} lang={lang} />
+          <ComplianceAlertsCard
+            lang={lang}
+            items={[
+              { count: absentCount, level: "red", text: ar ? `${absentCount} موظف غائب اليوم دون تسجيل حضور.` : `${absentCount} employees absent today without check-in.` },
+              { count: delayedTasks, level: "red", text: ar ? `${delayedTasks} مهمة متأخرة أو تقترب من موعدها النهائي.` : `${delayedTasks} tasks overdue or nearing deadline.` },
+              { count: stoppageCount, level: "amber", text: ar ? `${stoppageCount} بلاغ توقّف عمل بحاجة إلى معالجة.` : `${stoppageCount} work-stoppage issues need attention.` },
+              { count: openHazards, level: "amber", text: ar ? `${openHazards} خطر سلامة مفتوح في المحطات.` : `${openHazards} open safety hazards across stations.` },
+              { count: pendingLeaveCount, level: "amber", text: ar ? `${pendingLeaveCount} طلب إجازة بانتظار الاعتماد.` : `${pendingLeaveCount} leave requests awaiting approval.` },
+            ]}
+          />
+        </div>
       </div>
-      <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
+
+      <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <PendingActionsPanel items={pendingActionItems} t={t} />
+        <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
+      </div>
 
       <OperationsModuleGrid
         metrics={{

@@ -71,8 +71,13 @@ export default function Layout({ children }) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setSearchOpen(true); }
       if (event.key === "Escape") setSearchOpen(false);
     };
+    const openFromEvent = () => setSearchOpen(true);
     window.addEventListener("keydown", openSearch);
-    return () => window.removeEventListener("keydown", openSearch);
+    window.addEventListener("powercare:open-search", openFromEvent);
+    return () => {
+      window.removeEventListener("keydown", openSearch);
+      window.removeEventListener("powercare:open-search", openFromEvent);
+    };
   }, []);
 
   useEffect(() => {
