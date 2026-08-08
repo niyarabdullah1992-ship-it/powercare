@@ -6,12 +6,13 @@ import PageHeader from "@/components/PageHeader";
 import HRRequestsPanel from "@/components/hr/HRRequestsPanel";
 import LeaveBalancesTable from "@/components/hr/LeaveBalancesTable";
 
+// Central approvals inbox + company-wide leave balances.
 export default function LeaveRequests() {
   const { lang } = useI18n();
   const { data, company, currentUser } = useAuth();
   const ar = lang === "ar";
 
-  if (!data || !currentUser) return null;
+  if (!data || !currentUser || !company) return null;
 
   return (
     <div className="space-y-6">
