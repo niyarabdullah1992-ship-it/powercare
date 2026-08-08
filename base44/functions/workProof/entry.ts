@@ -1,4 +1,23 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { sendGmail } from '../../shared/gmailSend.ts';
+
+// Public view of a proof — only what the client needs to sign, never internal ids.
+const publicView = (proof) => ({
+  proofNumber: proof.proofNumber,
+  workTitle: proof.workTitle,
+  workDescription: proof.workDescription,
+  workDate: proof.workDate,
+  actualDays: proof.actualDays,
+  plannedDays: proof.plannedDays,
+  performedByName: proof.performedByName,
+  beforeImageUrls: proof.beforeImageUrls || [],
+  afterImageUrls: proof.afterImageUrls || [],
+  workers: (proof.workers || []).map((w) => ({ name: w.name })),
+  vehicles: (proof.vehicles || []).map((v) => ({ plate: v.plate, type: v.type, make: v.make, model: v.model, year: v.year })),
+  status: proof.status,
+  clientName: proof.clientName,
+  signedAt: proof.signedAt,
+});
 
 const managerRoles = ["director", "ops_manager", "pgm", "station_manager"];
 const seniorRoles = ["owner", "director", "ops_manager"];
@@ -7,6 +26,26 @@ export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
+
+    // ---- Public (client-facing) actions: authenticated only by the emailed sign token.
+    if (body.action === "publicGet" || body.action === "publicSign") {
+      const token = String(body.token || "").trim();
+      if (token.length < 20) return Response.json({ error: "Invalid link" }, { status: 400 });
+      const found = await base44.asServiceRole.entities.WorkProof.filter({ signToken: token });
+      const proof = found[0];
+      if (!proof) return Response.json({ error: "Link not found or expired" }, { status: 404 });
+      if (body.action === "publicGet") return Response.json({ proof: publicView(proof) });
+      const clientName = String(body.clientName || "").trim();
+      const signatureUrl = String(body.signatureUrl || "").trim();
+      if (proof.status !== "pending_signature") return Response.json({ error: "This proof is no longer awaiting signature" }, { status: 400 });
+      if (!clientName || !signatureUrl.startsWith("http")) return Response.json({ error: "Name and signature are required" }, { status: 400 });
+      await base44.asServiceRole.entities.WorkProof.update(proof.id, {
+        clientName, clientTitle: String(body.clientTitle || "").trim() || null,
+        clientSignatureUrl: signatureUrl, signedAt: new Date().toISOString(), status: "signed", signToken: null,
+      });
+      return Response.json({ ok: true });
+    }
+
     const platformUser = await base44.auth.me().catch(() => null);
     let auth = null;
     if (platformUser?.role === "admin" && body.companyId) auth = { companyId: body.companyId, userId: body.userId || null, role: "owner", name: platformUser.full_name || "Admin", stationId: null, managedStations: [] };
@@ -89,6 +128,26 @@ export default async function(req) {
         actualDays, afterImageUrls: after, afterFiles, closedAt: new Date().toISOString(), status: "pending_signature",
       });
       return Response.json({ ok: true });
+    }
+
+    if (body.action === "sendSignLink") {
+      const clientEmail = String(body.clientEmail || "").trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)) return Response.json({ error: "A valid client email is required" }, { status: 400 });
+      const proofs = await base44.asServiceRole.entities.WorkProof.filter({ id: body.proofId, companyId: auth.companyId });
+      const proof = proofs[0];
+      if (!proof || proof.status !== "pending_signature") return Response.json({ error: "Proof is not awaiting signature" }, { status: 400 });
+      if (!visibleStationIds.includes(proof.stationId) && proof.performedById !== auth.userId) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const signToken = proof.signToken || crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+      const origin = String(body.origin || "").replace(/\/$/, "");
+      const url = `${origin}/work-proof-sign?token=${signToken}`;
+      await sendGmail(base44, {
+        to: clientEmail,
+        subject: `توقيع إثبات العمل ${proof.proofNumber} · Work proof signature`,
+        text: `تم إنجاز العمل: ${proof.workTitle}\nبتاريخ ${proof.workDate} — بواسطة ${proof.performedByName}.\n\nيرجى مراجعة الإثبات والتوقيع إلكترونيًا عبر الزر أدناه.\n\nPlease review the work proof and sign it electronically.`,
+        cta: { url, label: "مراجعة وتوقيع · Review & sign" },
+      });
+      await base44.asServiceRole.entities.WorkProof.update(proof.id, { signToken, clientEmail, signLinkSentAt: new Date().toISOString() });
+      return Response.json({ ok: true, url });
     }
 
     if (body.action === "sign") {

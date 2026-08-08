@@ -1,14 +1,16 @@
 import React, { useState } from "react";
-import { BadgeCheck, CalendarDays, Car, CheckCircle2, Clock, MapPin, PenLine, User, Users } from "lucide-react";
+import { BadgeCheck, CalendarDays, Car, CheckCircle2, Clock, Mail, MapPin, PenLine, User, Users } from "lucide-react";
+import SendSignLinkDialog from "@/components/workproof/SendSignLinkDialog";
 import { Image } from "@/components/ui/image";
 import ClientSignDialog from "@/components/workproof/ClientSignDialog";
 import CloseJobDialog from "@/components/workproof/CloseJobDialog";
 import { idTypeLabel } from "@/components/workproof/CrewEditor";
 import { PhotoRow, FileRow, DetailList } from "@/components/workproof/ProofSections";
 
-export default function WorkProofCard({ proof, stationName, ar, onSign, onClose }) {
+export default function WorkProofCard({ proof, stationName, ar, onSign, onClose, onSendLink }) {
   const [signOpen, setSignOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
   const signed = proof.status === "signed";
   const inProgress = proof.status === "in_progress";
 
@@ -98,13 +100,19 @@ export default function WorkProofCard({ proof, stationName, ar, onSign, onClose 
             <CheckCircle2 className="h-4 w-4" />{ar ? "إغلاق المهمة" : "Close job"}
           </button>
         ) : (
-          <button onClick={() => setSignOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-95">
-            <PenLine className="h-4 w-4" />{ar ? "توقيع العميل الآن" : "Client sign now"}
-          </button>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button onClick={() => setLinkOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-95">
+              <Mail className="h-4 w-4" />{ar ? "إرسال رابط التوقيع" : "Email sign link"}
+            </button>
+            <button onClick={() => setSignOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-md border border-primary px-4 py-2.5 text-sm font-semibold hover:bg-secondary">
+              <PenLine className="h-4 w-4" />{ar ? "توقيع في الموقع" : "Sign on site"}
+            </button>
+          </div>
         )}
       </footer>
 
       {closeOpen && <CloseJobDialog proof={proof} ar={ar} onClose={() => setCloseOpen(false)} onSubmit={async (payload) => { const ok = await onClose(payload); if (ok) setCloseOpen(false); }} />}
+      {linkOpen && <SendSignLinkDialog proof={proof} ar={ar} onClose={() => setLinkOpen(false)} onSend={async (payload) => { const ok = await onSendLink(payload); if (ok) setLinkOpen(false); }} />}
       {signOpen && <ClientSignDialog ar={ar} onClose={() => setSignOpen(false)} onSign={async (payload) => { const ok = await onSign(payload); if (ok) setSignOpen(false); }} />}
     </article>
   );

@@ -175,6 +175,27 @@
       ],
       "description": "Client's job title / capacity."
     },
+    "clientEmail": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Client email the signature link was sent to."
+    },
+    "signToken": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Opaque token embedded in the emailed signature link. Cleared once signed."
+    },
+    "signLinkSentAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ISO timestamp when the signature link was emailed to the client."
+    },
     "clientSignatureUrl": {
       "type": [
         "string",
