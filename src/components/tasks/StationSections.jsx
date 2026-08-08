@@ -5,7 +5,7 @@ import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import { getLeafName, NO_SECTION } from "@/lib/taskFolders";
 import { groupTasksByPeriod, SCOPE_BADGES } from "@/lib/taskTimeScope";
 
-export default function StationSections({ stationId, currentPath, onNavigate, folders, tasksAll, canManage, renderTask, filterTasks, onAddFolder, onRenameFolder, onDeleteFolder, onCreateTask, t, dir, lang }) {
+export default function StationSections({ stationId, currentPath, onNavigate, folders, tasksAll, canManage, renderTask, filterTasks, onAddFolder, onRenameFolder, onDeleteFolder, onCreateTask, createOpen, t, dir, lang }) {
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [newName, setNewName] = useState("");
@@ -91,7 +91,7 @@ export default function StationSections({ stationId, currentPath, onNavigate, fo
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/20 bg-secondary/30 p-3">
         <button type="button" onClick={() => onNavigate(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className={`h-4 w-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}</button>
         <h4 className="font-heading text-lg font-semibold">{currentPath === NO_SECTION ? t("noSection") : getLeafName(currentPath)}</h4>
-        {canManage && currentPath !== NO_SECTION && <button type="button" onClick={() => onCreateTask(currentPath)} className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"><Plus className="h-4 w-4" /> {t("newTaskTarget")}</button>}
+        {canManage && !createOpen && currentPath !== NO_SECTION && <button type="button" onClick={() => onCreateTask(currentPath)} className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"><Plus className="h-4 w-4" /> {t("newTaskTarget")}</button>}
       </div>
       <Droppable droppableId={`tasks-${currentPath}`} type="TASK">
         {(provided, snapshot) => (

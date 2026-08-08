@@ -1311,6 +1311,7 @@ export default function MyTasks() {
                   onRenameFolder={renameFolder}
                   onDeleteFolder={deleteFolder}
                   onCreateTask={(sectionPath) => openCreateForm(selectedStation, sectionPath)}
+                  createOpen={showCreate}
                   t={t}
                   dir={dir}
                   lang={lang}
