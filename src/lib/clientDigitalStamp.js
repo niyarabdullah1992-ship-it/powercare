@@ -1,4 +1,4 @@
-import { createTypedSignatureImage } from "@/lib/typedSignatureImage";
+import { createTypedSignatureWithDate } from "@/lib/typedSignatureImage";
 import { makeSignatureStamp } from "@/lib/multiSignStamp";
 import { generateVerificationId } from "@/lib/verificationBadge";
 
@@ -7,8 +7,8 @@ import { generateVerificationId } from "@/lib/verificationBadge";
 // name rendered as a typed signature.
 export async function buildClientStamp(name) {
   const verificationId = generateVerificationId();
-  const signature = await createTypedSignatureImage(name, "'Dancing Script', cursive");
-  const dataUrl = await makeSignatureStamp(signature, name, verificationId, "unique", "neo");
+  const signature = await createTypedSignatureWithDate(name, new Date().toLocaleDateString("en-GB"), "Arial");
+  const dataUrl = await makeSignatureStamp(signature, name, verificationId, "typed", "neo");
   return { dataUrl, verificationId };
 }
 
