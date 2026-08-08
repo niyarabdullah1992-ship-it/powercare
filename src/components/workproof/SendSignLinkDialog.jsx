@@ -4,13 +4,15 @@ import { Loader2, Mail, X } from "lucide-react";
 // Emails the client a private link to review the proof and sign it electronically.
 export default function SendSignLinkDialog({ proof, ar, onClose, onSend }) {
   const [email, setEmail] = useState(proof.clientEmail || "");
+  const [name, setName] = useState(proof.clientName || "");
+  const [title, setTitle] = useState(proof.clientTitle || "");
   const [sending, setSending] = useState(false);
-  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && name.trim().length > 1;
 
   const submit = async () => {
     if (!valid || sending) return;
     setSending(true);
-    await onSend({ clientEmail: email.trim(), origin: window.location.origin });
+    await onSend({ clientEmail: email.trim(), clientName: name.trim(), clientTitle: title.trim(), origin: window.location.origin });
     setSending(false);
   };
 
@@ -26,6 +28,23 @@ export default function SendSignLinkDialog({ proof, ar, onClose, onSend }) {
         </div>
 
         <div className="space-y-3 p-5">
+          <label className="block space-y-1.5">
+            <span className="block text-xs font-medium text-muted-foreground font-body">{ar ? "اسم العميل (يُطبع على الختم)" : "Client name (printed on the stamp)"}</span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={ar ? "اسم العميل" : "Client name"}
+              className="w-full rounded-md border border-input bg-card px-3 py-2.5 text-sm font-body"
+            />
+          </label>
+          <label className="block space-y-1.5">
+            <span className="block text-xs font-medium text-muted-foreground font-body">{ar ? "الصفة (اختياري)" : "Title (optional)"}</span>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full rounded-md border border-input bg-card px-3 py-2.5 text-sm font-body"
+            />
+          </label>
           <label className="block space-y-1.5">
             <span className="block text-xs font-medium text-muted-foreground font-body">{ar ? "بريد العميل" : "Client email"}</span>
             <input

@@ -18,6 +18,8 @@ const publicView = (proof) => ({
   vehicles: (proof.vehicles || []).map((v) => ({ plate: v.plate, type: v.type, make: v.make, model: v.model, year: v.year })),
   status: proof.status,
   clientName: proof.clientName,
+  clientTitle: proof.clientTitle || null,
+  clientSignatureUrl: proof.clientSignatureUrl || null,
   signedAt: proof.signedAt,
 });
 
@@ -37,12 +39,11 @@ export default async function(req) {
       const proof = found[0];
       if (!proof) return Response.json({ error: "Link not found or expired" }, { status: 404 });
       if (body.action === "publicGet") return Response.json({ proof: publicView(proof) });
-      const clientName = String(body.clientName || "").trim();
+      // The client never types their name — it is taken from the record prepared when the link was sent.
       const signatureUrl = String(body.signatureUrl || "").trim();
       if (proof.status !== "pending_signature") return Response.json({ error: "This proof is no longer awaiting signature" }, { status: 400 });
-      if (!clientName || !signatureUrl.startsWith("http")) return Response.json({ error: "Name and signature are required" }, { status: 400 });
+      if (!proof.clientName || !signatureUrl.startsWith("http")) return Response.json({ error: "Signature is required" }, { status: 400 });
       await base44.asServiceRole.entities.WorkProof.update(proof.id, {
-        clientName, clientTitle: String(body.clientTitle || "").trim() || null,
         clientSignatureUrl: signatureUrl, signedAt: new Date().toISOString(), status: "signed", signToken: null,
       });
       return Response.json({ ok: true });
@@ -157,7 +158,12 @@ export default async function(req) {
         text: `تم إنجاز العمل: ${proof.workTitle}\nبتاريخ ${proof.workDate} — بواسطة ${proof.performedByName}.\n\nيرجى مراجعة الإثبات والتوقيع إلكترونيًا عبر الزر أدناه.\n\nPlease review the work proof and sign it electronically.`,
         cta: { url, label: "مراجعة وتوقيع · Review & sign" },
       });
-      await base44.asServiceRole.entities.WorkProof.update(proof.id, { signToken, clientEmail, signLinkSentAt: new Date().toISOString() });
+      const clientName = String(body.clientName || "").trim();
+      if (!clientName) return Response.json({ error: "Client name is required" }, { status: 400 });
+      await base44.asServiceRole.entities.WorkProof.update(proof.id, {
+        signToken, clientEmail, clientName, clientTitle: String(body.clientTitle || "").trim() || null,
+        signLinkSentAt: new Date().toISOString(),
+      });
       return Response.json({ ok: true, url });
     }
 

@@ -111,7 +111,7 @@ export default function WorkProofSign() {
         )}
       </div>
 
-      {signOpen && <ClientSignDialog ar proofNumber={proof?.proofNumber} onClose={() => setSignOpen(false)} onSign={sign} />}
+      {signOpen && <ClientSignDialog ar proofNumber={proof?.proofNumber} clientName={proof?.clientName || ""} clientTitle={proof?.clientTitle || ""} onClose={() => setSignOpen(false)} onSign={sign} />}
       {certOpen && proof && <ProofCertificateDialog proof={proof} stationName={proof.stationName || ""} companyName="" ar onClose={() => setCertOpen(false)} />}
     </div>
   );
