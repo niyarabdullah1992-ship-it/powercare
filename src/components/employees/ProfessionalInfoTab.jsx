@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { updateEmployeeProfile } from "@/lib/store";
-import { Pencil, Check, Briefcase, Building2, CalendarDays, IdCard, MapPin, FileText, Heart, Flag, GraduationCap, PhoneCall, User, Landmark, Layers3, MapPinned } from "lucide-react";
+import { Pencil, Check, Briefcase, Building2, CalendarDays, IdCard, MapPin, FileText, Heart, Flag, GraduationCap, PhoneCall, User, Landmark, Layers3, MapPinned, ShieldCheck, FileSignature, BadgeCheck, Plane, HeartPulse, Stethoscope } from "lucide-react";
 import MobileSelect from "@/components/mobile/MobileSelect";
 
 // Field groups: label = i18n key for original groups; ar/en = inline labels for
@@ -25,6 +25,20 @@ export const PROFILE_GROUPS = [
     { key: "emergencyName", icon: User, ar: "جهة اتصال الطوارئ", en: "Emergency contact" },
     { key: "emergencyPhone", icon: PhoneCall, ar: "هاتف الطوارئ", en: "Emergency phone", dir: "ltr" },
     { key: "iban", icon: Landmark, ar: "الحساب البنكي (IBAN)", en: "Bank account (IBAN)", dir: "ltr" },
+  ] },
+  { ar: "الالتزام النظامي (الأنظمة السعودية)", en: "Saudi Regulatory Compliance", fields: [
+    { key: "idType", icon: IdCard, ar: "نوع الهوية (هوية وطنية / إقامة)", en: "ID type (National ID / Iqama)", optional: true },
+    { key: "idExpiry", icon: CalendarDays, type: "date", ar: "تاريخ انتهاء الهوية / الإقامة", en: "ID / Iqama expiry", optional: true },
+    { key: "gosiNumber", icon: ShieldCheck, ar: "رقم التأمينات الاجتماعية (GOSI)", en: "GOSI number", dir: "ltr", optional: true },
+    { key: "contractType", icon: FileSignature, ar: "نوع العقد (محدد / غير محدد المدة)", en: "Contract type (fixed / indefinite)", optional: true },
+    { key: "workPermitNumber", icon: BadgeCheck, ar: "رقم رخصة العمل", en: "Work permit number", dir: "ltr", optional: true },
+    { key: "workPermitExpiry", icon: CalendarDays, type: "date", ar: "انتهاء رخصة العمل", en: "Work permit expiry", optional: true },
+    { key: "passportNumber", icon: Plane, ar: "رقم الجواز", en: "Passport number", dir: "ltr", optional: true },
+    { key: "passportExpiry", icon: CalendarDays, type: "date", ar: "انتهاء الجواز", en: "Passport expiry", optional: true },
+    { key: "medicalInsuranceNumber", icon: HeartPulse, ar: "رقم التأمين الطبي", en: "Medical insurance number", dir: "ltr", optional: true },
+    { key: "medicalInsuranceExpiry", icon: CalendarDays, type: "date", ar: "انتهاء التأمين الطبي", en: "Medical insurance expiry", optional: true },
+    { key: "qiwaJobTitle", icon: Briefcase, ar: "المسمى الوظيفي في قوى", en: "Qiwa job title", optional: true },
+    { key: "medicalExamStatus", icon: Stethoscope, ar: "الفحص الطبي", en: "Medical exam status", optional: true },
   ] },
 ];
 
