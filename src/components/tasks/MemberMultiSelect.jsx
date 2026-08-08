@@ -14,7 +14,7 @@ export default function MemberMultiSelect({ members, selected, onChange, lang })
           ? `${selected.length} ${ar ? "عضو محدد" : "selected"}`
           : (ar ? "اختر عضواً أو أكثر" : "Select one or more members")}
       </p>
-      <div className="max-h-52 space-y-1 overflow-y-auto rounded-lg border border-input p-1.5">
+      <div className="flex max-h-52 flex-wrap gap-x-4 gap-y-1 overflow-y-auto">
         {members.length === 0 ? (
           <p className="p-2 text-xs text-muted-foreground font-body">{ar ? "لا يوجد أعضاء في هذه المحطة." : "No members in this station."}</p>
         ) : members.map((m) => {
