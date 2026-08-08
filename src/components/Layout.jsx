@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio, Search,
-  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck, MailPlus, BookOpenCheck, ListTree, Mails, Users, CalendarDays, Landmark,
+  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck, Network, MailPlus, BookOpenCheck, ListTree, Mails, Users, CalendarDays,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -17,7 +17,6 @@ import PresenceDot from "@/components/employees/PresenceDot";
 import SwipeToDeleteItem from "@/components/notifications/SwipeToDeleteItem";
 import SyncStatusIndicator from "@/components/SyncStatusIndicator";
 import ThemeToggle from "@/components/ThemeToggle";
-import CorporatePalettePicker from "@/components/CorporatePalettePicker";
 import { allowedNavFor } from "@/lib/navVisibility";
 import BottomTabBar from "@/components/mobile/BottomTabBar";
 import BackButton from "@/components/mobile/BackButton";
@@ -160,10 +159,10 @@ export default function Layout({ children }) {
     { to: "/app/hr/invites", icon: MailPlus, label: lang === "ar" ? "دعوات التوظيف" : "Hiring invites", category: "workforce" },
     { to: "/app/hr/catalog", icon: BookOpenCheck, label: lang === "ar" ? "كتالوج المسميات" : "Job catalog", category: "workforce" },
     { to: "/app/hr/requests", icon: CalendarDays, label: lang === "ar" ? "الإجازات والطلبات" : "Leave & requests", category: "workforce" },
+    { to: "/app/chain", icon: Network, label: lang === "ar" ? "التسلسل الإداري" : "Management chain", category: "workforce" },
     { to: "/app/performance", icon: Trophy, label: t("performance"), category: "workforce" },
     { to: "/app/expenses", icon: ReceiptText, label: t("expenses"), category: "finance" },
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "finance" },
-    { to: "/app/finance", icon: Landmark, label: lang === "ar" ? "اللوحة المالية" : "Finance", category: "finance" },
     { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)", category: "governance" },
     { to: "/app/complaints", icon: Megaphone, label: t("allComplaints"), category: "governance" },
     { to: "/app/correspondence", icon: Mails, label: lang === "ar" ? "المعاملات والمراسلات" : "Correspondence", category: "governance" },
@@ -391,7 +390,6 @@ export default function Layout({ children }) {
               <button onClick={() => setSearchOpen(true)} aria-label={lang === "ar" ? "البحث العام" : "Global search"} className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-md text-foreground hover:bg-muted md:px-3"><Search className="h-5 w-5 text-accent" /><span className="hidden text-xs font-medium text-muted-foreground lg:inline">⌘K</span></button>
               <SyncStatusIndicator isSyncing={isSyncing} />
               <ThemeToggle />
-              <CorporatePalettePicker />
               {/* Language */}
               <div className="relative" ref={langRef}>
                 <button

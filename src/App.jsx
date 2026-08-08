@@ -37,6 +37,7 @@ const StationChat = lazy(() => import('./pages/StationChat'));
 const Complaints = lazy(() => import('./pages/Complaints'));
 const EmployeeProfile = lazy(() => import('./pages/EmployeeProfile'));
 const HRStructureManagement = lazy(() => import('./pages/HRStructureManagement'));
+const MyChain = lazy(() => import('./pages/MyChain'));
 const Payroll = lazy(() => import('./pages/Payroll'));
 const Performance = lazy(() => import('./pages/Performance'));
 const Safety = lazy(() => import('./pages/Safety'));
@@ -73,7 +74,6 @@ const JobCatalog = lazy(() => import('./pages/JobCatalog'));
 const Correspondence = lazy(() => import('./pages/Correspondence'));
 const Employees = lazy(() => import('./pages/Employees'));
 const LeaveRequests = lazy(() => import('./pages/LeaveRequests'));
-const Finance = lazy(() => import('./pages/Finance'));
 
 // After the first page is interactive, quietly download the most-used pages in
 // the background so navigating to them later is instant.
@@ -159,8 +159,8 @@ function AppRoutes() {
       <Route path="/app/hr/catalog" element={<RequireAuth><JobCatalog /></RequireAuth>} />
       <Route path="/app/hr/requests" element={<RequireAuth><LeaveRequests /></RequireAuth>} />
       <Route path="/app/correspondence" element={<RequireAuth><Correspondence /></RequireAuth>} />
+      <Route path="/app/chain" element={<RequireAuth><MyChain /></RequireAuth>} />
       <Route path="/app/payroll" element={<RequireAuth><Payroll /></RequireAuth>} />
-      <Route path="/app/finance" element={<RequireAuth><Finance /></RequireAuth>} />
       <Route path="/app/performance" element={<RequireAuth><Performance /></RequireAuth>} />
       <Route path="/app/safety" element={<RequireAuth><Safety /></RequireAuth>} />
       <Route path="/app/daily-report" element={<RequireAuth><DailyReport /></RequireAuth>} />
