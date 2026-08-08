@@ -47,8 +47,8 @@ export default function WorkProofForm({ stations, ar, onSubmit }) {
   };
 
   return (
-    <form onSubmit={submit} className="overflow-hidden rounded-xl border border-accent/30 bg-card shadow-soft">
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border bg-secondary/40 p-5">
+    <form onSubmit={submit} className="flex max-h-[92vh] flex-col overflow-hidden rounded-xl border border-accent/30 bg-card shadow-soft">
+      <header className="flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-border bg-secondary/40 p-5 pe-14">
         <div>
           <h2 className="font-heading text-xl font-semibold">{ar ? "فتح مهمة وتوثيق بياناتها" : "Open a job & document its details"}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground font-body">
@@ -60,14 +60,14 @@ export default function WorkProofForm({ stations, ar, onSubmit }) {
         </span>
       </header>
 
-      <div className="border-b border-border px-5 py-3">
+      <div className="shrink-0 overflow-x-auto border-b border-border px-5 py-3">
         <StageStrip
           steps={ar ? ["١ · قبل العمل", "٢ · أثناء التنفيذ", "٣ · الإغلاق بإثبات"] : ["1 · Before work", "2 · In progress", "3 · Sealed close"]}
           activeIndex={0}
         />
       </div>
 
-      <div className="space-y-5 p-5">
+      <div className="flex-1 space-y-5 overflow-y-auto p-5">
         <ProofFormSection eyebrow="Work order" title={ar ? "تعريف العمل" : "Work definition"}>
           <div className="grid gap-3 sm:grid-cols-2">
             {!lockedStationId && (
@@ -117,7 +117,7 @@ export default function WorkProofForm({ stations, ar, onSubmit }) {
         </ProofFormSection>
       </div>
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-secondary/40 px-5 py-4">
+      <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-border bg-secondary/40 px-5 py-4">
         <p className="text-[11px] text-muted-foreground font-body">
           {valid
             ? (ar ? "البيانات المطلوبة مكتملة." : "Required details are complete.")

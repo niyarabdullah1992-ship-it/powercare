@@ -133,8 +133,8 @@ export default function WorkProof() {
       )}
 
       {formOpen && station && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-0 backdrop-blur-sm sm:p-6" onClick={() => setFormOpen(false)}>
-          <div className="relative w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-6" onClick={() => setFormOpen(false)}>
+          <div className="relative max-h-full w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setFormOpen(false)} className="absolute end-3 top-3 z-10 rounded-md bg-card/90 p-1.5 text-muted-foreground hover:bg-muted" aria-label="close">
               <X className="h-4 w-4" />
             </button>
