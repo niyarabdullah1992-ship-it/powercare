@@ -10,6 +10,7 @@ import { base44 } from "@/api/base44Client";
 import { getLeafName, getParentPath, NO_SECTION } from "@/lib/taskFolders";
 import { logAudit } from "@/lib/auditLog";
 import { loadSmartDefaults, saveSmartDefaults } from "@/lib/smartDefaults";
+import { suggestEffortWeight, EFFORT_WEIGHT_LABELS } from "@/lib/effortWeights";
 import { getTodayAttendance } from "@/lib/attendance";
 import { Link } from "react-router-dom";
 import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, Clock, Search, Pencil, X, ClipboardCheck, Archive, Sparkles } from "lucide-react";
@@ -85,6 +86,8 @@ export default function MyTasks() {
   const [prefilled, setPrefilled] = useState(false);
   const [completionMode, setCompletionMode] = useState("onsite");
   const [effortWeight, setEffortWeight] = useState(1);
+  const [assignedTo, setAssignedTo] = useState("");
+  const [weightSuggested, setWeightSuggested] = useState(false);
   const [createStep, setCreateStep] = useState(0);
   const [editStep, setEditStep] = useState(0);
   const [logAttestation, setLogAttestation] = useState("");
@@ -534,6 +537,8 @@ export default function MyTasks() {
       setTaskFiles([]);
       setPriority("medium");
       setEffortWeight(1);
+      setAssignedTo("");
+      setWeightSuggested(false);
       setCompletionMode("onsite");
       setSectionValue("");
       setCreateStep(0);
@@ -776,6 +781,13 @@ export default function MyTasks() {
       if (updated) {
         setTargets((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
       }
+      // Changing the weight of a running task is recorded in the audit trail
+      // with the name of whoever changed it.
+      const nextWeight = Number(fd.get("effortWeight")) || 1;
+      const prevWeight = Number(editTarget.effortWeight) || 1;
+      if (nextWeight !== prevWeight) {
+        logAudit(company.id, "task_effort_weight_changed", currentUser.name, `"${editTarget.title || ""}": ×${prevWeight} → ×${nextWeight}`);
+      }
       const newSection = fd.get("section");
       if (newSection) {
         ensureFolder(newSection, targetStationKey(editTarget));
@@ -996,7 +1008,14 @@ export default function MyTasks() {
               <div className="rounded-lg border border-accent/30 bg-secondary/50 px-3 py-2 text-sm font-medium">{stationName(formStation)}</div>
               <MobileSelect
                 name="assignedTo"
-                defaultValue=""
+                value={assignedTo}
+                onChange={(value) => {
+                  setAssignedTo(value);
+                  const emp = data.employees.find((x) => x.id === value);
+                  const suggested = suggestEffortWeight(emp?.profile?.position || emp?.position || emp?.role);
+                  setEffortWeight(suggested);
+                  setWeightSuggested(true);
+                }}
                 placeholder={t("selectEmployee")}
                 options={memberCandidates
                   .filter((e) => e.role === "employee" || e.role === "station_manager")
@@ -1053,13 +1072,19 @@ export default function MyTasks() {
                 <button
                   key={w}
                   type="button"
-                  onClick={() => setEffortWeight(w)}
+                  onClick={() => { setEffortWeight(w); setWeightSuggested(false); }}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-body border transition ${effortWeight === w ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
+                  title={EFFORT_WEIGHT_LABELS[w][lang === "ar" ? "ar" : "en"]}
                 >
-                  ×{w}
+                  ×{w} · {EFFORT_WEIGHT_LABELS[w][lang === "ar" ? "ar" : "en"]}
                 </button>
               ))}
             </div>
+            <p className="mt-2 text-[11px] text-muted-foreground font-body">
+              {weightSuggested
+                ? (lang === "ar" ? "وزن مقترح من المسمى الوظيفي — يمكنك تعديله قبل بدء العمل." : "Suggested from the job title — you can change it before work starts.")
+                : (lang === "ar" ? "يُحدَّد الوزن قبل بدء العمل، ولا تُمنح النقاط إلا بعد اعتماد الإثبات." : "Weight is set before work starts; points are granted only after evidence approval.")}
+            </p>
           </div>
 
           {/* Target quota */}
