@@ -42,18 +42,47 @@ export default async function(req) {
       const stationId = String(body.stationId || "").trim();
       if (!workTitle || !workDate || !stationId || !visibleStationIds.includes(stationId)) return Response.json({ error: "Invalid work proof data" }, { status: 400 });
       const clean = (urls) => (Array.isArray(urls) ? urls.filter((u) => typeof u === "string" && u.startsWith("http")).slice(0, 10) : []);
+      const idTypes = ["national_id", "iqama", "passport", "other"];
+      const workers = (Array.isArray(body.workers) ? body.workers : []).filter((w) => String(w?.name || "").trim()).slice(0, 50).map((w) => ({
+        name: String(w.name).trim(),
+        idType: idTypes.includes(w.idType) ? w.idType : "other",
+        idNumber: String(w.idNumber || "").trim(),
+        phone: String(w.phone || "").trim(),
+      }));
+      const vehicles = (Array.isArray(body.vehicles) ? body.vehicles : []).filter((v) => String(v?.plate || "").trim()).slice(0, 30).map((v) => ({
+        plate: String(v.plate).trim(),
+        type: String(v.type || "").trim(),
+        driverName: String(v.driverName || "").trim(),
+      }));
+      const plannedDays = body.plannedDays == null || body.plannedDays === "" ? null : Number(body.plannedDays);
+      if (plannedDays != null && (!Number.isFinite(plannedDays) || plannedDays < 0)) return Response.json({ error: "Invalid planned days" }, { status: 400 });
       const existing = await base44.asServiceRole.entities.WorkProof.filter({ companyId: auth.companyId });
       const year = new Date().getFullYear();
       const proofNumber = `WP-${year}-${String(existing.length + 1).padStart(6, "0")}`;
       const created = await base44.asServiceRole.entities.WorkProof.create({
         companyId: auth.companyId, proofNumber, stationId,
         workTitle, workDescription: String(body.workDescription || ""), workDate,
-        beforeImageUrls: clean(body.beforeImageUrls), afterImageUrls: clean(body.afterImageUrls),
+        workers, vehicles, plannedDays, actualDays: null, closedAt: null,
+        beforeImageUrls: clean(body.beforeImageUrls), afterImageUrls: [],
         performedById: auth.userId || "owner", performedByName: auth.name,
         clientName: null, clientTitle: null, clientSignatureUrl: null, signedAt: null,
-        status: "pending_signature",
+        status: "in_progress",
       });
       return Response.json({ ok: true, proof: created });
+    }
+
+    if (body.action === "close") {
+      const proofs = await base44.asServiceRole.entities.WorkProof.filter({ id: body.proofId, companyId: auth.companyId });
+      const proof = proofs[0];
+      if (!proof || proof.status !== "in_progress") return Response.json({ error: "Job cannot be closed" }, { status: 400 });
+      if (!visibleStationIds.includes(proof.stationId) && proof.performedById !== auth.userId) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const actualDays = Number(body.actualDays);
+      if (!Number.isFinite(actualDays) || actualDays < 0) return Response.json({ error: "Actual working days are required" }, { status: 400 });
+      const after = Array.isArray(body.afterImageUrls) ? body.afterImageUrls.filter((u) => typeof u === "string" && u.startsWith("http")).slice(0, 10) : [];
+      await base44.asServiceRole.entities.WorkProof.update(proof.id, {
+        actualDays, afterImageUrls: after, closedAt: new Date().toISOString(), status: "pending_signature",
+      });
+      return Response.json({ ok: true });
     }
 
     if (body.action === "sign") {

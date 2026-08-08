@@ -24,6 +24,76 @@
       "type": "string",
       "format": "date"
     },
+    "workers": {
+      "type": "array",
+      "description": "Crew members performing the work, with identity document details.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "idType": {
+            "type": "string",
+            "enum": [
+              "national_id",
+              "iqama",
+              "passport",
+              "other"
+            ]
+          },
+          "idNumber": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "vehicles": {
+      "type": "array",
+      "description": "Vehicles entering the site for this job.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "plate": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "driverName": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "plannedDays": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Working days planned before starting the job."
+    },
+    "actualDays": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Actual working days recorded when the job was closed."
+    },
+    "closedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ISO timestamp when the job was closed and after-photos were attached."
+    },
     "beforeImageUrls": {
       "type": "array",
       "items": {
@@ -76,10 +146,11 @@
     "status": {
       "type": "string",
       "enum": [
+        "in_progress",
         "pending_signature",
         "signed"
       ],
-      "default": "pending_signature"
+      "default": "in_progress"
     },
     "description": {
       "type": "string",

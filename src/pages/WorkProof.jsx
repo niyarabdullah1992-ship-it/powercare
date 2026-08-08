@@ -69,6 +69,7 @@ export default function WorkProof() {
               proof={proof}
               stationName={stations.find((s) => s.stationId === proof.stationId)?.name || (data?.stations || []).find((s) => s.id === proof.stationId)?.name || "—"}
               ar={ar}
+              onClose={(payload) => run("close", { proofId: proof.id, ...payload }, ar ? "تم إغلاق المهمة." : "Job closed.")}
               onSign={(payload) => run("sign", { proofId: proof.id, ...payload }, ar ? "تم اعتماد الإثبات بتوقيع العميل." : "Proof sealed with the client's signature.")}
             />
           ))}
