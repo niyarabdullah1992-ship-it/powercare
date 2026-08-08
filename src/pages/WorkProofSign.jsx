@@ -51,7 +51,9 @@ export default function WorkProofSign() {
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>
         ) : !proof ? (
-          <p className="rounded-xl border border-border bg-card p-8 text-center text-sm font-body">{error || "الرابط غير صالح أو منتهي."}</p>
+          <p className="rounded-xl border border-border bg-card p-8 text-center text-sm font-body">
+            {error === "Unauthorized" ? "هذا الرابط غير صالح أو تم توقيع الإثبات مسبقًا. يرجى طلب رابط جديد." : error || "الرابط غير صالح أو منتهي."}
+          </p>
         ) : (
           <article className="space-y-5 rounded-xl border border-border bg-card p-6 shadow-soft">
             <div>
