@@ -4,6 +4,7 @@ import { submitLeaveRequest, setLeaveRequestStatus } from "@/lib/store";
 import { Send } from "lucide-react";
 import CommentFiles from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
+import MobileSelect from "@/components/mobile/MobileSelect";
 import LeaveBalanceCard from "@/components/employees/LeaveBalanceCard";
 import LeaveTotalsEditor from "@/components/employees/LeaveTotalsEditor";
 import LeaveRequestItem from "@/components/employees/LeaveRequestItem";
@@ -48,9 +49,13 @@ export default function LeaveTab({ employee, companyId, currentUser, isSelf, can
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <label className="space-y-1">
               <span className="block text-xs text-muted-foreground font-body">{t("leaveType")}</span>
-              <select value={type} onChange={(e) => setType(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
-                {visibleLeaveTypes(employee.profile).map((ty) => <option key={ty.key} value={ty.key}>{t(ty.key)}</option>)}
-              </select>
+              <MobileSelect
+                value={type}
+                onChange={setType}
+                placeholder={t("leaveType")}
+                className="w-full"
+                options={visibleLeaveTypes(employee.profile).map((ty) => ({ value: ty.key, label: t(ty.key) }))}
+              />
             </label>
             <label className="space-y-1">
               <span className="block text-xs text-muted-foreground font-body">{t("startDate")}</span>
