@@ -14,6 +14,7 @@ export const LEAVE_TYPES = [
   { key: "patientCompanion", defaultTotal: null, requiresFile: true },
   { key: "iddah", defaultTotal: 130 },
   { key: "otherLeave", defaultTotal: null },
+  { key: "otherRequest", defaultTotal: null },
   { key: "unpaid", defaultTotal: null },
 ];
 
