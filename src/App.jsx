@@ -63,6 +63,7 @@ const TiktokAd = lazy(() => import('./pages/TiktokAd'));
 const TruePerformanceDoc = lazy(() => import('./pages/TruePerformanceDoc'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const Expenses = lazy(() => import('./pages/Expenses'));
+const WorkProof = lazy(() => import('./pages/WorkProof'));
 const StationExpenses = lazy(() => import('./pages/StationExpenses'));
 
 // After the first page is interactive, quietly download the most-used pages in
@@ -150,6 +151,7 @@ function AppRoutes() {
       <Route path="/app/files" element={<RequireAuth><Files /></RequireAuth>} />
       <Route path="/app/inventory" element={<RequireAuth><Inventory /></RequireAuth>} />
       <Route path="/app/expenses" element={<RequireAuth><Expenses /></RequireAuth>} />
+      <Route path="/app/work-proof" element={<RequireAuth><WorkProof /></RequireAuth>} />
       <Route path="/app/stations/:stationId/expenses" element={<RequireAuth><StationExpenses /></RequireAuth>} />
       <Route path="/app/signing" element={<RequireAuth><FileSigning /></RequireAuth>} />
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />

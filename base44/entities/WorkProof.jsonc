@@ -1,0 +1,121 @@
+{
+  "name": "WorkProof",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company (tenant) this proof belongs to."
+    },
+    "proofNumber": {
+      "type": "string",
+      "description": "Human-readable proof number, e.g. WP-2026-000001."
+    },
+    "stationId": {
+      "type": "string",
+      "description": "Station where the work was performed."
+    },
+    "workTitle": {
+      "type": "string"
+    },
+    "workDescription": {
+      "type": "string"
+    },
+    "workDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "beforeImageUrls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10
+    },
+    "afterImageUrls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10
+    },
+    "performedById": {
+      "type": "string",
+      "description": "Employee id (or 'owner') who documented the work."
+    },
+    "performedByName": {
+      "type": "string"
+    },
+    "clientName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Name of the client who signed the proof."
+    },
+    "clientTitle": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Client's job title / capacity."
+    },
+    "clientSignatureUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Uploaded image of the client's hand-drawn signature."
+    },
+    "signedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ISO timestamp of the client signing moment. Once set, the record is immutable."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending_signature",
+        "signed"
+      ],
+      "default": "pending_signature"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "companyId",
+    "proofNumber",
+    "stationId",
+    "workTitle",
+    "workDate",
+    "performedById",
+    "performedByName",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
