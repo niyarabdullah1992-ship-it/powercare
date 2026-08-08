@@ -88,6 +88,7 @@ export default function MyTasks() {
   const [completionMode, setCompletionMode] = useState("onsite");
   const [effortWeight, setEffortWeight] = useState(1);
   const [assignedIds, setAssignedIds] = useState([]);
+  const [memberPickerOpen, setMemberPickerOpen] = useState(false);
   const [weightSuggested, setWeightSuggested] = useState(false);
   const [createStep, setCreateStep] = useState(0);
   const [editStep, setEditStep] = useState(0);
@@ -1003,7 +1004,7 @@ export default function MyTasks() {
                 <button
                   key={val}
                   type="button"
-                  onClick={() => setAssignType(val)}
+                  onClick={() => { setAssignType(val); if (val === "member") setMemberPickerOpen(true); }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${assignType === val ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
                 >
                   <OptIcon className="w-3.5 h-3.5" /> {label}
@@ -1018,19 +1019,34 @@ export default function MyTasks() {
           {assignType === "member" && (
             <div className="space-y-2">
               <div className="rounded-lg border border-accent/30 bg-secondary/50 px-3 py-2 text-sm font-medium">{stationName(formStation)}</div>
-              <MemberMultiSelect
-                lang={lang}
-                members={memberCandidates.filter((e) => e.role === "employee" || e.role === "station_manager")}
-                selected={assignedIds}
-                onChange={(ids) => {
-                  setAssignedIds(ids);
-                  const emp = data.employees.find((x) => x.id === ids[0]);
-                  if (emp) {
-                    setEffortWeight(suggestEffortWeight(emp.profile?.position || emp.position || emp.role));
-                    setWeightSuggested(true);
-                  }
-                }}
-              />
+              <p className="text-xs font-body text-muted-foreground">
+                {assignedIds.length > 0
+                  ? assignedIds.map((id) => employeeName(id)).join("، ")
+                  : (lang === "ar" ? "اضغط «عضو» لاختيار الأعضاء." : "Tap “Member” to pick members.")}
+              </p>
+              {memberPickerOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setMemberPickerOpen(false)}>
+                  <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-xl border border-accent/40 bg-card p-4 shadow-elevated">
+                    <p className="mb-3 text-sm font-semibold">{lang === "ar" ? "اختر عضواً أو أكثر" : "Select one or more members"}</p>
+                    <MemberMultiSelect
+                      lang={lang}
+                      members={memberCandidates.filter((e) => e.role === "employee" || e.role === "station_manager")}
+                      selected={assignedIds}
+                      onChange={(ids) => {
+                        setAssignedIds(ids);
+                        const emp = data.employees.find((x) => x.id === ids[0]);
+                        if (emp) {
+                          setEffortWeight(suggestEffortWeight(emp.profile?.position || emp.position || emp.role));
+                          setWeightSuggested(true);
+                        }
+                      }}
+                    />
+                    <button type="button" onClick={() => setMemberPickerOpen(false)} className="mt-3 w-full rounded-md bg-foreground px-3 py-2 text-sm text-background">
+                      {lang === "ar" ? "تم" : "Done"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
