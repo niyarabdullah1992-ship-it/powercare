@@ -14,11 +14,22 @@ export default function LeaveRequests() {
 
   if (!data || !currentUser || !company) return null;
 
+  // Managers, executives, the owner and HR-position holders can adjust balances.
+  const canEditBalances =
+    currentUser.id === data.ownerId ||
+    !!currentUser.hrLevelId ||
+    ["station_manager", "pgm", "ops_manager", "director"].includes(currentUser.role);
+
   return (
     <div className="space-y-6">
       <PageHeader title={ar ? "الإجازات والطلبات" : "Leaves & Requests"} icon={Inbox} />
       <HRRequestsPanel data={data} companyId={company.id} currentUser={currentUser} ar={ar} />
-      <LeaveBalancesTable employees={data.employees || []} ar={ar} />
+      <LeaveBalancesTable
+        employees={data.employees || []}
+        companyId={company.id}
+        canEdit={canEditBalances}
+        ar={ar}
+      />
     </div>
   );
 }
