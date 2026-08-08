@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Radio, Search,
-  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck, Network, MailPlus, BookOpenCheck, ListTree, Mails, Users, CalendarDays,
+  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, UserCircle, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck, Network, MailPlus, BookOpenCheck, ListTree, Mails, Users, CalendarDays, Landmark,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -163,6 +163,7 @@ export default function Layout({ children }) {
     { to: "/app/performance", icon: Trophy, label: t("performance"), category: "workforce" },
     { to: "/app/expenses", icon: ReceiptText, label: t("expenses"), category: "finance" },
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "finance" },
+    { to: "/app/finance", icon: Landmark, label: lang === "ar" ? "اللوحة المالية" : "Finance", category: "finance" },
     { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)", category: "governance" },
     { to: "/app/complaints", icon: Megaphone, label: t("allComplaints"), category: "governance" },
     { to: "/app/correspondence", icon: Mails, label: lang === "ar" ? "المعاملات والمراسلات" : "Correspondence", category: "governance" },

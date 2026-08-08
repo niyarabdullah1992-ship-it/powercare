@@ -3,7 +3,7 @@
 
 const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/inventory", "/app/expenses", "/app/signing", "/app/client-proof", "/app/assistant", "/app/complaints", "/app/performance", "/app/chain", "/app/employees", "/app/manual"];
 const MANAGER_EXTRA = ["/app/safety", "/app/correspondence"];
-const EXEC_EXTRA = ["/app/hr", "/app/payroll"];
+const EXEC_EXTRA = ["/app/hr", "/app/payroll", "/app/finance"];
 const SMART_SECTION_ROUTES = {
   complaints: "/app/complaints", safety: "/app/safety", payroll: "/app/payroll",
   performance: "/app/performance", attendance: "/app/attendance",
