@@ -24,12 +24,12 @@ export default function MemberMultiSelect({ members, selected, onChange, lang })
               key={m.id}
               type="button"
               onClick={() => toggle(m.id)}
-              className={`flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-start text-sm font-body transition ${on ? "bg-accent/15 text-foreground" : "hover:bg-muted"}`}
+              className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-start text-sm font-body transition ${on ? "bg-accent/15 text-foreground" : "hover:bg-muted"}`}
             >
-              <span className="truncate">{m.name}</span>
               <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${on ? "border-accent bg-accent text-accent-foreground" : "border-input"}`}>
                 {on && <Check className="h-3 w-3" />}
               </span>
+              <span className="truncate">{m.name}</span>
             </button>
           );
         })}
