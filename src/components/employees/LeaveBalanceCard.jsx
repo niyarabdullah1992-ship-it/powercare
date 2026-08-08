@@ -29,7 +29,7 @@ export default function LeaveBalanceCard({ profile, requests }) {
             </div>
           );
         })}
-        {["sick", "exam"].map((key) => (
+        {["sick", "exam", "patientCompanion", "otherLeave"].map((key) => (
           <div key={key} className="p-3 rounded-lg border border-border bg-background flex flex-col justify-center">
             <p className="text-xs text-muted-foreground font-body truncate">{t(key)}</p>
             <p className="text-lg font-heading font-semibold leading-tight">{t("unlimited")}</p>

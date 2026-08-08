@@ -8,6 +8,12 @@ export const LEAVE_TYPES = [
   { key: "bereavement", defaultTotal: 5 },
   { key: "maternity", defaultTotal: 70 },
   { key: "paternity", defaultTotal: 3 },
+  { key: "newborn", defaultTotal: 3 },
+  { key: "hajj", defaultTotal: 10 },
+  { key: "emergency", defaultTotal: 5 },
+  { key: "patientCompanion", defaultTotal: null, requiresFile: true },
+  { key: "iddah", defaultTotal: 130 },
+  { key: "otherLeave", defaultTotal: null },
   { key: "unpaid", defaultTotal: null },
 ];
 
@@ -16,7 +22,8 @@ export const LEAVE_TYPES = [
 export function isLeaveTypeAllowed(profile, key) {
   const gender = profile?.gender;
   if (key === "maternity") return gender !== "male";
-  if (key === "paternity") return gender !== "female";
+  if (key === "paternity" || key === "newborn") return gender !== "female";
+  if (key === "iddah") return gender !== "male";
   return true;
 }
 
