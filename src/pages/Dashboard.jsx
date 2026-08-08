@@ -19,7 +19,7 @@ import CommandCenterHero from "@/components/dashboard/CommandCenterHero";
 import RiskForecastPanel from "@/components/dashboard/RiskForecastPanel";
 import NiroPredictiveCenter from "@/components/dashboard/NiroPredictiveCenter";
 import { getRiskWeights } from "@/lib/riskWeights";
-import { isActiveAttendance, isScheduledToday } from "@/lib/attendance";
+import { isActiveAttendance } from "@/lib/attendance";
 import { isOnLeaveToday } from "@/lib/leaveTypes";
 import useProactiveAlerts from "@/hooks/useProactiveAlerts";
 import OperationalAlerts from "@/components/dashboard/OperationalAlerts";
@@ -145,9 +145,10 @@ export default function Dashboard() {
 
   const teamEmployees = visibleEmployees(currentUser, data);
   const pendingLeaveCount = teamEmployees.reduce((sum, employee) => sum + (employee.leaveRequests || []).filter((request) => request.status === "pending").length, 0);
-  const scheduledEmployees = teamEmployees.filter((employee) => isScheduledToday(employee, data) && !isOnLeaveToday(employee));
+  // كل موظف غير مُجاز يُحتسب ضمن حضور اليوم — لا حالة "غير مجدول" في اللوحة الرئيسية.
+  const scheduledEmployees = teamEmployees.filter((employee) => !isOnLeaveToday(employee));
   const scheduledIds = new Set(scheduledEmployees.map((employee) => employee.id));
-  const checkedInCount = attendanceRows.filter((row) => isActiveAttendance(row) && scheduledIds.has(row.employee_id)).length;
+  const checkedInCount = attendanceRows.filter((row) => ["present", "late"].includes(row.status) && scheduledIds.has(row.employee_id)).length;
   const activeMembersCount = new Set(attendanceRows.filter((row) => ["present", "late"].includes(row.status) || isActiveAttendance(row)).map((row) => row.employee_id)).size;
   const attendanceRate = scheduledEmployees.length ? Math.round((checkedInCount / scheduledEmployees.length) * 100) : 0;
   const absentCount = Math.max(0, scheduledEmployees.length - checkedInCount);
