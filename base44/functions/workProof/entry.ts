@@ -10,6 +10,8 @@ const publicView = (proof) => ({
   actualDays: proof.actualDays,
   plannedDays: proof.plannedDays,
   performedByName: proof.performedByName,
+  employeeSignatureUrl: proof.employeeSignatureUrl || null,
+  employeeSignedAt: proof.employeeSignedAt || null,
   beforeImageUrls: proof.beforeImageUrls || [],
   afterImageUrls: proof.afterImageUrls || [],
   workers: (proof.workers || []).map((w) => ({ name: w.name })),
@@ -124,8 +126,17 @@ export default async function(req) {
       if (!Number.isFinite(actualDays) || actualDays < 0) return Response.json({ error: "Actual working days are required" }, { status: 400 });
       const after = Array.isArray(body.afterImageUrls) ? body.afterImageUrls.filter((u) => typeof u === "string" && u.startsWith("http")).slice(0, 10) : [];
       const afterFiles = Array.isArray(body.afterFiles) ? body.afterFiles.filter((f) => typeof f?.url === "string" && f.url.startsWith("http")).slice(0, 10).map((f) => ({ url: f.url, name: String(f.name || "file") })) : [];
+      // The employee who documented the job signs it automatically at close, using their saved signature.
+      let employeeSignatureUrl = proof.employeeSignatureUrl || null;
+      if (!employeeSignatureUrl && auth.userId) {
+        const employees = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId: auth.userId });
+        const saved = employees[0]?.profile?.signatureUrl;
+        if (typeof saved === "string" && saved.startsWith("http")) employeeSignatureUrl = saved;
+      }
+      const closedAt = new Date().toISOString();
       await base44.asServiceRole.entities.WorkProof.update(proof.id, {
-        actualDays, afterImageUrls: after, afterFiles, closedAt: new Date().toISOString(), status: "pending_signature",
+        actualDays, afterImageUrls: after, afterFiles, closedAt, status: "pending_signature",
+        employeeSignatureUrl, employeeSignedAt: employeeSignatureUrl ? closedAt : null,
       });
       return Response.json({ ok: true });
     }

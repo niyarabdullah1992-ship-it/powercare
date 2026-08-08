@@ -161,6 +161,20 @@
     "performedByName": {
       "type": "string"
     },
+    "employeeSignatureUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Employee's saved signature stamped automatically when the job was closed."
+    },
+    "employeeSignedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ISO timestamp of the automatic employee signature at close."
+    },
     "clientName": {
       "type": [
         "string",

@@ -86,6 +86,16 @@ export default function WorkProofCard({ proof, stationName, ar, onSign, onClose,
       </div>
 
       <footer className="space-y-2 border-t border-border bg-secondary/40 p-4">
+        {proof.employeeSignatureUrl && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-wider text-accent-text font-body">{ar ? "توقيع الموظف (تلقائي عند الإغلاق)" : "Employee signature (auto at close)"}</p>
+              <p className="truncate text-sm font-medium font-body">{proof.performedByName}</p>
+              {proof.employeeSignedAt && <p className="text-[10px] text-muted-foreground font-body">{new Date(proof.employeeSignedAt).toLocaleString(ar ? "ar" : "en")}</p>}
+            </div>
+            <Image src={proof.employeeSignatureUrl} alt="employee signature" fittingType="fit" className="h-14 w-32 shrink-0 rounded-md border border-border bg-white" />
+          </div>
+        )}
         <button onClick={() => setCertOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-accent/50 bg-card px-4 py-2.5 text-sm font-semibold hover:bg-muted">
           <FileText className="h-4 w-4" />{ar ? "شهادة إثبات العمل (PDF)" : "Work proof certificate (PDF)"}
         </button>
