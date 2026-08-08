@@ -17,6 +17,7 @@ import PresenceDot from "@/components/employees/PresenceDot";
 import SwipeToDeleteItem from "@/components/notifications/SwipeToDeleteItem";
 import SyncStatusIndicator from "@/components/SyncStatusIndicator";
 import ThemeToggle from "@/components/ThemeToggle";
+import CorporatePalettePicker from "@/components/CorporatePalettePicker";
 import { allowedNavFor } from "@/lib/navVisibility";
 import BottomTabBar from "@/components/mobile/BottomTabBar";
 import BackButton from "@/components/mobile/BackButton";
@@ -391,6 +392,7 @@ export default function Layout({ children }) {
               <button onClick={() => setSearchOpen(true)} aria-label={lang === "ar" ? "البحث العام" : "Global search"} className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-md text-foreground hover:bg-muted md:px-3"><Search className="h-5 w-5 text-accent" /><span className="hidden text-xs font-medium text-muted-foreground lg:inline">⌘K</span></button>
               <SyncStatusIndicator isSyncing={isSyncing} />
               <ThemeToggle />
+              <CorporatePalettePicker />
               {/* Language */}
               <div className="relative" ref={langRef}>
                 <button
