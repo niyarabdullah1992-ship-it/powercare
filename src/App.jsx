@@ -37,7 +37,6 @@ const StationChat = lazy(() => import('./pages/StationChat'));
 const Complaints = lazy(() => import('./pages/Complaints'));
 const EmployeeProfile = lazy(() => import('./pages/EmployeeProfile'));
 const HRStructureManagement = lazy(() => import('./pages/HRStructureManagement'));
-const MyChain = lazy(() => import('./pages/MyChain'));
 const Payroll = lazy(() => import('./pages/Payroll'));
 const Performance = lazy(() => import('./pages/Performance'));
 const Safety = lazy(() => import('./pages/Safety'));
@@ -159,7 +158,6 @@ function AppRoutes() {
       <Route path="/app/hr/catalog" element={<RequireAuth><JobCatalog /></RequireAuth>} />
       <Route path="/app/hr/requests" element={<RequireAuth><LeaveRequests /></RequireAuth>} />
       <Route path="/app/correspondence" element={<RequireAuth><Correspondence /></RequireAuth>} />
-      <Route path="/app/chain" element={<RequireAuth><MyChain /></RequireAuth>} />
       <Route path="/app/payroll" element={<RequireAuth><Payroll /></RequireAuth>} />
       <Route path="/app/performance" element={<RequireAuth><Performance /></RequireAuth>} />
       <Route path="/app/safety" element={<RequireAuth><Safety /></RequireAuth>} />
