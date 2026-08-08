@@ -31,6 +31,7 @@ import CompletionModeToggle from "@/components/tasks/CompletionModeToggle";
 import TaskWizardStepper from "@/components/tasks/TaskWizardStepper";
 import TaskFormStep from "@/components/tasks/TaskFormStep";
 import TaskStepNav from "@/components/tasks/TaskStepNav";
+import MemberMultiSelect from "@/components/tasks/MemberMultiSelect";
 
 const DATE_PRESETS = [
   { val: "monthly", months: 1 },
@@ -86,7 +87,7 @@ export default function MyTasks() {
   const [prefilled, setPrefilled] = useState(false);
   const [completionMode, setCompletionMode] = useState("onsite");
   const [effortWeight, setEffortWeight] = useState(1);
-  const [assignedTo, setAssignedTo] = useState("");
+  const [assignedIds, setAssignedIds] = useState([]);
   const [weightSuggested, setWeightSuggested] = useState(false);
   const [createStep, setCreateStep] = useState(0);
   const [editStep, setEditStep] = useState(0);
@@ -422,7 +423,7 @@ export default function MyTasks() {
     const fail = (message) => { toast({ description: message, variant: "destructive" }); return false; };
     if (index === 0 && !String(fd.get("title") || "").trim()) return fail(t("taskTitle"));
     if (index === 1) {
-      if (!isIndividual && assignType === "member" && !fd.get("assignedTo")) return fail(t("selectEmployee"));
+      if (!isIndividual && assignType === "member" && assignedIds.length === 0) return fail(t("selectEmployee"));
       if (!fd.get("section")) return fail(t("sectionName"));
     }
     if (index === 2) {
@@ -473,10 +474,13 @@ export default function MyTasks() {
     let employeeId = null;
     let assignmentId = null;
     let stationId = null;
+    // A member task can be assigned to several people at once — one task per member.
+    let recipients = [];
 
     if (aType === "member") {
-      employeeId = fd.get("assignedTo");
-      if (!employeeId) { alert(t("selectEmployee")); return; }
+      if (assignedIds.length === 0) { alert(t("selectEmployee")); return; }
+      recipients = assignedIds;
+      employeeId = assignedIds[0];
       const emp = data.employees.find((x) => x.id === employeeId);
       stationId = emp?.stationId || firstStationId;
       assignmentId = employeeId;
@@ -495,7 +499,7 @@ export default function MyTasks() {
     creatingRef.current = true;
     setIsCreating(true);
     try {
-      const res = await targetsCall({
+      const basePayload = {
         action: "createTarget",
         userRole: currentUser.role,
         managerId: currentUser.id,
@@ -514,18 +518,26 @@ export default function MyTasks() {
         completionMode: canSetCompletionMode ? completionMode : "onsite",
         startDate,
         endDate,
-      });
-      const created = res?.data?.target;
-      if (created && created.id) {
-        setTargets((prev) => [created, ...prev.filter((x) => x.id !== created.id)]);
+      };
+      const results = aType === "member"
+        ? await Promise.all(recipients.map((id) => {
+            const emp = data.employees.find((x) => x.id === id);
+            return targetsCall({ ...basePayload, employeeId: id, assignmentId: id, stationId: emp?.stationId || firstStationId });
+          }))
+        : [await targetsCall(basePayload)];
+      const createdList = results.map((r) => r?.data?.target).filter((x) => x?.id);
+      if (createdList.length > 0) {
+        setTargets((prev) => [...createdList, ...prev.filter((x) => !createdList.some((c) => c.id === x.id))]);
       }
       // Remember these choices for the next task (smart pre-fill).
       saveSmartDefaults(`task_${currentUser.id}`, { assignType: aType, formStation, priority, datePreset });
       if (section) {
         ensureFolder(section, aType === "hq_team" ? PERSONAL_WORKSPACE_ID : stationId);
       }
-      if (aType === "member" && employeeId) {
-        addNotification(company.id, employeeId, `${t("setTarget")}: ${title} — ${total} ${t("tasksUnit")}.`);
+      if (aType === "member") {
+        for (const id of recipients) {
+          addNotification(company.id, id, `${t("setTarget")}: ${title} — ${total} ${t("tasksUnit")}.`);
+        }
       }
       setShowCreate(false);
       setAssignType("member");
@@ -537,7 +549,7 @@ export default function MyTasks() {
       setTaskFiles([]);
       setPriority("medium");
       setEffortWeight(1);
-      setAssignedTo("");
+      setAssignedIds([]);
       setWeightSuggested(false);
       setCompletionMode("onsite");
       setSectionValue("");
@@ -1006,20 +1018,18 @@ export default function MyTasks() {
           {assignType === "member" && (
             <div className="space-y-2">
               <div className="rounded-lg border border-accent/30 bg-secondary/50 px-3 py-2 text-sm font-medium">{stationName(formStation)}</div>
-              <MobileSelect
-                name="assignedTo"
-                value={assignedTo}
-                onChange={(value) => {
-                  setAssignedTo(value);
-                  const emp = data.employees.find((x) => x.id === value);
-                  const suggested = suggestEffortWeight(emp?.profile?.position || emp?.position || emp?.role);
-                  setEffortWeight(suggested);
-                  setWeightSuggested(true);
+              <MemberMultiSelect
+                lang={lang}
+                members={memberCandidates.filter((e) => e.role === "employee" || e.role === "station_manager")}
+                selected={assignedIds}
+                onChange={(ids) => {
+                  setAssignedIds(ids);
+                  const emp = data.employees.find((x) => x.id === ids[0]);
+                  if (emp) {
+                    setEffortWeight(suggestEffortWeight(emp.profile?.position || emp.position || emp.role));
+                    setWeightSuggested(true);
+                  }
                 }}
-                placeholder={t("selectEmployee")}
-                options={memberCandidates
-                  .filter((e) => e.role === "employee" || e.role === "station_manager")
-                  .map((e) => ({ value: e.id, label: e.name }))}
               />
             </div>
           )}

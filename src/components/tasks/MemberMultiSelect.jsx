@@ -1,0 +1,51 @@
+import React from "react";
+import { Check, Users } from "lucide-react";
+
+// Assign one task to several members at once — or to the whole station team.
+export default function MemberMultiSelect({ members, selected, onChange, lang }) {
+  const ar = lang === "ar";
+  const allSelected = members.length > 0 && selected.length === members.length;
+
+  const toggle = (id) =>
+    onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground font-body">
+          {selected.length > 0
+            ? `${selected.length} ${ar ? "عضو محدد" : "selected"}`
+            : (ar ? "اختر عضواً أو أكثر" : "Select one or more members")}
+        </p>
+        <button
+          type="button"
+          onClick={() => onChange(allSelected ? [] : members.map((m) => m.id))}
+          className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 px-3 py-1 text-xs font-body hover:bg-accent/10"
+        >
+          <Users className="h-3.5 w-3.5" />
+          {allSelected ? (ar ? "إلغاء التحديد" : "Clear all") : (ar ? "الفريق كامل" : "Whole team")}
+        </button>
+      </div>
+      <div className="max-h-52 space-y-1 overflow-y-auto rounded-lg border border-input p-1.5">
+        {members.length === 0 ? (
+          <p className="p-2 text-xs text-muted-foreground font-body">{ar ? "لا يوجد أعضاء في هذه المحطة." : "No members in this station."}</p>
+        ) : members.map((m) => {
+          const on = selected.includes(m.id);
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => toggle(m.id)}
+              className={`flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-start text-sm font-body transition ${on ? "bg-accent/15 text-foreground" : "hover:bg-muted"}`}
+            >
+              <span className="truncate">{m.name}</span>
+              <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${on ? "border-accent bg-accent text-accent-foreground" : "border-input"}`}>
+                {on && <Check className="h-3 w-3" />}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
