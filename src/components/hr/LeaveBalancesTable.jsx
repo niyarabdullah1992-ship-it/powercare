@@ -9,17 +9,18 @@ import { LEAVE_TYPES, getLeaveTotal, usedLeaveDays } from "@/lib/leaveTypes";
 // Managers / HR can edit each employee's yearly totals inline.
 export default function LeaveBalancesTable({ employees, companyId, canEdit, ar }) {
   const { t } = useI18n();
-  const types = LEAVE_TYPES.filter((ty) => ty.key !== "unpaid" && ty.defaultTotal !== null);
+  const types = LEAVE_TYPES.filter((ty) => ty.key !== "unpaid");
+  const editableTypes = types.filter((ty) => ty.defaultTotal !== null);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({});
 
   const startEdit = (emp) => {
     setEditingId(emp.id);
-    setForm(types.reduce((acc, ty) => ({ ...acc, [ty.key]: getLeaveTotal(emp.profile, ty.key) ?? 0 }), {}));
+    setForm(editableTypes.reduce((acc, ty) => ({ ...acc, [ty.key]: getLeaveTotal(emp.profile, ty.key) ?? 0 }), {}));
   };
 
   const save = (emp) => {
-    types.forEach((ty) => setLeaveTotal(companyId, emp.id, ty.key, Number(form[ty.key]) || 0));
+    editableTypes.forEach((ty) => setLeaveTotal(companyId, emp.id, ty.key, Number(form[ty.key]) || 0));
     setEditingId(null);
   };
 
@@ -58,7 +59,9 @@ export default function LeaveBalancesTable({ employees, companyId, canEdit, ar }
                       const remaining = Math.max(0, total - usedLeaveDays(emp.leaveRequests || [], ty.key));
                       return (
                         <td key={ty.key} className="p-2 font-body" data-label={t(ty.key)}>
-                          {editing ? (
+                          {ty.defaultTotal === null ? (
+                            <>{t("unlimited")}<span className="text-xs text-muted-foreground"> ({usedLeaveDays(emp.leaveRequests || [], ty.key)})</span></>
+                          ) : editing ? (
                             <input
                               type="number"
                               min="0"
