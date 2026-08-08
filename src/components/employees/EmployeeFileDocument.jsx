@@ -44,7 +44,7 @@ function Sheet({ children, header, footer }) {
 }
 
 // Comprehensive, verifiable employee file — mirrors the official HR document layout.
-export default function EmployeeFileDocument({ employee, company, stationName, gradeLabel, managerName, docNumber, fingerprint, hrManagerName, ar }) {
+export default function EmployeeFileDocument({ employee, company, stationName, gradeLabel, managerName, docNumber, fingerprint, signerName, signatureStampUrl, verificationId, ar }) {
   const p = employee.profile || {};
   const certs = employee.certificates || [];
   const leaves = employee.leaveRequests || [];
@@ -190,16 +190,14 @@ export default function EmployeeFileDocument({ employee, company, stationName, g
           )}
         </Section>
 
-        <div className="mt-10 flex items-end justify-between border-t border-[#dfe4ea] pt-6">
-          <div>
-            <p className="text-[10px] text-[#5b6b78]">{ar ? "مدير الموارد البشرية" : "HR Manager"}</p>
-            <p className="mt-6 border-t border-[#12304a] pt-1 text-[11px] font-bold">{hrManagerName || "—"}</p>
-            <p className="text-[9px] text-[#5b6b78]">{ar ? "موقّع رقمياً" : "Digitally signed"} · {fmt(issuedAt, ar)}</p>
-          </div>
-          <div className="flex h-20 w-20 flex-col items-center justify-center rounded-full border-2 border-[#1f6f52] text-center text-[8px] font-bold text-[#1f6f52]">
-            <span>{company.name}</span>
-            <span>{ar ? "الموارد البشرية" : "HR"}</span>
-          </div>
+        <div className="mt-10 border-t border-[#dfe4ea] pt-6">
+          <p className="text-[10px] text-[#5b6b78]">{ar ? "التوقيع الرقمي المعتمد" : "Approved digital signature"}</p>
+          {signatureStampUrl && <img src={signatureStampUrl} alt="digital signature" className="mt-3 w-[120mm] max-w-full" />}
+          <p className="mt-2 text-[10px] font-bold text-[#12304a]">{signerName}</p>
+          <p className="text-[9px] text-[#5b6b78]">
+            {ar ? "موقّع رقمياً" : "Digitally signed"} · {fmt(issuedAt, ar)}
+            {verificationId ? ` · ${ar ? "رقم التحقق" : "Verification ID"}: ${verificationId}` : ""}
+          </p>
         </div>
         <p className="mt-4 text-[9px] leading-relaxed text-[#5b6b78]">
           {ar

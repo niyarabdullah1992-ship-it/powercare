@@ -1,25 +1,34 @@
 import React, { useRef, useState } from "react";
 import { FileDown, Loader2 } from "lucide-react";
 import { downloadElementPdf } from "@/lib/downloadElementPdf";
+import { buildClientStamp } from "@/lib/clientDigitalStamp";
+import { useAuth } from "@/lib/PowerCareAuth";
 import EmployeeFileDocument from "@/components/employees/EmployeeFileDocument";
 
 const randomHex = (n) => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join("");
 
-// Lets the employee (or HR) download their official comprehensive file as PDF.
+// Lets the employee (or HR) download their official comprehensive file as PDF,
+// sealed with the platform's canonical digital signature badge in the name of
+// whoever downloaded it.
 export default function EmployeeFileCard({ employee, company, data, stationName, gradeLabel, ar }) {
+  const { currentUser } = useAuth();
   const ref = useRef(null);
   const [busy, setBusy] = useState(false);
+  const [stamp, setStamp] = useState(null);
   const [meta] = useState(() => ({
     docNumber: `HR-EF-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 99999)).padStart(5, "0")}`,
     fingerprint: Array.from({ length: 8 }, () => randomHex(4)).join("·"),
   }));
 
   const manager = data.employees.find((e) => e.id === employee.managerId);
-  const hrManager = data.employees.find((e) => e.id === data.ownerId);
+  const signerName = currentUser?.name || employee.name;
 
   const download = async () => {
     setBusy(true);
     try {
+      const built = await buildClientStamp(signerName);
+      setStamp(built);
+      await new Promise((resolve) => setTimeout(resolve, 60));
       await downloadElementPdf(ref.current, `${meta.docNumber}.pdf`);
     } finally {
       setBusy(false);
@@ -29,7 +38,7 @@ export default function EmployeeFileCard({ employee, company, data, stationName,
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
       <p className="font-heading text-sm font-semibold">{ar ? "ملف الموظف الشامل" : "Comprehensive employee file"}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{ar ? "مستند رسمي يشمل البيانات الوظيفية والشهادات والإجازات والراتب." : "Official document with employment data, certificates, leaves and salary."}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{ar ? "مستند رسمي موقّع رقمياً باسمك يشمل البيانات الوظيفية والشهادات والإجازات والراتب." : "Official document digitally signed in your name with employment data, certificates, leaves and salary."}</p>
       <button onClick={download} disabled={busy} className="mt-3 flex w-full items-center justify-center gap-2 rounded-md bg-foreground px-3 py-2 text-xs text-background disabled:opacity-50">
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
         {ar ? "تنزيل PDF" : "Download PDF"}
@@ -43,7 +52,9 @@ export default function EmployeeFileCard({ employee, company, data, stationName,
             stationName={stationName}
             gradeLabel={gradeLabel}
             managerName={manager?.name}
-            hrManagerName={hrManager?.name}
+            signerName={signerName}
+            signatureStampUrl={stamp?.dataUrl}
+            verificationId={stamp?.verificationId}
             docNumber={meta.docNumber}
             fingerprint={meta.fingerprint}
             ar={ar}
