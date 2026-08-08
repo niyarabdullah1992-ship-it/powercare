@@ -53,6 +53,9 @@ export default async function(req) {
       const vehicles = (Array.isArray(body.vehicles) ? body.vehicles : []).filter((v) => String(v?.plate || "").trim()).slice(0, 30).map((v) => ({
         plate: String(v.plate).trim(),
         type: String(v.type || "").trim(),
+        make: String(v.make || "").trim(),
+        model: String(v.model || "").trim(),
+        year: String(v.year || "").trim(),
         driverName: String(v.driverName || "").trim(),
       }));
       const plannedDays = body.plannedDays == null || body.plannedDays === "" ? null : Number(body.plannedDays);

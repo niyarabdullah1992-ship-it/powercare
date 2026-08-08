@@ -64,6 +64,18 @@
           "type": {
             "type": "string"
           },
+          "make": {
+            "type": "string",
+            "description": "Manufacturer / company."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model name."
+          },
+          "year": {
+            "type": "string",
+            "description": "Manufacturing year."
+          },
           "driverName": {
             "type": "string"
           }

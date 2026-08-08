@@ -72,7 +72,7 @@ export default function WorkProofCard({ proof, stationName, ar, onSign, onClose 
           <DetailList
             icon={Car}
             label={ar ? "السيارات" : "Vehicles"}
-            items={(proof.vehicles || []).map((v) => `${v.plate}${v.type ? ` · ${v.type}` : ""}${v.driverName ? ` · ${v.driverName}` : ""}`)}
+            items={(proof.vehicles || []).map((v) => [v.plate, v.type, [v.make, v.model, v.year].filter(Boolean).join(" "), v.driverName].filter(Boolean).join(" · "))}
           />
           <PhotoRow label={ar ? "قبل العمل" : "Before"} urls={proof.beforeImageUrls} />
           <PhotoRow label={ar ? "بعد العمل" : "After"} urls={proof.afterImageUrls} />
