@@ -1,15 +1,13 @@
 import React, { useState } from "react";
-import { BadgeCheck, CalendarDays, Car, CheckCircle2, Clock, FileText, Mail, MapPin, PenLine, User, Users } from "lucide-react";
+import { BadgeCheck, CalendarDays, Car, CheckCircle2, Clock, FileText, Mail, MapPin, User, Users } from "lucide-react";
 import ProofCertificateDialog from "@/components/workproof/ProofCertificateDialog";
 import SendSignLinkDialog from "@/components/workproof/SendSignLinkDialog";
 import { Image } from "@/components/ui/image";
-import ClientSignDialog from "@/components/workproof/ClientSignDialog";
 import CloseJobDialog from "@/components/workproof/CloseJobDialog";
 import { idTypeLabel } from "@/components/workproof/CrewEditor";
 import { PhotoRow, FileRow, DetailList } from "@/components/workproof/ProofSections";
 
-export default function WorkProofCard({ proof, stationName, ar, onSign, onClose, onSendLink }) {
-  const [signOpen, setSignOpen] = useState(false);
+export default function WorkProofCard({ proof, stationName, ar, onClose, onSendLink }) {
   const [closeOpen, setCloseOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [certOpen, setCertOpen] = useState(false);
@@ -117,22 +115,16 @@ export default function WorkProofCard({ proof, stationName, ar, onSign, onClose,
           <button onClick={() => setCloseOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-95">
             <CheckCircle2 className="h-4 w-4" />{ar ? "إغلاق المهمة" : "Close job"}
           </button>
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-2">
-            <button onClick={() => setLinkOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-95">
-              <Mail className="h-4 w-4" />{ar ? "إرسال رابط التوقيع" : "Email sign link"}
-            </button>
-            <button onClick={() => setSignOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-md border border-primary px-4 py-2.5 text-sm font-semibold hover:bg-secondary">
-              <PenLine className="h-4 w-4" />{ar ? "توقيع في الموقع" : "Sign on site"}
-            </button>
-          </div>
+        ) : signed ? null : (
+          <button onClick={() => setLinkOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground hover:opacity-95">
+            <Mail className="h-4 w-4" />{ar ? "إرسال رابط التوقيع للعميل" : "Email sign link to client"}
+          </button>
         )}
       </footer>
 
       {certOpen && <ProofCertificateDialog proof={proof} stationName={stationName} companyName={proof.companyName || ""} ar={ar} onClose={() => setCertOpen(false)} />}
       {closeOpen && <CloseJobDialog proof={proof} ar={ar} onClose={() => setCloseOpen(false)} onSubmit={async (payload) => { const ok = await onClose(payload); if (ok) setCloseOpen(false); }} />}
       {linkOpen && <SendSignLinkDialog proof={proof} ar={ar} onClose={() => setLinkOpen(false)} onSend={async (payload) => { const ok = await onSendLink(payload); if (ok) setLinkOpen(false); }} />}
-      {signOpen && <ClientSignDialog ar={ar} proofNumber={proof.proofNumber} onClose={() => setSignOpen(false)} onSign={async (payload) => { const ok = await onSign(payload); if (ok) setSignOpen(false); }} />}
     </article>
   );
 }
