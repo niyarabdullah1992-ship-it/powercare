@@ -130,6 +130,8 @@ export default async function(req) {
       const afterFiles = Array.isArray(body.afterFiles) ? body.afterFiles.filter((f) => typeof f?.url === "string" && f.url.startsWith("http")).slice(0, 10).map((f) => ({ url: f.url, name: String(f.name || "file") })) : [];
       // The employee who documented the job signs it automatically at close, using their saved signature.
       let employeeSignatureUrl = proof.employeeSignatureUrl || null;
+      const provided = String(body.employeeSignatureUrl || "");
+      if (!employeeSignatureUrl && provided.startsWith("http")) employeeSignatureUrl = provided;
       if (!employeeSignatureUrl && auth.userId) {
         const employees = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId: auth.userId });
         const saved = employees[0]?.profile?.signatureUrl;
@@ -173,9 +175,14 @@ export default async function(req) {
       });
       const clientName = String(body.clientName || "").trim();
       if (!clientName) return Response.json({ error: "Client name is required" }, { status: 400 });
+      // Backfill the internal approval stamp for records closed before it existed.
+      const stampUrl = String(body.employeeSignatureUrl || "");
+      const backfill = !proof.employeeSignatureUrl && stampUrl.startsWith("http")
+        ? { employeeSignatureUrl: stampUrl, employeeSignedAt: proof.closedAt || new Date().toISOString() }
+        : {};
       await base44.asServiceRole.entities.WorkProof.update(proof.id, {
         signToken, clientEmail, clientName, clientTitle: String(body.clientTitle || "").trim() || null,
-        signLinkSentAt: new Date().toISOString(),
+        signLinkSentAt: new Date().toISOString(), ...backfill,
       });
       return Response.json({ ok: true, url });
     }

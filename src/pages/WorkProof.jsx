@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, FileCheck2, X } from "lucide-react";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { workProofCall } from "@/lib/workProofApi";
+import { buildEmployeeStampUrl } from "@/lib/workProofEmployeeStamp";
 import PageHeader from "@/components/PageHeader";
 import WorkProofStationPicker from "@/components/workproof/WorkProofStationPicker";
 import WorkProofForm from "@/components/workproof/WorkProofForm";
@@ -131,10 +132,10 @@ export default function WorkProof() {
                   proof={proof}
                   stationName={station.name}
                   ar={ar}
-                  onClose={(payload) => run("close", { proofId: proof.id, ...payload }, ar ? "تم إغلاق المهمة." : "Job closed.")}
+                  onClose={async (payload) => run("close", { proofId: proof.id, ...payload, employeeSignatureUrl: await buildEmployeeStampUrl(proof.performedByName) }, ar ? "تم إغلاق المهمة." : "Job closed.")}
                   onSign={(payload) => run("sign", { proofId: proof.id, ...payload }, ar ? "تم اعتماد الإثبات بتوقيع العميل." : "Proof sealed with the client's signature.")}
                   onAddAfterEvidence={(payload) => run("addAfterEvidence", { proofId: proof.id, ...payload }, ar ? "تم حفظ إثبات بعد العمل." : "After-work evidence saved.")}
-                  onSendLink={(payload) => run("sendSignLink", { proofId: proof.id, ...payload }, ar ? "تم إرسال رابط التوقيع للعميل." : "Signature link emailed to the client.")}
+                  onSendLink={async (payload) => run("sendSignLink", { proofId: proof.id, ...payload, employeeSignatureUrl: proof.employeeSignatureUrl || await buildEmployeeStampUrl(proof.performedByName) }, ar ? "تم إرسال رابط التوقيع للعميل." : "Signature link emailed to the client.")}
                 />
               ))}
             </div>
