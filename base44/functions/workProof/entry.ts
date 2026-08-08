@@ -43,10 +43,11 @@ export default async function(req) {
       const signatureUrl = String(body.signatureUrl || "").trim();
       if (proof.status !== "pending_signature") return Response.json({ error: "This proof is no longer awaiting signature" }, { status: 400 });
       if (!proof.clientName || !signatureUrl.startsWith("http")) return Response.json({ error: "Signature is required" }, { status: 400 });
+      const signedAt = new Date().toISOString();
       await base44.asServiceRole.entities.WorkProof.update(proof.id, {
-        clientSignatureUrl: signatureUrl, signedAt: new Date().toISOString(), status: "signed", signToken: null,
+        clientSignatureUrl: signatureUrl, signedAt, status: "signed", signToken: null,
       });
-      return Response.json({ ok: true });
+      return Response.json({ ok: true, proof: publicView({ ...proof, clientSignatureUrl: signatureUrl, signedAt, status: "signed" }) });
     }
 
     const platformUser = await base44.auth.me().catch(() => null);

@@ -30,9 +30,10 @@ export default function WorkProofSign() {
 
   const sign = async (payload) => {
     try {
-      await base44.functions.invoke("workProof", { action: "publicSign", token, ...payload });
+      const res = await base44.functions.invoke("workProof", { action: "publicSign", token, ...payload });
       setSignOpen(false);
-      await load();
+      setError("");
+      if (res.data?.proof) setProof(res.data.proof);
       return true;
     } catch (e) {
       setError(e?.response?.data?.error || e.message);
