@@ -1108,7 +1108,7 @@ export default function MyTasks() {
           {/* Target quota */}
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{t("totalTasks")}</p>
-            <input name="totalTasks" type="number" min="1" defaultValue="50" className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
+            <input name="totalTasks" type="number" min="1" placeholder={t("totalTasks")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
           </div>
 
           {/* Date preset selector */}
