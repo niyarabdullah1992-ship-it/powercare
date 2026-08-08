@@ -99,11 +99,13 @@ export default function ProofCertificate({ proof, stationName, companyName, ar, 
         <div className="mt-5 grid grid-cols-2 gap-4">
           <div className="rounded-lg border border-[#e2d9c6] bg-[#faf7f0] p-4">
             <p className="text-[9px] text-[#8a7c63]">{t("توقيع المنفِّذ", "Executed by")}</p>
-            <div className="mt-2 flex h-24 items-center justify-center rounded-md border border-dashed border-[#d9b26a] bg-white text-center text-[10px] text-[#8a6d3b]">
-              {t("اعتماد داخلي — تم توثيق العمل", "Internal approval — work documented")}
+            <div className="mt-2 flex h-24 items-center justify-center rounded-md border border-[#e2d9c6] bg-white text-center text-[10px] text-[#8a6d3b]">
+              {proof.employeeSignatureUrl
+                ? <img src={proof.employeeSignatureUrl} alt="employee signature" crossOrigin="anonymous" className="h-full object-contain" />
+                : t("اعتماد داخلي — تم توثيق العمل", "Internal approval — work documented")}
             </div>
             <p className="mt-2 text-[12px] font-bold">{proof.performedByName}</p>
-            <p className="text-[10px] text-[#8a7c63]">{proof.closedAt ? new Date(proof.closedAt).toLocaleString(ar ? "ar" : "en") : proof.workDate}</p>
+            <p className="text-[10px] text-[#8a7c63]">{(proof.employeeSignedAt || proof.closedAt) ? new Date(proof.employeeSignedAt || proof.closedAt).toLocaleString(ar ? "ar" : "en") : proof.workDate}</p>
           </div>
 
           <div className="rounded-lg border border-[#e2d9c6] bg-[#faf7f0] p-4">
