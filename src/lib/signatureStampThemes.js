@@ -1,4 +1,5 @@
 export const SIGNATURE_STAMP_THEMES = [
+  { id: "neo", ar: "بصمة عصرية", en: "Modern Fingerprint", preview: "rounded-2xl border border-accent shadow-[0_0_0_2px_hsl(var(--accent)/.25)]", iconUrl: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/1fefda3ec_generated_image.png" },
   { id: "heritage", ar: "التوقيع الإلكتروني", en: "Electronic Signature", preview: "rounded-xl border-2 border-accent", iconUrl: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/52729a25f_generated_image.png" },
   { id: "executive", ar: "الأرقام المشفّرة", en: "Encrypted Numbers", preview: "rounded-sm border-t-4 border-accent", iconUrl: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/996520fad_generated_image.png" },
   { id: "horizon", ar: "البطاقة الذكية", en: "Smart Card", preview: "rounded-full border-y-4 border-accent", iconUrl: "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/6bd34e226_generated_image.png" },
@@ -20,6 +21,19 @@ function baseFrame(ctx, width, height, radius = 14, fill = "#13283d", lineWidth 
 }
 
 export function drawStampThemeFrame(ctx, width, height, theme = "heritage") {
+  if (theme === "neo") {
+    // Modern edge-lit frame: soft dark panel, thin gold hairline and corner brackets.
+    baseFrame(ctx, width, height, 22, "#0E2032", 1.5);
+    ctx.strokeStyle = "#C7AD7655"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(9, 9, width - 18, height - 18, 16); ctx.stroke();
+    ctx.strokeStyle = "#E2D1A7"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+    const c = 22;
+    [[14, 14, 1, 1], [width - 14, 14, -1, 1], [14, height - 14, 1, -1], [width - 14, height - 14, -1, -1]].forEach(([x, y, dx, dy]) => {
+      ctx.beginPath(); ctx.moveTo(x + dx * c, y); ctx.lineTo(x, y); ctx.lineTo(x, y + dy * c); ctx.stroke();
+    });
+    ctx.fillStyle = "#C7AD7622"; ctx.fillRect(104, 14, 2, height - 28);
+    return;
+  }
   if (theme === "executive") {
     baseFrame(ctx, width, height, 3);
     ctx.fillStyle = "#C7AD76"; ctx.fillRect(2, 2, width - 4, 7);

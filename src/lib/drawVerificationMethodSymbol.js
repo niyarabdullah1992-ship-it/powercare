@@ -44,9 +44,42 @@ function password(ctx, x, y, s) {
   ctx.strokeStyle = LIGHT; ctx.lineWidth = Math.max(1.3, s * .021); ctx.beginPath(); ctx.arc(x, y - s * .05, s * .07, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y + s * .02); ctx.lineTo(x, y + s * .2); ctx.stroke();
 }
 
+// Modern fingerprint: crisp concentric ridges inside a hexagonal tech frame.
+function modernFingerprint(ctx, x, y, s) {
+  setup(ctx);
+  ctx.strokeStyle = "#C7AD7688"; ctx.lineWidth = Math.max(1.2, s * .02);
+  ctx.beginPath();
+  for (let i = 0; i < 6; i += 1) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 3;
+    const px = x + Math.cos(a) * s * .5;
+    const py = y + Math.sin(a) * s * .5;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath(); ctx.stroke();
+
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(x, y, s * .33, s * .4, 0, 0, Math.PI * 2); ctx.clip();
+  for (let i = 0; i < 7; i += 1) {
+    ctx.beginPath();
+    ctx.ellipse(x, y + s * .05, s * (.06 + i * .045), s * (.08 + i * .052), 0, Math.PI * 1.05, Math.PI * 1.95);
+    ctx.strokeStyle = i % 2 ? GOLD : LIGHT;
+    ctx.lineWidth = Math.max(1, s * .018);
+    ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(x, y - s * .05); ctx.quadraticCurveTo(x - s * .06, y + s * .1, x, y + s * .3);
+  ctx.strokeStyle = LIGHT; ctx.lineWidth = Math.max(1.2, s * .02); ctx.stroke();
+  ctx.restore();
+
+  ctx.fillStyle = GOLD;
+  [[-.5, 0], [.5, 0], [0, -.5], [0, .5]].forEach(([dx, dy]) => {
+    ctx.beginPath(); ctx.arc(x + dx * s, y + dy * s, s * .028, 0, Math.PI * 2); ctx.fill();
+  });
+}
+
 export default function drawVerificationMethodSymbol(ctx, x, y, size, theme) {
   ctx.save();
-  if (theme === "executive") encryptedNumbers(ctx, x, y, size);
+  if (theme === "neo") modernFingerprint(ctx, x, y, size);
+  else if (theme === "executive") encryptedNumbers(ctx, x, y, size);
   else if (theme === "horizon") smartCard(ctx, x, y, size);
   else if (theme === "certificate") fingerprint(ctx, x, y, size);
   else if (theme === "vault") iris(ctx, x, y, size);
