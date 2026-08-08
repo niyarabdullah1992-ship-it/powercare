@@ -19,6 +19,8 @@ import DeleteEmployeeAccountCard from "@/components/employees/DeleteEmployeeAcco
 import ProfileCompletionCard from "@/components/employees/ProfileCompletionCard";
 import OffboardingTab from "@/components/employees/OffboardingTab";
 import { employeeJobGrade, orderedJobGrades } from "@/lib/jobGrades";
+import ProfileTopBar from "@/components/employees/ProfileTopBar";
+import ProfileLinkedRecords from "@/components/employees/ProfileLinkedRecords";
 
 const TABS = [
   { key: "overview", icon: LayoutDashboard },
@@ -80,6 +82,17 @@ export default function EmployeeProfile() {
         <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
           <ArrowLeft className={`h-4 w-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
         </button>
+
+        <ProfileTopBar
+          employee={employee}
+          companyName={data.name || company?.name || ""}
+          roleLabel={employee.profile?.position || fallbackPosition}
+          stationName={stationName}
+          ar={dir === "rtl"}
+          canEdit={isSelf || canManage}
+          onEdit={() => setTab("professionalInfo")}
+        />
+        <ProfileLinkedRecords ar={dir === "rtl"} showPayroll={isSelf || canEditSalary} />
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
           <main className="space-y-5 lg:col-start-1 lg:row-start-1">
