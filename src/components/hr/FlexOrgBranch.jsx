@@ -15,6 +15,20 @@ export default function FlexOrgBranch({ node, nodes, data, escalationChain, canM
     granted: grantedCount(position.permissions),
     customized: Boolean(position.templateId) && !samePermissions(position.permissions || {}, templatePermissions || {}),
   } : null;
+  // SAP-style: stations cascade vertically under their parent; people stay side by side.
+  const stationChildren = children.filter((child) => child.type === "station");
+  const peopleChildren = children.filter((child) => child.type !== "station");
+  const renderBranch = (child) => <FlexOrgBranch key={child.id} node={child} nodes={nodes} data={data} escalationChain={escalationChain} canManage={canManage} dragging={dragging} actions={actions} ar={ar} />;
+  if (!collapsed && stationChildren.length > 0) {
+    return <div className="flex min-w-max flex-col items-center">
+      <FlexOrgCard node={node} employee={employee} label={label} access={access} canManage={canManage} dragging={dragging} complaintLevel={node.type === "employee" ? escalationChain.indexOf(node.refId) + 1 : 0} ar={ar} childrenCount={children.length} collapsed={collapsed} onToggleCollapse={() => setCollapsed((value) => !value)} onToggleEscalation={() => actions.toggleEscalation(node.refId)} onDragStart={actions.start} onDragEnd={actions.end} onDrop={actions.drop} onEdit={actions.edit} />
+      {peopleChildren.length > 0 && <><div className="h-8 w-px bg-accent/40" /><div className="flex items-start justify-center gap-8">{peopleChildren.map(renderBranch)}</div></>}
+      <div className="h-6 w-px bg-accent/40" />
+      <div className="relative flex flex-col gap-6 border-s-2 border-accent/35 ps-8 pt-2">
+        {stationChildren.map((child) => <div key={child.id} className="relative before:absolute before:-start-8 before:top-8 before:h-px before:w-8 before:bg-accent/35">{renderBranch(child)}</div>)}
+      </div>
+    </div>;
+  }
   return <div className="flex min-w-max flex-col items-center">
     <FlexOrgCard node={node} employee={employee} label={label} access={access} canManage={canManage} dragging={dragging} complaintLevel={node.type === "employee" ? escalationChain.indexOf(node.refId) + 1 : 0} ar={ar} childrenCount={children.length} collapsed={collapsed} onToggleCollapse={() => setCollapsed((value) => !value)} onToggleEscalation={() => actions.toggleEscalation(node.refId)} onDragStart={actions.start} onDragEnd={actions.end} onDrop={actions.drop} onEdit={actions.edit} />
     {!collapsed && children.length === 1 && <><div className="h-8 w-px bg-accent/40" /><div><FlexOrgBranch node={children[0]} nodes={nodes} data={data} escalationChain={escalationChain} canManage={canManage} dragging={dragging} actions={actions} ar={ar} /></div></>}
