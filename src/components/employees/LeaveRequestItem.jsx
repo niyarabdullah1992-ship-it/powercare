@@ -17,7 +17,10 @@ export default function LeaveRequestItem({ request, canApprove, onDecide }) {
   return (
     <div className="p-4 rounded-xl border border-border bg-card space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-body font-medium">{t(request.type)} · {request.startDate} → {request.endDate} ({request.days || 1} {t("days")})</p>
+        <p className="flex flex-wrap items-center gap-2 text-sm font-body font-medium">
+          <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-xs text-accent-text">{t(request.type)}</span>
+          {request.startDate} → {request.endDate} ({request.days || 1} {t("days")})
+        </p>
         <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-body ${tone}`}>
           <StatusIcon className="w-3 h-3" /> {t(request.status)}
         </span>
