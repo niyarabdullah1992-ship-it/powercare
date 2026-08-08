@@ -132,7 +132,7 @@ export default function WorkProofCard({ proof, stationName, ar, onSign, onClose,
       {certOpen && <ProofCertificateDialog proof={proof} stationName={stationName} companyName={proof.companyName || ""} ar={ar} onClose={() => setCertOpen(false)} />}
       {closeOpen && <CloseJobDialog proof={proof} ar={ar} onClose={() => setCloseOpen(false)} onSubmit={async (payload) => { const ok = await onClose(payload); if (ok) setCloseOpen(false); }} />}
       {linkOpen && <SendSignLinkDialog proof={proof} ar={ar} onClose={() => setLinkOpen(false)} onSend={async (payload) => { const ok = await onSendLink(payload); if (ok) setLinkOpen(false); }} />}
-      {signOpen && <ClientSignDialog ar={ar} onClose={() => setSignOpen(false)} onSign={async (payload) => { const ok = await onSign(payload); if (ok) setSignOpen(false); }} />}
+      {signOpen && <ClientSignDialog ar={ar} proofNumber={proof.proofNumber} onClose={() => setSignOpen(false)} onSign={async (payload) => { const ok = await onSign(payload); if (ok) setSignOpen(false); }} />}
     </article>
   );
 }
