@@ -4,6 +4,7 @@
 const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/inventory", "/app/expenses", "/app/work-proof", "/app/signing", "/app/assistant", "/app/complaints", "/app/performance", "/app/employees", "/app/manual"];
 const MANAGER_EXTRA = ["/app/safety"];
 const EXEC_EXTRA = ["/app/hr", "/app/payroll"];
+const LEAVE_REQUESTS = "/app/leave-requests";
 const SMART_SECTION_ROUTES = {
   complaints: "/app/complaints", safety: "/app/safety", payroll: "/app/payroll",
   performance: "/app/performance", attendance: "/app/attendance",
@@ -36,6 +37,7 @@ export function allowedNavFor(user, data, company) {
   const hrPermissions = new Set(hrLevel?.permissions || []);
   if (["station_manager", "pgm", "ops_manager", "director"].includes(role) || user.id === data?.ownerId) {
     MANAGER_EXTRA.forEach((p) => allowed.add(p));
+    allowed.add(LEAVE_REQUESTS);
   }
   if (["employee", "safety_officer"].includes(role)) allowed.add("/app/safety");
   if (["ops_manager", "director"].includes(role)) {
@@ -45,6 +47,7 @@ export function allowedNavFor(user, data, company) {
   // Employees holding an HR position access workforce management through HR.
   if (user.hrLevelId) {
     allowed.add("/app/hr");
+    allowed.add(LEAVE_REQUESTS);
     if (hrPermissions.has("view_safety")) allowed.add("/app/safety");
     if (hrPermissions.has("manage_payroll")) allowed.add("/app/payroll");
   }
