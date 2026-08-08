@@ -42,6 +42,7 @@ export default async function(req) {
       const stationId = String(body.stationId || "").trim();
       if (!workTitle || !workDate || !stationId || !visibleStationIds.includes(stationId)) return Response.json({ error: "Invalid work proof data" }, { status: 400 });
       const clean = (urls) => (Array.isArray(urls) ? urls.filter((u) => typeof u === "string" && u.startsWith("http")).slice(0, 10) : []);
+      const cleanFiles = (files) => (Array.isArray(files) ? files.filter((f) => typeof f?.url === "string" && f.url.startsWith("http")).slice(0, 10).map((f) => ({ url: f.url, name: String(f.name || "file") })) : []);
       const idTypes = ["national_id", "iqama", "passport", "other"];
       const workers = (Array.isArray(body.workers) ? body.workers : []).filter((w) => String(w?.name || "").trim()).slice(0, 50).map((w) => ({
         name: String(w.name).trim(),
@@ -64,6 +65,7 @@ export default async function(req) {
         workTitle, workDescription: String(body.workDescription || ""), workDate,
         workers, vehicles, plannedDays, actualDays: null, closedAt: null,
         beforeImageUrls: clean(body.beforeImageUrls), afterImageUrls: [],
+        beforeFiles: cleanFiles(body.beforeFiles), afterFiles: [],
         performedById: auth.userId || "owner", performedByName: auth.name,
         clientName: null, clientTitle: null, clientSignatureUrl: null, signedAt: null,
         status: "in_progress",
@@ -79,8 +81,9 @@ export default async function(req) {
       const actualDays = Number(body.actualDays);
       if (!Number.isFinite(actualDays) || actualDays < 0) return Response.json({ error: "Actual working days are required" }, { status: 400 });
       const after = Array.isArray(body.afterImageUrls) ? body.afterImageUrls.filter((u) => typeof u === "string" && u.startsWith("http")).slice(0, 10) : [];
+      const afterFiles = Array.isArray(body.afterFiles) ? body.afterFiles.filter((f) => typeof f?.url === "string" && f.url.startsWith("http")).slice(0, 10).map((f) => ({ url: f.url, name: String(f.name || "file") })) : [];
       await base44.asServiceRole.entities.WorkProof.update(proof.id, {
-        actualDays, afterImageUrls: after, closedAt: new Date().toISOString(), status: "pending_signature",
+        actualDays, afterImageUrls: after, afterFiles, closedAt: new Date().toISOString(), status: "pending_signature",
       });
       return Response.json({ ok: true });
     }

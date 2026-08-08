@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BadgeCheck, CalendarDays, Car, CheckCircle2, Clock, PenLine, Users } from "lucide-react";
+import { BadgeCheck, CalendarDays, Car, CheckCircle2, Clock, Paperclip, PenLine, Users } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import ClientSignDialog from "@/components/workproof/ClientSignDialog";
 import CloseJobDialog from "@/components/workproof/CloseJobDialog";
@@ -17,6 +17,24 @@ function PhotoRow({ label, urls }) {
           </a>
         ))}
       </div>
+    </div>
+  );
+}
+
+function FileRow({ label, files }) {
+  if (!files?.length) return null;
+  return (
+    <div>
+      <p className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      <ul className="space-y-0.5">
+        {files.map((file) => (
+          <li key={file.url}>
+            <a href={file.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-body text-accent hover:underline">
+              <Paperclip className="h-3 w-3" />{file.name}
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -88,6 +106,8 @@ export default function WorkProofCard({ proof, stationName, ar, onSign, onClose 
       <div className="grid gap-3 sm:grid-cols-2">
         <PhotoRow label={ar ? "قبل" : "Before"} urls={proof.beforeImageUrls} />
         <PhotoRow label={ar ? "بعد" : "After"} urls={proof.afterImageUrls} />
+        <FileRow label={ar ? "ملفات قبل" : "Before files"} files={proof.beforeFiles} />
+        <FileRow label={ar ? "ملفات بعد" : "After files"} files={proof.afterFiles} />
       </div>
 
       {signed ? (

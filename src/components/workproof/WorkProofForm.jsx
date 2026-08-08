@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import PhotoUploader from "@/components/workproof/PhotoUploader";
+import FileAttachmentUploader from "@/components/workproof/FileAttachmentUploader";
 import CrewEditor from "@/components/workproof/CrewEditor";
 import VehicleEditor from "@/components/workproof/VehicleEditor";
 
@@ -11,6 +12,7 @@ export default function WorkProofForm({ stations, ar, onSubmit }) {
   const [workers, setWorkers] = useState([{ name: "", idType: "iqama", idNumber: "", phone: "" }]);
   const [vehicles, setVehicles] = useState([]);
   const [beforeImageUrls, setBeforeImageUrls] = useState([]);
+  const [beforeFiles, setBeforeFiles] = useState([]);
   const [saving, setSaving] = useState(false);
   const set = (key) => (event) => setForm((f) => ({ ...f, [key]: event.target.value }));
   const valid = form.stationId && form.workTitle.trim() && form.workDate;
@@ -25,6 +27,7 @@ export default function WorkProofForm({ stations, ar, onSubmit }) {
       workers: workers.filter((worker) => worker.name?.trim()),
       vehicles: vehicles.filter((vehicle) => vehicle.plate?.trim()),
       beforeImageUrls,
+      beforeFiles,
     });
     setSaving(false);
     if (ok) {
@@ -32,6 +35,7 @@ export default function WorkProofForm({ stations, ar, onSubmit }) {
       setWorkers([{ name: "", idType: "iqama", idNumber: "", phone: "" }]);
       setVehicles([]);
       setBeforeImageUrls([]);
+      setBeforeFiles([]);
     }
   };
 
@@ -51,6 +55,7 @@ export default function WorkProofForm({ stations, ar, onSubmit }) {
       <CrewEditor workers={workers} onChange={setWorkers} ar={ar} />
       <VehicleEditor vehicles={vehicles} onChange={setVehicles} ar={ar} />
       <PhotoUploader label={ar ? "صور قبل العمل" : "Before photos"} urls={beforeImageUrls} onChange={setBeforeImageUrls} />
+      <FileAttachmentUploader label={ar ? "إرفاق ملف قبل العمل" : "Attach file (before)"} files={beforeFiles} onChange={setBeforeFiles} />
       <button type="submit" disabled={!valid || saving} className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-40">
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
         {ar ? "فتح المهمة" : "Open job"}

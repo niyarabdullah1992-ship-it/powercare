@@ -108,6 +108,40 @@
       },
       "maxItems": 10
     },
+    "beforeFiles": {
+      "type": "array",
+      "description": "Document attachments captured before the work started.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "maxItems": 10
+    },
+    "afterFiles": {
+      "type": "array",
+      "description": "Document attachments captured after the work was completed.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "maxItems": 10
+    },
     "performedById": {
       "type": "string",
       "description": "Employee id (or 'owner') who documented the work."

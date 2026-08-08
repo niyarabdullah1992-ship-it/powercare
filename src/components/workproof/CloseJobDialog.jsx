@@ -1,18 +1,20 @@
 import React, { useState } from "react";
 import { CheckCircle2, Loader2, X } from "lucide-react";
 import PhotoUploader from "@/components/workproof/PhotoUploader";
+import FileAttachmentUploader from "@/components/workproof/FileAttachmentUploader";
 
 // Closing a job records the ACTUAL working days and the after-photos,
 // then moves the record to "awaiting client signature".
 export default function CloseJobDialog({ proof, ar, onClose, onSubmit }) {
   const [actualDays, setActualDays] = useState(proof.plannedDays != null ? String(proof.plannedDays) : "");
   const [afterImageUrls, setAfterImageUrls] = useState(proof.afterImageUrls || []);
+  const [afterFiles, setAfterFiles] = useState(proof.afterFiles || []);
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
     if (actualDays === "" || saving) return;
     setSaving(true);
-    await onSubmit({ actualDays: Number(actualDays), afterImageUrls });
+    await onSubmit({ actualDays: Number(actualDays), afterImageUrls, afterFiles });
     setSaving(false);
   };
 
@@ -31,6 +33,7 @@ export default function CloseJobDialog({ proof, ar, onClose, onSubmit }) {
           )}
         </div>
         <PhotoUploader label={ar ? "صور بعد العمل" : "After photos"} urls={afterImageUrls} onChange={setAfterImageUrls} />
+        <FileAttachmentUploader label={ar ? "إرفاق ملف بعد العمل" : "Attach file (after)"} files={afterFiles} onChange={setAfterFiles} />
         <button type="button" onClick={submit} disabled={actualDays === "" || saving} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-6 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-40">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
           {ar ? "إغلاق وإرسال لتوقيع العميل" : "Close & send for client signature"}
