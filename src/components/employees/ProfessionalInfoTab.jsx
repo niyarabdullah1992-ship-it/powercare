@@ -19,6 +19,11 @@ export const PROFILE_GROUPS = [
   ] },
   { ar: "بيانات الموارد البشرية", en: "HR Information", fields: [
     { key: "birthDate", icon: CalendarDays, type: "date", ar: "تاريخ الميلاد", en: "Birth date" },
+    { key: "gender", icon: User, ar: "الجنس", en: "Gender", options: [
+      { value: "", labelAr: "—", labelEn: "—" },
+      { value: "male", labelAr: "ذكر", labelEn: "Male" },
+      { value: "female", labelAr: "أنثى", labelEn: "Female" },
+    ] },
     { key: "nationality", icon: Flag, ar: "الجنسية", en: "Nationality" },
     { key: "maritalStatus", icon: Heart, ar: "الحالة الاجتماعية", en: "Marital status" },
     { key: "qualification", icon: GraduationCap, ar: "المؤهل العلمي", en: "Qualification" },
@@ -100,13 +105,19 @@ export default function ProfessionalInfoTab({ employee, companyId, canEdit, isSe
                     <Icon className="w-3.5 h-3.5 text-accent" /> {group.label ? t(key) : labelOf(field)}
                   </label>
                   {editing && ((key === "position" && isSelf) || (key !== "position" && canEdit)) ? (
-                    area ? (
+                    field.options ? (
+                      <MobileSelect
+                        value={form[key]}
+                        onChange={(value) => setForm({ ...form, [key]: value })}
+                        options={field.options.map((option) => ({ value: option.value, label: ar ? option.labelAr : option.labelEn }))}
+                      />
+                    ) : area ? (
                       <textarea value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} rows={3} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
                     ) : (
                       <input type={type || "text"} dir={field.dir} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
                     )
                   ) : (
-                    <p className="min-h-[42px] rounded-lg border border-border bg-background px-3 py-2 text-sm font-body" dir={profile[key] ? field.dir : undefined}>{profile[key] || (key === "position" ? fallbackPosition : "") || "—"}</p>
+                    <p className="min-h-[42px] rounded-lg border border-border bg-background px-3 py-2 text-sm font-body" dir={profile[key] ? field.dir : undefined}>{(field.options ? (field.options.find((option) => option.value === profile[key]) || {})[ar ? "labelAr" : "labelEn"] : profile[key]) || (key === "position" ? fallbackPosition : "") || "—"}</p>
                   )}
                 </div>
               );

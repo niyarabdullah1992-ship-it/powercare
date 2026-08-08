@@ -11,6 +11,19 @@ export const LEAVE_TYPES = [
   { key: "unpaid", defaultTotal: null },
 ];
 
+// Maternity is hidden for male employees, paternity for female employees.
+// If gender isn't recorded yet, both stay visible.
+export function isLeaveTypeAllowed(profile, key) {
+  const gender = profile?.gender;
+  if (key === "maternity") return gender !== "male";
+  if (key === "paternity") return gender !== "female";
+  return true;
+}
+
+export function visibleLeaveTypes(profile) {
+  return LEAVE_TYPES.filter((ty) => isLeaveTypeAllowed(profile, ty.key));
+}
+
 // Requests longer than this many days require a mandatory justification + supporting file.
 export const LEAVE_THRESHOLD_DAYS = 5;
 

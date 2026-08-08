@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { CalendarDays, Pencil, Check, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { setLeaveTotal } from "@/lib/store";
-import { LEAVE_TYPES, getLeaveTotal, usedLeaveDays } from "@/lib/leaveTypes";
+import { LEAVE_TYPES, getLeaveTotal, usedLeaveDays, isLeaveTypeAllowed } from "@/lib/leaveTypes";
 
 // Company-wide leave balances: one row per employee, one column per leave type.
 // Managers / HR can edit each employee's yearly totals inline.
@@ -59,7 +59,9 @@ export default function LeaveBalancesTable({ employees, companyId, canEdit, ar }
                       const remaining = Math.max(0, total - usedLeaveDays(emp.leaveRequests || [], ty.key));
                       return (
                         <td key={ty.key} className="p-2 font-body" data-label={t(ty.key)}>
-                          {ty.defaultTotal === null ? (
+                          {!isLeaveTypeAllowed(emp.profile, ty.key) ? (
+                            <span className="text-muted-foreground">—</span>
+                          ) : ty.defaultTotal === null ? (
                             <>{t("unlimited")}<span className="text-xs text-muted-foreground"> ({usedLeaveDays(emp.leaveRequests || [], ty.key)})</span></>
                           ) : editing ? (
                             <input

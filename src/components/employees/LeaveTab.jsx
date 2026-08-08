@@ -7,7 +7,7 @@ import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import LeaveBalanceCard from "@/components/employees/LeaveBalanceCard";
 import LeaveTotalsEditor from "@/components/employees/LeaveTotalsEditor";
 import LeaveRequestItem from "@/components/employees/LeaveRequestItem";
-import { LEAVE_TYPES, LEAVE_THRESHOLD_DAYS, computeDays } from "@/lib/leaveTypes";
+import { LEAVE_TYPES, LEAVE_THRESHOLD_DAYS, computeDays, visibleLeaveTypes } from "@/lib/leaveTypes";
 
 export default function LeaveTab({ employee, companyId, currentUser, isSelf, canApprove }) {
   const { t } = useI18n();
@@ -47,7 +47,7 @@ export default function LeaveTab({ employee, companyId, currentUser, isSelf, can
           <h3 className="font-heading font-semibold">{t("submitRequest")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <select value={type} onChange={(e) => setType(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body">
-              {LEAVE_TYPES.map((ty) => <option key={ty.key} value={ty.key}>{t(ty.key)}</option>)}
+              {visibleLeaveTypes(employee.profile).map((ty) => <option key={ty.key} value={ty.key}>{t(ty.key)}</option>)}
             </select>
             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />

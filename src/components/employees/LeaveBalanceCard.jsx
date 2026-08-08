@@ -1,7 +1,7 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n";
 import { CalendarDays } from "lucide-react";
-import { LEAVE_TYPES, getLeaveTotal, usedLeaveDays } from "@/lib/leaveTypes";
+import { getLeaveTotal, usedLeaveDays, visibleLeaveTypes } from "@/lib/leaveTypes";
 
 export default function LeaveBalanceCard({ profile, requests }) {
   const { t } = useI18n();
@@ -12,7 +12,7 @@ export default function LeaveBalanceCard({ profile, requests }) {
         <CalendarDays className="w-4 h-4 text-accent" /> {t("leaveBalance")}
       </h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {LEAVE_TYPES.filter((ty) => ty.key !== "unpaid" && ty.defaultTotal !== null).map((ty) => {
+        {visibleLeaveTypes(profile).filter((ty) => ty.key !== "unpaid" && ty.defaultTotal !== null).map((ty) => {
           const total = getLeaveTotal(profile, ty.key) ?? 0;
           const used = usedLeaveDays(requests, ty.key);
           const remaining = Math.max(0, total - used);
