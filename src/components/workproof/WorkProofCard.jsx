@@ -106,7 +106,7 @@ export default function WorkProofCard({ proof, stationName, ar, onClose, onSendL
             )}
           </div>
         ) : null}
-        {signed && proof.employeeSignatureUrl && (
+        {!inProgress && (
           <button onClick={() => setCertOpen(true)} className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-accent/50 bg-card px-4 py-2.5 text-sm font-semibold hover:bg-muted">
             <FileText className="h-4 w-4" />{ar ? "شهادة إثبات العمل (PDF)" : "Work proof certificate (PDF)"}
           </button>
