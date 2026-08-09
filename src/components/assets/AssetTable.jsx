@@ -1,12 +1,10 @@
 import React from "react";
-import { AlertTriangle } from "lucide-react";
 import AssetStatusBadge from "@/components/assets/AssetStatusBadge";
-import { inspectionDue } from "@/lib/assetAlerts";
 
 export default function AssetTable({ assets, lang, stationName, onOpen }) {
   const H = lang === "ar"
-    ? ["الأصل والرقم التسلسلي", "الفئة", "الحائز", "الوحدة والمقر", "الحالة", "الفحص القادم"]
-    : ["Asset & serial", "Category", "Holder", "Unit & site", "Status", "Next inspection"];
+    ? ["الأصل والرقم التسلسلي", "الفئة", "الحائز", "الوحدة والمقر", "الحالة"]
+    : ["Asset & serial", "Category", "Holder", "Unit & site", "Status"];
 
   if (!assets.length) {
     return <p className="rounded-[10px] border border-border bg-card p-8 text-center text-sm font-body text-muted-foreground">{lang === "ar" ? "لا توجد أصول مطابقة." : "No matching assets."}</p>;
@@ -29,12 +27,6 @@ export default function AssetTable({ assets, lang, stationName, onOpen }) {
               <td data-label={H[2]} className="px-3 py-2 font-body">{a.holderName || "—"}</td>
               <td data-label={H[3]} className="px-3 py-2 font-body">{stationName(a.stationId)}{a.site ? ` · ${a.site}` : ""}</td>
               <td data-label={H[4]} className="px-3 py-2"><AssetStatusBadge status={a.status} lang={lang} /></td>
-              <td data-label={H[5]} className="px-3 py-2 font-display tabular-nums text-sm">
-                <span className={inspectionDue(a) ? "text-destructive inline-flex items-center gap-1" : ""}>
-                  {inspectionDue(a) && <AlertTriangle className="w-3.5 h-3.5" />}
-                  {a.nextInspectionDate || "—"}
-                </span>
-              </td>
             </tr>
           ))}
         </tbody>

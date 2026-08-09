@@ -48,7 +48,6 @@ export default function AssetDetail({ asset, custody, maintenance, lang, station
             <Row label={lang === "ar" ? "القيمة" : "Value"} value={asset.value ? Number(asset.value).toLocaleString("en-US") : ""} />
             <Row label={lang === "ar" ? "نهاية الضمان" : "Warranty end"} value={asset.warrantyEndDate} />
             <Row label={lang === "ar" ? "نهاية العمر الافتراضي" : "End of useful life"} value={endOfLifeDate(asset)} />
-            <Row label={lang === "ar" ? "الفحص القادم" : "Next inspection"} value={asset.nextInspectionDate} />
           </div>
           <div className="flex flex-col items-center gap-2">
             <img src={qr} alt="QR" className="w-28 h-28 rounded-[10px] border border-border bg-white p-1" />
