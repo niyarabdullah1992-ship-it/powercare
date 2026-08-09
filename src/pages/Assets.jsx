@@ -137,7 +137,7 @@ export default function Assets() {
       )}
 
       {handing && selectedAsset && (
-        <HandoverDialog asset={selectedAsset} employees={employees} lang={lang} onClose={() => setHanding(false)} onSubmit={handover} />
+        <HandoverDialog asset={selectedAsset} employees={employees} stations={stations} lang={lang} onClose={() => setHanding(false)} onSubmit={handover} />
       )}
 
       {creating && (

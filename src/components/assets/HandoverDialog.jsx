@@ -5,7 +5,7 @@ import SignatureCapture from "@/components/assets/SignatureCapture";
 import MultiImageUploader from "@/components/inventory/MultiImageUploader";
 
 // Rule 2 — a handover is only recorded when both parties have signed.
-export default function HandoverDialog({ asset, employees, lang, onClose, onSubmit }) {
+export default function HandoverDialog({ asset, employees, stations = [], lang, onClose, onSubmit }) {
   const [toId, setToId] = useState("");
   const [condition, setCondition] = useState("");
   const [images, setImages] = useState([]);
@@ -13,13 +13,19 @@ export default function HandoverDialog({ asset, employees, lang, onClose, onSubm
   const [toSignatureUrl, setTo] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // The receiver can be a person or the branch itself (asset stored at the unit).
+  const toBranch = String(toId).startsWith("station:");
+  const receiverStation = stations.find((s) => `station:${s.id}` === toId);
   const receiver = employees.find((e) => e.id === toId);
+  const receiverName = toBranch
+    ? `${lang === "ar" ? "عهدة الفرع" : "Branch custody"} — ${receiverStation?.name || ""}`
+    : receiver?.name || "";
   const ready = toId && condition.trim() && fromSignatureUrl && toSignatureUrl;
 
   const submit = async () => {
     setSaving(true);
     try {
-      await onSubmit({ assetId: asset.id, toId, toName: receiver?.name || "", condition, imageUrls: images, fromSignatureUrl, toSignatureUrl });
+      await onSubmit({ assetId: asset.id, toId, toName: receiverName, condition, imageUrls: images, fromSignatureUrl, toSignatureUrl });
       onClose();
     } finally {
       setSaving(false);
@@ -42,8 +48,16 @@ export default function HandoverDialog({ asset, employees, lang, onClose, onSubm
           value={toId} onChange={setToId} searchable
           placeholder={lang === "ar" ? "المستلم" : "Receiver"}
           className="w-full"
-          options={employees.map((e) => ({ value: e.id, label: e.name }))}
+          options={[
+            ...stations.map((s) => ({ value: `station:${s.id}`, label: `${lang === "ar" ? "عهدة الفرع" : "Branch custody"} — ${s.name}` })),
+            ...employees.map((e) => ({ value: e.id, label: e.name })),
+          ]}
         />
+        {toBranch && (
+          <p className="text-xs font-body text-muted-foreground">
+            {lang === "ar" ? "الأصل سيُسجَّل باسم الفرع، ويوقّع المستلم نيابة عنه." : "The asset is registered to the branch; the receiver signs on its behalf."}
+          </p>
+        )}
 
         <textarea
           value={condition} onChange={(e) => setCondition(e.target.value)} rows={2}

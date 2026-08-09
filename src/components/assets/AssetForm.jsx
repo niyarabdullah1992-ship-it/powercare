@@ -24,10 +24,14 @@ export default function AssetForm({ asset, stations, employees, lang, onClose, o
   const submit = async () => {
     setSaving(true);
     try {
+      // An asset may sit with the branch itself rather than a person — the unit
+      // becomes the holder of record ("station:<id>").
+      const branchHolder = String(form.holderId || "").startsWith("station:");
       const holder = employees.find((e) => e.id === form.holderId);
+      const stationOf = stations.find((s) => s.id === String(form.holderId).replace("station:", ""));
       await onSave({
         ...form,
-        holderName: holder?.name || form.holderName || "",
+        holderName: branchHolder ? `${lang === "ar" ? "عهدة الفرع" : "Branch custody"} — ${stationOf?.name || ""}` : (holder?.name || form.holderName || ""),
         value: form.value ? Number(form.value) : null,
         usefulLifeMonths: form.usefulLifeMonths ? Number(form.usefulLifeMonths) : null,
         inspectionIntervalDays: form.inspectionIntervalDays ? Number(form.inspectionIntervalDays) : null,
@@ -54,8 +58,11 @@ export default function AssetForm({ asset, stations, employees, lang, onClose, o
           <MobileSelect value={form.stationId} onChange={set("stationId")} searchable className="w-full" options={stations.map((s) => ({ value: s.id, label: s.name }))} />
         </Field>
         <Field label={lang === "ar" ? "المقر" : "Site"}><input value={form.site} onChange={set("site")} className={input} /></Field>
-        <Field label={lang === "ar" ? "الحائز (أمين العهد عند الإتاحة)" : "Holder (unit custodian when available)"}>
-          <MobileSelect value={form.holderId} onChange={set("holderId")} searchable className="w-full" options={employees.map((e) => ({ value: e.id, label: e.name }))} />
+        <Field label={lang === "ar" ? "الحائز (موظف أو عهدة فرع)" : "Holder (employee or branch custody)"}>
+          <MobileSelect value={form.holderId} onChange={set("holderId")} searchable className="w-full" options={[
+            ...stations.map((s) => ({ value: `station:${s.id}`, label: `${lang === "ar" ? "عهدة الفرع" : "Branch custody"} — ${s.name}` })),
+            ...employees.map((e) => ({ value: e.id, label: e.name })),
+          ]} />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
