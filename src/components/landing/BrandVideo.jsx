@@ -17,9 +17,11 @@ export default function BrandVideo({ lang }) {
           <video
             key={BRAND_VIDEO_URL}
             src={BRAND_VIDEO_URL}
-            controls
+            autoPlay
+            muted
+            loop
             playsInline
-            preload="metadata"
+            preload="auto"
             className="aspect-video w-full bg-primary"
             aria-label={ar ? "فيديو تعريفي عن منصة NiroVera" : "NiroVera platform introduction video"}
           />
