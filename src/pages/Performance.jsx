@@ -8,6 +8,8 @@ import PerformanceComparison from "@/components/performance/PerformanceCompariso
 import PerformanceTrends from "@/components/performance/PerformanceTrends";
 import SupervisionFairness from "@/components/performance/SupervisionFairness";
 import EmployeeReportModal from "@/components/performance/EmployeeReportModal";
+import PeriodSelector from "@/components/performance/PeriodSelector";
+import { PerformancePeriodProvider } from "@/lib/PerformancePeriodContext";
 
 export default function Performance() {
   const { t, lang } = useI18n();
@@ -48,6 +50,7 @@ export default function Performance() {
   ];
 
   return (
+    <PerformancePeriodProvider>
     <div className="performance-hub space-y-6">
       <div className="performance-hub-header flex flex-wrap items-center justify-between gap-5">
         <div className="performance-hub-title">
@@ -73,6 +76,8 @@ export default function Performance() {
         </div>
       </div>
 
+      <PeriodSelector ar={ar} />
+
       {view === "overview" && (
         <PerformanceOverview
           t={t}
@@ -92,5 +97,6 @@ export default function Performance() {
 
       {reportId && <EmployeeReportModal employeeId={reportId} t={t} onClose={() => setReportId(null)} />}
     </div>
+    </PerformancePeriodProvider>
   );
 }
