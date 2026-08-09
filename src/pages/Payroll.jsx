@@ -184,7 +184,11 @@ export default function Payroll() {
                 onChange={(itemId, field, value) => updatePayrollItem(company.id, month, itemId, { [field]: value })}
                 onTogglePaid={(item, paid) => {
                   if (paid && payrollItemIssues(item).length) {
-                    alert(ar ? "لا يمكن اعتماد الدفع قبل إدخال راتب أساسي ومبالغ صحيحة وصافي موجب وعملة صالحة." : "Payment cannot be approved until base salary, valid amounts, a positive net, and a valid currency are set.");
+                    toast({
+                      variant: "destructive",
+                      title: ar ? "تعذر اعتماد الدفع" : "Payment cannot be approved",
+                      description: ar ? "أدخل راتبًا أساسيًا ومبالغ صحيحة وصافيًا موجبًا وعملة صالحة." : "Set a base salary, valid amounts, a positive net, and a valid currency.",
+                    });
                     return;
                   }
                   setItemPaid(company.id, month, item.id, paid);

@@ -12,6 +12,7 @@ import ChatGroupManager from "@/components/chat/ChatGroupManager";
 import ChatSearchPanel from "@/components/chat/ChatSearchPanel";
 import CompanyEmailComposer from "@/components/chat/CompanyEmailComposer";
 import CommentFiles from "@/components/tasks/CommentFiles";
+import { toast } from "@/components/ui/use-toast";
 
 export default function StationChat() {
   const { t, dir, lang } = useI18n();
@@ -123,7 +124,7 @@ export default function StationChat() {
       setFiles([]);
       fetchMessages();
     } catch (err) {
-      alert(err?.response?.data?.error || "Failed to send message");
+      toast({ variant: "destructive", title: t("chat"), description: err?.response?.data?.error || (lang === "ar" ? "تعذر إرسال الرسالة" : "Failed to send message") });
     } finally {
       setSending(false);
     }
@@ -135,7 +136,7 @@ export default function StationChat() {
       await base44.functions.invoke("supabaseTargets", { action, messageId: msg.id, userId: currentUser.id });
       fetchMessages();
     } catch (err) {
-      alert(err?.response?.data?.error || "Failed to delete message");
+      toast({ variant: "destructive", title: t("chat"), description: err?.response?.data?.error || (lang === "ar" ? "تعذر حذف الرسالة" : "Failed to delete message") });
     }
   };
 

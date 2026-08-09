@@ -12,6 +12,7 @@ import AssetTable from "@/components/assets/AssetTable";
 import AssetDetail from "@/components/assets/AssetDetail";
 import AssetForm from "@/components/assets/AssetForm";
 import HandoverDialog from "@/components/assets/HandoverDialog";
+import MarkLostDialog from "@/components/assets/MarkLostDialog";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 
 export default function Assets() {
@@ -26,6 +27,7 @@ export default function Assets() {
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
   const [handing, setHanding] = useState(false);
+  const [reportingLost, setReportingLost] = useState(false);
 
   const reload = async () => {
     const res = await assetsCall(session, "list");
@@ -78,9 +80,7 @@ export default function Assets() {
     await assetsCall(session, "logMaintenance", { assetId: selected, maintenance: record });
     await reload();
   };
-  const markLost = async () => {
-    const reason = window.prompt(lang === "ar" ? "سبب فتح بلاغ الفقدان" : "Reason for the loss report");
-    if (reason === null) return;
+  const markLost = async (reason) => {
     await assetsCall(session, "setStatus", { assetId: selected, status: "lost", reason });
     await reload();
   };
@@ -132,8 +132,12 @@ export default function Assets() {
           onHandover={() => setHanding(true)}
           onEdit={() => { setEditing(selectedAsset); setCreating(true); }}
           onAddMaintenance={addMaintenance}
-          onMarkLost={markLost}
+          onMarkLost={() => setReportingLost(true)}
         />
+      )}
+
+      {reportingLost && selectedAsset && (
+        <MarkLostDialog lang={lang} onClose={() => setReportingLost(false)} onConfirm={markLost} />
       )}
 
       {handing && selectedAsset && (
