@@ -30,8 +30,10 @@ export default function AssetForm({ asset, stations, employees, lang, onClose, o
       const branchHolder = String(form.holderId || "").startsWith("station:");
       const holder = employees.find((e) => e.id === form.holderId);
       const stationOf = stations.find((s) => s.id === String(form.holderId).replace("station:", ""));
+      const { noWarranty, ...payload } = form;
       await onSave({
-        ...form,
+        ...payload,
+        warrantyEndDate: noWarranty ? null : (form.warrantyEndDate || null),
         holderName: branchHolder ? `${lang === "ar" ? "عهدة الفرع" : "Branch custody"} — ${stationOf?.name || ""}` : (holder?.name || form.holderName || ""),
         value: form.value ? Number(form.value) : null,
         usefulLifeMonths: form.usefulLifeYears ? Number(form.usefulLifeYears) * 12 : null,
@@ -70,7 +72,13 @@ export default function AssetForm({ asset, stations, employees, lang, onClose, o
           <Field label={lang === "ar" ? "تاريخ الشراء" : "Purchase date"}><input type="date" value={form.purchaseDate || ""} onChange={set("purchaseDate")} className={input} /></Field>
           <Field label={lang === "ar" ? "القيمة" : "Value"}><input type="number" value={form.value || ""} onChange={set("value")} className={input} /></Field>
           <Field label={lang === "ar" ? "العمر الافتراضي (سنوات)" : "Useful life (years)"}><input type="number" min="0" value={form.usefulLifeYears || ""} onChange={set("usefulLifeYears")} className={input} /></Field>
-          <Field label={lang === "ar" ? "نهاية الضمان" : "Warranty end"}><input type="date" value={form.warrantyEndDate || ""} onChange={set("warrantyEndDate")} className={input} /></Field>
+          <Field label={lang === "ar" ? "نهاية الضمان" : "Warranty end"}>
+            <input type="date" value={form.warrantyEndDate || ""} onChange={set("warrantyEndDate")} disabled={form.noWarranty} className={`${input} disabled:opacity-40`} />
+            <label className="mt-1 flex items-center gap-2 text-xs font-body text-muted-foreground">
+              <input type="checkbox" checked={!!form.noWarranty} onChange={(e) => setForm({ ...form, noWarranty: e.target.checked, warrantyEndDate: e.target.checked ? "" : form.warrantyEndDate })} className="h-3.5 w-3.5 accent-current" />
+              {lang === "ar" ? "لا يوجد ضمان" : "No warranty"}
+            </label>
+          </Field>
         </div>
 
         <button disabled={!form.name || !form.assetCode || !form.stationId || saving} onClick={submit} className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-body font-medium text-primary-foreground disabled:opacity-50">
