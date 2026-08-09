@@ -4,6 +4,7 @@ import AssetStatusBadge from "@/components/assets/AssetStatusBadge";
 import CustodyTimeline from "@/components/assets/CustodyTimeline";
 import MaintenanceLog from "@/components/assets/MaintenanceLog";
 import { assetAlerts, endOfLifeDate } from "@/lib/assetAlerts";
+import InspectionTaskButton from "@/components/assets/InspectionTaskButton";
 
 const Row = ({ label, value }) => (
   <div className="flex justify-between gap-3 py-1.5 border-b border-border/60 last:border-0">
@@ -63,6 +64,7 @@ export default function AssetDetail({ asset, custody, maintenance, lang, station
           <button onClick={onEdit} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-body hover:bg-muted">
             <Pencil className="w-4 h-4" /> {lang === "ar" ? "تعديل" : "Edit"}
           </button>
+          <InspectionTaskButton asset={asset} lang={lang} />
           {asset.status !== "lost" && (
             <button onClick={onMarkLost} className="inline-flex items-center gap-1.5 rounded-md border border-red-300 px-3 py-2 text-sm font-body text-destructive hover:bg-red-50">
               <AlertTriangle className="w-4 h-4" /> {lang === "ar" ? "فتح بلاغ فقدان" : "Report lost"}
