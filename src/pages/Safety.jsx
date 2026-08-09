@@ -8,7 +8,6 @@ import { safetyApprovalIssues } from "@/lib/safetyLogic";
 import PageHeader from "@/components/PageHeader";
 import StationSafetyCard from "@/components/safety/StationSafetyCard";
 import SafetyReportExport from "@/components/safety/SafetyReportExport";
-import SafetyExplanation from "@/components/safety/SafetyExplanation";
 import SafetyDashboard from "@/components/safety/SafetyDashboard";
 import SafetyIncidentReportForm from "@/components/safety/SafetyIncidentReportForm";
 import { toast } from "@/components/ui/use-toast";
@@ -54,8 +53,6 @@ export default function Safety() {
         description={ar ? "أدخل بيانات السلامة لكل محطة واعتمدها — تُحسب تقارير السلامة الشهرية من البيانات المعتمدة هنا." : "Enter and approve each station's safety data — monthly HSE reports are calculated from the approved data here."}
         icon={ShieldCheck}
       />
-
-      <SafetyExplanation ar={ar} />
 
       {!canEdit && reportStation && <SafetyIncidentReportForm station={reportStation} ar={ar} onSubmit={async (description) => { const saved = recordSafetyIncident(company.id, reportStation.id, description, currentUser.name); toast({ description: saved ? (ar ? "تم إرسال بلاغ السلامة." : "Safety report submitted.") : (ar ? "تم تسجيل البلاغ نفسه اليوم مسبقًا." : "This report was already submitted today."), variant: saved ? "default" : "destructive" }); return saved; }} />}
 

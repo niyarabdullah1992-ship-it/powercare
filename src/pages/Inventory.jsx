@@ -15,7 +15,6 @@ import MovementList from "@/components/inventory/MovementList";
 import PurchasesTab from "@/components/inventory/PurchasesTab";
 import WorkIssueTab from "@/components/inventory/WorkIssueTab";
 import InventoryTabs from "@/components/inventory/InventoryTabs";
-import InventoryWorkflow from "@/components/inventory/InventoryWorkflow";
 import InventoryPeriodReport from "@/components/inventory/InventoryPeriodReport";
 import InventoryHeader from "@/components/inventory/InventoryHeader";
 import { toast } from "@/components/ui/use-toast";
@@ -77,7 +76,6 @@ export default function Inventory() {
   };
 
   if (!currentUser) return null;
-  const tabFromWorkflow = { purchase: "purchases", items: "items", requests: "requests", consumption: "consumption" };
   const stationIds = state.locations.map((station) => station.stationId || station.id);
   const inventoryViewStationIds = state.stations.map((station) => station.stationId || station.id);
   const allStationsSelected = selectedStation === "all" && state.locations.length > 1;
@@ -93,7 +91,6 @@ export default function Inventory() {
   return <div className="inventory-hub space-y-6">
     <InventoryHeader ar={ar} />
     {loading ? <div className="h-40 animate-pulse rounded-xl border border-accent/20 bg-muted" /> : <>
-      <InventoryWorkflow ar={ar} onNavigate={(key) => setActive(tabFromWorkflow[key])} />
       <InventoryItemScanner items={state.items} stationIds={selectedInventoryStations} onOpen={setSelectedItem} ar={ar} />
       <GlobalInventorySearch items={state.items} stations={state.stations} stationIds={selectedInventoryStations} onStationIdsChange={setSelectedInventoryStations} onOpen={(item, stationId) => setSelectedItem({ ...item, quantity: Number(item.locationBalances?.find((balance) => balance.locationId === stationId)?.quantity || 0), currentLocationId: stationId })} ar={ar} />
       <InventoryTabs active={active} onChange={setActive} ar={ar} />
