@@ -60,7 +60,7 @@ export default function AssetForm({ asset, stations, employees, lang, onClose, o
         <Field label={lang === "ar" ? "المقر" : "Site"}><input value={form.site} onChange={set("site")} className={input} /></Field>
         <Field label={lang === "ar" ? "الحائز (موظف أو عهدة فرع)" : "Holder (employee or branch custody)"}>
           <MobileSelect value={form.holderId} onChange={set("holderId")} searchable className="w-full" options={[
-            ...stations.map((s) => ({ value: `station:${s.id}`, label: `${lang === "ar" ? "عهدة الفرع" : "Branch custody"} — ${s.name}` })),
+            ...stations.filter((s) => s.id === form.stationId).map((s) => ({ value: `station:${s.id}`, label: `${lang === "ar" ? "عهدة الفرع" : "Branch custody"} — ${s.name}` })),
             ...employees.map((e) => ({ value: e.id, label: e.name })),
           ]} />
         </Field>
