@@ -38,15 +38,15 @@ export default function Employees() {
         icon={Users}
       />
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="no-scrollbar -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 py-0.5">
         {chips.map((station) => (
           <button
             key={station.id}
             onClick={() => setStationId(station.id)}
-            className={`rounded-full border px-3.5 py-2 text-xs font-medium ${stationId === station.id ? "border-accent bg-accent text-accent-foreground" : "border-border bg-card hover:bg-muted"}`}
+            className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium leading-tight ${stationId === station.id ? "border-accent bg-accent text-accent-foreground" : "border-border bg-card hover:bg-muted"}`}
           >
             {station.name}
-            <span className="ms-1.5 opacity-70">{station.id === "all" ? employees.length : employees.filter((e) => e.stationId === station.id).length}</span>
+            <span className="ms-1 opacity-70">{station.id === "all" ? employees.length : employees.filter((e) => e.stationId === station.id).length}</span>
           </button>
         ))}
       </div>
