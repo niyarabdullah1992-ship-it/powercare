@@ -11,6 +11,8 @@ export default function TaskDateRange({ start, end, setStart, setEnd, lang }) {
     { key: "quarter", label: ar ? "ربع" : "Quarter", days: 90 },
   ];
 
+  const days = start && end ? Math.max(0, Math.round((new Date(end) - new Date(start)) / 86400000)) : "";
+
   const apply = (days) => {
     const from = new Date();
     const to = new Date();
@@ -31,6 +33,24 @@ export default function TaskDateRange({ start, end, setStart, setEnd, lang }) {
           <input type="date" value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} className="w-full rounded-md border border-input px-3 py-2 text-sm font-body" />
         </label>
       </div>
+      <label className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">{ar ? "عدد الأيام" : "Number of days"}</span>
+        <input
+          type="number"
+          min="1"
+          value={days}
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            if (!n || n < 1) { setEnd(start || ""); return; }
+            const from = start ? new Date(start) : new Date();
+            const to = new Date(from);
+            to.setDate(to.getDate() + n);
+            if (!start) setStart(toISO(from));
+            setEnd(toISO(to));
+          }}
+          className="w-24 rounded-md border border-input px-3 py-2 text-sm font-body"
+        />
+      </label>
       <div className="flex flex-wrap gap-2">
         {shortcuts.map((s) => (
           <button key={s.key} type="button" onClick={() => apply(s.days)} className="rounded-full border border-border px-3 py-1 text-xs font-body hover:bg-muted">
