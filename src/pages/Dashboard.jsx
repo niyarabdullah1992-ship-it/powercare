@@ -2,17 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canSeeAllStations, visibleEmployees, canApproveReports, canReplyAnon, isCompanyOwner } from "@/lib/permissions";
-import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
 import WelcomeHero from "@/components/dashboard/WelcomeHero";
-import { AlertTriangle, FileText, Bell, Megaphone, Palette } from "lucide-react";
-import DashboardStatCards from "@/components/dashboard/DashboardStatCards";
+import { AlertTriangle, FileText, Bell, Megaphone } from "lucide-react";
 import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
 import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
 import StationManagerDashboard from "@/components/dashboard/StationManagerDashboard";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { queryClientInstance } from "@/lib/query-client";
-import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import CommandCenterHero from "@/components/dashboard/CommandCenterHero";
 import { getRiskWeights } from "@/lib/riskWeights";
 import { isActiveAttendance, isScheduledToday } from "@/lib/attendance";
@@ -27,7 +24,6 @@ export default function Dashboard() {
   const { t, lang } = useI18n();
   const { data, currentUser, company, session, refresh } = useAuth();
   const [stoppageCount, setStoppageCount] = useState(0);
-  const [showBranding, setShowBranding] = useState(false);
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [targetRows, setTargetRows] = useState([]);
   const { alerts: proactiveAlerts, loading: proactiveLoading } = useProactiveAlerts(data, currentUser, session);
@@ -215,34 +211,6 @@ export default function Dashboard() {
       <div className="overflow-x-auto no-scrollbar"><QuickOverviewStrip lang={lang} employees={teamEmployees.length} attendance={attendanceRate} completedTasks={completed} satisfaction={satisfactionRate} updates={recent.length} /></div>
       <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
       <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
-      {canEditBranding && (
-        <div className="flex justify-end">
-          <button onClick={() => setShowBranding((value) => !value)} className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-body hover:bg-muted">
-            <Palette className="h-3.5 w-3.5 text-accent" />{t("logoSettings")}
-          </button>
-        </div>
-      )}
-
-      {showBranding && canEditBranding && (
-        <BrandingSettingsCard
-          companyId={company.id}
-          branding={data.reportBranding}
-          companyName={data.name || company?.name || ""}
-          lang={lang}
-          onClose={() => setShowBranding(false)}
-        />
-      )}
-
-      {/* Numbered stat cards (WorkForce style) */}
-      <DashboardStatCards
-        attendanceRate={attendanceRate}
-        activeMembers={activeMembersCount}
-        totalMembers={teamEmployees.length}
-        t={t}
-      />
-
-      <TeamStatusPanel employees={teamEmployees} companyId={company.id} t={t} lang={lang} />
-
       {/* Recent activity */}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
         <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-1">{formatDate(new Date(), lang, { month: "short" })}</p>
