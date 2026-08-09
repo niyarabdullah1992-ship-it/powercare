@@ -77,9 +77,9 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
 
   const allEmployeesSelected = employeeId === "all";
   const allEmployeesLabel = lang === "ar" ? "كل الموظفين" : "All employees";
-  const exportHeaders = [...(allEmployeesSelected ? [t("employeeName")] : []), t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("lateMinutesLabel"), lang === "ar" ? "تحضير يدوي" : "Manual attendance"];
+  const exportHeaders = [t("employeeName"), t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("lateMinutesLabel"), lang === "ar" ? "تحضير يدوي" : "Manual attendance"];
   const exportRows = rows.map((r) => [
-    ...(allEmployeesSelected ? [r.employeeName || "—"] : []),
+    r.employeeName || "—",
     r.date, statusLabel(r) + (r.excused ? ` (${t("excused")})` : ""),
     r.check_in_at ? formatTime(r.check_in_at, format, lang) : "—",
     r.check_out_at ? formatTime(r.check_out_at, format, lang) : "—",
@@ -171,7 +171,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
           <table className="w-full text-sm font-body mobile-cards">
             <thead>
               <tr className="text-start text-xs text-muted-foreground border-b border-border">
-                {allEmployeesSelected && <th className="py-2 pe-3 text-start">{t("employeeName")}</th>}
+                <th className="py-2 pe-3 text-start">{t("employeeName")}</th>
                 <th className="py-2 pe-3 text-start">{t("date")}</th>
                 <th className="py-2 pe-3 text-start">{t("status")}</th>
                 <th className="py-2 pe-3 text-start">{t("checkIn")}</th>
@@ -184,7 +184,7 @@ export default function AttendanceMonthlyReport({ employees, defaultEmployeeId, 
             <tbody>
               {rows.map((r) => (
                 <tr key={`${r.employeeId || employeeId}-${r.id}`} className="border-b border-border/60">
-                  {allEmployeesSelected && <td data-label={t("employeeName")} className="py-2 pe-3 font-medium">{r.employeeName || "—"}</td>}
+                  <td data-label={t("employeeName")} className="py-2 pe-3 font-medium">{r.employeeName || "—"}</td>
                   <td data-label={t("date")} className="py-2 pe-3">{r.date}</td>
                   <td data-label={t("status")} className="py-2 pe-3 text-muted-foreground">
                     {statusLabel(r)}
