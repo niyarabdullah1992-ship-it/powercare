@@ -27,6 +27,10 @@ export default function Help() {
         </p>
       </div>
 
+      <Link to="/app/manual" className="flex items-center justify-between rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm font-semibold text-accent hover:bg-accent/10">
+        <span className="flex items-center gap-2"><BookOpen className="h-4 w-4" />{ar ? "فتح الدليل التشغيلي الشامل" : "Open the complete operations manual"}</span>
+      </Link>
+
       <div className="grid gap-4 md:grid-cols-2">
         {sections.map((s) => (
           <HelpSection key={s.title} icon={s.icon} title={s.title} steps={s.steps} />
