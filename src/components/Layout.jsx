@@ -24,6 +24,7 @@ import { shouldShowNotification } from "@/lib/notificationFilters";
 import { routeForNotification } from "@/lib/notificationRoute";
 import CompanyNameEditor from "@/components/CompanyNameEditor";
 import GlobalSearch from "@/components/navigation/GlobalSearch";
+import useSmartPolling from "@/hooks/useSmartPolling";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -38,7 +39,6 @@ export default function Layout({ children }) {
   const langRef = useRef(null);
   const notifRef = useRef(null);
   const userRef = useRef(null);
-  const notificationPollInFlightRef = useRef(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("powercare_sidebar_collapsed") === "true");
 
   useEffect(() => {
@@ -75,59 +75,49 @@ export default function Layout({ children }) {
     return () => window.removeEventListener("powercare:proactive-alerts", receive);
   }, [company?.id, currentUser?.id]);
 
-  // Real-time notification polling (Supabase → local bell)
-  useEffect(() => {
-    if (!currentUser || !company) return;
-    const poll = async () => {
-      if (notificationPollInFlightRef.current || document.visibilityState !== "visible" || navigator.onLine === false) return;
-      notificationPollInFlightRef.current = true;
-      try {
-        const dismissedKey = `powercare_notification_dismissed_${company.id}_${currentUser.id}`;
-        const dismissedIds = new Set(JSON.parse(localStorage.getItem(dismissedKey) || "[]"));
-        const res = await base44.functions.invoke("supabaseTargets", {
-          action: "listNotifications",
-          userId: currentUser.id,
-          companyId: company.id,
-          sessionToken: getCompanyToken(company.id),
-        });
-        const remote = (res.data?.notifications || []).filter((notification) =>
-          !dismissedIds.has(String(notification.id)) && shouldShowNotification(notification.message, data)
-        );
-        const current = getCompanyData(company.id);
-        if (!current) return;
-        const existing = new Set(
-          current.notifications.filter((n) => n.userId === currentUser.id).map((n) => n.text)
-        );
-        const fresh = remote.filter((rn) => !existing.has(rn.message));
-        if (fresh.length === 0) return;
-        updateCompany(company.id, (d) => {
-          for (const rn of fresh) {
-            d.notifications.unshift({
-              id: "snf_" + (rn.id || Math.random().toString(36).slice(2)),
-              userId: currentUser.id,
-              text: rn.message,
-              read: false,
-              createdAt: rn.created_at || new Date().toISOString(),
-            });
-          }
-        });
-        // Fire instant in-site toast alerts for each new notification
+  // Live notifications — visibility-aware polling with progressive backoff
+  // (shared engine: pauses when the tab is hidden, slows down when idle).
+  const pollNotifications = async () => {
+    if (!currentUser || !company) return false;
+    try {
+      const dismissedKey = `powercare_notification_dismissed_${company.id}_${currentUser.id}`;
+      const dismissedIds = new Set(JSON.parse(localStorage.getItem(dismissedKey) || "[]"));
+      const res = await base44.functions.invoke("supabaseTargets", {
+        action: "listNotifications",
+        userId: currentUser.id,
+        companyId: company.id,
+        sessionToken: getCompanyToken(company.id),
+      });
+      const remote = (res.data?.notifications || []).filter((notification) =>
+        !dismissedIds.has(String(notification.id)) && shouldShowNotification(notification.message, data)
+      );
+      const current = getCompanyData(company.id);
+      if (!current) return false;
+      const existing = new Set(
+        current.notifications.filter((n) => n.userId === currentUser.id).map((n) => n.text)
+      );
+      const fresh = remote.filter((rn) => !existing.has(rn.message));
+      if (fresh.length === 0) return false;
+      updateCompany(company.id, (d) => {
         for (const rn of fresh) {
-          toast({
-            title: t("notifications"),
-            description: rn.message,
+          d.notifications.unshift({
+            id: "snf_" + (rn.id || Math.random().toString(36).slice(2)),
+            userId: currentUser.id,
+            text: rn.message,
+            read: false,
+            createdAt: rn.created_at || new Date().toISOString(),
           });
         }
-      } catch {
-        // Supabase not configured or unreachable — silent
-      } finally {
-        notificationPollInFlightRef.current = false;
+      });
+      for (const rn of fresh) {
+        toast({ title: t("notifications"), description: rn.message });
       }
-    };
-    poll();
-    const interval = setInterval(poll, 5000);
-    return () => clearInterval(interval);
-  }, [currentUser?.id, company?.id]);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  useSmartPolling(pollNotifications, { baseInterval: 5000, maxInterval: 60000, enabled: !!(currentUser && company) });
 
   if (!currentUser || !data) return children;
 

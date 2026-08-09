@@ -7,6 +7,7 @@ import { logAudit, fetchAllAuditLog } from "@/lib/auditLog";
 import { Building2, Plus, Trash2, ShieldCheck, ShieldAlert, LogOut, LogIn, RefreshCw } from "lucide-react";
 import Logo from "@/components/Logo";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
+import useSmartPolling from "@/hooks/useSmartPolling";
 import NewsBroadcast from "@/components/owner/NewsBroadcast";
 import SubscribersDashboard from "@/components/owner/SubscribersDashboard";
 import SaasAnalyticsDashboard from "@/components/owner/SaasAnalyticsDashboard";
@@ -51,14 +52,7 @@ export default function OwnerPanel() {
     setRefreshKey((value) => value + 1);
     if (showLoading) setRefreshing(false);
   };
-  useEffect(() => {
-    if (user?.role !== "admin") return;
-    refresh();
-    const interval = window.setInterval(() => refresh(), 30000);
-    const onFocus = () => refresh();
-    window.addEventListener("focus", onFocus);
-    return () => { window.clearInterval(interval); window.removeEventListener("focus", onFocus); };
-  }, [user]);
+  useSmartPolling(() => refresh(), { baseInterval: 30000, maxInterval: 180000, enabled: user?.role === "admin" });
 
   if (user === undefined) return null;
 

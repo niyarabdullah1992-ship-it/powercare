@@ -13,6 +13,7 @@ import ChatSearchPanel from "@/components/chat/ChatSearchPanel";
 import CompanyEmailComposer from "@/components/chat/CompanyEmailComposer";
 import CommentFiles from "@/components/tasks/CommentFiles";
 import { toast } from "@/components/ui/use-toast";
+import useSmartPolling from "@/hooks/useSmartPolling";
 
 export default function StationChat() {
   const { t, dir, lang } = useI18n();
@@ -71,31 +72,34 @@ export default function StationChat() {
     return selectedStation === "hq" ? !e.stationId : e.stationId === selectedStation;
   });
 
+  // Returns true when the room actually received new messages, so the shared
+  // polling engine can slow down while a conversation is idle.
   const fetchMessages = async () => {
-    if (!activeChat) return;
+    if (!activeChat) return false;
     try {
+      let rows = [];
       if (activeChat.type === "general") {
         const res = await base44.functions.invoke("supabaseTargets", { action: "listChatMessages", stationId: selectedStation });
-        const rows = [...(res?.data?.messages || [])].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-        setMessages(rows);
+        rows = [...(res?.data?.messages || [])].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       } else {
         const res = await base44.functions.invoke("supabaseTargets", { action: "listDirectMessages", userId: currentUser.id, otherUserId: activeChat.userId });
-        const rows = (res?.data?.messages || [])
+        rows = (res?.data?.messages || [])
           .map((m) => ({ ...m, user_id: m.sender_id, user_name: m.sender_name }))
           .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-        setMessages(rows);
       }
+      let changed = false;
+      setMessages((previous) => {
+        changed = previous.length !== rows.length || previous[previous.length - 1]?.id !== rows[rows.length - 1]?.id;
+        return changed ? rows : previous;
+      });
+      return changed;
     } catch {
       setMessages([]);
+      return false;
     }
   };
 
-  useEffect(() => {
-    if (!activeChat) return;
-    fetchMessages();
-    const interval = setInterval(fetchMessages, 4000);
-    return () => clearInterval(interval);
-  }, [activeChat, selectedStation]);
+  useSmartPolling(fetchMessages, { baseInterval: 4000, maxInterval: 30000, enabled: !!activeChat });
 
   useEffect(() => {
     setActiveTab("chat");
