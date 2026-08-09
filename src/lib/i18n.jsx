@@ -1633,13 +1633,6 @@ for (const [code, vals] of Object.entries(extraTranslations)) {
 export const LANGUAGES = [
   { code: "en", label: "English", flag: "🇬🇧" },
   { code: "ar", label: "العربية", flag: "🇸🇦" },
-  { code: "de", label: "Deutsch", flag: "🇩🇪" },
-  { code: "fr", label: "Français", flag: "🇫🇷" },
-  { code: "es", label: "Español", flag: "🇪🇸" },
-  { code: "pt", label: "Português", flag: "🇵🇹" },
-  { code: "ru", label: "Русский", flag: "🇷🇺" },
-  { code: "ja", label: "日本語", flag: "🇯🇵" },
-  { code: "ko", label: "한국어", flag: "🇰🇷" },
 ];
 
 const I18nContext = createContext(null);
@@ -1649,7 +1642,10 @@ const GENERATED_KEY = `powercare_generated_translations_${GENERATED_VERSION}`;
 const PRESERVED_KEYS = new Set(["dir", "appName", "plan_starter", "plan_pro", "plan_ent"]);
 
 export function I18nProvider({ children }) {
-  const [lang, setLang] = useState(() => localStorage.getItem("powercare_lang") || "en");
+  const [lang, setLang] = useState(() => {
+    const saved = localStorage.getItem("powercare_lang");
+    return LANGUAGES.some((l) => l.code === saved) ? saved : "en";
+  });
   const [generated, setGenerated] = useState(() => {
     try { return JSON.parse(localStorage.getItem(GENERATED_KEY) || "{}"); } catch { return {}; }
   });
