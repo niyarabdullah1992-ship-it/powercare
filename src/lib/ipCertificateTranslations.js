@@ -1,4 +1,4 @@
-export const IP_CERTIFICATE_URL = "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/9f1117668_NiyarAbdullah.pdf";
+export const IP_CERTIFICATE_URL = "https://media.base44.com/files/public/6a4f617bd7360a0ae9581d2a/00f2eb2e9_.pdf";
 
 export const ipCertificateTranslations = {
   ar: { badge: "مصنف مسجل لدى الهيئة السعودية للملكية الفكرية", title: "شهادة تسجيل مصنف", intro: "NiroVera مصنف برمجي مسجل لدى الهيئة السعودية للملكية الفكرية.", registration: "رقم التسجيل", work: "عنوان المصنف", category: "نوع المصنف", categoryValue: "مصنفات برمجيات وتطبيقات الحاسب الآلي", author: "المؤلف وصاحب الحق", date: "تاريخ التسجيل", view: "عرض الشهادة الأصلية", note: "تعرض هذه المعلومات لأغراض التوثيق والثقة، ولا تمثل تصريحًا باستغلال المصنف أو تداوله." },

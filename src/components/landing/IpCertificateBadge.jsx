@@ -6,9 +6,9 @@ import { IP_CERTIFICATE_URL, ipCertificateTranslations } from "@/lib/ipCertifica
 export default function IpCertificateBadge({ lang }) {
   const copy = ipCertificateTranslations[lang] || ipCertificateTranslations.en;
   const details = [
-    [copy.registration, "26-12-92957462"], [copy.work, "NiroVera"],
+    [copy.registration, "26-12-97045034"], [copy.work, "NiroVera"],
     [copy.category, copy.categoryValue], [copy.author, lang === "ar" ? "نيار عبدالله سويلم الرنياوي" : "Niyar Abdullah Sweilem Al-Raniawi"],
-    [copy.date, "20/07/2026"],
+    [copy.date, "06/08/2026"],
   ];
   return <Dialog>
     <DialogTrigger asChild>
