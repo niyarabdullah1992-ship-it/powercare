@@ -9,6 +9,9 @@ const SMART_SECTION_ROUTES = {
   complaints: "/app/complaints", safety: "/app/safety", payroll: "/app/payroll",
   performance: "/app/performance", attendance: "/app/attendance",
   hr: "/app/hr", inventory: "/app/inventory",
+  tasks: "/app/tasks", reports: "/app/daily-report", assets: "/app/assets",
+  expenses: "/app/expenses", workProof: "/app/work-proof", files: "/app/files",
+  signing: "/app/signing", chat: "/app/chat",
 };
 const PLAN_ROUTE_SECTIONS = {
   "/app/assistant": "assistant", "/app/daily-report": "reports", "/app/tasks": "tasks",

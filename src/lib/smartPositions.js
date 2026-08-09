@@ -10,6 +10,14 @@ export const SMART_DEPARTMENTS = [
   { id: "attendance", ar: "حضور", en: "Attendance", badge: "bg-blue-100 text-blue-700 border-blue-200" },
   { id: "hr", ar: "موارد بشرية", en: "Human Resources", badge: "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200" },
   { id: "inventory", ar: "مخزن", en: "Inventory", badge: "bg-orange-100 text-orange-700 border-orange-200" },
+  { id: "tasks", ar: "المهام", en: "Tasks", badge: "bg-sky-100 text-sky-700 border-sky-200" },
+  { id: "reports", ar: "التقرير اليومي", en: "Daily report", badge: "bg-teal-100 text-teal-700 border-teal-200" },
+  { id: "assets", ar: "الأصول والعهد", en: "Assets & custody", badge: "bg-indigo-100 text-indigo-700 border-indigo-200" },
+  { id: "expenses", ar: "المصروفات", en: "Expenses", badge: "bg-lime-100 text-lime-700 border-lime-200" },
+  { id: "workProof", ar: "إثبات العمل", en: "Work proof", badge: "bg-stone-100 text-stone-700 border-stone-200" },
+  { id: "files", ar: "الملفات", en: "Files", badge: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+  { id: "signing", ar: "التوقيع الرقمي", en: "Digital signing", badge: "bg-purple-100 text-purple-700 border-purple-200" },
+  { id: "chat", ar: "المحادثات", en: "Chat", badge: "bg-pink-100 text-pink-700 border-pink-200" },
 ];
 
 export const rankFromScore = (score) => score >= 13 ? "executive" : score >= 8 ? "manager" : score >= 4 ? "supervisor" : "employee";
