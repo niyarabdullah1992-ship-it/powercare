@@ -1,94 +1,72 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { CalendarDays, Pencil, Check, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { setLeaveTotal } from "@/lib/store";
-import { LEAVE_TYPES, getLeaveTotal, usedLeaveDays, isLeaveTypeAllowed } from "@/lib/leaveTypes";
+import { LEAVE_TYPES, getLeaveTotal, usedLeaveDays } from "@/lib/leaveTypes";
+import LeavePolicyCard from "@/components/hr/LeavePolicyCard";
+import LeaveBalanceDrawer from "@/components/hr/LeaveBalanceDrawer";
 
-// Company-wide leave balances: one row per employee, one column per leave type.
-// Managers / HR can edit each employee's yearly totals inline.
+// Only what actually differs per employee: annual usage, sick days taken,
+// documented exceptions to the company policy, and the latest request.
 export default function LeaveBalancesTable({ employees, companyId, canEdit, ar }) {
   const { t } = useI18n();
-  const types = LEAVE_TYPES.filter((ty) => ty.key !== "unpaid");
-  const editableTypes = types.filter((ty) => ty.defaultTotal !== null);
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({});
+  const [openEmployee, setOpenEmployee] = useState(null);
 
-  const startEdit = (emp) => {
-    setEditingId(emp.id);
-    setForm(editableTypes.reduce((acc, ty) => ({ ...acc, [ty.key]: getLeaveTotal(emp.profile, ty.key) ?? 0 }), {}));
-  };
+  const exceptionsOf = (emp) =>
+    LEAVE_TYPES.filter((ty) => ty.defaultTotal !== null && emp.profile?.leaveTotals?.[ty.key] != null && emp.profile.leaveTotals[ty.key] !== ty.defaultTotal)
+      .map((ty) => `${t(ty.key)} ${emp.profile.leaveTotals[ty.key]}`);
 
-  const save = (emp) => {
-    editableTypes.forEach((ty) => setLeaveTotal(companyId, emp.id, ty.key, Number(form[ty.key]) || 0));
-    setEditingId(null);
-  };
+  const lastRequestOf = (emp) =>
+    [...(emp.leaveRequests || [])].sort((a, b) => String(b.startDate || "").localeCompare(String(a.startDate || "")))[0];
+
+  const headers = ar
+    ? ["الموظف", "السنوية", "المرضية", "استثناءات", "آخر طلب"]
+    : ["Employee", "Annual", "Sick", "Exceptions", "Last request"];
 
   return (
-    <section className="space-y-4 rounded-xl border border-border bg-card p-5">
-      <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
-        <CalendarDays className="h-4 w-4 text-accent" /> {ar ? "أرصدة الإجازات" : "Leave balances"}
-      </h2>
-      {canEdit && (
-        <p className="text-xs text-muted-foreground font-body">
-          {ar ? "يمكن للمدراء والموارد البشرية تعديل الرصيد السنوي لكل موظف." : "Managers and HR can edit each employee's yearly balance."}
-        </p>
-      )}
+    <div className="space-y-4">
+      <LeavePolicyCard ar={ar} />
+
       {employees.length === 0 ? (
-        <p className="text-sm text-muted-foreground font-body">{ar ? "لا يوجد موظفون." : "No employees."}</p>
+        <p className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground font-body">{ar ? "لا يوجد موظفون." : "No employees."}</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full mobile-cards">
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <table className="mobile-cards w-full">
             <thead>
-              <tr>
-                <th className="p-2 text-start">{ar ? "الموظف" : "Employee"}</th>
-                {types.map((ty) => <th key={ty.key} className="p-2 text-start">{t(ty.key)}</th>)}
-                {canEdit && <th className="p-2" />}
-              </tr>
+              <tr>{headers.map((h) => <th key={h} className="px-3 py-2 text-start font-medium">{h}</th>)}</tr>
             </thead>
             <tbody>
               {employees.map((emp) => {
-                const editing = editingId === emp.id;
+                const total = getLeaveTotal(emp.profile, "annual") ?? 0;
+                const used = usedLeaveDays(emp.leaveRequests || [], "annual");
+                const remaining = Math.max(0, total - used);
+                const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+                const low = total > 0 && remaining <= 3;
+                const sick = usedLeaveDays(emp.leaveRequests || [], "sick");
+                const exceptions = exceptionsOf(emp);
+                const last = lastRequestOf(emp);
                 return (
-                  <tr key={emp.id} className="border-b border-border">
-                    <td className="p-2" data-label={ar ? "الموظف" : "Employee"}>
-                      <Link to={`/app/employees/${emp.id}`} className="text-accent hover:underline">{emp.name}</Link>
+                  <tr key={emp.id} onClick={() => setOpenEmployee(emp)} className="cursor-pointer border-t border-border">
+                    <td className="px-3 py-2 font-medium" data-label={headers[0]}>{emp.name}</td>
+                    <td className="px-3 py-2" data-label={headers[1]}>
+                      <span className="block w-full min-w-[110px] max-w-[180px]">
+                        <span className="block h-1.5 overflow-hidden rounded-full bg-muted">
+                          <span className={`block h-full rounded-full ${low ? "bg-destructive" : "bg-accent"}`} style={{ width: `${pct}%` }} />
+                        </span>
+                        <span className={`mt-1 block text-[11px] font-body ${low ? "text-destructive" : "text-muted-foreground"}`}>
+                          {ar ? `مستهلك ${used} من ${total} · متبقٍ ${remaining}` : `${used} of ${total} used · ${remaining} left`}
+                        </span>
+                      </span>
                     </td>
-                    {types.map((ty) => {
-                      const total = getLeaveTotal(emp.profile, ty.key) ?? 0;
-                      const remaining = Math.max(0, total - usedLeaveDays(emp.leaveRequests || [], ty.key));
-                      return (
-                        <td key={ty.key} className="p-2 font-body" data-label={t(ty.key)}>
-                          {!isLeaveTypeAllowed(emp.profile, ty.key) ? (
-                            <span className="text-muted-foreground">—</span>
-                          ) : ty.defaultTotal === null ? (
-                            <>{t("unlimited")}<span className="text-xs text-muted-foreground"> ({usedLeaveDays(emp.leaveRequests || [], ty.key)})</span></>
-                          ) : editing ? (
-                            <input
-                              type="number"
-                              min="0"
-                              value={form[ty.key]}
-                              onChange={(e) => setForm({ ...form, [ty.key]: e.target.value })}
-                              className="w-20 rounded-md border border-input px-2 py-1 text-sm font-body"
-                            />
-                          ) : (
-                            <>{remaining}<span className="text-xs text-muted-foreground"> / {total}</span></>
-                          )}
-                        </td>
-                      );
-                    })}
-                    {canEdit && (
-                      <td className="p-2" data-label="">
-                        {editing ? (
-                          <div className="flex gap-1">
-                            <button onClick={() => save(emp)} className="rounded p-1.5 text-emerald-600 hover:bg-emerald-50"><Check className="h-4 w-4" /></button>
-                            <button onClick={() => setEditingId(null)} className="rounded p-1.5 text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>
-                          </div>
-                        ) : (
-                          <button onClick={() => startEdit(emp)} className="rounded p-1.5 hover:bg-muted"><Pencil className="h-4 w-4" /></button>
-                        )}
-                      </td>
-                    )}
+                    <td className="px-3 py-2 text-muted-foreground" data-label={headers[2]}>
+                      {sick ? `${sick} ${t("days")}` : "—"}
+                    </td>
+                    <td className="px-3 py-2" data-label={headers[3]}>
+                      {exceptions.length ? (
+                        <span className="inline-flex rounded-full border border-accent/35 bg-accent/10 px-2 py-0.5 text-[11px] text-accent-text">{exceptions.join(" · ")}</span>
+                      ) : <span className="text-muted-foreground">—</span>}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground" data-label={headers[4]}>
+                      {last ? `${t(last.type)} · ${String(last.startDate || "").slice(0, 10)}` : "—"}
+                    </td>
                   </tr>
                 );
               })}
@@ -96,6 +74,16 @@ export default function LeaveBalancesTable({ employees, companyId, canEdit, ar }
           </table>
         </div>
       )}
-    </section>
+
+      {openEmployee && (
+        <LeaveBalanceDrawer
+          employee={openEmployee}
+          companyId={companyId}
+          canEdit={canEdit}
+          ar={ar}
+          onClose={() => setOpenEmployee(null)}
+        />
+      )}
+    </div>
   );
 }
