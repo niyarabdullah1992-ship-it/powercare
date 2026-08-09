@@ -2,26 +2,13 @@ import React, { useState, useMemo } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { canSeeAllStations, visibleStations } from "@/lib/permissions";
-import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis,
-  Tooltip, ResponsiveContainer, CartesianGrid,
-} from "recharts";
-import { Calendar, TrendingUp, Users, Building2, BarChart3 } from "lucide-react";
 import moment from "moment";
 import IssuesList from "@/components/performance/IssuesList";
-import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
-import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
-
-function EmployeeAxisTick({ x, y, payload, employees }) {
-  const employee = employees.find((item) => item.id === payload.value);
-  return (
-    <foreignObject x={x - 92} y={y - 12} width="88" height="24">
-      <div className="text-end leading-tight">
-        <EmployeeNameLink employeeId={employee?.id} employeeName={employee?.name || "—"} className="block truncate text-[10px] font-body" />
-      </div>
-    </foreignObject>
-  );
-}
+import TrendPeriodBar from "@/components/performance/TrendPeriodBar";
+import TrendKpiRow from "@/components/performance/TrendKpiRow";
+import TrendCharts from "@/components/performance/TrendCharts";
+import useMonthlyAttendance from "@/hooks/useMonthlyAttendance";
+import { monthLabel, trimLeadingEmpty, deltaPct, toArabicDigits } from "@/lib/trendFormat";
 
 const RANGES = [
   { val: "daily", bucket: "day", count: 14 },
@@ -32,21 +19,16 @@ const RANGES = [
   { val: "custom", bucket: "auto" },
 ];
 
-const rangeLabel = (val, t) => ({
-  daily: t("rangeDaily"),
-  weekly: t("rangeWeekly"),
-  monthly: t("rangeMonthly"),
-  "3months": t("range3Months"),
-  yearly: t("rangeYearly"),
-  custom: t("rangeCustom"),
-}[val] || val);
+const weightOf = (item) => Number(item.effortWeight) || 1;
 
 export default function PerformanceAnalytics() {
-  const { t, dir } = useI18n();
-  const { data, currentUser } = useAuth();
+  const { t, lang } = useI18n();
+  const { data, currentUser, company } = useAuth();
+  const ar = lang === "ar";
   const [range, setRange] = useState("monthly");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+  const { rows: attendance } = useMonthlyAttendance(company, data?.employees || []);
 
   const result = useMemo(() => {
     if (!data || !currentUser) return null;
@@ -73,18 +55,17 @@ export default function PerformanceAnalytics() {
     } else {
       windowStart = moment().subtract(cfg.count, cfg.bucket + "s").toDate();
     }
+    const previousStart = new Date(windowStart.getTime() - (windowEnd - windowStart));
 
-    // Build bucket list
     const buckets = [];
     let cur = moment(windowStart).startOf(bucket === "week" ? "isoWeek" : bucket);
     const endM = moment(windowEnd).endOf(bucket === "week" ? "isoWeek" : bucket);
     while (cur.isSameOrBefore(endM)) {
-      const key = cur.format("YYYY-MM-DD");
       const label =
-        bucket === "day" ? cur.format("D/M") :
-        bucket === "week" ? cur.format("[W]w") :
-        cur.format("MMM YY");
-      buckets.push({ key, label, total: 0 });
+        bucket === "day" ? (ar ? toArabicDigits(cur.format("D/M")) : cur.format("D/M")) :
+        bucket === "week" ? (ar ? `أ${toArabicDigits(cur.format("w"))}` : cur.format("[W]w")) :
+        monthLabel(cur.format("YYYY-MM"), ar);
+      buckets.push({ key: cur.format("YYYY-MM-DD"), label, total: 0 });
       cur.add(1, bucket + "s");
     }
     const bucketIndex = (dateStr) => {
@@ -94,210 +75,110 @@ export default function PerformanceAnalytics() {
       const startOf = moment(m).startOf(bucket === "week" ? "isoWeek" : bucket);
       return buckets.findIndex((b) => b.key === startOf.format("YYYY-MM-DD"));
     };
+    const inPrevious = (dateStr) => {
+      if (!dateStr) return false;
+      const m = moment(dateStr);
+      return m.isSameOrAfter(previousStart) && m.isBefore(windowStart);
+    };
 
-    const empMap = {};
-    const stationMap = {};
-    let totalCompleted = 0;
+    let totalWeight = 0;
+    let previousWeight = 0;
+    let onTime = 0;
+    let overdue = 0;
+    const now = moment();
 
-    // Completed tasks (status === completed) — +1 each, attributed by createdAt
-    for (const tk of data.tasks || []) {
-      if (tk.status !== "completed") continue;
-      if (tk.stationId && !visibleStationIds.has(tk.stationId)) continue;
-      if (tk.assignedTo && !visibleEmpIds.has(tk.assignedTo)) continue;
-      const idx = bucketIndex(tk.createdAt);
-      if (idx >= 0) {
-        buckets[idx].total += 1;
-        totalCompleted += 1;
+    const visibleItems = [...(data.tasks || []), ...(data.targets || [])].filter((item) => {
+      if (item.stationId && !visibleStationIds.has(item.stationId)) return false;
+      if (item.assignedTo && !visibleEmpIds.has(item.assignedTo)) return false;
+      return true;
+    });
+
+    for (const item of visibleItems) {
+      const done = item.status === "completed" ? Math.max(1, Number(item.completed) || 1) : Number(item.completed) || 0;
+      const earned = done * weightOf(item);
+      if (earned > 0) {
+        const idx = bucketIndex(item.createdAt);
+        if (idx >= 0) { buckets[idx].total += earned; totalWeight += earned; }
+        else if (inPrevious(item.createdAt)) previousWeight += earned;
       }
-      if (tk.assignedTo) empMap[tk.assignedTo] = (empMap[tk.assignedTo] || 0) + 1;
-      if (tk.stationId) stationMap[tk.stationId] = (stationMap[tk.stationId] || 0) + 1;
-    }
-
-    // Targets — contribute their completed count, attributed by createdAt
-    for (const tg of data.targets || []) {
-      const completed = Number(tg.completed) || 0;
-      if (completed <= 0) continue;
-      if (tg.stationId && !visibleStationIds.has(tg.stationId)) continue;
-      if (tg.assignedTo && !visibleEmpIds.has(tg.assignedTo)) continue;
-      const idx = bucketIndex(tg.createdAt);
-      if (idx >= 0) {
-        buckets[idx].total += completed;
-        totalCompleted += completed;
+      const deadline = item.endDate || item.end_date;
+      if (bucketIndex(item.createdAt) >= 0 && deadline) {
+        if (item.status === "completed") onTime += 1;
+        else if (moment(deadline).isBefore(now)) overdue += 1;
       }
-      if (tg.assignedTo) empMap[tg.assignedTo] = (empMap[tg.assignedTo] || 0) + completed;
-      if (tg.stationId) stationMap[tg.stationId] = (stationMap[tg.stationId] || 0) + completed;
     }
-
-    const employeeName = (id) => data.employees.find((e) => e.id === id)?.name || "—";
-    const stationName = (id) => data.stations.find((s) => s.id === (id || defaultStationId))?.name || "—";
-
-    const perEmployee = Object.entries(empMap)
-      .map(([id, value]) => ({ id, name: employeeName(id), value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
-
-    const perStation = Object.entries(stationMap)
-      .map(([id, value]) => ({ name: stationName(id), value }))
-      .sort((a, b) => b.value - a.value);
 
     const nonEmpty = buckets.filter((b) => b.total > 0);
-    const avgPerPeriod = buckets.length ? (totalCompleted / buckets.length) : 0;
+    const avgPerPeriod = buckets.length ? totalWeight / buckets.length : 0;
     const peak = nonEmpty.length ? nonEmpty.reduce((a, b) => (b.total > a.total ? b : a)) : null;
+    const tracked = onTime + overdue;
 
-    return { buckets, perEmployee, perStation, totalCompleted, avgPerPeriod, peak };
-  }, [data, currentUser, range, customStart, customEnd]);
+    return {
+      buckets: trimLeadingEmpty(buckets, (b) => b.total > 0),
+      totalWeight,
+      previousWeight,
+      avgPerPeriod,
+      peak,
+      compliance: tracked ? Math.round((onTime / tracked) * 100) : null,
+    };
+  }, [data, currentUser, range, customStart, customEnd, ar]);
 
-  if (!data || !currentUser) return null;
-  if (!result) return null;
+  if (!data || !currentUser || !result) return null;
 
-  const { buckets, perEmployee, perStation, totalCompleted, avgPerPeriod, peak } = result;
-  const hasData = totalCompleted > 0;
+  const { buckets, totalWeight, previousWeight, avgPerPeriod, peak, compliance } = result;
 
-  const axisProps = { stroke: "hsl(var(--muted-foreground))", fontSize: 11, tickLine: false, axisLine: false };
-  const tooltipStyle = {
-    contentStyle: { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 },
-    labelStyle: { color: "hsl(var(--foreground))" },
-  };
+  const attendanceRows = trimLeadingEmpty(
+    attendance.map((r) => ({ ...r, label: monthLabel(r.month, ar) })),
+    (r) => r.avgRate != null || r.lateCount > 0
+  );
+  const num = (value) => (ar ? toArabicDigits(value) : value);
+
+  const kpis = [
+    { label: ar ? "الوزن المنجز" : "Completed weight", value: num(totalWeight), delta: deltaPct(totalWeight, previousWeight) },
+    { label: ar ? "المتوسط لكل فترة" : "Average per period", value: num(avgPerPeriod.toFixed(1)), delta: deltaPct(avgPerPeriod, previousWeight / Math.max(buckets.length, 1)) },
+    { label: ar ? "أعلى فترة" : "Peak period", value: peak ? peak.label : "—", hint: peak ? `${num(peak.total)} ${ar ? "وزن" : "weight"}` : (ar ? "لا بيانات" : "no data") },
+    { label: ar ? "الالتزام بالمهل" : "Deadline compliance", value: compliance == null ? "—" : `${num(compliance)}%`, hint: compliance == null ? (ar ? "لا مهل مسجلة" : "no deadlines recorded") : undefined, delta: null },
+  ];
 
   return (
     <div className="space-y-5">
+      <TrendPeriodBar
+        ranges={RANGES}
+        range={range}
+        onRange={setRange}
+        rangeLabel={(val) => ({
+          daily: t("rangeDaily"), weekly: t("rangeWeekly"), monthly: t("rangeMonthly"),
+          "3months": t("range3Months"), yearly: t("rangeYearly"), custom: t("rangeCustom"),
+        }[val] || val)}
+        customStart={customStart}
+        customEnd={customEnd}
+        onCustomStart={setCustomStart}
+        onCustomEnd={setCustomEnd}
+        exportProps={{
+          title: t("analytics"),
+          headers: [t("category"), t("title"), t("completedTasks")],
+          rows: [
+            ...buckets.map((r) => [ar ? "الوزن المنجز" : "Completed weight", r.label, r.total]),
+            ...attendanceRows.map((r) => [ar ? "نسبة الحضور" : "Attendance %", r.label, r.avgRate ?? "—"]),
+            ...attendanceRows.map((r) => [ar ? "حالات التأخير" : "Late", r.label, r.lateCount]),
+          ],
+        }}
+      />
+
+      <TrendKpiRow items={kpis} ar={ar} />
+
+      <TrendCharts
+        weightRows={buckets}
+        attendanceRows={attendanceRows}
+        lateRows={attendanceRows}
+        labels={{
+          weight: ar ? "الوزن المنجز" : "Completed weight",
+          attendance: ar ? "نسبة الحضور" : "Attendance rate",
+          late: ar ? "حالات التأخير" : "Late check-ins",
+        }}
+      />
+
       <IssuesList />
-
-      {/* Range selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <Calendar className="w-4 h-4 text-muted-foreground" />
-          {RANGES.map((r) => (
-            <button
-              key={r.val}
-              onClick={() => setRange(r.val)}
-              className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${range === r.val ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-            >
-              {rangeLabel(r.val, t)}
-            </button>
-          ))}
-        </div>
-        {range === "custom" && (
-          <div className="flex items-center gap-2">
-            <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="px-2.5 py-1.5 rounded-md border border-input text-xs font-body" />
-            <span className="text-muted-foreground text-xs">—</span>
-            <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="px-2.5 py-1.5 rounded-md border border-input text-xs font-body" />
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-end">
-        <ComparisonExportButtons
-          title={t("analytics")}
-          headers={[t("category"), t("title"), t("completedTasks")]}
-          rows={[
-            ...buckets.map((r) => [t("productivityTrend"), r.label, r.total]),
-            ...perEmployee.map((r) => [t("perEmployee"), r.name, r.value]),
-            ...perStation.map((r) => [t("perStation"), r.name, r.value]),
-          ]}
-        />
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-4 rounded-xl border border-border bg-card">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground font-body mb-1">
-            <BarChart3 className="w-3.5 h-3.5" /> {t("totalCompleted")}
-          </div>
-          <p className="text-2xl font-heading font-semibold">{totalCompleted}</p>
-        </div>
-        <div className="p-4 rounded-xl border border-border bg-card">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground font-body mb-1">
-            <TrendingUp className="w-3.5 h-3.5" /> {t("avgPerPeriod")}
-          </div>
-          <p className="text-2xl font-heading font-semibold">{avgPerPeriod.toFixed(1)}</p>
-        </div>
-        <div className="p-4 rounded-xl border border-border bg-card">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground font-body mb-1">
-            <Calendar className="w-3.5 h-3.5" /> {t("peakPeriod")}
-          </div>
-          <p className="text-2xl font-heading font-semibold">{peak ? peak.label : "—"}</p>
-          {peak && <p className="text-xs text-muted-foreground font-body">{peak.total} {t("tasksUnit")}</p>}
-        </div>
-      </div>
-
-      {!hasData ? (
-        <div className="p-8 rounded-xl border border-border bg-card text-center">
-          <p className="text-sm text-muted-foreground font-body">{t("noAnalyticsData")}</p>
-        </div>
-      ) : (
-        <>
-          {/* Productivity trend */}
-          <div className="p-5 rounded-xl border border-border bg-card">
-            <h3 className="font-heading text-base font-semibold flex items-center gap-2 mb-4">
-              <TrendingUp className="w-4 h-4" /> {t("productivityTrend")}
-            </h3>
-            <div className="w-full h-64" dir="ltr">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={buckets} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="prodGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="label" {...axisProps} interval="preserveStartEnd" minTickGap={20} />
-                  <YAxis {...axisProps} allowDecimals={false} />
-                  <Tooltip {...tooltipStyle} />
-                  <Area type="monotone" dataKey="total" name={t("completedTasks")} stroke="hsl(var(--accent))" strokeWidth={2} fill="url(#prodGrad)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Per employee */}
-            <div className="p-5 rounded-xl border border-border bg-card">
-              <h3 className="font-heading text-base font-semibold flex items-center gap-2 mb-4">
-                <Users className="w-4 h-4" /> {t("perEmployee")}
-              </h3>
-              {perEmployee.length === 0 ? (
-                <p className="text-sm text-muted-foreground font-body">{t("noAnalyticsData")}</p>
-              ) : (
-                <div className="w-full h-72" dir="ltr">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={perEmployee} layout="vertical" margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                      <XAxis type="number" {...axisProps} allowDecimals={false} />
-                      <YAxis type="category" dataKey="id" {...axisProps} width={100} tick={(props) => <EmployeeAxisTick {...props} employees={perEmployee} />} />
-                      <Tooltip {...tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
-                      <Bar dataKey="value" name={t("completedTasks")} fill="hsl(var(--accent))" radius={[0, 4, 4, 0]} barSize={18} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </div>
-
-            {/* Per station */}
-            <div className="p-5 rounded-xl border border-border bg-card">
-              <h3 className="font-heading text-base font-semibold flex items-center gap-2 mb-4">
-                <Building2 className="w-4 h-4" /> {t("perStation")}
-              </h3>
-              {perStation.length === 0 ? (
-                <p className="text-sm text-muted-foreground font-body">{t("noAnalyticsData")}</p>
-              ) : (
-                <div className="w-full h-72" dir="ltr">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={perStation} layout="vertical" margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                      <XAxis type="number" {...axisProps} allowDecimals={false} />
-                      <YAxis type="category" dataKey="name" {...axisProps} width={90} />
-                      <Tooltip {...tooltipStyle} cursor={{ fill: "hsl(var(--muted))" }} />
-                      <Bar dataKey="value" name={t("completedTasks")} fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} barSize={18} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }
