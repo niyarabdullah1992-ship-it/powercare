@@ -5,6 +5,7 @@ import { updateCompany } from "@/lib/store";
 import { getBadges, DEFAULT_BADGE_THRESHOLDS } from "@/lib/rewards";
 import { Award, Pencil, Save, RotateCcw, X } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import BadgeMark from "@/components/performance/BadgeMark";
 
 const TIER_STYLES = [
   "from-secondary to-card ring-accent/15 text-primary",
@@ -88,7 +89,7 @@ export default function BadgeLegend() {
             className={`relative p-4 rounded-xl border border-border bg-gradient-to-b ring-1 ${TIER_STYLES[i] || TIER_STYLES[0]}`}
           >
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-2xl leading-none">{b.icon}</span>
+              <BadgeMark level={i} title={t(b.key)} />
               <span className="text-sm font-heading font-semibold">{t(b.key)}</span>
             </div>
             {!editing ? (
