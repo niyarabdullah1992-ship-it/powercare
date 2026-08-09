@@ -6,7 +6,6 @@ import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
 import WelcomeHero from "@/components/dashboard/WelcomeHero";
 import { AlertTriangle, FileText, Bell, Megaphone, Palette } from "lucide-react";
 import DashboardStatCards from "@/components/dashboard/DashboardStatCards";
-import PendingActionsPanel from "@/components/dashboard/PendingActionsPanel";
 import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
 import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
@@ -15,8 +14,6 @@ import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { queryClientInstance } from "@/lib/query-client";
 import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
 import CommandCenterHero from "@/components/dashboard/CommandCenterHero";
-import RiskForecastPanel from "@/components/dashboard/RiskForecastPanel";
-import NiroPredictiveCenter from "@/components/dashboard/NiroPredictiveCenter";
 import { getRiskWeights } from "@/lib/riskWeights";
 import { isActiveAttendance, isScheduledToday } from "@/lib/attendance";
 import { isOnLeaveToday } from "@/lib/leaveTypes";
@@ -163,12 +160,6 @@ export default function Dashboard() {
     (recentIncidents * riskWeights.incidents) + (openHazards * riskWeights.hazards)
   ));
 
-  const pendingActionItems = [
-    { key: "reports", icon: FileText, label: t("pendingReports"), count: pendingReports, to: "/app/daily-report" },
-    { key: "stoppage", icon: AlertTriangle, label: t("stoppageIssues"), count: stoppageCount, to: "/app/performance" },
-    ...(canReplyAnon(currentUser) ? [{ key: "anon", icon: Megaphone, label: t("anonymous"), count: anonOpenCount, to: "/app/complaints" }] : []),
-  ];
-
   // Real six-month task activity — stable across renders and based on company data.
   const monthBuckets = [];
   for (let i = 5; i >= 0; i--) {
@@ -242,17 +233,6 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Predictive risk and executable decisions */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <RiskForecastPanel absentCount={absentCount} delayedTasks={delayedTasks} stoppageCount={stoppageCount} criticalStations={criticalStations} openHazards={openHazards} recentIncidents={recentIncidents} lang={lang} />
-        <NiroPredictiveCenter
-          data={data}
-          metrics={{ absentCount, delayedTasks, pendingReports, anonOpenCount, safetySignals: criticalStations + recentIncidents + openHazards }}
-          alerts={proactiveAlerts}
-          lang={lang}
-        />
-      </div>
-
       {/* Numbered stat cards (WorkForce style) */}
       <DashboardStatCards
         attendanceRate={attendanceRate}
@@ -260,15 +240,6 @@ export default function Dashboard() {
         totalMembers={teamEmployees.length}
         t={t}
       />
-
-      {/* Main analytics grid: big trend chart + map & pending actions column */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-            </div>
-        <div className="space-y-4">
-          <PendingActionsPanel items={pendingActionItems} t={t} />
-        </div>
-      </div>
 
       <TeamStatusPanel employees={teamEmployees} companyId={company.id} t={t} lang={lang} />
 

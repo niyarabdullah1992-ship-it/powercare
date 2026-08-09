@@ -476,7 +476,7 @@ const dict = {
     tagline: "ذكاء تشغيلي للفرق متعددة المحطات",
     login: "تسجيل الدخول", logout: "تسجيل الخروج", email: "البريد الإلكتروني", password: "كلمة المرور",
     ownerPanel: "لوحة المالك", companyLogin: "دخول الشركة",
-    dashboard: "لوحة التحكم", executiveDashboard: "اللوحة التنفيذية", myTasks: "المهام", reports: "التقارير اليومية",
+    dashboard: "لوحة المعلومات", executiveDashboard: "اللوحة التنفيذية", myTasks: "المهام", reports: "التقارير اليومية",
     anonymous: "البلاغات المجهولة", stations: "المحطات", employees: "الموظفون",
     safety: "السلامة", plans: "الخطط", settings: "الإعدادات",
     overview: "نظرة عامة", activeStations: "المحطات النشطة", taskCompletion: "إنجاز المهام",
