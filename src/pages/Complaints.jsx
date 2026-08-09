@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { ShieldQuestion, Megaphone, Archive } from "lucide-react";
+import { ShieldQuestion, Megaphone, Archive, Lightbulb } from "lucide-react";
+import SuggestionsBoard from "@/components/complaints/SuggestionsBoard";
 import AnonymousReports from "./AnonymousReports";
 import PublicComplaints from "./PublicComplaints";
 import RecordSmartArchive from "@/components/RecordSmartArchive";
@@ -24,6 +25,7 @@ export default function Complaints() {
   const TABS = [
     { key: "anonymous", label: t("anonymous"), icon: ShieldQuestion },
     { key: "public", label: t("publicComplaints"), icon: Megaphone },
+    { key: "suggestions", label: ar ? "الاقتراحات" : "Suggestions", icon: Lightbulb },
     ...(isManager ? [{ key: "archive", label: ar ? "الأرشيف الذكي" : "Smart Archive", icon: Archive }] : []),
   ];
 
@@ -41,6 +43,16 @@ export default function Complaints() {
         })),
       ]
     : [];
+
+  const employeeName = (id) => data?.employees?.find((e) => e.id === id)?.name || "—";
+  const suggestions = [
+    ...(data?.publicReports || [])
+      .filter((r) => r.type === "suggestion" && (isManager ? canSeeReport(r) : r.authorId === currentUser?.id))
+      .map((r) => ({ id: "pu_" + r.id, author: employeeName(r.authorId), station: stationName(r.stationId), message: r.message, badge: t("publicComplaints"), status: r.status, createdAt: r.createdAt })),
+    ...(data?.anonymousReports || [])
+      .filter((r) => r.type === "suggestion" && isManager && canSeeReport(r))
+      .map((r) => ({ id: "an_" + r.id, author: ar ? "مجهول" : "Anonymous", station: stationName(r.stationId), message: r.message, badge: t("anonymous"), status: r.status, createdAt: r.createdAt })),
+  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return (
     <div className="space-y-6">
@@ -62,6 +74,7 @@ export default function Complaints() {
 
       {tab === "anonymous" && <AnonymousReports />}
       {tab === "public" && <PublicComplaints />}
+      {tab === "suggestions" && <SuggestionsBoard items={suggestions} lang={lang} t={t} />}
       {tab === "archive" && isManager && (
         <RecordSmartArchive
           items={archiveItems}
