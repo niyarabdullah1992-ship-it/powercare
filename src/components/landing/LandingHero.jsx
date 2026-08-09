@@ -14,7 +14,7 @@ export default function LandingHero({ lang, t }) {
     <section className="px-4 pb-8 pt-8 sm:px-6 md:px-8 md:pt-10">
       <div dir={lang === "ar" ? "rtl" : "ltr"} className="mx-auto max-w-[1380px] overflow-hidden rounded-2xl border border-landing-gold/30 bg-card shadow-elevated">
         <div className="grid lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.65fr)]">
-          <div className="relative overflow-hidden bg-primary">
+          <div className="relative self-start overflow-hidden">
             <Image src={HERO_IMAGE} alt={lang === "ar" ? "فريق قيادي يتعاون في بيئة مؤسسية حديثة" : "Leadership team collaborating in a modern corporate workplace"} originWidth={1536} originHeight={1024} fittingType="fit" quality={100} className="block h-auto w-full" />
           </div>
 
