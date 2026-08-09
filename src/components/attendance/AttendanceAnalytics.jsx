@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import moment from "moment";
 import { base44 } from "@/api/base44Client";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { WARNING_COLOR } from "@/lib/trendFormat";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import { CalendarRange, FileText } from "lucide-react";
@@ -67,13 +68,18 @@ export default function AttendanceAnalytics({ employees, t }) {
   }, [employeeId, dateWindow.startDate, dateWindow.endDate, employees.map((e) => e.id).join(",")]);
 
   const nameOf = (id) => employees.find((e) => e.id === id)?.name || "—";
-  const chartData = stats.map((s) => ({
-    employeeId: s.employeeId,
-    name: nameOf(s.employeeId),
-    attendanceRate: s.attendanceRate ?? 0,
-    lateCount: s.late + s.excusedLate,
-    avgLateMinutes: s.avgLateMinutes,
-  }));
+  // Ranked, not alphabetical — and only the below-average bars are coloured.
+  const chartData = stats
+    .map((s) => ({
+      employeeId: s.employeeId,
+      name: nameOf(s.employeeId),
+      attendanceRate: s.attendanceRate ?? 0,
+      lateCount: s.late + s.excusedLate,
+      avgLateMinutes: s.avgLateMinutes,
+    }))
+    .sort((a, b) => b.attendanceRate - a.attendanceRate);
+  const lateData = [...chartData].sort((a, b) => b.lateCount - a.lateCount);
+  const avgLateCount = lateData.length ? lateData.reduce((sum, r) => sum + r.lateCount, 0) / lateData.length : 0;
   const avgRate = stats.length
     ? Math.round((stats.reduce((sum, s) => sum + (s.attendanceRate || 0), 0) / stats.length) * 10) / 10
     : 0;
@@ -141,7 +147,11 @@ export default function AttendanceAnalytics({ employees, t }) {
                 <XAxis dataKey="employeeId" tick={(props) => <EmployeeAxisTick {...props} employees={chartData} />} height={42} />
                 <YAxis tick={{ fontSize: 11 }} unit="%" />
                 <Tooltip />
-                <Bar dataKey="attendanceRate" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="attendanceRate" radius={[4, 4, 0, 0]}>
+                  {chartData.map((row) => (
+                    <Cell key={row.employeeId} fill={row.attendanceRate < avgRate ? WARNING_COLOR : "hsl(var(--accent))"} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -149,12 +159,16 @@ export default function AttendanceAnalytics({ employees, t }) {
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{t("lateFrequencyLabel")}</p>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartData}>
+              <BarChart data={lateData}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="employeeId" tick={(props) => <EmployeeAxisTick {...props} employees={chartData} />} height={42} />
+                <XAxis dataKey="employeeId" tick={(props) => <EmployeeAxisTick {...props} employees={lateData} />} height={42} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="lateCount" fill="#d97706" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="lateCount" radius={[4, 4, 0, 0]}>
+                  {lateData.map((row) => (
+                    <Cell key={row.employeeId} fill={row.lateCount > avgLateCount ? WARNING_COLOR : "hsl(var(--muted-foreground))"} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

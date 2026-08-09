@@ -1,9 +1,10 @@
 import React, { useState, useEffect, lazy, Suspense } from "react";
+import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { canCreateTasks, isCompanyOwner, visibleEmployees, visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
-import { ClipboardCheck, Loader2 } from "lucide-react";
+import { ClipboardCheck, Loader2, ArrowLeftRight } from "lucide-react";
 import CheckInOutCard from "@/components/attendance/CheckInOutCard";
 import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDashboard";
 import CalendarExportCard from "@/components/calendar/CalendarExportCard";
@@ -21,7 +22,6 @@ const AttendanceLocationsPanel = lazy(() => import("@/components/attendance/Atte
 const AttendanceAnalytics = lazy(() => import("@/components/attendance/AttendanceAnalytics"));
 const AttendanceMapDashboard = lazy(() => import("@/components/attendance/AttendanceMapDashboard"));
 const ScheduleTab = lazy(() => import("@/components/attendance/ScheduleTab"));
-const AttendanceLeaveRequests = lazy(() => import("@/components/attendance/AttendanceLeaveRequests"));
 const MonthlyTaskCalendar = lazy(() => import("@/components/attendance/MonthlyTaskCalendar"));
 
 function TabLoader() {
@@ -30,8 +30,9 @@ function TabLoader() {
 
 export default function Attendance() {
   const { t, lang } = useI18n();
+  const ar = lang === "ar";
   const { data, currentUser, company, refresh } = useAuth();
-  const [tab, setTab] = useState("team");
+  const [tab, setTab] = useState(() => new URLSearchParams(window.location.search).get("tab") || "today");
 
   const isManager = data && currentUser && canCreateTasks(currentUser);
   const canManageLeave = data && currentUser && (isManager || hasHRPermission(currentUser, data, "manage_leave"));
@@ -39,7 +40,6 @@ export default function Attendance() {
   const canEditSettings = data && currentUser && (isCompanyOwner(currentUser, data) || ["director", "ops_manager"].includes(currentUser.role));
   const canManageEmergency = data && currentUser && (canEditSettings || currentUser.role === "station_manager");
   const defaultEmployees = data && currentUser ? visibleEmployees(currentUser, data) : [];
-  const stations = data && currentUser ? visibleStations(currentUser, data) : [];
   const leaveScope = data && currentUser?.hrLevelId ? hrScopeStations(currentUser, data) : null;
   const defaultStationId = data?.stations?.[0]?.id || null;
   const employees = canManageLeave && currentUser?.hrLevelId
@@ -74,16 +74,11 @@ export default function Attendance() {
 
   if (!data || !currentUser) return null;
 
+  // Three audiences, four tabs: today's answer, the plan, the record, the setup.
   const tabs = [
-    { key: "calendar", label: lang === "ar" ? "التقويم الشهري" : "Monthly calendar" },
-    ...(isManager ? [
-      { key: "team", label: t("teamTab") },
-      { key: "map", label: t("mapTab") },
-      { key: "schedule", label: t("scheduleTab") },
-      { key: "report", label: t("reportTab") },
-      { key: "analytics", label: t("analyticsTab") },
-    ] : []),
-    ...(canManageLeave ? [{ key: "leaves", label: t("leaveRequests") }] : []),
+    { key: "today", label: ar ? "اليوم" : "Today" },
+    ...(isManager ? [{ key: "schedules", label: ar ? "الجداول والورديات" : "Schedules & shifts" }] : []),
+    { key: "reports", label: ar ? "التقارير" : "Reports" },
     ...(canManageEmergency ? [{ key: "settings", label: t("settingsTab") }] : []),
   ];
   const activeTab = tabs.some((item) => item.key === tab) ? tab : tabs[0]?.key;
@@ -92,16 +87,6 @@ export default function Attendance() {
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="attendance-hub space-y-6">
       <PageHeader title={t("attendanceScheduling")} icon={ClipboardCheck} actions={<TimeFormatToggle lang={lang} />} />
-
-      <CheckInOutCard currentUser={currentUser} company={company} t={t} />
-
-      <CalendarExportCard data={data} user={currentUser} />
-
-      {!isManager && !canManageLeave && (
-        <Suspense fallback={<TabLoader />}>
-          <AttendanceMonthlyReport employees={[currentUser]} defaultEmployeeId={currentUser.id} t={t} />
-        </Suspense>
-      )}
 
       <div className="space-y-4">
           <div className="flex gap-2 border-b border-border overflow-x-auto no-scrollbar">
@@ -116,19 +101,42 @@ export default function Attendance() {
             ))}
           </div>
 
-          {activeTab === "team" && <AttendanceDailyDashboard employees={employees} currentUser={currentUser} company={company} data={data} t={t} />}
+          {activeTab === "today" && (
+            <div className="space-y-4">
+              <CheckInOutCard currentUser={currentUser} company={company} t={t} />
+              {canManageLeave && (
+                <Link to="/app/leave-requests" className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-body hover:bg-muted">
+                  <ArrowLeftRight className="h-3.5 w-3.5" />{ar ? "طلبات الإجازة في قسم الإجازات والطلبات" : "Leave requests live in Leaves & requests"}
+                </Link>
+              )}
+              {isManager && <AttendanceDailyDashboard employees={employees} currentUser={currentUser} company={company} data={data} t={t} onOpenSchedules={() => setTab("schedules")} />}
+              {isManager && (
+                <Suspense fallback={<TabLoader />}>
+                  <AttendanceMapDashboard employees={employees} t={t} />
+                </Suspense>
+              )}
+            </div>
+          )}
+
           <Suspense fallback={<TabLoader />}>
-            {activeTab === "calendar" && <MonthlyTaskCalendar />}
-            {activeTab === "map" && <AttendanceMapDashboard employees={employees} t={t} />}
-            {activeTab === "schedule" && <ScheduleTab />}
-            {activeTab === "report" && <AttendanceMonthlyReport employees={employees} defaultEmployeeId={currentUser.id} t={t} />}
-            {activeTab === "analytics" && <AttendanceAnalytics employees={employees} t={t} />}
-            {activeTab === "leaves" && <AttendanceLeaveRequests employees={employees} stations={stations} t={t} lang={lang} />}
+            {activeTab === "schedules" && isManager && (
+              <div className="space-y-4">
+                <ScheduleTab />
+                <MonthlyTaskCalendar />
+              </div>
+            )}
+            {activeTab === "reports" && (
+              <div className="space-y-4">
+                <AttendanceMonthlyReport employees={isManager ? employees : [currentUser]} defaultEmployeeId={currentUser.id} t={t} />
+                {isManager && <AttendanceAnalytics employees={employees} t={t} />}
+              </div>
+            )}
             {activeTab === "settings" && canManageEmergency && (
               <div className="space-y-4">
                 <AttendanceEmergencyPanel company={company} currentUser={currentUser} />
                 {canEditSettings && <AttendanceLocationsPanel company={company} currentUser={currentUser} t={t} />}
                 {canEditSettings && <AttendanceSettingsPanel company={company} currentUser={currentUser} t={t} />}
+                <CalendarExportCard data={data} user={currentUser} />
               </div>
             )}
           </Suspense>

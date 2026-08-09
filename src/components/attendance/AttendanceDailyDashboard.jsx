@@ -25,7 +25,7 @@ const STATUS_STYLE = {
 
 // Manager-facing daily attendance table — merges the visible employee roster (local
 // data) with today's attendance rows (Supabase) so unrecorded employees still show up.
-export default function AttendanceDailyDashboard({ employees, currentUser, company, data, t }) {
+export default function AttendanceDailyDashboard({ employees, currentUser, company, data, t, onOpenSchedules }) {
   const { lang } = useI18n();
   const { format } = useTimeFormat();
   const [rows, setRows] = useState([]);
@@ -252,6 +252,27 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
               {employees.map((e) => {
                 const r = byEmployee[e.id];
                 const status = statusFor(e);
+                // Unscheduled isn't missing data — it's a state that needs an action.
+                if (status === "not_scheduled" && !r) {
+                  return (
+                    <tr key={e.id} className="border-b border-border/60 align-middle">
+                      <td className="px-2 py-3 text-start"><EmployeeNameLink employeeId={e.id} employeeName={e.name} className="block font-medium leading-tight" /></td>
+                      <td className="px-2 py-3 text-center">
+                        <span className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLE.not_scheduled}`}>{statusLabel(status)}</span>
+                      </td>
+                      <td colSpan={5} className="px-2 py-3">
+                        <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground font-body">
+                          <span>{lang === "ar" ? "لم يُدرج في جدول اليوم" : "Not on today's schedule"}</span>
+                          {isManager && onOpenSchedules && (
+                            <button onClick={onOpenSchedules} className="rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-muted">
+                              {lang === "ar" ? "جدولة" : "Schedule"}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }
                 return (
                   <tr key={e.id} className="border-b border-border/60 align-middle">
                     <td className="px-2 py-3 text-start"><EmployeeNameLink employeeId={e.id} employeeName={e.name} className="block font-medium leading-tight" /></td>
@@ -296,7 +317,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                       <div className="flex flex-col items-center justify-center gap-1.5">
                       {isManager && isPastCheckoutMissing(r) && (
                         checkoutEmployeeId === e.id ? (
-                          <div className="w-full space-y-1.5 rounded-md border border-violet-200 bg-violet-50 p-2 text-start">
+                          <div className="w-full space-y-1.5 rounded-md border border-border bg-muted p-2 text-start">
                             <input
                               value={checkoutReason}
                               onChange={(event) => { setCheckoutReason(event.target.value); setCheckoutError(""); }}
@@ -306,7 +327,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                             />
                             {checkoutError && <p className="text-[11px] text-destructive">{checkoutError}</p>}
                             <div className="flex gap-1">
-                              <button onClick={() => manualCheckOut(e)} disabled={manualLoadingId === e.id} className="inline-flex items-center gap-1 rounded-md bg-violet-700 px-2 py-1 text-xs text-white disabled:opacity-50">
+                              <button onClick={() => manualCheckOut(e)} disabled={manualLoadingId === e.id} className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground disabled:opacity-50">
                                 {manualLoadingId === e.id && <Loader2 className="h-3 w-3 animate-spin" />}{lang === "ar" ? "حفظ" : "Save"}
                               </button>
                               <button onClick={() => { setCheckoutEmployeeId(null); setCheckoutReason(""); setCheckoutError(""); }} className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground">
@@ -315,17 +336,17 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
                             </div>
                           </div>
                         ) : (
-                          <button onClick={() => { setCheckoutEmployeeId(e.id); setCheckoutReason(""); setCheckoutError(""); }} className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-violet-300 px-2 py-1 text-xs text-violet-700 hover:bg-violet-50">
+                          <button onClick={() => { setCheckoutEmployeeId(e.id); setCheckoutReason(""); setCheckoutError(""); }} className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-border bg-card px-2 py-1 text-xs text-muted-foreground hover:bg-muted">
                             <PenLine className="h-3.5 w-3.5" />{lang === "ar" ? "إغلاق يدوي" : "Manual check-out"}
                           </button>
                         )
                       )}
                       {(r?.manual_override || r?.location_status === "manual") ? (
-                        <span title={`${lang === "ar" ? "حضور يدوي بواسطة" : "Manual by"} ${r.override_by || r.excused_by_name || "—"}`} className="inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-xs text-violet-700">
+                        <span title={`${lang === "ar" ? "حضور يدوي بواسطة" : "Manual by"} ${r.override_by || r.excused_by_name || "—"}`} className="inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-md border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">
                           <PenLine className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{lang === "ar" ? "يدوي" : "Manual"} · {r.override_by || r.excused_by_name || "—"}</span>
                         </span>
                       ) : isManager && !r?.check_in_at ? (
-                        <button onClick={() => manualCheckIn(e)} disabled={manualLoadingId === e.id} className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-violet-300 px-2 py-1 text-xs text-violet-700 hover:bg-violet-50 disabled:opacity-50">
+                        <button onClick={() => manualCheckIn(e)} disabled={manualLoadingId === e.id} className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-border bg-card px-2 py-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-50" title={lang === "ar" ? "استثناء يُسجَّل باسمك في سجل التدقيق" : "Exception — recorded in the audit trail under your name"}>
                           {manualLoadingId === e.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PenLine className="h-3.5 w-3.5" />}{lang === "ar" ? "تحضير يدوي" : "Manual check-in"}
                         </button>
                       ) : null}
