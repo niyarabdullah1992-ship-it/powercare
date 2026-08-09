@@ -1,21 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
-import { formatDateTime } from "@/lib/dateFormat";
 import { visibleStations, canSeeAllStations } from "@/lib/permissions";
 import moment from "moment";
-import { FileText, ListTodo, AlertTriangle, Activity, Building2 } from "lucide-react";
+import { FileText, ListTodo, AlertTriangle, Send } from "lucide-react";
 import ReportCard from "@/components/reports/ReportCard";
-import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
-import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import PageHeader from "@/components/PageHeader";
+import DayNavigator from "@/components/reports/DayNavigator";
+import UnitSubmissionStrip from "@/components/reports/UnitSubmissionStrip";
+import TimelineEntry from "@/components/reports/TimelineEntry";
+import MobileSelect from "@/components/mobile/MobileSelect";
+import { buildDailyTimeline } from "@/lib/dailyTimeline";
 
 export default function DailyReport() {
   const { t, lang } = useI18n();
   const { data, currentUser } = useAuth();
   const [targets, setTargets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [day, setDay] = useState(moment().format("YYYY-MM-DD"));
+  const [activeStation, setActiveStation] = useState("all");
 
   useEffect(() => {
     if (!currentUser) return;
@@ -38,75 +42,75 @@ export default function DailyReport() {
     })();
   }, [currentUser?.id]);
 
+  const seesAll = currentUser ? canSeeAllStations(currentUser) : false;
+  const myStations = data && currentUser ? visibleStations(currentUser, data) : [];
+
+  const timeline = useMemo(() => {
+    if (!data || !currentUser) return [];
+    const stationIds = new Set(myStations.map((s) => s.id));
+    const defaultStationId = data.stations?.[0]?.id || null;
+    const stationName = (id) => data.stations.find((s) => s.id === (id || defaultStationId))?.name || "—";
+    const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || defaultStationId;
+    const inScope = (key) => seesAll || stationIds.has(key);
+
+    const stationOf = (tg) => {
+      if (tg.assignment_type === "station_team") return tg.assignment_id || tg.station_id || null;
+      if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || defaultStationId;
+      if (tg.assignment_type === "hq_team") return defaultStationId;
+      return tg.station_id || defaultStationId;
+    };
+
+    // Localized actor name + job title — never a raw English role key.
+    const actorLabel = (c) => {
+      const emp = data.employees.find((e) => e.id === c.user_id);
+      if (emp) return emp.position ? `${emp.name} — ${emp.position}` : emp.name;
+      if (!c.user_name || /^owner$/i.test(c.user_name)) return lang === "ar" ? "مالك الحساب" : "Account owner";
+      return c.user_name;
+    };
+
+    const complaints = [
+      ...(data.anonymousReports || []),
+      ...(data.publicReports || []),
+    ].filter((r) => inScope(r.stationId || defaultStationId));
+
+    return buildDailyTimeline({
+      targets: targets.filter((tg) => inScope(stationOf(tg))),
+      complaints,
+      day,
+      stationOf,
+      stationName,
+      actorLabel,
+      taskLabel: t("setTarget"),
+      lang,
+    });
+  }, [targets, data, currentUser, day, lang, seesAll]);
+
   if (!data || !currentUser) return null;
 
-  const seesAll = canSeeAllStations(currentUser);
-  const myStations = visibleStations(currentUser, data);
-  const stationIds = new Set(myStations.map((s) => s.id));
+  const visible = activeStation === "all" ? timeline : timeline.filter((e) => e.stationKey === activeStation);
 
-  const defaultStationId = data.stations?.[0]?.id || null;
-  const stationName = (id) => data.stations.find((s) => s.id === (id || defaultStationId))?.name || "—";
-  const employeeName = (id) => data.employees.find((e) => e.id === id)?.name || "—";
-  const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || defaultStationId;
-
-  const targetStationKey = (tg) => {
-    if (tg.assignment_type === "station_team") return tg.assignment_id || tg.station_id || null;
-    if (tg.assignment_type === "member") return tg.station_id || empStation(tg.employee_id) || defaultStationId;
-    if (tg.assignment_type === "hq_team") return defaultStationId;
-    return tg.station_id || defaultStationId;
-  };
-  const stationLabel = (key) => key ? stationName(key) : "—";
-  const inScope = (key) => seesAll || stationIds.has(key);
-
-  const isToday = (dateStr) => dateStr && moment(dateStr).isSame(moment(), "day");
-
-  // Scope every target to the user's visible stations first.
-  const myTargets = targets.filter((tg) => inScope(targetStationKey(tg)));
-
-  // Today's tasks — created today or due today.
-  const todaysTasks = myTargets
-    .filter((tg) => isToday(tg.created_at) || isToday(tg.end_date))
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-  // Today's issues — stoppage issues logged today, plus anonymous/public complaints filed today.
-  const todaysTaskIssues = [];
-  myTargets.forEach((tg) => {
-    (Array.isArray(tg.comments) ? tg.comments : []).forEach((c) => {
-      if (c.is_issue && isToday(c.created_at)) {
-        todaysTaskIssues.push({ ...c, targetTitle: tg.title || t("setTarget"), stationKey: targetStationKey(tg) });
-      }
-    });
+  // Reporting status per unit: first entry of the day, or nothing sent at all.
+  const units = myStations.map((s) => {
+    const first = timeline.filter((e) => e.stationKey === s.id).sort((a, b) => new Date(a.at) - new Date(b.at))[0];
+    return { id: s.id, name: s.name, firstAt: first?.at || null };
   });
-  const todaysComplaints = [
-    ...(data.anonymousReports || []).map((r) => ({ ...r, kind: "anonymous" })),
-    ...(data.publicReports || []).map((r) => ({ ...r, kind: "public" })),
-  ].filter((r) => inScope(r.stationId || defaultStationId) && isToday(r.createdAt));
+  const notReported = units.filter((u) => !u.firstAt).length;
 
-  const totalIssuesToday = todaysTaskIssues.length + todaysComplaints.length;
-
-  // Today's actions — every comment (progress note or issue) logged today across tasks.
-  const todaysActions = [];
-  myTargets.forEach((tg) => {
-    (Array.isArray(tg.comments) ? tg.comments : []).forEach((c) => {
-      if (isToday(c.created_at)) {
-        todaysActions.push({ ...c, targetTitle: tg.title || t("setTarget"), stationKey: targetStationKey(tg) });
-      }
-    });
-  });
-  todaysActions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const dayTasks = visible.filter((e) => e.kind === "task");
+  const doneTasks = dayTasks.filter((e) => e.status === "completed" || e.status === "approved").length;
+  const openIssues = visible.filter((e) => e.kind === "issue" || e.kind === "complaint").filter((e) => !(e.responses || []).length).length;
 
   const stats = [
-    { icon: ListTodo, label: t("todayTasks"), value: todaysTasks.length },
-    { icon: AlertTriangle, label: t("todayIssues"), value: totalIssuesToday },
-    { icon: Activity, label: t("todayActions"), value: todaysActions.length },
+    { icon: ListTodo, label: lang === "ar" ? "مهام مكتملة" : "Tasks completed", value: `${doneTasks} ${lang === "ar" ? "من" : "of"} ${dayTasks.length}` },
+    { icon: AlertTriangle, label: lang === "ar" ? "مشاكل مفتوحة" : "Open issues", value: openIssues },
+    { icon: Send, label: lang === "ar" ? "وحدات لم تُرسل" : "Units not reported", value: notReported },
   ];
+
   return (
-    <div className="reports-hub space-y-6">
-      <PageHeader
-        title={t("reports")}
-        description={t("dailyReportNote")}
-        icon={FileText}
-      />
+    <div className="reports-hub space-y-5">
+      <PageHeader title={t("reports")} description={t("dailyReportNote")} icon={FileText} />
+
+      <DayNavigator day={day} setDay={setDay} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {stats.map((s) => (
@@ -115,104 +119,42 @@ export default function DailyReport() {
               <s.icon className="w-4 h-4" strokeWidth={1.75} />
             </span>
             <div>
-              <p className="text-2xl font-heading font-semibold">{s.value}</p>
+              <p className="text-xl font-heading font-semibold">{s.value}</p>
               <p className="text-xs text-muted-foreground font-body">{s.label}</p>
             </div>
           </ReportCard>
         ))}
       </div>
 
+      <UnitSubmissionStrip units={units} activeStation={activeStation} setActiveStation={setActiveStation} />
+
+      {myStations.length > 1 && (
+        <MobileSelect
+          value={activeStation}
+          onChange={setActiveStation}
+          searchable
+          placeholder={lang === "ar" ? "المحطة" : "Station"}
+          className="w-full sm:w-64"
+          options={[{ value: "all", label: lang === "ar" ? "كل المحطات" : "All stations" }, ...myStations.map((s) => ({ value: s.id, label: s.name }))]}
+        />
+      )}
+
       {loading ? (
         <p className="text-sm text-muted-foreground font-body">…</p>
+      ) : visible.length === 0 ? (
+        <ReportCard>
+          <p className="text-sm text-muted-foreground font-body text-center py-6">
+            {lang === "ar" ? "لا يوجد نشاط مسجّل في هذا اليوم." : "No activity recorded on this day."}
+          </p>
+        </ReportCard>
       ) : (
-        <>
-          {/* Today's Tasks */}
-          <section className="space-y-3">
-            <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
-              <ListTodo className="w-4 h-4" /> {t("todayTasks")}
-            </h2>
-            <ReportCard>
-              {todaysTasks.length === 0 ? (
-                <p className="text-sm text-muted-foreground font-body text-center py-4">{t("noTasksInRange")}</p>
-              ) : (
-                <div className="space-y-2">
-                  {todaysTasks.map((tg) => (
-                    <div key={tg.id} className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border border-border/60">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium font-body truncate">{tg.title || t("setTarget")}</p>
-                        <p className="text-xs text-muted-foreground font-body flex items-center gap-1 mt-0.5">
-                          <Building2 className="w-3 h-3" /> {stationLabel(targetStationKey(tg))}
-                        </p>
-                      </div>
-                      <TaskStatusBadge status={tg.status} t={t} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ReportCard>
-          </section>
-
-          {/* Today's Issues */}
-          <section className="space-y-3">
-            <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" /> {t("todayIssues")}
-            </h2>
-            <ReportCard>
-              {totalIssuesToday === 0 ? (
-                <p className="text-sm text-muted-foreground font-body text-center py-4">{t("noIssuesReported")}</p>
-              ) : (
-                <div className="space-y-2">
-                  {todaysTaskIssues.map((issue) => (
-                    <div key={issue.id} className="p-3 rounded-lg border border-red-200 bg-red-50/60">
-                      <div className="flex items-center justify-between gap-2 text-xs font-body text-muted-foreground">
-                        <span className="flex items-center gap-1"><Building2 className="w-3 h-3" /> {stationLabel(issue.stationKey)} · {issue.targetTitle}</span>
-                        <span>{formatDateTime(issue.created_at, lang)}</span>
-                      </div>
-                      <p className="text-sm font-body mt-1">{issue.content}</p>
-                    </div>
-                  ))}
-                  {todaysComplaints.map((r) => (
-                    <div key={r.id} className="p-3 rounded-lg border border-amber-200 bg-amber-50/60">
-                      <div className="flex items-center justify-between gap-2 text-xs font-body text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Building2 className="w-3 h-3" /> {stationName(r.stationId || defaultStationId)} · {r.kind === "anonymous" ? t("anonymous") : t("publicComplaints")}
-                        </span>
-                        <span>{formatDateTime(r.createdAt, lang)}</span>
-                      </div>
-                      <p className="text-sm font-body mt-1">{r.message}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ReportCard>
-          </section>
-
-          {/* Today's Actions */}
-          <section className="space-y-3">
-            <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
-              <Activity className="w-4 h-4" /> {t("todayActions")}
-            </h2>
-            <ReportCard>
-              {todaysActions.length === 0 ? (
-                <p className="text-sm text-muted-foreground font-body text-center py-4">{t("noActionsToday")}</p>
-              ) : (
-                <div className="space-y-2">
-                  {todaysActions.map((a) => (
-                    <div key={a.id} className="p-3 rounded-lg border border-border/60">
-                      <div className="flex items-center justify-between gap-2 text-xs font-body text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Building2 className="w-3 h-3" /> {stationLabel(a.stationKey)} · {a.targetTitle} · <EmployeeNameLink employeeId={a.user_id} employeeName={a.user_name} />
-                        </span>
-                        <span>{formatDateTime(a.created_at, lang)}</span>
-                      </div>
-                      {a.content && <p className="text-sm font-body mt-1">{a.content}</p>}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ReportCard>
-          </section>
-        </>
+        <ReportCard>
+          <div className="ps-3">
+            {visible.map((entry) => (
+              <TimelineEntry key={entry.id} entry={entry} />
+            ))}
+          </div>
+        </ReportCard>
       )}
     </div>
   );
