@@ -31,16 +31,16 @@ import CompletionModeToggle from "@/components/tasks/CompletionModeToggle";
 import TaskWizardStepper from "@/components/tasks/TaskWizardStepper";
 import TaskFormStep from "@/components/tasks/TaskFormStep";
 import TaskStepNav from "@/components/tasks/TaskStepNav";
-import MemberMultiSelect from "@/components/tasks/MemberMultiSelect";
+import TaskSidePanel from "@/components/tasks/TaskSidePanel";
+import TaskCreateFields from "@/components/tasks/TaskCreateFields";
 
-const DATE_PRESETS = [
-  { val: "monthly", months: 1 },
-  { val: "3months", months: 3 },
-  { val: "6months", months: 6 },
-  { val: "yearly", months: 12 },
-  { val: "days", months: 0 },
-  { val: "custom", months: 0 },
-];
+const toISODate = (d) => d.toISOString().slice(0, 10);
+const defaultRange = () => {
+  const from = new Date();
+  const to = new Date();
+  to.setMonth(to.getMonth() + 1);
+  return { start: toISODate(from), end: toISODate(to) };
+};
 
 const PRIORITY_WEIGHT = { urgent: 0, high: 1, medium: 2, low: 3 };
 const PERSONAL_WORKSPACE_ID = "hq"; // Legacy backend room used only by Individual plans.
@@ -58,10 +58,8 @@ export default function MyTasks() {
   const [showCreate, setShowCreate] = useState(false);
   const [assignType, setAssignType] = useState("member");
   const [formStation, setFormStation] = useState("");
-  const [datePreset, setDatePreset] = useState("monthly");
-  const [customStart, setCustomStart] = useState("");
-  const [customEnd, setCustomEnd] = useState("");
-  const [customDays, setCustomDays] = useState("");
+  const [customStart, setCustomStart] = useState(defaultRange().start);
+  const [customEnd, setCustomEnd] = useState(defaultRange().end);
   const [taskFiles, setTaskFiles] = useState([]);
   const [logTarget, setLogTarget] = useState(null);
   const [logAmount, setLogAmount] = useState(1);
@@ -88,9 +86,7 @@ export default function MyTasks() {
   const [completionMode, setCompletionMode] = useState("onsite");
   const [effortWeight, setEffortWeight] = useState(1);
   const [assignedIds, setAssignedIds] = useState([]);
-  const [memberPickerOpen, setMemberPickerOpen] = useState(false);
-  const [weightSuggested, setWeightSuggested] = useState(false);
-  const [createStep, setCreateStep] = useState(0);
+  const [suggestedWeight, setSuggestedWeight] = useState(null);
   const [editStep, setEditStep] = useState(0);
   const [logAttestation, setLogAttestation] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -107,17 +103,17 @@ export default function MyTasks() {
         if (d.assignType && !isIndividual) setAssignType(d.assignType);
         if (d.formStation && !stationId) setFormStation(d.formStation);
         if (d.priority) setPriority(d.priority);
-        if (d.datePreset && d.datePreset !== "custom") setDatePreset(d.datePreset);
         setPrefilled(true);
       } else {
         setPrefilled(false);
       }
       if (stationId) setFormStation(stationId);
       if (sectionPath) setSectionValue(sectionPath);
+      const range = defaultRange();
+      setCustomStart(range.start);
+      setCustomEnd(range.end);
     }
     setShowCreate(opening);
-    setCreateStep(0);
-    if (opening) requestAnimationFrame(() => document.getElementById("task-create-form")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   // Individual (personal) workspaces: no stations, no attendance gate, no escalation.
@@ -397,49 +393,21 @@ export default function MyTasks() {
     ? data.employees.filter((e) => (e.stationId || firstStationId) === formStation)
     : data.employees;
 
-  const computeDates = () => {
-    const start = new Date();
-    if (datePreset === "custom") {
-      return {
-        startDate: customStart ? new Date(customStart).toISOString() : start.toISOString(),
-        endDate: customEnd ? new Date(customEnd).toISOString() : null,
-      };
-    }
-    if (datePreset === "days") {
-      const end = new Date(start);
-      end.setDate(end.getDate() + Number(customDays || 1));
-      return { startDate: start.toISOString(), endDate: end.toISOString() };
-    }
-    const months = DATE_PRESETS.find((p) => p.val === datePreset)?.months || 1;
-    const end = new Date(start);
-    end.setMonth(end.getMonth() + months);
-    return { startDate: start.toISOString(), endDate: end.toISOString() };
-  };
+  const computeDates = () => ({
+    startDate: new Date(customStart).toISOString(),
+    endDate: customEnd ? new Date(customEnd).toISOString() : null,
+  });
 
-  // Per-step validation. The browser's own `required` can't be used here: hidden
-  // steps stay mounted (so their values survive), and a hidden required field makes
-  // the browser refuse to submit with no visible message at all.
-  const validateCreateStep = (index) => {
+  // One form, one validation pass — nothing is hidden, so nothing is reviewed separately.
+  const validateCreate = () => {
     const fd = new FormData(createFormRef.current);
     const fail = (message) => { toast({ description: message, variant: "destructive" }); return false; };
-    if (index === 0 && !String(fd.get("title") || "").trim()) return fail(t("taskTitle"));
-    if (index === 1) {
-      if (!isIndividual && assignType === "member" && assignedIds.length === 0) return fail(t("selectEmployee"));
-      if (!fd.get("section")) return fail(t("sectionName"));
-    }
-    if (index === 2) {
-      const total = Number(fd.get("totalTasks"));
-      if (!Number.isFinite(total) || total < 1) return fail(t("totalTasks"));
-      if (datePreset === "days" && !(Number(customDays) >= 1)) return fail(t("numberOfDays"));
-      if (datePreset === "custom" && (!customStart || !customEnd || customEnd < customStart)) return fail(t("selectDate"));
-    }
-    return true;
-  };
-
-  // Jumping back is always allowed; jumping forward must pass every step in between.
-  const canJumpCreate = (target) => {
-    if (target <= createStep) return true;
-    for (let i = createStep; i < target; i++) if (!validateCreateStep(i)) { setCreateStep(i); return false; }
+    if (!String(fd.get("title") || "").trim()) return fail(t("taskTitle"));
+    if (!isIndividual && assignType === "member" && assignedIds.length === 0) return fail(t("selectEmployee"));
+    if (!fd.get("section")) return fail(t("sectionName"));
+    const total = Number(fd.get("totalTasks"));
+    if (!Number.isFinite(total) || total < 1) return fail(t("totalTasks"));
+    if (!customStart || !customEnd || customEnd < customStart) return fail(t("selectDate"));
     return true;
   };
 
@@ -531,7 +499,7 @@ export default function MyTasks() {
         setTargets((prev) => [...createdList, ...prev.filter((x) => !createdList.some((c) => c.id === x.id))]);
       }
       // Remember these choices for the next task (smart pre-fill).
-      saveSmartDefaults(`task_${currentUser.id}`, { assignType: aType, formStation, priority, datePreset });
+      saveSmartDefaults(`task_${currentUser.id}`, { assignType: aType, formStation, priority });
       if (section) {
         ensureFolder(section, aType === "hq_team" ? PERSONAL_WORKSPACE_ID : stationId);
       }
@@ -543,18 +511,15 @@ export default function MyTasks() {
       setShowCreate(false);
       setAssignType("member");
       setFormStation("");
-      setDatePreset("monthly");
-      setCustomStart("");
-      setCustomEnd("");
-      setCustomDays("");
+      setCustomStart(defaultRange().start);
+      setCustomEnd(defaultRange().end);
       setTaskFiles([]);
       setPriority("medium");
       setEffortWeight(1);
       setAssignedIds([]);
-      setWeightSuggested(false);
+      setSuggestedWeight(null);
       setCompletionMode("onsite");
       setSectionValue("");
-      setCreateStep(0);
       fetchTargets();
     } catch (err) {
       alert(err?.response?.data?.error || "Failed to create");
@@ -833,15 +798,6 @@ export default function MyTasks() {
     return tg.employee_id === currentUser.id;
   };
 
-  const presetLabel = (val) => ({
-    monthly: t("presetMonthly"),
-    "3months": t("preset3Months"),
-    "6months": t("preset6Months"),
-    yearly: t("presetYearly"),
-    days: t("presetDays"),
-    custom: t("presetCustom"),
-  })[val] || val;
-
   // Group targets by station
   const empStation = (id) => data.employees.find((e) => e.id === id)?.stationId || firstStationId;
   const targetStationKey = (tg) => {
@@ -951,229 +907,69 @@ export default function MyTasks() {
         <EscalationInfoBox t={t} />
       )}
 
-      {/* Unified Target form */}
-      {showCreate && canCreateTasks(currentUser) && (
-        <form id="task-create-form" ref={createFormRef} onSubmit={createTarget} className="mx-auto w-full max-w-3xl scroll-mt-6 rounded-2xl border border-accent/50 bg-secondary/60 p-3 shadow-soft sm:p-4">
-          <TaskWizardStepper lang={lang} active={createStep} onSelect={setCreateStep} canSelect={canJumpCreate} />
-          <div className="space-y-5 rounded-xl border border-accent/40 bg-card p-4 sm:p-6">
-          <TaskFormStep index={0} active={createStep}>
-          {prefilled && (
-            <p className="text-[11px] font-body text-accent flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" /> {t("smartPrefill")}
-            </p>
-          )}
-          <div className="space-y-4">
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-foreground">{t("taskTitle")}</label>
-              <input name="title" placeholder={t("taskTitle")} className="w-full rounded-lg border border-input px-3 py-2.5 text-sm font-body focus:border-accent focus:ring-1 focus:ring-accent" />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-foreground">{t("taskDescription")}</label>
-              <textarea name="description" rows={3} placeholder={t("taskDescription")} className="w-full resize-y rounded-lg border border-input px-3 py-2.5 text-sm font-body focus:border-accent focus:ring-1 focus:ring-accent" />
-            </div>
-          </div>
-
-          {canSetCompletionMode && <CompletionModeToggle value={completionMode} onChange={setCompletionMode} lang={lang} />}
-
-          {/* Steps */}
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><ListOrdered className="w-3.5 h-3.5" /> {t("steps")}</p>
-            <textarea name="steps" rows={3} placeholder={t("stepsPlaceholder")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-y" />
-          </div>
-
-          {/* File attachments */}
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><Paperclip className="w-3.5 h-3.5" /> {t("attachFile")}</p>
-            <div className="flex flex-wrap items-end gap-2">
-              <CommentFiles files={taskFiles} setFiles={setTaskFiles} />
-            </div>
-          </div>
-
-          </TaskFormStep>
-
-          <TaskFormStep index={1} active={createStep}>
-          {/* Assignment type selector — hidden for individuals (tasks are self-assigned) */}
-          {!isIndividual && (
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{t("assignTo")}</p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { val: "member", label: t("member"), icon: User },
-                { val: "station_team", label: t("stationTeam"), icon: Users },
-              ].map(({ val, label, icon: OptIcon }) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => { setAssignType(val); if (val === "member") setMemberPickerOpen(true); }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${assignType === val ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-                >
-                  <OptIcon className="w-3.5 h-3.5" /> {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          )}
-          <input type="hidden" name="assignType" value={assignType} />
-
-          {/* Conditional assignment fields */}
-          {assignType === "member" && (
-            <div className="space-y-2">
-              <div className="rounded-lg border border-accent/30 bg-secondary/50 px-3 py-2 text-sm font-medium">{stationName(formStation)}</div>
-              <p className="text-xs font-body text-muted-foreground">
-                {assignedIds.length > 0
-                  ? assignedIds.map((id) => employeeName(id)).join("، ")
-                  : (lang === "ar" ? "اضغط «عضو» لاختيار الأعضاء." : "Tap “Member” to pick members.")}
-              </p>
-              {memberPickerOpen && (
-                <MemberMultiSelect
-                  lang={lang}
-                  members={memberCandidates.filter((e) => e.role === "employee" || e.role === "station_manager")}
-                  selected={assignedIds}
-                  onChange={(ids) => {
-                    setAssignedIds(ids);
-                    const emp = data.employees.find((x) => x.id === ids[0]);
-                    if (emp) {
-                      setEffortWeight(suggestEffortWeight(emp.profile?.position || emp.position || emp.role));
-                      setWeightSuggested(true);
-                    }
-                  }}
-                />
-              )}
-            </div>
-          )}
-
-          {assignType === "station_team" && (
-            <>
-              <input type="hidden" name="stationId" value={formStation} />
-              <div className="rounded-lg border border-accent/30 bg-secondary/50 px-3 py-2 text-sm font-medium">{stationName(formStation)}</div>
-            </>
-          )}
-
-
-          {/* The task belongs to the section from which creation was opened. */}
-          <div>
-            <p className="mb-2 flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground"><FileText className="h-3.5 w-3.5" /> {t("section")}</p>
-            <input type="hidden" name="section" value={sectionValue} />
-            <div className="rounded-lg border border-accent/30 bg-secondary/50 px-3 py-2 text-sm font-medium">{getLeafName(sectionValue)}</div>
-          </div>
-
-          {/* Priority */}
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> {t("priority")}</p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { val: "urgent", label: t("urgent") },
-                { val: "high", label: t("high") },
-                { val: "medium", label: t("medium") },
-                { val: "low", label: t("low") },
-              ].map(({ val, label }) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setPriority(val)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${priority === val ? "bg-foreground text-background border-foreground" : val === "urgent" ? "border-red-400 text-red-700 hover:bg-red-50" : "border-border hover:bg-muted"}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          </TaskFormStep>
-
-          <TaskFormStep index={2} active={createStep}>
-          {/* Effort weight — performance is scored on weight, not task count */}
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">⚖️ {lang === "ar" ? "وزن الجهد — يُحتسب الأداء على الوزن لا العدد" : "Effort weight — score counts weight, not count"}</p>
-            <div className="flex flex-wrap gap-2">
-              {[1, 2, 3, 4, 5].map((w) => (
-                <button
-                  key={w}
-                  type="button"
-                  onClick={() => { setEffortWeight(w); setWeightSuggested(false); }}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-body border transition ${effortWeight === w ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-                  title={EFFORT_WEIGHT_LABELS[w][lang === "ar" ? "ar" : "en"]}
-                >
-                  ×{w}
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-[11px] text-muted-foreground font-body">
-              {weightSuggested
-                ? (lang === "ar" ? "وزن مقترح من المسمى الوظيفي — يمكنك تعديله قبل بدء العمل." : "Suggested from the job title — you can change it before work starts.")
-                : (lang === "ar" ? "يُحدَّد الوزن قبل بدء العمل، ولا تُمنح النقاط إلا بعد اعتماد الإثبات." : "Weight is set before work starts; points are granted only after evidence approval.")}
-            </p>
-          </div>
-
-          {/* Target quota */}
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">{t("totalTasks")}</p>
-            <input name="totalTasks" type="number" min="1" placeholder={t("totalTasks")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-          </div>
-
-          {/* Date preset selector */}
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {t("selectDate")}</p>
-            <div className="flex flex-wrap gap-2">
-              {DATE_PRESETS.map(({ val }) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setDatePreset(val)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${datePreset === val ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-                >
-                  {presetLabel(val)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {datePreset === "days" && (
-            <div>
-              <label className="text-xs text-muted-foreground font-body block mb-1">{t("presetDays")}</label>
-              <input type="number" min="1" value={customDays} onChange={(e) => setCustomDays(e.target.value)} placeholder={t("numberOfDays")} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-            </div>
-          )}
-
-          {datePreset === "custom" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-muted-foreground font-body block mb-1">{t("startDate")}</label>
-                <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground font-body block mb-1">{t("endDate")}</label>
-                <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-              </div>
-            </div>
-          )}
-
-          </TaskFormStep>
-
-          <TaskFormStep index={3} active={createStep}>
-            <div className="space-y-2 rounded-lg border border-accent/30 bg-secondary/40 p-4 text-sm font-body">
-              <p className="text-xs uppercase tracking-wider text-accent">{lang === "ar" ? "مراجعة قبل الحفظ" : "Review before saving"}</p>
-              <p>{lang === "ar" ? "القسم" : "Section"}: <span className="font-medium">{getLeafName(sectionValue) || "—"}</span></p>
-              <p>{t("assignTo")}: <span className="font-medium">{assignType === "station_team" ? `${t("stationTeam")} — ${stationName(formStation)}` : t("member")}</span></p>
-              <p>{t("priority")}: <span className="font-medium">{presetLabel(datePreset)} · {priority}</span></p>
-              <p>{lang === "ar" ? "وزن الجهد" : "Effort weight"}: <span className="font-medium">×{effortWeight}</span></p>
-              <p className="text-xs text-muted-foreground">{lang === "ar" ? "راجع الحقول في المراحل السابقة ثم احفظ." : "Check the earlier steps, then save."}</p>
-            </div>
-          </TaskFormStep>
-
-          <TaskStepNav
-            step={createStep}
-            lastStep={3}
-            setStep={setCreateStep}
-            onNext={validateCreateStep}
-            onCancel={() => { setShowCreate(false); setSectionValue(""); setCreateStep(0); }}
-            lang={lang}
-            dir={dir}
-            submitting={isCreating}
-            submitLabel={isCreating ? (lang === "ar" ? "جارٍ الحفظ..." : "Saving...") : t("save")}
-          />
-          </div>
-        </form>
+      {/* Create task — one side panel, no steps */}
+      {canCreateTasks(currentUser) && (
+        <TaskSidePanel
+          open={showCreate}
+          dir={dir}
+          title={lang === "ar" ? "إنشاء مهمة" : "Create task"}
+          onClose={() => { setShowCreate(false); setSectionValue(""); }}
+          footer={
+            <button
+              type="submit"
+              form="task-create-form"
+              disabled={isCreating}
+              className="w-full rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
+            >
+              {isCreating ? (lang === "ar" ? "جارٍ الحفظ..." : "Saving...") : (lang === "ar" ? "إنشاء المهمة" : "Create task")}
+            </button>
+          }
+        >
+          <form
+            id="task-create-form"
+            ref={createFormRef}
+            onSubmit={(e) => { if (!validateCreate()) { e.preventDefault(); return; } createTarget(e); }}
+          >
+            <TaskCreateFields
+              t={t}
+              lang={lang}
+              prefilled={prefilled}
+              taskFiles={taskFiles}
+              setTaskFiles={setTaskFiles}
+              isIndividual={isIndividual}
+              assignType={assignType}
+              setAssignType={setAssignType}
+              memberCandidates={memberCandidates.filter((e) => e.role === "employee" || e.role === "station_manager")}
+              assignedIds={assignedIds}
+              setAssignedIds={(ids) => {
+                setAssignedIds(ids);
+                const emp = data.employees.find((x) => x.id === ids[0]);
+                if (emp) {
+                  const weight = suggestEffortWeight(emp.profile?.position || emp.position || emp.role);
+                  setSuggestedWeight(weight);
+                  setEffortWeight(weight);
+                } else {
+                  setSuggestedWeight(null);
+                }
+              }}
+              stationNameOf={(m) => stationName(m.stationId || firstStationId)}
+              stationLabel={{ id: formStation, name: stationName(formStation) }}
+              sectionValue={sectionValue}
+              priority={priority}
+              setPriority={setPriority}
+              effortWeight={effortWeight}
+              setEffortWeight={setEffortWeight}
+              suggestedWeight={suggestedWeight}
+              completionMode={completionMode}
+              setCompletionMode={setCompletionMode}
+              canSetCompletionMode={canSetCompletionMode}
+              startDate={customStart}
+              endDate={customEnd}
+              setStartDate={setCustomStart}
+              setEndDate={setCustomEnd}
+            />
+          </form>
+        </TaskSidePanel>
       )}
 
       {/* Task Targets — organized by station as a hierarchical folder tree */}

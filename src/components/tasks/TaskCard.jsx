@@ -1,11 +1,9 @@
 import React, { useState } from "react";
-import { Check, AlertTriangle, Clock, MessageCircle, Send, Pencil, Trash2, HelpCircle, Lock } from "lucide-react";
+import { Check, AlertTriangle, Clock, MessageCircle, Send, HelpCircle, Lock } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
-import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import { formatDateTime } from "@/lib/dateFormat";
-import { NO_SECTION } from "@/lib/taskFolders";
 import EscalationSteps from "@/components/escalation/EscalationSteps";
-import MobileSelect from "@/components/mobile/MobileSelect";
+import TaskAdminMenu from "@/components/tasks/TaskAdminMenu";
 import FlowSwipeAction from "@/components/flow/FlowSwipeAction";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
@@ -30,7 +28,6 @@ export default function TaskCard({
   const [rejectReason, setRejectReason] = useState("");
   const [disputing, setDisputing] = useState(false);
   const [disputeMessage, setDisputeMessage] = useState("");
-  const [completing, setCompleting] = useState(false);
   const comments = Array.isArray(tg.comments) ? tg.comments : [];
   const lastComment = comments[comments.length - 1];
   const canObject = !canManage && tg.status === "active" && lastComment?.is_rejection;
@@ -78,10 +75,10 @@ export default function TaskCard({
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-medium font-body">{tg.title || t("setTarget")}</p>
             <span className={`rounded-full border px-2 py-0.5 text-[10px] font-body ${completionMode === "remote" ? "border-border bg-muted text-muted-foreground" : "border-accent/40 bg-accent/10 text-accent"}`}>
-              {completionMode === "remote" ? (lang === "ar" ? "🌐 عن بُعد" : "🌐 Remote") : (lang === "ar" ? "🏢 حضوري" : "🏢 On-site")}
+              {completionMode === "remote" ? (lang === "ar" ? "عن بُعد" : "Remote") : (lang === "ar" ? "حضوري" : "On-site")}
             </span>
             <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] font-body text-accent" title={lang === "ar" ? "وزن الجهد المعياري" : "Standard effort weight"}>
-              ⚖️ ×{Number(tg.effortWeight) || 1}
+              ×{Number(tg.effortWeight) || 1}
             </span>
           </div>
           {tg.description && <p className="text-xs text-muted-foreground font-body mt-0.5">{tg.description}</p>}
@@ -108,25 +105,16 @@ export default function TaskCard({
             {done ? t("completed") : overdue ? t("overdue") : pendingReview ? t("pendingReview") : t("inProgress")}
           </span>
           {canManage && (
-            <div className="flex items-center gap-1 mt-1">
-              <MobileSelect
-                value={tg.section || NO_SECTION}
-                onChange={(value) => moveTaskToSection(tg, value)}
-                placeholder={t("moveToSection")}
-                options={allSectionFolders.map((folder) => ({ value: folder.key, label: folder.name }))}
-                className="max-w-[150px] px-2 py-1 text-[11px]"
-              />
-              <button onClick={() => setEditTarget(tg)} className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground" title={t("edit")}>
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
-              <ConfirmDeleteDialog
-                onConfirm={() => deleteTarget(tg.id)}
-                description={t("confirmDeleteTask")}
-                trigger={
-                  <button className="p-1 rounded-md hover:bg-red-50 text-muted-foreground hover:text-red-600" title={t("delete")}>
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                }
+            <div className="mt-1">
+              <TaskAdminMenu
+                tg={tg} t={t} lang={lang} done={done}
+                allSectionFolders={allSectionFolders}
+                moveTaskToSection={moveTaskToSection}
+                setEditTarget={setEditTarget}
+                deleteTarget={deleteTarget}
+                convertToRemote={convertToRemote}
+                canChangeCompletionMode={canChangeCompletionMode}
+                completeTarget={completeTarget}
               />
             </div>
           )}
@@ -136,14 +124,6 @@ export default function TaskCard({
         <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs font-body text-amber-800">
           <Lock className="h-4 w-4 shrink-0" />
           <span>{lang === "ar" ? "هذه المهمة تتطلب الحضور في الموقع — يرجى تسجيل الدخول أولًا" : "This task requires on-site attendance — please check in first."}</span>
-        </div>
-      )}
-      {canManage && !done && (
-        <div className="flex flex-wrap gap-2">
-          {canChangeCompletionMode && completionMode === "onsite" && <button onClick={() => convertToRemote(tg)} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-xs font-body text-muted-foreground hover:text-foreground">🌐 {lang === "ar" ? "تحويل إلى عن بُعد" : "Convert to remote"}</button>}
-          <button disabled={completing} onClick={async () => { setCompleting(true); try { await completeTarget(tg); } finally { setCompleting(false); } }} className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
-            <Check className="h-3.5 w-3.5" /> {completing ? (lang === "ar" ? "جارٍ الإنهاء..." : "Completing...") : (lang === "ar" ? "إنهاء المهمة" : "Complete task")}
-          </button>
         </div>
       )}
       <div className="flex items-center gap-1.5 text-xs font-body">
