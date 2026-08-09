@@ -58,7 +58,6 @@ const PowerCareSapComparisonV2 = lazy(() => import('./pages/PowerCareSapComparis
 const AdAudio = lazy(() => import('./pages/AdAudio'));
 const CopyrightDoc = lazy(() => import('./pages/CopyrightDoc'));
 const SourceCodeDoc = lazy(() => import('./pages/SourceCodeDoc'));
-const ProjectGuideDoc = lazy(() => import('./pages/ProjectGuideDoc'));
 const TruePerformanceDoc = lazy(() => import('./pages/TruePerformanceDoc'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const Assets = lazy(() => import('./pages/Assets'));
@@ -126,8 +125,6 @@ function AppRoutes() {
       <Route path="/ad-audio" element={<AdAudio />} />
       <Route path="/copyright-doc" element={<CopyrightDoc />} />
       <Route path="/source-code-doc" element={<SourceCodeDoc />} />
-      <Route path="/project-guide" element={<ProjectGuideDoc />} />
-      <Route path="/manual" element={<ProjectGuideDoc />} />
       <Route path="/true-performance" element={<TruePerformanceDoc />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/owner-panel" element={<OwnerPanel />} />
@@ -156,7 +153,6 @@ function AppRoutes() {
       <Route path="/app/signing" element={<RequireAuth><FileSigning /></RequireAuth>} />
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
       <Route path="/app/help" element={<RequireAuth><Help /></RequireAuth>} />
-      <Route path="/app/manual" element={<RequireAuth><ProjectGuideDoc /></RequireAuth>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     <PlatformMusicButton />

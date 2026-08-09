@@ -97,7 +97,6 @@ export default function Landing() {
           <div>
             <h3 className="font-heading text-2xl text-white">{t("appName")}</h3>
             <p className="mt-3 text-sm leading-relaxed text-white/50">{t("footerDescription")}</p>
-            <Link to="/manual" className="mt-4 inline-flex items-center gap-2 rounded-lg border border-accent/40 px-4 py-2 text-sm font-semibold text-accent hover:bg-accent hover:text-accent-foreground"><BookOpen className="h-3.5 w-3.5" />{lang === "ar" ? "كتيب المستخدم" : "User Handbook"}</Link>
             <div className="mt-5 flex items-center gap-4 text-white/45"><Facebook className="h-4 w-4" /><Twitter className="h-4 w-4" /><XIcon className="h-4 w-4" /><Send className="h-4 w-4" /></div>
           </div>
           <div>

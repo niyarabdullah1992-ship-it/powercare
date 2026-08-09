@@ -141,7 +141,6 @@ export default function Layout({ children }) {
     { to: "/app/files", icon: FolderOpen, label: t("files"), category: "governance" },
     { to: "/app/complaints", icon: Megaphone, label: t("allComplaints"), category: "governance" },
     { to: "/app/chat", icon: MessageSquare, label: t("chat"), category: "support" },
-    { to: "/app/manual", icon: HelpCircle, label: t("userGuide"), category: "support" },
   ];
 
   const navGroupLabels = {
