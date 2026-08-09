@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canManageSchedule } from "@/lib/permissions";
-import { ArrowLeft, CalendarClock } from "lucide-react";
 import StationScheduleEditor, { getMonthDates, dateKey } from "@/components/schedules/StationScheduleEditor";
+import ScheduleStationSelect from "@/components/schedules/ScheduleStationSelect";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 
@@ -13,29 +13,12 @@ export default function ScheduleTab() {
   const { t, lang } = useI18n();
   const { format } = useTimeFormat();
   const { data, company, currentUser } = useAuth();
-  const [selectedStation, setSelectedStation] = useState(null);
+  const [stationId, setStationId] = useState(null);
 
   if (!data || !currentUser) return null;
   const stations = visibleStations(currentUser, data);
-
-  if (!selectedStation) {
-    return (
-      <div className="space-y-4">
-        <p className="text-muted-foreground font-body text-sm">{t("manageScheduleNote")}</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {stations.map((s) => (
-            <button key={s.id} onClick={() => setSelectedStation(s.id)} className="text-start p-5 rounded-xl border border-border bg-card hover:border-accent transition-colors space-y-2">
-              <div className="flex items-center gap-2">
-                <CalendarClock className="w-4 h-4 text-accent" />
-                <h3 className="font-heading font-semibold">{s.name}</h3>
-              </div>
-              <p className="text-sm text-muted-foreground font-body">{t("monthlySchedule")}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const selectedStation = stationId || stations[0]?.id || null;
+  if (!selectedStation) return <p className="text-sm text-muted-foreground font-body">{t("manageScheduleNote")}</p>;
 
   const station = data.stations.find((s) => s.id === selectedStation);
   const canManage = canManageSchedule(currentUser, data, selectedStation);
@@ -55,12 +38,11 @@ export default function ScheduleTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <button onClick={() => setSelectedStation(null)} className="p-2 rounded-md hover:bg-muted shrink-0">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <h3 className="flex-1 text-center font-heading text-xl font-semibold">{station?.name}</h3>
-        <ComparisonExportButtons title={`${t("monthlySchedule")} — ${station?.name || ""}`} headers={exportHeaders} rows={exportRows} />
+      <div className="flex flex-wrap items-center gap-3">
+        <ScheduleStationSelect stations={stations} schedules={data.schedules} value={selectedStation} onChange={setStationId} ar={lang === "ar"} />
+        <div className="ms-auto">
+          <ComparisonExportButtons title={`${t("monthlySchedule")} — ${station?.name || ""}`} headers={exportHeaders} rows={exportRows} />
+        </div>
       </div>
       <StationScheduleEditor companyId={company.id} stationId={selectedStation} canManage={canManage} />
     </div>
