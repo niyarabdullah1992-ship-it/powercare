@@ -9,6 +9,7 @@ import StatsBand from "@/components/landing/StatsBand";
 import { trackVisit } from "@/lib/trackVisit";
 import WhyNiroVera from "@/components/landing/WhyPowerCare";
 import IpCertificateBadge from "@/components/landing/IpCertificateBadge";
+import CommercialRegistrationBadge from "@/components/landing/CommercialRegistrationBadge";
 import PlatformServices from "@/components/landing/PlatformServices";
 
 const PATTERN_IMG = "https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/613ed91a1_generated_image.png";
@@ -113,6 +114,7 @@ export default function Landing() {
           </div>
         </div>
         <IpCertificateBadge lang={lang} />
+        <CommercialRegistrationBadge lang={lang} />
       </footer>
     </div>
   );
