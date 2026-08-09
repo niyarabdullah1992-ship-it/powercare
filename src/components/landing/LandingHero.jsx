@@ -15,7 +15,7 @@ export default function LandingHero({ lang, t }) {
       <div dir={lang === "ar" ? "rtl" : "ltr"} className="mx-auto max-w-[1380px] overflow-hidden rounded-2xl border border-landing-gold/30 bg-card shadow-elevated">
         <div className="grid lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.65fr)]">
           <div className="relative min-h-[360px] overflow-hidden bg-primary sm:min-h-[500px] lg:min-h-[620px]">
-            <Image src={HERO_IMAGE} alt={lang === "ar" ? "فريق قيادي يتعاون في بيئة مؤسسية حديثة" : "Leadership team collaborating in a modern corporate workplace"} originWidth={1536} originHeight={1024} fittingType="fill" quality={100} className="absolute inset-0 h-full w-full" />
+            <Image src={HERO_IMAGE} alt={lang === "ar" ? "فريق قيادي يتعاون في بيئة مؤسسية حديثة" : "Leadership team collaborating in a modern corporate workplace"} originWidth={1536} originHeight={1024} fittingType="fit" quality={100} className="absolute inset-0 h-full w-full object-contain" />
           </div>
 
           <aside className="flex flex-col justify-between border-t border-landing-gold/30 bg-card p-6 lg:border-s lg:border-t-0 lg:p-8">
