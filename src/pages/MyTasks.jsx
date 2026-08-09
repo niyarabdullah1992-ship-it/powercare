@@ -903,10 +903,6 @@ export default function MyTasks() {
         </div>
       )}
 
-      {!isIndividual && targets.some((tg) => tg.status === "active" && Array.isArray(tg.comments) && tg.comments.some((c) => c.is_rejection || c.is_dispute)) && (
-        <EscalationInfoBox t={t} />
-      )}
-
       {/* Create task — one side panel, no steps */}
       {canCreateTasks(currentUser) && (
         <TaskSidePanel
