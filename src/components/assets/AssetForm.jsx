@@ -14,9 +14,10 @@ const input = "w-full rounded-md border border-input px-3 py-2 text-sm font-body
 export default function AssetForm({ asset, stations, employees, lang, onClose, onSave }) {
   const [form, setForm] = useState({
     name: "", assetCode: "", category: "", stationId: stations[0]?.id || "", site: "",
-    holderId: "", purchaseDate: "", value: "", usefulLifeMonths: "", warrantyEndDate: "",
-    inspectionIntervalDays: "", nextInspectionDate: "", status: "available",
+    holderId: "", purchaseDate: "", value: "", warrantyEndDate: "",
+    nextInspectionDate: "", status: "available",
     ...(asset || {}),
+    usefulLifeYears: asset?.usefulLifeMonths ? Math.round(asset.usefulLifeMonths / 12) : "",
   });
   const [saving, setSaving] = useState(false);
   const set = (key) => (e) => setForm({ ...form, [key]: e?.target ? e.target.value : e });
@@ -33,8 +34,8 @@ export default function AssetForm({ asset, stations, employees, lang, onClose, o
         ...form,
         holderName: branchHolder ? `${lang === "ar" ? "عهدة الفرع" : "Branch custody"} — ${stationOf?.name || ""}` : (holder?.name || form.holderName || ""),
         value: form.value ? Number(form.value) : null,
-        usefulLifeMonths: form.usefulLifeMonths ? Number(form.usefulLifeMonths) : null,
-        inspectionIntervalDays: form.inspectionIntervalDays ? Number(form.inspectionIntervalDays) : null,
+        usefulLifeMonths: form.usefulLifeYears ? Number(form.usefulLifeYears) * 12 : null,
+        inspectionIntervalDays: null,
       });
       onClose();
     } finally {
@@ -68,9 +69,8 @@ export default function AssetForm({ asset, stations, employees, lang, onClose, o
         <div className="grid grid-cols-2 gap-3">
           <Field label={lang === "ar" ? "تاريخ الشراء" : "Purchase date"}><input type="date" value={form.purchaseDate || ""} onChange={set("purchaseDate")} className={input} /></Field>
           <Field label={lang === "ar" ? "القيمة" : "Value"}><input type="number" value={form.value || ""} onChange={set("value")} className={input} /></Field>
-          <Field label={lang === "ar" ? "العمر الافتراضي (شهر)" : "Useful life (months)"}><input type="number" value={form.usefulLifeMonths || ""} onChange={set("usefulLifeMonths")} className={input} /></Field>
+          <Field label={lang === "ar" ? "العمر الافتراضي (سنوات)" : "Useful life (years)"}><input type="number" min="0" value={form.usefulLifeYears || ""} onChange={set("usefulLifeYears")} className={input} /></Field>
           <Field label={lang === "ar" ? "نهاية الضمان" : "Warranty end"}><input type="date" value={form.warrantyEndDate || ""} onChange={set("warrantyEndDate")} className={input} /></Field>
-          <Field label={lang === "ar" ? "دورية الفحص (يوم)" : "Inspection interval (days)"}><input type="number" value={form.inspectionIntervalDays || ""} onChange={set("inspectionIntervalDays")} className={input} /></Field>
           <Field label={lang === "ar" ? "الفحص القادم" : "Next inspection"}><input type="date" value={form.nextInspectionDate || ""} onChange={set("nextInspectionDate")} className={input} /></Field>
         </div>
 
