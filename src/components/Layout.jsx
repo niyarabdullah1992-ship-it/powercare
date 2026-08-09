@@ -143,48 +143,49 @@ export default function Layout({ children }) {
   if (!currentUser || !data) return children;
 
   const navItems = [
-    { to: "/app", icon: LayoutDashboard, label: t("dashboard"), end: true, category: "management" },
-    { to: "/app/assistant", icon: Sparkles, label: t("aiAssistant"), category: "management" },
-    { to: "/app/daily-report", icon: FileText, label: t("reports"), category: "operations" },
+    { to: "/app", icon: LayoutDashboard, label: t("dashboard"), end: true, category: "main" },
+    { to: "/app/assistant", icon: Sparkles, label: lang === "ar" ? "المساعد نيرو" : t("aiAssistant"), category: "main" },
     { to: "/app/tasks", icon: ListTodo, label: t("myTasks"), category: "operations" },
-    { to: "/app/inventory", icon: Warehouse, label: t("inventory"), category: "operations" },
+    { to: "/app/daily-report", icon: FileText, label: t("reports"), category: "operations" },
     { to: "/app/assets", icon: Boxes, label: lang === "ar" ? "الأصول والعهد" : "Assets & custody", category: "operations" },
-    { to: "/app/work-proof", icon: FileCheck2, label: lang === "ar" ? "إثبات العمل" : "Work Proof", category: "operations" },
-    { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling"), category: "workforce" },
-    { to: "/app/employees", icon: Users, label: lang === "ar" ? "الموظفون" : "Employees", category: "workforce" },
-    { to: "/app/leave-requests", icon: Inbox, label: lang === "ar" ? "الإجازات والطلبات" : "Leaves & Requests", category: "workforce" },
+    { to: "/app/inventory", icon: Warehouse, label: t("inventory"), category: "operations" },
+    { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)", category: "operations" },
     { to: "/app/hr", icon: UserCog, label: t("hr"), category: "workforce" },
+    { to: "/app/employees", icon: Users, label: lang === "ar" ? "الموظفون" : "Employees", category: "workforce" },
+    { to: "/app/attendance", icon: ClipboardCheck, label: t("attendanceScheduling"), category: "workforce" },
+    { to: "/app/leave-requests", icon: Inbox, label: lang === "ar" ? "الإجازات والطلبات" : "Leaves & Requests", category: "workforce" },
     { to: "/app/performance", icon: Trophy, label: t("performance"), category: "workforce" },
-    { to: "/app/expenses", icon: ReceiptText, label: t("expenses"), category: "finance" },
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "finance" },
-    { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة (HSE)" : "Safety (HSE)", category: "governance" },
+    { to: "/app/expenses", icon: ReceiptText, label: t("expenses"), category: "finance" },
+    { to: "/app/signing", icon: PenLine, label: t("fileSigning"), category: "governance" },
+    { to: "/app/work-proof", icon: FileCheck2, label: lang === "ar" ? "إثبات العمل" : "Work Proof", category: "governance" },
+    { to: "/app/files", icon: FolderOpen, label: t("files"), category: "governance" },
     { to: "/app/complaints", icon: Megaphone, label: t("allComplaints"), category: "governance" },
-    { to: "/app/files", icon: FolderOpen, label: t("files"), category: "documents" },
-    { to: "/app/signing", icon: PenLine, label: t("fileSigning"), category: "documents" },
-    { to: "/app/chat", icon: MessageSquare, label: t("chat"), category: "communication" },
+    { to: "/app/chat", icon: MessageSquare, label: t("chat"), category: "support" },
     { to: "/app/manual", icon: HelpCircle, label: t("userGuide"), category: "support" },
   ];
 
   const navGroupLabels = {
-    management: lang === "ar" ? "الإدارة" : "Management",
+    main: lang === "ar" ? "الرئيسية" : "Main",
     operations: lang === "ar" ? "العمليات" : "Operations",
     workforce: lang === "ar" ? "القوى العاملة" : "Workforce",
     finance: lang === "ar" ? "المالية" : "Finance",
-    governance: lang === "ar" ? "الحوكمة" : "Governance",
-    documents: lang === "ar" ? "المستندات" : "Documents",
-    communication: lang === "ar" ? "التواصل" : "Communication",
-    support: lang === "ar" ? "الدعم" : "Support",
+    governance: lang === "ar" ? "الحوكمة والوثائق" : "Governance & documents",
+    support: lang === "ar" ? "أدوات مساندة" : "Tools",
   };
+  const navGroupOrder = ["main", "operations", "workforce", "finance", "governance", "support"];
 
   // Role-based visibility: each user only sees the sections their role needs.
   const allowedNav = allowedNavFor(currentUser, data, company);
   const visibleNavItems = navItems.filter((i) => allowedNav.has(i.to));
 
   const orderKeys = navOrder.length ? navOrder : visibleNavItems.map((i) => i.to);
+  // Custom drag order is respected inside each group, but groups always stay
+  // contiguous so the sidebar keeps its five-section structure.
   const orderedNavItems = [
     ...orderKeys.map((to) => visibleNavItems.find((i) => i.to === to)).filter(Boolean),
     ...visibleNavItems.filter((i) => !orderKeys.includes(i.to)),
-  ];
+  ].sort((a, b) => navGroupOrder.indexOf(a.category) - navGroupOrder.indexOf(b.category));
 
   const onNavDragEnd = (result) => {
     if (!result.destination) return;
@@ -285,26 +286,23 @@ export default function Layout({ children }) {
                         className={`group relative w-full ${dragSnapshot.isDragging ? "opacity-90" : ""}`}
                       >
                         {!sidebarCollapsed && (index === 0 || orderedNavItems[index - 1]?.category !== item.category) && (
-                          <div className="flex items-center gap-2 px-2 pb-1.5 pt-4">
-                            <p className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/38">{navGroupLabels[item.category]}</p>
-                            <span className="h-px flex-1 bg-gradient-to-r from-landing-gold/30 to-transparent" />
-                          </div>
+                          <p className={`px-3 pb-1.5 text-[11px] font-semibold tracking-[0.06em] text-[#8C9AB8] ${index === 0 ? "pt-2" : "mt-3 border-t border-white/10 pt-3"}`}>
+                            {navGroupLabels[item.category]}
+                          </p>
                         )}
                         <NavLink
                           to={item.to}
                           end={item.end}
                           title={item.label}
                           className={({ isActive }) =>
-                            `flex h-10 w-full items-center rounded-md border-s-2 transition-all ${sidebarCollapsed ? "justify-center px-1" : "gap-3 px-3"} ${
+                            `flex h-9 w-full items-center rounded-md transition-colors ${sidebarCollapsed ? "justify-center px-1" : "gap-3 px-3"} ${
                               isActive
-                                ? "border-landing-gold bg-white/10 text-white shadow-sm"
-                                : "border-transparent text-white/58 hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+                                ? "bg-white/10 text-white [&_svg]:text-landing-gold"
+                                : "text-white/70 hover:bg-white/[0.06] hover:text-white"
                             }`
                           }
                         >
-                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/[0.04] text-landing-gold-light group-hover:bg-white/[0.08]">
-                            <item.icon className="h-4 w-4" strokeWidth={1.7} />
-                          </span>
+                          <item.icon className="h-5 w-5 shrink-0 text-[#8C9AB8]" strokeWidth={1.7} />
                           {!sidebarCollapsed && <span className="truncate text-[13px] font-medium tracking-[0.01em]">{item.label}</span>}
                         </NavLink>
                       </div>
