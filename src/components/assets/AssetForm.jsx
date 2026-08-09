@@ -71,7 +71,6 @@ export default function AssetForm({ asset, stations, employees, lang, onClose, o
           <Field label={lang === "ar" ? "القيمة" : "Value"}><input type="number" value={form.value || ""} onChange={set("value")} className={input} /></Field>
           <Field label={lang === "ar" ? "العمر الافتراضي (سنوات)" : "Useful life (years)"}><input type="number" min="0" value={form.usefulLifeYears || ""} onChange={set("usefulLifeYears")} className={input} /></Field>
           <Field label={lang === "ar" ? "نهاية الضمان" : "Warranty end"}><input type="date" value={form.warrantyEndDate || ""} onChange={set("warrantyEndDate")} className={input} /></Field>
-          <Field label={lang === "ar" ? "الفحص القادم" : "Next inspection"}><input type="date" value={form.nextInspectionDate || ""} onChange={set("nextInspectionDate")} className={input} /></Field>
         </div>
 
         <button disabled={!form.name || !form.assetCode || !form.stationId || saving} onClick={submit} className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-body font-medium text-primary-foreground disabled:opacity-50">
