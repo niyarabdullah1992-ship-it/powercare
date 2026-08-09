@@ -1,0 +1,83 @@
+{
+  "name": "AssetMaintenance",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "assetId": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "preventive",
+        "emergency"
+      ],
+      "default": "preventive"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "performedBy": {
+      "type": "string"
+    },
+    "cost": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "taskId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Linked maintenance/inspection task."
+    },
+    "result": {
+      "type": "string"
+    },
+    "evidenceUrls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "companyId",
+    "assetId",
+    "type",
+    "date"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

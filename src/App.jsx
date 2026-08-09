@@ -64,6 +64,7 @@ const ProjectGuideDoc = lazy(() => import('./pages/ProjectGuideDoc'));
 const TiktokAd = lazy(() => import('./pages/TiktokAd'));
 const TruePerformanceDoc = lazy(() => import('./pages/TruePerformanceDoc'));
 const Inventory = lazy(() => import('./pages/Inventory'));
+const Assets = lazy(() => import('./pages/Assets'));
 const Expenses = lazy(() => import('./pages/Expenses'));
 const WorkProof = lazy(() => import('./pages/WorkProof'));
 const StationExpenses = lazy(() => import('./pages/StationExpenses'));
@@ -156,6 +157,7 @@ function AppRoutes() {
       <Route path="/app/attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/files" element={<RequireAuth><Files /></RequireAuth>} />
       <Route path="/app/inventory" element={<RequireAuth><Inventory /></RequireAuth>} />
+      <Route path="/app/assets" element={<RequireAuth><Assets /></RequireAuth>} />
       <Route path="/app/expenses" element={<RequireAuth><Expenses /></RequireAuth>} />
       <Route path="/app/work-proof" element={<RequireAuth><WorkProof /></RequireAuth>} />
       <Route path="/app/stations/:stationId/expenses" element={<RequireAuth><StationExpenses /></RequireAuth>} />
