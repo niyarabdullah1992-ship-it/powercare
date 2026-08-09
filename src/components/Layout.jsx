@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { RefreshCw } from "lucide-react";
@@ -41,20 +40,11 @@ export default function Layout({ children }) {
   const notifRef = useRef(null);
   const userRef = useRef(null);
   const notificationPollInFlightRef = useRef(false);
-  const [navOrder, setNavOrder] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("powercare_sidebar_collapsed") === "true");
 
   useEffect(() => {
     localStorage.setItem("powercare_sidebar_collapsed", String(sidebarCollapsed));
   }, [sidebarCollapsed]);
-
-  useEffect(() => {
-    if (!company) return;
-    const saved = localStorage.getItem(`powercare_corporate_nav_v1_${company.id}`);
-    if (saved) {
-      try { setNavOrder(JSON.parse(saved)); } catch { setNavOrder([]); }
-    }
-  }, [company?.id]);
 
   useEffect(() => {
     const onClick = (e) => {
@@ -179,23 +169,10 @@ export default function Layout({ children }) {
   const allowedNav = allowedNavFor(currentUser, data, company);
   const visibleNavItems = navItems.filter((i) => allowedNav.has(i.to));
 
-  const orderKeys = navOrder.length ? navOrder : visibleNavItems.map((i) => i.to);
-  // Custom drag order is respected inside each group, but groups always stay
-  // contiguous so the sidebar keeps its five-section structure.
-  const orderedNavItems = [
-    ...orderKeys.map((to) => visibleNavItems.find((i) => i.to === to)).filter(Boolean),
-    ...visibleNavItems.filter((i) => !orderKeys.includes(i.to)),
-  ].sort((a, b) => navGroupOrder.indexOf(a.category) - navGroupOrder.indexOf(b.category));
-
-  const onNavDragEnd = (result) => {
-    if (!result.destination) return;
-    const items = Array.from(orderedNavItems);
-    const [moved] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, moved);
-    const newOrder = items.map((i) => i.to);
-    setNavOrder(newOrder);
-    if (company) localStorage.setItem(`powercare_corporate_nav_v1_${company.id}`, JSON.stringify(newOrder));
-  };
+  // The sidebar order is fixed: items always follow their group order.
+  const orderedNavItems = [...visibleNavItems].sort(
+    (a, b) => navGroupOrder.indexOf(a.category) - navGroupOrder.indexOf(b.category)
+  );
 
   const myNotifs = [
     ...proactiveAlerts,
@@ -272,48 +249,32 @@ export default function Layout({ children }) {
           </div>}
 
         </div>
-        <DragDropContext onDragEnd={onNavDragEnd}>
-          <Droppable droppableId="sidebar-nav">
-            {(provided) => (
-              <nav ref={provided.innerRef} {...provided.droppableProps} className={`flex-1 w-full py-3 flex flex-col gap-0.5 overflow-y-auto no-scrollbar no-select ${sidebarCollapsed ? "px-2" : "px-4"}`}>
-                {orderedNavItems.map((item, index) => (
-                  <Draggable key={item.to} draggableId={item.to} index={index}>
-                    {(dragProvided, dragSnapshot) => (
-                      <div
-                        ref={dragProvided.innerRef}
-                        {...dragProvided.draggableProps}
-                        {...dragProvided.dragHandleProps}
-                        className={`group relative w-full ${dragSnapshot.isDragging ? "opacity-90" : ""}`}
-                      >
-                        {!sidebarCollapsed && (index === 0 || orderedNavItems[index - 1]?.category !== item.category) && (
-                          <p className={`px-3 pb-1.5 text-[11px] font-semibold tracking-[0.06em] text-[#8C9AB8] ${index === 0 ? "pt-2" : "mt-3 border-t border-white/10 pt-3"}`}>
-                            {navGroupLabels[item.category]}
-                          </p>
-                        )}
-                        <NavLink
-                          to={item.to}
-                          end={item.end}
-                          title={item.label}
-                          className={({ isActive }) =>
-                            `flex h-9 w-full items-center rounded-md transition-colors ${sidebarCollapsed ? "justify-center px-1" : "gap-3 px-3"} ${
-                              isActive
-                                ? "bg-white/10 text-white [&_svg]:text-landing-gold"
-                                : "text-white/70 hover:bg-white/[0.06] hover:text-white"
-                            }`
-                          }
-                        >
-                          <item.icon className="h-5 w-5 shrink-0 text-[#8C9AB8]" strokeWidth={1.7} />
-                          {!sidebarCollapsed && <span className="truncate text-[13px] font-medium tracking-[0.01em]">{item.label}</span>}
-                        </NavLink>
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </nav>
-            )}
-          </Droppable>
-        </DragDropContext>
+        <nav className={`flex-1 w-full py-3 flex flex-col gap-0.5 overflow-y-auto no-scrollbar no-select ${sidebarCollapsed ? "px-2" : "px-4"}`}>
+          {orderedNavItems.map((item, index) => (
+            <div key={item.to} className="group relative w-full">
+              {!sidebarCollapsed && (index === 0 || orderedNavItems[index - 1]?.category !== item.category) && (
+                <p className={`px-3 pb-1.5 text-[11px] font-semibold tracking-[0.06em] text-[#8C9AB8] ${index === 0 ? "pt-2" : "mt-3 border-t border-white/10 pt-3"}`}>
+                  {navGroupLabels[item.category]}
+                </p>
+              )}
+              <NavLink
+                to={item.to}
+                end={item.end}
+                title={item.label}
+                className={({ isActive }) =>
+                  `flex h-9 w-full items-center rounded-md transition-colors ${sidebarCollapsed ? "justify-center px-1" : "gap-3 px-3"} ${
+                    isActive
+                      ? "bg-white/10 text-white [&_svg]:text-landing-gold"
+                      : "text-white/70 hover:bg-white/[0.06] hover:text-white"
+                  }`
+                }
+              >
+                <item.icon className="h-5 w-5 shrink-0 text-[#8C9AB8]" strokeWidth={1.7} />
+                {!sidebarCollapsed && <span className="truncate text-[13px] font-medium tracking-[0.01em]">{item.label}</span>}
+              </NavLink>
+            </div>
+          ))}
+        </nav>
         <div className={`shrink-0 border-t border-white/10 pt-3 ${sidebarCollapsed ? "px-2" : "px-4"}`}>
           <button onClick={() => window.dispatchEvent(new Event("powercare:open-feedback"))} className="group flex h-10 w-full items-center gap-3 rounded-md border border-white/10 bg-white/[0.035] px-3 text-white/60 transition hover:border-landing-gold/40 hover:bg-white/[0.07] hover:text-white">
             <MessageSquare className="h-4 w-4 shrink-0 text-landing-gold-light" strokeWidth={1.7} />
