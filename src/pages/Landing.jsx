@@ -6,6 +6,7 @@ import Logo from "@/components/Logo";
 import LandingHero from "@/components/landing/LandingHero";
 import VideoIntro from "@/components/landing/VideoIntro";
 import StatsBand from "@/components/landing/StatsBand";
+import BrandVideo from "@/components/landing/BrandVideo";
 import { trackVisit } from "@/lib/trackVisit";
 import WhyNiroVera from "@/components/landing/WhyPowerCare";
 import IpCertificateBadge from "@/components/landing/IpCertificateBadge";
@@ -66,6 +67,7 @@ export default function Landing() {
 
       <LandingHero lang={lang} t={t} />
 
+      <BrandVideo lang={lang} />
       <StatsBand lang={lang} />
       <PlatformServices lang={lang} />
       <VideoIntro />
