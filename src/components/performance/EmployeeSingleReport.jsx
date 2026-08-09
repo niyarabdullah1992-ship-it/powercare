@@ -11,10 +11,10 @@ import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 
 // Full performance report for a single selected employee — points, badge, tasks,
 // certificates, leave, and a completed-tasks trend over the last 6 months.
-export default function EmployeeSingleReport({ t }) {
+export default function EmployeeSingleReport({ t, initialEmployeeId }) {
   const { data, company, currentUser } = useAuth();
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState(currentUser?.id || null);
+  const [selectedId, setSelectedId] = useState(initialEmployeeId || currentUser?.id || null);
   const [showResults, setShowResults] = useState(false);
   const [targets, setTargets] = useState([]);
 

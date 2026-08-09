@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import FlexOrgTree from "@/components/hr/FlexOrgTree";
 import JobGradeManager from "@/components/employees/JobGradeManager";
 import HRRequestsPanel from "@/components/hr/HRRequestsPanel";
+import BadgeLegend from "@/components/performance/BadgeLegend";
 
 export default function HRStructureManagement() {
   const { t, lang } = useI18n();
@@ -31,6 +32,7 @@ export default function HRStructureManagement() {
         </button>
         {gradesOpen && <JobGradeManager companyId={company.id} data={data} />}
       </div>
+      <BadgeLegend />
       <FlexOrgTree data={data} company={company} currentUser={currentUser} lang={lang} />
     </div>
   );
