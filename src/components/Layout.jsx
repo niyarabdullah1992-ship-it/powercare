@@ -22,7 +22,6 @@ import BackButton from "@/components/mobile/BackButton";
 import ProductFeedbackPrompt from "@/components/ProductFeedbackPrompt";
 import { shouldShowNotification } from "@/lib/notificationFilters";
 import { routeForNotification } from "@/lib/notificationRoute";
-import SectionGuide from "@/components/SectionGuide";
 import CompanyNameEditor from "@/components/CompanyNameEditor";
 import GlobalSearch from "@/components/navigation/GlobalSearch";
 
@@ -485,7 +484,6 @@ export default function Layout({ children }) {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
             >
-              <SectionGuide lang={lang} t={t} />
               {children}
             </motion.div>
           </AnimatePresence>
