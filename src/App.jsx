@@ -56,12 +56,10 @@ const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
 const PowerCarePresentation = lazy(() => import('./pages/PowerCarePresentation'));
 const PowerCareProfile = lazy(() => import('./pages/PowerCareProfile'));
 const PowerCareSapComparisonV2 = lazy(() => import('./pages/PowerCareSapComparisonV2'));
-const AcwaComprehensiveProposal = lazy(() => import('./pages/AcwaComprehensiveProposal'));
 const AdAudio = lazy(() => import('./pages/AdAudio'));
 const CopyrightDoc = lazy(() => import('./pages/CopyrightDoc'));
 const SourceCodeDoc = lazy(() => import('./pages/SourceCodeDoc'));
 const ProjectGuideDoc = lazy(() => import('./pages/ProjectGuideDoc'));
-const TiktokAd = lazy(() => import('./pages/TiktokAd'));
 const TruePerformanceDoc = lazy(() => import('./pages/TruePerformanceDoc'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const Assets = lazy(() => import('./pages/Assets'));
@@ -127,15 +125,11 @@ function AppRoutes() {
       <Route path="/powercare-profile" element={<PowerCareProfile />} />
       <Route path="/powercare-sap-comparison" element={<PowerCareSapComparisonV2 />} />
       <Route path="/powercare-sap-comparison-v2" element={<PowerCareSapComparisonV2 />} />
-      <Route path="/acwa-powercare-proposal" element={<AcwaComprehensiveProposal />} />
-      <Route path="/acwa-executive-brief" element={<Navigate to="/acwa-powercare-proposal" replace />} />
-      <Route path="/acwa-pilot-proposal" element={<Navigate to="/acwa-powercare-proposal" replace />} />
       <Route path="/ad-audio" element={<AdAudio />} />
       <Route path="/copyright-doc" element={<CopyrightDoc />} />
       <Route path="/source-code-doc" element={<SourceCodeDoc />} />
       <Route path="/project-guide" element={<ProjectGuideDoc />} />
       <Route path="/manual" element={<ProjectGuideDoc />} />
-      <Route path="/tiktok-ad" element={<TiktokAd />} />
       <Route path="/true-performance" element={<TruePerformanceDoc />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/owner-panel" element={<OwnerPanel />} />
