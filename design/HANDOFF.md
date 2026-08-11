@@ -16,18 +16,18 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · **`payroll`**
-(إضافي مادة 107 بنسبة 150% · اعتماد المسير · WPS بعد مطابقة قوى · مهلة اليوم 3 من الشهر التالي).
+`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · **`signing`**
+(رفع من مصدر فقط · سلسلة مرتبة · ختم PENDING → NV-SIG · `NOT_YOUR_TURN` · `SEAL_MISMATCH` · إرسال بعد اكتمال السلسلة).
 
-مسار التحقق (الرواتب):
+مسار التحقق (التوقيع):
 
-1. افتح مسيرًا فارغًا → اعتمد → `EMPTY_RUN`
-2. بند بلا أساسي → `ITEM_ISSUES`
-3. اعتمد مسيرًا سليمًا ثم أرسل WPS قبل الاعتماد على مسير آخر → `RUN_NOT_APPROVED`
-4. غيّر `qiwaWage` ليخالف الأساسي+البدلات → `QIWA_MISMATCH`
-5. بعد المطابقة أرسل WPS — يظهر الموعد النظامي (يوم 3 من الشهر التالي)
+1. ارفع بلا مصدر → `SOURCE_REQUIRED`
+2. سلسلة بموقّعين — وقّع كالثاني أولًا → `NOT_YOUR_TURN`
+3. وقّع بالترتيب → الختم يغادر `PENDING` ويصبح `NV-SIG-…`
+4. غيّر `contentHash` بعد التوقيع ثم تحقق → `SEAL_MISMATCH`
+5. أرسل قبل اكتمال السلسلة → `CHAIN_INCOMPLETE`
 
-تنفيذ: `payrollDerivations` · `base44/functions/payroll` · `PayrollRunBoard` على `/app/payroll`.
+تنفيذ: `signingDerivations` · `base44/functions/signing` · `SigningChainBoard` على `/app/signing`.
 
 ---
 
