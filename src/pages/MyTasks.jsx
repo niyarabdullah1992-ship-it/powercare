@@ -69,6 +69,7 @@ export default function MyTasks() {
   const [markIssue, setMarkIssue] = useState(false);
   const [targets, setTargets] = useState([]);
   const [targetsLoading, setTargetsLoading] = useState(false);
+  const [opsCounts, setOpsCounts] = useState(null);
   const [selectedStation, setSelectedStation] = useState(null);
   const [folderPath, setFolderPath] = useState(null);
   const [priority, setPriority] = useState("medium");
@@ -143,6 +144,21 @@ export default function MyTasks() {
       if (!cached) setTargets([]);
     } finally {
       setTargetsLoading(false);
+    }
+    // Server-derived ops counters (no client-invented KPI literals when available).
+    if (company?.id) {
+      try {
+        const countsRes = await base44.functions.invoke("operations", {
+          action: "counts",
+          companyId: company.id,
+          sessionToken: getCompanyToken(company.id),
+          scope: currentUser.stationId || null,
+        });
+        const body = countsRes?.data || countsRes;
+        if (body?.counts) setOpsCounts(body.counts);
+      } catch {
+        /* operations may be unavailable until deployed — TaskStats falls back */
+      }
     }
   };
 
@@ -913,7 +929,7 @@ export default function MyTasks() {
       )}
 
       {/* Statistics overview — handoff KPI strip */}
-      {!targetsLoading && targets.length > 0 && <TaskStats targets={targets} t={t} lang={lang} />}
+      {!targetsLoading && targets.length > 0 && <TaskStats targets={targets} t={t} lang={lang} counts={opsCounts} />}
 
       <div className="flex flex-wrap items-center gap-2.5">
         <span className="text-[12.5px] text-[#98A2B3]">

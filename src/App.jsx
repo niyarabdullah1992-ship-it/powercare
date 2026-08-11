@@ -80,6 +80,7 @@ if (typeof window !== "undefined") {
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 5000));
     idle(() => {
       import('./pages/Dashboard');
+      import('./pages/Operations');
       import('./pages/MyTasks');
       import('./pages/Attendance');
       import('./pages/FileSigning');

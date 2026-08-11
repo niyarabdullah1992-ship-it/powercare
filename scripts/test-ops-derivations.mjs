@@ -6,22 +6,39 @@ import {
   clampEffortWeight,
 } from "../src/lib/opsDerivations.js";
 
-// Re-implement gate checks against the same rules (server module is Deno TS).
+// Gate rules mirrored from base44/shared/opsDerivations.ts for Node tests.
 const CERT_FOR = { pm: "loto", cm: "loto", em: "fa", pr: "wah", cp: null };
 
-function checkAssignGate({ workKind, owner, today = new Date() }) {
-  const required = CERT_FOR[workKind];
-  if (!required) return { ok: true };
+function employeeLacksCert(owner, required, today) {
+  if (!required) return false;
   const certs = owner.certificates || [];
-  const current = certs.some((c) => {
+  return !certs.some((c) => {
     const code = String(c.code || "").toLowerCase();
     if (code !== required) return false;
-    if (!c.expiryDate) return c.status !== "expired";
+    if (String(c.status || "").toLowerCase() === "expired") return false;
+    if (!c.expiryDate) return true;
     return new Date(`${c.expiryDate}T23:59:59`) >= new Date(today.toDateString());
   });
-  return current
-    ? { ok: true }
-    : { ok: false, reason: `Cannot assign: ${required} certification has lapsed` };
+}
+
+function checkAssignGate({ workKind, assignMode, ownerId, memberIds = [], people, today = new Date() }) {
+  const required = CERT_FOR[workKind];
+  if (!required) return { ok: true, required: null, blocked: [] };
+  const byId = new Map(people.map((p) => [p.employeeId, p]));
+  let candidates = [];
+  if (assignMode === "one") {
+    if (!ownerId || !byId.has(ownerId)) return { ok: false, reason: "owner missing from company" };
+    candidates = [byId.get(ownerId)];
+  } else if (assignMode === "some") {
+    if (!memberIds.length || memberIds.some((id) => !byId.has(id))) return { ok: false, reason: "member missing" };
+    candidates = memberIds.map((id) => byId.get(id));
+  } else {
+    candidates = people;
+    if (!candidates.length) return { ok: false, reason: "empty crew" };
+  }
+  const blocked = candidates.filter((p) => employeeLacksCert(p, required, today));
+  if (!blocked.length) return { ok: true, required, blocked: [] };
+  return { ok: false, reason: `Cannot assign: ${required} certification has lapsed`, blocked };
 }
 
 assert.equal(taskPoints("high", 4), 12);
@@ -49,23 +66,15 @@ assert.equal(counts.awaiting, 1);
 assert.equal(counts.done, 1);
 assert.equal(counts.pointsAwarded, 6);
 
-const blocked = checkAssignGate({
-  workKind: "pm",
-  owner: { employeeId: "e1", certificates: [{ code: "loto", expiryDate: "2020-01-01", status: "expired" }] },
-  today,
-});
-assert.equal(blocked.ok, false);
-assert.match(blocked.reason, /loto/i);
+const people = [
+  { employeeId: "e1", name: "Lapsed", certificates: [{ code: "loto", expiryDate: "2020-01-01", status: "expired" }] },
+  { employeeId: "e2", name: "Valid", certificates: [{ code: "loto", expiryDate: "2027-01-01", status: "approved" }] },
+];
 
-const allowed = checkAssignGate({
-  workKind: "pm",
-  owner: { employeeId: "e2", certificates: [{ code: "loto", expiryDate: "2027-01-01", status: "approved" }] },
-  today,
-});
-assert.equal(allowed.ok, true);
-
-// Points are a pure function of priority×weight — approval is a separate step (server awards only then).
-const pendingPoints = taskPoints("high", 3);
-assert.equal(pendingPoints, 9);
+assert.equal(checkAssignGate({ workKind: "pm", assignMode: "one", ownerId: "e1", people, today }).ok, false);
+assert.equal(checkAssignGate({ workKind: "pm", assignMode: "one", ownerId: "e2", people, today }).ok, true);
+assert.equal(checkAssignGate({ workKind: "pm", assignMode: "one", ownerId: "ghost", people, today }).ok, false);
+assert.equal(checkAssignGate({ workKind: "cp", assignMode: "one", ownerId: "e1", people, today }).ok, true);
+assert.equal(taskPoints("high", 3), 9);
 
 console.log("opsDerivations E2E rules: PASS");

@@ -174,14 +174,64 @@ export function checkAssignGate(input: {
   let candidates: AssignGatePerson[] = [];
 
   if (input.assignMode === "one") {
-    const p = input.ownerId ? byId.get(input.ownerId) : null;
-    if (p) candidates = [p];
+    if (!input.ownerId) {
+      return {
+        ok: false as const,
+        required,
+        blocked: [],
+        reason: lang === "ar" ? "لا يمكن الإسناد: لم يُحدَّد مسؤول." : "Cannot assign: no owner selected.",
+        certLabel: label,
+      };
+    }
+    const p = byId.get(input.ownerId);
+    if (!p) {
+      return {
+        ok: false as const,
+        required,
+        blocked: [],
+        reason: lang === "ar"
+          ? "لا يمكن الإسناد: المسؤول ليس ضمن موظفي هذه الشركة."
+          : "Cannot assign: owner is not an employee of this company.",
+        certLabel: label,
+      };
+    }
+    candidates = [p];
   } else if (input.assignMode === "some") {
-    candidates = (input.memberIds || []).map((id) => byId.get(id)).filter(Boolean) as AssignGatePerson[];
+    const ids = input.memberIds || [];
+    if (!ids.length) {
+      return {
+        ok: false as const,
+        required,
+        blocked: [],
+        reason: lang === "ar" ? "لا يمكن الإسناد: لم يُختَر أحد من الفريق." : "Cannot assign: no team members selected.",
+        certLabel: label,
+      };
+    }
+    const missing = ids.filter((id) => !byId.has(id));
+    if (missing.length) {
+      return {
+        ok: false as const,
+        required,
+        blocked: [],
+        reason: lang === "ar"
+          ? "لا يمكن الإسناد: أحد المحددين ليس ضمن موظفي هذه الشركة."
+          : "Cannot assign: a selected member is not an employee of this company.",
+        certLabel: label,
+      };
+    }
+    candidates = ids.map((id) => byId.get(id)!) ;
   } else {
-    candidates = input.people.filter((p) => !input.stationId || true);
-    // Caller should pass station-filtered people for "all".
+    // Whole-station assignment: caller must pass the station crew only.
     candidates = input.people;
+    if (!candidates.length) {
+      return {
+        ok: false as const,
+        required,
+        blocked: [],
+        reason: lang === "ar" ? "لا يمكن الإسناد: لا طاقم في هذه المحطة." : "Cannot assign: no crew at this station.",
+        certLabel: label,
+      };
+    }
   }
 
   const blocked = candidates.filter((p) => employeeLacksCert(p, required, today));

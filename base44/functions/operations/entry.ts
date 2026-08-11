@@ -195,15 +195,24 @@ Deno.serve(async (req) => {
       if (assignMode === "some" && !memberIds.length) return Response.json({ error: "Select at least one member" }, { status: 400 });
       if (assignMode === "all" && !stationId) return Response.json({ error: "Station required for whole-crew assignment" }, { status: 400 });
 
-      const stationPeople = await loadPeople(assignMode === "all" || assignMode === "some" ? stationId : null);
-      const allPeople = assignMode === "one" ? await loadPeople(null) : stationPeople;
+      const allCompanyPeople = await loadPeople(null);
+      const companyIds = new Set(allCompanyPeople.map((p) => p.employeeId));
+      if (assignMode === "one" && !companyIds.has(ownerId)) {
+        return Response.json({ error: "Owner is not an employee of this company" }, { status: 400 });
+      }
+      if (assignMode === "some" && memberIds.some((id) => !companyIds.has(id))) {
+        return Response.json({ error: "A selected member is not an employee of this company" }, { status: 400 });
+      }
+
+      const stationPeople = await loadPeople(stationId);
+      const gatePeople = assignMode === "all" ? stationPeople : allCompanyPeople;
       const gate = checkAssignGate({
         workKind,
         assignMode,
         ownerId,
         memberIds,
         stationId,
-        people: assignMode === "all" ? stationPeople : allPeople,
+        people: gatePeople,
         lang: body.lang === "en" ? "en" : "ar",
       });
       if (!gate.ok) {
