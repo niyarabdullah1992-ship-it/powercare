@@ -499,6 +499,9 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 .powercare-public .mobile-field-screen:hover .mobile-phone-frame {
   transform: translateY(-6px);
 }
+.powercare-public .sales-deck-stage {
+  outline: none;
+}
 @media (prefers-reduced-motion: reduce) {
   .powercare-public .mobile-field-screen:hover .mobile-phone-frame {
     transform: none;

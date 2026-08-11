@@ -212,6 +212,11 @@ export default function Mobile() {
                 </Link>
               </li>
               <li>
+                <Link to="/deck" className="hover:text-[#3FBF80]">
+                  {ar ? "عرض المبيعات" : "Sales deck"}
+                </Link>
+              </li>
+              <li>
                 <Link to="/security" className="hover:text-[#3FBF80]">
                   {ar ? "الأمان والامتثال" : "Security & Compliance"}
                 </Link>
