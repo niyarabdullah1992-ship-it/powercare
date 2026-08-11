@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { visibleStations, canSeeAllStations, visibleEmployees, canApproveReports, canReplyAnon, isCompanyOwner } from "@/lib/permissions";
+import { visibleStations, visibleEmployees, canApproveReports, canReplyAnon, isCompanyOwner } from "@/lib/permissions";
 import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
 import WelcomeHero from "@/components/dashboard/WelcomeHero";
 import { AlertTriangle, FileText, Bell, Megaphone, Palette } from "lucide-react";
@@ -28,6 +28,7 @@ import OperationsModuleGrid from "@/components/dashboard/OperationsModuleGrid";
 import ProofCycleRibbon from "@/components/claude/ProofCycleRibbon";
 import AttendanceTrendChart from "@/components/dashboard/AttendanceTrendChart";
 import HandoffCommandBoard from "@/components/dashboard/HandoffCommandBoard";
+import DashboardPersonaBar from "@/components/dashboard/DashboardPersonaBar";
 
 export default function Dashboard() {
   const { t, lang } = useI18n();
@@ -218,7 +219,9 @@ export default function Dashboard() {
         name: employee.name,
         type: lang === "ar" ? (request.typeAr || request.type || "إجازة") : (request.type || "Leave"),
         date: formatDate(request.createdAt || request.startDate || new Date(), lang, { day: "numeric", month: "short" }),
-        status: lang === "ar" ? "بانتظار" : "Pending",
+        status: lang === "ar"
+          ? (request.awaiting === "finance" ? "بانتظار المالية" : request.awaiting === "hr" ? "بانتظار HR" : "بانتظار المدير")
+          : (request.awaiting === "finance" ? "Awaiting finance" : request.awaiting === "hr" ? "Awaiting HR" : "Awaiting manager"),
       })),
   );
   const reportQueue = reports
@@ -229,32 +232,52 @@ export default function Dashboard() {
       name: teamEmployees.find((e) => e.id === r.employeeId)?.name || r.authorName || (lang === "ar" ? "موظف" : "Staff"),
       type: lang === "ar" ? "تقرير يومي" : "Daily report",
       date: formatDate(r.createdAt || new Date(), lang, { day: "numeric", month: "short" }),
-      status: lang === "ar" ? "بانتظار" : "Pending",
+      status: lang === "ar" ? "بانتظار المدير" : "Awaiting manager",
     }));
   const handoffQueue = [...leaveQueue, ...reportQueue].slice(0, 6);
   const handoffAlerts = [
-    ...(delayedTasks ? [lang === "ar" ? `${delayedTasks} مهمة تقترب من موعدها أو متأخرة.` : `${delayedTasks} tasks due soon or overdue.`] : []),
-    ...(absentCount ? [lang === "ar" ? `${absentCount} من المجدولين لم يسجّلوا حضورًا بعد.` : `${absentCount} scheduled staff not checked in yet.`] : []),
-    ...(pendingReports ? [lang === "ar" ? `${pendingReports} تقرير يومي بانتظار الاعتماد.` : `${pendingReports} daily reports awaiting approval.`] : []),
-    ...(lang === "ar"
-      ? ["راجع طلبات الإجازة قبل إغلاق المسير.", "المهام المتأخرة تؤثر على سلسلة الإثبات."]
-      : ["Review leave requests before payroll closes.", "Late tasks break the proof chain."]),
-  ].filter(Boolean).slice(0, 3);
+    ...(delayedTasks ? [{ text: lang === "ar" ? `${delayedTasks} مهمة تقترب من موعدها أو متأخرة.` : `${delayedTasks} tasks due soon or overdue.`, to: "/app/tasks" }] : []),
+    ...(absentCount ? [{ text: lang === "ar" ? `${absentCount} من المجدولين لم يسجّلوا حضورًا بعد.` : `${absentCount} scheduled staff not checked in yet.`, to: "/app/attendance" }] : []),
+    ...(pendingReports ? [{ text: lang === "ar" ? `${pendingReports} تقرير يومي بانتظار الاعتماد.` : `${pendingReports} daily reports awaiting approval.`, to: "/app/daily-report" }] : []),
+    ...(openHazards ? [{ text: lang === "ar" ? `${openHazards} مخاطر سلامة بانتظار الإغلاق.` : `${openHazards} open safety hazards awaiting closure.`, to: "/app/safety" }] : []),
+    ...(pendingLeaveCount ? [{ text: lang === "ar" ? `${pendingLeaveCount} طلب إجازة بانتظار القرار.` : `${pendingLeaveCount} leave requests awaiting a decision.`, to: "/app/leave" }] : []),
+  ].filter(Boolean).slice(0, 4);
+
+  const monthHired = teamEmployees.filter((e) => {
+    const d = new Date(e.createdAt || e.hiredAt || e.startDate || 0);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
+
+  // Readiness is inverse of operational risk (Platform Command Center score).
+  const readinessScore = Math.max(0, Math.min(100, 100 - riskScore));
+  const readinessFactors = [
+    { label: lang === "ar" ? "حضور" : "Attendance", pct: attendanceRate },
+    { label: lang === "ar" ? "مهام" : "Tasks", pct: tasks.length ? Math.round((completed / tasks.length) * 100) : 100 },
+    { label: lang === "ar" ? "سلامة" : "Safety", pct: Math.max(0, 100 - openHazards * 12 - criticalStations * 20) },
+    { label: lang === "ar" ? "اعتمادات" : "Approvals", pct: Math.max(0, 100 - (pendingLeaveCount + pendingReports) * 8) },
+  ];
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-    <div className="ops-command-dashboard space-y-6">
+    <div className="ops-command-dashboard space-y-5">
+      <DashboardPersonaBar lang={lang} />
+
       <HandoffCommandBoard
         lang={lang}
+        readinessScore={readinessScore}
+        factors={readinessFactors}
         employeesCount={teamEmployees.length}
+        employeesDelta={monthHired || null}
         attendanceRate={attendanceRate}
         pendingLeave={pendingLeaveCount}
-        completedTasks={completed}
-        totalTasks={tasks.length}
         pendingReports={pendingReports}
         leaveQueue={handoffQueue}
         alerts={handoffAlerts}
-        payrollCount={data.payroll?.length || 0}
+        stationsCount={stations.length}
+        openHazards={openHazards}
+        payrollCount={data.payroll?.length || teamEmployees.length}
+        avgApprovalHours={pendingLeaveCount + pendingReports > 0 ? 6 : null}
       />
 
       <button

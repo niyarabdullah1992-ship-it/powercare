@@ -4,81 +4,94 @@ import {
   Banknote,
   Bot,
   CalendarCheck2,
+  CalendarClock,
   CalendarOff,
-  CircleHelp,
+  Camera,
   FileBarChart,
   FolderOpen,
   ListTodo,
-  MapPin,
   MessageCircle,
   MessagesSquare,
+  Network,
   Package,
   PenTool,
   ReceiptText,
+  Settings2,
   ShieldCheck,
   TrendingUp,
-  UserMinus,
   Users,
-  BadgeCheck,
+  Briefcase,
+  BarChart3,
 } from "lucide-react";
 import { canAccessPath } from "@/lib/navVisibility";
 import PageSection from "@/components/claude/PageSection";
 
 /**
- * Internal modules grouped like Claude calm sections,
- * content derived from NiroVera Proof Cycle layers.
+ * Internal modules grouped by Platform IA (day rhythm), not org chart.
  */
 export default function OperationsModuleGrid({ metrics, lang, user, data, company }) {
   const ar = lang === "ar";
 
   const groups = [
     {
-      key: "people",
-      eyebrow: ar ? "الأشخاص" : "People",
-      title: ar ? "من يعمل وأين يحضر" : "Who works and where they show up",
+      key: "daily",
+      eyebrow: ar ? "يومي" : "Daily",
+      title: ar ? "إيقاع يوم التشغيل" : "The operating day's rhythm",
       description: ar
-        ? "الملف الوظيفي والحضور والإجازات — أساس دورة الإثبات."
-        : "Profiles, attendance and leave — the base of the proof cycle.",
+        ? "مركز القيادة · المهام · الحضور · التقرير اليومي · المحادثات."
+        : "Command center · operations · attendance · daily report · chat.",
       items: [
-        { icon: MapPin, title: ar ? "المحطات" : "Stations", note: ar ? "محطة تحت المتابعة" : "stations monitored", value: metrics.stations, to: "/app/hr" },
-        { icon: Users, title: ar ? "دليل الموظفين" : "Employees", note: ar ? `${metrics.activeMembers} نشط اليوم` : `${metrics.activeMembers} active today`, value: metrics.employees, to: "/app/hr" },
-        { icon: CalendarCheck2, title: ar ? "الحضور والجداول" : "Attendance", note: ar ? `${metrics.checkedIn} حاضر اليوم` : `${metrics.checkedIn} present today`, value: `${metrics.attendanceRate}%`, to: "/app/attendance" },
-        { icon: CalendarOff, title: ar ? "الإجازات" : "Leave", note: ar ? "طلبات بانتظار المراجعة" : "awaiting review", value: metrics.pendingLeave, to: "/app/attendance" },
-        { icon: UserMinus, title: ar ? "إنهاء الخدمة" : "Offboarding", note: ar ? "ملفات قيد الإجراء" : "cases in progress", value: metrics.offboarding, to: "/app/hr" },
-        { icon: Banknote, title: ar ? "الرواتب" : "Payroll", note: ar ? "يغذيه الحضور والطلبات" : "fed by attendance & requests", value: metrics.payroll, to: "/app/payroll" },
+        { icon: ListTodo, title: ar ? "المهام والعمليات" : "Operations", note: ar ? `${metrics.completedTasks} مكتملة` : `${metrics.completedTasks} completed`, value: metrics.tasks, to: "/app/tasks" },
+        { icon: CalendarCheck2, title: ar ? "الحضور" : "Attendance", note: ar ? `${metrics.checkedIn} حاضر اليوم` : `${metrics.checkedIn} present today`, value: `${metrics.attendanceRate}%`, to: "/app/attendance" },
+        { icon: FileBarChart, title: ar ? "التقرير اليومي" : "Daily report", note: ar ? `${metrics.pendingReports} بانتظار المراجعة` : `${metrics.pendingReports} awaiting review`, value: metrics.reports, to: "/app/daily-report" },
+        { icon: MessagesSquare, title: ar ? "المحادثات" : "Ops chat", note: ar ? "قنوات المحطات" : "station channels", value: metrics.messages, to: "/app/chat" },
       ],
     },
     {
-      key: "ops",
-      eyebrow: ar ? "العمليات" : "Operations",
-      title: ar ? "تنفيذ يُثبت ويُراجع" : "Work that is proven and reviewed",
+      key: "workforce",
+      eyebrow: ar ? "القوى العاملة" : "Workforce",
+      title: ar ? "من يعمل وكيف يُدار" : "Who works and how they are managed",
       description: ar
-        ? "المهام بوزن جهد، التقارير اليومية، والعهد والمصروفات — حلقة الإنجاز."
-        : "Effort-weighted tasks, daily reports, inventory and expenses — the delivery loop.",
+        ? "ورديات · إجازات · موارد بشرية · توظيف · أداء · هيكل."
+        : "Shifts · leave · HR · recruitment · performance · org.",
       items: [
-        { icon: ListTodo, title: ar ? "المهام" : "Tasks", note: ar ? `${metrics.completedTasks} مكتملة` : `${metrics.completedTasks} completed`, value: metrics.tasks, to: "/app/tasks" },
-        { icon: FileBarChart, title: ar ? "التقارير اليومية" : "Daily reports", note: ar ? `${metrics.pendingReports} بانتظار المراجعة` : `${metrics.pendingReports} awaiting review`, value: metrics.reports, to: "/app/daily-report" },
-        { icon: TrendingUp, title: ar ? "الأداء" : "Performance", note: ar ? "معدل إنجاز المهام" : "completion rate", value: `${metrics.performance}%`, to: "/app/performance" },
-        { icon: Package, title: ar ? "المخزون والعهد" : "Inventory", note: ar ? "مواد ووحدات" : "stock & units", value: metrics.inventory, to: "/app/inventory" },
-        { icon: ReceiptText, title: ar ? "المصروفات" : "Expenses", note: ar ? "مطالبات قيد المسار" : "claims in flow", value: metrics.expenses, to: "/app/expenses" },
-        { icon: ShieldCheck, title: ar ? "السلامة" : "Safety", note: ar ? `${metrics.hazards} مخاطر مفتوحة` : `${metrics.hazards} open hazards`, value: metrics.safety, to: "/app/safety" },
+        { icon: CalendarClock, title: ar ? "الورديات" : "Shifts", note: ar ? "جدول شهري" : "monthly matrix", value: metrics.stations, to: "/app/shifts" },
+        { icon: CalendarOff, title: ar ? "الإجازات" : "Leave", note: ar ? "طلبات بانتظار المراجعة" : "awaiting review", value: metrics.pendingLeave, to: "/app/leave" },
+        { icon: Users, title: ar ? "الموارد البشرية" : "HR", note: ar ? `${metrics.activeMembers} نشط اليوم` : `${metrics.activeMembers} active today`, value: metrics.employees, to: "/app/hr" },
+        { icon: Briefcase, title: ar ? "التوظيف" : "Recruitment", note: ar ? "من الطلب إلى أول يوم" : "requisition to day one", value: "→", to: "/app/hiring" },
+        { icon: TrendingUp, title: ar ? "الأداء" : "Performance", note: ar ? "من بيانات فعلية" : "from actual data", value: `${metrics.performance}%`, to: "/app/performance" },
+        { icon: Network, title: ar ? "الهيكل" : "Org", note: ar ? "صلاحيات وتصعيد" : "permissions & escalation", value: metrics.stations, to: "/app/org" },
       ],
     },
     {
-      key: "trust",
-      eyebrow: ar ? "الثقة" : "Trust",
-      title: ar ? "توقيع، إثبات، وصوت آمن" : "Signing, proof, and safe voice",
+      key: "compliance",
+      eyebrow: ar ? "الالتزام والإثبات" : "Compliance & Evidence",
+      title: ar ? "سلامة، إثبات، توقيع، بلاغ" : "Safety, proof, signing, voice",
       description: ar
-        ? "من المستند الموقّع إلى إثبات العميل والبلاغات — طبقة لا تنقطع عن الاعتماد."
-        : "From signed docs to client proof and reports — the approval trust layer.",
+        ? "طبقة لا تنقطع عن دورة الإثبات."
+        : "The trust layer of the proof cycle.",
       items: [
-        { icon: FolderOpen, title: ar ? "المستندات" : "Documents", note: ar ? "ملفات محفوظة" : "stored files", value: metrics.files, to: "/app/files" },
+        { icon: ShieldCheck, title: ar ? "السلامة HSE" : "Safety HSE", note: ar ? `${metrics.hazards} مخاطر مفتوحة` : `${metrics.hazards} open hazards`, value: metrics.safety, to: "/app/safety" },
+        { icon: Camera, title: ar ? "إثبات العمل" : "Work Proof", note: ar ? "قبل/بعد مختوم" : "stamped before/after", value: "→", to: "/app/work-proof" },
         { icon: PenTool, title: ar ? "التوقيع الرقمي" : "Digital signing", note: ar ? "Secure Sign" : "Secure Sign", value: metrics.signing, to: "/app/signing" },
-        { icon: BadgeCheck, title: ar ? "إثبات العمل للعميل" : "Client proof", note: ar ? "ختم قابل للتحقق" : "verifiable seal", value: "→", to: "/app/client-proof" },
-        { icon: MessageCircle, title: ar ? "الشكاوى والبلاغات" : "Complaints", note: ar ? "مفتوحة الآن" : "open now", value: metrics.complaints, to: "/app/complaints" },
-        { icon: MessagesSquare, title: ar ? "الرسائل" : "Messages", note: ar ? "تواصل داخلي" : "internal chat", value: metrics.messages, to: "/app/chat" },
-        { icon: Bot, title: ar ? "المساعد نيرو" : "Niro assistant", note: ar ? "اسأل بيانات منشأتك" : "ask your company data", value: ar ? "جاهز" : "Ready", to: "/app/assistant" },
-        { icon: CircleHelp, title: ar ? "المساعدة" : "Help", note: ar ? "دليل الأقسام" : "section guides", value: "24/7", to: "/app/help" },
+        { icon: MessageCircle, title: ar ? "الشكاوى" : "Complaints", note: ar ? "مفتوحة الآن" : "open now", value: metrics.complaints, to: "/app/complaints" },
+      ],
+    },
+    {
+      key: "money_admin",
+      eyebrow: ar ? "مال وإدارة" : "Money & Admin",
+      title: ar ? "أصول، رواتب، تقارير، إعدادات" : "Assets, payroll, reports, settings",
+      description: ar
+        ? "ما يُدار أسبوعيًا وشهريًا — مطوي في الشريط الجانبي."
+        : "Weekly and monthly work — folded in the sidebar.",
+      items: [
+        { icon: Banknote, title: ar ? "الرواتب" : "Payroll", note: ar ? "يغذيه الحضور" : "fed by attendance", value: metrics.payroll, to: "/app/payroll" },
+        { icon: Package, title: ar ? "المخزون" : "Inventory", note: ar ? "مواد ووحدات" : "stock & units", value: metrics.inventory, to: "/app/inventory" },
+        { icon: ReceiptText, title: ar ? "المصروفات" : "Expenses", note: ar ? "مقابل الميزانية" : "against budget", value: metrics.expenses, to: "/app/expenses" },
+        { icon: BarChart3, title: ar ? "التقارير" : "Reports", note: ar ? "مكتبة وجدولة" : "library & schedule", value: "→", to: "/app/reports" },
+        { icon: FolderOpen, title: ar ? "الملفات" : "Files", note: ar ? "مقيّدة بالصلاحية" : "permission-scoped", value: metrics.files, to: "/app/files" },
+        { icon: Bot, title: ar ? "المساعد" : "Assistant", note: ar ? "اسأل بيانات منشأتك" : "ask company data", value: ar ? "جاهز" : "Ready", to: "/app/assistant" },
+        { icon: Settings2, title: ar ? "الإعدادات" : "Settings", note: ar ? "نطاق وصلاحيات" : "scope & permissions", value: "→", to: "/app/settings" },
       ],
     },
   ]

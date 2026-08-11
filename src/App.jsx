@@ -45,6 +45,9 @@ const StationChat = lazy(() => import('./pages/StationChat'));
 const Complaints = lazy(() => import('./pages/Complaints'));
 const EmployeeProfile = lazy(() => import('./pages/EmployeeProfile'));
 const HRStructureManagement = lazy(() => import('./pages/HRStructureManagement'));
+const OrgStructure = lazy(() => import('./pages/OrgStructure'));
+const CompanySettings = lazy(() => import('./pages/CompanySettings'));
+const Reports = lazy(() => import('./pages/Reports'));
 const Payroll = lazy(() => import('./pages/Payroll'));
 const Performance = lazy(() => import('./pages/Performance'));
 const Safety = lazy(() => import('./pages/Safety'));
@@ -173,12 +176,17 @@ function AppRoutes() {
       <Route path="/app/complaints" element={<RequireAuth><Complaints /></RequireAuth>} />
       <Route path="/app/employees/:employeeId" element={<RequireAuth><EmployeeProfile /></RequireAuth>} />
       <Route path="/app/hr" element={<RequireAuth><HRStructureManagement /></RequireAuth>} />
+      <Route path="/app/org" element={<RequireAuth><OrgStructure /></RequireAuth>} />
+      <Route path="/app/settings" element={<RequireAuth><CompanySettings /></RequireAuth>} />
       <Route path="/app/hiring" element={<RequireAuth><Recruitment /></RequireAuth>} />
       <Route path="/app/payroll" element={<RequireAuth><Payroll /></RequireAuth>} />
       <Route path="/app/performance" element={<RequireAuth><Performance /></RequireAuth>} />
       <Route path="/app/safety" element={<RequireAuth><Safety /></RequireAuth>} />
       <Route path="/app/daily-report" element={<RequireAuth><DailyReport /></RequireAuth>} />
+      <Route path="/app/reports" element={<RequireAuth><Reports /></RequireAuth>} />
       <Route path="/app/attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
+      <Route path="/app/shifts" element={<RequireAuth><Attendance /></RequireAuth>} />
+      <Route path="/app/leave" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/files" element={<RequireAuth><Files /></RequireAuth>} />
       <Route path="/app/inventory" element={<RequireAuth><Inventory /></RequireAuth>} />
       <Route path="/app/expenses" element={<RequireAuth><Expenses /></RequireAuth>} />

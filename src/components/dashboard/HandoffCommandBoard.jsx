@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { formatDate } from "@/lib/dateFormat";
 
@@ -13,171 +13,218 @@ function initials(name = "") {
 }
 
 /**
- * Claude handoff dashboard board — calm KPI strip + pending queue + week bars + compliance + payroll.
- * Wired to live NiroVera / Base44 data (not prototype placeholders).
+ * Command Center board — Platform `dash`:
+ * readiness card · decisions queue · proactive alerts · payroll nudge.
  */
 export default function HandoffCommandBoard({
   lang = "ar",
+  readinessScore = 0,
+  readinessDelta = null,
+  factors = [],
   employeesCount = 0,
+  employeesDelta = null,
   attendanceRate = 0,
   pendingLeave = 0,
-  completedTasks = 0,
-  totalTasks = 0,
   pendingReports = 0,
   leaveQueue = [],
   alerts = [],
+  stationsCount = 0,
+  openHazards = 0,
   payrollCount = 0,
+  avgApprovalHours = null,
 }) {
   const ar = lang === "ar";
+  const pendingTotal = pendingLeave + pendingReports;
+  const monthLabel = formatDate(new Date(), lang, { month: "long", year: "numeric" });
+  const score = Math.max(0, Math.min(100, Math.round(Number(readinessScore) || 0)));
 
-  const kpis = [
-    {
-      label: ar ? "إجمالي الموظفين" : "Total employees",
-      value: String(employeesCount),
-      delta: ar ? "ضمن نطاق صلاحياتك" : "In your scope",
-    },
-    {
-      label: ar ? "نسبة الحضور اليوم" : "Today’s attendance",
-      value: `${attendanceRate}%`,
-      delta: ar ? "مقابل المجدولين" : "Of scheduled staff",
-    },
-    {
-      label: ar ? "طلبات معلّقة" : "Pending requests",
-      value: String(pendingLeave + pendingReports),
-      delta: ar ? `${pendingLeave} إجازة · ${pendingReports} تقرير` : `${pendingLeave} leave · ${pendingReports} reports`,
-    },
-    {
-      label: ar ? "مسير رواتب" : "Payroll run",
-      value: String(payrollCount || employeesCount),
-      delta: ar ? "سجل · جاهز للمراجعة" : "records · ready to review",
-    },
-  ];
-
-  const week = useMemo(() => {
-    const daysAr = ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
-    const daysEn = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const out = [];
-    for (let i = 4; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      // Soft distribution around today’s rate so the handoff bars feel alive without fake precision.
-      const wobble = [6, -4, 3, -2, 0][4 - i];
-      const pct = Math.min(100, Math.max(35, attendanceRate + wobble));
-      out.push({
-        day: ar ? daysAr[d.getDay()] : daysEn[d.getDay()],
-        pct: `${pct}%`,
-        h: `${Math.max(18, pct)}%`,
-      });
-    }
-    return out;
-  }, [ar, attendanceRate]);
+  const factorBars = factors.length
+    ? factors.slice(0, 4)
+    : [
+        { label: ar ? "حضور" : "Attendance", pct: attendanceRate },
+        { label: ar ? "مهام" : "Tasks", pct: Math.max(20, 100 - pendingReports * 8) },
+        { label: ar ? "سلامة" : "Safety", pct: Math.max(25, 100 - openHazards * 10) },
+        { label: ar ? "اعتمادات" : "Approvals", pct: Math.max(30, 100 - pendingTotal * 6) },
+      ];
 
   const queue = leaveQueue.slice(0, 6);
   const alertLines = alerts.length
-    ? alerts.slice(0, 3).map((a) => a.title || a.message || a.text || String(a))
+    ? alerts.slice(0, 4).map((a) => {
+        if (typeof a === "string") return { text: a, to: null };
+        return {
+          text: a.title || a.message || a.text || String(a),
+          to: a.to || a.href || null,
+        };
+      })
     : [
-        ar ? "راجع طلبات الإجازة قبل إغلاق المسير." : "Review leave requests before payroll closes.",
-        ar ? "المهام المتأخرة تؤثر على سلسلة الإثبات." : "Late tasks break the proof chain.",
-        ar ? "التقارير المعلّقة تنتظر اعتماد المدير." : "Pending reports await manager approval.",
+        { text: ar ? "راجع طلبات الإجازة قبل إغلاق المسير." : "Review leave requests before payroll closes.", to: "/app/leave" },
+        { text: ar ? "المهام المتأخرة تؤثر على سلسلة الإثبات." : "Late tasks break the proof chain.", to: "/app/tasks" },
       ];
 
-  const monthLabel = formatDate(new Date(), lang, { month: "long", year: "numeric" });
-
   return (
-    <div className="flex flex-col gap-[18px]">
-      <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-        {kpis.map((k) => (
-          <div key={k.label} className="flex flex-col gap-1.5 rounded-[10px] border border-[#E4E7EC] bg-white p-4">
-            <div className="text-[12.5px] text-[#667085]">{k.label}</div>
-            <div className="font-heading text-[28px] font-semibold leading-none tracking-tight text-[#101828]">{k.value}</div>
-            <div className="text-xs text-[#0E7A4B]">{k.delta}</div>
+    <div className="nirovera-command-board flex flex-col gap-[18px]">
+      <section className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)]">
+        <article className="flex flex-col gap-4 rounded-[12px] bg-[#14284B] px-5 py-5 text-white shadow-[0_1px_2px_rgba(16,24,40,.08)]">
+          <p className="m-0 text-[11px] font-semibold tracking-[0.14em] text-[#8C9AB8]">
+            {ar ? "مؤشر الجاهزية التشغيلية" : "OPERATIONAL READINESS"}
+          </p>
+          <div className="flex items-end gap-3">
+            <p className="m-0 font-heading text-[56px] font-semibold leading-none tracking-tight">{score}</p>
+            <p className="mb-2 m-0 text-sm text-[#B9C3D8]">/100</p>
+            {readinessDelta != null && (
+              <span className="mb-2 rounded-md bg-white/10 px-2 py-1 text-[11px] text-[#A7F3D0]">
+                {readinessDelta > 0 ? "+" : ""}{readinessDelta}
+              </span>
+            )}
           </div>
-        ))}
-      </div>
+          <div className="grid gap-2.5">
+            {factorBars.map((f) => (
+              <div key={f.label} className="grid grid-cols-[72px_1fr_36px] items-center gap-2">
+                <span className="text-[11.5px] text-[#B9C3D8]">{f.label}</span>
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-[#0E7A4B]"
+                    style={{ width: `${Math.max(0, Math.min(100, Number(f.pct) || 0))}%` }}
+                  />
+                </div>
+                <span className="text-end font-heading text-[11px] text-white">{Math.round(Number(f.pct) || 0)}%</span>
+              </div>
+            ))}
+          </div>
+          <p className="m-0 text-[12px] leading-relaxed text-[#8C9AB8]">
+            {ar
+              ? `${stationsCount} محطة · ${employeesCount} موظف في النطاق`
+              : `${stationsCount} stations · ${employeesCount} people in scope`}
+            {employeesDelta != null ? (ar ? ` · +${employeesDelta} هذا الشهر` : ` · +${employeesDelta} this month`) : ""}
+          </p>
+        </article>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[1.55fr_1fr]">
-        <div className="overflow-hidden rounded-[10px] border border-[#E4E7EC] bg-white">
+        <section className="overflow-hidden rounded-[12px] border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(16,24,40,.04)]">
           <div className="flex items-center justify-between border-b border-[#EEF0F4] px-4 py-3.5">
-            <span className="text-sm font-semibold text-[#101828]">{ar ? "طلبات بانتظار الاعتماد" : "Pending approvals"}</span>
-            <Link to="/app/employees" className="text-[12.5px] text-[#0E7A4B] hover:text-[#0B5F3A]">
-              {ar ? "عرض الكل" : "View all"}
-            </Link>
-          </div>
-          <div className="grid grid-cols-[1.4fr_1fr_0.9fr_0.9fr] gap-2 border-b border-[#EEF0F4] bg-[#F9FAFB] px-4 py-2.5 text-xs text-[#667085]">
-            <span>{ar ? "الموظف" : "Employee"}</span>
-            <span>{ar ? "نوع الطلب" : "Type"}</span>
-            <span>{ar ? "التاريخ" : "Date"}</span>
-            <span>{ar ? "الحالة" : "Status"}</span>
+            <div>
+              <h2 className="m-0 text-sm font-semibold text-[#101828]">
+                {ar ? "ما يحتاج قرارك اليوم" : "Needs your decision today"}
+              </h2>
+              <p className="m-0 mt-0.5 text-[12px] text-[#667085]">
+                {ar ? "مرتبة بأثرها على التشغيل، لا بتاريخها" : "Ranked by operational impact, not by date"}
+              </p>
+            </div>
+            <span className="rounded-md bg-[#F2F4F7] px-2.5 py-1 text-[11.5px] font-medium text-[#344054]">
+              {ar ? `${queue.length} بنود` : `${queue.length} items`}
+            </span>
           </div>
           {queue.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-[#98A2B3]">
-              {ar ? "لا توجد طلبات معلّقة الآن — سلسلة الإثبات نظيفة." : "No pending requests — proof chain is clear."}
+            <p className="m-0 px-4 py-10 text-center text-sm text-[#98A2B3]">
+              {ar ? "لا توجد قرارات معلّقة — سلسلة الإثبات نظيفة." : "No pending decisions — proof chain is clear."}
             </p>
           ) : (
             queue.map((r) => (
               <div
                 key={r.id || `${r.name}-${r.date}`}
-                className="grid grid-cols-[1.4fr_1fr_0.9fr_0.9fr] items-center gap-2 border-b border-[#F2F4F7] px-4 py-2.5 text-[13px] text-[#344054] last:border-b-0"
+                className="grid grid-cols-[1.35fr_1.1fr_0.85fr_1fr] items-center gap-2 border-b border-[#F2F4F7] px-4 py-[11px] text-[13px] text-[#344054] last:border-b-0"
               >
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#EEF2F8] text-[11px] text-[#0B1A3F]">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEF2F8] text-[11px] font-medium text-[#0B1A3F]">
                     {initials(r.name)}
                   </span>
-                  <span className="truncate">{r.name}</span>
+                  <span className="truncate font-medium">{r.name}</span>
                 </div>
                 <span className="truncate text-[#667085]">{r.type}</span>
                 <span className="font-heading text-[#667085]">{r.date}</span>
-                <span className="justify-self-start rounded-full bg-[#FFF6E5] px-2.5 py-0.5 text-[11.5px] text-[#B54708]">
+                <span className="justify-self-start rounded-md bg-[#FFF6E5] px-2.5 py-1 text-[11.5px] font-medium text-[#B54708]">
                   {r.status}
                 </span>
               </div>
             ))
           )}
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3.5 rounded-[10px] border border-[#E4E7EC] bg-white p-4">
-            <span className="text-sm font-semibold">{ar ? "الحضور خلال الأسبوع" : "Attendance this week"}</span>
-            <div className="flex h-[140px] items-end gap-2.5">
-              {week.map((d) => (
-                <div key={d.day} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
-                  <span className="font-heading text-xs font-medium text-[#0B1A3F]">{d.pct}</span>
-                  <div className="flex min-h-0 w-full flex-1 items-end">
-                    <div className="w-full shrink-0 rounded-t-[5px] bg-[#0E7A4B]" style={{ height: d.h }} />
-                  </div>
-                  <span className="text-[11.5px] text-[#667085]">{d.day}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3 rounded-[10px] border border-[#E4E7EC] bg-white p-4">
-            <span className="text-sm font-semibold">{ar ? "تنبيهات الامتثال" : "Compliance alerts"}</span>
-            {alertLines.map((line, i) => (
-              <div key={i} className="flex items-start gap-2.5">
-                <span className="mt-1.5 h-[7px] w-[7px] shrink-0 rounded-full bg-[#B54708]" />
-                <span className="text-[12.8px] leading-relaxed text-[#475467]">{line}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-col gap-2 rounded-[10px] bg-[#0B1A3F] p-[18px]">
-            <span className="text-[13.5px] font-semibold text-white">
-              {ar ? `مسير رواتب — ${monthLabel}` : `Payroll run — ${monthLabel}`}
-            </span>
-            <span className="text-[12.5px] leading-relaxed text-[#B9C3D8]">
-              {ar
-                ? `${payrollCount || employeesCount} سجل راتب في النطاق · راجع قبل الإغلاق`
-                : `${payrollCount || employeesCount} payroll records in scope · review before close`}
-            </span>
-            <Link
-              to="/app/payroll"
-              className="mt-1.5 self-start rounded-lg bg-[#0E7A4B] px-3.5 py-1.5 text-[12.5px] text-white hover:bg-[#0B5F3A]"
-            >
-              {ar ? "مراجعة المسير" : "Review payroll"}
+          <div className="border-t border-[#EEF0F4] px-4 py-3">
+            <Link to="/app/leave" className="text-[12.5px] font-medium text-[#0E7A4B] hover:text-[#0B5F3A]">
+              {ar ? "عرض طابور الإجازات" : "Open leave queue"}
             </Link>
           </div>
-        </div>
+        </section>
+      </section>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          {
+            label: ar ? "نسبة الحضور اليوم" : "Attendance today",
+            value: `${Number(attendanceRate).toLocaleString(ar ? "ar-SA" : "en-US", { maximumFractionDigits: 1 })}%`,
+            delta: ar ? "مقابل المجدولين" : "Of scheduled staff",
+            to: "/app/attendance",
+          },
+          {
+            label: ar ? "طلبات معلّقة" : "Pending requests",
+            value: String(pendingTotal),
+            delta:
+              avgApprovalHours != null
+                ? (ar ? `متوسط الاعتماد ${avgApprovalHours} ساعات` : `Avg approval ${avgApprovalHours}h`)
+                : (ar ? `${pendingLeave} إجازة · ${pendingReports} تقرير` : `${pendingLeave} leave · ${pendingReports} reports`),
+            to: "/app/leave",
+          },
+          {
+            label: ar ? "مخاطر مفتوحة" : "Open hazards",
+            value: String(openHazards),
+            delta: ar ? "سلامة بانتظار الإغلاق" : "Safety awaiting closure",
+            to: "/app/safety",
+          },
+          {
+            label: ar ? `مسير ${monthLabel}` : `${monthLabel} payroll`,
+            value: String(payrollCount || employeesCount),
+            delta: ar ? "جاهز للمراجعة" : "Ready for review",
+            to: "/app/payroll",
+          },
+        ].map((k) => (
+          <Link
+            key={k.label}
+            to={k.to}
+            className="flex flex-col gap-1.5 rounded-[10px] border border-[#E4E7EC] bg-white px-[18px] py-4 shadow-[0_1px_2px_rgba(16,24,40,.04)] transition-colors hover:border-[#0E7A4B]/40"
+          >
+            <p className="m-0 text-[12.5px] text-[#667085]">{k.label}</p>
+            <p className="m-0 font-heading text-[28px] font-semibold leading-none tracking-tight text-[#101828]">{k.value}</p>
+            <p className="m-0 text-xs text-[#0E7A4B]">{k.delta}</p>
+          </Link>
+        ))}
+      </div>
+
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,1fr)]">
+        <section className="flex flex-col gap-3 rounded-[10px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,.04)]">
+          <h2 className="m-0 text-sm font-semibold text-[#101828]">{ar ? "تنبيهات استباقية" : "Proactive alerts"}</h2>
+          <p className="m-0 text-[12px] text-[#667085]">
+            {ar ? "كل تنبيه يفتح القسم الذي يصلحه" : "Each alert opens the section that fixes it"}
+          </p>
+          <ul className="m-0 flex list-none flex-col gap-3 p-0">
+            {alertLines.map((line, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <span className="mt-[7px] h-[7px] w-[7px] shrink-0 rounded-full bg-[#B54708]" />
+                {line.to ? (
+                  <Link to={line.to} className="text-[12.8px] leading-[1.7] text-[#475467] hover:text-[#0E7A4B]">
+                    {line.text}
+                  </Link>
+                ) : (
+                  <span className="text-[12.8px] leading-[1.7] text-[#475467]">{line.text}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="flex flex-col gap-2 rounded-[10px] bg-[#0B1A3F] p-5">
+          <h2 className="m-0 text-[14px] font-semibold text-white">
+            {ar ? `مسير رواتب — ${monthLabel}` : `Payroll — ${monthLabel}`}
+          </h2>
+          <p className="m-0 text-[12.5px] leading-relaxed text-[#B9C3D8]">
+            {ar
+              ? `الإغلاق قريب · ${payrollCount || employeesCount} موظف · راجع المسير قبل الاعتماد`
+              : `Closing soon · ${payrollCount || employeesCount} employees · review before approve`}
+          </p>
+          <Link
+            to="/app/payroll"
+            className="mt-1 self-start rounded-lg bg-[#0E7A4B] px-4 py-2 text-[12.5px] font-medium text-white transition-colors hover:bg-[#0B5F3A]"
+          >
+            {ar ? "مراجعة المسير" : "Review payroll"}
+          </Link>
+        </section>
       </div>
     </div>
   );

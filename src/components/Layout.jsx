@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useOrgTerms } from "@/hooks/useOrgTerms";
@@ -9,7 +8,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Search,
-  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck, Camera, Briefcase,
+  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, Banknote, Warehouse, ReceiptText, Camera, Briefcase, CalendarClock, CalendarOff, Network, Settings2, BarChart3,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -40,20 +39,22 @@ export default function Layout({ children }) {
   const notifRef = useRef(null);
   const userRef = useRef(null);
   const notificationPollInFlightRef = useRef(false);
-  const [navOrder, setNavOrder] = useState([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("powercare_sidebar_collapsed") === "true");
+  const [navFold, setNavFold] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("powercare_nav_fold_v1") || '{"money":true,"admin":true}');
+    } catch {
+      return { money: true, admin: true };
+    }
+  });
 
   useEffect(() => {
     localStorage.setItem("powercare_sidebar_collapsed", String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
   useEffect(() => {
-    if (!company) return;
-    const saved = localStorage.getItem(`powercare_corporate_nav_v1_${company.id}`);
-    if (saved) {
-      try { setNavOrder(JSON.parse(saved)); } catch { setNavOrder([]); }
-    }
-  }, [company?.id]);
+    localStorage.setItem("powercare_nav_fold_v1", JSON.stringify(navFold));
+  }, [navFold]);
 
   useEffect(() => {
     const onClick = (e) => {
@@ -141,54 +142,55 @@ export default function Layout({ children }) {
 
   if (!currentUser || !data) return children;
 
+  // Platform IA — day rhythm: Daily → Workforce → Compliance → Money → Admin
   const navItems = [
-    { to: "/app", icon: LayoutDashboard, label: lang === "ar" ? "لوحة المعلومات" : "Dashboard", end: true, category: "core" },
-    { to: "/app/hr", icon: UserCog, label: lang === "ar" ? "الموظفون" : "Employees", category: "core" },
-    { to: "/app/hiring", icon: Briefcase, label: lang === "ar" ? "التوظيف" : "Recruitment", category: "core" },
-    { to: "/app/attendance", icon: ClipboardCheck, label: lang === "ar" ? "الحضور والانصراف" : "Attendance", category: "core" },
-    { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "مسير الرواتب" : "Payroll", category: "core" },
-    { to: "/app/performance", icon: Trophy, label: lang === "ar" ? "إدارة الأداء" : "Performance", category: "core" },
-    { to: "/app/tasks", icon: ListTodo, label: lang === "ar" ? "المهام والعمليات" : "Operations", category: "operations" },
-    { to: "/app/daily-report", icon: FileText, label: lang === "ar" ? "التقرير اليومي" : "Daily report", category: "operations" },
-    { to: "/app/inventory", icon: Warehouse, label: lang === "ar" ? "المخزون والعهد" : "Inventory", category: "operations" },
-    { to: "/app/expenses", icon: ReceiptText, label: lang === "ar" ? "المصروفات" : "Expenses", category: "operations" },
-    { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة والامتثال" : "Safety & compliance", category: "operations" },
-    { to: "/app/files", icon: FolderOpen, label: lang === "ar" ? "المستندات" : "Documents", category: "governance" },
-    { to: "/app/signing", icon: PenLine, label: lang === "ar" ? "التوقيع الرقمي" : "Digital signing", category: "governance" },
-    { to: "/app/work-proof", icon: Camera, label: lang === "ar" ? "إثبات العمل" : "Work Proof", category: "governance" },
-    { to: "/app/client-proof", icon: ShieldCheck, label: lang === "ar" ? "إثبات العمل للعميل" : "Client work proof", category: "governance" },
-    { to: "/app/complaints", icon: Megaphone, label: lang === "ar" ? "الشكاوى والبلاغات" : "Complaints", category: "governance" },
-    { to: "/app/assistant", icon: Sparkles, label: lang === "ar" ? "المساعد الذكي" : "Assistant", category: "management" },
-    { to: "/app/chat", icon: MessageSquare, label: lang === "ar" ? "الدردشة" : "Chat", category: "management" },
-    { to: "/app/manual", icon: HelpCircle, label: lang === "ar" ? "التقارير" : "Reports", category: "management" },
+    { to: "/app", icon: LayoutDashboard, label: lang === "ar" ? "مركز القيادة" : "Command Center", end: true, category: "daily" },
+    { to: "/app/tasks", icon: ListTodo, label: lang === "ar" ? "المهام والعمليات" : "Operations", category: "daily" },
+    { to: "/app/attendance", icon: ClipboardCheck, label: lang === "ar" ? "الحضور والانصراف" : "Attendance", category: "daily" },
+    { to: "/app/daily-report", icon: FileText, label: lang === "ar" ? "التقرير اليومي" : "Daily Report", category: "daily" },
+    { to: "/app/chat", icon: MessageSquare, label: lang === "ar" ? "المحادثات التشغيلية" : "Operations Chat", category: "daily" },
+    { to: "/app/shifts", icon: CalendarClock, label: lang === "ar" ? "الورديات" : "Shifts", category: "workforce" },
+    { to: "/app/leave", icon: CalendarOff, label: lang === "ar" ? "طلبات الإجازة" : "Leave Requests", category: "workforce" },
+    { to: "/app/hr", icon: UserCog, label: lang === "ar" ? "الموارد البشرية" : "Human Resources", category: "workforce" },
+    { to: "/app/hiring", icon: Briefcase, label: lang === "ar" ? "التوظيف" : "Recruitment", category: "workforce" },
+    { to: "/app/performance", icon: Trophy, label: lang === "ar" ? "الأداء" : "Performance", category: "workforce" },
+    { to: "/app/org", icon: Network, label: lang === "ar" ? "الهيكل التنظيمي" : "Org Structure", category: "workforce" },
+    { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة HSE" : "Safety HSE", category: "compliance" },
+    { to: "/app/work-proof", icon: Camera, label: lang === "ar" ? "إثبات العمل" : "Work Proof", category: "compliance" },
+    { to: "/app/signing", icon: PenLine, label: lang === "ar" ? "التوقيع الرقمي" : "Digital Signing", category: "compliance" },
+    { to: "/app/complaints", icon: Megaphone, label: lang === "ar" ? "الشكاوى والبلاغات" : "Reports & Complaints", category: "compliance" },
+    { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "money", fold: "money" },
+    { to: "/app/expenses", icon: ReceiptText, label: lang === "ar" ? "المصروفات" : "Expenses", category: "money", fold: "money" },
+    { to: "/app/inventory", icon: Warehouse, label: lang === "ar" ? "المخزون والأصول" : "Inventory & Assets", category: "money", fold: "money" },
+    { to: "/app/reports", icon: BarChart3, label: lang === "ar" ? "التقارير والتحليلات" : "Reports & Analytics", category: "admin", fold: "admin" },
+    { to: "/app/assistant", icon: Sparkles, label: lang === "ar" ? "المساعد الذكي" : "AI Assistant", category: "admin", fold: "admin" },
+    { to: "/app/files", icon: FolderOpen, label: lang === "ar" ? "الملفات" : "Files", category: "admin", fold: "admin" },
+    { to: "/app/settings", icon: Settings2, label: lang === "ar" ? "إعدادات الشركة" : "Company Settings", category: "admin", fold: "admin" },
   ];
 
   const navGroupLabels = {
-    core: lang === "ar" ? "الأساسية" : "Core",
-    operations: lang === "ar" ? "العمليات" : "Operations",
-    governance: lang === "ar" ? "الحوكمة والوثائق" : "Governance",
-    management: lang === "ar" ? "الإدارة" : "Admin",
+    daily: lang === "ar" ? "يومي" : "Daily",
+    workforce: lang === "ar" ? "القوى العاملة" : "Workforce",
+    compliance: lang === "ar" ? "الالتزام والإثبات" : "Compliance & Evidence",
+    money: lang === "ar" ? "المال والأصول" : "Money & Assets",
+    admin: lang === "ar" ? "الإدارة" : "Admin",
   };
-  const categoryOrder = ["core", "operations", "governance", "management"];
+  const categoryOrder = ["daily", "workforce", "compliance", "money", "admin"];
+  const foldableCategories = new Set(["money", "admin"]);
 
-  // Role-based visibility: each user only sees the sections their role needs.
   const allowedNav = allowedNavFor(currentUser, data, company);
   const visibleNavItems = navItems.filter((i) => allowedNav.has(i.to));
+  const orderedNavItems = [...visibleNavItems].sort(
+    (a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category),
+  );
 
-  const orderKeys = navOrder.length ? navOrder : visibleNavItems.map((i) => i.to);
-  const orderedNavItems = [
-    ...orderKeys.map((to) => visibleNavItems.find((i) => i.to === to)).filter(Boolean),
-    ...visibleNavItems.filter((i) => !orderKeys.includes(i.to)),
-  ].sort((a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category));
+  const activeFoldKey = orderedNavItems.find((item) => {
+    if (item.end) return location.pathname === item.to;
+    return location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+  })?.fold;
 
-  const onNavDragEnd = (result) => {
-    if (!result.destination) return;
-    const items = Array.from(orderedNavItems);
-    const [moved] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, moved);
-    const newOrder = items.map((i) => i.to);
-    setNavOrder(newOrder);
-    if (company) localStorage.setItem(`powercare_corporate_nav_v1_${company.id}`, JSON.stringify(newOrder));
+  const toggleFold = (key) => {
+    setNavFold((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const myNotifs = [
@@ -254,24 +256,29 @@ export default function Layout({ children }) {
   const sidebarSide = dir === "rtl" ? "right-0" : "left-0";
 
   const pageTitles = {
-    "/app": lang === "ar" ? "لوحة المعلومات" : "Dashboard",
-    "/app/hr": lang === "ar" ? "الموارد البشرية" : "HR",
-    "/app/hiring": lang === "ar" ? "التوظيف والتعيين" : "Recruitment",
+    "/app": lang === "ar" ? "مركز القيادة" : "Command Center",
+    "/app/hr": lang === "ar" ? "الموارد البشرية" : "Human Resources",
+    "/app/org": lang === "ar" ? "الهيكل التنظيمي" : "Org Structure",
+    "/app/settings": lang === "ar" ? "إعدادات الشركة" : "Company Settings",
+    "/app/hiring": lang === "ar" ? "التوظيف" : "Recruitment",
     "/app/attendance": lang === "ar" ? "الحضور والانصراف" : "Attendance",
-    "/app/payroll": lang === "ar" ? "مسير الرواتب" : "Payroll",
-    "/app/performance": lang === "ar" ? "إدارة الأداء" : "Performance",
+    "/app/shifts": lang === "ar" ? "الورديات" : "Shifts",
+    "/app/leave": lang === "ar" ? "طلبات الإجازة" : "Leave Requests",
+    "/app/payroll": lang === "ar" ? "الرواتب" : "Payroll",
+    "/app/performance": lang === "ar" ? "الأداء" : "Performance",
     "/app/tasks": lang === "ar" ? "المهام والعمليات" : "Operations",
-    "/app/daily-report": lang === "ar" ? "التقرير اليومي" : "Daily report",
-    "/app/inventory": lang === "ar" ? "المخزون والعهد" : "Inventory",
+    "/app/daily-report": lang === "ar" ? "التقرير اليومي" : "Daily Report",
+    "/app/reports": lang === "ar" ? "التقارير والتحليلات" : "Reports & Analytics",
+    "/app/inventory": lang === "ar" ? "المخزون والأصول" : "Inventory & Assets",
     "/app/expenses": lang === "ar" ? "المصروفات" : "Expenses",
-    "/app/safety": lang === "ar" ? "السلامة والامتثال" : "Safety",
-    "/app/files": lang === "ar" ? "المستندات" : "Documents",
-    "/app/signing": lang === "ar" ? "التوقيع الرقمي" : "Digital signing",
+    "/app/safety": lang === "ar" ? "السلامة HSE" : "Safety HSE",
+    "/app/files": lang === "ar" ? "الملفات" : "Files",
+    "/app/signing": lang === "ar" ? "التوقيع الرقمي" : "Digital Signing",
     "/app/work-proof": lang === "ar" ? "إثبات العمل" : "Work Proof",
     "/app/client-proof": lang === "ar" ? "إثبات العمل للعميل" : "Client work proof",
-    "/app/complaints": lang === "ar" ? "الشكاوى والبلاغات" : "Complaints",
-    "/app/assistant": lang === "ar" ? "المساعد الذكي" : "Assistant",
-    "/app/chat": lang === "ar" ? "المحادثات" : "Chat",
+    "/app/complaints": lang === "ar" ? "الشكاوى والبلاغات" : "Reports & Complaints",
+    "/app/assistant": lang === "ar" ? "المساعد الذكي" : "AI Assistant",
+    "/app/chat": lang === "ar" ? "المحادثات التشغيلية" : "Operations Chat",
     "/app/manual": lang === "ar" ? "دليل الاستخدام" : "User guide",
   };
   const pageTitle = (() => {
@@ -313,49 +320,63 @@ export default function Layout({ children }) {
           )}
         </div>
 
-        <DragDropContext onDragEnd={onNavDragEnd}>
-          <Droppable droppableId="sidebar-nav">
-            {(provided) => (
-              <nav ref={provided.innerRef} {...provided.droppableProps} className={`flex-1 w-full flex flex-col gap-3.5 overflow-y-auto no-scrollbar no-select ${sidebarCollapsed ? "px-2" : "px-3"}`}>
-                {orderedNavItems.map((item, index) => (
-                  <Draggable key={item.to} draggableId={item.to} index={index}>
-                    {(dragProvided, dragSnapshot) => (
-                      <div
-                        ref={dragProvided.innerRef}
-                        {...dragProvided.draggableProps}
-                        {...dragProvided.dragHandleProps}
-                        className={`group relative w-full ${dragSnapshot.isDragging ? "opacity-90" : ""}`}
-                      >
-                        {!sidebarCollapsed && (index === 0 || orderedNavItems[index - 1]?.category !== item.category) && (
-                          <div className="px-3 pb-1.5 pt-1">
-                            <p className="text-[10.5px] tracking-[0.1em] text-[#5C6E96]">{navGroupLabels[item.category]}</p>
-                          </div>
-                        )}
-                        <NavLink
-                          to={item.to}
-                          end={item.end}
-                          title={item.label}
-                          className={({ isActive }) =>
-                            `flex w-full items-center rounded-lg px-3 py-2 text-[13px] transition-colors ${sidebarCollapsed ? "justify-center" : "gap-2.5"} ${
-                              isActive
-                                ? "bg-[#16274F] text-white"
-                                : "text-[#B9C3D8] hover:bg-[#16274F] hover:text-white"
-                            }`
-                          }
-                        >
-                          <span className="handoff-nav-dot" aria-hidden />
-                          {!sidebarCollapsed && <span className="truncate text-[13px] font-medium">{item.label}</span>}
-                          {sidebarCollapsed && <item.icon className="h-4 w-4" strokeWidth={1.7} />}
-                        </NavLink>
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </nav>
-            )}
-          </Droppable>
-        </DragDropContext>
+        <nav className={`flex-1 w-full flex flex-col gap-1 overflow-y-auto no-scrollbar no-select ${sidebarCollapsed ? "px-2" : "px-3"}`}>
+          {categoryOrder.map((category) => {
+            const items = orderedNavItems.filter((item) => item.category === category);
+            if (!items.length) return null;
+            const foldKey = foldableCategories.has(category) ? category : null;
+            const folded = !!(foldKey && navFold[foldKey] && activeFoldKey !== foldKey);
+            return (
+              <div key={category} className="pb-2" data-nv="navgroup">
+                {!sidebarCollapsed && (
+                  foldKey ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleFold(foldKey)}
+                      className="mb-1 flex w-full items-center justify-between px-3 pb-1 pt-2 text-start"
+                    >
+                      <span className="text-[10.5px] font-semibold tracking-[0.12em] text-[#5C6E96]">
+                        {navGroupLabels[category]}
+                      </span>
+                      <span className="text-[11px] text-[#5C6E96]">{folded ? "+" : "−"}</span>
+                    </button>
+                  ) : (
+                    <div className="mb-1 px-3 pb-1 pt-2">
+                      <p className="text-[10.5px] font-semibold tracking-[0.12em] text-[#5C6E96]">
+                        {navGroupLabels[category]}
+                      </p>
+                    </div>
+                  )
+                )}
+                {items.map((item) => {
+                  // Keep foldable items in the DOM so the icon rail still has targets.
+                  const hideInExpanded = folded && !sidebarCollapsed;
+                  return (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.end}
+                      title={item.label}
+                      data-nv="navbtn"
+                      data-fold={item.fold || undefined}
+                      style={hideInExpanded ? { display: "none" } : undefined}
+                      className={({ isActive }) =>
+                        `mb-0.5 flex w-full items-center rounded-lg px-3 py-2 text-[13px] transition-colors ${sidebarCollapsed ? "justify-center" : "gap-2.5"} ${
+                          isActive
+                            ? "bg-[#16274F] text-white"
+                            : "text-[#B9C3D8] hover:bg-[#16274F] hover:text-white"
+                        }`
+                      }
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.7} />
+                      {!sidebarCollapsed && <span className="truncate text-[13px] font-medium">{item.label}</span>}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </nav>
 
         {!sidebarCollapsed && (
           <div className="mt-auto flex flex-col gap-2.5 border-t border-[#1B2C55] px-3 pb-4 pt-4">

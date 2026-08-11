@@ -1,14 +1,14 @@
 import React, { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, UserCog } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useOrgTerms } from "@/hooks/useOrgTerms";
 import FlexOrgTree from "@/components/hr/FlexOrgTree";
 import JobGradeManager from "@/components/employees/JobGradeManager";
-import OrgTypeSettings from "@/components/hr/OrgTypeSettings";
-import OrgStructureBoard from "@/components/hr/OrgStructureBoard";
-import CompanySettingsBoard from "@/components/hr/CompanySettingsBoard";
+import PageHeader from "@/components/PageHeader";
 
+/** One-job surface: people directory & grades (Platform `hr`). Org/settings live on their own routes. */
 export default function HRStructureManagement() {
   const { t, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
@@ -17,18 +17,29 @@ export default function HRStructureManagement() {
   if (!data || !currentUser) return null;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="font-heading text-3xl font-semibold">{t("hr")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {lang === "ar"
-            ? `إدارة الهيكل والمستويات — المصطلحات الحالية: ${terms.stations} · رأس الهيكل: ${terms.ceo}`
-            : `Manage structure and levels — current terms: ${terms.stations} · hierarchy head: ${terms.ceo}`}
-        </p>
+    <div className="space-y-6">
+      <PageHeader
+        title={lang === "ar" ? "الموارد البشرية" : "Human Resources"}
+        description={
+          lang === "ar"
+            ? `دليل الموظفين والتعيين · ${terms.stations} · رأس الهيكل: ${terms.ceo}`
+            : `Employee directory and onboarding · ${terms.stations} · hierarchy head: ${terms.ceo}`
+        }
+        icon={UserCog}
+      />
+
+      <div className="flex flex-wrap gap-2 text-sm">
+        <Link to="/app/org" className="rounded-lg border border-border bg-card px-3 py-2 text-foreground hover:border-accent/40">
+          {lang === "ar" ? "الهيكل التنظيمي" : "Org structure"}
+        </Link>
+        <Link to="/app/hiring" className="rounded-lg border border-border bg-card px-3 py-2 text-foreground hover:border-accent/40">
+          {lang === "ar" ? "التوظيف" : "Recruitment"}
+        </Link>
+        <Link to="/app/settings" className="rounded-lg border border-border bg-card px-3 py-2 text-foreground hover:border-accent/40">
+          {lang === "ar" ? "إعدادات الشركة" : "Company settings"}
+        </Link>
       </div>
-      <OrgTypeSettings lang={lang} />
-      <OrgStructureBoard lang={lang} />
-      <CompanySettingsBoard lang={lang} />
+
       <div className="space-y-3">
         <button
           type="button"

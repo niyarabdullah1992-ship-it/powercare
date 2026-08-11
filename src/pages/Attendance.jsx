@@ -1,4 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
@@ -28,10 +29,24 @@ function TabLoader() {
   return <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>;
 }
 
+function tabFromRoute(pathname, searchTab) {
+  if (pathname.endsWith("/shifts") || searchTab === "schedule") return "schedule";
+  if (pathname.endsWith("/leave") || searchTab === "leaves") return "leaves";
+  if (searchTab) return searchTab;
+  return null;
+}
+
 export default function Attendance() {
   const { t, lang } = useI18n();
   const { data, currentUser, company, refresh } = useAuth();
-  const [tab, setTab] = useState("team");
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const routeTab = tabFromRoute(location.pathname, searchParams.get("tab"));
+  const [tab, setTab] = useState(routeTab || "team");
+
+  useEffect(() => {
+    if (routeTab) setTab(routeTab);
+  }, [routeTab]);
 
   const isManager = data && currentUser && canCreateTasks(currentUser);
   const canManageLeave = data && currentUser && (isManager || hasHRPermission(currentUser, data, "manage_leave"));
@@ -74,6 +89,19 @@ export default function Attendance() {
 
   if (!data || !currentUser) return null;
 
+  const focusShifts = location.pathname.endsWith("/shifts") || tab === "schedule";
+  const focusLeave = location.pathname.endsWith("/leave") || tab === "leaves";
+  const pageTitle = focusShifts
+    ? (lang === "ar" ? "الورديات" : "Shifts")
+    : focusLeave
+      ? (lang === "ar" ? "طلبات الإجازة" : "Leave Requests")
+      : t("attendanceScheduling");
+  const pageDescription = focusShifts
+    ? (lang === "ar" ? "جدول شهري لكل محطة · الفحص النظامي قبل النشر" : "Monthly schedule per station · statutory checks before publishing")
+    : focusLeave
+      ? (lang === "ar" ? "الرصيد يُخصم عند الاعتماد فقط" : "Balance is deducted only on approval")
+      : (lang === "ar" ? "مباشر · التحقق بالموقع الجغرافي" : "Live · geofence verified");
+
   const tabs = [
     { key: "calendar", label: lang === "ar" ? "التقويم الشهري" : "Monthly calendar" },
     ...(isManager ? [
@@ -86,35 +114,54 @@ export default function Attendance() {
     ...(canManageLeave ? [{ key: "leaves", label: t("leaveRequests") }] : []),
     ...(canManageEmergency ? [{ key: "settings", label: t("settingsTab") }] : []),
   ];
-  const activeTab = tabs.some((item) => item.key === tab) ? tab : tabs[0]?.key;
+  const activeTab = focusShifts && isManager
+    ? "schedule"
+    : focusLeave && canManageLeave
+      ? "leaves"
+      : (tabs.some((item) => item.key === tab) ? tab : tabs[0]?.key);
+
+  const selectTab = (key) => {
+    setTab(key);
+    if (location.pathname === "/app/attendance") {
+      const next = new URLSearchParams(searchParams);
+      if (key === "team") next.delete("tab");
+      else next.set("tab", key);
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
     <div className="attendance-hub space-y-6">
-      <PageHeader title={t("attendanceScheduling")} icon={ClipboardCheck} actions={<TimeFormatToggle lang={lang} />} />
+      <PageHeader title={pageTitle} description={pageDescription} icon={ClipboardCheck} actions={<TimeFormatToggle lang={lang} />} />
 
-      <CheckInOutCard currentUser={currentUser} company={company} t={t} />
+      {!focusShifts && !focusLeave && (
+        <>
+          <CheckInOutCard currentUser={currentUser} company={company} t={t} />
+          <CalendarExportCard data={data} user={currentUser} />
+        </>
+      )}
 
-      <CalendarExportCard data={data} user={currentUser} />
-
-      {!isManager && !canManageLeave && (
+      {!isManager && !canManageLeave && !focusShifts && !focusLeave && (
         <Suspense fallback={<TabLoader />}>
           <AttendanceMonthlyReport employees={[currentUser]} defaultEmployeeId={currentUser.id} t={t} />
         </Suspense>
       )}
 
       <div className="space-y-4">
+          {!focusShifts && !focusLeave && (
           <div className="flex gap-2 border-b border-border overflow-x-auto no-scrollbar">
             {tabs.map((tb) => (
               <button
                 key={tb.key}
-                onClick={() => setTab(tb.key)}
+                onClick={() => selectTab(tb.key)}
                 className={`px-3 py-2 text-sm font-body border-b-2 -mb-px transition whitespace-nowrap shrink-0 ${activeTab === tb.key ? "border-foreground text-foreground font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
               >
                 {tb.label}
               </button>
             ))}
           </div>
+          )}
 
           {activeTab === "team" && <AttendanceDailyDashboard employees={employees} currentUser={currentUser} company={company} data={data} t={t} />}
           <Suspense fallback={<TabLoader />}>
