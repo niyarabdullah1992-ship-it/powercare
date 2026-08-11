@@ -16,17 +16,17 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · **`stock`**
-(حالة المخزون مشتقة من المتاح/حد الطلب · أمر شراء يحرّك الناقص إلى قيد التوريد · `INSUFFICIENT_STOCK` · `NO_SHORT_SKUS` · `ALREADY_RAISED`).
+`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · **`budget`**
+(استهلاك ميزانية المحطة مشتق من المطالبات المعتمدة · وسم ضمن الحد/مراقبة/قارب النفاد · `RECEIPT_REQUIRED` · `BUDGET_EXCEEDED` · تنبيه صرف متأخر 48س).
 
-مسار التحقق (المخزون):
+مسار التحقق (المصروفات):
 
-1. لوح بلا أصناف ناقصة → أنشئ أمر شراء → `NO_SHORT_SKUS` (بعد تغطية الكل أو بأصناف متوفرة فقط)
-2. أصناف حرجة/منخفضة → أنشئ أمر شراء → تصبح `on_order`
-3. أعد إنشاء أمر الشراء → `ALREADY_RAISED`
-4. اصرف كمية أكبر من المتاح → `INSUFFICIENT_STOCK`
+1. اعتمد بلا إيصال → `RECEIPT_REQUIRED`
+2. اعتمد مبلغًا يتجاوز المتبقي للمحطة → `BUDGET_EXCEEDED`
+3. اعتمد ضمن الحد → يرتفع شريط الاستهلاك ويتغير الوسم عند ≥85% / ≥95%
+4. مطالبة معتمدة بلا صرف أكثر من 48 ساعة → تظهر في تنبيه التأخير
 
-تنفيذ: `inventoryDerivations` · `base44/functions/stock` · `StockAlertBoard` على `/app/inventory`.
+تنفيذ: `expenseDerivations` · `base44/functions/budget` · `ExpenseBudgetBoard` على `/app/expenses`.
 
 ---
 
