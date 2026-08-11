@@ -16,16 +16,18 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · **`hiring`**
-(SLA من يوم فتح الشاغر · `NITAQAT_EFFECT_REQUIRED` · `OFFER_PICK_REQUIRED` · مباشرة موقوفة بـ `MANDATORY_STEPS_OPEN`).
+`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · **`org`**
+(فروع + مسؤول ينقل التصعيد فورًا · مصفوفة صلاحيات مشتقة · `DELEGATED_IS_DERIVED` · `CYCLE_FORBIDDEN` · تفويض ينتهي تلقائيًا).
 
-مسار التحقق (التوظيف):
+مسار التحقق (الهيكل):
 
-1. افتح شاغرًا → حاول أنجز مرحلة الطلب بلا أثر نطاقات → `NITAQAT_EFFECT_REQUIRED`
-2. سجّل الأثر → تقدّم حتى العرض بلا اختيار مرشح → `OFFER_PICK_REQUIRED`
-3. اختر مرشحًا → أصدر العرض → عيّن → حاول تأكيد المباشرة قبل الحلقات الإلزامية → `MANDATORY_STEPS_OPEN`
+1. أنشئ فرعًا بلا مسؤول → `BRANCH_MANAGER_REQUIRED`
+2. غيّر مسؤول فرع → تتحدّث `escalation` فورًا من نفس القائمة
+3. اضغط خانة «بتفويض» في المصفوفة → `DELEGATED_IS_DERIVED`
+4. أعد أبوّة عقدة تحت سليلها → `CYCLE_FORBIDDEN`
+5. فوّض بصلاحية بتاريخ ماضٍ → تظهر `expired` وتُسحب تلقائيًا من السريان
 
-تنفيذ: `hiringDerivations` · `base44/functions/hiring` · `/app/hiring` (`Recruitment.jsx`).
+تنفيذ: `orgDerivations` · `base44/functions/org` · `OrgStructureBoard` على `/app/hr`.
 
 ---
 
