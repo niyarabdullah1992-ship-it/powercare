@@ -80,7 +80,7 @@ export default function Operations() {
         mode: form.mode,
       });
       const body = res?.data ?? res ?? {};
-      if (body.error === "ASSIGN_GATE" || body.error === "ASSIGN_GATE") {
+      if (body.error === "ASSIGN_GATE") {
         toast({ title: ar ? "بوابة الإسناد" : "Assignment gate", description: body.reason || body.error, variant: "destructive" });
         return;
       }
