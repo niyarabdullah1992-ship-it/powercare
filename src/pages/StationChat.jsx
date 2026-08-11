@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { canSeeAllStations, visibleStations, isCompanyOwner, canTransferOwnership } from "@/lib/permissions";
-import { updateCompany, addStationChatGroup, removeStationChatGroup } from "@/lib/store";
+import { updateCompany, addStationChatGroup, removeStationChatGroup, getCompanyToken } from "@/lib/store";
 import { MessageSquare, Send, ArrowLeft, Building2, Radio, Link2 } from "lucide-react";
 import ChatBubble from "@/components/chat/ChatBubble";
 import ChatContactList from "@/components/chat/ChatContactList";
@@ -12,6 +12,9 @@ import ChatGroupManager from "@/components/chat/ChatGroupManager";
 import ChatSearchPanel from "@/components/chat/ChatSearchPanel";
 import CompanyEmailComposer from "@/components/chat/CompanyEmailComposer";
 import CommentFiles from "@/components/tasks/CommentFiles";
+import StationChatBoard from "@/components/chat/StationChatBoard";
+import { checkSendGate } from "@/lib/chatDerivations";
+import { toast } from "@/components/ui/use-toast";
 
 export default function StationChat() {
   const { t, dir, lang } = useI18n();
@@ -107,9 +110,52 @@ export default function StationChat() {
   const sendMessage = async (e) => {
     e.preventDefault();
     const trimmed = text.trim();
-    if (!trimmed && files.length === 0) return;
+    const gate = checkSendGate({
+      text: trimmed,
+      hasFiles: files.length > 0,
+      channelId: selectedStation || activeChat?.userId || null,
+      stationKey: selectedStation || null,
+      companyId: company?.id,
+      actor: {
+        role: currentUser?.role,
+        owner: isOwner,
+        admin: currentUser?.role === "admin",
+        userId: currentUser?.id,
+        stationId: currentUser?.stationId || null,
+        stationIds: currentUser?.stationId
+          ? [currentUser.stationId, ...(currentUser.managedStations || [])]
+          : (currentUser?.managedStations || []),
+        allStations: canSeeAllStations(currentUser),
+      },
+      crossStationChatEnabled: !!data?.crossStationChatEnabled,
+    });
+    if (!gate.ok) {
+      toast({
+        title: lang === "ar" ? gate.reason : gate.reasonEn,
+        variant: "destructive",
+      });
+      return;
+    }
     setSending(true);
     try {
+      if (activeChat.type === "general" && company?.id && selectedStation) {
+        try {
+          await base44.functions.invoke("chat", {
+            action: "send",
+            companyId: company.id,
+            sessionToken: getCompanyToken(company.id),
+            channelId: selectedStation,
+            stationKey: selectedStation,
+            text: trimmed,
+            files,
+            stationIds: currentUser?.stationId
+              ? [currentUser.stationId, ...(currentUser.managedStations || [])]
+              : (currentUser?.managedStations || []),
+          });
+        } catch {
+          // Board blob may not have this station key yet — legacy path still runs.
+        }
+      }
       if (activeChat.type === "general") {
         await base44.functions.invoke("supabaseTargets", {
           action: "sendChatMessage", stationId: selectedStation, userId: currentUser.id, userName: currentUser.name, text: trimmed, files,
@@ -123,7 +169,8 @@ export default function StationChat() {
       setFiles([]);
       fetchMessages();
     } catch (err) {
-      alert(err?.response?.data?.error || "Failed to send message");
+      const msg = err?.response?.data?.reason || err?.response?.data?.error || "Failed to send message";
+      toast({ title: msg, variant: "destructive" });
     } finally {
       setSending(false);
     }
@@ -150,6 +197,16 @@ export default function StationChat() {
         <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{t("station")}</p>
         <h1 className="hero-title text-4xl md:text-5xl">{t("chat")}</h1>
       </div>
+
+      <StationChatBoard
+        lang={lang}
+        onPickChannel={(ch) => {
+          if (ch?.stationKey && !["supervisors", "safety", "purchasing"].includes(String(ch.stationKey))) {
+            setSelectedStation(ch.stationKey);
+            setActiveChat({ type: "general" });
+          }
+        }}
+      />
 
       {!selectedStation ? (
         <div className="border border-border bg-card p-6 space-y-4">

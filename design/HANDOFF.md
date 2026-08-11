@@ -16,20 +16,20 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · `offboarding` · `complaints` · `files` · `settings` · `reports` · **`assistant`**
-(لوحة أسئلة التصميم مشتقة من حقائق الشركة · بوابات نطاق/خطة/صلاحية · مسار LLM الحالي يبقى بعد تفويض الخادم — دون استبدال نيرو كاملًا).
+`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · `offboarding` · `complaints` · `files` · `settings` · `reports` · `assistant` · **`chat`**
 
-مسار التحقق (المساعد الذكي):
+مسار التحقق (الدردشة / StationChat):
 
-1. سؤال فارغ → `EMPTY_QUESTION` · خطة بلا `ai` / قسم `assistant` → `FEATURE_DISABLED`
-2. Careers / متقدم / `NV-APP-…` أو قناة توظيف → `OUT_OF_SCOPE` · طلب عبر مستأجر آخر → `OUT_OF_SCOPE`
-3. سؤال مجلس/إضافي بلا دور مناسب أو بلا `navVisibility` للمساعد → `FORBIDDEN`
-4. أسئلة التصميم الأربعة + Spotlight: إجابة + أدلة مشتقة من عمليات/حضور/سلامة (نطاق `companyId` + محطات الدور)
-5. نص حر مصرّح → `mode: scoped_llm` يعيد للمسار الحالي في `Assistant.jsx` دون مكدس LLM موازٍ
+1. رسالة فارغة بلا مرفق → `EMPTY_MESSAGE` · بلا محطة/قناة → `STATION_REQUIRED`
+2. قناة خارج نطاق محطة الدور → `FORBIDDEN` · طلب عبر مستأجر آخر / بلا `companyId` → `OUT_OF_SCOPE`
+3. إرسال متتابع يتجاوز الحد → `RATE_LIMIT_BURST` (30 / 5 دقائق)
+4. لوحة القنوات: معاينة + عدّاد غير مقروء مشتقّان من رسائل النطاق (`companyId` + رؤية المحطة)
+5. مسار الجلسة عبر `authPowerCareSession` · الواجهة الحالية على `/app/chat` تبقى مع `StationChatBoard` فوقها
 
-تنفيذ: `assistantDerivations` · `base44/functions/assistant` · `AssistantBoard` على `/app/assistant`.
+تنفيذ: `chatDerivations` · `base44/functions/chat` · `StationChatBoard` على `/app/chat`.
 
-**المتبقي من التسليم (تقريبًا):** Chat (وما يتصل بها من روابط عرضية).
+**التسليم C+:** مكتمل بعد Chat — أقسام التصميم التشغيلية ذات الخادم-أولًا مغطّاة.
+ما يبقى خارج نطاق هذه الجولة: Landing / Mobile / Deck / Careers العامة (صراحةً بعد A→B→C+ في هذا الملف).
 
 ---
 
