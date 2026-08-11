@@ -10,7 +10,6 @@ import MySignatureCard from "@/components/files/MySignatureCard";
 import MultiSignCard from "@/components/files/MultiSignCard";
 import MultiSignInbox from "@/components/files/MultiSignInbox";
 import VerifyDocumentCard from "@/components/files/VerifyDocumentCard";
-import SigningChainBoard from "@/components/files/SigningChainBoard";
 import { canCreateSignatureRequests, visibleEmployees } from "@/lib/permissions";
 
 export default function FileSigning() {
@@ -50,7 +49,6 @@ export default function FileSigning() {
           <div className="flex items-center gap-2 rounded-full border border-accent/30 bg-primary-foreground/5 px-4 py-2 text-xs"><ShieldCheck className="h-4 w-4 text-accent" />{ar ? "تشفير وحماية موثّقة" : "Verified encryption & protection"}</div>
         </div>
       </header>
-      <SigningChainBoard lang={lang} />
       <Tabs defaultValue="signature" dir={ar ? "rtl" : "ltr"} className="w-full min-w-0 max-w-full overflow-hidden">
         <TabsList className="signing-page-tabs h-auto w-full min-w-0 max-w-full justify-start gap-1 overflow-x-auto rounded-xl border border-accent/20 bg-card p-1.5 shadow-sm no-scrollbar">
           {tabs.map(({ value, label, icon: Icon, count }) => <TabsTrigger key={value} value={value} className="min-h-11 min-w-max gap-2 rounded-lg px-5 py-2.5 font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"><Icon className="h-4 w-4" />{label}{count > 0 && <Badge className="h-5 min-w-5 justify-center rounded-full bg-accent px-1.5 text-accent-foreground">{count}</Badge>}</TabsTrigger>)}

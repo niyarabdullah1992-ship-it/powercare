@@ -11,7 +11,6 @@ import SafetyReportExport from "@/components/safety/SafetyReportExport";
 import SafetyExplanation from "@/components/safety/SafetyExplanation";
 import SafetyDashboard from "@/components/safety/SafetyDashboard";
 import SafetyIncidentReportForm from "@/components/safety/SafetyIncidentReportForm";
-import HseRatesPanel from "@/components/safety/HseRatesPanel";
 import { toast } from "@/components/ui/use-toast";
 import RecordSmartArchive from "@/components/RecordSmartArchive";
 import SectionToolbar from "@/components/shared/SectionToolbar";
@@ -46,22 +45,8 @@ export default function Safety() {
   };
 
   // Approval is committed only after the store re-validates every dependency.
-  const handleApprove = (stationId) => {
-    const result = approveSafetyRecord(company.id, stationId, currentUser.name);
-    if (result && result.ok === false) {
-      toast({ description: ar ? result.reason : (result.reasonEn || result.reason), variant: "destructive" });
-      return false;
-    }
-    return true;
-  };
+  const handleApprove = (stationId) => approveSafetyRecord(company.id, stationId, currentUser.name);
   const handleRevokeApproval = (stationId) => revokeSafetyApproval(company.id, stationId, currentUser.name);
-  const handleCloseHazard = (stationId, index, opts = {}) => {
-    const result = closeSafetyHazard(company.id, stationId, index, currentUser.name, opts);
-    if (result && result.ok === false) {
-      toast({ description: ar ? result.reason : (result.reasonEn || result.reason), variant: "destructive" });
-    }
-    return result;
-  };
 
   return (
     <div className="space-y-6">
@@ -76,10 +61,7 @@ export default function Safety() {
       {!canEdit && reportStation && <SafetyIncidentReportForm station={reportStation} ar={ar} onSubmit={async (description) => { const saved = recordSafetyIncident(company.id, reportStation.id, description, currentUser.name); toast({ description: saved ? (ar ? "تم إرسال بلاغ السلامة." : "Safety report submitted.") : (ar ? "تم تسجيل البلاغ نفسه اليوم مسبقًا." : "This report was already submitted today."), variant: saved ? "default" : "destructive" }); return saved; }} />}
 
       {(canEdit || canApprove || data.ownerId === currentUser.id) && (
-        <>
-          <HseRatesPanel lang={lang} />
-          <SafetyDashboard safety={data.safety || []} stations={stations} lang={lang} />
-        </>
+        <SafetyDashboard safety={data.safety || []} stations={stations} lang={lang} />
       )}
 
       <SectionToolbar
@@ -134,7 +116,7 @@ export default function Safety() {
                 signerName={currentUser.name}
                 onUpdate={(updates) => handleUpdate(station.id, updates)}
                 onDisabledTabsChange={(disabledTabs) => updateSafetyRecord(company.id, station.id, { disabledTabs }, currentUser.name)}
-                onCloseHazard={(index, opts) => handleCloseHazard(station.id, index, opts)}
+                onCloseHazard={(index) => closeSafetyHazard(company.id, station.id, index, currentUser.name)}
                 onApprove={() => handleApprove(station.id)}
                 onRevokeApproval={() => handleRevokeApproval(station.id)}
                 onIncident={(desc) => {

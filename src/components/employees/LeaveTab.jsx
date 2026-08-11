@@ -8,18 +8,10 @@ import LeaveBalanceCard from "@/components/employees/LeaveBalanceCard";
 import LeaveTotalsEditor from "@/components/employees/LeaveTotalsEditor";
 import LeaveRequestItem from "@/components/employees/LeaveRequestItem";
 import { LEAVE_TYPES, LEAVE_THRESHOLD_DAYS, computeDays } from "@/lib/leaveTypes";
-import { checkApproveLeaveGate } from "@/lib/leaveDerivations";
 import { generateAbsenceDeduction } from "@/lib/deductionGenerators";
-import { base44 } from "@/api/base44Client";
-
-async function workforce(payload) {
-  const res = await base44.functions.invoke("workforce", payload);
-  return res?.data ?? res;
-}
 
 export default function LeaveTab({ employee, companyId, currentUser, isSelf, canApprove }) {
-  const { t, lang } = useI18n();
-  const ar = lang === "ar";
+  const { t } = useI18n();
   const [type, setType] = useState("annual");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -44,32 +36,14 @@ export default function LeaveTab({ employee, companyId, currentUser, isSelf, can
     setStartDate(""); setEndDate(""); setReason(""); setFiles([]);
   };
 
-  const decide = async (id, status) => {
-    const request = requests.find((r) => r.id === id);
-    if (status === "approved") {
-      const gate = checkApproveLeaveGate(request, !!LEAVE_TYPES.find((ty) => ty.key === request?.type)?.requiresFile);
-      if (!gate.ok) {
-        setError(ar ? gate.reason : "Approval blocked — attachment required for requests over 5 days.");
-        return;
-      }
-    }
-    try {
-      const remote = await workforce({
-        action: status === "approved" ? "approveLeave" : "rejectLeave",
-        companyId,
-        employeeId: employee.id,
-        requestId: id,
-      });
-      if (remote?.error === "ATTACHMENT_REQUIRED") {
-        setError(ar ? remote.reason : (remote.reasonEn || remote.reason));
-        return;
-      }
-    } catch {
-      // Fall through to local store when function is unavailable.
-    }
+  const decide = (id, status) => {
     setLeaveRequestStatus(companyId, employee.id, id, status, currentUser.name);
-    if (status === "approved" && request?.type === "unpaid") {
-      generateAbsenceDeduction(companyId, employee.id, id, request.days || computeDays(request.startDate, request.endDate), currentUser);
+    // Approved unpaid absence generates its documented payroll deduction line automatically.
+    if (status === "approved") {
+      const request = requests.find((r) => r.id === id);
+      if (request?.type === "unpaid") {
+        generateAbsenceDeduction(companyId, employee.id, id, request.days || computeDays(request.startDate, request.endDate), currentUser);
+      }
     }
   };
 
@@ -117,7 +91,6 @@ export default function LeaveTab({ employee, companyId, currentUser, isSelf, can
 
       <div className="space-y-3">
         <h3 className="font-heading font-semibold">{t("leaveRequests")}</h3>
-        {error && !isSelf && <p className="text-xs text-destructive font-body">{error}</p>}
         {requests.length === 0 ? (
           <p className="text-sm text-muted-foreground font-body">{t("noLeaveRequests")}</p>
         ) : (

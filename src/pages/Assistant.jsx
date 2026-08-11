@@ -11,14 +11,11 @@ import VoiceControl from "@/components/assistant/VoiceControl";
 import NiroVoiceSettings from "@/components/assistant/NiroVoiceSettings";
 import AutomationApprovalCard from "@/components/assistant/AutomationApprovalCard";
 import AssistantImageUpload from "@/components/assistant/AssistantImageUpload";
-import AssistantBoard from "@/components/assistant/AssistantBoard";
 import { Sparkles, Send, Loader2 } from "lucide-react";
 import speak, { stopSpeaking } from "@/components/assistant/speak";
 import formatNiroImageAnalysis from "@/lib/formatNiroImageAnalysis";
 import { loadAssistantMemory, saveAssistantMemory } from "@/lib/assistantMemory";
 import { needsWebSearch, relevantDocumentUrls, selectAssistantContext } from "@/lib/assistantRetrieval";
-import { allowedNavFor } from "@/lib/navVisibility";
-import { toast } from "@/components/ui/use-toast";
 
 export default function Assistant() {
   const { t, lang } = useI18n();
@@ -106,54 +103,6 @@ export default function Assistant() {
     setMessages(nextMessages);
     setLoading(true);
     try {
-      // Server-first: authorize + scope before any LLM / local context work.
-      try {
-        const navRoutes = [...allowedNavFor(currentUser, data, company)];
-        const allowedSections = ["assistant"];
-        navRoutes.forEach((r) => {
-          if (r.includes("tasks")) allowedSections.push("tasks");
-          if (r.includes("attendance")) allowedSections.push("attendance");
-          if (r.includes("safety")) allowedSections.push("safety");
-          if (r.includes("daily-report")) allowedSections.push("reports");
-          if (r.includes("performance")) allowedSections.push("performance");
-          if (r.includes("payroll")) allowedSections.push("payroll");
-        });
-        const authz = await base44.functions.invoke("assistant", {
-          action: "ask",
-          companyId: company.id,
-          sessionToken: getCompanyToken(company.id),
-          question: q,
-          planConfig: company.planConfig || null,
-          allowedSections,
-        });
-        const authData = authz?.data ?? authz;
-        if (authData?.error || authData?.ok === false) {
-          const reason = lang === "ar"
-            ? (authData.reason || authData.error)
-            : (authData.reasonEn || authData.reason || authData.error);
-          setMessages((prev) => [...prev, { role: "assistant", text: reason }]);
-          toast({ title: reason, variant: "destructive" });
-          setLoading(false);
-          return;
-        }
-        if (authData?.mode === "derived" && authData?.answer) {
-          const derived = authData.answer;
-          const text = lang === "ar" ? derived.answerAr : derived.answerEn;
-          const evidence = (derived.evidence || [])
-            .map((e) => `• ${lang === "ar" ? e.sourceAr : e.sourceEn}: **${e.value}** — ${lang === "ar" ? e.labelAr : e.labelEn}`)
-            .join("\n");
-          setMessages((prev) => [...prev, {
-            role: "assistant",
-            text: `${text}${evidence ? `\n\n${evidence}` : ""}`,
-          }]);
-          if (fromVoice) speak(text, lang, voiceGender);
-          setLoading(false);
-          return;
-        }
-      } catch {
-        // If the authorize function is unreachable, continue with existing LLM path
-        // (still scoped by buildAssistantContext client filters).
-      }
       const context = buildAssistantContext(data, currentUser);
       await enrichAssistantContext(context, { session, data });
       try {
@@ -416,8 +365,6 @@ Answer the last user question.`,
         </div>
         <NiroVoiceSettings gender={voiceGender} onGenderChange={changeVoiceGender} ar={lang === "ar"} />
       </div>
-
-      <AssistantBoard lang={lang} onPickPrompt={(q) => { setInput(q); }} />
 
       <div className="flex-1 overflow-y-auto space-y-3 pb-4">
         {messages.length === 0 && (

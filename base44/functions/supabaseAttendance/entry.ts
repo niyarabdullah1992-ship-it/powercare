@@ -32,8 +32,7 @@ Deno.serve(async (req) => {
       auth = { admin: true, isManager: true, role: "owner", name: platformUser.full_name || platformUser.email || "Administrator", companyId: body.companyId || null, userId: null };
     } else {
       if (platformUser && platformUser.role === "admin") {
-        if (!body.companyId) return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
-        auth = { admin: true, isManager: true, role: "owner", name: platformUser.full_name || platformUser.email || "Administrator", companyId: body.companyId, userId: body.userId || null };
+        auth = { admin: true, isManager: true, role: "owner", name: platformUser.full_name || platformUser.email || "Administrator", companyId: body.companyId || null, userId: body.userId || null };
       } else {
         const { sessionToken, companyId } = body;
         if (sessionToken && companyId) {
@@ -64,7 +63,6 @@ Deno.serve(async (req) => {
         }
       }
       if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
-      if (!auth.companyId) return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
     }
     const isManager = !!auth?.isManager;
     if (auth && !auth.admin && body.companyId && body.companyId !== auth.companyId) return Response.json({ error: "Forbidden" }, { status: 403 });
@@ -156,12 +154,12 @@ Deno.serve(async (req) => {
     // loaded from the server's own records, so an employee working across multiple
     // stations can check in at any of them — the record documents which one.
     const listWorkplaces = async () => {
-      const companyId = auth?.companyId;
+      const companyId = auth?.companyId || body.companyId;
       if (!companyId) return [];
       const out = [];
       const unrestricted = auth?.admin || ["owner", "director", "ops_manager"].includes(auth?.role);
       const stations = await base44.asServiceRole.entities.Station.filter({ companyId });
-      const allowedStationIds = new Set([auth?.stationId, ...(auth?.stationIds || []), ...(auth?.managedStations || [])].filter(Boolean));
+      const allowedStationIds = new Set([auth?.stationId || stations[0]?.stationId, ...(auth?.stationIds || []), ...(auth?.managedStations || [])].filter(Boolean));
       for (const st of stations) {
         if (!unrestricted && !allowedStationIds.has(st.stationId)) continue;
         if (st.lat != null && st.lng != null) {
@@ -228,8 +226,7 @@ Deno.serve(async (req) => {
 
     if (action === "setAttendanceEmergency" || action === "clearAttendanceEmergency") {
       if (!auth?.admin && !["owner", "director", "ops_manager", "station_manager"].includes(auth?.role)) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const companyId = auth?.companyId;
-      if (!companyId) return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
+      const companyId = auth?.companyId || body.companyId;
       const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "attendanceEmergency" });
       if (action === "clearAttendanceEmergency") {
         if (blobs[0]) await base44.asServiceRole.entities.CompanyDataBlob.update(blobs[0].id, { payload: [] });
@@ -246,8 +243,7 @@ Deno.serve(async (req) => {
 
     if (action === "setScheduleRequirement") {
       if (!auth?.admin && !["owner", "director", "ops_manager"].includes(auth?.role)) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const companyId = auth?.companyId;
-      if (!companyId) return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
+      const companyId = auth?.companyId || body.companyId;
       const scheduleRequired = body.scheduleRequired !== false;
       const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "attendancePolicy" });
       const payload = [{ scheduleRequired }];
@@ -734,8 +730,8 @@ Deno.serve(async (req) => {
 
     if (action === "markAbsentees") {
       if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const companyId = auth?.companyId;
-      if (!companyId) return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
+      const companyId = auth?.companyId || body.companyId;
+      if (!companyId) return Response.json({ error: "Missing companyId" }, { status: 400 });
       const date = toRiyadhDateKey();
       const dirRes = await fetch(`${SUPABASE_URL}/rest/v1/employees_directory?company_id=eq.${encodeURIComponent(companyId)}&select=*`, { headers });
       const directory = await dirRes.json();

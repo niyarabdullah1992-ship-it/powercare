@@ -27,19 +27,14 @@ import Assistant from './pages/Assistant';
 import LocalPreviewEntry from './pages/LocalPreviewEntry';
 
 const Login = lazy(() => import('./pages/Login'));
-const LoginPortal = lazy(() => import('./pages/LoginPortal'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const OwnerPanel = lazy(() => import('./pages/OwnerPanel'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const PricingSuccess = lazy(() => import('./pages/PricingSuccess'));
-const Mobile = lazy(() => import('./pages/Mobile'));
-const SalesDeck = lazy(() => import('./pages/SalesDeck'));
-const Careers = lazy(() => import('./pages/Careers'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const MyTasks = lazy(() => import('./pages/MyTasks'));
-const Operations = lazy(() => import('./pages/Operations'));
 const StationChat = lazy(() => import('./pages/StationChat'));
 const Complaints = lazy(() => import('./pages/Complaints'));
 const EmployeeProfile = lazy(() => import('./pages/EmployeeProfile'));
@@ -73,8 +68,6 @@ const Inventory = lazy(() => import('./pages/Inventory'));
 const Expenses = lazy(() => import('./pages/Expenses'));
 const StationExpenses = lazy(() => import('./pages/StationExpenses'));
 const ClientProof = lazy(() => import('./pages/ClientProof'));
-const WorkProof = lazy(() => import('./pages/WorkProof'));
-const Recruitment = lazy(() => import('./pages/Recruitment'));
 const ProofVerify = lazy(() => import('./pages/ProofVerify'));
 
 // After the first page is interactive, quietly download the most-used pages in
@@ -85,7 +78,6 @@ if (typeof window !== "undefined") {
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 5000));
     idle(() => {
       import('./pages/Dashboard');
-      import('./pages/Operations');
       import('./pages/MyTasks');
       import('./pages/Attendance');
       import('./pages/FileSigning');
@@ -127,13 +119,9 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/preview" element={<LocalPreviewEntry />} />
       <Route path="/about" element={<About />} />
-      <Route path="/mobile" element={<Mobile />} />
-      <Route path="/deck" element={<SalesDeck />} />
-      <Route path="/careers" element={<Careers />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/pricing-success" element={<PricingSuccess />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/login/:portal" element={<LoginPortal />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
@@ -163,14 +151,12 @@ function AppRoutes() {
       </Route>
       <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/app/executive" element={<Navigate to="/app" replace />} />
-      <Route path="/app/tasks" element={<RequireAuth><Operations /></RequireAuth>} />
-      <Route path="/app/tasks-classic" element={<RequireAuth><MyTasks /></RequireAuth>} />
+      <Route path="/app/tasks" element={<RequireAuth><MyTasks /></RequireAuth>} />
       <Route path="/app/chat" element={<RequireAuth><StationChat /></RequireAuth>} />
 
       <Route path="/app/complaints" element={<RequireAuth><Complaints /></RequireAuth>} />
       <Route path="/app/employees/:employeeId" element={<RequireAuth><EmployeeProfile /></RequireAuth>} />
       <Route path="/app/hr" element={<RequireAuth><HRStructureManagement /></RequireAuth>} />
-      <Route path="/app/hiring" element={<RequireAuth><Recruitment /></RequireAuth>} />
       <Route path="/app/payroll" element={<RequireAuth><Payroll /></RequireAuth>} />
       <Route path="/app/performance" element={<RequireAuth><Performance /></RequireAuth>} />
       <Route path="/app/safety" element={<RequireAuth><Safety /></RequireAuth>} />
@@ -182,7 +168,6 @@ function AppRoutes() {
       <Route path="/app/stations/:stationId/expenses" element={<RequireAuth><StationExpenses /></RequireAuth>} />
       <Route path="/app/signing" element={<RequireAuth><FileSigning /></RequireAuth>} />
       <Route path="/app/client-proof" element={<RequireAuth><ClientProof /></RequireAuth>} />
-      <Route path="/app/work-proof" element={<RequireAuth><WorkProof /></RequireAuth>} />
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
       <Route path="/app/help" element={<RequireAuth><Help /></RequireAuth>} />
       <Route path="/app/manual" element={<RequireAuth><ProjectGuideDoc /></RequireAuth>} />

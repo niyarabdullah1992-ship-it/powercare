@@ -9,7 +9,6 @@ import ExpenseForm from "@/components/expenses/ExpenseForm";
 import ExpenseStats from "@/components/expenses/ExpenseStats";
 import ExpenseList from "@/components/expenses/ExpenseList";
 import ExpenseReportPanel from "@/components/expenses/ExpenseReportPanel";
-import ExpenseBudgetBoard from "@/components/expenses/ExpenseBudgetBoard";
 import { toast } from "@/components/ui/use-toast";
 
 const empty = { claims: [], stations: [], canManagerReview: false, canFinanceReview: false, canPickStations: false };
@@ -36,7 +35,6 @@ export default function Expenses() {
 
   return <div className="space-y-6">
     <PageHeader title={ar ? "إدارة المصروفات" : "Expense Management"} description={ar ? "رفع الإيصالات واعتماد المصروفات ومراجعتها ماليًا." : "Submit receipts, approve expenses and complete finance review."} icon={ReceiptText} />
-    <ExpenseBudgetBoard lang={lang} />
     <ExpenseForm stations={state.stations} canPickStations={state.canPickStations} onSubmit={submit} ar={ar} />
     <ExpenseStats claims={state.claims} ar={ar} />
     <SectionToolbar
