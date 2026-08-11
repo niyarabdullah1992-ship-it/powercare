@@ -48,6 +48,9 @@ export default function Login() {
       subtitle={ar ? "الشركة والجهة الحكومية منفصلتان — لكل حساب دخول مخصص" : "Company and government are separate — each account has its own login"}
       footer={
         <span className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+          <Link to="/workspace" className="font-medium text-accent hover:underline">
+            {ar ? "ابحث عن مساحة شركتك" : "Find your company workspace"}
+          </Link>
           <Link to="/pricing?org=company" className="font-medium text-accent hover:underline">
             {ar ? "إنشاء حساب شركة" : "Create company account"}
           </Link>

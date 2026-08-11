@@ -37,6 +37,7 @@ const PricingSuccess = lazy(() => import('./pages/PricingSuccess'));
 const Mobile = lazy(() => import('./pages/Mobile'));
 const SalesDeck = lazy(() => import('./pages/SalesDeck'));
 const Careers = lazy(() => import('./pages/Careers'));
+const Workspace = lazy(() => import('./pages/Workspace'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const MyTasks = lazy(() => import('./pages/MyTasks'));
 const Operations = lazy(() => import('./pages/Operations'));
@@ -130,6 +131,8 @@ function AppRoutes() {
       <Route path="/mobile" element={<Mobile />} />
       <Route path="/deck" element={<SalesDeck />} />
       <Route path="/careers" element={<Careers />} />
+      <Route path="/workspace" element={<Workspace />} />
+      <Route path="/workspace/:slug" element={<Workspace />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/pricing-success" element={<PricingSuccess />} />
       <Route path="/login" element={<Login />} />

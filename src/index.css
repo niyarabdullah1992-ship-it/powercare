@@ -527,6 +527,23 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+.powercare-public .workspace-hero h1 {
+  animation: workspace-hero-in 480ms ease-out both;
+}
+.powercare-public .workspace-panel {
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+.powercare-public .workspace-result {
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+.powercare-public .workspace-result:hover {
+  border-color: rgba(110, 231, 183, 0.28);
+  background-color: rgba(255, 255, 255, 0.06);
+}
+@keyframes workspace-hero-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 @media (prefers-reduced-motion: reduce) {
   .powercare-public .mobile-field-screen:hover .mobile-phone-frame {
     transform: none;
@@ -539,6 +556,13 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   }
   .powercare-public .careers-hero h1 {
     animation: none;
+  }
+  .powercare-public .workspace-hero h1 {
+    animation: none;
+  }
+  .powercare-public .workspace-panel,
+  .powercare-public .workspace-result {
+    transition: none;
   }
 }
 .powercare-public .proof-journey-step {
@@ -824,6 +848,12 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 .powercare-shell main :is(h1, h2, h3) {
   color: #101828;
   letter-spacing: -.02em;
+}
+.powercare-shell main :is(.bg-primary, .bg-\[\#0B1A3F\], [class*="from-primary"]) :is(h1, h2, h3) {
+  color: #fff;
+}
+.powercare-shell main :is(.bg-primary, .bg-\[\#0B1A3F\], [class*="from-primary"]) :is(p, span) {
+  color: inherit;
 }
 .powercare-shell main :is(.rounded-xl, .rounded-2xl, .rounded-3xl) { border-radius: 10px; }
 .powercare-shell main :is(section, .bg-card).border,

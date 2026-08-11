@@ -280,6 +280,11 @@ export default function SalesDeck() {
                 </Link>
               </li>
               <li>
+                <Link to="/workspace" className="hover:text-[#3FBF80]">
+                  {ar ? "مساحة الشركة" : "Company workspace"}
+                </Link>
+              </li>
+              <li>
                 <Link to="/" className="hover:text-[#3FBF80]">
                   {ar ? "اطلب عرضًا" : "Request demo"}
                 </Link>

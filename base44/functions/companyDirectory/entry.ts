@@ -2,6 +2,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
 import { fetchWithRetry } from '../../shared/fetchRetry.ts';
 import { filterBlobPayload, redactEmployee, APPEND_ONLY_CATEGORIES, inspectAppendOnly } from '../../shared/blobVisibility.ts';
+import {
+  WORKSPACE_SEARCH_MAX,
+  accountMatchesWorkspaceQuery,
+  checkWorkspaceSearchGate,
+  derivePublicWorkspaceCard,
+} from '../../shared/workspaceDerivations.ts';
 
 // System emails (OTP codes, welcome messages) go out through the app's connected
 // Gmail account, because the built-in email service refuses recipients who are
@@ -241,6 +247,63 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
     const { action, companyId } = body;
+
+    // Public workspace registry — name/CR lookup only. Never returns owner email,
+    // passwords, employee rows, or payroll. Careers + staff login stay separate channels.
+    if (action === 'publicWorkspaceSearch') {
+      const gate = checkWorkspaceSearchGate(body.query ?? body.q);
+      if (!gate.ok) {
+        return Response.json({ error: gate.error, reason: gate.reason, reasonEn: gate.reasonEn, results: [] }, { status: 400 });
+      }
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.list('-created_date', 500);
+      const eligible = accounts.filter((account) => {
+        if (!account?.companyId || account.frozen === true) return false;
+        if (String(account.plan || '').toLowerCase() === 'individual') return false;
+        return true;
+      });
+
+      const wantDigits = String(gate.query || '').replace(/\D/g, '');
+      const crByCompany = new Map();
+      if (wantDigits.length >= 4) {
+        // Only load settings blobs when the query looks like a commercial registration.
+        const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ category: 'companySettings' });
+        for (const blob of blobs) {
+          const raw = blob?.payload && typeof blob.payload === 'object' ? blob.payload : {};
+          const record = raw.record && typeof raw.record === 'object' ? raw.record : raw;
+          const cr = String(record?.commercialRegistration || '').replace(/\D/g, '');
+          if (cr && blob.companyId) crByCompany.set(blob.companyId, cr);
+        }
+      }
+
+      const matched = [];
+      for (const account of eligible) {
+        const cr = crByCompany.get(account.companyId) || '';
+        if (!accountMatchesWorkspaceQuery(account, gate.query, cr)) continue;
+        matched.push(account);
+        if (matched.length >= WORKSPACE_SEARCH_MAX) break;
+      }
+
+      const results = [];
+      for (const account of matched) {
+        const [stations, employees] = await Promise.all([
+          base44.asServiceRole.entities.Station.filter({ companyId: account.companyId }),
+          base44.asServiceRole.entities.Employee.filter({ companyId: account.companyId }),
+        ]);
+        results.push(derivePublicWorkspaceCard(account, {
+          sites: stations.length,
+          staff: employees.length,
+          commercialRegistration: crByCompany.get(account.companyId) || '',
+        }));
+      }
+
+      return Response.json({
+        ok: true,
+        query: gate.query,
+        results,
+        employees: null,
+        ownerEmail: null,
+      });
+    }
 
     // Google verifies the email identity. It may belong to company owners, employees,
     // or both; when several workspaces match, the user chooses one explicitly.

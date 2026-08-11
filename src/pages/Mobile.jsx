@@ -222,6 +222,11 @@ export default function Mobile() {
                 </Link>
               </li>
               <li>
+                <Link to="/workspace" className="hover:text-[#3FBF80]">
+                  {ar ? "مساحة الشركة" : "Company workspace"}
+                </Link>
+              </li>
+              <li>
                 <Link to="/security" className="hover:text-[#3FBF80]">
                   {ar ? "الأمان والامتثال" : "Security & Compliance"}
                 </Link>

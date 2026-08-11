@@ -56,6 +56,9 @@ export default function Careers() {
             <Link to="/deck" className="text-[12.5px] text-[#5A6B85] transition-colors hover:text-[#0E7A4B]">
               {ar ? "العرض" : "Deck"}
             </Link>
+            <Link to="/workspace" className="text-[12.5px] text-[#5A6B85] transition-colors hover:text-[#0E7A4B]">
+              {ar ? "مساحة الشركة" : "Workspace"}
+            </Link>
           </nav>
           <div className="ms-auto flex items-center gap-2">
             <div className="relative">
@@ -179,6 +182,11 @@ export default function Careers() {
                 <li>
                   <Link to="/deck" className="hover:text-[#3FBF80]">
                     {ar ? "عرض المبيعات" : "Sales deck"}
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/workspace" className="hover:text-[#3FBF80]">
+                    {ar ? "مساحة الشركة" : "Company workspace"}
                   </Link>
                 </li>
                 <li>
