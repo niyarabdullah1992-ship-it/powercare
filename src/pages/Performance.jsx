@@ -14,6 +14,7 @@ import SupervisionFairness from "@/components/performance/SupervisionFairness";
 import PerformanceTabs from "@/components/performance/PerformanceTabs";
 import PerformanceHeaderStats from "@/components/performance/PerformanceHeaderStats";
 import OpsPointsLedger from "@/components/performance/OpsPointsLedger";
+import PerfScoreBoard from "@/components/performance/PerfScoreBoard";
 import usePerformanceTargets from "@/hooks/usePerformanceTargets";
 import { buildSupervisionModel } from "@/lib/supervisionModel";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
@@ -113,6 +114,8 @@ export default function Performance() {
         employeeId={isManager ? null : currentUser.id}
         lang={lang}
       />
+
+      <PerfScoreBoard lang={lang} />
 
       {(view === "individual" || view === "achievements") && (
         <div className="flex justify-end">

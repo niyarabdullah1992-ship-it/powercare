@@ -1,4 +1,5 @@
 import { getCompanyData, logAudit, updateCompany } from "@/lib/store";
+import { checkHazardCloseGate } from "@/lib/hseDerivations";
 
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
 const stationExists = (data, stationId) => (data?.stations || []).some((station) => station.id === stationId);
@@ -42,22 +43,49 @@ export function updateSafetyRecord(companyId, stationId, updates, actorName = ""
   });
 }
 
-export function closeSafetyHazard(companyId, stationId, hazardIndex, closedBy) {
+export function closeSafetyHazard(companyId, stationId, hazardIndex, closedBy, opts = {}) {
+  const gate = checkHazardCloseGate({
+    controlId: opts.controlId,
+    likelihood: opts.likelihood ?? 3,
+    severity: opts.severity ?? 3,
+    inherent: opts.inherent,
+    beforePhoto: opts.beforePhoto,
+    afterPhoto: opts.afterPhoto,
+  });
+  if (!gate.ok) return { ok: false, ...gate };
+
+  let closed = null;
   updateCompany(companyId, (data) => {
     const rec = (data.safety || []).find((item) => item.stationId === stationId);
     if (!rec || hazardIndex < 0 || hazardIndex >= (rec.hazards || []).length) return;
-    const [description] = rec.hazards.splice(hazardIndex, 1);
+    const [raw] = rec.hazards.splice(hazardIndex, 1);
+    const description = typeof raw === "string" ? raw : raw?.description || raw?.title || String(raw);
+    closed = {
+      id: uid("haz"),
+      description,
+      controlId: gate.controlId,
+      inherent: gate.inherent,
+      residual: gate.residual,
+      beforePhoto: opts.beforePhoto || true,
+      afterPhoto: opts.afterPhoto || true,
+      closedBy,
+      closedAt: new Date().toISOString(),
+      sealId: `NV-HSE-${uid("seal").slice(-6).toUpperCase()}`,
+    };
     rec.hazardLog = rec.hazardLog || [];
-    rec.hazardLog.unshift({ id: uid("haz"), description, closedBy, closedAt: new Date().toISOString() });
+    rec.hazardLog.unshift(closed);
     rec.lastActionBy = closedBy;
     rec.lastActionAt = new Date().toISOString();
     rec.approvedBy = null;
     rec.approvedAt = null;
   });
+  if (!closed) return { ok: false, error: "HAZARD_NOT_FOUND" };
+  return { ok: true, closed, gate };
 }
 
 export function approveSafetyRecord(companyId, stationId, approvedBy) {
   let approved = false;
+  let blocked = null;
   updateCompany(companyId, (data) => {
     if (!stationExists(data, stationId)) return;
     data.safety = data.safety || [];
@@ -65,6 +93,14 @@ export function approveSafetyRecord(companyId, stationId, approvedBy) {
     if (!rec) {
       rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], dailyHours: [], ltiEntries: [], checklistResults: {}, permits: [], disabledTabs: [], createdAt: new Date().toISOString() };
       data.safety.push(rec);
+    }
+    if ((rec.hazards || []).length) {
+      blocked = {
+        error: "OPEN_HAZARDS",
+        reason: `لا يمكن الاعتماد — ${rec.hazards.length} مخاطر مفتوحة.`,
+        reasonEn: `Cannot approve — ${rec.hazards.length} open hazards.`,
+      };
+      return;
     }
     const at = new Date().toISOString();
     rec.approvedBy = approvedBy;
@@ -84,7 +120,8 @@ export function approveSafetyRecord(companyId, stationId, approvedBy) {
     };
     approved = true;
   });
-  return approved;
+  if (blocked) return { ok: false, ...blocked };
+  return { ok: approved };
 }
 
 export function revokeSafetyApproval(companyId, stationId, revokedBy) {

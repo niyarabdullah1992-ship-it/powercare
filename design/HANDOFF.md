@@ -15,18 +15,16 @@
 لا تنتقل لقسم آخر قبل أن يعمل هذا القسم من الطرف إلى الطرف.
 ```
 
-**حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل لمسار التحقق —
-`operations` + بوابة الحضور + **`workforce`** (نشر الورديات بفحوص نظامية 48س/11س/راحة/تغطية + بوابة اعتماد الإجازة `ATTACHMENT_REQUIRED` لطلب >5 أيام).
+**حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل لمسارات التحقق —
+`operations` + حضور + `workforce` + **`scores`** (HSE: تعرّض=عدد×2080، TRIR/LTIFR/DART، بوابة إغلاق الخطر بضابط+صور؛ الأداء: 50/25/15/10 مع حماية انتقالية `max(new,old)`، الحضور وزن 0).
 
-القسم التالي: السلامة HSE أو الأداء (صيغة النقاط) بعد التحقق الحيّ لنشر الجدول واعتماد الإجازة.
+مسار التحقق (HSE/أداء):
 
-مسار التحقق الإلزامي (ورديات/إجازة):
+1. إغلاق خطر بلا ضابط أو بلا صور قبل/بعد → `PHOTOS_REQUIRED` / `CONTROL_REQUIRED`
+2. اعتماد سلامة ومحطة فيها مخاطر مفتوحة → مرفوض  
+3. `perfBoard` يعيد درجات مشتقة لا ترتيب نقاط خام فقط
 
-1. جدول بمحطة فيه خلايا فارغة → `checkPublish` يجب أن يمنع النشر بسبب مسمّى (`coverage`)
-2. طلب إجازة >5 أيام بلا مرفق → `approveLeave` يُرفض بـ `ATTACHMENT_REQUIRED`
-3. أرفق مستندًا واعتمد → يظهر في الإحصاءات المشتقة؛ المعتمدون مستبعدون من إسناد الورديات
-
-تنفيذ مرجعي: `base44/shared/shiftDerivations.ts` · `base44/shared/leaveDerivations.ts` · `base44/functions/workforce/entry.ts` · `RotaPublishPanel` · `LeaveRequestItem`.
+تنفيذ: `hseDerivations` · `perfDerivations` · `base44/functions/scores` · `HseRatesPanel` · `PerfScoreBoard`.
 
 ---
 
