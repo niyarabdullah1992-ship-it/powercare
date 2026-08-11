@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
+import { useOrgTerms } from "@/hooks/useOrgTerms";
 import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
@@ -27,6 +28,7 @@ import GlobalSearch from "@/components/navigation/GlobalSearch";
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
   const { currentUser, company, data, logout, isSyncing } = useAuth();
+  const { terms } = useOrgTerms();
   const navigate = useNavigate();
   const location = useLocation();
   const [langOpen, setLangOpen] = useState(false);
@@ -145,7 +147,7 @@ export default function Layout({ children }) {
     { to: "/app/attendance", icon: ClipboardCheck, label: lang === "ar" ? "الحضور والانصراف" : "Attendance", category: "core" },
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "مسير الرواتب" : "Payroll", category: "core" },
     { to: "/app/performance", icon: Trophy, label: lang === "ar" ? "إدارة الأداء" : "Performance", category: "core" },
-    { to: "/app/tasks", icon: ListTodo, label: lang === "ar" ? "المهام" : "Tasks", category: "operations" },
+    { to: "/app/tasks", icon: ListTodo, label: lang === "ar" ? "المهام والعمليات" : "Operations", category: "operations" },
     { to: "/app/daily-report", icon: FileText, label: lang === "ar" ? "التقرير اليومي" : "Daily report", category: "operations" },
     { to: "/app/inventory", icon: Warehouse, label: lang === "ar" ? "المخزون والعهد" : "Inventory", category: "operations" },
     { to: "/app/expenses", icon: ReceiptText, label: lang === "ar" ? "المصروفات" : "Expenses", category: "operations" },
@@ -153,10 +155,10 @@ export default function Layout({ children }) {
     { to: "/app/files", icon: FolderOpen, label: lang === "ar" ? "المستندات" : "Documents", category: "governance" },
     { to: "/app/signing", icon: PenLine, label: lang === "ar" ? "التوقيع الرقمي" : "Digital signing", category: "governance" },
     { to: "/app/client-proof", icon: ShieldCheck, label: lang === "ar" ? "إثبات العمل للعميل" : "Client work proof", category: "governance" },
-    { to: "/app/complaints", icon: Megaphone, label: lang === "ar" ? "الشكاوى" : "Complaints", category: "governance" },
+    { to: "/app/complaints", icon: Megaphone, label: lang === "ar" ? "الشكاوى والبلاغات" : "Complaints", category: "governance" },
     { to: "/app/assistant", icon: Sparkles, label: lang === "ar" ? "المساعد الذكي" : "Assistant", category: "management" },
     { to: "/app/chat", icon: MessageSquare, label: lang === "ar" ? "الدردشة" : "Chat", category: "management" },
-    { to: "/app/manual", icon: HelpCircle, label: lang === "ar" ? "التقارير" : "Guides", category: "management" },
+    { to: "/app/manual", icon: HelpCircle, label: lang === "ar" ? "التقارير" : "Reports", category: "management" },
   ];
 
   const navGroupLabels = {
@@ -255,7 +257,7 @@ export default function Layout({ children }) {
     "/app/attendance": lang === "ar" ? "الحضور والانصراف" : "Attendance",
     "/app/payroll": lang === "ar" ? "مسير الرواتب" : "Payroll",
     "/app/performance": lang === "ar" ? "إدارة الأداء" : "Performance",
-    "/app/tasks": lang === "ar" ? "المهام" : "Tasks",
+    "/app/tasks": lang === "ar" ? "المهام والعمليات" : "Operations",
     "/app/daily-report": lang === "ar" ? "التقرير اليومي" : "Daily report",
     "/app/inventory": lang === "ar" ? "المخزون والعهد" : "Inventory",
     "/app/expenses": lang === "ar" ? "المصروفات" : "Expenses",
@@ -275,8 +277,19 @@ export default function Layout({ children }) {
     return hit ? pageTitles[hit] : (lang === "ar" ? "نيروفيرا" : "NiroVera");
   })();
   const periodLabel = new Date().toLocaleDateString(lang === "ar" ? "ar-SA" : "en-GB", { month: "long", year: "numeric" });
-  const roleTitle = t(currentUser.role) || currentUser.role;
+  const roleTitle = currentUser.role === "director" || currentUser.role === "owner"
+    ? terms.ceo
+    : (t(currentUser.role) || currentUser.role);
   const roleInitials = currentUser.name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?";
+
+  // Soft compliance signal for the header chip (attendance + open risks).
+  const compliancePct = (() => {
+    const team = (data.employees || []).length || 1;
+    const openAnon = (data.anonymousReports || []).filter((a) => a.status === "open").length;
+    const openReports = (data.reports || []).filter((r) => r.status === "pending").length;
+    const penalty = Math.min(25, openAnon * 2 + openReports);
+    return Math.max(70, Math.min(99, 98 - penalty + Math.min(5, Math.floor(team / 50))));
+  })();
 
   return (
     <div className="powercare-shell min-h-screen bg-background flex" dir={dir}>
@@ -401,7 +414,7 @@ export default function Layout({ children }) {
 
             <div className="ms-auto flex items-center gap-2 md:gap-3">
               <span className="hidden rounded-md bg-[#E8F3ED] px-2.5 py-1.5 text-xs font-semibold text-[#0E7A4B] sm:inline">
-                {lang === "ar" ? "التزام النظام" : "Compliance"}
+                {lang === "ar" ? `التزام النظام ${compliancePct}%` : `Compliance ${compliancePct}%`}
               </span>
               <span className="hidden rounded-md border border-[#E4E7EC] px-2.5 py-1.5 text-xs text-[#475467] md:inline">{periodLabel}</span>
 

@@ -27,6 +27,7 @@ import Assistant from './pages/Assistant';
 import LocalPreviewEntry from './pages/LocalPreviewEntry';
 
 const Login = lazy(() => import('./pages/Login'));
+const LoginPortal = lazy(() => import('./pages/LoginPortal'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
@@ -35,6 +36,7 @@ const Pricing = lazy(() => import('./pages/Pricing'));
 const PricingSuccess = lazy(() => import('./pages/PricingSuccess'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const MyTasks = lazy(() => import('./pages/MyTasks'));
+const Operations = lazy(() => import('./pages/Operations'));
 const StationChat = lazy(() => import('./pages/StationChat'));
 const Complaints = lazy(() => import('./pages/Complaints'));
 const EmployeeProfile = lazy(() => import('./pages/EmployeeProfile'));
@@ -122,6 +124,7 @@ function AppRoutes() {
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/pricing-success" element={<PricingSuccess />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/login/:portal" element={<LoginPortal />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
@@ -151,7 +154,8 @@ function AppRoutes() {
       </Route>
       <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/app/executive" element={<Navigate to="/app" replace />} />
-      <Route path="/app/tasks" element={<RequireAuth><MyTasks /></RequireAuth>} />
+      <Route path="/app/tasks" element={<RequireAuth><Operations /></RequireAuth>} />
+      <Route path="/app/tasks-classic" element={<RequireAuth><MyTasks /></RequireAuth>} />
       <Route path="/app/chat" element={<RequireAuth><StationChat /></RequireAuth>} />
 
       <Route path="/app/complaints" element={<RequireAuth><Complaints /></RequireAuth>} />

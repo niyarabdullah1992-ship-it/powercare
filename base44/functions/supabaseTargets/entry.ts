@@ -199,11 +199,13 @@ Deno.serve(async (req) => {
     // priority value × the task's effort weight. Both approval paths (a supervisor
     // approving, and the deadline auto-approval) call this — so the same task can
     // never be worth two different amounts depending on who closed it.
-    const DEFAULT_PRIORITY_POINTS = { urgent: 150, high: 100, medium: 75, low: 50 };
+    // Design formula (Platform Component): High 3 · Medium 2 · Low 1 × effort weight.
+    // urgent maps to high. Company rewardPoints overrides remain allowed when set.
+    const DEFAULT_PRIORITY_POINTS = { urgent: 3, high: 3, medium: 2, low: 1 };
     const taskPointsFor = async (target) => {
       const meta = await getCompanyMeta().catch(() => ({}));
       const configured = Number(meta.rewardPoints?.[target.priority]);
-      const base = Number.isFinite(configured) && configured > 0 ? configured : (DEFAULT_PRIORITY_POINTS[target.priority] || 75);
+      const base = Number.isFinite(configured) && configured > 0 ? configured : (DEFAULT_PRIORITY_POINTS[target.priority] || 1);
       return base * (Number(target.effortWeight) || 1);
     };
     const pointRecipientsFor = async (target) => {
