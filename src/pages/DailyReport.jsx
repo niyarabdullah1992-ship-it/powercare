@@ -10,6 +10,7 @@ import ReportCard from "@/components/reports/ReportCard";
 import TaskStatusBadge from "@/components/reports/TaskStatusBadge";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
 import PageHeader from "@/components/PageHeader";
+import StationDailyBoard from "@/components/reports/StationDailyBoard";
 
 export default function DailyReport() {
   const { t, lang } = useI18n();
@@ -107,6 +108,11 @@ export default function DailyReport() {
         description={t("dailyReportNote")}
         icon={FileText}
       />
+
+      <section className="space-y-3">
+        <h2 className="font-heading text-lg font-semibold">{lang === "ar" ? "تقارير المحطات اليوم" : "Today's station reports"}</h2>
+        <StationDailyBoard lang={lang} />
+      </section>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {stats.map((s) => (

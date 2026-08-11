@@ -16,15 +16,16 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · **`workproof`** (رفع → اعتماد بلا رافع → ختم FNV · خارج النطاق يحتاج سبب · استلام عميل).
+`operations` · حضور · `workforce` · `scores` · `workproof` · **`dailyReport`**
+(حقائق مشتقة لكل محطة · التأخير ≠ الاعتماد · اعتمد الكل / طالب / أصدر موقّعًا).
 
-مسار التحقق (إثبات العمل):
+مسار التحقق (التقرير اليومي):
 
-1. ارفع إثباتًا بنفس المستخدم ثم حاول الاعتماد → `SELF_APPROVE_FORBIDDEN`
-2. التقاط `out` بلا سبب → `GEO_CLEARANCE_REQUIRED`
-3. اعتمد كمشرف آخر → يظهر `sealId`؛ غيّر طابع البعد → الختم يبطل عند الاستلام
+1. ارفع تقرير محطة بعد نهاية الوردية → `isLate: true`
+2. اعتمده → يبقى `lateChip` / `isLate` (لا يُمسح التأخير)
+3. حاول اعتماد بلا رفع → `NOT_FILED`
 
-تنفيذ: `workProofDerivations` · `base44/functions/workproof` · `/app/work-proof`.
+تنفيذ: `dailyReportDerivations` · `base44/functions/dailyReport` · `StationDailyBoard`.
 
 ---
 
