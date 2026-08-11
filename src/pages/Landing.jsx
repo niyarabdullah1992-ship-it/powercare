@@ -347,6 +347,7 @@ export default function Landing() {
             <h4 className="font-heading text-lg text-white">{ar ? "روابط" : "Links"}</h4>
             <ul className="mt-3 space-y-2 text-sm text-white/55">
               <li><Link to="/about" className="hover:text-[#3FBF80]">{t("footerAbout")}</Link></li>
+              <li><Link to="/mobile" className="hover:text-[#3FBF80]">{ar ? "تطبيق الميدان" : "Field companion"}</Link></li>
               <li><Link to="/security" className="hover:text-[#3FBF80]">{ar ? "الأمان والامتثال" : "Security & Compliance"}</Link></li>
               <li><Link to="/terms" className="hover:text-[#3FBF80]">{t("footerTerms")}</Link></li>
               <li><Link to="/privacy" className="hover:text-[#3FBF80]">{ar ? "الخصوصية" : "Privacy"}</Link></li>

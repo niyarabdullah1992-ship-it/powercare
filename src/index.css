@@ -493,6 +493,17 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 .powercare-public .institutional-cta:hover {
   transform: translateY(-1px);
 }
+.powercare-public .mobile-phone-frame {
+  transition: transform 0.35s ease;
+}
+.powercare-public .mobile-field-screen:hover .mobile-phone-frame {
+  transform: translateY(-6px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .powercare-public .mobile-field-screen:hover .mobile-phone-frame {
+    transform: none;
+  }
+}
 .powercare-public .proof-journey-step {
   opacity: 0;
   transform: translateY(12px);
