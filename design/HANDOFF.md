@@ -16,17 +16,17 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · **`budget`**
-(استهلاك ميزانية المحطة مشتق من المطالبات المعتمدة · وسم ضمن الحد/مراقبة/قارب النفاد · `RECEIPT_REQUIRED` · `BUDGET_EXCEEDED` · تنبيه صرف متأخر 48س).
+`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · **`offboarding`**
+(عهدة الموظف · إغلاق إنهاء الخدمة موقوف حتى استلام كل العهد · مكافأة نهاية خدمة م.84 · إلغاء الصلاحيات + إشعار قوى عند الإكمال · `ASSETS_OUTSTANDING`).
 
-مسار التحقق (المصروفات):
+مسار التحقق (العهدة / إنهاء الخدمة):
 
-1. اعتمد بلا إيصال → `RECEIPT_REQUIRED`
-2. اعتمد مبلغًا يتجاوز المتبقي للمحطة → `BUDGET_EXCEEDED`
-3. اعتمد ضمن الحد → يرتفع شريط الاستهلاك ويتغير الوسم عند ≥85% / ≥95%
-4. مطالبة معتمدة بلا صرف أكثر من 48 ساعة → تظهر في تنبيه التأخير
+1. أنهِ الخدمة وعهدة معلّقة → `ASSETS_OUTSTANDING`
+2. علّم كل العهد «مُستلم» → تفتح بوابة الإغلاق
+3. أنهِ الخدمة → `accessRevoked` + `qiwaNotified` + خطوات الإغلاق تكتمل
+4. قبل تاريخ التعيين → مكافأة نهاية الخدمة = 0 (pre-start)
 
-تنفيذ: `expenseDerivations` · `base44/functions/budget` · `ExpenseBudgetBoard` على `/app/expenses`.
+تنفيذ: `offboardingDerivations` · `base44/functions/offboarding` · `OffboardingCustodyBoard` على `/app/employees/:employeeId` (تبويب إنهاء الخدمة).
 
 ---
 
