@@ -34,7 +34,9 @@
 - **Landing** — مكتمل على الفرع: بطل مؤسسي كامل العرض · دورة الإثبات · شريط الوحدات المتصلة · جمهور الشركات/الحكومة · ثقة · أدوار · مقارنة · باقات · طلب عرض. لا نسخ HTML/`support.js`؛ إعادة بناء بـ React القائمة وهوية CSS الحالية.
 - **Mobile** — مكتمل على الفرع (`/mobile`): رفيق الفني الميداني — بطل بهوية المنتج · أربع شاشات فعل واحد (حضور · مهام · إغلاق بالصورة · بلاغ مجهول) · ربط بدورة الإثبات ومسارات المنصة (`/app/attendance` · `/app/tasks` · `/app/work-proof` · `/app/complaints`) عبر `/login`. لا نسخ HTML/`support.js`.
 - **Sales Deck** — مكتمل على الفرع (`/deck`): عرض تعريفي للمستثمرين/المشترين — 15 شريحة (غلاف · مشكلة · حل · أثر · باقات · خطوة تالية) · تنقل لوحة مفاتيح وروابط عميقة `?slide=` · ملاحظات متحدث · هوية NiroVera/PowerCare · روابط من تذييل Landing/Mobile. لا نسخ HTML/`support.js`/`deck-stage.js`.
-- يبقى: Careers العامة.
+- **Careers** — مكتمل على الفرع (`/careers`): قناة متقدمين عامة ≠ دخول موظف · بطل هوية · تقديم بلا حساب · رقم مرجعي `NV-APP-…` · ربط خادم `hiring.publicList` / `publicApply` / `publicDeleteRequest` (اتجاه واحد إلى طابور التوظيف) · رابط عام من Recruitment · روابط تذييل Landing/Mobile/Deck. لا نسخ HTML/`support.js`.
+
+**أسطح التسويق في الحزمة مكتملة.** المتبقي عالميًا: نشر Base44 للدوال/الكيانات على البيئة المستضافة · مراجعة/دمج فرع `handoff/server-first-ops` · WIP محلي غير متعلق (LoginPortal · orgTerms · inventory · Dashboard/HR · companyDirectory · `.tmp-design-caps/`).
 
 ---
 

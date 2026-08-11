@@ -10,7 +10,9 @@ import {
   checkAdvanceGate,
   checkConfirmStartGate,
 } from "@/lib/hiringDerivations";
+import { careersPublicPath } from "@/lib/careersContent";
 import { toast } from "@/components/ui/use-toast";
+import { Link } from "react-router-dom";
 
 async function hiring(payload) {
   const res = await base44.functions.invoke("hiring", payload);
@@ -214,6 +216,22 @@ export default function Recruitment() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     {stationName(v.stationId)} · {v.grade} · {ar ? `مفتوح منذ ${b.ageDays} يومًا` : `open ${b.ageDays} days`}
                   </p>
+                  {company?.id ? (
+                    <p className="mt-1.5 text-xs">
+                      <Link
+                        to={careersPublicPath(company.id, v.key)}
+                        className="text-accent hover:underline"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {ar ? "رابط التقديم العام" : "Public careers link"}
+                      </Link>
+                      <span className="text-muted-foreground">
+                        {" · "}
+                        {ar ? "بلا حساب موظف" : "no employee account"}
+                      </span>
+                    </p>
+                  ) : null}
                 </div>
                 <span className={`rounded-md border px-2 py-1 text-xs font-medium ${b.late ? "border-red-200 bg-red-50 text-red-700" : "border-border bg-muted/50"}`}>
                   {b.late
@@ -303,6 +321,21 @@ export default function Recruitment() {
                   <div key={a.id} className={`flex flex-wrap items-center gap-2 border-t border-border/60 py-2 text-xs ${a.state === "out" ? "opacity-60" : ""}`}>
                     <span className="font-medium">{a.name}</span>
                     <span className="text-muted-foreground">{a.saudi ? (ar ? "سعودي" : "Saudi") : (ar ? "غير سعودي" : "Non-Saudi")} · {a.state || "new"}</span>
+                    {a.ref ? (
+                      <span dir="ltr" className="rounded border bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                        {a.ref}
+                      </span>
+                    ) : null}
+                    {a.source === "careers" ? (
+                      <span className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] text-emerald-800">
+                        {ar ? "Careers" : "Careers"}
+                      </span>
+                    ) : null}
+                    {a.deletionRequested ? (
+                      <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-900">
+                        {ar ? "طلب حذف" : "Deletion requested"}
+                      </span>
+                    ) : null}
                     {isHr && a.state !== "out" && (
                       <>
                         {a.state !== "short" && a.state !== "pick" && (

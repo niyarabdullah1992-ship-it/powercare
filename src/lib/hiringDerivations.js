@@ -166,3 +166,51 @@ export function deriveHiringStats(vacancies = [], applicants = [], now = new Dat
   const late = open.filter((v) => deriveVacancyBoard(v, now).late).length;
   return { vacanciesOpen: vacN, applications: appN, avgDaysOpen: avgAge, stagesLate: late };
 }
+
+export function isVacancyPubliclyListed(vacancy) {
+  if (!vacancy || vacancy.withdrawn) return false;
+  return (Number(vacancy.at) || 0) < RQ_STAGES.length;
+}
+
+export function buildApplicationRef(vacancyKey, seed) {
+  const code = String(vacancyKey || "GEN").replace(/[^A-Za-z0-9]/g, "").slice(0, 8).toUpperCase() || "GEN";
+  let h = 2166136261;
+  const raw = `${vacancyKey}|${seed}|${Date.now()}`;
+  for (let i = 0; i < raw.length; i++) {
+    h ^= raw.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const hash = (Math.abs(h) % 1679616).toString(36).toUpperCase().padStart(4, "0");
+  return `NV-APP-${code}-${hash}`;
+}
+
+export function checkPublicApplyGate(input = {}) {
+  const name = String(input.name || "").trim();
+  const phone = String(input.phone || "").replace(/\s+/g, "");
+  const vacancyKey = String(input.vacancyKey || "").trim();
+  if (!vacancyKey) {
+    return {
+      ok: false,
+      error: "VACANCY_REQUIRED",
+      reason: "اختر الشاغر قبل الإرسال.",
+      reasonEn: "Choose a vacancy before submitting.",
+    };
+  }
+  if (!name) {
+    return {
+      ok: false,
+      error: "NAME_REQUIRED",
+      reason: "الاسم مطلوب.",
+      reasonEn: "Name is required.",
+    };
+  }
+  if (phone.length < 8) {
+    return {
+      ok: false,
+      error: "PHONE_REQUIRED",
+      reason: "رقم الجوال مطلوب للمتابعة بالرقم المرجعي.",
+      reasonEn: "A phone number is required so we can reach you with your reference.",
+    };
+  }
+  return { ok: true, name, phone, vacancyKey };
+}

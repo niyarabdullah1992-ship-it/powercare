@@ -217,6 +217,11 @@ export default function Mobile() {
                 </Link>
               </li>
               <li>
+                <Link to="/careers" className="hover:text-[#3FBF80]">
+                  {t("footerCareers")}
+                </Link>
+              </li>
+              <li>
                 <Link to="/security" className="hover:text-[#3FBF80]">
                   {ar ? "الأمان والامتثال" : "Security & Compliance"}
                 </Link>

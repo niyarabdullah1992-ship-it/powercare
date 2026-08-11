@@ -56,6 +56,16 @@ export type ApplicantLike = {
   exp?: number;
   state?: "new" | "short" | "intv" | "out" | "pick";
   rejectReason?: string | null;
+  /** Public careers reference — one-way intake identity, never an employee account. */
+  ref?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  nationalId?: string | null;
+  cvName?: string | null;
+  source?: "internal" | "careers" | string | null;
+  appliedAt?: string | null;
+  deletionRequested?: boolean;
+  companyId?: string;
 };
 
 export type OnboardingLike = {
@@ -226,4 +236,58 @@ export function deriveHiringStats(vacancies: VacancyLike[], applicants: Applican
   const avgAge = ages.length ? Math.round(ages.reduce((a, b) => a + b, 0) / ages.length) : 0;
   const late = open.filter((v) => deriveVacancyBoard(v, now).late).length;
   return { vacanciesOpen: vacN, applications: appN, avgDaysOpen: avgAge, stagesLate: late };
+}
+
+/** Open vacancy that the public careers channel may list (no employee fields). */
+export function isVacancyPubliclyListed(vacancy: VacancyLike | null | undefined) {
+  if (!vacancy || vacancy.withdrawn) return false;
+  return (Number(vacancy.at) || 0) < RQ_STAGES.length;
+}
+
+/** NV-APP-<CODE>-<HASH> — candidate identity on the public channel only. */
+export function buildApplicationRef(vacancyKey: string, seed: string) {
+  const code = String(vacancyKey || "GEN").replace(/[^A-Za-z0-9]/g, "").slice(0, 8).toUpperCase() || "GEN";
+  let h = 2166136261;
+  const raw = `${vacancyKey}|${seed}|${Date.now()}`;
+  for (let i = 0; i < raw.length; i++) {
+    h ^= raw.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const hash = (Math.abs(h) % 1679616).toString(36).toUpperCase().padStart(4, "0");
+  return `NV-APP-${code}-${hash}`;
+}
+
+export function checkPublicApplyGate(input: {
+  name?: string;
+  phone?: string;
+  vacancyKey?: string;
+}) {
+  const name = String(input.name || "").trim();
+  const phone = String(input.phone || "").replace(/\s+/g, "");
+  const vacancyKey = String(input.vacancyKey || "").trim();
+  if (!vacancyKey) {
+    return {
+      ok: false as const,
+      error: "VACANCY_REQUIRED",
+      reason: "اختر الشاغر قبل الإرسال.",
+      reasonEn: "Choose a vacancy before submitting.",
+    };
+  }
+  if (!name) {
+    return {
+      ok: false as const,
+      error: "NAME_REQUIRED",
+      reason: "الاسم مطلوب.",
+      reasonEn: "Name is required.",
+    };
+  }
+  if (phone.length < 8) {
+    return {
+      ok: false as const,
+      error: "PHONE_REQUIRED",
+      reason: "رقم الجوال مطلوب للمتابعة بالرقم المرجعي.",
+      reasonEn: "A phone number is required so we can reach you with your reference.",
+    };
+  }
+  return { ok: true as const, name, phone, vacancyKey };
 }

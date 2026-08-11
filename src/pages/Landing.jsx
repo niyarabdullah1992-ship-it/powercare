@@ -349,6 +349,7 @@ export default function Landing() {
               <li><Link to="/about" className="hover:text-[#3FBF80]">{t("footerAbout")}</Link></li>
               <li><Link to="/mobile" className="hover:text-[#3FBF80]">{ar ? "تطبيق الميدان" : "Field companion"}</Link></li>
               <li><Link to="/deck" className="hover:text-[#3FBF80]">{ar ? "عرض المبيعات" : "Sales deck"}</Link></li>
+              <li><Link to="/careers" className="hover:text-[#3FBF80]">{t("footerCareers")}</Link></li>
               <li><Link to="/security" className="hover:text-[#3FBF80]">{ar ? "الأمان والامتثال" : "Security & Compliance"}</Link></li>
               <li><Link to="/terms" className="hover:text-[#3FBF80]">{t("footerTerms")}</Link></li>
               <li><Link to="/privacy" className="hover:text-[#3FBF80]">{ar ? "الخصوصية" : "Privacy"}</Link></li>

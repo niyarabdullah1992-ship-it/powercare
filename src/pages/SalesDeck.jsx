@@ -109,6 +109,9 @@ export default function SalesDeck() {
             <Link to="/mobile" className="text-[12.5px] text-[#B9C3D8] transition-colors hover:text-white">
               {ar ? "الميدان" : "Field"}
             </Link>
+            <Link to="/careers" className="text-[12.5px] text-[#B9C3D8] transition-colors hover:text-white">
+              {ar ? "الوظائف" : "Careers"}
+            </Link>
             <Link to="/pricing" className="text-[12.5px] text-[#B9C3D8] transition-colors hover:text-white">
               {ar ? "الباقات" : "Pricing"}
             </Link>
@@ -269,6 +272,11 @@ export default function SalesDeck() {
               <li>
                 <Link to="/pricing" className="hover:text-[#3FBF80]">
                   {ar ? "الباقات" : "Pricing"}
+                </Link>
+              </li>
+              <li>
+                <Link to="/careers" className="hover:text-[#3FBF80]">
+                  {t("footerCareers")}
                 </Link>
               </li>
               <li>
