@@ -16,18 +16,18 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · **`org`**
-(فروع + مسؤول ينقل التصعيد فورًا · مصفوفة صلاحيات مشتقة · `DELEGATED_IS_DERIVED` · `CYCLE_FORBIDDEN` · تفويض ينتهي تلقائيًا).
+`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · **`payroll`**
+(إضافي مادة 107 بنسبة 150% · اعتماد المسير · WPS بعد مطابقة قوى · مهلة اليوم 3 من الشهر التالي).
 
-مسار التحقق (الهيكل):
+مسار التحقق (الرواتب):
 
-1. أنشئ فرعًا بلا مسؤول → `BRANCH_MANAGER_REQUIRED`
-2. غيّر مسؤول فرع → تتحدّث `escalation` فورًا من نفس القائمة
-3. اضغط خانة «بتفويض» في المصفوفة → `DELEGATED_IS_DERIVED`
-4. أعد أبوّة عقدة تحت سليلها → `CYCLE_FORBIDDEN`
-5. فوّض بصلاحية بتاريخ ماضٍ → تظهر `expired` وتُسحب تلقائيًا من السريان
+1. افتح مسيرًا فارغًا → اعتمد → `EMPTY_RUN`
+2. بند بلا أساسي → `ITEM_ISSUES`
+3. اعتمد مسيرًا سليمًا ثم أرسل WPS قبل الاعتماد على مسير آخر → `RUN_NOT_APPROVED`
+4. غيّر `qiwaWage` ليخالف الأساسي+البدلات → `QIWA_MISMATCH`
+5. بعد المطابقة أرسل WPS — يظهر الموعد النظامي (يوم 3 من الشهر التالي)
 
-تنفيذ: `orgDerivations` · `base44/functions/org` · `OrgStructureBoard` على `/app/hr`.
+تنفيذ: `payrollDerivations` · `base44/functions/payroll` · `PayrollRunBoard` على `/app/payroll`.
 
 ---
 
