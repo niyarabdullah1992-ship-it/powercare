@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from "react-leaflet";
+import { MapContainer, Marker, Circle, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import GoogleTiles from "@/components/maps/GoogleTiles";
 import LocationSearchBox from "@/components/maps/LocationSearchBox";

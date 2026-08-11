@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
-import { STAMP_CANVAS_HEIGHT, STAMP_CANVAS_WIDTH, STAMP_MAX_SCALE, STAMP_MIN_SCALE, STAMP_WIDTH_PERCENT } from "@/lib/signatureStampGeometry";
+import { STAMP_CANVAS_HEIGHT, STAMP_CANVAS_WIDTH, STAMP_MAX_SCALE, STAMP_WIDTH_PERCENT } from "@/lib/signatureStampGeometry";
 import PlacementToolbar from "@/components/files/PlacementToolbar";
 import { Image } from "@/components/ui/image";
 

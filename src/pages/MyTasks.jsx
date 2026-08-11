@@ -12,7 +12,7 @@ import { logAudit } from "@/lib/auditLog";
 import { loadSmartDefaults, saveSmartDefaults } from "@/lib/smartDefaults";
 import { getTodayAttendance } from "@/lib/attendance";
 import { Link } from "react-router-dom";
-import { Plus, Check, Target, User, Users, Building2, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Radio, Clock, Search, Pencil, X, ClipboardCheck, Archive, Sparkles } from "lucide-react";
+import { User, Users, Calendar, AlertTriangle, Paperclip, ListOrdered, FileText, ChevronRight, ArrowLeft, Search, Pencil, X, Sparkles } from "lucide-react";
 import TaskStats from "@/components/tasks/TaskStats";
 import TaskCard from "@/components/tasks/TaskCard";
 import StationSections from "@/components/tasks/StationSections";

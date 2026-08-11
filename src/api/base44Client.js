@@ -40,6 +40,10 @@ const SESSION_SECURED_FUNCTIONS = new Set([
   'multiSign',
   'calendarSync',
   'cameraConnectionTest',
+  // Also auto-attach for legacy module APIs that authorize via CompanySession
+  'inventory',
+  'expenses',
+  'clientProof',
 ]);
 const powercareFunctions = base44.functions;
 const rawInvoke = powercareFunctions.invoke.bind(powercareFunctions);

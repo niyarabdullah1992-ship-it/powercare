@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { base44 } from "@/api/base44Client";
-import { Paperclip, X, FileText, Image as ImageIcon, Loader2, Download } from "lucide-react";
+import { Paperclip, X, FileText, Loader2, Download } from "lucide-react";
 
 const isImage = (name = "", type = "") =>
   /^image\/(png|jpe?g|gif|webp|svg)$/i.test(type) || /\.(png|jpe?g|gif|webp|svg)$/i.test(name);
