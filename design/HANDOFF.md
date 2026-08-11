@@ -16,20 +16,20 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · `offboarding` · `complaints` · `files` · **`settings`**
-(نطاقات المحطات الجغرافية · سجل المنشأة · مفتاح المالك للتحقق الجغرافي · حدود البلاغات للعرض فقط من ثوابت الشكاوى).
+`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · `offboarding` · `complaints` · `files` · `settings` · **`reports`**
+(مكتبة التقارير الستة · الجداول التلقائية · تحليل الحضور/الإضافي المشتق · كشف شهري يُقفل لمسير الرواتب — دون إعادة بناء `StationDailyBoard`).
 
-مسار التحقق (إعدادات الشركة):
+مسار التحقق (التقارير والتحليلات):
 
-1. تحقق موقع خارج نصف القطر والتحقق مفعّل → `OUTSIDE_GEOFENCE`
-2. تحقق مفعّل بلا إحداثيات → `GEOFENCE_REQUIRED` · إحداثيات غير صالحة → `INVALID_COORDS` · محطة بلا نطاق → `GEOFENCE_NOT_CONFIGURED`
-3. سجل منشأة: CR/VAT/قوى/نطاق بريدي غير صالح → `INVALID_CR` / `INVALID_VAT` / `INVALID_QIWA_ESTABLISHMENT` / `INVALID_EMAIL_DOMAIN`
-4. إيقاف التحقق (مالك فقط) → `verificationMode: self_declaration` (إقرار لا إثبات) · غير المالك → `OWNER_ONLY`
-5. مصفوفة الصلاحيات والتفويض المؤقت: في شريحة `org` — لا تُعاد هنا
+1. توليد بلا نوع معروف → `UNKNOWN_REPORT` · بلا صلاحية دور → `FORBIDDEN` · تقرير يحتاج فترة بلا `YYYY-MM` → `PERIOD_REQUIRED` · نطاق فارغ → `EMPTY_SCOPE`
+2. كشف الحضور: سماح 10 دقائق · وردية 8 ساعات · ما زاد إضافي؛ الإقفال بلا موظف/فترة → `EMPLOYEE_REQUIRED` / `PERIOD_REQUIRED`
+3. إقفال والكشف مقفل → `ALREADY_CLOSED` · أيام بلا انصراف → `OPEN_CHECKOUTS`
+4. فتح بعد الإقفال بلا سبب مكتوب → `REASON_REQUIRED` · غير مقفل → `NOT_CLOSED`
+5. تحليل OT: محطات فوق حد الإضافي الأسبوعي (8س/رأس من سقف 48س) · غياب متكرر ≥2 · تجاوز فردي لـ 48س/أسبوع
 
-تنفيذ: `settingsDerivations` · `base44/functions/settings` · `CompanySettingsBoard` على `/app/hr`.
+تنفيذ: `reportsDerivations` · `base44/functions/reports` · `ReportLibraryBoard` على `/app/daily-report` (لوحة ثانوية تحت التقرير اليومي للمحطات).
 
-**المتبقي من التسليم (تقريبًا):** Reports · Assistant · Chat (وما يتصل بها من روابط عرضية).
+**المتبقي من التسليم (تقريبًا):** Assistant · Chat (وما يتصل بها من روابط عرضية).
 
 ---
 
