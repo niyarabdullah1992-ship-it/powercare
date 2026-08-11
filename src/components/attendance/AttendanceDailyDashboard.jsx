@@ -210,17 +210,38 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
         />
       </div>}
 
-      <div className="p-5 rounded-xl border border-border bg-card space-y-3">
-        <h3 className="font-heading text-lg font-semibold">{t("dailyAttendance")}</h3>
-      {!loading && employees.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-          <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-center"><strong className="block text-lg text-emerald-700">{counts.present}</strong><span className="text-xs text-emerald-700">{t("totalPresent")}</span></div>
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-center"><strong className="block text-lg text-amber-700">{counts.late}</strong><span className="text-xs text-amber-700">{t("totalLate")}</span></div>
-          <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-center"><strong className="block text-lg text-red-700">{counts.absent}</strong><span className="text-xs text-red-700">{t("totalAbsent")}</span></div>
-          <div className="rounded-lg border border-sky-300 bg-sky-50 p-3 text-center"><strong className="block text-lg text-sky-700">{counts.onLeave}</strong><span className="text-xs text-sky-700">{t("onLeaveStatus")}</span></div>
-          <div className="rounded-lg border border-border bg-muted p-3 text-center"><strong className="block text-lg">{counts.notScheduled}</strong><span className="text-xs text-muted-foreground">{lang === "ar" ? "غير مجدول" : "Not scheduled"}</span></div>
-        </div>
-      )}
+      <div className="space-y-3 rounded-[14px] border border-[#E2E8F0] bg-white p-5">
+        <h3 className="m-0 font-heading text-[15px] font-semibold text-[#14284B]">{t("dailyAttendance")}</h3>
+      {!loading && employees.length > 0 && (() => {
+        const scheduled = Math.max(1, employees.length - counts.notScheduled);
+        const rate = Math.round(((counts.present + counts.late) / scheduled) * 100);
+        const outside = rows.filter((r) => r.location_status === "outside").length;
+        const lateAvg = (() => {
+          const lateRows = rows.filter((r) => Number(r.late_minutes) > 0);
+          if (!lateRows.length) return 0;
+          return Math.round(lateRows.reduce((s, r) => s + Number(r.late_minutes || 0), 0) / lateRows.length);
+        })();
+        const attStats = [
+          { label: lang === "ar" ? "نسبة الحضور اليوم" : "Attendance rate today", value: `${rate}%`, suffix: lang === "ar" ? "من المجدولين" : "of scheduled", tone: "#14284B" },
+          { label: lang === "ar" ? "متوسط التأخير" : "Avg lateness", value: String(lateAvg), suffix: lang === "ar" ? "دقيقة" : "min", tone: lateAvg ? "#B45309" : "#14284B" },
+          { label: lang === "ar" ? "خارج النطاق الجغرافي" : "Outside geofence", value: String(outside), suffix: lang === "ar" ? "تسجيل" : "records", tone: outside ? "#DC2626" : "#14284B" },
+          { label: lang === "ar" ? "ساعات العمل" : "Work hours", value: dailyWorkHours.toFixed(1), suffix: lang === "ar" ? "ساعة" : "h", tone: "#14284B" },
+          { label: t("totalAbsent"), value: String(counts.absent), suffix: lang === "ar" ? "موظف" : "people", tone: counts.absent ? "#DC2626" : "#14284B" },
+        ];
+        return (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            {attStats.map((s) => (
+              <div key={s.label} className="rounded-[13px] border border-[#E2E8F0] bg-white px-4 py-3.5">
+                <div className="text-[11px] text-[#5A6B85]">{s.label}</div>
+                <div className="mt-2 flex flex-wrap items-baseline gap-1.5">
+                  <span className="font-heading text-[26px] font-semibold leading-none" style={{ color: s.tone }}>{s.value}</span>
+                  <span className="text-[11px] text-[#5A6B85]">{s.suffix}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
       {loading ? (
         <p className="text-sm text-muted-foreground font-body">…</p>
       ) : employees.length === 0 ? (

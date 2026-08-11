@@ -1,16 +1,45 @@
 import React from "react";
 import { PackagePlus, ArrowLeftRight, PackageMinus, History } from "lucide-react";
+import { useOrgTerms } from "@/hooks/useOrgTerms";
 
 export default function InventoryWorkflow({ onNavigate, ar }) {
+  const { terms } = useOrgTerms();
   const steps = [
-    ["purchase", PackagePlus, ar ? "المشتريات / الإدخال" : "Purchase / Entry", ar ? "أدخل جميع بيانات الصنف والكمية والفاتورة" : "Enter all item, quantity and invoice details"],
-    ["items", ArrowLeftRight, ar ? "الأصناف" : "Items", ar ? "راجع الأصناف المتاحة وأماكن وجودها" : "Review available items and their stations"],
-    ["requests", History, ar ? "طلب من محطة" : "Station request", ar ? "اطلب صنفاً وتنتظر موافقة محطة المصدر" : "Request an item and await source approval"],
-    ["consumption", PackageMinus, ar ? "الصرف للعمل" : "Issue to work", ar ? "اصرف مباشرة من رصيد المحطة ووثّق المهمة والمستلم" : "Issue directly from station stock and document the task and recipient"],
+    ["purchase", PackagePlus, ar ? "المشتريات / الإدخال" : "Purchase / Entry", ar ? "أدخل بيانات الصنف والكمية والفاتورة" : "Enter item, quantity and invoice details"],
+    ["items", ArrowLeftRight, ar ? "الأصناف" : "Items", ar ? `راجع الأصناف وأماكن وجودها` : `Review items and their ${terms.stations.toLowerCase()}`],
+    ["requests", History, ar ? `طلب من ${terms.aStation}` : `Request from ${terms.station.toLowerCase()}`, ar ? "اطلب صنفًا وانتظر موافقة المصدر" : "Request an item and await approval"],
+    ["consumption", PackageMinus, ar ? "الصرف للعمل" : "Issue to work", ar ? `اصرف من رصيد ${terms.theStation} ووثّق المستلم` : `Issue from ${terms.station.toLowerCase()} stock and document recipient`],
   ];
   const gridDirection = ar ? "[direction:rtl]" : "[direction:ltr]";
-  return <section className="rounded-xl border border-accent/30 bg-card px-4 py-7 shadow-soft md:px-7 md:py-8">
-    <div className="mb-9 text-center"><p className="font-mono text-[10px] uppercase tracking-widest text-accent">NiroVera Workflow</p><h2 className="mt-2 font-heading text-3xl font-bold md:text-4xl">{ar ? "دورة حركة الصنف" : "Item movement cycle"}</h2><p className="mt-3 text-lg text-foreground/70 md:text-xl">{ar ? "تبدأ بالشراء وتنتهي عند صرف الصنف للعمل." : "Starts with purchase and ends when the item is issued to work."}</p></div>
-    <div className={`grid gap-x-5 gap-y-9 md:grid-cols-2 xl:grid-cols-4 ${gridDirection}`}>{steps.map(([key, Icon, title, text], index) => <button type="button" key={key} onClick={() => onNavigate(key)} className="relative flex min-h-44 flex-col items-center justify-center rounded-lg border border-accent/35 bg-secondary/40 px-4 pb-4 pt-7 text-center hover:border-accent hover:bg-accent/5"><span className="absolute left-1/2 top-0 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-accent bg-primary text-base font-bold text-accent shadow-sm">{index + 1}</span><Icon className="mb-3 h-8 w-8 text-accent" strokeWidth={1.6} /><span className="block text-lg font-bold leading-snug text-foreground">{title}</span><span className="mt-1.5 block max-w-48 text-sm leading-5 text-muted-foreground">{text}</span></button>)}</div>
-  </section>;
+
+  return (
+    <section className="rounded-[10px] border border-[#E4E7EC] bg-white px-4 py-5 md:px-5">
+      <div className="mb-4">
+        <p className="text-[11px] font-semibold tracking-[0.14em] text-[#0E7A4B]">NIROVERA WORKFLOW</p>
+        <h2 className="mt-1 text-lg font-semibold text-[#101828] md:text-xl">
+          {ar ? "دورة حركة الصنف" : "Item movement cycle"}
+        </h2>
+        <p className="mt-1 text-sm text-[#667085]">
+          {ar ? "تبدأ بالشراء وتنتهي عند صرف الصنف للعمل." : "Starts with purchase and ends when the item is issued to work."}
+        </p>
+      </div>
+      <div className={`grid gap-3 sm:grid-cols-2 xl:grid-cols-4 ${gridDirection}`}>
+        {steps.map(([key, Icon, title, text], index) => (
+          <button
+            type="button"
+            key={key}
+            onClick={() => onNavigate(key)}
+            className="relative flex flex-col gap-2 rounded-[10px] border border-[#E4E7EC] bg-[#F9FAFB] px-3.5 py-4 text-start transition hover:border-[#0E7A4B] hover:bg-white"
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0B1A3F] text-xs font-semibold text-white">
+              {index + 1}
+            </span>
+            <Icon className="h-5 w-5 text-[#0E7A4B]" strokeWidth={1.6} />
+            <span className="text-[13.5px] font-semibold text-[#101828]">{title}</span>
+            <span className="text-[12px] leading-5 text-[#667085]">{text}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
 }

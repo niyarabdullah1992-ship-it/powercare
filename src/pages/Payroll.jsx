@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { Banknote, Users, CheckCircle2, Wallet, RefreshCw, FileText } from "lucide-react";
+import { Users, CheckCircle2, Wallet, RefreshCw, FileText } from "lucide-react";
 import { ensurePayrollRun, getRun, isPayrollEmployee, monthKey, netOf, payrollItemIssues, setOwnerPayrollEnabled, updatePayrollItem, setItemPaid, syncPayrollFromProfiles } from "@/lib/payroll";
 import { printReport } from "@/lib/printReport";
 import PayrollTableRows from "@/components/payroll/PayrollTableRows";
@@ -13,7 +13,6 @@ import PayrollSyncDialog from "@/components/payroll/PayrollSyncDialog";
 import { canAdjustPayroll, hrScopeStations } from "@/lib/permissions";
 import { toast } from "@/components/ui/use-toast";
 import { stationIdForTreeEmployee } from "@/lib/orgTree";
-import PageHeader from "@/components/PageHeader";
 import DeductionLinesDialog from "@/components/payroll/DeductionLinesDialog";
 import PayrollRunBoard from "@/components/payroll/PayrollRunBoard";
 import { addDeductionLine, removeDeductionLine, resolveDeductionDispute, backfillLegacyDeduction, disputeDeductionLine, deductionLines } from "@/lib/payrollDeductions";
@@ -110,19 +109,22 @@ export default function Payroll() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={ar ? "الرواتب" : "Payroll"}
-        description={ar ? "مسيّر رواتب شهري مبني على ملفات الموظفين" : "Monthly payroll run built from employee salary profiles"}
-        icon={Banknote}
-        actions={<>
-          <input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} className="border-border bg-card px-3 py-2 text-sm font-medium text-foreground shadow-sm [color-scheme:light] dark:[color-scheme:dark]" dir="ltr" />
+    <div className="mx-auto max-w-[1320px] space-y-5">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="m-0 font-heading text-[22px] font-semibold text-[#14284B]">{ar ? "الرواتب" : "Payroll"}</h1>
+          <p className="m-0 mt-1 text-[13px] text-[#5A6B85]">
+            {ar ? `مسير ${monthLabel} · بانتظار الاعتماد` : `${monthLabel} run · awaiting approval`}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm font-medium text-[#14284B] [color-scheme:light]" dir="ltr" />
           <StationMultiSelect stations={filterStations} value={selectedStationIds} onChange={setStationFilter} ar={ar} />
-          <button onClick={() => setShowSyncConfirm(true)} className="flex items-center gap-1.5 border border-accent/45 bg-accent px-3.5 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent/90">
-            <RefreshCw className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تحديث من الملفات الشخصية" : "Refresh from profiles"}
+          <button onClick={() => setShowSyncConfirm(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-3.5 py-2 text-[12.5px] font-semibold text-[#14284B] hover:border-[#0E7A4B]">
+            <RefreshCw className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تحديث من الملفات" : "Refresh from profiles"}
           </button>
-        </>}
-      />
+        </div>
+      </header>
       <PayrollRunBoard month={month} lang={lang} />
 
       <PayrollSyncDialog open={showSyncConfirm} onOpenChange={setShowSyncConfirm} onConfirm={syncFromProfiles} ar={ar} />

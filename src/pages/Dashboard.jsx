@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { visibleStations, visibleEmployees, canApproveReports, canReplyAnon, isCompanyOwner } from "@/lib/permissions";
+import { visibleStations, visibleEmployees, canReplyAnon, isCompanyOwner } from "@/lib/permissions";
 import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
-import WelcomeHero from "@/components/dashboard/WelcomeHero";
-import { AlertTriangle, FileText, Bell, Megaphone, Palette } from "lucide-react";
+import { AlertTriangle, FileText, Megaphone, Palette } from "lucide-react";
 import DashboardStatCards from "@/components/dashboard/DashboardStatCards";
 import PendingActionsPanel from "@/components/dashboard/PendingActionsPanel";
 import ExecutiveDashboard from "@/pages/ExecutiveDashboard";
@@ -91,45 +90,31 @@ export default function Dashboard() {
   const stations = visibleStations(currentUser, data);
   const stationIds = new Set(stations.map((s) => s.id));
 
-  const unreadNotifs = data.notifications.filter((n) => n.userId === currentUser.id && !n.read).length;
-  const pendingReportsCount = data.reports.filter((r) => stationIds.has(r.stationId) && r.status === "pending").length;
   const anonOpenCount = data.anonymousReports.filter((a) => stationIds.has(a.stationId) && a.status === "open").length;
-
-  const welcomeAlerts = [
-    { key: "notifications", icon: Bell, label: t("notifications"), value: unreadNotifs },
-    { key: "stoppage", icon: AlertTriangle, label: t("stoppageIssues"), value: stoppageCount },
-    ...(canApproveReports(currentUser) ? [{ key: "reports", icon: FileText, label: t("pendingReports"), value: pendingReportsCount }] : []),
-    ...(canReplyAnon(currentUser) ? [{ key: "anon", icon: Megaphone, label: t("anonymous"), value: anonOpenCount }] : []),
-  ];
-  const welcomeHero = (
-    <WelcomeHero name={currentUser.name} companyName={data.name} t={t} lang={lang} alerts={welcomeAlerts} employee={currentUser} companyId={company.id} />
-  );
 
   const isEmployee = currentUser.role === "employee";
   const canEditBranding = isCompanyOwner(currentUser, data) || currentUser.role === "director";
 
   if (isEmployee) return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="field-dashboard space-y-5">
-        {welcomeHero}
-        <ProofCycleRibbon lang={lang} />
+      <div className="field-dashboard space-y-4">
+        <DashboardPersonaBar lang={lang} />
+        <EmployeeDashboard user={currentUser} company={company} data={data} />
         <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
         <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
-        <EmployeeDashboard user={currentUser} company={company} data={data} />
       </div>
     </PullToRefresh>
   );
 
-  // Station-scoped managers get their own station-focused dashboard.
+  // Station-scoped managers get the same Command Center language, station-scoped.
   if (currentUser.role === "station_manager" || currentUser.role === "pgm") {
     return (
       <PullToRefresh onRefresh={handleRefresh}>
         <div className="ops-command-dashboard space-y-4">
-          {welcomeHero}
-          <ProofCycleRibbon lang={lang} />
+          <DashboardPersonaBar lang={lang} />
+          <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
           <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
           <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
-          <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
         </div>
       </PullToRefresh>
     );

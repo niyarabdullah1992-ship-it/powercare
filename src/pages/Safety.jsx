@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import { ShieldCheck, FileText, ClipboardCheck, Archive } from "lucide-react";
+import { FileText, ClipboardCheck, Archive } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canApproveReports } from "@/lib/permissions";
 import { updateSafetyRecord, recordSafetyIncident, closeSafetyHazard, approveSafetyRecord, revokeSafetyApproval } from "@/lib/safetyStore";
 import { safetyApprovalIssues } from "@/lib/safetyLogic";
-import PageHeader from "@/components/PageHeader";
 import StationSafetyCard from "@/components/safety/StationSafetyCard";
 import SafetyReportExport from "@/components/safety/SafetyReportExport";
 import SafetyExplanation from "@/components/safety/SafetyExplanation";
@@ -64,12 +63,15 @@ export default function Safety() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={ar ? "السلامة (HSE)" : "Safety (HSE)"}
-        description={ar ? "أدخل بيانات السلامة لكل محطة واعتمدها — تُحسب تقارير السلامة الشهرية من البيانات المعتمدة هنا." : "Enter and approve each station's safety data — monthly HSE reports are calculated from the approved data here."}
-        icon={ShieldCheck}
-      />
+    <div className="mx-auto max-w-[1320px] space-y-5">
+      <header>
+        <h1 className="m-0 font-heading text-[22px] font-semibold text-[#14284B]">
+          {ar ? "السلامة HSE" : "Safety HSE"}
+        </h1>
+        <p className="m-0 mt-1 text-[13px] text-[#5A6B85]">
+          {ar ? "المخاطر المفتوحة وسجل الحوادث · المعدّلات من ساعات التعرّض" : "Open hazards and incident log · rates from exposure hours"}
+        </p>
+      </header>
 
       <SafetyExplanation ar={ar} />
 

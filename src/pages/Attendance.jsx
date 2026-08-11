@@ -4,14 +4,13 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { canCreateTasks, isCompanyOwner, visibleEmployees, visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
-import { ClipboardCheck, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import CheckInOutCard from "@/components/attendance/CheckInOutCard";
 import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDashboard";
 import CalendarExportCard from "@/components/calendar/CalendarExportCard";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import TimeFormatToggle from "@/components/attendance/TimeFormatToggle";
 import { queryClientInstance } from "@/lib/query-client";
-import PageHeader from "@/components/PageHeader";
 
 // Heavy tabs (maps/charts) load only when their tab is actually opened —
 // the page itself now appears instantly with the check-in card + team list.
@@ -132,8 +131,14 @@ export default function Attendance() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-    <div className="attendance-hub space-y-6">
-      <PageHeader title={pageTitle} description={pageDescription} icon={ClipboardCheck} actions={<TimeFormatToggle lang={lang} />} />
+    <div className="attendance-hub mx-auto max-w-[1320px] space-y-5">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="m-0 font-heading text-[22px] font-semibold text-[#14284B]">{pageTitle}</h1>
+          <p className="m-0 mt-1 text-[13px] text-[#5A6B85]">{pageDescription}</p>
+        </div>
+        <TimeFormatToggle lang={lang} />
+      </header>
 
       {!focusShifts && !focusLeave && (
         <>
@@ -150,12 +155,16 @@ export default function Attendance() {
 
       <div className="space-y-4">
           {!focusShifts && !focusLeave && (
-          <div className="flex gap-2 border-b border-border overflow-x-auto no-scrollbar">
+          <div className="flex w-max max-w-full gap-0.5 overflow-x-auto rounded-[10px] bg-[#EEF2F6] p-0.5 no-scrollbar">
             {tabs.map((tb) => (
               <button
                 key={tb.key}
                 onClick={() => selectTab(tb.key)}
-                className={`px-3 py-2 text-sm font-body border-b-2 -mb-px transition whitespace-nowrap shrink-0 ${activeTab === tb.key ? "border-foreground text-foreground font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                className={`shrink-0 whitespace-nowrap rounded-lg px-3.5 py-2 text-[12.5px] font-medium transition ${
+                  activeTab === tb.key
+                    ? "bg-white text-[#14284B] shadow-sm"
+                    : "text-[#5A6B85] hover:text-[#14284B]"
+                }`}
               >
                 {tb.label}
               </button>

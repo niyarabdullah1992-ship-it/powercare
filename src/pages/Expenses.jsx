@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { ReceiptText, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 import SectionToolbar from "@/components/shared/SectionToolbar";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { expensesCall } from "@/lib/expensesApi";
-import PageHeader from "@/components/PageHeader";
 import ExpenseForm from "@/components/expenses/ExpenseForm";
 import ExpenseStats from "@/components/expenses/ExpenseStats";
 import ExpenseList from "@/components/expenses/ExpenseList";
@@ -34,8 +33,13 @@ export default function Expenses() {
   const run = async (action, payload) => { try { await expensesCall(session, action, payload); await load(); toast({ description: ar ? "تم حفظ العملية." : "Expense updated." }); return true; } catch (error) { toast({ description: error?.response?.data?.error || error.message, variant: "destructive" }); return false; } };
   const submit = async (payload) => run("submit", { ...payload, stationId: currentUser?.stationId });
 
-  return <div className="space-y-6">
-    <PageHeader title={ar ? "إدارة المصروفات" : "Expense Management"} description={ar ? "رفع الإيصالات واعتماد المصروفات ومراجعتها ماليًا." : "Submit receipts, approve expenses and complete finance review."} icon={ReceiptText} />
+  return <div className="mx-auto max-w-[1320px] space-y-5">
+    <header>
+      <h1 className="m-0 font-heading text-[22px] font-semibold text-[#14284B]">{ar ? "المصروفات" : "Expenses"}</h1>
+      <p className="m-0 mt-1 text-[13px] text-[#5A6B85]">
+        {ar ? "مطالبات ومصروفات تشغيلية مقابل ميزانية كل محطة" : "Claims and operating spend against each station's budget"}
+      </p>
+    </header>
     <ExpenseBudgetBoard lang={lang} />
     <ExpenseForm stations={state.stations} canPickStations={state.canPickStations} onSubmit={submit} ar={ar} />
     <ExpenseStats claims={state.claims} ar={ar} />
