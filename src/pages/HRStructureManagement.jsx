@@ -7,6 +7,7 @@ import FlexOrgTree from "@/components/hr/FlexOrgTree";
 import JobGradeManager from "@/components/employees/JobGradeManager";
 import OrgTypeSettings from "@/components/hr/OrgTypeSettings";
 import OrgStructureBoard from "@/components/hr/OrgStructureBoard";
+import CompanySettingsBoard from "@/components/hr/CompanySettingsBoard";
 
 export default function HRStructureManagement() {
   const { t, lang } = useI18n();
@@ -27,6 +28,7 @@ export default function HRStructureManagement() {
       </div>
       <OrgTypeSettings lang={lang} />
       <OrgStructureBoard lang={lang} />
+      <CompanySettingsBoard lang={lang} />
       <div className="space-y-3">
         <button
           type="button"

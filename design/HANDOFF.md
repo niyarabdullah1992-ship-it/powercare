@@ -16,17 +16,20 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · `offboarding` · `complaints` · **`files`**
-(أرشيف ذكي: مجلدات بصلاحية `restricted` / `all_staff` / `hr` / `supervisors` · مستندات مربوطة بمحطة · عدّادات مشتقة · بوابات مسمّاة).
+`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · `offboarding` · `complaints` · `files` · **`settings`**
+(نطاقات المحطات الجغرافية · سجل المنشأة · مفتاح المالك للتحقق الجغرافي · حدود البلاغات للعرض فقط من ثوابت الشكاوى).
 
-مسار التحقق (الملفات / الأرشيف الذكي):
+مسار التحقق (إعدادات الشركة):
 
-1. موظف يفتح مجلد/ملف `restricted` أو `hr` → `ACCESS_DENIED_BY_SCOPE`
-2. رفع بلا `stationId` وغير company-wide → `MISSING_STATION_BINDING`
-3. نقل مجلد تحت فرع منه → `FOLDER_CYCLE`
-4. `list`/`seedDemo` → عدّادات المجلدات وقائمة «أحدث الملفات» من الخادم فقط
+1. تحقق موقع خارج نصف القطر والتحقق مفعّل → `OUTSIDE_GEOFENCE`
+2. تحقق مفعّل بلا إحداثيات → `GEOFENCE_REQUIRED` · إحداثيات غير صالحة → `INVALID_COORDS` · محطة بلا نطاق → `GEOFENCE_NOT_CONFIGURED`
+3. سجل منشأة: CR/VAT/قوى/نطاق بريدي غير صالح → `INVALID_CR` / `INVALID_VAT` / `INVALID_QIWA_ESTABLISHMENT` / `INVALID_EMAIL_DOMAIN`
+4. إيقاف التحقق (مالك فقط) → `verificationMode: self_declaration` (إقرار لا إثبات) · غير المالك → `OWNER_ONLY`
+5. مصفوفة الصلاحيات والتفويض المؤقت: في شريحة `org` — لا تُعاد هنا
 
-تنفيذ: `fileArchiveDerivations` · `base44/functions/files` · `SmartArchiveBoard` على `/app/files`.
+تنفيذ: `settingsDerivations` · `base44/functions/settings` · `CompanySettingsBoard` على `/app/hr`.
+
+**المتبقي من التسليم (تقريبًا):** Reports · Assistant · Chat (وما يتصل بها من روابط عرضية).
 
 ---
 
