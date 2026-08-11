@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Search,
-  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck, Camera,
+  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck, Camera, Briefcase,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -144,6 +144,7 @@ export default function Layout({ children }) {
   const navItems = [
     { to: "/app", icon: LayoutDashboard, label: lang === "ar" ? "لوحة المعلومات" : "Dashboard", end: true, category: "core" },
     { to: "/app/hr", icon: UserCog, label: lang === "ar" ? "الموظفون" : "Employees", category: "core" },
+    { to: "/app/hiring", icon: Briefcase, label: lang === "ar" ? "التوظيف" : "Recruitment", category: "core" },
     { to: "/app/attendance", icon: ClipboardCheck, label: lang === "ar" ? "الحضور والانصراف" : "Attendance", category: "core" },
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "مسير الرواتب" : "Payroll", category: "core" },
     { to: "/app/performance", icon: Trophy, label: lang === "ar" ? "إدارة الأداء" : "Performance", category: "core" },
@@ -255,6 +256,7 @@ export default function Layout({ children }) {
   const pageTitles = {
     "/app": lang === "ar" ? "لوحة المعلومات" : "Dashboard",
     "/app/hr": lang === "ar" ? "الموارد البشرية" : "HR",
+    "/app/hiring": lang === "ar" ? "التوظيف والتعيين" : "Recruitment",
     "/app/attendance": lang === "ar" ? "الحضور والانصراف" : "Attendance",
     "/app/payroll": lang === "ar" ? "مسير الرواتب" : "Payroll",
     "/app/performance": lang === "ar" ? "إدارة الأداء" : "Performance",

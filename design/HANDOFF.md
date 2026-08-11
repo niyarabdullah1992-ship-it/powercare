@@ -16,16 +16,16 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · `workproof` · **`dailyReport`**
-(حقائق مشتقة لكل محطة · التأخير ≠ الاعتماد · اعتمد الكل / طالب / أصدر موقّعًا).
+`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · **`hiring`**
+(SLA من يوم فتح الشاغر · `NITAQAT_EFFECT_REQUIRED` · `OFFER_PICK_REQUIRED` · مباشرة موقوفة بـ `MANDATORY_STEPS_OPEN`).
 
-مسار التحقق (التقرير اليومي):
+مسار التحقق (التوظيف):
 
-1. ارفع تقرير محطة بعد نهاية الوردية → `isLate: true`
-2. اعتمده → يبقى `lateChip` / `isLate` (لا يُمسح التأخير)
-3. حاول اعتماد بلا رفع → `NOT_FILED`
+1. افتح شاغرًا → حاول أنجز مرحلة الطلب بلا أثر نطاقات → `NITAQAT_EFFECT_REQUIRED`
+2. سجّل الأثر → تقدّم حتى العرض بلا اختيار مرشح → `OFFER_PICK_REQUIRED`
+3. اختر مرشحًا → أصدر العرض → عيّن → حاول تأكيد المباشرة قبل الحلقات الإلزامية → `MANDATORY_STEPS_OPEN`
 
-تنفيذ: `dailyReportDerivations` · `base44/functions/dailyReport` · `StationDailyBoard`.
+تنفيذ: `hiringDerivations` · `base44/functions/hiring` · `/app/hiring` (`Recruitment.jsx`).
 
 ---
 

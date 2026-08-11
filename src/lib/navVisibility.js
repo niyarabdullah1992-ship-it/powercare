@@ -2,16 +2,17 @@
 // used by the sidebar/mobile nav and the dashboards' quick-access shortcuts.
 
 const BASE = ["/app", "/app/daily-report", "/app/tasks", "/app/attendance", "/app/chat", "/app/files", "/app/inventory", "/app/expenses", "/app/signing", "/app/work-proof", "/app/client-proof", "/app/assistant", "/app/complaints", "/app/performance", "/app/manual"];
-const MANAGER_EXTRA = ["/app/safety"];
-const EXEC_EXTRA = ["/app/hr", "/app/payroll"];
+const MANAGER_EXTRA = ["/app/safety", "/app/hiring"];
+const EXEC_EXTRA = ["/app/hr", "/app/payroll", "/app/hiring"];
 const SMART_SECTION_ROUTES = {
   complaints: "/app/complaints", safety: "/app/safety", payroll: "/app/payroll",
   performance: "/app/performance", attendance: "/app/attendance",
-  hr: "/app/hr", inventory: "/app/inventory",
+  hr: "/app/hr", inventory: "/app/inventory", hiring: "/app/hiring",
 };
 const PLAN_ROUTE_SECTIONS = {
   "/app/assistant": "assistant", "/app/daily-report": "reports", "/app/tasks": "tasks",
   "/app/inventory": "inventory", "/app/attendance": "attendance", "/app/hr": "hr",
+  "/app/hiring": "hr",
   "/app/performance": "performance", "/app/expenses": "expenses", "/app/payroll": "payroll",
   "/app/safety": "safety", "/app/complaints": "complaints", "/app/files": "files",
   "/app/signing": "signing", "/app/chat": "chat",
@@ -45,6 +46,7 @@ export function allowedNavFor(user, data, company) {
   // Employees holding an HR position access workforce management through HR.
   if (user.hrLevelId) {
     allowed.add("/app/hr");
+    allowed.add("/app/hiring");
     if (hrPermissions.has("view_safety")) allowed.add("/app/safety");
     if (hrPermissions.has("manage_payroll")) allowed.add("/app/payroll");
   }
