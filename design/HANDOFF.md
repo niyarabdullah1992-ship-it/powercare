@@ -16,18 +16,17 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · **`signing`**
-(رفع من مصدر فقط · سلسلة مرتبة · ختم PENDING → NV-SIG · `NOT_YOUR_TURN` · `SEAL_MISMATCH` · إرسال بعد اكتمال السلسلة).
+`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · **`stock`**
+(حالة المخزون مشتقة من المتاح/حد الطلب · أمر شراء يحرّك الناقص إلى قيد التوريد · `INSUFFICIENT_STOCK` · `NO_SHORT_SKUS` · `ALREADY_RAISED`).
 
-مسار التحقق (التوقيع):
+مسار التحقق (المخزون):
 
-1. ارفع بلا مصدر → `SOURCE_REQUIRED`
-2. سلسلة بموقّعين — وقّع كالثاني أولًا → `NOT_YOUR_TURN`
-3. وقّع بالترتيب → الختم يغادر `PENDING` ويصبح `NV-SIG-…`
-4. غيّر `contentHash` بعد التوقيع ثم تحقق → `SEAL_MISMATCH`
-5. أرسل قبل اكتمال السلسلة → `CHAIN_INCOMPLETE`
+1. لوح بلا أصناف ناقصة → أنشئ أمر شراء → `NO_SHORT_SKUS` (بعد تغطية الكل أو بأصناف متوفرة فقط)
+2. أصناف حرجة/منخفضة → أنشئ أمر شراء → تصبح `on_order`
+3. أعد إنشاء أمر الشراء → `ALREADY_RAISED`
+4. اصرف كمية أكبر من المتاح → `INSUFFICIENT_STOCK`
 
-تنفيذ: `signingDerivations` · `base44/functions/signing` · `SigningChainBoard` على `/app/signing`.
+تنفيذ: `inventoryDerivations` · `base44/functions/stock` · `StockAlertBoard` على `/app/inventory`.
 
 ---
 
