@@ -40,6 +40,8 @@ export default function Operations() {
   const [rejectFor, setRejectFor] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [proofFile, setProofFile] = useState(null);
+  const [checkedIn, setCheckedIn] = useState(null);
+  const [attendanceGate, setAttendanceGate] = useState(null);
   const [form, setForm] = useState({
     title: "",
     stationId: "",
@@ -66,11 +68,17 @@ export default function Operations() {
     if (!company?.id) return;
     setLoading(true);
     try {
-      const res = await ops({ action: "list" });
-      const body = res?.data || res;
+      const [listRes, attRes] = await Promise.all([
+        ops({ action: "list" }),
+        ops({ action: "attendanceStatus", employeeId: currentUser?.id || currentUser?.employeeId }),
+      ]);
+      const body = listRes?.data || listRes;
       setTasks(Array.isArray(body?.tasks) ? body.tasks : []);
       setCounts(body?.counts || null);
       setHorizons(Array.isArray(body?.horizons) ? body.horizons : []);
+      const attBody = attRes?.data || attRes || {};
+      setCheckedIn(!!attBody.checkedIn);
+      setAttendanceGate(attBody.gate || null);
     } catch (e) {
       toast({ title: ar ? "تعذّر تحميل المهام" : "Failed to load tasks", description: e?.message || "", variant: "destructive" });
       setTasks([]);
@@ -79,7 +87,7 @@ export default function Operations() {
     } finally {
       setLoading(false);
     }
-  }, [ops, company?.id, ar]);
+  }, [ops, company?.id, ar, currentUser?.id, currentUser?.employeeId]);
 
   useEffect(() => { reload(); }, [reload]);
 
@@ -153,12 +161,35 @@ export default function Operations() {
           : (ar ? `إفادة إنجاز بواسطة ${currentUser?.name || "المستخدم"}` : `Completion attested by ${currentUser?.name || "user"}`),
       });
       const body = res?.data || res;
+      if (body?.error === "CHECK_IN_REQUIRED") {
+        toast({ title: ar ? "بوابة الحضور" : "Attendance gate", description: body.reason || body.error, variant: "destructive" });
+        return;
+      }
       if (body?.error) throw new Error(body.reason || body.error);
       setProofFile(null);
       setCounts(body.counts || null);
       await reload();
     } catch (err) {
-      toast({ title: ar ? "فشل التسجيل" : "Log failed", description: err.message, variant: "destructive" });
+      const dataErr = err?.response?.data || err?.data || {};
+      toast({
+        title: dataErr.error === "CHECK_IN_REQUIRED" ? (ar ? "بوابة الحضور" : "Attendance gate") : (ar ? "فشل التسجيل" : "Log failed"),
+        description: dataErr.reason || dataErr.error || err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const setMode = async (task, mode) => {
+    setBusy(true);
+    try {
+      const res = await ops({ action: "setTaskMode", taskId: task.id, mode });
+      const body = res?.data || res;
+      if (body?.error) throw new Error(body.reason || body.error);
+      await reload();
+    } catch (err) {
+      toast({ title: ar ? "تعذّر تغيير النمط" : "Mode change failed", description: err.message, variant: "destructive" });
     } finally {
       setBusy(false);
     }
@@ -278,6 +309,19 @@ export default function Operations() {
         </div>
       )}
 
+      <div className={`rounded-xl border px-4 py-3 text-sm ${checkedIn ? "border-[#BBF7D0] bg-[#ECFDF3] text-[#15803D]" : "border-[#FDE68A] bg-[#FFFBEB] text-[#B45309]"}`}>
+        {checkedIn
+          ? (ar ? "حضور اليوم مسجَّل — يمكنك تسجيل إنجاز المهام الحضورية." : "Checked in today — you can log on-site task completion.")
+          : (attendanceGate?.reason || (ar
+            ? "تسجيل الإنجاز الميداني موقوف حتى بصمة اليوم — سجّل حضورك من شاشة الحضور، أو اطلب تحويل المهمة إلى عن بُعد."
+            : "On-site logging is blocked until today's check-in — use Attendance, or ask to switch the task to remote."))}
+        {!checkedIn && (
+          <a href="/app/attendance" className="ms-2 underline font-medium">
+            {ar ? "الحضور" : "Attendance"}
+          </a>
+        )}
+      </div>
+
       <form onSubmit={createTask} className="grid gap-3 rounded-xl border border-[#E2E8F0] bg-white p-4 md:grid-cols-2">
         <div className="md:col-span-2 text-sm font-semibold text-[#14284B]">{ar ? "مهمة جديدة" : "New task"}</div>
         <input required className="h-10 rounded-lg border border-[#E2E8F0] px-3 text-sm md:col-span-2" placeholder={ar ? "عنوان المهمة" : "Task title"} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
@@ -355,13 +399,29 @@ export default function Operations() {
                 <div>
                   <div className="font-medium text-[#14284B]">{task.title}</div>
                   <div className="mt-1 font-mono text-xs text-[#5A6B85]" dir="ltr">
-                    {task.ref} · {task.completedCount}/{task.targetCount} · {task.status} · {task.planHorizon || "w"}
+                    {task.ref} · {task.completedCount}/{task.targetCount} · {task.status} · {task.planHorizon || "w"} · {task.mode === "remote" ? "remote" : "onsite"}
                     {task.pointsAwarded != null ? ` · +${task.pointsAwarded} pts` : ""}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  {task.status !== "completed" && task.mode !== "remote" && (
+                    <button type="button" disabled={busy} onClick={() => setMode(task, "remote")} className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-xs">
+                      {ar ? "حوّل لعن بُعد" : "Make remote"}
+                    </button>
+                  )}
+                  {task.status !== "completed" && task.mode === "remote" && (
+                    <button type="button" disabled={busy} onClick={() => setMode(task, "onsite")} className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-xs">
+                      {ar ? "حوّل لحضوري" : "Make on-site"}
+                    </button>
+                  )}
                   {task.status !== "completed" && task.status !== "awaiting_approval" && (
-                    <button type="button" disabled={busy} onClick={() => logDone(task)} className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-xs">
+                    <button
+                      type="button"
+                      disabled={busy || (task.mode !== "remote" && checkedIn === false)}
+                      title={task.mode !== "remote" && checkedIn === false ? (attendanceGate?.reason || "") : undefined}
+                      onClick={() => logDone(task)}
+                      className="rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                    >
                       {ar ? "سجّل إنجازًا" : "Log completion"}
                     </button>
                   )}

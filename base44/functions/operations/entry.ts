@@ -19,6 +19,15 @@ function requireCompanyId(companyId: unknown) {
   return id;
 }
 
+function riyadhDateKey(d = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Riyadh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -44,6 +53,49 @@ Deno.serve(async (req) => {
 
     const managerRoles = ["owner", "director", "ops_manager", "station_manager", "pgm", "admin"];
     const isManager = auth.owner || auth.admin || managerRoles.includes(auth.role);
+
+    const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") || "").replace(/\/+$/, "").replace(/\/rest\/v\d+$/, "");
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_KEY") || "";
+    const sbHeaders = SUPABASE_URL && SERVICE_KEY
+      ? { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" }
+      : null;
+
+    const loadTodayAttendance = async (employeeId: string) => {
+      if (!sbHeaders || !employeeId) return null;
+      const date = riyadhDateKey();
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`,
+        { headers: sbHeaders },
+      );
+      const rows = await res.json().catch(() => []);
+      return Array.isArray(rows) && rows[0] ? rows[0] : null;
+    };
+
+    /** On-site completion requires today's check-in (present/late). Remote skips. Named reason — never silent. */
+    const assertAttendanceGate = async (task: { mode?: string }) => {
+      if (task.mode === "remote") return { ok: true as const, skipped: "remote" as const };
+      if (auth.admin || !auth.userId) return { ok: true as const, skipped: "admin_or_owner" as const };
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: auth.companyId });
+      const plan = String(accounts[0]?.plan || "").toLowerCase();
+      if (plan === "individual") return { ok: true as const, skipped: "individual" as const };
+      if (!sbHeaders) {
+        return {
+          ok: false as const,
+          error: "CHECK_IN_REQUIRED",
+          reason: "لا يمكن تسجيل إنجاز حضوري دون خدمة الحضور — تحقق من إعدادات الخادم.",
+        };
+      }
+      const attendance = await loadTodayAttendance(auth.userId);
+      if (!attendance || !["present", "late"].includes(String(attendance.status || ""))) {
+        return {
+          ok: false as const,
+          error: "CHECK_IN_REQUIRED",
+          reason: "تسجيل الإنجاز الميداني موقوف حتى بصمة اليوم — سجّل حضورك أولًا، أو حوّل المهمة إلى عن بُعد.",
+          attendance: attendance || null,
+        };
+      }
+      return { ok: true as const, attendance };
+    };
 
     const loadBlob = async (category: string) => {
       const rows = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: auth.companyId, category });
@@ -294,6 +346,12 @@ Deno.serve(async (req) => {
       if (idx < 0) return Response.json({ error: "Task not found" }, { status: 404 });
       const task = { ...tasks[idx] };
       if (task.status === "completed") return Response.json({ error: "Already completed" }, { status: 400 });
+
+      const gate = await assertAttendanceGate(task);
+      if (!gate.ok) {
+        return Response.json({ error: gate.error, reason: gate.reason, attendance: gate.attendance || null }, { status: 403 });
+      }
+
       if (!proofFiles.length && !attestation) {
         return Response.json({ error: "PROOF_REQUIRED", reason: "لا نقطة بلا أثر — أرفق صورة أو اكتب إفادة أولًا" }, { status: 400 });
       }
@@ -344,6 +402,41 @@ Deno.serve(async (req) => {
       tasks[idx] = task;
       await saveTasks(tasks);
       await audit("ops_task_reject", `Rejected ${task.ref}`, { reason });
+      return Response.json({ task, counts: deriveOpsCounts(scopeFilter(tasks, body.scope || null)) });
+    }
+
+    if (action === "attendanceStatus") {
+      const employeeId = String(body.employeeId || auth.userId || "");
+      if (!employeeId) return Response.json({ error: "Missing employeeId" }, { status: 400 });
+      if (!isManager && employeeId !== auth.userId) {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const attendance = await loadTodayAttendance(employeeId);
+      const checkedIn = !!attendance && ["present", "late"].includes(String(attendance.status || ""));
+      return Response.json({
+        date: riyadhDateKey(),
+        attendance,
+        checkedIn,
+        gate: checkedIn
+          ? { ok: true }
+          : {
+              ok: false,
+              error: "CHECK_IN_REQUIRED",
+              reason: "تسجيل الإنجاز الميداني موقوف حتى بصمة اليوم — سجّل حضورك أولًا، أو حوّل المهمة إلى عن بُعد.",
+            },
+      });
+    }
+
+    if (action === "setTaskMode") {
+      if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const mode = body.mode === "remote" ? "remote" : "onsite";
+      const tasks = await listTasksRaw();
+      const idx = tasks.findIndex((t) => t.id === body.taskId);
+      if (idx < 0) return Response.json({ error: "Task not found" }, { status: 404 });
+      const task = { ...tasks[idx], mode };
+      tasks[idx] = task;
+      await saveTasks(tasks);
+      await audit("ops_task_mode", `Set ${task.ref} mode to ${mode}`);
       return Response.json({ task, counts: deriveOpsCounts(scopeFilter(tasks, body.scope || null)) });
     }
 
