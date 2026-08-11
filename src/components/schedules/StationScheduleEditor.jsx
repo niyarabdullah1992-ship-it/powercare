@@ -6,6 +6,7 @@ import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import ShiftTypeEditor from "./ShiftTypeEditor";
 import ScheduleCell from "./ScheduleCell";
 import ScheduleStatsBar from "./ScheduleStatsBar";
+import RotaPublishPanel from "./RotaPublishPanel";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
 
 const DAY_KEYS = ["daySun", "dayMon", "dayTue", "dayWed", "dayThu", "dayFri", "daySat"];
@@ -115,6 +116,15 @@ export default function StationScheduleEditor({ companyId, stationId, canManage 
       </div>
 
       <ScheduleStatsBar employees={stationEmployees} shiftTypes={shiftTypes} assignments={assignments} monthDates={monthDates} />
+
+      <RotaPublishPanel
+        stationId={stationId}
+        year={cursor.year}
+        monthIndex={cursor.month}
+        shiftTypes={shiftTypes}
+        assignments={assignments}
+        canManage={canManage}
+      />
     </div>
   );
 }

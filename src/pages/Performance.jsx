@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { badgeFor, getBadges } from "@/lib/rewards";
@@ -13,18 +13,26 @@ import EmployeeSingleReport from "@/components/performance/EmployeeSingleReport"
 import SupervisionFairness from "@/components/performance/SupervisionFairness";
 import PerformanceTabs from "@/components/performance/PerformanceTabs";
 import PerformanceHeaderStats from "@/components/performance/PerformanceHeaderStats";
+import OpsPointsLedger from "@/components/performance/OpsPointsLedger";
+import PerfScoreBoard from "@/components/performance/PerfScoreBoard";
 import usePerformanceTargets from "@/hooks/usePerformanceTargets";
 import { buildSupervisionModel } from "@/lib/supervisionModel";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
+import { syncPointsFromCloud } from "@/lib/store";
 
 export default function Performance() {
   const { t, dir, lang } = useI18n();
-  const { data, currentUser, company } = useAuth();
+  const { data, currentUser, company, refresh } = useAuth();
   // The achievements board replaced the older individual-ranking list (same data,
   // same export) — the old "individual" value still resolves to it.
   const [view, setView] = useState("achievements");
   const targets = usePerformanceTargets(company, currentUser);
+
+  useEffect(() => {
+    if (!company?.id) return;
+    syncPointsFromCloud(company.id).then((ok) => { if (ok) refresh?.(); }).catch(() => {});
+  }, [company?.id]);
 
   if (!data || !currentUser) return null;
 
@@ -100,6 +108,14 @@ export default function Performance() {
           supervisionAlert={supervisionAlert}
         />
       </div>
+
+      <OpsPointsLedger
+        companyId={company?.id}
+        employeeId={isManager ? null : currentUser.id}
+        lang={lang}
+      />
+
+      <PerfScoreBoard lang={lang} />
 
       {(view === "individual" || view === "achievements") && (
         <div className="flex justify-end">

@@ -49,7 +49,8 @@ Deno.serve(async (req) => {
 
     const auth = await requireSession(base44, body);
     if (!auth.ok) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    const companyId = String(body.companyId || '').slice(0, 64);
+    const companyId = String(body.companyId || '').trim();
+    if (!companyId) return Response.json({ error: 'Missing companyId — record without tenant is rejected' }, { status: 400 });
 
     if (action === 'issue') {
       const proofId = String(body.proofId || '').slice(0, 40);

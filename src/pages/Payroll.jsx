@@ -15,6 +15,7 @@ import { toast } from "@/components/ui/use-toast";
 import { stationIdForTreeEmployee } from "@/lib/orgTree";
 import PageHeader from "@/components/PageHeader";
 import DeductionLinesDialog from "@/components/payroll/DeductionLinesDialog";
+import PayrollRunBoard from "@/components/payroll/PayrollRunBoard";
 import { addDeductionLine, removeDeductionLine, resolveDeductionDispute, backfillLegacyDeduction, disputeDeductionLine, deductionLines } from "@/lib/payrollDeductions";
 import { addNotification } from "@/lib/store";
 
@@ -122,6 +123,7 @@ export default function Payroll() {
           </button>
         </>}
       />
+      <PayrollRunBoard month={month} lang={lang} />
 
       <PayrollSyncDialog open={showSyncConfirm} onOpenChange={setShowSyncConfirm} onConfirm={syncFromProfiles} ar={ar} />
 
