@@ -71,3 +71,16 @@ export function checkHazardCloseGate({ controlId, likelihood = 3, severity = 3, 
   }
   return { ok: true, inherent: inn, residual, controlId };
 }
+
+export function reportingPointsEligible(kind) {
+  const k = String(kind || "").toLowerCase();
+  return ["hazard", "near_miss", "nearmiss", "unsafe", "unsafe_act"].includes(k);
+}
+
+export function reportingPointsFor(kind, inherent = 6) {
+  if (!reportingPointsEligible(kind)) return 0;
+  if (inherent >= 15) return 5;
+  if (inherent >= 10) return 4;
+  if (inherent >= 5) return 3;
+  return 2;
+}
