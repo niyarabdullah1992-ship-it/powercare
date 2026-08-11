@@ -9,7 +9,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Search,
-  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck,
+  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, HelpCircle, Banknote, Warehouse, ReceiptText, ShieldCheck, Camera,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -154,6 +154,7 @@ export default function Layout({ children }) {
     { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة والامتثال" : "Safety & compliance", category: "operations" },
     { to: "/app/files", icon: FolderOpen, label: lang === "ar" ? "المستندات" : "Documents", category: "governance" },
     { to: "/app/signing", icon: PenLine, label: lang === "ar" ? "التوقيع الرقمي" : "Digital signing", category: "governance" },
+    { to: "/app/work-proof", icon: Camera, label: lang === "ar" ? "إثبات العمل" : "Work Proof", category: "governance" },
     { to: "/app/client-proof", icon: ShieldCheck, label: lang === "ar" ? "إثبات العمل للعميل" : "Client work proof", category: "governance" },
     { to: "/app/complaints", icon: Megaphone, label: lang === "ar" ? "الشكاوى والبلاغات" : "Complaints", category: "governance" },
     { to: "/app/assistant", icon: Sparkles, label: lang === "ar" ? "المساعد الذكي" : "Assistant", category: "management" },
@@ -264,6 +265,7 @@ export default function Layout({ children }) {
     "/app/safety": lang === "ar" ? "السلامة والامتثال" : "Safety",
     "/app/files": lang === "ar" ? "المستندات" : "Documents",
     "/app/signing": lang === "ar" ? "التوقيع الرقمي" : "Digital signing",
+    "/app/work-proof": lang === "ar" ? "إثبات العمل" : "Work Proof",
     "/app/client-proof": lang === "ar" ? "إثبات العمل للعميل" : "Client work proof",
     "/app/complaints": lang === "ar" ? "الشكاوى والبلاغات" : "Complaints",
     "/app/assistant": lang === "ar" ? "المساعد الذكي" : "Assistant",

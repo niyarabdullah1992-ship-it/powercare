@@ -15,16 +15,16 @@
 لا تنتقل لقسم آخر قبل أن يعمل هذا القسم من الطرف إلى الطرف.
 ```
 
-**حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل لمسارات التحقق —
-`operations` + حضور + `workforce` + **`scores`** (HSE: تعرّض=عدد×2080، TRIR/LTIFR/DART، بوابة إغلاق الخطر بضابط+صور؛ الأداء: 50/25/15/10 مع حماية انتقالية `max(new,old)`، الحضور وزن 0).
+**حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
+`operations` · حضور · `workforce` · `scores` · **`workproof`** (رفع → اعتماد بلا رافع → ختم FNV · خارج النطاق يحتاج سبب · استلام عميل).
 
-مسار التحقق (HSE/أداء):
+مسار التحقق (إثبات العمل):
 
-1. إغلاق خطر بلا ضابط أو بلا صور قبل/بعد → `PHOTOS_REQUIRED` / `CONTROL_REQUIRED`
-2. اعتماد سلامة ومحطة فيها مخاطر مفتوحة → مرفوض  
-3. `perfBoard` يعيد درجات مشتقة لا ترتيب نقاط خام فقط
+1. ارفع إثباتًا بنفس المستخدم ثم حاول الاعتماد → `SELF_APPROVE_FORBIDDEN`
+2. التقاط `out` بلا سبب → `GEO_CLEARANCE_REQUIRED`
+3. اعتمد كمشرف آخر → يظهر `sealId`؛ غيّر طابع البعد → الختم يبطل عند الاستلام
 
-تنفيذ: `hseDerivations` · `perfDerivations` · `base44/functions/scores` · `HseRatesPanel` · `PerfScoreBoard`.
+تنفيذ: `workProofDerivations` · `base44/functions/workproof` · `/app/work-proof`.
 
 ---
 
