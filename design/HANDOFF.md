@@ -16,20 +16,20 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · `offboarding` · `complaints` · `files` · `settings` · **`reports`**
-(مكتبة التقارير الستة · الجداول التلقائية · تحليل الحضور/الإضافي المشتق · كشف شهري يُقفل لمسير الرواتب — دون إعادة بناء `StationDailyBoard`).
+`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · `offboarding` · `complaints` · `files` · `settings` · `reports` · **`assistant`**
+(لوحة أسئلة التصميم مشتقة من حقائق الشركة · بوابات نطاق/خطة/صلاحية · مسار LLM الحالي يبقى بعد تفويض الخادم — دون استبدال نيرو كاملًا).
 
-مسار التحقق (التقارير والتحليلات):
+مسار التحقق (المساعد الذكي):
 
-1. توليد بلا نوع معروف → `UNKNOWN_REPORT` · بلا صلاحية دور → `FORBIDDEN` · تقرير يحتاج فترة بلا `YYYY-MM` → `PERIOD_REQUIRED` · نطاق فارغ → `EMPTY_SCOPE`
-2. كشف الحضور: سماح 10 دقائق · وردية 8 ساعات · ما زاد إضافي؛ الإقفال بلا موظف/فترة → `EMPLOYEE_REQUIRED` / `PERIOD_REQUIRED`
-3. إقفال والكشف مقفل → `ALREADY_CLOSED` · أيام بلا انصراف → `OPEN_CHECKOUTS`
-4. فتح بعد الإقفال بلا سبب مكتوب → `REASON_REQUIRED` · غير مقفل → `NOT_CLOSED`
-5. تحليل OT: محطات فوق حد الإضافي الأسبوعي (8س/رأس من سقف 48س) · غياب متكرر ≥2 · تجاوز فردي لـ 48س/أسبوع
+1. سؤال فارغ → `EMPTY_QUESTION` · خطة بلا `ai` / قسم `assistant` → `FEATURE_DISABLED`
+2. Careers / متقدم / `NV-APP-…` أو قناة توظيف → `OUT_OF_SCOPE` · طلب عبر مستأجر آخر → `OUT_OF_SCOPE`
+3. سؤال مجلس/إضافي بلا دور مناسب أو بلا `navVisibility` للمساعد → `FORBIDDEN`
+4. أسئلة التصميم الأربعة + Spotlight: إجابة + أدلة مشتقة من عمليات/حضور/سلامة (نطاق `companyId` + محطات الدور)
+5. نص حر مصرّح → `mode: scoped_llm` يعيد للمسار الحالي في `Assistant.jsx` دون مكدس LLM موازٍ
 
-تنفيذ: `reportsDerivations` · `base44/functions/reports` · `ReportLibraryBoard` على `/app/daily-report` (لوحة ثانوية تحت التقرير اليومي للمحطات).
+تنفيذ: `assistantDerivations` · `base44/functions/assistant` · `AssistantBoard` على `/app/assistant`.
 
-**المتبقي من التسليم (تقريبًا):** Assistant · Chat (وما يتصل بها من روابط عرضية).
+**المتبقي من التسليم (تقريبًا):** Chat (وما يتصل بها من روابط عرضية).
 
 ---
 
