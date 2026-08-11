@@ -66,3 +66,20 @@ export function deriveOpsCounts(tasks, today = new Date()) {
     pointsAwarded: list.reduce((n, t) => n + (Number(t.pointsAwarded) || 0), 0),
   };
 }
+
+export function deriveHorizonGroups(tasks) {
+  const order = ["y", "h", "q", "m", "w"];
+  const list = Array.isArray(tasks) ? tasks : [];
+  return order.map((id) => {
+    const rows = list.filter((t) => (t.planHorizon || "w") === id);
+    const units = rows.reduce(
+      (acc, t) => ({
+        done: acc.done + (Number(t.completedCount) || 0),
+        target: acc.target + Math.max(1, Number(t.targetCount) || 1),
+      }),
+      { done: 0, target: 0 },
+    );
+    const pct = units.target ? Math.round((units.done / units.target) * 100) : 0;
+    return { id, count: rows.length, unitsDone: units.done, unitsTarget: units.target, pct };
+  });
+}

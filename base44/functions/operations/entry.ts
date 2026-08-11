@@ -3,6 +3,7 @@ import { authPowerCareSession } from "../../shared/powerCareSession.ts";
 import {
   checkAssignGate,
   clampEffortWeight,
+  deriveHorizonGroups,
   deriveOpsCounts,
   planHorizonFromDue,
   taskPoints,
@@ -167,8 +168,34 @@ Deno.serve(async (req) => {
       const scope = body.scope || body.stationId || null;
       const tasks = scopeFilter(await listTasksRaw(), scope);
       const counts = deriveOpsCounts(tasks);
-      if (action === "counts") return Response.json({ counts });
-      return Response.json({ tasks, counts });
+      const horizons = deriveHorizonGroups(tasks);
+      if (action === "counts") return Response.json({ counts, horizons });
+      return Response.json({ tasks, counts, horizons });
+    }
+
+    if (action === "get") {
+      const tasks = await listTasksRaw();
+      const task = tasks.find((t) => t.id === body.taskId);
+      if (!task) return Response.json({ error: "Task not found" }, { status: 404 });
+      return Response.json({ task, pointsWorth: taskPoints(task.priority, task.effortWeight) });
+    }
+
+    if (action === "ledger") {
+      const employeeId = body.employeeId || (isManager ? null : auth.userId);
+      const filter: Record<string, string> = { companyId: auth.companyId };
+      if (employeeId) {
+        if (!isManager && employeeId !== auth.userId) {
+          return Response.json({ error: "Forbidden" }, { status: 403 });
+        }
+        filter.employeeId = String(employeeId);
+      } else if (!isManager) {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const entries = await base44.asServiceRole.entities.PointsLedger.filter(filter, "-awardedAt", 200);
+      // Strict: drop rows without matching companyId (no permissive fallback).
+      const scoped = (entries || []).filter((e) => e && e.companyId === auth.companyId);
+      const total = scoped.reduce((sum, e) => sum + (Number(e.points) || 0), 0);
+      return Response.json({ entries: scoped, total });
     }
 
     if (action === "create") {

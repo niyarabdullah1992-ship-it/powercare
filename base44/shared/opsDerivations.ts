@@ -94,6 +94,23 @@ export function isDone(task: OpsTaskLike) {
 }
 
 /** Every ops counter is derived from the scoped rows — never stored literals. */
+export function deriveHorizonGroups(tasks: (OpsTaskLike & { planHorizon?: string })[]) {
+  const order = ["y", "h", "q", "m", "w"] as const;
+  const list = Array.isArray(tasks) ? tasks : [];
+  return order.map((id) => {
+    const rows = list.filter((t) => (t.planHorizon || "w") === id);
+    const units = rows.reduce(
+      (acc, t) => ({
+        done: acc.done + (Number(t.completedCount) || 0),
+        target: acc.target + Math.max(1, Number(t.targetCount) || 1),
+      }),
+      { done: 0, target: 0 },
+    );
+    const pct = units.target ? Math.round((units.done / units.target) * 100) : 0;
+    return { id, count: rows.length, unitsDone: units.done, unitsTarget: units.target, pct };
+  });
+}
+
 export function deriveOpsCounts(tasks: OpsTaskLike[], today = new Date()) {
   const list = Array.isArray(tasks) ? tasks : [];
   const done = list.filter((t) => isDone(t)).length;

@@ -15,16 +15,18 @@
 لا تنتقل لقسم آخر قبل أن يعمل هذا القسم من الطرف إلى الطرف.
 ```
 
-مسار التحقق الإلزامي قبل أي قسم لاحق:
+**حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل لمسار التحقق —
+`operations` + `opsDerivations` + `/app/tasks` + شهادات بكود كفاءة + سجل نقاط في الأداء.
+القسم التالي بعد التحقق الحيّ: الحضور (بوابة الحضور ↔ المهام).
+
+مسار التحقق الإلزامي:
 
 1. أنشئ مهمة  
 2. أسندها لموظف شهادته منتهية → يجب أن تُمنع بسبب مسمّى (`ASSIGN_GATE`)  
 3. أسندها لمؤهَّل، سجّل الإنجاز، اعتمدها  
 4. تحقق أن النقاط ظهرت في `PointsLedger` / الأداء  
 
-إن نجح هذا المسار فالنمط صحيح، وبقية الأقسام تكرار له.
-
-تنفيذ مرجعي موجود: `base44/shared/opsDerivations.ts` · `base44/functions/operations/entry.ts` · `src/pages/Operations.jsx` (`/app/tasks`).
+تنفيذ مرجعي: `base44/shared/opsDerivations.ts` · `base44/functions/operations/entry.ts` · `src/pages/Operations.jsx` · `CertificatesTab` (code+expiry) · `OpsPointsLedger`.
 
 ---
 
