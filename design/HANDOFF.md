@@ -35,8 +35,24 @@
 - **Mobile** — مكتمل على الفرع (`/mobile`): رفيق الفني الميداني — بطل بهوية المنتج · أربع شاشات فعل واحد (حضور · مهام · إغلاق بالصورة · بلاغ مجهول) · ربط بدورة الإثبات ومسارات المنصة (`/app/attendance` · `/app/tasks` · `/app/work-proof` · `/app/complaints`) عبر `/login`. لا نسخ HTML/`support.js`.
 - **Sales Deck** — مكتمل على الفرع (`/deck`): عرض تعريفي للمستثمرين/المشترين — 15 شريحة (غلاف · مشكلة · حل · أثر · باقات · خطوة تالية) · تنقل لوحة مفاتيح وروابط عميقة `?slide=` · ملاحظات متحدث · هوية NiroVera/PowerCare · روابط من تذييل Landing/Mobile. لا نسخ HTML/`support.js`/`deck-stage.js`.
 - **Careers** — مكتمل على الفرع (`/careers`): قناة متقدمين عامة ≠ دخول موظف · بطل هوية · تقديم بلا حساب · رقم مرجعي `NV-APP-…` · ربط خادم `hiring.publicList` / `publicApply` / `publicDeleteRequest` (اتجاه واحد إلى طابور التوظيف) · رابط عام من Recruitment · روابط تذييل Landing/Mobile/Deck. لا نسخ HTML/`support.js`.
+- **Workspace** — مكتمل على الفرع (`/workspace` · `/workspace/:slug`): مدخل مستأجر عام — بحث بالاسم/السجل التجاري (تطبيع عربي) · بطاقات عامة بلا بريد مالك/موظفين · دخول موظفين → `/login/:portal?company=` · وظائف → `/careers?company=` · تسجيل جديد → `/pricing`. خادم: `companyDirectory.publicWorkspaceSearch` + `workspaceDerivations`. لا نسخ HTML/`support.js` · لا OTP تجريبي ثابت من النموذج.
 
-**أسطح التسويق في الحزمة مكتملة.** المتبقي عالميًا: نشر Base44 للدوال/الكيانات على البيئة المستضافة · مراجعة/دمج فرع `handoff/server-first-ops` · WIP محلي غير متعلق (LoginPortal · orgTerms · inventory · Dashboard/HR · companyDirectory · `.tmp-design-caps/`).
+### تطبيق حزمة «قدرات التصميم المتاحة» (2026-08-12)
+
+المصدر: `c:\Users\Niyar\Downloads\قدرات التصميم المتاحة.zip`  
+المستخرج: `.tmp-design-caps/_zip_extract_20260812021914/` · أُضيفت الأصول الجديدة إلى `.tmp-design-caps/design_handoff_nirovera/` (`github.md` · `scratchpad.md` · `android-frame.jsx` · `uploads/` · `.thumbnail`) مع الإبقاء على ملفات `.dc.html` الأكبر/المطبّقة سابقًا كمرجع أساسي (اختلاف hash عن نسخة الـ zip الأصغر).
+
+| في الحزمة | حالة التطبيق |
+| --- | --- |
+| Platform C+ (خادم أولًا) | كان مكتملًا قبل هذه الجولة |
+| Landing / Mobile / Deck / Careers | كان مكتملًا قبل هذه الجولة |
+| **Workspace** | **طُبّق في هذه الجولة** |
+| `github.md` (خريطة شاشات ← ملفات مصدر) | مرجع توثيقي فقط — لا تنفيذ جديد مطلوب |
+| `scratchpad.md` (هيكل الـ Deck) | Deck موجود — لا تغيير |
+| `android-frame.jsx` | أداة إطار تصميم — غير منقولة للإنتاج (Mobile يستخدم إطاره الحالي) |
+| `uploads/*.png` | لقطات مرجعية — غير منقولة للإنتاج |
+
+**أسطح التصميم في الحزمة مكتملة.** المتبقي عالميًا: نشر Base44 للدوال/الكيانات على البيئة المستضافة · مراجعة/دمج فرع `handoff/server-first-ops` · WIP محلي غير متعلق (inventory · Dashboard persona · `.tmp-design-caps/` نفسه).
 
 ---
 

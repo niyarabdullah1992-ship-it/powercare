@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; padding:0; background:#F7F8FA; }
+  * { box-sizing:border-box; }
+  input, select, textarea, button { font-family:inherit; }
+  a { color:#14683F; }
+  a:hover { color:#0F4F30; }
+</style>
+</helmet>
+
+<div dir="{{ dir }}" style="min-height:100vh; background:#F7F8FA; font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif; color:#14284B;">
+
+  <header style="background:#fff; border-bottom:1px solid #E2E8F0;">
+    <div style="max-width:960px; margin-inline:auto; padding:14px 22px; display:flex; align-items:center; gap:12px;">
+      <img src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/a15fe425c_generated_image.png" alt="NiroVera" style="width:28px; height:28px; object-fit:contain;">
+      <span style="font-family:'IBM Plex Sans',sans-serif; font-size:17px; font-weight:600;">NiroVera</span>
+      <span style="width:1px; height:18px; background:#E2E8F0;"></span>
+      <span style="font-size:13px; color:#5A6B85;">{{ t.careers }}</span>
+      <span style="font-size:13px; font-weight:600; color:#14284B;">· {{ company }}</span>
+      <span style="flex:1;"></span>
+      <button onClick="{{ toggleLang }}" style="height:32px; padding:0 12px; border-radius:8px; border:1px solid #E2E8F0; background:#fff; font-size:12px; font-weight:600; color:#5A6B85; cursor:pointer;">{{ t.langBtn }}</button>
+    </div>
+  </header>
+
+  <main style="max-width:960px; margin-inline:auto; padding:26px 22px 60px;">
+
+    <sc-if value="{{ hasJob }}" hint-placeholder-val="{{ true }}">
+      <div dir="ltr" style="font-size:11px; color:#5A6B85; font-family:'IBM Plex Mono',monospace; text-align:{{ startAlign }};">nirovera.sa/jobs/{{ job.code }}</div>
+    </sc-if>
+
+    <h1 style="margin:10px 0 0; font-size:30px; font-weight:600; letter-spacing:-0.02em; line-height:1.25; text-wrap:pretty;">{{ job.title }}</h1>
+
+    <sc-if value="{{ hasJob }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;">
+      <sc-for list="{{ job.facts }}" as="f" hint-placeholder-count="5">
+        <span style="display:inline-flex; align-items:center; gap:7px; padding:6px 12px; border-radius:9px; background:#fff; border:1px solid #E2E8F0; font-size:12px; color:#5A6B85;">
+          <span style="font-weight:600; color:#14284B;">{{ f.value }}</span>
+          <span>{{ f.label }}</span>
+        </span>
+      </sc-for>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isNone }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:18px; background:#fff; border:1px solid #E2E8F0; border-radius:14px; padding:26px 24px; max-width:620px;">
+        <div style="font-size:13px; color:#5A6B85; line-height:1.8; text-wrap:pretty;">{{ noneBody }}</div>
+        <sc-if value="{{ notified }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px; padding:11px 13px; border-radius:10px; background:#ECFDF3; border:1px solid #BBF7D0; font-size:12px; color:#166534; line-height:1.7;">{{ notifyDone }}</div>
+        </sc-if>
+        <sc-if value="{{ notNotified }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; gap:9px; margin-top:14px; flex-wrap:wrap;">
+            <input value="{{ notifyVal }}" onChange="{{ setNotify }}" placeholder="{{ notifyPh }}" style="{{ notifyStyle }}">
+            <button onClick="{{ notify }}" style="{{ notifyBtnStyle }}">{{ noneNotifyLabel }}</button>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasJob }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex; align-items:center; gap:10px; margin-top:14px; padding:11px 14px; border-radius:11px; background:#ECFDF3; border:1px solid #BBF7D0; flex-wrap:wrap;">
+      <span style="width:8px; height:8px; border-radius:50%; background:#1E9E63; flex-shrink:0;"></span>
+      <span style="flex:1 1 260px; font-size:12px; color:#166534; line-height:1.7; text-wrap:pretty;">{{ t.closing }}</span>
+      <span style="font-size:12px; font-weight:600; color:#14683F; white-space:nowrap;">{{ job.closes }}</span>
+    </div>
+
+    <div style="display:flex; gap:18px; margin-top:22px; flex-wrap:wrap; align-items:flex-start;">
+
+      <div style="flex:1 1 420px; min-width:0; display:flex; flex-direction:column; gap:14px;">
+        <sc-for list="{{ sections }}" as="s" hint-placeholder-count="3">
+          <div style="background:#fff; border:1px solid #E2E8F0; border-radius:14px; padding:18px 20px;">
+            <div style="font-size:14px; font-weight:600;">{{ s.title }}</div>
+            <div style="display:flex; flex-direction:column; gap:9px; margin-top:11px;">
+              <sc-for list="{{ s.items }}" as="i" hint-placeholder-count="4">
+                <div style="display:flex; gap:10px;">
+                  <span style="width:5px; height:5px; border-radius:50%; background:#1E9E63; flex-shrink:0; margin-top:8px;"></span>
+                  <span style="flex:1; font-size:13px; line-height:1.75; color:#5A6B85; text-wrap:pretty;">{{ i }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+
+        <div style="background:#fff; border:1px solid #E2E8F0; border-radius:14px; padding:18px 20px;">
+          <div style="font-size:14px; font-weight:600;">{{ t.stepsTitle }}</div>
+          <div style="font-size:12px; color:#5A6B85; margin-top:4px; line-height:1.7; text-wrap:pretty;">{{ t.stepsSub }}</div>
+          <div style="display:flex; flex-direction:column; margin-top:10px;">
+            <sc-for list="{{ steps }}" as="p" hint-placeholder-count="4">
+              <div style="display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid #F1F5F9;">
+                <span style="{{ p.numStyle }}">{{ p.n }}</span>
+                <span style="flex:1; min-width:0;">
+                  <span style="display:block; font-size:13px; font-weight:600;">{{ p.label }}</span>
+                  <span style="display:block; font-size:12px; color:#5A6B85; margin-top:2px;">{{ p.when }}</span>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:#fff; border:1px dashed #E2E8F0; border-radius:14px; padding:16px 18px;">
+          <div style="font-size:12px; font-weight:600; color:#14284B;">{{ t.privacyTitle }}</div>
+          <div style="font-size:12px; color:#5A6B85; margin-top:5px; line-height:1.75; text-wrap:pretty;">{{ t.privacyBody }}</div>
+        </div>
+      </div>
+
+      <div style="flex:1 1 320px; min-width:0; position:sticky; top:18px;">
+        <div style="background:#fff; border:1px solid #E2E8F0; border-radius:14px; padding:18px 20px;">
+
+          <sc-if value="{{ sent }}" hint-placeholder-val="{{ false }}">
+            <div style="text-align:center; padding:8px 0;">
+              <div style="width:46px; height:46px; border-radius:50%; background:#ECFDF3; border:1px solid #BBF7D0; color:#15803D; display:flex; align-items:center; justify-content:center; margin-inline:auto; font-size:20px;">✓</div>
+              <div style="font-size:15px; font-weight:600; margin-top:12px;">{{ t.sentTitle }}</div>
+              <div style="font-size:12px; color:#5A6B85; margin-top:6px; line-height:1.75; text-wrap:pretty;">{{ t.sentBody }}</div>
+              <div dir="ltr" style="margin-top:12px; font-size:13px; font-weight:600; color:#14683F; font-family:'IBM Plex Mono',monospace; background:#ECFDF3; border:1px solid #BBF7D0; border-radius:9px; padding:8px 12px;">{{ refNo }}</div>
+              <div style="font-size:12px; color:#5A6B85; margin-top:8px;">{{ t.sentRefNote }}</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ open }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:15px; font-weight:600;">{{ t.applyTitle }}</div>
+            <div style="font-size:12px; color:#5A6B85; margin-top:4px; line-height:1.65; text-wrap:pretty;">{{ t.applySub }}</div>
+
+            <div style="display:flex; flex-direction:column; gap:11px; margin-top:14px;">
+              <sc-for list="{{ fields }}" as="f" hint-placeholder-count="5">
+                <label style="display:block;">
+                  <span style="display:block; font-size:11px; font-weight:600; color:#5A6B85; margin-bottom:5px;">{{ f.label }}</span>
+                  <input value="{{ f.value }}" onChange="{{ f.set }}" placeholder="{{ f.ph }}" style="{{ f.style }}">
+                </label>
+              </sc-for>
+
+              <label style="display:block;">
+                <span style="display:block; font-size:11px; font-weight:600; color:#5A6B85; margin-bottom:5px;">{{ t.natLabel }}</span>
+                <select value="{{ nat }}" onChange="{{ setNat }}" style="width:100%; height:40px; border:1px solid #E2E8F0; border-radius:10px; background:#F7F8FA; padding:0 11px; font-size:13px; color:#14284B; outline:none;">
+                  <sc-for list="{{ natOpts }}" as="o" hint-placeholder-count="2">
+                    <option value="{{ o.value }}">{{ o.label }}</option>
+                  </sc-for>
+                </select>
+              </label>
+
+              <label style="display:block;">
+                <span style="display:block; font-size:11px; font-weight:600; color:#5A6B85; margin-bottom:5px;">{{ t.cvLabel }}</span>
+                <span style="{{ cvBoxStyle }}">
+                  <input type="file" accept=".pdf,.doc,.docx" onChange="{{ setCv }}" style="position:absolute; inset:0; opacity:0; cursor:pointer;">
+                  <span style="font-size:12px; color:#5A6B85;">{{ cvName }}</span>
+                </span>
+              </label>
+            </div>
+
+            <button onClick="{{ submit }}" style="{{ submitStyle }}">{{ t.submit }}</button>
+            <div style="font-size:12px; color:#5A6B85; margin-top:9px; line-height:1.7; text-wrap:pretty;">{{ t.consent }}</div>
+          </sc-if>
+        </div>
+
+        <div style="background:#14284B; border-radius:14px; padding:16px 18px; margin-top:14px; color:#fff;">
+          <div style="font-size:11px; letter-spacing:0.1em; color:#6EE7B7; font-weight:600;">{{ t.otherKicker }}</div>
+          <div style="display:flex; flex-direction:column; margin-top:8px;">
+            <sc-for list="{{ others }}" as="o" hint-placeholder-count="3">
+              <a href="#" onClick="{{ o.go }}" style="display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid rgba(255,255,255,.1); text-decoration:none;">
+                <span style="flex:1; min-width:0;">
+                  <span style="display:block; font-size:13px; font-weight:600; color:#fff;">{{ o.title }}</span>
+                  <span style="display:block; font-size:11px; color:#A8B4C8; margin-top:2px;">{{ o.meta }}</span>
+                </span>
+                <span style="color:#6EE7B7; font-size:13px;">←</span>
+              </a>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+  </main>
+
+  <footer style="border-top:1px solid #E2E8F0; background:#fff;">
+    <div style="max-width:960px; margin-inline:auto; padding:18px 22px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+      <span style="font-size:11px; color:#5A6B85;">{{ t.footer }}</span>
+      <span style="flex:1;"></span>
+      <span style="font-size:11px; color:#5A6B85;">{{ t.equal }}</span>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:960,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { lang: "ar", job: 0, form: {}, nat: "saudi", cv: "", sent: false };
+
+  renderVals() {
+    const ar = this.state.lang === "ar";
+    const T = (a, e) => (ar ? a : e);
+    const f = this.state.form;
+
+    const JOBS = [
+      { tenant: "gulf-power", code: "R1", title: T("مهندس تشغيل — محطة الجبيل 1", "Operations Engineer — Jubail 1"),
+        station: T("الجبيل 1", "Jubail 1"), grade: "G9", type: T("دوام كامل", "Full time"),
+        exp: T("5+ سنوات", "5+ years"), closes: T("يغلق 24 أغسطس 2026", "Closes 24 August 2026") },
+      { tenant: "gulf-power", code: "R2", title: T("فني كهرباء — محطة ينبع", "Electrical Technician — Yanbu"),
+        station: T("ينبع", "Yanbu"), grade: "G6", type: T("دوام كامل", "Full time"),
+        exp: T("3+ سنوات", "3+ years"), closes: T("يغلق 5 سبتمبر 2026", "Closes 5 September 2026") },
+      { tenant: "gulf-power", code: "R3", title: T("مشرف سلامة — محطة الدمام", "Safety Supervisor — Dammam"),
+        station: T("الدمام", "Dammam"), grade: "G8", type: T("دوام كامل", "Full time"),
+        exp: T("6+ سنوات", "6+ years"), closes: T("يغلق 12 سبتمبر 2026", "Closes 12 September 2026") },
+    ];
+    let TENANT = { slug: "gulf-power", name: T("شركة الخليج للطاقة", "Gulf Power Co.") };
+    try { const raw = localStorage.getItem("nv_tenant"); if (raw) TENANT = JSON.parse(raw); } catch (e) {}
+    let PUB = [];
+    try { PUB = JSON.parse(localStorage.getItem("nv_job_vacancies") || "[]")
+      .filter((v) => v.tenant === TENANT.slug); } catch (e) { PUB = []; }
+    const yWord = (n) => n === 0 ? T("بلا خبرة", "No experience") : n === 1 ? T("سنة واحدة", "1 year") : n === 2 ? T("سنتان", "2 years") : T(`${n} سنوات`, `${n} years`);
+    // After a preposition the count takes its genitive form, and zero is a track.
+    const expLine = (n) => n === 0
+      ? T("مسار خريجين — لا تُشترط خبرة سابقة.", "Graduate track — no prior experience required.")
+      : T(`خبرة لا تقل عن ${n === 1 ? "سنة واحدة" : n === 2 ? "سنتين" : `${n} سنوات`} في مجال الوظيفة.`,
+          `At least ${n} year${n === 1 ? "" : "s"} of relevant experience.`);
+    const CONTRACT = { fixed: T("محدد المدة", "Fixed term"), open: T("غير محدد المدة", "Open ended"), part: T("عمل جزئي", "Part time"), temp: T("موسمي/مؤقت", "Seasonal") };
+    const OPENED = PUB.map((v) => ({
+      code: v.code, title: T(`${v.title} — ${v.station}`, `${v.title} — ${v.station}`),
+      station: v.station, grade: v.grade, type: CONTRACT[v.contract] || CONTRACT.fixed, certs: Array.isArray(v.certs) ? v.certs : (v.cert ? [v.cert] : []), minExp: Number(v.minExp) || 0,
+      exp: yWord(Number(v.minExp) || 0),
+      closes: T(`يغلق ${v.closes}`, `Closes ${v.closes}`),
+      cert: v.cert || "", dept: v.dept || "", live: true,
+    }));
+    const ALL = [...OPENED, ...JOBS.filter((j) => j.tenant === TENANT.slug)];
+    const idx = Math.max(0, Math.min(this.state.job, ALL.length - 1));
+    const job = ALL[idx] || { code: "—", title: T("لا شواغر معلنة حاليًا", "No vacancies advertised"),
+      station: TENANT.name, grade: "—", type: "—", exp: "—", closes: T("تابع الصفحة لاحقًا", "Check back later"),
+      certs: [], minExp: 0, none: true };
+
+
+    const V = {
+      dir: ar ? "rtl" : "ltr",
+      startAlign: ar ? "right" : "left",
+      toggleLang: () => this.setState((s) => ({ lang: s.lang === "ar" ? "en" : "ar" })),
+      company: TENANT.name,
+      t: {
+        careers: T("الوظائف", "Careers"),
+        langBtn: ar ? "EN" : "ع",
+        closing: T("التقديم مفتوح، وتُراجَع الطلبات أولًا بأول — لا تنتظر إغلاق الباب.", "Applications are open and reviewed as they arrive — do not wait for the closing date."),
+        stepsTitle: T("ماذا يحدث بعد أن ترسل طلبك", "What happens after you apply"),
+        stepsSub: T("لكل مرحلة مهلة معلنة. إن تجاوزناها فلك أن تسأل عن سبب التأخر بالرقم المرجعي.", "Every stage has a published deadline. If we exceed it, you may ask why using your reference number."),
+        privacyTitle: T("بياناتك", "Your data"),
+        privacyBody: T("تُستخدم بياناتك لتقييم هذا الطلب فقط، وتُحفظ سنة واحدة ثم تُحذف ما لم تأذن ببقائها لشواغر أخرى. لك أن تطلب حذفها في أي وقت بالرقم المرجعي.", "Your data is used to assess this application only. It is kept for one year and then deleted unless you allow us to keep it for other vacancies. You may request deletion at any time using your reference number."),
+        applyTitle: T("قدّم على هذه الوظيفة", "Apply for this role"),
+        applySub: T("دقيقتان — بلا حساب وبلا كلمة مرور.", "Two minutes — no account, no password."),
+        natLabel: T("الجنسية", "Nationality"),
+        cvLabel: T("السيرة الذاتية (PDF أو Word)", "CV (PDF or Word)"),
+        submit: T("أرسل الطلب", "Submit application"),
+        consent: T("بإرسال الطلب توافق على مراجعة بياناتك لهذا الشاغر وفق ما ورد أعلاه.", "By submitting you agree to your data being reviewed for this vacancy as described above."),
+        sentTitle: T("وصل طلبك", "Your application is in"),
+        sentBody: T("سيصلك إشعار عند كل تغيّر في حالة طلبك، سواء تقدّم أو رُفض — لن نتركك بلا رد.", "You will be notified at every change of status, whether you advance or are rejected — you will not be left without an answer."),
+        sentRefNote: T("احفظ هذا الرقم — به تتابع طلبك أو تطلب حذف بياناتك.", "Keep this number — use it to follow your application or request deletion."),
+        otherKicker: T("شواغر أخرى مفتوحة", "OTHER OPEN ROLES"),
+        footer: T("NiroVera — منصة إدارة العمليات والقوى العاملة", "NiroVera — operations and workforce platform"),
+        equal: T("نوظّف على الكفاءة وحدها، ونرحّب بطلبات الأشخاص ذوي الإعاقة.", "We hire on merit alone and welcome applications from persons with disabilities."),
+      },
+      job: { code: job.code, title: job.title, closes: job.closes,
+        facts: [
+          { value: job.station, label: T("الموقع", "Location") },
+          { value: job.type, label: T("نوع التعاقد", "Contract") },
+          { value: job.grade, label: T("الدرجة", "Grade") },
+          { value: job.exp, label: T("الخبرة", "Experience") },
+        ] },
+      sections: [
+        { title: T("ماذا ستعمل", "What you will do"), items: [
+          T("تشغيل ومتابعة معدات المحطة وفق إجراءات التشغيل المعتمدة.", "Operate and monitor station equipment under the approved operating procedures."),
+          T("إغلاق أوامر العمل بإثبات مصوّر مختوم بالموقع والوقت.", "Close work orders with photo proof stamped with location and time."),
+          T("التبليغ عن المخاطر فور ملاحظتها — التبليغ مكافأ لا مؤاخذ عليه.", "Report hazards the moment you see them — reporting is rewarded, never penalised."),
+          T("المشاركة في الورديات المنشورة مسبقًا بجدول معلوم قبل بدايتها.", "Work published shift rotas, known in advance of the week they cover."),
+        ] },
+        { title: T("ما نطلبه", "What we ask for"), items: [
+          ...((job.certs || []).map((c2) => T(`شهادة ${c2} سارية، أو الاستعداد لإتمامها قبل المباشرة — وبدونها لا يُسند العمل الخطر.`, `A valid ${c2} certificate, or readiness to complete it before starting — hazardous work is not assigned without it.`))),
+          ...(job.live ? [expLine(job.minExp)] : []),
+          job.live ? T("مؤهل في التخصص.", "A relevant qualification.")
+            : T("مؤهل في التخصص وخبرة عملية في بيئة صناعية.", "A relevant qualification and hands-on experience in an industrial setting."),
+          ...((job.certs || []).length ? [] : [T("شهادة سلامة سارية أو الاستعداد لإتمامها قبل المباشرة.", "A valid safety certificate, or readiness to complete one before starting.")]),
+          T("القدرة على العمل ضمن نظام ورديات، بما فيها الوردية الليلية.", "Ability to work a shift rotation, including night shifts."),
+        ] },
+        { title: T("ما نقدّمه", "What we offer"), items: [
+          T("عقد موثّق في قوى وتسجيل في التأمينات من أول يوم عمل.", "A contract authenticated in Qiwa and GOSI registration from day one."),
+          T("تأمين طبي للموظف وأسرته، وبدل سكن ومواصلات.", "Medical insurance for you and your family, with housing and transport allowances."),
+          T("تقييم أداء معلن معاييره مسبقًا، ولا يدخل الحضور في درجته.", "Performance criteria published in advance — attendance is not a term in the score."),
+          T("مسار تدريب معتمد وشهادات مهنية على حساب المنشأة.", "A funded training path with professional certifications paid by the employer."),
+        ] },
+      ],
+      steps: [
+        { n: "1", label: T("مراجعة الطلب", "Application review"), when: T("خلال 7 أيام عمل", "within 7 working days") },
+        { n: "2", label: T("اختبار فني قصير", "Short technical assessment"), when: T("خلال 7 أيام من الترشيح", "within 7 days of shortlisting") },
+        { n: "3", label: T("مقابلة مع لجنة", "Panel interview"), when: T("خلال 7 أيام من الاختبار", "within 7 days of the assessment") },
+        { n: "4", label: T("العرض الوظيفي", "Job offer"), when: T("خلال 5 أيام من المقابلة", "within 5 days of the interview") },
+      ].map((x) => ({ ...x,
+        numStyle: "width:26px; height:26px; border-radius:50%; background:#EAF6EF; color:#14683F; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:'IBM Plex Sans',sans-serif;" })),
+      others: ALL.map((j, i) => ({ ...j, i })).filter((j) => j.i !== idx).map((j) => ({
+        title: j.title, meta: `${j.station} · ${j.grade}`,
+        go: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ job: j.i, sent: false, form: {}, cv: "", ref: "" }); },
+      })),
+    };
+
+    const inp = "width:100%; height:40px; border:1px solid #E2E8F0; border-radius:10px; background:#F7F8FA; padding:0 11px; font-size:13px; color:#14284B; outline:none;";
+    const FIELDS = [
+      { k: "name", label: T("الاسم الكامل", "Full name"), ph: T("كما في الهوية", "As on your ID") },
+      { k: "nameEn", label: T("الاسم بالإنجليزية (كما في الجواز)", "Name in English (as on your passport)"), ph: "Rayan Aldosari" },
+      { k: "id", label: T("رقم الهوية أو الإقامة", "National ID or Iqama") , ph: "1xxxxxxxxx" },
+      { k: "phone", label: T("رقم الجوال", "Mobile number"), ph: "+9665xxxxxxxx" },
+      { k: "email", label: T("البريد الإلكتروني", "Email"), ph: "name@example.com" },
+      { k: "exp", label: T("سنوات الخبرة", "Years of experience"), ph: "5" },
+    ];
+    V.fields = FIELDS.map((x) => ({ label: x.label, ph: x.ph, value: f[x.k] || "", style: inp,
+      set: (e) => { const v = e.target.value; this.setState((s) => ({ form: { ...(s.form || {}), [x.k]: v } })); } }));
+    V.nat = this.state.nat;
+    V.natOpts = [{ value: "saudi", label: T("سعودي / سعودية", "Saudi") }, { value: "other", label: T("غير سعودي", "Non-Saudi") }];
+    V.setNat = (e) => { const v = e.target.value; this.setState({ nat: v }); };
+    V.cvName = this.state.cv || T("اضغط لاختيار ملف", "Tap to choose a file");
+    V.cvBoxStyle = `position:relative; display:flex; align-items:center; justify-content:center; height:44px; border-radius:10px; border:1px dashed ${this.state.cv ? "#BBF7D0" : "#CBD5E1"}; background:${this.state.cv ? "#ECFDF3" : "#F7F8FA"};`;
+    V.setCv = (e) => { const file = e.target.files && e.target.files[0]; if (file) this.setState({ cv: file.name }); };
+
+    const ready = ["name", "id", "phone"].every((k) => String(f[k] || "").trim()) && !!this.state.cv;
+    V.submitStyle = ready
+      ? "width:100%; height:44px; margin-top:14px; border-radius:10px; border:none; background:#1E9E63; color:#fff; font-size:14px; font-weight:600; cursor:pointer;"
+      : "width:100%; height:44px; margin-top:14px; border-radius:10px; border:none; background:#E2E8F0; color:#5A6B85; font-size:14px; font-weight:600; cursor:not-allowed;";
+    V.submit = () => {
+      if (!ready || job.none) return;
+      const seed = `${job.code}|${f.name}|${f.id}|${f.phone}|${Date.now()}`;
+      let h = 2166136261;
+      for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+      const ref = `NV-APP-${String(job.code || "").replace(/[^A-Za-z0-9]/g, "") || "GEN"}-${(h % 1679616).toString(36).toUpperCase().padStart(4, "0")}`;
+      // The public page owns no employee data — it drops the application into the
+      // intake queue, and the internal console reads that queue. One channel, two
+      // surfaces, no account for the candidate.
+      try {
+        const KEY = "nv_job_applications";
+        const q = JSON.parse(localStorage.getItem(KEY) || "[]");
+        q.push({ ref, tenant: TENANT.slug, code: job.code, title: job.title, name: f.name, nameEn: f.nameEn || "", id: f.id, phone: f.phone,
+          email: f.email || "", exp: f.exp || "", nat: this.state.nat, cv: this.state.cv,
+          at: new Date().toISOString(), status: "new" });
+        localStorage.setItem(KEY, JSON.stringify(q.slice(-40)));
+      } catch (e) {}
+      this.setState({ sent: true, ref });
+    };
+    V.hasJob = !job.none;
+    V.isNone = !!job.none;
+    V.labels = V.labels || {};
+    V.noneTitle = T(`لا شواغر معلنة في ${TENANT.name} حاليًا`, `No vacancies currently posted at ${TENANT.name}`);
+    V.noneBody = T("لا يوجد ما يُقدَّم عليه الآن، ولن نطلب منك بياناتك بلا شاغر قائم. اترك بريدك لنبلغك أول ما يُنشر شاغر يناسبك، أو تابع الصفحة لاحقًا.", "There is nothing to apply for right now, and we will not take your details without a live vacancy. Leave your email and we will tell you the moment a suitable role is posted, or check back later.");
+    V.noneNotifyLabel = T("أبلغني عند نشر شاغر", "Notify me when a role opens");
+    V.notifyPh = T("name@example.com", "name@example.com");
+    V.notifyVal = this.state.notify || "";
+    V.setNotify = (e) => { const v = e.target.value; this.setState({ notify: v }); };
+    V.notifyStyle = "flex:1 1 220px; height:40px; border:1px solid #E2E8F0; border-radius:10px; background:#F7F8FA; padding:0 11px; font-size:13px; color:#14284B; outline:none;";
+    V.notifyReady = /.+@.+\..+/.test(String(this.state.notify || ""));
+    V.notifyBtnStyle = V.notifyReady
+      ? "height:40px; padding:0 16px; border-radius:10px; border:none; background:#1E9E63; color:#fff; font-size:13px; font-weight:600; cursor:pointer;"
+      : "height:40px; padding:0 16px; border-radius:10px; border:none; background:#E2E8F0; color:#5A6B85; font-size:13px; font-weight:600; cursor:not-allowed;";
+    V.notified = !!this.state.notified;
+    V.notNotified = !this.state.notified;
+    V.notifyDone = T("سنبلغك على بريدك أول ما يُنشر شاغر مناسب.", "We will email you as soon as a suitable role is posted.");
+    V.notify = () => {
+      if (!V.notifyReady) return;
+      try { const K = "nv_job_alerts";
+        const q = JSON.parse(localStorage.getItem(K) || "[]");
+        q.push({ email: String(this.state.notify).trim(), tenant: TENANT.slug, at: new Date().toISOString() });
+        localStorage.setItem(K, JSON.stringify(q.slice(-40)));
+      } catch (e) {}
+      this.setState({ notified: true, notify: "" });
+    };
+    V.sent = this.state.sent;
+    V.open = !this.state.sent;
+    V.refNo = this.state.ref || "";
+    return V;
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; padding:0; background:#0B1220; }
+  * { box-sizing:border-box; }
+  a { color:#1E9E63; text-decoration:none; }
+  a:hover { color:#14284B; }
+</style>
+</helmet>
+
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+  <section data-label="الغلاف" data-screen-label="01" data-speaker-notes="عرّف بنفسك وبالمنصة في جملة واحدة. NiroVera منصة سعودية لتشغيل المحطات والقوى العاملة الميدانية. المدة المستهدفة خمس عشرة دقيقة." dir="rtl" style="background:#14284B; color:#FFFFFF; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden;">
+    <div style="display:flex; align-items:center; gap:22px;">
+      <img src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/a15fe425c_generated_image.png" alt="NiroVera" style="width:72px; height:72px; object-fit:contain;">
+      <span style="font-family:'IBM Plex Sans',sans-serif; font-size:40px; font-weight:600; letter-spacing:-0.01em;">NiroVera</span>
+    </div>
+    <div>
+      <h1 style="margin:0; font-size:104px; font-weight:600; line-height:1.15; letter-spacing:-0.03em; max-width:1400px; text-wrap:pretty;">منصة تشغيل المحطات والقوى العاملة الميدانية</h1>
+      <p style="margin:40px 0 0; font-size:44px; font-weight:300; color:#94A3B8; max-width:1200px; line-height:1.5;">إدارة العمليات والحضور والسلامة والرواتب في نظام واحد، مبني للميدان السعودي.</p>
+    </div>
+    <div style="display:flex; align-items:center; gap:28px; font-size:28px; color:#64748B;">
+      <span>عرض تعريفي</span>
+      <span style="width:6px; height:6px; border-radius:50%; background:#1E9E63;"></span>
+      <span>أغسطس 2026</span>
+    </div>
+  </section>
+
+  <section data-label="فاصل — المشكلة" data-screen-label="02" data-speaker-notes="انتقال قصير. لا تقرأ الشريحة، قل فقط: لنبدأ بالوضع الحالي." dir="rtl" style="background:#14284B; color:#FFFFFF; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column; justify-content:center;">
+    <span style="font-family:'IBM Plex Sans',sans-serif; font-size:32px; font-weight:600; color:#1E9E63; letter-spacing:0.14em;">01</span>
+    <h1 style="margin:28px 0 0; font-size:120px; font-weight:600; letter-spacing:-0.03em; line-height:1;">المشكلة</h1>
+  </section>
+
+  <section data-label="واقع التشغيل اليوم" data-screen-label="03" data-speaker-notes="اذكر أن هذه الأرقام من مقابلات مع مدراء تشغيل في قطاع المحطات. لا تدّعِ أنها دراسة رسمية." dir="rtl" style="background:#F7F8FA; color:#14284B; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column;">
+    <h1 style="margin:0; font-size:72px; font-weight:600; letter-spacing:-0.02em;">واقع التشغيل اليوم</h1>
+    <p style="margin:28px 0 0; font-size:34px; color:#5A6B85; max-width:1200px; line-height:1.6;">المعلومة موجودة، لكنها موزّعة على أدوات لا تتحدث مع بعضها.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:32px; margin-top:80px;">
+      <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:20px; padding:44px;">
+        <div style="font-family:'IBM Plex Sans',sans-serif; font-size:96px; font-weight:600; line-height:1; color:#14284B;">7</div>
+        <p style="margin:24px 0 0; font-size:32px; line-height:1.5; color:#14284B;">أدوات منفصلة في المتوسط: إكسل، واتساب، ورق، بريد، ونظام حضور مستقل.</p>
+      </div>
+      <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:20px; padding:44px;">
+        <div style="font-family:'IBM Plex Sans',sans-serif; font-size:96px; font-weight:600; line-height:1; color:#14284B;">3<span style="font-size:44px; font-weight:400; color:#5A6B85; padding-right:10px;">ساعات</span></div>
+        <p style="margin:24px 0 0; font-size:32px; line-height:1.5; color:#14284B;">يوميًا من وقت المشرفين في جمع البيانات وتجميع التقارير يدويًا.</p>
+      </div>
+      <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:20px; padding:44px;">
+        <div style="font-family:'IBM Plex Sans',sans-serif; font-size:96px; font-weight:600; line-height:1; color:#DC2626;">48<span style="font-size:44px; font-weight:400; color:#5A6B85; padding-right:10px;">ساعة</span></div>
+        <p style="margin:24px 0 0; font-size:32px; line-height:1.5; color:#14284B;">متوسط التأخير حتى تصل مشكلة ميدانية إلى من يملك قرار حلّها.</p>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="تكلفة التشتت" data-screen-label="04" data-speaker-notes="هذه الشريحة عن الأثر المالي. اربطها بأرقام العميل نفسه إن كانت متاحة قبل الاجتماع." dir="rtl" style="background:#FFFFFF; color:#14284B; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column;">
+    <h1 style="margin:0; font-size:72px; font-weight:600; letter-spacing:-0.02em;">تكلفة التشتت</h1>
+    <div style="display:flex; gap:80px; margin-top:72px; align-items:flex-start;">
+      <div style="flex:1;">
+        <div style="border-top:2px solid #14284B; padding-top:32px;">
+          <div style="font-size:34px; font-weight:600;">ساعات إضافية غير مبررة</div>
+          <p style="margin:16px 0 0; font-size:30px; color:#5A6B85; line-height:1.6;">بلا ربط بين الجدولة والحضور الفعلي، تُعتمد ساعات لا يمكن التحقق منها.</p>
+        </div>
+        <div style="border-top:1px solid #E2E8F0; padding-top:32px; margin-top:40px;">
+          <div style="font-size:34px; font-weight:600;">توقفات تتكرر</div>
+          <p style="margin:16px 0 0; font-size:30px; color:#5A6B85; line-height:1.6;">لا يوجد سجل يربط العطل بسببه، فتتكرر المشكلة نفسها كل ربع سنة.</p>
+        </div>
+        <div style="border-top:1px solid #E2E8F0; padding-top:32px; margin-top:40px;">
+          <div style="font-size:34px; font-weight:600;">مخاطر امتثال</div>
+          <p style="margin:16px 0 0; font-size:30px; color:#5A6B85; line-height:1.6;">عند التدقيق، إثبات من فعل ماذا ومتى يستغرق أيامًا من البحث في الأرشيف.</p>
+        </div>
+      </div>
+      <div style="width:620px; flex-shrink:0; background:#14284B; border-radius:20px; padding:56px; color:#FFFFFF;">
+        <div style="font-size:28px; color:#1E9E63; font-weight:600; letter-spacing:0.1em;">المحصلة</div>
+        <p style="margin:32px 0 0; font-size:40px; line-height:1.55; font-weight:300;">القرارات تُتخذ على بيانات عمرها يومان، بينما المحطة تعمل بالساعة.</p>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="فاصل — الحل" data-screen-label="05" data-speaker-notes="انتقال. هنا يبدأ العرض الفعلي للمنصة." dir="rtl" style="background:#14284B; color:#FFFFFF; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column; justify-content:center;">
+    <span style="font-family:'IBM Plex Sans',sans-serif; font-size:32px; font-weight:600; color:#1E9E63; letter-spacing:0.14em;">02</span>
+    <h1 style="margin:28px 0 0; font-size:120px; font-weight:600; letter-spacing:-0.03em; line-height:1;">الحل</h1>
+  </section>
+
+  <section data-label="مركز القيادة" data-screen-label="06" data-speaker-notes="أهم شريحة في العرض. اشرح الفرق: لوحات المعلومات التقليدية تعرض أرقامًا، هذه تعرض قرارات مرتبة بأثرها. افتح المنصة الحية هنا إن أمكن." dir="rtl" style="background:#F7F8FA; color:#14284B; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column;">
+    <h1 style="margin:0; font-size:72px; font-weight:600; letter-spacing:-0.02em;">مركز القيادة</h1>
+    <p style="margin:28px 0 0; font-size:34px; color:#5A6B85; max-width:1300px; line-height:1.6;">تفتح المنصة على ما يحتاج قرارك اليوم، مرتبًا بأثره على التشغيل — لا بتاريخ وصوله.</p>
+    <div style="display:flex; gap:36px; margin-top:64px; align-items:stretch;">
+      <div style="width:520px; flex-shrink:0; background:#14284B; border-radius:20px; padding:52px; color:#FFFFFF;">
+        <div style="font-size:26px; letter-spacing:0.1em; color:#6EE7B7; font-weight:600;">مؤشر الجاهزية التشغيلية</div>
+        <div style="display:flex; align-items:baseline; gap:16px; margin-top:28px;">
+          <span dir="ltr" style="font-family:'IBM Plex Sans',sans-serif; font-size:140px; font-weight:600; line-height:1; letter-spacing:-0.04em;">82</span>
+          <span dir="ltr" style="font-size:40px; color:#64748B;">/100</span>
+        </div>
+        <p style="margin:32px 0 0; font-size:28px; color:#94A3B8; line-height:1.6;">رقم واحد يجمع الحضور وإنجاز المهام وإغلاق بنود السلامة وجاهزية الأصول.</p>
+      </div>
+      <div style="flex:1; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:20px; padding:52px; display:flex; flex-direction:column; justify-content:center; gap:36px;">
+        <div style="display:flex; align-items:center; gap:24px;">
+          <span style="width:14px; height:14px; border-radius:50%; background:#DC2626; flex-shrink:0;"></span>
+          <span style="flex:1; font-size:34px; font-weight:500;">توقف مضخة التبريد — الجبيل 2</span>
+          <span style="font-size:28px; color:#5A6B85;">يعطّل 3 مهام</span>
+        </div>
+        <div style="height:1px; background:#E2E8F0;"></div>
+        <div style="display:flex; align-items:center; gap:24px;">
+          <span style="width:14px; height:14px; border-radius:50%; background:#F59E0B; flex-shrink:0;"></span>
+          <span style="flex:1; font-size:34px; font-weight:500;">7 طلبات إجازة تتجاوز حد الوردية</span>
+          <span style="font-size:28px; color:#5A6B85;">الأسبوع القادم</span>
+        </div>
+        <div style="height:1px; background:#E2E8F0;"></div>
+        <div style="display:flex; align-items:center; gap:24px;">
+          <span style="width:14px; height:14px; border-radius:50%; background:#F59E0B; flex-shrink:0;"></span>
+          <span style="flex:1; font-size:34px; font-weight:500;">عقد صيانة بانتظار توقيعك</span>
+          <span style="font-size:28px; color:#5A6B85;">ينتهي خلال 48 ساعة</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="وحدات المنصة" data-screen-label="07" data-speaker-notes="لا تقرأ الوحدات واحدة واحدة. النقطة: كلها فوق قاعدة بيانات واحدة، فالتغيير في الحضور ينعكس فورًا في الرواتب." dir="rtl" style="background:#FFFFFF; color:#14284B; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column;">
+    <h1 style="margin:0; font-size:72px; font-weight:600; letter-spacing:-0.02em;">وحدات المنصة</h1>
+    <p style="margin:28px 0 0; font-size:34px; color:#5A6B85; max-width:1300px; line-height:1.6;">إحدى وعشرون وحدة فوق قاعدة بيانات واحدة — تسجيل حضور واحد يغذّي الجدولة والرواتب والتقارير معًا.</p>
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:18px; margin-top:56px;">
+      <div style="background:#14284B; border:1px solid #14284B; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500; color:#FFFFFF;">مركز القيادة</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">المهام والعمليات</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">الحضور والانصراف</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">الورديات</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">إثبات العمل</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">التقرير اليومي</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">السلامة HSE</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">المخزون والأصول</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">المحادثات التشغيلية</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">الموارد البشرية</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">ملفات الموظفين</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">الهيكل التنظيمي</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">طلبات الإجازة</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">الأداء والنقاط</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">الرواتب</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">المصروفات</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">الملفات</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">التوقيع الرقمي</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">الشكاوى والبلاغات</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">التقارير والتحليلات</div>
+      <div style="background:#F7F8FA; border:1px solid #E2E8F0; border-radius:14px; padding:26px 22px; font-size:27px; font-weight:500;">المساعد الذكي</div>
+    </div>
+  </section>
+
+  <section data-label="المساعد الذكي" data-screen-label="08" data-speaker-notes="أوضح الفرق عن روبوتات المحادثة العامة: هذا يقرأ بيانات الشركة نفسها، ويعرض مصدر كل رقم، وينتهي بزر تنفيذ." dir="rtl" style="background:#F7F8FA; color:#14284B; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column;">
+    <h1 style="margin:0; font-size:72px; font-weight:600; letter-spacing:-0.02em;">المساعد الذكي</h1>
+    <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:20px; padding:56px; margin-top:56px;">
+      <div style="font-size:28px; color:#5A6B85; font-weight:600; letter-spacing:0.08em;">السؤال</div>
+      <p style="margin:20px 0 0; font-size:44px; font-weight:500; line-height:1.5;">لماذا انخفض إنجاز المهام في محطة الجبيل 2 هذا الأسبوع؟</p>
+      <div style="height:1px; background:#E2E8F0; margin:40px 0;"></div>
+      <p style="margin:0; font-size:34px; line-height:1.7; color:#334155; max-width:1500px;">الانخفاض مصدره سبب واحد: توقف مضخة التبريد يوم الأحد أوقف 3 مهام معتمدة عليها، ولم تُعَد جدولتها. الحضور والطاقم لم يتغيرا.</p>
+      <div style="display:flex; gap:24px; margin-top:44px;">
+        <div style="flex:1; background:#F7F8FA; border:1px solid #E2E8F0; border-radius:16px; padding:32px;">
+          <div style="font-size:24px; color:#5A6B85; letter-spacing:0.08em;">العمليات</div>
+          <div dir="ltr" style="font-family:'IBM Plex Sans',sans-serif; font-size:48px; font-weight:600; margin-top:14px; text-align:right;">-23%</div>
+        </div>
+        <div style="flex:1; background:#F7F8FA; border:1px solid #E2E8F0; border-radius:16px; padding:32px;">
+          <div style="font-size:24px; color:#5A6B85; letter-spacing:0.08em;">الحضور</div>
+          <div dir="ltr" style="font-family:'IBM Plex Sans',sans-serif; font-size:48px; font-weight:600; margin-top:14px; text-align:right;">0%</div>
+        </div>
+        <div style="flex:1; background:#F7F8FA; border:1px solid #E2E8F0; border-radius:16px; padding:32px;">
+          <div style="font-size:24px; color:#5A6B85; letter-spacing:0.08em;">الأصول</div>
+          <div dir="ltr" style="font-family:'IBM Plex Sans',sans-serif; font-size:48px; font-weight:600; margin-top:14px; text-align:right;">31h</div>
+        </div>
+        <div style="flex:1.4; background:#1E9E63; border-radius:16px; padding:32px; display:flex; align-items:center; justify-content:center; color:#FFFFFF; font-size:32px; font-weight:600;">أعد جدولة المهام الثلاث</div>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="السلامة والامتثال" data-screen-label="09" data-speaker-notes="مهم للجهات الحكومية وشبه الحكومية. ركّز على سجل التدقيق: كل تغيير مسجل تلقائيًا، لا يعتمد على انضباط المستخدم." dir="rtl" style="background:#FFFFFF; color:#14284B; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column;">
+    <h1 style="margin:0; font-size:72px; font-weight:600; letter-spacing:-0.02em;">السلامة والامتثال</h1>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:32px; margin-top:72px;">
+      <div style="border-top:2px solid #1E9E63; padding-top:36px;">
+        <div style="font-size:38px; font-weight:600;">سجل تدقيق تلقائي</div>
+        <p style="margin:20px 0 0; font-size:30px; color:#5A6B85; line-height:1.65;">كل تغيير على البيانات يُسجَّل من مصدره: من، ومتى، وماذا تغيّر — دون أن يعتمد على تذكّر المستخدم.</p>
+      </div>
+      <div style="border-top:2px solid #1E9E63; padding-top:36px;">
+        <div style="font-size:38px; font-weight:600;">بلاغ مجهول محمي</div>
+        <p style="margin:20px 0 0; font-size:30px; color:#5A6B85; line-height:1.65;">الموظف يبلّغ برمز متغيّر كل ثلاثين يومًا، فلا يمكن ربط البلاغ بصاحبه حتى من داخل النظام.</p>
+      </div>
+      <div style="border-top:2px solid #1E9E63; padding-top:36px;">
+        <div style="font-size:38px; font-weight:600;">تصعيد تلقائي</div>
+        <p style="margin:20px 0 0; font-size:30px; color:#5A6B85; line-height:1.65;">إن تجاوز البلاغ زمن الاستجابة المحدد، ينتقل تلقائيًا إلى المستوى الأعلى في سلسلة المسؤولية.</p>
+      </div>
+    </div>
+    <div style="margin-top:auto; display:flex; align-items:center; gap:40px; background:#F7F8FA; border-radius:20px; padding:48px;">
+      <div dir="ltr" style="font-family:'IBM Plex Sans',sans-serif; font-size:96px; font-weight:600; line-height:1; color:#1E9E63;">214</div>
+      <p style="margin:0; font-size:34px; color:#14284B; line-height:1.5;">يومًا متتاليًا دون حادث يفقد وقت عمل — مقاسة تلقائيًا من سجل الحوادث، لا مدخلة يدويًا.</p>
+    </div>
+  </section>
+
+  <section data-label="فاصل — الأثر" data-screen-label="10" data-speaker-notes="انتقال إلى الجزء الذي يهم من يوقّع الشيك." dir="rtl" style="background:#14284B; color:#FFFFFF; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column; justify-content:center;">
+    <span style="font-family:'IBM Plex Sans',sans-serif; font-size:32px; font-weight:600; color:#1E9E63; letter-spacing:0.14em;">03</span>
+    <h1 style="margin:28px 0 0; font-size:120px; font-weight:600; letter-spacing:-0.03em; line-height:1;">الأثر</h1>
+  </section>
+
+  <section data-label="مقارنة" data-screen-label="11" data-speaker-notes="لا تهاجم ساب. الرسالة: هي ممتازة للمؤسسات الكبيرة، لكن شركة بمئة موظف تدفع تعقيدًا لا تحتاجه." dir="rtl" style="background:#F7F8FA; color:#14284B; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column;">
+    <h1 style="margin:0; font-size:72px; font-weight:600; letter-spacing:-0.02em;">NiroVera مقابل الأنظمة التقليدية</h1>
+    <div style="margin-top:64px; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:20px; overflow:hidden;">
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; background:#14284B; color:#FFFFFF;">
+        <div style="padding:32px 40px; font-size:30px; font-weight:600;">المعيار</div>
+        <div style="padding:32px 40px; font-size:30px; font-weight:600; color:#94A3B8;">نظام موارد تقليدي</div>
+        <div style="padding:32px 40px; font-size:30px; font-weight:600; color:#6EE7B7;">NiroVera</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; border-bottom:1px solid #E2E8F0;">
+        <div style="padding:34px 40px; font-size:30px; font-weight:500;">مدة التطبيق</div>
+        <div style="padding:34px 40px; font-size:30px; color:#5A6B85;">6 إلى 18 شهرًا</div>
+        <div style="padding:34px 40px; font-size:30px; color:#14284B; font-weight:500;">أسبوعان</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; border-bottom:1px solid #E2E8F0;">
+        <div style="padding:34px 40px; font-size:30px; font-weight:500;">التدريب المطلوب</div>
+        <div style="padding:34px 40px; font-size:30px; color:#5A6B85;">دورات لكل وحدة</div>
+        <div style="padding:34px 40px; font-size:30px; color:#14284B; font-weight:500;">الفني يسجّل حضوره من هاتفه بلا تدريب</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; border-bottom:1px solid #E2E8F0;">
+        <div style="padding:34px 40px; font-size:30px; font-weight:500;">اللغة والاتجاه</div>
+        <div style="padding:34px 40px; font-size:30px; color:#5A6B85;">عربية مضافة على واجهة إنجليزية</div>
+        <div style="padding:34px 40px; font-size:30px; color:#14284B; font-weight:500;">عربية أصلية من اليمين لليسار</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr;">
+        <div style="padding:34px 40px; font-size:30px; font-weight:500;">التكلفة السنوية</div>
+        <div style="padding:34px 40px; font-size:30px; color:#5A6B85;">مئات الآلاف قبل التخصيص</div>
+        <div style="padding:34px 40px; font-size:30px; color:#14284B; font-weight:500;">اشتراك ثابت بلا رسوم تطبيق</div>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="العائد المتوقع" data-screen-label="12" data-speaker-notes="قدّم هذه كتقديرات مبنية على شركة بمئة وخمسين موظفًا وست محطات، لا كوعود تعاقدية." dir="rtl" style="background:#14284B; color:#FFFFFF; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column;">
+    <h1 style="margin:0; font-size:72px; font-weight:600; letter-spacing:-0.02em;">العائد المتوقع</h1>
+    <p style="margin:28px 0 0; font-size:32px; color:#94A3B8; max-width:1300px; line-height:1.6;">تقديرات لشركة بـ 150 موظفًا وست محطات، خلال أول اثني عشر شهرًا.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:48px; margin-top:auto;">
+      <div>
+        <div dir="ltr" style="font-family:'IBM Plex Sans',sans-serif; font-size:130px; font-weight:600; line-height:1; letter-spacing:-0.04em; color:#6EE7B7; text-align:right;">-31%</div>
+        <p style="margin:28px 0 0; font-size:32px; line-height:1.55; color:#E2E8F0;">في الساعات الإضافية، بربط الجدولة بالحضور المتحقق جغرافيًا.</p>
+      </div>
+      <div>
+        <div dir="ltr" style="font-family:'IBM Plex Sans',sans-serif; font-size:130px; font-weight:600; line-height:1; letter-spacing:-0.04em; color:#6EE7B7; text-align:right;">-64%</div>
+        <p style="margin:28px 0 0; font-size:32px; line-height:1.55; color:#E2E8F0;">في زمن وصول المشكلة الميدانية إلى صاحب القرار.</p>
+      </div>
+      <div>
+        <div dir="ltr" style="font-family:'IBM Plex Sans',sans-serif; font-size:130px; font-weight:600; line-height:1; letter-spacing:-0.04em; color:#6EE7B7; text-align:right;">15h</div>
+        <p style="margin:28px 0 0; font-size:32px; line-height:1.55; color:#E2E8F0;">تُوفَّر أسبوعيًا من وقت المشرفين، كانت تذهب لتجميع التقارير.</p>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="خطة التطبيق" data-screen-label="13" data-speaker-notes="النقطة: لا يوجد مشروع تطبيق طويل. الشركة تعمل على المنصة من الأسبوع الثالث." dir="rtl" style="background:#FFFFFF; color:#14284B; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column;">
+    <h1 style="margin:0; font-size:72px; font-weight:600; letter-spacing:-0.02em;">خطة التطبيق</h1>
+    <div style="display:flex; gap:0; margin-top:80px; align-items:stretch;">
+      <div style="flex:1; padding-left:48px;">
+        <div style="font-family:'IBM Plex Sans',sans-serif; font-size:28px; font-weight:600; color:#1E9E63; letter-spacing:0.1em;">الأسبوع 1</div>
+        <div style="font-size:42px; font-weight:600; margin-top:20px;">التهيئة</div>
+        <p style="margin:20px 0 0; font-size:30px; color:#5A6B85; line-height:1.65;">رفع الموظفين والمحطات، رسم الهيكل التنظيمي، وتحديد النطاق الجغرافي لكل محطة.</p>
+      </div>
+      <div style="width:1px; background:#E2E8F0;"></div>
+      <div style="flex:1; padding:0 48px;">
+        <div style="font-family:'IBM Plex Sans',sans-serif; font-size:28px; font-weight:600; color:#1E9E63; letter-spacing:0.1em;">الأسبوع 2</div>
+        <div style="font-size:42px; font-weight:600; margin-top:20px;">التشغيل التجريبي</div>
+        <p style="margin:20px 0 0; font-size:30px; color:#5A6B85; line-height:1.65;">محطة واحدة تعمل بالكامل على المنصة، مع فريق التشغيل الفعلي لا فريق تجريبي.</p>
+      </div>
+      <div style="width:1px; background:#E2E8F0;"></div>
+      <div style="flex:1; padding-right:48px;">
+        <div style="font-family:'IBM Plex Sans',sans-serif; font-size:28px; font-weight:600; color:#1E9E63; letter-spacing:0.1em;">الأسبوع 3</div>
+        <div style="font-size:42px; font-weight:600; margin-top:20px;">التوسعة</div>
+        <p style="margin:20px 0 0; font-size:30px; color:#5A6B85; line-height:1.65;">بقية المحطات تنضم دفعة واحدة، والتقارير المجدولة تبدأ بالوصول تلقائيًا.</p>
+      </div>
+    </div>
+    <div style="margin-top:auto; background:#F7F8FA; border-radius:20px; padding:44px 48px; font-size:32px; color:#14284B; line-height:1.55;">لا يوجد فريق تطبيق يُقيم في مقر العميل، ولا رسوم تهيئة منفصلة.</div>
+  </section>
+
+  <section data-label="الباقات" data-screen-label="14" data-speaker-notes="ثبّت الأسعار قبل العرض. الرسالة: السعر لكل موظف شهريًا، بلا رسوم مخفية." dir="rtl" style="background:#F7F8FA; color:#14284B; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column;">
+    <h1 style="margin:0; font-size:72px; font-weight:600; letter-spacing:-0.02em;">الباقات</h1>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:32px; margin-top:72px; flex:1;">
+      <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:20px; padding:48px; display:flex; flex-direction:column;">
+        <div style="font-size:38px; font-weight:600;">البداية</div>
+        <div style="margin-top:24px; display:flex; align-items:baseline; gap:12px;">
+          <span dir="ltr" style="font-family:'IBM Plex Sans',sans-serif; font-size:72px; font-weight:600; line-height:1;">29</span>
+          <span style="font-size:28px; color:#5A6B85;">ريال / موظف / شهر</span>
+        </div>
+        <p style="margin:32px 0 0; font-size:30px; color:#5A6B85; line-height:1.65;">المهام والحضور والمحادثات والملفات. حتى 30 موظفًا ومحطتين.</p>
+      </div>
+      <div style="background:#14284B; border:1px solid #14284B; border-radius:20px; padding:48px; display:flex; flex-direction:column; color:#FFFFFF;">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <span style="font-size:38px; font-weight:600;">الاحترافية</span>
+          <span style="font-size:26px; background:#1E9E63; border-radius:20px; padding:6px 16px; font-weight:600;">الأكثر اختيارًا</span>
+        </div>
+        <div style="margin-top:24px; display:flex; align-items:baseline; gap:12px;">
+          <span dir="ltr" style="font-family:'IBM Plex Sans',sans-serif; font-size:72px; font-weight:600; line-height:1;">49</span>
+          <span style="font-size:28px; color:#94A3B8;">ريال / موظف / شهر</span>
+        </div>
+        <p style="margin:32px 0 0; font-size:30px; color:#CBD5E1; line-height:1.65;">كل الوحدات الإحدى والعشرين، بما فيها الرواتب والمخزون والتوقيع الرقمي والمساعد الذكي.</p>
+      </div>
+      <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:20px; padding:48px; display:flex; flex-direction:column;">
+        <div style="font-size:38px; font-weight:600;">المؤسسات</div>
+        <div style="margin-top:24px; display:flex; align-items:baseline; gap:12px;">
+          <span style="font-size:52px; font-weight:600; line-height:1;">حسب الاتفاق</span>
+        </div>
+        <p style="margin:32px 0 0; font-size:30px; color:#5A6B85; line-height:1.65;">استضافة مخصصة، تكامل مع الأنظمة القائمة، ودعم تشغيلي مخصص.</p>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="الخطوة التالية" data-screen-label="15" data-speaker-notes="اختم بطلب واضح: محطة واحدة، أسبوعان، بلا التزام. اترك الشريحة معروضة أثناء الأسئلة." dir="rtl" style="background:#14284B; color:#FFFFFF; font-family:'IBM Plex Sans Arabic',sans-serif; padding:100px 100px 80px; display:flex; flex-direction:column; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:22px;">
+      <img src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/a15fe425c_generated_image.png" alt="NiroVera" style="width:60px; height:60px; object-fit:contain;">
+      <span style="font-family:'IBM Plex Sans',sans-serif; font-size:34px; font-weight:600;">NiroVera</span>
+    </div>
+    <div>
+      <h1 style="margin:0; font-size:88px; font-weight:600; letter-spacing:-0.03em; line-height:1.2; max-width:1400px; text-wrap:pretty;">محطة واحدة، أسبوعان، بلا التزام</h1>
+      <p style="margin:36px 0 0; font-size:38px; color:#94A3B8; max-width:1200px; line-height:1.5;">نشغّل محطة واحدة من محطاتكم على المنصة، وتقارنون النتيجة بأنفسكم قبل أي قرار.</p>
+    </div>
+    <div style="display:flex; gap:64px; font-size:30px; color:#CBD5E1;">
+      <span>نيار عبدالله الرنياوي</span>
+      <span dir="ltr">niyar@powercares.pro</span>
+      <span dir="ltr">+966 59 541 4472</span>
+    </div>
+  </section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

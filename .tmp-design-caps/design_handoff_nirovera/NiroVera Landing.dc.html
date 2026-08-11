@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; padding:0; background:#F7F8FA; }
+  * { box-sizing:border-box; }
+  a { color:#1E9E63; text-decoration:none; }
+  a:hover { color:#14284B; }
+  @media (max-width: 900px) {
+    [data-nv="split"] { flex-direction:column !important; }
+    [data-nv="navlinks"] { display:none !important; }
+    [data-nv="pad"] { padding-left:22px !important; padding-right:22px !important; }
+    [data-nv="h1"] { font-size:44px !important; }
+    [data-nv="h2"] { font-size:32px !important; }
+  }
+</style>
+</helmet>
+
+<div dir="{{ dir }}" style="background:#F7F8FA; font-family:'IBM Plex Sans Arabic','IBM Plex Sans',sans-serif; color:#14284B;">
+
+  <header data-nv="pad" style="position:sticky; top:0; z-index:50; background:rgba(247,248,250,.92); backdrop-filter:blur(12px); border-bottom:1px solid #E2E8F0; padding:0 48px;">
+    <div style="max-width:1240px; margin:0 auto; height:68px; display:flex; align-items:center; gap:20px;">
+      <div style="display:flex; align-items:center; gap:11px;">
+        <img src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/a15fe425c_generated_image.png" alt="NiroVera" style="width:32px; height:32px; object-fit:contain;">
+        <span style="font-family:'IBM Plex Sans',sans-serif; font-size:19px; font-weight:600; letter-spacing:-0.01em;">NiroVera</span>
+      </div>
+      <nav data-nv="navlinks" style="flex:1; display:flex; align-items:center; gap:26px; margin:0 30px;">
+        <sc-for list="{{ navLinks }}" as="l" hint-placeholder-count="4">
+          <a href="{{ l.href }}" style="font-size:14px; color:#5A6B85;" style-hover="color:#14284B;">{{ l.label }}</a>
+        </sc-for>
+      </nav>
+      <div style="flex:1;"></div>
+      <button onClick="{{ toggleLang }}" style="height:36px; padding:0 12px; border-radius:9px; border:1px solid #E2E8F0; background:#fff; font-size:12px; font-weight:600; color:#5A6B85; cursor:pointer; font-family:'IBM Plex Sans',sans-serif;" style-hover="border-color:#1E9E63; color:#1E9E63;">{{ langToggleLabel }}</button>
+      <a href="#pricing" style="height:36px; padding:0 18px; border-radius:9px; background:#1E9E63; color:#fff; font-size:13px; font-weight:600; display:flex; align-items:center;" style-hover="background:#15803D; color:#fff;">{{ t.navCta }}</a>
+    </div>
+  </header>
+
+  <section data-nv="pad" style="padding:88px 48px 72px; background:#F7F8FA;">
+    <div style="max-width:1240px; margin:0 auto;">
+      <div style="display:inline-flex; align-items:center; gap:9px; padding:7px 14px; border-radius:20px; border:1px solid #BBF7D0; background:#ECFDF3;">
+        <span style="width:6px; height:6px; border-radius:50%; background:#1E9E63;"></span>
+        <span style="font-size:13px; color:#15803D; font-weight:500;">{{ t.heroBadge }}</span>
+      </div>
+      <h1 data-nv="h1" style="margin:26px 0 0; font-size:66px; font-weight:600; line-height:1.18; letter-spacing:-0.03em; max-width:900px; text-wrap:pretty;">{{ t.heroTitle }}</h1>
+      <p style="margin:26px 0 0; font-size:21px; line-height:1.65; color:#5A6B85; max-width:720px; text-wrap:pretty;">{{ t.heroSub }}</p>
+      <div style="display:flex; gap:12px; margin-top:34px; flex-wrap:wrap;">
+        <a href="#pricing" style="height:48px; padding:0 26px; border-radius:11px; background:#14284B; color:#fff; font-size:15px; font-weight:600; display:flex; align-items:center;" style-hover="background:#0E1D38; color:#fff;">{{ t.heroPrimary }}</a>
+        <a href="#modules" style="height:48px; padding:0 26px; border-radius:11px; background:#fff; color:#14284B; border:1px solid #E2E8F0; font-size:15px; font-weight:500; display:flex; align-items:center;" style-hover="border-color:#CBD5E1; color:#14284B;">{{ t.heroSecondary }}</a>
+      </div>
+
+      <div style="margin-top:56px; background:#14284B; border-radius:22px; padding:34px; display:flex; gap:20px; flex-wrap:wrap;" data-nv="split">
+        <div style="flex:1 1 280px; max-width:340px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:26px;">
+          <div style="font-size:11px; letter-spacing:0.12em; color:#6EE7B7; font-weight:600;">{{ t.readinessKicker }}</div>
+          <div style="display:flex; align-items:baseline; gap:10px; margin-top:14px;">
+            <span dir="ltr" style="font-family:'IBM Plex Sans',sans-serif; font-size:68px; font-weight:600; line-height:1; letter-spacing:-0.04em; color:#fff;">82</span>
+            <span dir="ltr" style="font-size:19px; color:#64748B;">/100</span>
+          </div>
+          <p style="margin:18px 0 0; font-size:14px; line-height:1.7; color:#94A3B8;">{{ t.readinessBody }}</p>
+        </div>
+        <div style="flex:999 1 380px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:26px; display:flex; flex-direction:column; justify-content:center; gap:18px;">
+          <div style="font-size:13px; font-weight:600; color:#fff;">{{ t.decisionsTitle }}</div>
+          <sc-for list="{{ heroDecisions }}" as="d" hint-placeholder-count="3">
+            <div style="display:flex; align-items:center; gap:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,.08); flex-wrap:wrap;">
+              <span style="{{ d.dotStyle }}"></span>
+              <span style="flex:1 1 200px; font-size:15px; color:#E2E8F0;">{{ d.title }}</span>
+              <span style="font-size:13px; color:#94A3B8;">{{ d.meta }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-nv="pad" style="padding:72px 48px; background:#FFFFFF; border-top:1px solid #E2E8F0; border-bottom:1px solid #E2E8F0;">
+    <div style="max-width:1240px; margin:0 auto;">
+      <h2 data-nv="h2" style="margin:0; font-size:40px; font-weight:600; letter-spacing:-0.02em;">{{ t.problemTitle }}</h2>
+      <p style="margin:16px 0 0; font-size:18px; color:#5A6B85; max-width:700px; line-height:1.65;">{{ t.problemSub }}</p>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:22px; margin-top:46px;">
+        <sc-for list="{{ problems }}" as="p" hint-placeholder-count="3">
+          <div style="border-top:2px solid #14284B; padding-top:24px;">
+            <div dir="ltr" style="font-family:'IBM Plex Sans',sans-serif; font-size:52px; font-weight:600; line-height:1; letter-spacing:-0.03em; text-align:{{ numAlign }};">{{ p.value }}</div>
+            <p style="margin:16px 0 0; font-size:16px; line-height:1.7; color:#5A6B85; text-wrap:pretty;">{{ p.text }}</p>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="modules" data-nv="pad" style="padding:80px 48px; background:#F7F8FA;">
+    <div style="max-width:1240px; margin:0 auto;">
+      <h2 data-nv="h2" style="margin:0; font-size:40px; font-weight:600; letter-spacing:-0.02em;">{{ t.modulesTitle }}</h2>
+      <p style="margin:16px 0 0; font-size:18px; color:#5A6B85; max-width:760px; line-height:1.65;">{{ t.modulesSub }}</p>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(228px,1fr)); gap:14px; margin-top:44px;">
+        <sc-for list="{{ modules }}" as="m" hint-placeholder-count="16">
+          <div style="{{ m.cardStyle }}">
+            <span style="{{ m.iconStyle }}">{{ m.iconEl }}</span>
+            <span style="font-size:15px; font-weight:500;">{{ m.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section data-nv="pad" style="padding:80px 48px; background:#FFFFFF; border-top:1px solid #E2E8F0;">
+    <div style="max-width:1240px; margin:0 auto; display:flex; gap:56px; flex-wrap:wrap;" data-nv="split">
+      <div style="flex:1 1 340px;">
+        <div style="font-size:12px; letter-spacing:0.12em; color:#1E9E63; font-weight:600;">{{ t.proofKicker }}</div>
+        <h2 data-nv="h2" style="margin:18px 0 0; font-size:40px; font-weight:600; letter-spacing:-0.02em; text-wrap:pretty;">{{ t.proofTitle }}</h2>
+        <p style="margin:20px 0 0; font-size:17px; line-height:1.75; color:#5A6B85; text-wrap:pretty;">{{ t.proofBody }}</p>
+        <div style="display:flex; flex-direction:column; gap:16px; margin-top:30px;">
+          <sc-for list="{{ proofPoints }}" as="p" hint-placeholder-count="3">
+            <div style="display:flex; align-items:flex-start; gap:12px;">
+              <span style="width:20px; height:20px; border-radius:50%; background:#ECFDF3; border:1px solid #BBF7D0; color:#15803D; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;">✓</span>
+              <span style="font-size:16px; line-height:1.65; color:#14284B; text-wrap:pretty;">{{ p.text }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex:1 1 340px; background:#F7F8FA; border:1px solid #E2E8F0; border-radius:18px; padding:26px; display:flex; flex-direction:column;">
+        <div style="display:flex; gap:12px; flex:1; min-height:190px;">
+          <div style="flex:1; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;">
+            <span style="font-size:11px; color:#94A3B8; letter-spacing:0.08em;">{{ t.before }}</span>
+            <span dir="ltr" style="font-size:13px; color:#CBD5E1; font-family:'IBM Plex Sans',sans-serif;">06:18</span>
+          </div>
+          <div style="flex:1; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;">
+            <span style="font-size:11px; color:#94A3B8; letter-spacing:0.08em;">{{ t.after }}</span>
+            <span dir="ltr" style="font-size:13px; color:#CBD5E1; font-family:'IBM Plex Sans',sans-serif;">09:42</span>
+          </div>
+        </div>
+        <div style="margin-top:18px; padding-top:18px; border-top:1px solid #E2E8F0; display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#1E9E63; flex-shrink:0;"></span>
+            <span style="font-size:14px; color:#5A6B85;">{{ t.proofGeo }}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:#CBD5E1; flex-shrink:0;"></span>
+            <span style="font-size:14px; color:#5A6B85;">{{ t.proofVerifier }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-nv="pad" style="padding:80px 48px; background:#14284B; color:#fff;">
+    <div style="max-width:1240px; margin:0 auto;">
+      <div style="font-size:12px; letter-spacing:0.12em; color:#6EE7B7; font-weight:600;">{{ t.assistantKicker }}</div>
+      <h2 data-nv="h2" style="margin:18px 0 0; font-size:40px; font-weight:600; letter-spacing:-0.02em; max-width:800px; text-wrap:pretty;">{{ t.assistantTitle }}</h2>
+      <div style="margin-top:38px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:18px; padding:32px;">
+        <div style="font-size:12px; color:#6EE7B7; font-weight:600; letter-spacing:0.08em;">{{ t.assistantQLabel }}</div>
+        <p style="margin:14px 0 0; font-size:24px; font-weight:500; line-height:1.5; text-wrap:pretty;">{{ t.assistantQuestion }}</p>
+        <div style="height:1px; background:rgba(255,255,255,.1); margin:26px 0;"></div>
+        <p style="margin:0; font-size:17px; line-height:1.8; color:#CBD5E1; max-width:920px; text-wrap:pretty;">{{ t.assistantAnswer }}</p>
+        <div style="display:flex; gap:14px; margin-top:28px; flex-wrap:wrap;">
+          <sc-for list="{{ assistantEvidence }}" as="e" hint-placeholder-count="3">
+            <div style="flex:1 1 150px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:18px;">
+              <div style="font-size:11px; color:#94A3B8; letter-spacing:0.08em;">{{ e.source }}</div>
+              <div dir="ltr" style="font-family:'IBM Plex Sans',sans-serif; font-size:30px; font-weight:600; margin-top:8px; text-align:{{ numAlign }};">{{ e.value }}</div>
+            </div>
+          </sc-for>
+          <div style="flex:1 1 200px; background:#1E9E63; border-radius:12px; padding:18px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:600; text-align:center;">{{ t.assistantAction }}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-nv="pad" style="padding:80px 48px; background:#FFFFFF;">
+    <div style="max-width:1240px; margin:0 auto;">
+      <h2 data-nv="h2" style="margin:0; font-size:40px; font-weight:600; letter-spacing:-0.02em;">{{ t.compareTitle }}</h2>
+      <div style="margin-top:40px; border:1px solid #E2E8F0; border-radius:18px; overflow:hidden;">
+        <div style="overflow-x:auto;">
+          <div style="min-width:760px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; background:#14284B; color:#fff;">
+              <div style="padding:18px 24px; font-size:14px; font-weight:600;">{{ t.compareCol0 }}</div>
+              <div style="padding:18px 24px; font-size:14px; font-weight:600; color:#94A3B8;">{{ t.compareCol1 }}</div>
+              <div style="padding:18px 24px; font-size:14px; font-weight:600; color:#6EE7B7;">{{ t.compareCol2 }}</div>
+            </div>
+            <sc-for list="{{ compareRows }}" as="r" hint-placeholder-count="5">
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; border-bottom:1px solid #E2E8F0;">
+                <div style="padding:20px 24px; font-size:15px; font-weight:500;">{{ r.criterion }}</div>
+                <div style="padding:20px 24px; font-size:15px; color:#5A6B85;">{{ r.legacy }}</div>
+                <div style="padding:20px 24px; font-size:15px; color:#14284B; font-weight:500;">{{ r.nirovera }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing" data-nv="pad" style="padding:80px 48px; background:#F7F8FA; border-top:1px solid #E2E8F0;">
+    <div style="max-width:1240px; margin:0 auto;">
+      <h2 data-nv="h2" style="margin:0; font-size:40px; font-weight:600; letter-spacing:-0.02em;">{{ t.pricingTitle }}</h2>
+      <p style="margin:16px 0 0; font-size:18px; color:#5A6B85; max-width:640px; line-height:1.65;">{{ t.pricingSub }}</p>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; margin-top:44px;">
+        <sc-for list="{{ plans }}" as="p" hint-placeholder-count="3">
+          <div style="{{ p.cardStyle }}">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="{{ p.nameStyle }}">{{ p.name }}</span>
+              <sc-if value="{{ p.tag }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size:11px; background:#1E9E63; color:#fff; border-radius:20px; padding:4px 11px; font-weight:600;">{{ p.tag }}</span>
+              </sc-if>
+            </div>
+            <div style="display:flex; align-items:baseline; gap:9px; margin-top:18px;">
+              <span dir="ltr" style="{{ p.priceStyle }}">{{ p.price }}</span>
+              <span style="{{ p.unitStyle }}">{{ p.unit }}</span>
+            </div>
+            <p style="{{ p.descStyle }}">{{ p.desc }}</p>
+            <div style="flex:1;"></div>
+            <a href="#contact" style="{{ p.ctaStyle }}">{{ p.cta }}</a>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section data-nv="pad" style="padding:80px 48px; background:#FFFFFF; border-top:1px solid #E2E8F0;">
+    <div style="max-width:1240px; margin:0 auto;">
+      <h2 data-nv="h2" style="margin:0; font-size:40px; font-weight:600; letter-spacing:-0.02em;">{{ t.securityTitle }}</h2>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:26px; margin-top:44px;">
+        <sc-for list="{{ security }}" as="s" hint-placeholder-count="3">
+          <div style="border-top:2px solid #1E9E63; padding-top:22px;">
+            <div style="font-size:19px; font-weight:600;">{{ s.title }}</div>
+            <p style="margin:12px 0 0; font-size:16px; line-height:1.7; color:#5A6B85; text-wrap:pretty;">{{ s.text }}</p>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" data-nv="pad" style="padding:88px 48px; background:#14284B; color:#fff;">
+    <div style="max-width:1240px; margin:0 auto;">
+      <h2 data-nv="h2" style="margin:0; font-size:48px; font-weight:600; letter-spacing:-0.025em; max-width:800px; line-height:1.25; text-wrap:pretty;">{{ t.ctaTitle }}</h2>
+      <p style="margin:22px 0 0; font-size:19px; color:#94A3B8; max-width:660px; line-height:1.65; text-wrap:pretty;">{{ t.ctaSub }}</p>
+      <div style="display:flex; gap:12px; margin-top:34px; flex-wrap:wrap;">
+        <a href="mailto:niyar@powercares.pro" style="height:50px; padding:0 28px; border-radius:11px; background:#1E9E63; color:#fff; font-size:15px; font-weight:600; display:flex; align-items:center;" style-hover="background:#15803D; color:#fff;">{{ t.ctaPrimary }}</a>
+        <a href="tel:+966595414472" dir="ltr" style="height:50px; padding:0 28px; border-radius:11px; background:transparent; color:#fff; border:1px solid rgba(255,255,255,.2); font-size:15px; font-weight:500; display:flex; align-items:center;" style-hover="border-color:rgba(255,255,255,.45); color:#fff;">+966 59 541 4472</a>
+      </div>
+    </div>
+  </section>
+
+  <footer data-nv="pad" style="padding:44px 48px; background:#0E1D38; color:#fff;">
+    <div style="max-width:1240px; margin:0 auto; display:flex; gap:26px; flex-wrap:wrap; align-items:center;">
+      <div style="display:flex; align-items:center; gap:11px;">
+        <img src="https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/a15fe425c_generated_image.png" alt="NiroVera" style="width:26px; height:26px; object-fit:contain;">
+        <span style="font-family:'IBM Plex Sans',sans-serif; font-size:15px; font-weight:600;">NiroVera</span>
+      </div>
+      <div style="flex:1;"></div>
+      <div style="display:flex; gap:22px; flex-wrap:wrap;">
+        <sc-for list="{{ footerLinks }}" as="l" hint-placeholder-count="4">
+          <a href="{{ l.href }}" style="font-size:13px; color:#94A3B8;" style-hover="color:#fff;">{{ l.label }}</a>
+        </sc-for>
+      </div>
+      <div style="font-size:13px; color:#64748B; width:100%;">{{ t.footerLegal }}</div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ar&quot;,&quot;en&quot;],&quot;default&quot;:&quot;ar&quot;,&quot;tsType&quot;:&quot;'ar'|'en'&quot;,&quot;section&quot;:&quot;المحتوى&quot;}}">
+class Component extends DCLogic {
+  state = { lang: "ar" };
+
+  icon(paths) {
+    return React.createElement("svg", {
+      width: 17, height: 17, viewBox: "0 0 24 24", fill: "none",
+      stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round",
+    }, paths.map((d, i) => React.createElement("path", { key: i, d })));
+  }
+
+  renderVals() {
+    const ar = (this.state.lang || this.props.lang || "ar") === "ar";
+    const T = (a, e) => (ar ? a : e);
+    const dot = (c) => `width:9px; height:9px; border-radius:50%; background:${c}; flex-shrink:0;`;
+
+    const P = {
+      day: ["M5 3.5h14v17H5z", "M8.5 8h7", "M8.5 12h7", "M8.5 16h4"],
+      org: ["M9.5 3.5h5v4h-5z", "M3 16.5h5v4H3z", "M16 16.5h5v4h-5z", "M12 7.5v3", "M5.5 16.5v-3h13v3"],
+      cal: ["M4 6.5h16v14H4z", "M4 10.5h16", "M8.5 3.5v4", "M15.5 3.5v4"],
+      grid: ["M4 4h6v6H4z", "M14 4h6v6h-6z", "M14 14h6v6h-6z", "M4 14h6v6H4z"],
+      ops: ["M9 11.5l2.2 2.2L16 9", "M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"],
+      clock: ["M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z", "M12 7.5V12l3 1.8"],
+      camera: ["M4 8h3l1.6-2.2h6.8L17 8h3v11H4z", "M9.4 13.2l1.8 1.8 3.4-3.6"],
+      shield: ["M12 3l7.5 3v5.5c0 4.6-3.1 7.7-7.5 9.5-4.4-1.8-7.5-4.9-7.5-9.5V6z", "M12 9v4", "M12 16.2h.01"],
+      box: ["M20.5 7.8L12 3 3.5 7.8 12 12.6z", "M3.5 7.8v8.4L12 21l8.5-4.8V7.8"],
+      chat: ["M20.5 4.5h-17v11h4v4l4.5-4h8.5z"],
+      users: ["M9.5 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z", "M3 20a6.5 6.5 0 0 1 13 0", "M17 10.5a3 3 0 1 0 0-6", "M18.5 20a6 6 0 0 0-2.6-4.9"],
+      trend: ["M3.5 16.5l5-5 3.5 3.5 8-8", "M15.5 7h4.5v4.5"],
+      wallet: ["M4 7.5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2h11", "M16.5 13.5h.01"],
+      receipt: ["M6 3.5h12v17l-2.4-1.6-2.4 1.6-2.4-1.6-2.4 1.6L6 20.5z", "M9.5 9h5", "M9.5 13h5"],
+      folder: ["M3.5 6.5h6l2 2.5h9v9.5h-17z"],
+      pen: ["M12.5 20H21", "M16.6 3.9a2.1 2.1 0 0 1 3 3L7.4 19.1 3.5 20.2l1.1-3.9z"],
+      message: ["M20.5 12a8 8 0 0 1-8 8H7l-3.5 2.5V12a8 8 0 0 1 8-8h1a8 8 0 0 1 8 8z"],
+      chart: ["M4.5 20V11", "M10 20V4.5", "M15.5 20v-6", "M21 20H3.5"],
+      spark: ["M12 3.5l1.9 5.3 5.3 1.9-5.3 1.9L12 17.9l-1.9-5.3L4.8 10.7l5.3-1.9z"],
+    };
+
+    const modDef = [
+      ["grid", T("مركز القيادة", "Command Center"), true],
+      ["ops", T("المهام والعمليات", "Operations")],
+      ["clock", T("الحضور والانصراف", "Attendance")],
+      ["clock", T("الورديات", "Shifts")],
+      ["camera", T("إثبات العمل", "Work Proof")],
+      ["day", T("التقرير اليومي", "Daily Report")],
+      ["shield", T("السلامة HSE", "Safety HSE")],
+      ["box", T("المخزون والأصول", "Inventory & Assets")],
+      ["chat", T("المحادثات التشغيلية", "Operations Chat")],
+      ["users", T("الموارد البشرية", "Human Resources")],
+      ["folder", T("ملفات الموظفين", "Employee Files")],
+      ["org", T("الهيكل التنظيمي", "Org Structure")],
+      ["cal", T("طلبات الإجازة", "Leave Requests")],
+      ["trend", T("الأداء والنقاط", "Performance & Points")],
+      ["wallet", T("الرواتب", "Payroll")],
+      ["receipt", T("المصروفات", "Expenses")],
+      ["folder", T("الملفات", "Files")],
+      ["pen", T("التوقيع الرقمي", "Digital Signing")],
+      ["message", T("الشكاوى والبلاغات", "Reports & Complaints")],
+      ["chart", T("التقارير والتحليلات", "Reports & Analytics")],
+      ["spark", T("المساعد الذكي", "AI Assistant")],
+    ];
+
+    const planCard = (dark) => `background:${dark ? "#14284B" : "#FFFFFF"}; border:1px solid ${dark ? "#14284B" : "#E2E8F0"}; border-radius:18px; padding:32px; display:flex; flex-direction:column; color:${dark ? "#fff" : "#14284B"}; min-height:290px;`;
+
+    return {
+      dir: ar ? "rtl" : "ltr",
+      numAlign: ar ? "right" : "left",
+      toggleLang: () => this.setState((s) => ({ lang: s.lang === "ar" ? "en" : "ar" })),
+      langToggleLabel: ar ? "EN" : "ع",
+
+      navLinks: [
+        { href: "#modules", label: T("الوحدات", "Modules") },
+        { href: "#pricing", label: T("الأسعار", "Pricing") },
+        { href: "#contact", label: T("تواصل", "Contact") },
+      ],
+      footerLinks: [
+        { href: "#modules", label: T("الوحدات", "Modules") },
+        { href: "#pricing", label: T("الأسعار", "Pricing") },
+        { href: "mailto:niyar@powercares.pro", label: T("الدعم", "Support") },
+        { href: "#contact", label: T("تواصل", "Contact") },
+      ],
+
+      t: {
+        navCta: T("ابدأ التجربة", "Start trial"),
+        heroBadge: T("منصة سعودية · تعمل بالعربية والإنجليزية", "Built in Saudi Arabia · Arabic and English"),
+        heroTitle: T("منصة تشغيل المحطات والقوى العاملة الميدانية", "Run your stations and field workforce from one platform"),
+        heroSub: T("العمليات والحضور والسلامة والرواتب في نظام واحد. تفتح المنصة على ما يحتاج قرارك اليوم، لا على جدول أرقام.", "Operations, attendance, safety and payroll in one system. It opens on what needs your decision today, not on a table of numbers."),
+        heroPrimary: T("ابدأ بمحطة واحدة", "Start with one station"),
+        heroSecondary: T("استعرض الوحدات", "See the modules"),
+        readinessKicker: T("مؤشر الجاهزية التشغيلية", "OPERATIONAL READINESS"),
+        readinessBody: T("رقم واحد يجمع الحضور وإنجاز المهام وإغلاق بنود السلامة وجاهزية الأصول — محدَّث لحظيًا.", "One number combining attendance, task completion, safety closure and asset uptime — updated live."),
+        decisionsTitle: T("ما يحتاج قرارك اليوم", "Needs your decision today"),
+
+        problemTitle: T("لماذا تتأخر القرارات التشغيلية", "Why operational decisions run late"),
+        problemSub: T("المعلومة موجودة، لكنها موزّعة على أدوات لا تتحدث مع بعضها.", "The information exists, but it's spread across tools that don't talk to each other."),
+
+        modulesTitle: T("إحدى وعشرون وحدة، قاعدة بيانات واحدة", "Twenty-one modules, one database"),
+        modulesSub: T("تسجيل حضور واحد يغذّي الجدولة والرواتب والأداء والتقارير معًا — دون إعادة إدخال ولا تصدير واستيراد.", "A single check-in feeds scheduling, payroll, performance and reporting together — no re-entry, no export-import."),
+
+        proofKicker: T("إثبات العمل", "WORK PROOF"),
+        proofTitle: T("العمل يُغلق بصورة مختومة بالموقع والوقت", "Work closes with a photo stamped by location and time"),
+        proofBody: T("الفني يلتقط صورة قبل وبعد من داخل نطاق المحطة. الرفع من خارج النطاق يُرفض تلقائيًا، فلا يمكن إغلاق عمل لم يُنفَّذ.", "The technician captures a before and after photo from inside the station's geofence. Uploads from outside are rejected automatically, so work that wasn't done can't be closed."),
+        before: T("قبل", "BEFORE"), after: T("بعد", "AFTER"),
+        proofGeo: T("داخل نطاق الجبيل 2 · 12 مترًا", "Inside Jubail 2 geofence · 12m"),
+        proofVerifier: T("راجعه فهد القحطاني", "Reviewed by F. Alqahtani"),
+
+        assistantKicker: T("المساعد الذكي", "AI ASSISTANT"),
+        assistantTitle: T("يقرأ بيانات شركتك، ويعرض مصدر كل رقم", "It reads your company's data and shows the source behind every number"),
+        assistantQLabel: T("السؤال", "QUESTION"),
+        assistantQuestion: T("لماذا انخفض إنجاز المهام في محطة الجبيل 2 هذا الأسبوع؟", "Why did task completion drop at Jubail 2 this week?"),
+        assistantAnswer: T("الانخفاض مصدره سبب واحد: توقف مضخة التبريد يوم الأحد أوقف 3 مهام معتمدة عليها، ولم تُعَد جدولتها. الحضور والطاقم لم يتغيرا.", "The drop traces to a single cause: Sunday's cooling pump stoppage blocked 3 dependent tasks that were never rescheduled. Attendance and crew levels were unchanged."),
+        assistantAction: T("أعد جدولة المهام الثلاث", "Reschedule the 3 tasks"),
+
+        compareTitle: T("مقارنة بأنظمة الموارد التقليدية", "Compared with a traditional ERP"),
+        compareCol0: T("المعيار", "Criterion"),
+        compareCol1: T("نظام موارد تقليدي", "Traditional ERP"),
+        compareCol2: "NiroVera",
+
+        pricingTitle: T("الأسعار", "Pricing"),
+        pricingSub: T("سعر لكل موظف شهريًا، بلا رسوم تهيئة ولا فريق تطبيق مقيم.", "Priced per employee per month, with no setup fee and no on-site implementation team."),
+
+        securityTitle: T("الأمان والامتثال", "Security and compliance"),
+
+        ctaTitle: T("محطة واحدة، أسبوعان، بلا التزام", "One station, two weeks, no commitment"),
+        ctaSub: T("نشغّل محطة واحدة من محطاتكم على المنصة، وتقارنون النتيجة بأنفسكم قبل أي قرار.", "We run one of your stations on the platform, and you compare the result yourself before deciding anything."),
+        ctaPrimary: T("تواصل معنا", "Get in touch"),
+
+        footerLegal: T("© 2026 NiroVera — نيار عبدالله سويلم الرنياوي · جميع الحقوق محفوظة", "© 2026 NiroVera — Niyar Abdullah Sweilem Al-Raniawi · All rights reserved"),
+      },
+
+      heroDecisions: [
+        { title: T("توقف مضخة التبريد — الجبيل 2", "Cooling pump stoppage — Jubail 2"), meta: T("يعطّل 3 مهام", "Blocks 3 tasks"), dotStyle: dot("#DC2626") },
+        { title: T("7 طلبات إجازة تتجاوز حد الوردية", "7 leave requests exceed shift cover"), meta: T("الأسبوع القادم", "Next week"), dotStyle: dot("#F59E0B") },
+        { title: T("عقد صيانة بانتظار توقيعك", "Maintenance contract awaiting signature"), meta: T("ينتهي خلال 48 ساعة", "Expires in 48h"), dotStyle: dot("#F59E0B") },
+      ],
+
+      problems: [
+        { value: "7", text: T("أدوات منفصلة في المتوسط: إكسل، واتساب، ورق، بريد، ونظام حضور مستقل.", "Seven separate tools on average: spreadsheets, chat apps, paper, email and a standalone attendance system.") },
+        { value: "3h", text: T("يوميًا من وقت المشرفين تذهب في جمع البيانات وتجميع التقارير يدويًا.", "Three hours of supervisor time a day spent collecting data and assembling reports by hand.") },
+        { value: "48h", text: T("متوسط التأخير حتى تصل مشكلة ميدانية إلى من يملك قرار حلّها.", "The average delay before a field problem reaches the person who can decide on it.") },
+      ],
+
+      modules: modDef.map(([ic, label, primary]) => ({
+        label, iconEl: this.icon(P[ic]),
+        cardStyle: `display:flex; align-items:center; gap:12px; padding:18px 20px; border-radius:13px; border:1px solid ${primary ? "#14284B" : "#E2E8F0"}; background:${primary ? "#14284B" : "#FFFFFF"}; color:${primary ? "#FFFFFF" : "#14284B"};`,
+        iconStyle: `display:flex; align-items:center; justify-content:center; color:${primary ? "#6EE7B7" : "#1E9E63"}; flex-shrink:0;`,
+      })),
+
+      proofPoints: [
+        { text: T("الحضور يُتحقق منه بموقع المحطة، لا بضغطة زر من أي مكان.", "Attendance is verified against the station's location, not a button press from anywhere.") },
+        { text: T("كل تغيير على البيانات يُسجَّل تلقائيًا: من، ومتى، وماذا تغيّر بالضبط.", "Every data change is logged automatically: who, when, and exactly what changed.") },
+        { text: T("البلاغ المجهول يصل برمز متغيّر كل ثلاثين يومًا، فلا يُربط بصاحبه من داخل النظام.", "Anonymous reports arrive under a code that rotates every thirty days, so they can't be traced from inside the system.") },
+      ],
+
+      assistantEvidence: [
+        { source: T("العمليات", "OPERATIONS"), value: "-23%" },
+        { source: T("الحضور", "ATTENDANCE"), value: "0%" },
+        { source: T("الأصول", "ASSETS"), value: "31h" },
+      ],
+
+      compareRows: [
+        { criterion: T("مدة التطبيق", "Implementation time"), legacy: T("6 إلى 18 شهرًا", "6 to 18 months"), nirovera: T("أسبوعان", "Two weeks") },
+        { criterion: T("التدريب المطلوب", "Training required"), legacy: T("دورات لكل وحدة", "A course per module"), nirovera: T("الفني يسجّل حضوره من هاتفه بلا تدريب", "Technicians check in from their phone with no training") },
+        { criterion: T("اللغة والاتجاه", "Language and direction"), legacy: T("عربية مضافة على واجهة إنجليزية", "Arabic bolted onto an English interface"), nirovera: T("عربية أصلية من اليمين لليسار", "Native right-to-left Arabic") },
+        { criterion: T("العمل الميداني", "Field work"), legacy: T("إدخال لاحق من المكتب", "Entered later from the office"), nirovera: T("إثبات مصوّر مختوم بالموقع والوقت", "Photo proof stamped with location and time") },
+        { criterion: T("التكلفة السنوية", "Annual cost"), legacy: T("مئات الآلاف قبل التخصيص", "Hundreds of thousands before customization"), nirovera: T("اشتراك ثابت بلا رسوم تطبيق", "A flat subscription with no implementation fee") },
+      ],
+
+      plans: [
+        {
+          name: T("البداية", "Starter"), tag: "", price: "29", unit: T("ريال / موظف / شهر", "SAR / employee / month"),
+          desc: T("المهام والحضور والمحادثات والملفات. حتى 30 موظفًا ومحطتين.", "Tasks, attendance, chat and files. Up to 30 employees and 2 stations."),
+          cta: T("ابدأ", "Get started"),
+          cardStyle: planCard(false),
+          nameStyle: "font-size:22px; font-weight:600;",
+          priceStyle: "font-family:'IBM Plex Sans',sans-serif; font-size:42px; font-weight:600; line-height:1;",
+          unitStyle: "font-size:14px; color:#5A6B85;",
+          descStyle: "margin:20px 0 0; font-size:16px; line-height:1.7; color:#5A6B85;",
+          ctaStyle: "margin-top:26px; height:44px; border-radius:10px; background:#F7F8FA; border:1px solid #E2E8F0; color:#14284B; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center;",
+        },
+        {
+          name: T("الاحترافية", "Professional"), tag: T("الأكثر اختيارًا", "Most chosen"), price: "49", unit: T("ريال / موظف / شهر", "SAR / employee / month"),
+          desc: T("كل الوحدات الإحدى والعشرين، بما فيها الرواتب وملفات الموظفين والتوقيع الرقمي والمساعد الذكي.", "All twenty-one modules, including payroll, employee files, digital signing and the AI assistant."),
+          cta: T("ابدأ التجربة", "Start trial"),
+          cardStyle: planCard(true),
+          nameStyle: "font-size:22px; font-weight:600;",
+          priceStyle: "font-family:'IBM Plex Sans',sans-serif; font-size:42px; font-weight:600; line-height:1;",
+          unitStyle: "font-size:14px; color:#94A3B8;",
+          descStyle: "margin:20px 0 0; font-size:16px; line-height:1.7; color:#CBD5E1;",
+          ctaStyle: "margin-top:26px; height:44px; border-radius:10px; background:#1E9E63; color:#fff; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center;",
+        },
+        {
+          name: T("المؤسسات", "Enterprise"), tag: "", price: T("حسب الاتفاق", "Custom"), unit: "",
+          desc: T("استضافة مخصصة، تكامل مع الأنظمة القائمة، ودعم تشغيلي مخصص.", "Dedicated hosting, integration with existing systems, and a named support contact."),
+          cta: T("تواصل معنا", "Talk to us"),
+          cardStyle: planCard(false),
+          nameStyle: "font-size:22px; font-weight:600;",
+          priceStyle: "font-size:30px; font-weight:600; line-height:1;",
+          unitStyle: "font-size:14px; color:#5A6B85;",
+          descStyle: "margin:20px 0 0; font-size:16px; line-height:1.7; color:#5A6B85;",
+          ctaStyle: "margin-top:26px; height:44px; border-radius:10px; background:#F7F8FA; border:1px solid #E2E8F0; color:#14284B; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center;",
+        },
+      ],
+
+      security: [
+        { title: T("التزام نظامي مبني في الملف", "Regulatory compliance built into the file"), text: T("ملف الموظف يحمل الإقامة ورخصة العمل والتأمينات والمسمى في قوى، ويُنبَّه تلقائيًا قبل انتهاء أي منها بستين يومًا.", "Each employee file carries Iqama, work permit, GOSI and the Qiwa job title, and flags any of them sixty days before expiry.") },
+        { title: T("سجل تدقيق تلقائي", "Automatic audit trail"), text: T("كل تغيير على البيانات يُسجَّل من مصدره — دون أن يعتمد على انضباط المستخدم أو تذكّره.", "Every data change is logged at its source — it doesn't depend on user discipline or memory.") },
+        { title: T("صلاحيات على مستوى القسم", "Section-level permissions"), text: T("الصلاحية تُشتق من الدور والموقع في الهيكل التنظيمي معًا، لا من قائمة يدوية تُنسى.", "Access is derived from role and position in the org structure together, not a manual list that goes stale.") },
+        { title: T("تصعيد تلقائي للبلاغات", "Automatic report escalation"), text: T("إن تجاوز البلاغ زمن الاستجابة المحدد، ينتقل تلقائيًا إلى المستوى الأعلى في سلسلة المسؤولية.", "If a report breaches its response time, it moves up the responsibility chain on its own.") },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
