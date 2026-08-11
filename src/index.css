@@ -474,6 +474,44 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
   --icon-gold-soft: 154 58% 45%;
   --icon-halo: 154 76% 27%;
 }
+
+/* Institutional marketing landing — calm motion + atmosphere */
+.powercare-public .institutional-hero-mesh {
+  background-image:
+    linear-gradient(120deg, transparent 40%, rgba(14, 122, 75, 0.12) 100%),
+    repeating-linear-gradient(
+      -32deg,
+      transparent 0,
+      transparent 11px,
+      rgba(255, 255, 255, 0.03) 11px,
+      rgba(255, 255, 255, 0.03) 12px
+    );
+}
+.powercare-public .institutional-cta {
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.powercare-public .institutional-cta:hover {
+  transform: translateY(-1px);
+}
+.powercare-public .proof-journey-step {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.powercare-public .proof-journey-step.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .powercare-public .proof-journey-step {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .powercare-public .institutional-cta:hover {
+    transform: none;
+  }
+}
 .powercare-public svg.lucide:not(.animate-spin),
 .powercare-shell svg.lucide:not(.animate-spin) { animation: none; }
 .powercare-public .tech-floating-icon::before,
