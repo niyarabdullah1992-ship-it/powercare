@@ -45,7 +45,7 @@ export default defineConfig({
   // Claude Design handoff zips lock files on Windows; watching them crashes Vite (EBUSY).
   server: {
     watch: {
-      ignored: ["**/design-handoff-claude/**"],
+      ignored: ["**/design-handoff-claude/**", "**/.tmp-design-caps/**"],
     },
   },
 });

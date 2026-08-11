@@ -5,11 +5,18 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
 import { isBase44BackendConfigured } from "@/lib/localPreview";
 
-export default function usePowerCareLogin(returnPath = "/login") {
+function resolveKind(fixedKind, search) {
+  if (fixedKind === "gov" || fixedKind === "company" || fixedKind === "individual") return fixedKind;
+  const type = new URLSearchParams(search).get("type");
+  if (type === "gov" || type === "individual" || type === "company") return type;
+  return "company";
+}
+
+export default function usePowerCareLogin(returnPath = "/login", fixedKind = null) {
   const { login, loginWithGoogle, verifyOtp, session } = useAuth();
   const { lang } = useI18n();
   const navigate = useNavigate();
-  const [kind, setKind] = useState(() => new URLSearchParams(window.location.search).get("type") === "individual" ? "individual" : "company");
+  const [kind, setKind] = useState(() => resolveKind(fixedKind, window.location.search));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,6 +25,10 @@ export default function usePowerCareLogin(returnPath = "/login") {
   const [accounts, setAccounts] = useState([]);
   const [googleAccounts, setGoogleAccounts] = useState([]);
   const [googleOtpAccountKey, setGoogleOtpAccountKey] = useState(null);
+
+  useEffect(() => {
+    if (fixedKind) setKind(fixedKind);
+  }, [fixedKind]);
 
   useEffect(() => { if (session) navigate("/app", { replace: true }); }, [session, navigate]);
   useEffect(() => {
@@ -30,7 +41,7 @@ export default function usePowerCareLogin(returnPath = "/login") {
     const cleanSearch = params.toString();
     window.history.replaceState({}, "", `${window.location.pathname}${cleanSearch ? `?${cleanSearch}` : ""}${window.location.hash}`);
     setLoading(true);
-    const loginKind = params.get("type") === "individual" ? "individual" : "company";
+    const loginKind = resolveKind(fixedKind, window.location.search);
     setKind(loginKind);
     loginWithGoogle(loginKind).then((result) => {
       if (result?.selectionRequired) setGoogleAccounts(result.accounts || []);
@@ -40,21 +51,33 @@ export default function usePowerCareLogin(returnPath = "/login") {
         setAccounts([]);
         setGoogleOtpAccountKey(result.accountKey || null);
       } else if (!result) setError(lang === "ar"
-        ? `أنت لا تملك حسابًا مرتبطًا بـ ${provider} في NiroVera. استخدم البريد المسجل أو أنشئ حسابًا جديدًا.`
-        : `You do not have a NiroVera account linked to ${provider}. Use your registered email or create a new account.`);
+        ? `أنت لا تملك حسابًا مرتبطًا بـ ${provider} في هذه البوابة. استخدم البوابة الصحيحة أو أنشئ حسابًا جديدًا.`
+        : `You do not have a NiroVera account linked to ${provider} on this portal. Use the correct portal or create an account.`);
     }).catch((error) => {
       const message = error.message || `${provider} login failed`;
       setError(provider === "Google" ? message : message.replaceAll("Google", provider));
     }).finally(() => setLoading(false));
   }, []);
 
+  const wrongKindMessage = lang === "ar"
+    ? (kind === "gov"
+      ? "هذا الحساب لشركة وليس لجهة حكومية — استخدم بوابة الشركات."
+      : kind === "company"
+        ? "هذا الحساب لجهة حكومية وليس لشركة — استخدم بوابة الجهات الحكومية."
+        : "هذا الحساب لا ينتمي إلى بوابة الأفراد.")
+    : (kind === "gov"
+      ? "This is a company account — use the company portal."
+      : kind === "company"
+        ? "This is a government account — use the government portal."
+        : "This account does not belong to the individual portal.");
+
   const submit = async (event) => {
     event.preventDefault();
     setError(""); setLoading(true);
     try {
       const result = await login(email, password, kind);
-      if (!result) setError("Invalid email or password");
-      else if (result.wrongKind) setError("This account does not belong to the selected login section");
+      if (!result) setError(lang === "ar" ? "البريد أو كلمة المرور غير صحيحة" : "Invalid email or password");
+      else if (result.wrongKind) setError(wrongKindMessage);
       else if (result.otpRequired) { setPendingId(result.pendingId); setAccounts(result.accounts || []); }
     } catch (error) {
       setError(error.message || "Login failed");
@@ -76,21 +99,21 @@ export default function usePowerCareLogin(returnPath = "/login") {
   };
   const google = () => {
     if (!isBase44BackendConfigured()) {
-      window.location.assign("/login");
+      window.location.assign(returnPath);
       return;
     }
     base44.auth.loginWithProvider("google", `${returnPath}?google_login=1&type=${kind}`);
   };
   const microsoft = () => {
     if (!isBase44BackendConfigured()) {
-      window.location.assign("/login");
+      window.location.assign(returnPath);
       return;
     }
     base44.auth.loginWithProvider("microsoft", `${returnPath}?microsoft_login=1&type=${kind}`);
   };
   const apple = () => {
     if (!isBase44BackendConfigured()) {
-      window.location.assign("/login");
+      window.location.assign(returnPath);
       return;
     }
     base44.auth.loginWithProvider("apple", `${returnPath}?apple_login=1&type=${kind}`);
@@ -104,7 +127,7 @@ export default function usePowerCareLogin(returnPath = "/login") {
       setAccounts([]);
       setGoogleAccounts([]);
       setGoogleOtpAccountKey(result.accountKey || accountKey);
-    } else if (!result) setError("Could not open this workspace");
+    } else if (!result) setError(lang === "ar" ? "تعذر فتح هذه المساحة" : "Could not open this workspace");
     setLoading(false);
   };
   const backFromOtp = () => { setPendingId(null); setGoogleOtpAccountKey(null); };

@@ -41,7 +41,10 @@ export default function Pricing() {
     base44.auth.me().then((user) => setGoogleEmail(user.email || "")).catch(() => setError(lang === "ar" ? `تعذر التسجيل باستخدام ${provider}.` : `${provider} sign-up could not be completed.`));
   }, []);
 
-  const saveSocialSignup = () => sessionStorage.setItem("powercare_social_signup", JSON.stringify({ planId: activePlan.slug, billing }));
+  const saveSocialSignup = () => {
+    const orgType = new URLSearchParams(window.location.search).get("org") === "gov" ? "gov" : "company";
+    sessionStorage.setItem("powercare_social_signup", JSON.stringify({ planId: activePlan.slug, billing, orgType }));
+  };
   const handleGoogleSignup = () => {
     saveSocialSignup();
     base44.auth.loginWithProvider("sso", "/pricing?google_signup=1");
@@ -57,18 +60,19 @@ export default function Pricing() {
 
   const handleTrialSignup = async ({ companyName, ownerEmail, ownerPassword, authMethod, pendingId, otpCode }) => {
     setError("");
+    const orgType = new URLSearchParams(window.location.search).get("org") === "gov" ? "gov" : "company";
     if (!pendingId) {
       try {
-        const response = await base44.functions.invoke("companyDirectory", { action: "startSignupOtp", email: ownerEmail, plan: activePlan.slug });
+        const response = await base44.functions.invoke("companyDirectory", { action: "startSignupOtp", email: ownerEmail, plan: activePlan.slug, orgType });
         return response.data;
       } catch (error) {
-        setError(error?.response?.data?.error === "email_exists" ? (lang === "ar" ? "هذا البريد مسجل مسبقًا." : "This email is already registered.") : (lang === "ar" ? "تعذر إرسال رمز التحقق." : "Could not send the verification code."));
+        setError(error?.response?.data?.error === "email_exists" ? (lang === "ar" ? "هذا البريد مسجل مسبقًا في نفس نوع الجهة." : "This email is already registered for this organization type.") : (lang === "ar" ? "تعذر إرسال رمز التحقق." : "Could not send the verification code."));
         return false;
       }
     }
     const activationDate = new Date().toISOString().slice(0, 10);
     const company = pendingCompanyRef.current || createCompany(
-      { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: activePlan.nameEn, subscriptionStart: activationDate, subscriptionEnd: null },
+      { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: activePlan.nameEn, subscriptionStart: activationDate, subscriptionEnd: null, orgType },
       { sync: false }
     );
     pendingCompanyRef.current = company;
@@ -155,7 +159,18 @@ export default function Pricing() {
           <Logo size={32} />
         </div>
         <h1 className="mb-3 text-center font-heading text-5xl font-semibold text-white md:text-6xl">{t("pricingHeading")}</h1>
-        <p className="mb-12 text-center text-white/55">{t("pricingSubheading")}</p>
+        <p className="mb-4 text-center text-white/55">{t("pricingSubheading")}</p>
+        {(() => {
+          const org = new URLSearchParams(window.location.search).get("org");
+          const isGov = org === "gov";
+          return (
+            <p className={`mx-auto mb-10 w-fit rounded-full px-4 py-1.5 text-sm font-semibold ${isGov ? "bg-[#0E7A4B]/25 text-[#7DDBA8]" : "bg-white/10 text-white/80"}`}>
+              {lang === "ar"
+                ? (isGov ? "تسجيل جهة حكومية — بوابة دخول منفصلة عن الشركات" : "تسجيل شركة — بوابة دخول منفصلة عن الجهات الحكومية")
+                : (isGov ? "Government signup — separate login from companies" : "Company signup — separate login from government")}
+            </p>
+          );
+        })()}
 
         {error && <p className="text-center text-sm text-red-500 font-body mb-6">{error}</p>}
 

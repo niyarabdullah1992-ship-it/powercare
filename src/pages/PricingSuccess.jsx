@@ -50,6 +50,7 @@ export default function PricingSuccess() {
       ownerEmail: session.ownerEmail,
       ownerPassword: session.authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : password,
       plan: PLAN_LABELS[session.plan] || "Starter",
+      orgType: session.orgType === "gov" ? "gov" : "company",
     }, { sync: false });
     pendingCompanyRef.current = company;
     const saved = await syncCompanyAccount(company);
