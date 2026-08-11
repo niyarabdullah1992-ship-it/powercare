@@ -5,6 +5,7 @@ import { ShieldQuestion, Megaphone, Archive } from "lucide-react";
 import AnonymousReports from "./AnonymousReports";
 import PublicComplaints from "./PublicComplaints";
 import RecordSmartArchive from "@/components/RecordSmartArchive";
+import ComplaintQueueBoard from "@/components/complaints/ComplaintQueueBoard";
 import { hasHRPermission, hrScopeStations } from "@/lib/permissions";
 
 // Single combined section for both anonymous and identified (public) complaints —
@@ -47,6 +48,8 @@ export default function Complaints() {
       <div>
         <h1 className="font-heading text-3xl font-semibold">{t("allComplaints")}</h1>
       </div>
+
+      <ComplaintQueueBoard lang={lang} />
 
       <div className="flex items-center gap-1.5 flex-wrap">
         {TABS.map((tb) => (

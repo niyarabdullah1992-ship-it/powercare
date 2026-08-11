@@ -16,17 +16,17 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · **`offboarding`**
-(عهدة الموظف · إغلاق إنهاء الخدمة موقوف حتى استلام كل العهد · مكافأة نهاية خدمة م.84 · إلغاء الصلاحيات + إشعار قوى عند الإكمال · `ASSETS_OUTSTANDING`).
+`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · `offboarding` · **`complaints`**
+(سلسلة تصعيد من الهيكل/المعالجين · تجاوز زمن الاستجابة → تصعيد تلقائي `SLA_BREACH` · حدود البلاغ المجهول 3/يوم · 10/أسبوع · 30/شهر · بوابات مسمّاة).
 
-مسار التحقق (العهدة / إنهاء الخدمة):
+مسار التحقق (الشكاوى والبلاغات):
 
-1. أنهِ الخدمة وعهدة معلّقة → `ASSETS_OUTSTANDING`
-2. علّم كل العهد «مُستلم» → تفتح بوابة الإغلاق
-3. أنهِ الخدمة → `accessRevoked` + `qiwaNotified` + خطوات الإغلاق تكتمل
-4. قبل تاريخ التعيين → مكافأة نهاية الخدمة = 0 (pre-start)
+1. بلاغ مجهول رابع في اليوم → `RATE_LIMIT_DAY` (كذلك WEEK/MONTH)
+2. تجاوز زمن الاستجابة للمستوى الحالي → `list`/`sweepSla` يصعّد مع `SLA_BREACH`
+3. تصعيد يدوي من غير معالج → `NOT_HANDLER` · أعلى السلسلة → `AT_TOP_OF_CHAIN`
+4. إغلاق بلاغ مغلق → `ALREADY_CLOSED`
 
-تنفيذ: `offboardingDerivations` · `base44/functions/offboarding` · `OffboardingCustodyBoard` على `/app/employees/:employeeId` (تبويب إنهاء الخدمة).
+تنفيذ: `complaintDerivations` · `base44/functions/complaints` · `ComplaintQueueBoard` على `/app/complaints`.
 
 ---
 
