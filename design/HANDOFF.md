@@ -16,19 +16,17 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل لمسار التحقق —
-`operations` + `opsDerivations` + `/app/tasks` + شهادات بكود كفاءة + سجل نقاط في الأداء
-+ **بوابة الحضور** على `logCompletion` (`CHECK_IN_REQUIRED` بسبب مسمّى؛ عن بُعد يتجاوزها).
+`operations` + بوابة الحضور + **`workforce`** (نشر الورديات بفحوص نظامية 48س/11س/راحة/تغطية + بوابة اعتماد الإجازة `ATTACHMENT_REQUIRED` لطلب >5 أيام).
 
-القسم التالي: الورديات / الإجازة (قواعد النشر النظامية) بعد التحقق الحيّ للحضور↔المهام.
+القسم التالي: السلامة HSE أو الأداء (صيغة النقاط) بعد التحقق الحيّ لنشر الجدول واعتماد الإجازة.
 
-مسار التحقق الإلزامي:
+مسار التحقق الإلزامي (ورديات/إجازة):
 
-1. أنشئ مهمة  
-2. أسندها لموظف شهادته منتهية → يجب أن تُمنع بسبب مسمّى (`ASSIGN_GATE`)  
-3. أسندها لمؤهَّل، سجّل الإنجاز، اعتمدها  
-4. تحقق أن النقاط ظهرت في `PointsLedger` / الأداء  
+1. جدول بمحطة فيه خلايا فارغة → `checkPublish` يجب أن يمنع النشر بسبب مسمّى (`coverage`)
+2. طلب إجازة >5 أيام بلا مرفق → `approveLeave` يُرفض بـ `ATTACHMENT_REQUIRED`
+3. أرفق مستندًا واعتمد → يظهر في الإحصاءات المشتقة؛ المعتمدون مستبعدون من إسناد الورديات
 
-تنفيذ مرجعي: `base44/shared/opsDerivations.ts` · `base44/functions/operations/entry.ts` · `src/pages/Operations.jsx` · `CertificatesTab` (code+expiry) · `OpsPointsLedger`.
+تنفيذ مرجعي: `base44/shared/shiftDerivations.ts` · `base44/shared/leaveDerivations.ts` · `base44/functions/workforce/entry.ts` · `RotaPublishPanel` · `LeaveRequestItem`.
 
 ---
 
