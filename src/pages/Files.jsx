@@ -12,6 +12,7 @@ import FolderCard from "@/components/files/FolderCard";
 import FileRow from "@/components/files/FileRow";
 import NewFolderDialog from "@/components/files/NewFolderDialog";
 import StationFilesCard from "@/components/files/StationFilesCard";
+import SmartArchiveBoard from "@/components/files/SmartArchiveBoard";
 
 export default function Files() {
   const { t, dir, lang } = useI18n();
@@ -82,6 +83,8 @@ export default function Files() {
         description={isIndividual ? (lang === "ar" ? "احفظ ونظّم مستنداتك الخاصة في مجلدات." : "Store and organize your personal documents in folders.") : t("filesNote")}
         icon={FolderOpen}
       />
+
+      {!isIndividual && <SmartArchiveBoard lang={lang} />}
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 flex-wrap text-sm font-body">

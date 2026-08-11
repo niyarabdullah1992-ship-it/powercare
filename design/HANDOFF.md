@@ -16,17 +16,17 @@
 ```
 
 **حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
-`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · `offboarding` · **`complaints`**
-(سلسلة تصعيد من الهيكل/المعالجين · تجاوز زمن الاستجابة → تصعيد تلقائي `SLA_BREACH` · حدود البلاغ المجهول 3/يوم · 10/أسبوع · 30/شهر · بوابات مسمّاة).
+`operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · `offboarding` · `complaints` · **`files`**
+(أرشيف ذكي: مجلدات بصلاحية `restricted` / `all_staff` / `hr` / `supervisors` · مستندات مربوطة بمحطة · عدّادات مشتقة · بوابات مسمّاة).
 
-مسار التحقق (الشكاوى والبلاغات):
+مسار التحقق (الملفات / الأرشيف الذكي):
 
-1. بلاغ مجهول رابع في اليوم → `RATE_LIMIT_DAY` (كذلك WEEK/MONTH)
-2. تجاوز زمن الاستجابة للمستوى الحالي → `list`/`sweepSla` يصعّد مع `SLA_BREACH`
-3. تصعيد يدوي من غير معالج → `NOT_HANDLER` · أعلى السلسلة → `AT_TOP_OF_CHAIN`
-4. إغلاق بلاغ مغلق → `ALREADY_CLOSED`
+1. موظف يفتح مجلد/ملف `restricted` أو `hr` → `ACCESS_DENIED_BY_SCOPE`
+2. رفع بلا `stationId` وغير company-wide → `MISSING_STATION_BINDING`
+3. نقل مجلد تحت فرع منه → `FOLDER_CYCLE`
+4. `list`/`seedDemo` → عدّادات المجلدات وقائمة «أحدث الملفات» من الخادم فقط
 
-تنفيذ: `complaintDerivations` · `base44/functions/complaints` · `ComplaintQueueBoard` على `/app/complaints`.
+تنفيذ: `fileArchiveDerivations` · `base44/functions/files` · `SmartArchiveBoard` على `/app/files`.
 
 ---
 
