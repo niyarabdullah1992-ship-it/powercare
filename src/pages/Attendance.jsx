@@ -6,6 +6,7 @@ import { base44 } from "@/api/base44Client";
 import { canCreateTasks, isCompanyOwner, visibleEmployees, visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
 import { Loader2 } from "lucide-react";
 import CheckInOutCard from "@/components/attendance/CheckInOutCard";
+import AttendanceHandoffBoard from "@/components/attendance/AttendanceHandoffBoard";
 import AttendanceDailyDashboard from "@/components/attendance/AttendanceDailyDashboard";
 import CalendarExportCard from "@/components/calendar/CalendarExportCard";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
@@ -172,7 +173,12 @@ export default function Attendance() {
           </div>
           )}
 
-          {activeTab === "team" && <AttendanceDailyDashboard employees={employees} currentUser={currentUser} company={company} data={data} t={t} />}
+          {activeTab === "team" && (
+            <div className="space-y-5">
+              <AttendanceHandoffBoard />
+              <AttendanceDailyDashboard employees={employees} currentUser={currentUser} company={company} data={data} t={t} />
+            </div>
+          )}
           <Suspense fallback={<TabLoader />}>
             {activeTab === "calendar" && <MonthlyTaskCalendar />}
             {activeTab === "map" && <AttendanceMapDashboard employees={employees} t={t} />}
