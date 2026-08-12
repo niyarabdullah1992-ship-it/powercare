@@ -3,28 +3,28 @@ import { Link } from "react-router-dom";
 
 const ITEMS = [
   {
-    arTitle: "WPS والمسير",
-    enTitle: "WPS & payroll",
-    arText: "الحضور الموثّق يغذي المسير عبر سلسلة قابلة للتدقيق — لا ملف منفصل بلا أصل.",
-    enText: "Verified attendance feeds payroll through an auditable chain — no orphan spreadsheets.",
+    arTitle: "وزارة الموارد البشرية",
+    enTitle: "Ministry of HR (MHRSD)",
+    arText: "مواد نظام العمل للإجازات والساعات ونهاية الخدمة تُطبَّق كبوابات مشتقة — لا شعارات فقط.",
+    enText: "Labour-law articles for leave, hours and end-of-service run as derived gates — not slogans.",
   },
   {
-    arTitle: "ملكية فكرية مسجّلة",
-    enTitle: "Registered IP",
-    arText: "دورة الإثبات ومنهجية وزن الجهد محمية كمنتج سعودي مسجّل.",
-    enText: "The proof cycle and effort weighting are protected as registered Saudi IP.",
+    arTitle: "قوى · التأمينات · WPS",
+    enTitle: "Qiwa · GOSI · WPS",
+    arText: "مطابقة الأجر، ملف GOSI الشهري، وصفوف مدى/WPS (هوية وآيبان) قبل الإيداع.",
+    enText: "Wage match, monthly GOSI file, and Mudad/WPS rows (ID & IBAN) before deposit.",
   },
   {
-    arTitle: "صلاحيات دقيقة",
-    enTitle: "Precise permissions",
-    arText: "كل دور يرى مساحته فقط — بلا شاشات زائدة وبلا تسريب صلاحيات.",
-    enText: "Each role sees only its space — no extra screens, no privilege leak.",
+    arTitle: "نِطاقات والملف النظامي",
+    enTitle: "Nitaqat & statutory file",
+    arText: "نسبة السعودة مشتقة من الرأس؛ تنبيه انتهاء الوثائق خلال ٦٠ يومًا باسم الوثيقة.",
+    enText: "Saudization rate derived from headcount; 60-day document expiry named by document.",
   },
   {
     arTitle: "تحقق عام للختم",
     enTitle: "Public seal verify",
-    arText: "العميل أو الجهة الرقابية تتحقق من الختم دون دخول للمنصة.",
-    enText: "A client or oversight body verifies the seal without logging in.",
+    arText: "الجهة الرقابية أو العميل تتحقق من الختم دون دخول للمنصة.",
+    enText: "An oversight body or client verifies the seal without logging into the platform.",
   },
 ];
 
@@ -41,12 +41,12 @@ export default function TrustCompliance({ ar }) {
               {ar ? "ثقة ورقابة" : "TRUST & OVERSIGHT"}
             </p>
             <h2 className="mt-2 font-heading text-[28px] font-semibold text-[#0B1A3F] md:text-[34px]">
-              {ar ? "مبنية للامتثال السعودي" : "Built for Saudi compliance"}
+              {ar ? "سياسة الدولة داخل التشغيل" : "State policy inside operations"}
             </h2>
             <p className="mt-4 max-w-md text-[15px] leading-[1.9] text-[#5A6478]">
               {ar
-                ? "كل حلقة في دورة الإثبات تُنتج أثرًا يمكن مراجعته — من بصمة الحضور إلى ختم العميل."
-                : "Every link in the proof cycle leaves a trail that can be reviewed — from attendance to client seal."}
+                ? "الامتثال ليس صفحة منفصلة — هو بوابات في الحضور والتوظيف والمسير والتوقيع، مع أثر تدقيق لكل قرار."
+                : "Compliance is not a separate page — it is gates in attendance, hiring, payroll and signing, with an audit trail on every decision."}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link

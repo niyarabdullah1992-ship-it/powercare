@@ -8,14 +8,16 @@ import ProofCycleLanding from "@/components/landing/ProofCycleLanding";
 import ModulesConnected from "@/components/landing/ModulesConnected";
 import AudienceSplit from "@/components/landing/AudienceSplit";
 import TrustCompliance from "@/components/landing/TrustCompliance";
+import SaudiHcmSuite from "@/components/landing/SaudiHcmSuite";
+import EnterpriseCompare from "@/components/landing/EnterpriseCompare";
 import IpCertificateBadge from "@/components/landing/IpCertificateBadge";
 import { trackVisit } from "@/lib/trackVisit";
 
 const NAV = [
+  { href: "#suite", ar: "المنظومة", en: "Suite" },
   { href: "#proof-cycle", ar: "دورة الإثبات", en: "Proof cycle" },
-  { href: "#modules", ar: "الوحدات", en: "Modules" },
-  { href: "#audience", ar: "القطاعات", en: "Sectors" },
-  { href: "#trust", ar: "الثقة", en: "Trust" },
+  { href: "#enterprise", ar: "مقابل SAP", en: "vs SAP" },
+  { href: "#trust", ar: "الوزارة", en: "Ministry" },
   { href: "#how", ar: "الأدوار", en: "Roles" },
   { href: "#pricing", ar: "الباقات", en: "Pricing" },
 ];
@@ -25,15 +27,6 @@ const ROLES = [
   { badge: "د", arTitle: "المدير المباشر", enTitle: "Line manager", arText: "يراجع إثباتات الفريق ويعتمد أو يرفض بسبب.", enText: "Reviews team proof and approves or rejects in writing." },
   { badge: "ب", arTitle: "الموارد البشرية", enTitle: "HR", arText: "تدير المنظومة والمسير والهيكل والطلبات.", enText: "Runs the system, payroll, structure and requests." },
   { badge: "ت", arTitle: "التنفيذي", enTitle: "Executive", arText: "يقرأ المؤشرات دون ضوضاء تشغيلية.", enText: "Reads indicators without operational noise." },
-];
-
-const COMPARE_ROWS = [
-  { ar: "إثبات أن العمل أُنجز", en: "Proof work was done", nv: true, other: false },
-  { ar: "حضور مربوط بالمهمة الميدانية", en: "Attendance gated to field tasks", nv: true, other: false },
-  { ar: "وزن جهد بدل ساعات الجلوس", en: "Effort weight vs desk hours", nv: true, other: false },
-  { ar: "ختم عميل قابل للتحقق (SHA-256)", en: "Verifiable client seal (SHA-256)", nv: true, other: false },
-  { ar: "عربية أولًا + 9 لغات", en: "Arabic-first + 9 languages", nv: true, other: false },
-  { ar: "مبنية للامتثال السعودي", en: "Built for Saudi compliance", nv: true, other: false },
 ];
 
 const PLANS = [
@@ -145,9 +138,13 @@ export default function Landing() {
 
       <InstitutionalHero ar={ar} />
 
+      <SaudiHcmSuite ar={ar} />
+
       <ProofCycleLanding lang={lang} />
 
       <ModulesConnected ar={ar} />
+
+      <EnterpriseCompare ar={ar} />
 
       <AudienceSplit ar={ar} />
 
@@ -206,33 +203,6 @@ export default function Landing() {
                 <span className="rounded-lg border border-[#E4E7EC] bg-white px-3 py-1.5 text-xs text-[#475467]">{ar ? "رفض بسبب مكتوب" : "Reject with reason"}</span>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="compare" className="bg-white">
-        <div className="mx-auto max-w-[1200px] px-6 py-16 md:px-8 md:py-[72px]">
-          <h2 className="m-0 mb-3 font-heading text-[28px] font-semibold text-[#0B1A3F] md:text-[32px]">
-            {ar ? "لماذا نيروفيرا وليس الأنظمة العالمية؟" : "Why NiroVera vs global systems?"}
-          </h2>
-          <p className="mb-8 max-w-xl text-[14.5px] leading-[1.8] text-[#5A6478]">
-            {ar
-              ? "الفرق ليس في عدد الشاشات — بل في أن العمل يصبح سلسلة إثبات يمكن التحقق منها."
-              : "The difference is not more screens — it is that work becomes a verifiable proof chain."}
-          </p>
-          <div className="overflow-hidden rounded-[14px] border border-[#E4E7EC]">
-            <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-2 border-b border-[#EEF0F4] bg-[#F9FAFB] px-4 py-3 text-xs text-[#667085]">
-              <span>{ar ? "وجه المقارنة" : "Comparison"}</span>
-              <span className="font-semibold text-[#0E7A4B]">{ar ? "نيروفيرا" : "NiroVera"}</span>
-              <span>{ar ? "الأنظمة العالمية" : "Global systems"}</span>
-            </div>
-            {COMPARE_ROWS.map((row) => (
-              <div key={row.en} className="grid grid-cols-[1.4fr_1fr_1fr] gap-2 border-b border-[#F2F4F7] px-4 py-3.5 text-[13px] text-[#344054] last:border-b-0">
-                <span>{ar ? row.ar : row.en}</span>
-                <span className="font-medium text-[#0E7A4B]">{row.nv ? (ar ? "نعم" : "Yes") : "—"}</span>
-                <span className="text-[#98A2B3]">{row.other ? (ar ? "نعم" : "Yes") : (ar ? "ضعيف / غير أصلي" : "Weak / bolted on")}</span>
-              </div>
-            ))}
           </div>
         </div>
       </section>

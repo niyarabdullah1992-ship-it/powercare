@@ -493,6 +493,12 @@ svg.lucide:is(.text-destructive, .text-red-500, .text-red-600, .text-green-500, 
 .powercare-public .institutional-cta:hover {
   transform: translateY(-1px);
 }
+.powercare-public .saudi-hcm-flow a {
+  transition: border-color 0.25s ease, background-color 0.25s ease, transform 0.25s ease;
+}
+.powercare-public .saudi-hcm-flow a:hover {
+  transform: translateY(-2px);
+}
 .powercare-public .mobile-phone-frame {
   transition: transform 0.35s ease;
 }

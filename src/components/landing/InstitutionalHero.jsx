@@ -70,8 +70,8 @@ export default function InstitutionalHero({ ar }) {
             className="mt-5 max-w-[34rem] text-[18px] leading-[1.7] text-[#B9C3D8] md:text-[20px]"
           >
             {ar
-              ? "لا تكتفي بتسجيل العمل — تُثبت أنه أُنجز فعلًا، من الحضور إلى ختم العميل."
-              : "It doesn’t just log work — it proves work was done, from attendance to the client seal."}
+              ? "منظومة موارد بشرية سعودية: حضور · مهام · رواتب · امتثال وزارة الموارد — بإثبات قابل للتحقق."
+              : "A Saudi HR suite: attendance · tasks · payroll · Ministry compliance — with verifiable proof."}
           </motion.p>
 
           <motion.div
