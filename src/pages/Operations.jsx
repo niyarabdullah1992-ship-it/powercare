@@ -3,7 +3,17 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { getCompanyToken, syncPointsFromCloud } from "@/lib/store";
-import { dayDiffFromToday, planHorizonFromDue, taskPoints } from "@/lib/opsDerivations";
+import {
+  CERT_FOR,
+  CERT_LABELS,
+  checkAssignGate,
+  dayDiffFromToday,
+  isAwaitingApproval,
+  isOverdue,
+  planHorizonFromDue,
+  taskPoints,
+} from "@/lib/opsDerivations";
+import OpsTaskDetail from "@/components/tasks/OpsTaskDetail";
 import { toast } from "@/components/ui/use-toast";
 
 const HORIZON_LABEL = {
@@ -44,6 +54,7 @@ export default function Operations() {
   const [proofFile, setProofFile] = useState(null);
   const [checkedIn, setCheckedIn] = useState(null);
   const [attendanceGate, setAttendanceGate] = useState(null);
+  const [openTaskId, setOpenTaskId] = useState(null);
   const [form, setForm] = useState({
     title: "",
     stationId: "",
@@ -56,6 +67,7 @@ export default function Operations() {
     dueAt: "",
     targetCount: 1,
     mode: "onsite",
+    steps: "",
   });
 
   const ops = useCallback((payload) => base44.functions.invoke("operations", {
@@ -100,10 +112,43 @@ export default function Operations() {
     return all.filter((e) => e.stationId === form.stationId);
   }, [data?.employees, form.stationId]);
 
+  const gatePeople = useMemo(() => {
+    const mapEmp = (e) => ({
+      employeeId: e.employeeId || e.id,
+      name: e.name,
+      certificates: Array.isArray(e.certificates) ? e.certificates : [],
+    });
+    if (form.assignMode === "all") {
+      return (data?.employees || []).filter((e) => e.stationId === form.stationId).map(mapEmp);
+    }
+    return (data?.employees || []).map(mapEmp);
+  }, [data?.employees, form.assignMode, form.stationId]);
+
+  const clientGate = useMemo(() => checkAssignGate({
+    workKind: form.workKind,
+    assignMode: form.assignMode,
+    ownerId: form.ownerId,
+    memberIds: form.memberIds,
+    stationId: form.stationId,
+    people: gatePeople,
+    lang: ar ? "ar" : "en",
+  }), [form.workKind, form.assignMode, form.ownerId, form.memberIds, form.stationId, gatePeople, ar]);
+
+  const reqCert = CERT_FOR[form.workKind] || null;
+  const reqCertLabel = reqCert ? (CERT_LABELS[reqCert]?.[ar ? "ar" : "en"] || reqCert) : null;
+  /** Named certificate lapse only — empty owner is a normal form required field, not a silent cert block. */
+  const certBlocked = Array.isArray(clientGate.blocked) && clientGate.blocked.length > 0;
   const derivedHorizon = planHorizonFromDue(form.dueAt || null);
+  const openTask = tasks.find((t) => t.id === openTaskId) || null;
+  const isManager = ["owner", "director", "ops_manager", "station_manager", "pgm", "admin"].includes(currentUser?.role)
+    || currentUser?.isOwner || currentUser?.admin;
 
   const createTask = async (e) => {
     e.preventDefault();
+    if (certBlocked) {
+      toast({ title: ar ? "بوابة الإسناد" : "Assignment gate", description: clientGate.reason, variant: "destructive" });
+      return;
+    }
     setBusy(true);
     try {
       const res = await ops({
@@ -119,6 +164,7 @@ export default function Operations() {
         dueAt: form.dueAt || null,
         targetCount: form.targetCount,
         mode: form.mode,
+        steps: form.steps,
       });
       const body = res?.data ?? res ?? {};
       if (body.error === "ASSIGN_GATE") {
@@ -130,7 +176,7 @@ export default function Operations() {
         return;
       }
       toast({ title: ar ? "أُنشئت المهمة" : "Task created", description: body?.task?.ref });
-      setForm((f) => ({ ...f, title: "", memberIds: [] }));
+      setForm((f) => ({ ...f, title: "", memberIds: [], steps: "", ownerId: "" }));
       setCounts(body.counts || null);
       await reload();
     } catch (err) {
@@ -145,22 +191,34 @@ export default function Operations() {
     }
   };
 
-  const logDone = async (task) => {
+  const logDone = async (task, opts = {}) => {
     setBusy(true);
     try {
       let proofFiles = [];
-      if (proofFile) {
-        const up = await base44.integrations.Core.UploadFile({ file: proofFile });
-        proofFiles = [{ url: up.file_url, name: proofFile.name }];
+      const file = opts.proofFile || proofFile;
+      if (file) {
+        const up = await base44.integrations.Core.UploadFile({ file });
+        proofFiles = [{ url: up.file_url, name: file.name }];
+      }
+      const attestation = opts.attestation != null
+        ? opts.attestation
+        : (proofFiles.length
+          ? ""
+          : (ar ? `إفادة إنجاز بواسطة ${currentUser?.name || "المستخدم"}` : `Completion attested by ${currentUser?.name || "user"}`));
+      if (!proofFiles.length && !String(attestation || "").trim()) {
+        toast({
+          title: ar ? "بوابة الإثبات" : "Proof gate",
+          description: ar ? "لا نقطة بلا أثر — أرفق صورة أو اكتب إفادة أولًا" : "No point without a trace — attach a photo or write an attestation first",
+          variant: "destructive",
+        });
+        return;
       }
       const res = await ops({
         action: "logCompletion",
         taskId: task.id,
-        amount: 1,
+        amount: Math.max(1, Number(opts.amount) || 1),
         proofFiles,
-        attestation: proofFiles.length
-          ? ""
-          : (ar ? `إفادة إنجاز بواسطة ${currentUser?.name || "المستخدم"}` : `Completion attested by ${currentUser?.name || "user"}`),
+        attestation,
       });
       const body = res?.data || res;
       if (body?.error === "CHECK_IN_REQUIRED") {
@@ -178,6 +236,36 @@ export default function Operations() {
         description: dataErr.reason || dataErr.error || err.message,
         variant: "destructive",
       });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addComment = async (task, text, isIssue) => {
+    setBusy(true);
+    try {
+      const res = await ops({ action: "addComment", taskId: task.id, text, isIssue });
+      const body = res?.data || res;
+      if (body?.error) throw new Error(body.reason || body.error);
+      await reload();
+    } catch (err) {
+      toast({ title: ar ? "فشل التعليق" : "Comment failed", description: err.message, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addAttachment = async (task, file) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const up = await base44.integrations.Core.UploadFile({ file });
+      const res = await ops({ action: "addAttachment", taskId: task.id, url: up.file_url, name: file.name });
+      const body = res?.data || res;
+      if (body?.error) throw new Error(body.reason || body.error);
+      await reload();
+    } catch (err) {
+      toast({ title: ar ? "فشل المرفق" : "Attachment failed", description: err.message, variant: "destructive" });
     } finally {
       setBusy(false);
     }
@@ -242,10 +330,10 @@ export default function Operations() {
   const todayKey = localTodayKey();
   const visible = tasks.filter((t) => {
     if (filter === "all") return true;
-    if (filter === "overdue") return t.dueAt && dayDiffFromToday(t.dueAt) < 0 && t.status !== "completed";
-    if (filter === "today") return t.dueAt && t.dueAt.slice(0, 10) === todayKey;
-    if (filter === "awaiting") return t.status === "awaiting_approval";
-    if (filter === "done") return t.status === "completed";
+    if (filter === "overdue") return isOverdue(t);
+    if (filter === "today") return t.dueAt && String(t.dueAt).slice(0, 10) === todayKey;
+    if (filter === "awaiting") return isAwaitingApproval(t);
+    if (filter === "done") return t.status === "completed" || !!t.approvedAt;
     return true;
   });
 
@@ -302,41 +390,53 @@ export default function Operations() {
       rows: visible.filter((t) => (t.planHorizon || "w") === h.id),
     }));
 
-  const renderActions = (task) => (
-    <div className="flex flex-wrap gap-1.5">
-      {task.status !== "completed" && task.mode !== "remote" && (
-        <button type="button" disabled={busy} onClick={() => setMode(task, "remote")} className="rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-[11px] text-[#5A6B85]">
-          {ar ? "عن بُعد" : "Remote"}
-        </button>
-      )}
-      {task.status !== "completed" && task.mode === "remote" && (
-        <button type="button" disabled={busy} onClick={() => setMode(task, "onsite")} className="rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-[11px] text-[#5A6B85]">
-          {ar ? "حضوري" : "On-site"}
-        </button>
-      )}
-      {task.status !== "completed" && task.status !== "awaiting_approval" && (
-        <button
-          type="button"
-          disabled={busy || (task.mode !== "remote" && checkedIn === false)}
-          title={task.mode !== "remote" && checkedIn === false ? (attendanceGate?.reason || "") : undefined}
-          onClick={() => logDone(task)}
-          className="rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-[11px] font-medium text-[#14284B] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {ar ? "سجّل" : "Log"}
-        </button>
-      )}
-      {task.status === "awaiting_approval" && (
-        <>
-          <button type="button" disabled={busy} onClick={() => approve(task)} className="rounded-lg bg-[#1E9E63] px-2.5 py-1 text-[11px] font-semibold text-white">
-            {ar ? "اعتمد" : "Approve"}
+  const renderActions = (task) => {
+    const logBlocked = task.mode !== "remote" && checkedIn === false;
+    return (
+      <div className="flex flex-col items-start gap-1">
+        <div className="flex flex-wrap gap-1.5">
+          <button type="button" onClick={() => setOpenTaskId(task.id)} className="rounded-lg border border-[#1E9E63]/40 bg-[#EAF6EF] px-2.5 py-1 text-[11px] font-medium text-[#14683F]">
+            {ar ? "بطاقة" : "Card"}
           </button>
-          <button type="button" disabled={busy} onClick={() => { setRejectFor(task); setRejectReason(""); }} className="rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-2.5 py-1 text-[11px] text-[#B91C1C]">
-            {ar ? "أرجع" : "Return"}
-          </button>
-        </>
-      )}
-    </div>
-  );
+          {task.status !== "completed" && task.mode !== "remote" && (
+            <button type="button" disabled={busy} onClick={() => setMode(task, "remote")} className="rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-[11px] text-[#5A6B85]">
+              {ar ? "عن بُعد" : "Remote"}
+            </button>
+          )}
+          {task.status !== "completed" && task.mode === "remote" && (
+            <button type="button" disabled={busy} onClick={() => setMode(task, "onsite")} className="rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-[11px] text-[#5A6B85]">
+              {ar ? "حضوري" : "On-site"}
+            </button>
+          )}
+          {task.status !== "completed" && !isAwaitingApproval(task) && (
+            <button
+              type="button"
+              disabled={busy || logBlocked}
+              onClick={() => logDone(task)}
+              className="rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-[11px] font-medium text-[#14284B] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {ar ? "سجّل" : "Log"}
+            </button>
+          )}
+          {isAwaitingApproval(task) && isManager && (
+            <>
+              <button type="button" disabled={busy} onClick={() => approve(task)} className="rounded-lg bg-[#1E9E63] px-2.5 py-1 text-[11px] font-semibold text-white">
+                {ar ? "اعتمد" : "Approve"}
+              </button>
+              <button type="button" disabled={busy} onClick={() => { setRejectFor(task); setRejectReason(""); }} className="rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-2.5 py-1 text-[11px] text-[#B91C1C]">
+                {ar ? "أرجع" : "Return"}
+              </button>
+            </>
+          )}
+        </div>
+        {logBlocked && task.status !== "completed" && !isAwaitingApproval(task) && (
+          <span className="max-w-[220px] text-[10px] leading-snug text-[#B45309]">
+            {attendanceGate?.reason || (ar ? "موقوف حتى بصمة اليوم" : "Blocked until today's check-in")}
+          </span>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div dir={dir} className="mx-auto max-w-[1320px] space-y-4 p-4 md:p-6">
@@ -430,7 +530,21 @@ export default function Operations() {
               <option value="">{ar ? "المسؤول" : "Owner"}</option>
               {employees.map((emp) => {
                 const id = emp.employeeId || emp.id;
-                return <option key={id} value={id}>{emp.name}</option>;
+                const personGate = checkAssignGate({
+                  workKind: form.workKind,
+                  assignMode: "one",
+                  ownerId: id,
+                  people: gatePeople,
+                  lang: ar ? "ar" : "en",
+                });
+                const bad = Array.isArray(personGate.blocked) && personGate.blocked.length > 0;
+                return (
+                  <option key={id} value={id}>
+                    {bad
+                      ? (ar ? `${emp.name} — شهادة ${reqCertLabel} منتهية` : `${emp.name} — ${reqCertLabel} expired`)
+                      : emp.name}
+                  </option>
+                );
               })}
             </select>
           )}
@@ -439,9 +553,26 @@ export default function Operations() {
               {employees.map((emp) => {
                 const id = emp.employeeId || emp.id;
                 const on = form.memberIds.includes(id);
+                const personGate = checkAssignGate({
+                  workKind: form.workKind,
+                  assignMode: "one",
+                  ownerId: id,
+                  people: gatePeople,
+                  lang: ar ? "ar" : "en",
+                });
+                const bad = Array.isArray(personGate.blocked) && personGate.blocked.length > 0;
                 return (
-                  <button key={id} type="button" onClick={() => toggleMember(id)} className={`rounded-full border px-3 py-1 text-xs ${on ? "border-[#1E9E63] bg-[#EAF6EF]" : "border-[#E2E8F0]"}`}>
-                    {emp.name}
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => toggleMember(id)}
+                    className={`rounded-full border px-3 py-1 text-xs ${
+                      bad
+                        ? (on ? "border-[#FECACA] bg-[#FEF2F2] font-semibold text-[#B91C1C]" : "border-dashed border-[#FECACA] text-[#B91C1C]")
+                        : (on ? "border-[#1E9E63] bg-[#EAF6EF]" : "border-[#E2E8F0]")
+                    }`}
+                  >
+                    {bad ? (ar ? `${emp.name} — منتهية` : `${emp.name} — expired`) : emp.name}
                   </button>
                 );
               })}
@@ -461,14 +592,43 @@ export default function Operations() {
           </select>
           <input type="number" min={1} max={5} className="h-10 rounded-lg border border-[#E2E8F0] px-3 text-sm" value={form.effortWeight} onChange={(e) => setForm({ ...form, effortWeight: Number(e.target.value) })} />
           <input type="date" className="h-10 rounded-lg border border-[#E2E8F0] px-3 text-sm" value={form.dueAt} onChange={(e) => setForm({ ...form, dueAt: e.target.value })} />
-          <div className="md:col-span-2 text-xs text-[#5A6B85]">
-            {ar
-              ? `النقاط عند الاعتماد فقط: ${taskPoints(form.priority, form.effortWeight)} · الأفق المشتق: ${HORIZON_LABEL[derivedHorizon]?.ar || derivedHorizon}`
-              : `Points on approval only: ${taskPoints(form.priority, form.effortWeight)} · derived horizon: ${HORIZON_LABEL[derivedHorizon]?.en || derivedHorizon}`}
+          <textarea
+            className="min-h-[72px] rounded-lg border border-[#E2E8F0] px-3 py-2 text-sm md:col-span-2"
+            placeholder={ar ? "خطوات التنفيذ (سطر لكل خطوة)" : "Execution steps (one per line)"}
+            value={form.steps}
+            onChange={(e) => setForm({ ...form, steps: e.target.value })}
+          />
+          <div className="md:col-span-2 space-y-1.5 text-xs text-[#5A6B85]">
+            <div>
+              {ar
+                ? `النقاط عند الاعتماد فقط: ${taskPoints(form.priority, form.effortWeight)} · الأفق المشتق: ${HORIZON_LABEL[derivedHorizon]?.ar || derivedHorizon} · محورا التصنيف: أفق زمني + نوع عمل`
+                : `Points on approval only: ${taskPoints(form.priority, form.effortWeight)} · derived horizon: ${HORIZON_LABEL[derivedHorizon]?.en || derivedHorizon} · two axes: plan horizon + work kind`}
+            </div>
+            <div>
+              {reqCert
+                ? (ar
+                  ? `هذا النوع يشترط شهادة ${reqCertLabel} سارية — من انتهت شهادته لا يُقبل في أي نمط إسناد.`
+                  : `This work type requires a current ${reqCertLabel} certification — anyone whose certification has lapsed cannot be assigned in any mode.`)
+                : (ar ? "هذا النوع من العمل لا يشترط شهادة كفاءة." : "This work type requires no competency certification.")}
+            </div>
+            {certBlocked && (
+              <div className="rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[11px] leading-relaxed text-[#B91C1C]">
+                {clientGate.reason}
+              </div>
+            )}
           </div>
-          <button type="submit" disabled={busy} className="h-10 rounded-lg bg-[#1E9E63] px-4 text-sm font-semibold text-white md:col-span-2 disabled:opacity-50">
+          <button
+            type="submit"
+            disabled={busy || certBlocked}
+            className="h-10 rounded-lg bg-[#1E9E63] px-4 text-sm font-semibold text-white md:col-span-2 disabled:cursor-not-allowed disabled:bg-[#E2E8F0] disabled:text-[#5A6B85]"
+          >
             {ar ? "أنشئ المهمة" : "Create task"}
           </button>
+          {certBlocked && (
+            <p className="md:col-span-2 text-[11px] text-[#B91C1C]">
+              {ar ? "الإنشاء موقوف بسبب بوابة الشهادة أعلاه (يُعاد التحقق على الخادم)." : "Create is blocked by the certificate gate above (re-checked on the server)."}
+            </p>
+          )}
         </form>
       )}
 
@@ -502,9 +662,15 @@ export default function Operations() {
               ) : (
                 g.rows.map((task) => {
                   const owner = ownerName(task);
-                  const pct = progressPct(task);
                   return (
-                    <div key={task.id} className="flex flex-wrap items-center gap-3 border-b border-[#F1F5F9] px-[18px] py-3 last:border-b-0 hover:bg-[#F7F8FA]">
+                    <div
+                      key={task.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setOpenTaskId(task.id)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setOpenTaskId(task.id); }}
+                      className="flex cursor-pointer flex-wrap items-center gap-3 border-b border-[#F1F5F9] px-[18px] py-3 last:border-b-0 hover:bg-[#F7F8FA]"
+                    >
                       <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: priColor(task.priority) }} />
                       <div className="min-w-[200px] flex-1">
                         <div className="text-[13px] font-medium text-[#14284B]">{task.title}</div>
@@ -521,7 +687,7 @@ export default function Operations() {
                         {ar ? STATUS_LABEL[task.status]?.ar : STATUS_LABEL[task.status]?.en || task.status}
                       </span>
                       <span className="font-mono text-[11px] text-[#5A6B85]" dir="ltr">{task.completedCount}/{task.targetCount}</span>
-                      {renderActions(task)}
+                      <div onClick={(e) => e.stopPropagation()}>{renderActions(task)}</div>
                     </div>
                   );
                 })
@@ -555,7 +721,11 @@ export default function Operations() {
                   return (
                     <div
                       key={task.id}
-                      className="grid grid-cols-[minmax(260px,2.4fr)_118px_138px_108px_116px_100px_minmax(120px,1fr)] items-center gap-3 border-b border-[#F1F5F9] px-[18px] py-3.5 last:border-b-0 hover:bg-[#F7F8FA]"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setOpenTaskId(task.id)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setOpenTaskId(task.id); }}
+                      className="grid cursor-pointer grid-cols-[minmax(260px,2.4fr)_118px_138px_108px_116px_100px_minmax(120px,1fr)] items-center gap-3 border-b border-[#F1F5F9] px-[18px] py-3.5 last:border-b-0 hover:bg-[#F7F8FA]"
                     >
                       <div className="flex min-w-0 items-center gap-2.5">
                         <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: priColor(task.priority) }} />
@@ -596,7 +766,7 @@ export default function Operations() {
                         </span>
                         <span className="w-7 text-end font-mono text-[10px] text-[#5A6B85]">{pct}%</span>
                       </div>
-                      {renderActions(task)}
+                      <div onClick={(e) => e.stopPropagation()}>{renderActions(task)}</div>
                     </div>
                   );
                 })}
@@ -604,6 +774,37 @@ export default function Operations() {
             </div>
           )}
         </div>
+      )}
+
+      {openTask && (
+        <OpsTaskDetail
+          task={openTask}
+          ar={ar}
+          busy={busy}
+          canManage={!!isManager}
+          checkedIn={checkedIn}
+          attendanceGate={attendanceGate}
+          onClose={() => setOpenTaskId(null)}
+          onLog={(opts) => logDone(openTask, opts)}
+          onApprove={() => approve(openTask)}
+          onReject={async (reason) => {
+            setBusy(true);
+            try {
+              const res = await ops({ action: "reject", taskId: openTask.id, reason });
+              const body = res?.data || res;
+              if (body?.error) throw new Error(body.reason || body.error);
+              toast({ title: ar ? "أُعيدت للمنفّذ" : "Returned to executor" });
+              setCounts(body.counts || null);
+              await reload();
+            } catch (err) {
+              toast({ title: ar ? "فشل الرفض" : "Reject failed", description: err.message, variant: "destructive" });
+            } finally {
+              setBusy(false);
+            }
+          }}
+          onAddComment={(text, isIssue) => addComment(openTask, text, isIssue)}
+          onAddAttachment={(file) => addAttachment(openTask, file)}
+        />
       )}
 
       {rejectFor && (
