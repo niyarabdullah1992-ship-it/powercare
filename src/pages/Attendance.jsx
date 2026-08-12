@@ -42,7 +42,7 @@ export default function Attendance() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const routeTab = tabFromRoute(location.pathname, searchParams.get("tab"));
-  const [tab, setTab] = useState(routeTab || "team");
+  const [tab, setTab] = useState(routeTab || "roster");
 
   useEffect(() => {
     if (routeTab) setTab(routeTab);
@@ -103,7 +103,7 @@ export default function Attendance() {
       : (lang === "ar" ? "مباشر · التحقق بالموقع الجغرافي" : "Live · geofence verified");
 
   const tabs = [
-    { key: "calendar", label: lang === "ar" ? "التقويم الشهري" : "Monthly calendar" },
+    { key: "roster", label: lang === "ar" ? "كشف اليوم" : "Today roster" },
     ...(isManager ? [
       { key: "team", label: t("teamTab") },
       { key: "map", label: t("mapTab") },
@@ -111,6 +111,7 @@ export default function Attendance() {
       { key: "report", label: t("reportTab") },
       { key: "analytics", label: t("analyticsTab") },
     ] : []),
+    { key: "calendar", label: lang === "ar" ? "التقويم الشهري" : "Monthly calendar" },
     ...(canManageLeave ? [{ key: "leaves", label: t("leaveRequests") }] : []),
     ...(canManageEmergency ? [{ key: "settings", label: t("settingsTab") }] : []),
   ];
@@ -118,13 +119,13 @@ export default function Attendance() {
     ? "schedule"
     : focusLeave && canManageLeave
       ? "leaves"
-      : (tabs.some((item) => item.key === tab) ? tab : tabs[0]?.key);
+      : (tabs.some((item) => item.key === tab) ? tab : "roster");
 
   const selectTab = (key) => {
     setTab(key);
     if (location.pathname === "/app/attendance") {
       const next = new URLSearchParams(searchParams);
-      if (key === "team") next.delete("tab");
+      if (key === "roster") next.delete("tab");
       else next.set("tab", key);
       setSearchParams(next, { replace: true });
     }
@@ -173,11 +174,11 @@ export default function Attendance() {
           </div>
           )}
 
+          {activeTab === "roster" && (
+            <AttendanceHandoffBoard employees={employees.length ? employees : (data?.employees || [])} />
+          )}
           {activeTab === "team" && (
-            <div className="space-y-5">
-              <AttendanceHandoffBoard />
-              <AttendanceDailyDashboard employees={employees} currentUser={currentUser} company={company} data={data} t={t} />
-            </div>
+            <AttendanceDailyDashboard employees={employees} currentUser={currentUser} company={company} data={data} t={t} />
           )}
           <Suspense fallback={<TabLoader />}>
             {activeTab === "calendar" && <MonthlyTaskCalendar />}
