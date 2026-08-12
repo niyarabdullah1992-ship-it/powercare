@@ -320,6 +320,15 @@ Deno.serve(async (req) => {
         completedCount: 0,
         status: "active",
         steps,
+        attachments: Array.isArray(body.attachments)
+          ? body.attachments.filter((f: any) => f && f.url).map((f: any) => ({
+            url: f.url,
+            name: f.name || "file",
+            addedBy: auth.name,
+            addedAt: new Date().toISOString(),
+          }))
+          : [],
+        comments: [],
         proofFiles: [],
         attestation: "",
         pointsAwarded: null,
@@ -455,6 +464,56 @@ Deno.serve(async (req) => {
         lang: body.lang === "en" ? "en" : "ar",
       });
       return Response.json({ gate });
+    }
+
+    if (action === "addComment") {
+      const text = String(body.text || "").trim();
+      if (!text) return Response.json({ error: "EMPTY_COMMENT", reason: "اكتب تعليقًا أولًا." }, { status: 400 });
+      const tasks = await listTasksRaw();
+      const idx = tasks.findIndex((t) => t.id === body.taskId);
+      if (idx < 0) return Response.json({ error: "Task not found" }, { status: 404 });
+      const task = { ...tasks[idx] };
+      const files = Array.isArray(body.files)
+        ? body.files.filter((f: any) => f && f.url).map((f: any) => ({ url: f.url, name: f.name || "file" }))
+        : [];
+      const entry = {
+        id: crypto.randomUUID(),
+        authorId: auth.userId,
+        authorName: auth.name,
+        text,
+        isIssue: body.isIssue === true,
+        files,
+        at: new Date().toISOString(),
+      };
+      task.comments = [...(Array.isArray(task.comments) ? task.comments : []), entry];
+      tasks[idx] = task;
+      await saveTasks(tasks);
+      await audit(
+        entry.isIssue ? "ops_task_blocker" : "ops_task_comment",
+        `${entry.isIssue ? "Blocker" : "Comment"} on ${task.ref} by ${auth.name}`,
+        { newValue: entry.id },
+      );
+      return Response.json({ task, comment: entry });
+    }
+
+    if (action === "addAttachment") {
+      const url = String(body.url || "").trim();
+      if (!url) return Response.json({ error: "FILE_REQUIRED", reason: "أرفق ملفًا أولًا." }, { status: 400 });
+      const tasks = await listTasksRaw();
+      const idx = tasks.findIndex((t) => t.id === body.taskId);
+      if (idx < 0) return Response.json({ error: "Task not found" }, { status: 404 });
+      const task = { ...tasks[idx] };
+      const entry = {
+        url,
+        name: String(body.name || "file"),
+        addedBy: auth.name,
+        addedAt: new Date().toISOString(),
+      };
+      task.attachments = [...(Array.isArray(task.attachments) ? task.attachments : []), entry];
+      tasks[idx] = task;
+      await saveTasks(tasks);
+      await audit("ops_task_attach", `Attachment on ${task.ref} by ${auth.name}: ${entry.name}`);
+      return Response.json({ task, attachment: entry });
     }
 
     return Response.json({ error: `Unknown action: ${action}` }, { status: 400 });

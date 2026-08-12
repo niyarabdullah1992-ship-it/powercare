@@ -10,12 +10,25 @@
 ## الطلب الحالي (نفّذه الآن)
 
 ```
-اربط شاشة المهام والعمليات بـ base44.functions.invoke('operations', …) —
-أزل كل رقم ثابت من الواجهة، واجعل كل عدّاد يُقرأ من الخادم.
-لا تنتقل لقسم آخر قبل أن يعمل هذا القسم من الطرف إلى الطرف.
+قسم واحد لكل طلب دمج: المهام والعمليات فقط —
+أغلق الفجوات مقابل Platform Component ثم توقّف.
+لا تبدأ الحضور قبل دمج هذا القسم.
 ```
 
-**حالة التنفيذ (فرع `handoff/server-first-ops`):** مكتمل —
+### المهام والعمليات (Ops) — حالة القسم
+
+| بند | حالة |
+| --- | --- |
+| معادلات الخادم (`opsDerivations` · نقاط 3/2/1×وزن · أفق · عدّادات) | **مكتمل** |
+| بوابة الشهادة على الخادم (فرد / عدة / طاقم) مع اسم الشهادة | **مكتمل** |
+| `operations` API: list/create/log/approve/reject/checkGate/comment/attach | **مكتمل** |
+| فلاتر الشريحة تُصفّي الجدول + حالة فارغة صريحة | **مكتمل** |
+| بطاقة المهمة: خطوات · مرفقات · تعليقات · تسجيل · شريط اعتماد | **مكتمل** (فرع `handoff/ops-tasks`) |
+| اختبارات الصيغة + البوابة `scripts/test-ops-derivations.mjs` | **مكتمل** |
+
+**التالي بعد الدمج:** الحضور (Attendance) — لا يُبدأ في هذا الـ MR.
+
+**حالة التنفيذ الأشمل (فرع `handoff/server-first-ops`):** مكتمل تاريخيًا —
 `operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · `offboarding` · `complaints` · `files` · `settings` · `reports` · `assistant` · **`chat`**
 
 مسار التحقق (الدردشة / StationChat):
