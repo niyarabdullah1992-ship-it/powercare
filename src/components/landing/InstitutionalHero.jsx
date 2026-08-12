@@ -49,50 +49,62 @@ export default function InstitutionalHero({ ar }) {
             animate="show"
             className="font-heading text-[11px] font-semibold tracking-[0.22em] text-[#3FBF80] md:text-xs"
           >
-            POWERCARE · NIROVERA
+            {ar ? "منصة سعودية · تعمل بالعربية والإنجليزية" : "Built in Saudi Arabia · Arabic and English"}
           </motion.p>
 
-          <motion.h1
+          <motion.p
             custom={1}
             variants={fade}
             initial="hidden"
             animate="show"
-            className="mt-4 font-heading text-[48px] font-semibold leading-[1.05] tracking-[-0.03em] text-white sm:text-[64px] md:text-[80px]"
+            className="mt-4 font-heading text-[13px] font-semibold tracking-[0.14em] text-white/70"
           >
-            NiroVera
-          </motion.h1>
+            NIROVERA
+          </motion.p>
 
-          <motion.p
+          <motion.h1
             custom={2}
             variants={fade}
             initial="hidden"
             animate="show"
-            className="mt-5 max-w-[34rem] text-[18px] leading-[1.7] text-[#B9C3D8] md:text-[20px]"
+            className="mt-3 font-heading text-[36px] font-semibold leading-[1.12] tracking-[-0.03em] text-white sm:text-[48px] md:text-[56px]"
           >
             {ar
-              ? "منظومة موارد بشرية سعودية: حضور · مهام · رواتب · امتثال وزارة الموارد — بإثبات قابل للتحقق."
-              : "A Saudi HR suite: attendance · tasks · payroll · Ministry compliance — with verifiable proof."}
+              ? "منصة تشغيل المحطات والقوى العاملة الميدانية"
+              : "Run your stations and field workforce from one platform"}
+          </motion.h1>
+
+          <motion.p
+            custom={3}
+            variants={fade}
+            initial="hidden"
+            animate="show"
+            className="mt-5 max-w-[36rem] text-[17px] leading-[1.7] text-[#B9C3D8] md:text-[19px]"
+          >
+            {ar
+              ? "العمليات والحضور والسلامة والرواتب في نظام واحد. تفتح المنصة على ما يحتاج قرارك اليوم، لا على جدول أرقام."
+              : "Operations, attendance, safety and payroll in one system. It opens on what needs your decision today, not on a table of numbers."}
           </motion.p>
 
           <motion.div
-            custom={3}
+            custom={4}
             variants={fade}
             initial="hidden"
             animate="show"
             className="mt-9 flex flex-wrap gap-3"
           >
-            <a
-              href="#demo"
+            <Link
+              to="/pricing"
               className="institutional-cta rounded-[10px] bg-[#0E7A4B] px-7 py-3.5 text-[15px] font-medium text-white transition-colors hover:bg-[#0B5F3A]"
             >
-              {ar ? "اطلب عرضًا رسميًا" : "Request a formal briefing"}
-            </a>
-            <Link
-              to="/login"
+              {ar ? "ابدأ بمحطة واحدة" : "Start with one station"}
+            </Link>
+            <a
+              href="#modules"
               className="rounded-[10px] border border-white/25 bg-white/5 px-7 py-3.5 text-[15px] text-white backdrop-blur-sm transition-colors hover:border-white/40 hover:bg-white/10"
             >
-              {ar ? "دخول الشركة أو الجهة" : "Company or government login"}
-            </Link>
+              {ar ? "استعرض الوحدات" : "See the modules"}
+            </a>
           </motion.div>
         </div>
       </div>

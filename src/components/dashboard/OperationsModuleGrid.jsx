@@ -64,33 +64,33 @@ export default function OperationsModuleGrid({ metrics, lang, user, data, compan
       ],
     },
     {
-      key: "compliance",
-      eyebrow: ar ? "الالتزام والإثبات" : "Compliance & Evidence",
-      title: ar ? "سلامة، إثبات، توقيع، بلاغ" : "Safety, proof, signing, voice",
+      key: "resources",
+      eyebrow: ar ? "الموارد والامتثال" : "Resources & compliance",
+      title: ar ? "مخزون، سلامة، إثبات، رواتب" : "Stock, safety, proof, payroll",
       description: ar
-        ? "طبقة لا تنقطع عن دورة الإثبات."
-        : "The trust layer of the proof cycle.",
+        ? "طبقة الموارد ودورة الإثبات — كما في تسليم التصميم."
+        : "Resources and the proof cycle — per design handoff.",
       items: [
+        { icon: Package, title: ar ? "المخزون" : "Inventory", note: ar ? "مواد ووحدات" : "stock & units", value: metrics.inventory, to: "/app/inventory" },
         { icon: ShieldCheck, title: ar ? "السلامة HSE" : "Safety HSE", note: ar ? `${metrics.hazards} مخاطر مفتوحة` : `${metrics.hazards} open hazards`, value: metrics.safety, to: "/app/safety" },
         { icon: Camera, title: ar ? "إثبات العمل" : "Work Proof", note: ar ? "قبل/بعد مختوم" : "stamped before/after", value: "→", to: "/app/work-proof" },
         { icon: PenTool, title: ar ? "التوقيع الرقمي" : "Digital signing", note: ar ? "Secure Sign" : "Secure Sign", value: metrics.signing, to: "/app/signing" },
         { icon: MessageCircle, title: ar ? "الشكاوى" : "Complaints", note: ar ? "مفتوحة الآن" : "open now", value: metrics.complaints, to: "/app/complaints" },
+        { icon: FolderOpen, title: ar ? "الملفات" : "Files", note: ar ? "مقيّدة بالصلاحية" : "permission-scoped", value: metrics.files, to: "/app/files" },
+        { icon: Banknote, title: ar ? "الرواتب" : "Payroll", note: ar ? "يغذيه الحضور" : "fed by attendance", value: metrics.payroll, to: "/app/payroll" },
       ],
     },
     {
-      key: "money_admin",
-      eyebrow: ar ? "مال وإدارة" : "Money & Admin",
-      title: ar ? "أصول، رواتب، تقارير، إعدادات" : "Assets, payroll, reports, settings",
+      key: "admin",
+      eyebrow: ar ? "الإدارة" : "Administration",
+      title: ar ? "تقارير، مساعد، مصروفات، إعدادات" : "Reports, assistant, expenses, settings",
       description: ar
         ? "ما يُدار أسبوعيًا وشهريًا — مطوي في الشريط الجانبي."
         : "Weekly and monthly work — folded in the sidebar.",
       items: [
-        { icon: Banknote, title: ar ? "الرواتب" : "Payroll", note: ar ? "يغذيه الحضور" : "fed by attendance", value: metrics.payroll, to: "/app/payroll" },
-        { icon: Package, title: ar ? "المخزون" : "Inventory", note: ar ? "مواد ووحدات" : "stock & units", value: metrics.inventory, to: "/app/inventory" },
-        { icon: ReceiptText, title: ar ? "المصروفات" : "Expenses", note: ar ? "مقابل الميزانية" : "against budget", value: metrics.expenses, to: "/app/expenses" },
         { icon: BarChart3, title: ar ? "التقارير" : "Reports", note: ar ? "مكتبة وجدولة" : "library & schedule", value: "→", to: "/app/reports" },
-        { icon: FolderOpen, title: ar ? "الملفات" : "Files", note: ar ? "مقيّدة بالصلاحية" : "permission-scoped", value: metrics.files, to: "/app/files" },
         { icon: Bot, title: ar ? "المساعد" : "Assistant", note: ar ? "اسأل بيانات منشأتك" : "ask company data", value: ar ? "جاهز" : "Ready", to: "/app/assistant" },
+        { icon: ReceiptText, title: ar ? "المصروفات" : "Expenses", note: ar ? "مقابل الميزانية" : "against budget", value: metrics.expenses, to: "/app/expenses" },
         { icon: Settings2, title: ar ? "الإعدادات" : "Settings", note: ar ? "نطاق وصلاحيات" : "scope & permissions", value: "→", to: "/app/settings" },
       ],
     },

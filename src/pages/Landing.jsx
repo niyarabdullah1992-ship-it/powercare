@@ -31,25 +31,29 @@ const ROLES = [
 
 const PLANS = [
   {
-    tagAr: "للشركات الصغيرة",
-    tagEn: "For small companies",
-    nameAr: "أعمال",
-    nameEn: "Business",
-    price: "حسب الحجم",
-    priceEn: "Sized to you",
-    featuresAr: ["دورة الإثبات كاملة", "الحضور والرواتب", "حتى 3 مقرات", "دعم بالعربية"],
-    featuresEn: ["Full proof cycle", "Attendance & payroll", "Up to 3 sites", "Arabic support"],
+    tagAr: "",
+    tagEn: "",
+    nameAr: "البداية",
+    nameEn: "Starter",
+    price: "29",
+    priceEn: "29",
+    unitAr: "ريال / موظف / شهر",
+    unitEn: "SAR / employee / month",
+    featuresAr: ["المهام والحضور والمحادثات والملفات", "حتى 30 موظفًا ومحطتين", "بلا رسوم تهيئة"],
+    featuresEn: ["Tasks, attendance, chat and files", "Up to 30 employees and 2 stations", "No setup fee"],
     featured: false,
   },
   {
     tagAr: "الأكثر اختيارًا",
     tagEn: "Most chosen",
-    nameAr: "مؤسسات",
-    nameEn: "Enterprise",
-    price: "مخصص",
-    priceEn: "Custom",
-    featuresAr: ["محطات متعددة", "حوكمة وتوقيع", "إثبات عميل", "مرافقة تهيئة"],
-    featuresEn: ["Multi-station", "Governance & signing", "Client proof", "Onboarding support"],
+    nameAr: "الاحترافية",
+    nameEn: "Professional",
+    price: "49",
+    priceEn: "49",
+    unitAr: "ريال / موظف / شهر",
+    unitEn: "SAR / employee / month",
+    featuresAr: ["كل الوحدات الإحدى والعشرين", "الرواتب والتوقيع والمساعد", "بلا فريق تطبيق مقيم"],
+    featuresEn: ["All twenty-one modules", "Payroll, signing and assistant", "No on-site implementation team"],
     featured: true,
   },
   {
@@ -57,10 +61,12 @@ const PLANS = [
     tagEn: "Public sector",
     nameAr: "حكومي",
     nameEn: "Government",
-    price: "بعرض رسمي",
-    priceEn: "Formal quote",
-    featuresAr: ["مسارات اعتماد صارمة", "تقارير رقابية", "صلاحيات مفصّلة", "اتفاقية مستوى خدمة"],
-    featuresEn: ["Strict approval paths", "Oversight reports", "Fine-grained roles", "SLA"],
+    price: "بعرض",
+    priceEn: "Quote",
+    unitAr: "رسمي حسب النطاق",
+    unitEn: "formal by scope",
+    featuresAr: ["مسارات اعتماد صارمة", "تقارير رقابية", "اتفاقية مستوى خدمة"],
+    featuresEn: ["Strict approval paths", "Oversight reports", "SLA"],
     featured: false,
   },
 ];
@@ -211,10 +217,12 @@ export default function Landing() {
         <div className="mx-auto flex max-w-[1200px] flex-col gap-8 px-6 py-16 md:px-8 md:py-[72px]">
           <div className="max-w-xl">
             <h2 className="m-0 font-heading text-[28px] font-semibold text-[#0B1A3F] md:text-[32px]">
-              {ar ? "باقات بحسب حجم الجهة" : "Plans by organization size"}
+              {ar ? "الأسعار" : "Pricing"}
             </h2>
             <p className="mt-2 text-[14.5px] text-[#5A6478]">
-              {ar ? "كل الباقات تشمل دورة الإثبات كاملة والدعم بالعربية." : "Every plan includes the full proof cycle and Arabic support."}
+              {ar
+                ? "سعر لكل موظف شهريًا، بلا رسوم تهيئة ولا فريق تطبيق مقيم."
+                : "Priced per employee per month, with no setup fee and no on-site implementation team."}
             </p>
           </div>
           <div className="grid items-stretch gap-[18px] md:grid-cols-3">
@@ -225,11 +233,16 @@ export default function Landing() {
                   p.featured ? "border-[#0E7A4B] bg-[#0B1A3F] text-white" : "border-[#E4E7EC] bg-white text-[#101828]"
                 }`}
               >
-                <span className={`text-[13px] ${p.featured ? "text-[#8C9AB8]" : "text-[#667085]"}`}>{ar ? p.tagAr : p.tagEn}</span>
+                <span className={`min-h-[1.25rem] text-[13px] ${p.featured ? "text-[#8C9AB8]" : "text-[#667085]"}`}>{ar ? p.tagAr : p.tagEn}</span>
                 <span className="text-xl font-bold">{ar ? p.nameAr : p.nameEn}</span>
-                <span className={`font-heading text-[28px] font-bold ${p.featured ? "text-white" : "text-[#0B1A3F]"}`}>
-                  {ar ? p.price : p.priceEn}
-                </span>
+                <div>
+                  <span className={`font-heading text-[36px] font-bold leading-none ${p.featured ? "text-white" : "text-[#0B1A3F]"}`}>
+                    {ar ? p.price : p.priceEn}
+                  </span>
+                  <p className={`mt-1 text-[13px] ${p.featured ? "text-[#94A3B8]" : "text-[#5A6B85]"}`}>
+                    {ar ? p.unitAr : p.unitEn}
+                  </p>
+                </div>
                 <ul className="mt-2 flex flex-1 flex-col gap-2.5">
                   {(ar ? p.featuresAr : p.featuresEn).map((f) => (
                     <li key={f} className={`flex items-start gap-2.5 text-[12.8px] leading-[1.7] ${p.featured ? "text-[#C7D2E6]" : "text-[#475467]"}`}>

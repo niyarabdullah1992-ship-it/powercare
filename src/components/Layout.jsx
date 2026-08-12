@@ -42,9 +42,14 @@ export default function Layout({ children }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("powercare_sidebar_collapsed") === "true");
   const [navFold, setNavFold] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("powercare_nav_fold_v1") || '{"money":true,"admin":true}');
+      const raw = JSON.parse(localStorage.getItem("powercare_nav_fold_v2") || '{"workforce":false,"resources":true,"admin":true}');
+      return {
+        workforce: !!raw.workforce,
+        resources: raw.resources !== false ? !!raw.resources : true,
+        admin: raw.admin !== false ? !!raw.admin : true,
+      };
     } catch {
-      return { money: true, admin: true };
+      return { workforce: false, resources: true, admin: true };
     }
   });
 
@@ -53,7 +58,7 @@ export default function Layout({ children }) {
   }, [sidebarCollapsed]);
 
   useEffect(() => {
-    localStorage.setItem("powercare_nav_fold_v1", JSON.stringify(navFold));
+    localStorage.setItem("powercare_nav_fold_v2", JSON.stringify(navFold));
   }, [navFold]);
 
   useEffect(() => {
@@ -142,41 +147,41 @@ export default function Layout({ children }) {
 
   if (!currentUser || !data) return children;
 
-  // Platform IA — day rhythm: Daily → Workforce → Compliance → Money → Admin
+  // Design handoff IA (zip): Daily → Workforce → Resources & compliance → Administration
+  // Groups 2–4 collapsible; Daily never folds. Payroll kept under resources (Saudi pay/compliance).
   const navItems = [
     { to: "/app", icon: LayoutDashboard, label: lang === "ar" ? "مركز القيادة" : "Command Center", end: true, category: "daily" },
     { to: "/app/tasks", icon: ListTodo, label: lang === "ar" ? "المهام والعمليات" : "Operations", category: "daily" },
     { to: "/app/attendance", icon: ClipboardCheck, label: lang === "ar" ? "الحضور والانصراف" : "Attendance", category: "daily" },
     { to: "/app/daily-report", icon: FileText, label: lang === "ar" ? "التقرير اليومي" : "Daily Report", category: "daily" },
     { to: "/app/chat", icon: MessageSquare, label: lang === "ar" ? "المحادثات التشغيلية" : "Operations Chat", category: "daily" },
-    { to: "/app/shifts", icon: CalendarClock, label: lang === "ar" ? "الورديات" : "Shifts", category: "workforce" },
-    { to: "/app/leave", icon: CalendarOff, label: lang === "ar" ? "طلبات الإجازة" : "Leave Requests", category: "workforce" },
-    { to: "/app/hr", icon: UserCog, label: lang === "ar" ? "الموارد البشرية" : "Human Resources", category: "workforce" },
-    { to: "/app/hiring", icon: Briefcase, label: lang === "ar" ? "التوظيف" : "Recruitment", category: "workforce" },
-    { to: "/app/performance", icon: Trophy, label: lang === "ar" ? "الأداء" : "Performance", category: "workforce" },
-    { to: "/app/org", icon: Network, label: lang === "ar" ? "الهيكل التنظيمي" : "Org Structure", category: "workforce" },
-    { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة HSE" : "Safety HSE", category: "compliance" },
-    { to: "/app/work-proof", icon: Camera, label: lang === "ar" ? "إثبات العمل" : "Work Proof", category: "compliance" },
-    { to: "/app/signing", icon: PenLine, label: lang === "ar" ? "التوقيع الرقمي" : "Digital Signing", category: "compliance" },
-    { to: "/app/complaints", icon: Megaphone, label: lang === "ar" ? "الشكاوى والبلاغات" : "Reports & Complaints", category: "compliance" },
-    { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "money", fold: "money" },
-    { to: "/app/expenses", icon: ReceiptText, label: lang === "ar" ? "المصروفات" : "Expenses", category: "money", fold: "money" },
-    { to: "/app/inventory", icon: Warehouse, label: lang === "ar" ? "المخزون والأصول" : "Inventory & Assets", category: "money", fold: "money" },
+    { to: "/app/shifts", icon: CalendarClock, label: lang === "ar" ? "الورديات" : "Shifts", category: "workforce", fold: "workforce" },
+    { to: "/app/leave", icon: CalendarOff, label: lang === "ar" ? "طلبات الإجازة" : "Leave Requests", category: "workforce", fold: "workforce" },
+    { to: "/app/hr", icon: UserCog, label: lang === "ar" ? "الموارد البشرية" : "Human Resources", category: "workforce", fold: "workforce" },
+    { to: "/app/hiring", icon: Briefcase, label: lang === "ar" ? "التوظيف" : "Recruitment", category: "workforce", fold: "workforce" },
+    { to: "/app/org", icon: Network, label: lang === "ar" ? "الهيكل التنظيمي" : "Org Structure", category: "workforce", fold: "workforce" },
+    { to: "/app/performance", icon: Trophy, label: lang === "ar" ? "الأداء" : "Performance", category: "workforce", fold: "workforce" },
+    { to: "/app/inventory", icon: Warehouse, label: lang === "ar" ? "المخزون والأصول" : "Inventory & Assets", category: "resources", fold: "resources" },
+    { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة HSE" : "Safety HSE", category: "resources", fold: "resources" },
+    { to: "/app/work-proof", icon: Camera, label: lang === "ar" ? "إثبات العمل" : "Work Proof", category: "resources", fold: "resources" },
+    { to: "/app/signing", icon: PenLine, label: lang === "ar" ? "التوقيع الرقمي" : "Digital Signing", category: "resources", fold: "resources" },
+    { to: "/app/complaints", icon: Megaphone, label: lang === "ar" ? "الشكاوى والبلاغات" : "Reports & Complaints", category: "resources", fold: "resources" },
+    { to: "/app/files", icon: FolderOpen, label: lang === "ar" ? "الملفات" : "Files", category: "resources", fold: "resources" },
+    { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "resources", fold: "resources" },
     { to: "/app/reports", icon: BarChart3, label: lang === "ar" ? "التقارير والتحليلات" : "Reports & Analytics", category: "admin", fold: "admin" },
     { to: "/app/assistant", icon: Sparkles, label: lang === "ar" ? "المساعد الذكي" : "AI Assistant", category: "admin", fold: "admin" },
-    { to: "/app/files", icon: FolderOpen, label: lang === "ar" ? "الملفات" : "Files", category: "admin", fold: "admin" },
+    { to: "/app/expenses", icon: ReceiptText, label: lang === "ar" ? "المصروفات" : "Expenses", category: "admin", fold: "admin" },
     { to: "/app/settings", icon: Settings2, label: lang === "ar" ? "إعدادات الشركة" : "Company Settings", category: "admin", fold: "admin" },
   ];
 
   const navGroupLabels = {
     daily: lang === "ar" ? "يومي" : "Daily",
     workforce: lang === "ar" ? "القوى العاملة" : "Workforce",
-    compliance: lang === "ar" ? "الالتزام والإثبات" : "Compliance & Evidence",
-    money: lang === "ar" ? "المال والأصول" : "Money & Assets",
-    admin: lang === "ar" ? "الإدارة" : "Admin",
+    resources: lang === "ar" ? "الموارد والامتثال" : "Resources & compliance",
+    admin: lang === "ar" ? "الإدارة" : "Administration",
   };
-  const categoryOrder = ["daily", "workforce", "compliance", "money", "admin"];
-  const foldableCategories = new Set(["money", "admin"]);
+  const categoryOrder = ["daily", "workforce", "resources", "admin"];
+  const foldableCategories = new Set(["workforce", "resources", "admin"]);
 
   const allowedNav = allowedNavFor(currentUser, data, company);
   const visibleNavItems = navItems.filter((i) => allowedNav.has(i.to));
