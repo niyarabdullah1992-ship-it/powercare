@@ -2,6 +2,19 @@
 
 export const LEAVE_THRESHOLD_DAYS = 5;
 
+export const LEAVE_TYPES = [
+  { key: "annual", total: 21, article: "109", ar: "سنوية", en: "Annual" },
+  { key: "sick", total: 30, article: "117", ar: "مرضية", en: "Sick", requiresFile: true },
+  { key: "maternity", total: 70, article: "151", ar: "وضع", en: "Maternity", f: true },
+  { key: "paternity", total: 3, article: "113", ar: "مولود", en: "Paternity", m: true },
+  { key: "marriage", total: 3, article: "113", ar: "زواج", en: "Marriage" },
+  { key: "bereavement", total: 5, article: "113", ar: "وفاة", en: "Bereavement" },
+  { key: "hajj", total: 10, article: "114", ar: "حج", en: "Hajj" },
+  { key: "exam", total: null, article: "115", ar: "امتحان", en: "Exam", requiresFile: true },
+  { key: "emergency", total: 5, article: null, ar: "اضطرارية", en: "Emergency" },
+  { key: "unpaid", total: null, article: null, ar: "بدون راتب", en: "Unpaid" },
+];
+
 export function computeLeaveDays(startDate, endDate) {
   if (!startDate || !endDate) return 0;
   const a = new Date(`${String(startDate).slice(0, 10)}T00:00:00`);
@@ -12,23 +25,37 @@ export function computeLeaveDays(startDate, endDate) {
 
 export function leaveNeedsAttachment(request, typeRequiresFile = false) {
   const days = Number(request?.days) || computeLeaveDays(request?.startDate, request?.endDate);
-  if (typeRequiresFile) return true;
+  const type = LEAVE_TYPES.find((t) => t.key === request?.type);
+  if (typeRequiresFile || type?.requiresFile) return true;
   return days > LEAVE_THRESHOLD_DAYS;
 }
 
 export function checkApproveLeaveGate(request, typeRequiresFile = false) {
   if (!request) {
-    return { ok: false, error: "LEAVE_NOT_FOUND", reason: "طلب الإجازة غير موجود." };
+    return {
+      ok: false,
+      error: "LEAVE_NOT_FOUND",
+      reason: "طلب الإجازة غير موجود في نطاق الشركة.",
+      reasonEn: "Leave request was not found in this company.",
+    };
   }
   if (request.status && request.status !== "pending") {
-    return { ok: false, error: "LEAVE_NOT_PENDING", reason: "لا يمكن اعتماد طلب غير معلّق." };
+    return {
+      ok: false,
+      error: "LEAVE_NOT_PENDING",
+      reason: "لا يمكن اعتماد طلب غير معلّق.",
+      reasonEn: "Only pending leave requests can be approved.",
+    };
   }
   const hasFile = Array.isArray(request.files) && request.files.length > 0;
   if (leaveNeedsAttachment(request, typeRequiresFile) && !hasFile) {
     return {
       ok: false,
       error: "ATTACHMENT_REQUIRED",
-      reason: "لا يمكن الاعتماد — يلزم مستند لطلب يتجاوز 5 أيام.",
+      reason: "لا يمكن الاعتماد — يلزم مستند لطلب يتجاوز 5 أيام (أو لنوع يتطلب مرفقًا).",
+      reasonEn: "Approval blocked — a document is required for a request over 5 days (or a type that requires an attachment).",
+      days: Number(request.days) || computeLeaveDays(request.startDate, request.endDate),
+      threshold: LEAVE_THRESHOLD_DAYS,
     };
   }
   return { ok: true, days: Number(request.days) || computeLeaveDays(request.startDate, request.endDate) };

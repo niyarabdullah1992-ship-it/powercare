@@ -19,6 +19,7 @@ export const base44 = createClient({
 const SESSION_SECURED_FUNCTIONS = new Set([
   'supabaseAttendance',
   'attendance',
+  'compliance',
   'supabaseTargets',
   'operations',
   'workforce',

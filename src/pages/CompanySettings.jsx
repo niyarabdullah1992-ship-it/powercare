@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import PageHeader from "@/components/PageHeader";
 import OrgTypeSettings from "@/components/hr/OrgTypeSettings";
 import CompanySettingsBoard from "@/components/hr/CompanySettingsBoard";
+import ComplianceMhrsdBoard from "@/components/hr/ComplianceMhrsdBoard";
 
 /** One-job surface: company record, geofence, permission matrix (Platform `settings`). */
 export default function CompanySettings() {
@@ -24,6 +25,7 @@ export default function CompanySettings() {
         icon={Settings2}
       />
       <OrgTypeSettings lang={lang} />
+      <ComplianceMhrsdBoard />
       <CompanySettingsBoard lang={lang} />
     </div>
   );

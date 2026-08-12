@@ -37,7 +37,25 @@
 | `attendance` API + `AttendanceHandoffBoard` على تبويب الفريق | **مكتمل** |
 | اختبارات `scripts/test-attendance-derivations.mjs` | **مكتمل** |
 
-**التالي:** ورديات/إجازة إن بقيت فجوات، ثم حزمة امتثال MHRSD.
+### ورديات / إجازة (workforce follow)
+
+| بند | حالة |
+| --- | --- |
+| بوابات النشر الأربع على الخادم + `RotaPublishPanel` بسبب مسمّى | **مكتمل** (سابقًا) |
+| بوابة اعتماد الإجازة (>5 أيام / نوع بمستند) بنص السبب في الواجهة | **مكتمل** |
+| مواد نظام العمل ظاهرة بجانب نوع الإجازة | **مكتمل** |
+
+### حزمة امتثال MHRSD
+
+| بند | حالة |
+| --- | --- |
+| ملف نظامي + بوابة انتهاء ≤60 يوم باسم الوثيقة | **مكتمل** (`complianceDerivations`) |
+| نِطاقات مشتق + بوابة أثر التوظيف | **مكتمل** |
+| GOSI شهري + رقم منشأة + إرسال محاكى | **مكتمل** (`compliance` function) |
+| WPS/مدى جاهز (هوية · IBAN · تطابق قوى) | **مكتمل** |
+| ربط حيّ Qiwa/GOSI/مدى/نفاذ | **مؤجّل** — انظر `design/GOV_INTEGRATIONS.md` |
+
+**التالي:** نشر Base44 + اعتمادات الربط الحيّ عند توفرها.
 
 **حالة التنفيذ الأشمل (فرع `handoff/server-first-ops`):** مكتمل تاريخيًا —
 `operations` · حضور · `workforce` · `scores` · `workproof` · `dailyReport` · `hiring` · `org` · `payroll` · `signing` · `stock` · `budget` · `offboarding` · `complaints` · `files` · `settings` · `reports` · `assistant` · **`chat`**

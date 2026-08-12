@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { formatDate } from "@/lib/dateFormat";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
-import { deriveLeaveStats, leaveNeedsAttachment } from "@/lib/leaveDerivations";
+import { checkApproveLeaveGate, deriveLeaveStats, LEAVE_TYPES } from "@/lib/leaveDerivations";
 
 const statusStyle = {
   approved: "bg-emerald-100 text-emerald-700 border-emerald-300",
@@ -47,20 +47,26 @@ export default function AttendanceLeaveRequests({ employees, stations, t, lang }
                 {[t("employeeName"), t("station"), t("leaveType"), t("startDate"), t("endDate"), t("days"), t("status")].map((label) => <th key={label} className="px-2 py-2 text-start text-xs">{label}</th>)}
               </tr></thead>
               <tbody>{requests.map((request) => {
-                const blocked = request.status === "pending" && leaveNeedsAttachment(request) && !(request.files || []).length;
+                const typeMeta = (LEAVE_TYPES || []).find((x) => x.key === request.type);
+                const gate = request.status === "pending" ? checkApproveLeaveGate(request) : { ok: true };
                 return (
                   <tr key={`${request.employee.id}-${request.id}`} className="border-b border-border/60 last:border-0">
                     <td data-label={t("employeeName")} className="px-2 py-2.5 font-medium"><EmployeeNameLink employeeId={request.employee.id} employeeName={request.employee.name} /></td>
                     <td data-label={t("station")} className="px-2 py-2.5 text-muted-foreground">{stationName(request.employee.stationId)}</td>
-                    <td data-label={t("leaveType")} className="px-2 py-2.5 text-muted-foreground">{t(request.type)}</td>
+                    <td data-label={t("leaveType")} className="px-2 py-2.5 text-muted-foreground">
+                      {ar ? (typeMeta?.ar || t(request.type)) : (typeMeta?.en || t(request.type))}
+                      {typeMeta?.article ? (
+                        <span className="ms-1 text-[10px] text-[#5A6B85]">· {ar ? "م" : "Art."} {typeMeta.article}</span>
+                      ) : null}
+                    </td>
                     <td data-label={t("startDate")} className="px-2 py-2.5 text-muted-foreground">{formatDate(request.startDate, lang)}</td>
                     <td data-label={t("endDate")} className="px-2 py-2.5 text-muted-foreground">{formatDate(request.endDate, lang)}</td>
                     <td data-label={t("days")} className="px-2 py-2.5 text-muted-foreground">{request.days}</td>
                     <td data-label={t("status")} className="px-2 py-2.5">
                       <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] ${statusStyle[request.status] || statusStyle.pending}`}>{t(request.status)}</span>
-                      {blocked && (
+                      {!gate.ok && (
                         <span className="ms-2 text-[10px] text-destructive">
-                          {ar ? "موقوف — يلزم مستند" : "Blocked — document required"}
+                          {ar ? (gate.reason || gate.error) : (gate.reasonEn || gate.reason || gate.error)}
                         </span>
                       )}
                     </td>
