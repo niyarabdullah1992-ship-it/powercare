@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
 import { Megaphone, Loader2, CheckCircle2 } from "lucide-react";
@@ -31,11 +31,11 @@ export default function NewsBroadcast() {
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-xl">
-      <h3 className="font-heading text-lg font-semibold mb-1 flex items-center gap-2 text-[#3a2f22]">
-        <Megaphone className="w-4 h-4 text-landing-gold" />
+      <h3 className="font-heading text-lg font-semibold mb-1 flex items-center gap-2 text-[#14284B]">
+        <Megaphone className="w-4 h-4 text-[#1E9E63]" />
         {lang === "ar" ? "إرسال أخبار الموقع للمشتركين" : "Email Site News to Subscribers"}
       </h3>
-      <p className="text-xs text-[#3a2f22]/50 font-body mb-4">
+      <p className="text-xs text-[#14284B]/50 font-body mb-4">
         {lang === "ar"
           ? "تُرسل الرسالة إلى البريد الإلكتروني المسجل لكل شركة مشتركة."
           : "The message is sent to the registered email of every subscribed company."}
@@ -46,7 +46,7 @@ export default function NewsBroadcast() {
           onChange={(e) => setSubject(e.target.value)}
           placeholder={lang === "ar" ? "عنوان الرسالة" : "Subject"}
           required
-          className="w-full px-3 py-2 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
+          className="w-full px-3 py-2 rounded-lg bg-[#F7F8FA] text-[#14284B] text-sm font-body focus:outline-none focus:ring-2 focus:ring-[#14284B]"
         />
         <textarea
           value={message}
@@ -54,12 +54,12 @@ export default function NewsBroadcast() {
           placeholder={lang === "ar" ? "نص الخبر..." : "News content..."}
           required
           rows={4}
-          className="w-full px-3 py-2 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold resize-none"
+          className="w-full px-3 py-2 rounded-lg bg-[#F7F8FA] text-[#14284B] text-sm font-body focus:outline-none focus:ring-2 focus:ring-[#14284B] resize-none"
         />
         <button
           type="submit"
           disabled={status === "sending"}
-          className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+          className="w-full py-2.5 rounded-lg bg-gradient-to-b from-[#1E9E63] to-[#15803D] text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {status === "sending" && <Loader2 className="w-4 h-4 animate-spin" />}
           {lang === "ar" ? "إرسال للجميع" : "Send to all subscribers"}

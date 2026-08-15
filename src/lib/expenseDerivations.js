@@ -112,7 +112,7 @@ export function checkSubmitClaimGate(input) {
     return {
       ok: false,
       error: "STATION_REQUIRED",
-      reason: "المحطة مطلوبة.",
+      reason: "الفرع مطلوبة.",
       reasonEn: "Station is required.",
     };
   }
@@ -164,7 +164,7 @@ export function checkApproveClaimGate(claim, budget, claims = []) {
     return {
       ok: false,
       error: "BUDGET_MISSING",
-      reason: "لا ميزانية لهذه المحطة.",
+      reason: "لا ميزانية لهذا الفرع.",
       reasonEn: "No budget configured for this station.",
     };
   }
@@ -175,7 +175,7 @@ export function checkApproveClaimGate(claim, budget, claims = []) {
     return {
       ok: false,
       error: "BUDGET_EXCEEDED",
-      reason: `تجاوز ميزانية المحطة — المتبقي ${Math.max(0, limit - spent)}.`,
+      reason: `تجاوز ميزانية الفرع — المتبقي ${Math.max(0, limit - spent)}.`,
       reasonEn: `Station budget exceeded — remaining ${Math.max(0, limit - spent)}.`,
     };
   }

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { base44 } from "@/api/base44Client";
 import { visibleStations } from "@/lib/permissions";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { isActiveAttendance } from "@/lib/attendance";
-import { isOnLeaveToday } from "@/lib/leaveTypes";
-import { isScheduledToday } from "@/lib/attendance";
+import { deriveTeamAttendanceToday } from "@/lib/attendance";
+import { listLocalTodayAttendance, mergeAttendanceRows } from "@/lib/localAttendanceFallback";
+import { leaveTypeLabel } from "@/lib/leaveTypes";
 import { stationIdForTreeEmployee } from "@/lib/orgTree";
 import { formatDate } from "@/lib/dateFormat";
 import QuickCheckInCard from "@/components/attendance/QuickCheckInCard";
@@ -24,27 +23,57 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
   const stationIds = new Set(stations.map((s) => s.id));
 
   const defaultStationId = data.stations?.[0]?.id || null;
-  const team = data.employees.filter((employee) =>
+  const team = (data.employees || []).filter((employee) =>
     stationIds.has(stationIdForTreeEmployee(data, employee.id) || employee.stationId || defaultStationId),
   );
-  const tasks = data.tasks.filter((tk) => stationIds.has(tk.stationId));
-  const reports = data.reports.filter((r) => stationIds.has(r.stationId));
-  const pendingReports = reports.filter((r) => r.status === "pending");
+  const tasks = (data.tasks || []).filter((tk) => stationIds.has(tk.stationId));
+  const dayKey = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+  const reports = (data.reports || []).filter((r) =>
+    stationIds.has(r.stationId)
+    && (r.kind === "daily" || r.type === "daily" || !r.kind)
+    && (!r.dateKey || r.dateKey === dayKey),
+  );
+  const pendingReports = reports.filter((r) => !r.approved);
+  const unfiledDaily = stations.filter((st) => {
+    const r = reports.find((x) => String(x.stationId) === String(st.id));
+    return !r?.filedAt;
+  }).length;
   const completed = tasks.filter((tk) => tk.status === "completed").length;
 
   useEffect(() => {
-    if (!team.length) return;
-    base44.functions
-      .invoke("supabaseAttendance", { action: "listDaily", employeeIds: team.map((e) => e.id) })
-      .then((res) => setAttendanceRows(res?.data?.rows || []))
-      .catch(() => setAttendanceRows([]));
-  }, [team.map((e) => e.id).join(",")]);
+    const apply = (cloudRows) => {
+      setAttendanceRows(mergeAttendanceRows(cloudRows || [], listLocalTodayAttendance(company?.id, data)));
+    };
+    if (!team.length) {
+      apply([]);
+      return undefined;
+    }
+    const load = () => {
+      base44.functions
+        .invoke("supabaseAttendance", { action: "listDaily", employeeIds: team.map((e) => e.id) })
+        .then((res) => apply(res?.data?.rows || []))
+        .catch(() => apply([]));
+    };
+    load();
+    window.addEventListener("attendance-updated", load);
+    return () => window.removeEventListener("attendance-updated", load);
+  }, [team.map((e) => e.id).join(","), company?.id, data?.personalAttendance?.length]);
 
-  const scheduled = team.filter((employee) => isScheduledToday(employee, data) && !isOnLeaveToday(employee));
-  const scheduledIds = new Set(scheduled.map((e) => e.id));
-  const checkedInCount = attendanceRows.filter((row) => isActiveAttendance(row) && scheduledIds.has(row.employee_id)).length;
-  const attendanceRate = scheduled.length ? Math.round((checkedInCount / scheduled.length) * 100) : 0;
-  const absentCount = Math.max(0, scheduled.length - checkedInCount);
+  const mergedAttendanceRows = mergeAttendanceRows(
+    attendanceRows,
+    listLocalTodayAttendance(company?.id, data),
+  );
+  const todayAtt = deriveTeamAttendanceToday(team, mergedAttendanceRows, data);
+  const attendanceRate = todayAtt.rate;
+  const absentCount = todayAtt.absent;
+  const presentIds = new Set(
+    mergedAttendanceRows
+      .filter((row) => row.check_in_at || row.checkInAt)
+      .map((row) => String(row.employee_id ?? row.employeeId)),
+  );
 
   const safetyRecs = (data.safety || []).filter((s) => stationIds.has(s.stationId));
   const openHazards = safetyRecs.reduce((sum, s) => sum + (s.hazards?.length || 0), 0);
@@ -65,7 +94,7 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
       .map((request) => ({
         id: `${employee.id}-${request.id || request.createdAt || request.startDate}`,
         name: employee.name,
-        type: ar ? (request.typeAr || request.type || "إجازة") : (request.type || "Leave"),
+        type: leaveTypeLabel(request.typeAr || request.type, ar),
         date: formatDate(request.createdAt || request.startDate || new Date(), lang, { day: "numeric", month: "short" }),
         status: ar
           ? (request.awaiting === "finance" ? "بانتظار المالية" : request.awaiting === "hr" ? "بانتظار HR" : "بانتظار المدير")
@@ -87,7 +116,7 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
   );
   const readinessScore = Math.max(0, Math.min(100, 100 - riskScore));
   const readinessFactors = [
-    { label: ar ? "حضور" : "Attendance", pct: attendanceRate },
+    { label: ar ? "حضور اليوم" : "Today's attendance", pct: attendanceRate },
     { label: ar ? "مهام" : "Tasks", pct: tasks.length ? Math.round((completed / tasks.length) * 100) : 100 },
     { label: ar ? "سلامة" : "Safety", pct: Math.max(0, 100 - openHazards * 12 - criticalStations * 20) },
     { label: ar ? "اعتمادات" : "Approvals", pct: Math.max(0, 100 - (pendingLeaveCount + pendingReports.length) * 8) },
@@ -96,7 +125,8 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
   const handoffAlerts = [
     ...(delayedTasks ? [{ text: ar ? `${delayedTasks} مهمة تقترب من موعدها أو متأخرة.` : `${delayedTasks} tasks due soon or overdue.`, to: "/app/tasks" }] : []),
     ...(absentCount ? [{ text: ar ? `${absentCount} من المجدولين لم يسجّلوا حضورًا بعد.` : `${absentCount} scheduled staff not checked in yet.`, to: "/app/attendance" }] : []),
-    ...(pendingReports.length ? [{ text: ar ? `${pendingReports.length} تقرير يومي بانتظار الاعتماد.` : `${pendingReports.length} daily reports awaiting approval.`, to: "/app/daily-report" }] : []),
+    ...(unfiledDaily ? [{ text: ar ? `${unfiledDaily} فرع بلا رفع يومي — الوردية لا تُغلق.` : `${unfiledDaily} station(s) without a daily filing — shift cannot close.`, to: "/app/daily-report" }] : []),
+    ...(pendingReports.length && !unfiledDaily ? [{ text: ar ? `${pendingReports.length} تقرير يومي بانتظار اعتماد العمليات.` : `${pendingReports.length} daily report(s) awaiting ops approval.`, to: "/app/daily-report" }] : []),
     ...(openHazards ? [{ text: ar ? `${openHazards} مخاطر سلامة بانتظار الإغلاق.` : `${openHazards} open safety hazards awaiting closure.`, to: "/app/safety" }] : []),
     ...(stoppageCount ? [{ text: ar ? `${stoppageCount} عوائق تشغيل معلّمة على المهام.` : `${stoppageCount} stoppage issues flagged on tasks.`, to: "/app/tasks" }] : []),
   ].slice(0, 4);
@@ -108,47 +138,30 @@ export default function StationManagerDashboard({ user, data, stoppageCount = 0 
   }).length;
 
   return (
-    <div className="space-y-4">
-      <QuickCheckInCard currentUser={user} company={company} />
-
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="m-0 text-[11px] font-semibold tracking-[0.12em] text-[#0E7A4B]">
-            {ar ? "محطتي" : "MY STATION"}
-          </p>
-          <h1 className="m-0 mt-1 font-heading text-2xl font-semibold text-[#14284B]">
-            {stations.length === 1 ? stations[0].name : (ar ? "قيادة المحطة" : "Station command")}
-          </h1>
-          <p className="m-0 mt-1 text-[13px] text-[#667085]">
-            {ar
-              ? `${stations.length} محطة في نطاقك · قرارات اليوم قبل إغلاق الورديات`
-              : `${stations.length} stations in scope · today's decisions before shift close`}
-          </p>
-        </div>
-        <Link
-          to="/app/attendance"
-          className="rounded-lg border border-[#E4E7EC] bg-white px-3.5 py-2 text-[12.5px] font-medium text-[#344054] hover:border-[#0E7A4B] hover:text-[#0E7A4B]"
-        >
-          {ar ? "كشف الحضور" : "Attendance roster"}
-        </Link>
-      </div>
-
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <HandoffCommandBoard
         lang={lang}
         readinessScore={readinessScore}
         factors={readinessFactors}
-        employeesCount={team.length}
+        employeesCount={todayAtt.scheduled}
         employeesDelta={monthHired || null}
         attendanceRate={attendanceRate}
         pendingLeave={pendingLeaveCount}
         pendingReports={pendingReports.length}
         leaveQueue={handoffQueue}
         alerts={handoffAlerts}
+        stations={stations.map((s) => {
+          const crew = team.filter((e) => (stationIdForTreeEmployee(data, e.id) || e.stationId) === s.id && presentIds.has(String(e.id))).length;
+          const open = tasks.filter((tk) => tk.stationId === s.id && tk.status !== "completed").length
+            + (safetyRecs.find((r) => r.stationId === s.id)?.hazards?.length || 0);
+          return { id: s.id, name: s.name, code: s.code || s.shortCode || "", crew, open, to: "/app/attendance" };
+        })}
         stationsCount={stations.length}
         openHazards={openHazards}
         payrollCount={team.length}
         avgApprovalHours={pendingLeaveCount + pendingReports.length > 0 ? 4 : null}
       />
+      <QuickCheckInCard currentUser={user} company={company} />
     </div>
   );
 }

@@ -65,26 +65,8 @@ module.exports = {
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
   			},
-  			'landing-bg': 'hsl(var(--landing-bg))',
   			'landing-olive': 'hsl(var(--landing-olive))',
-  			'landing-olive-card': 'hsl(var(--landing-olive-card))',
-  			'landing-gold': 'hsl(var(--landing-gold))',
-  			'landing-gold-light': 'hsl(var(--landing-gold-light))',
-  			'landing-gold-deep': 'hsl(var(--landing-gold-deep))',
-  			'landing-cinema': 'hsl(var(--landing-cinema))',
-  			'executive-teal': 'hsl(var(--executive-teal))',
-  			'executive-panel': 'hsl(var(--executive-panel))',
-  			'executive-ink': 'hsl(var(--executive-ink))',
-  			'executive-line': 'hsl(var(--executive-line))',
-  			'video-brown': 'hsl(var(--video-brown))',
-  			'video-brown-deep': 'hsl(var(--video-brown-deep))',
-  			'video-cream': 'hsl(var(--video-cream))',
-  			'video-gold': 'hsl(var(--video-gold))',
-  			'sign-bg': 'hsl(var(--sign-bg))',
-  			'sign-surface': 'hsl(var(--sign-surface))',
-  			'sign-ink': 'hsl(var(--sign-ink))',
-  			'sign-gold': 'hsl(var(--sign-gold))',
-  			'holo-green': 'hsl(var(--holo-green))'
+  			'landing-cinema': 'hsl(var(--landing-cinema))'
   		},
   		fontFamily: {
   			heading: ['var(--font-heading)'],

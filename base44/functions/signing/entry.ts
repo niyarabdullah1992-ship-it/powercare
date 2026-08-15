@@ -4,6 +4,7 @@ import {
   checkRaiseGate,
   checkSendSignedGate,
   checkSignGate,
+  checkSignIntentGate,
   checkVerifySealGate,
   deriveSigningStats,
   enrichSigningDoc,
@@ -121,12 +122,15 @@ Deno.serve(async (req) => {
         id: uid("sig"),
         docKey: String(body.docKey || `${gate.source}:${sourceRef}`),
         title: String(body.title).trim(),
+        purpose: String(body.purpose || "").trim() || null,
         source: gate.source,
         sourceRef,
         contentHash: String(body.contentHash || sourceRef),
         signers,
         sentAt: null,
         createdAt: new Date().toISOString(),
+        raisedByName: auth.name,
+        raisedByRole: auth.role,
       };
       docs.unshift(doc);
       await saveDocs(docs);
@@ -142,6 +146,10 @@ Deno.serve(async (req) => {
         return Response.json({ error: "DOC_NOT_FOUND", reason: "مستند التوقيع غير موجود." }, { status: 404 });
       }
       const doc = docs[idx];
+      const intentGate = checkSignIntentGate(body.intent);
+      if (!intentGate.ok) {
+        return Response.json({ error: intentGate.error, reason: intentGate.reason, reasonEn: intentGate.reasonEn }, { status: 400 });
+      }
       const gate = checkSignGate(doc, {
         sid: body.sid || null,
         userId: body.userId || auth.userId,
@@ -167,6 +175,9 @@ Deno.serve(async (req) => {
         fingerprint,
         name: auth.name || signer.name,
         userId: signer.userId || auth.userId,
+        signerTitle: String(body.signerTitle || auth.role || "").trim() || null,
+        signerCompany: String(body.signerCompany || "").trim() || null,
+        intentAt: signedAt,
       };
       docs[idx] = { ...doc, signers };
       await saveDocs(docs);

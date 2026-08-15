@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
 import { authPowerCareSession } from '../../shared/powerCareSession.ts';
 import { fetchWithRetry } from '../../shared/fetchRetry.ts';
-import { POWERCARE_LOGO_URL } from '../../shared/brand.ts';
+import { POWERCARE_MARK_URL } from '../../shared/brand.ts';
 
 function toBase64Url(str) {
   const bytes = new TextEncoder().encode(str);
@@ -73,7 +73,7 @@ function signatureRequestEmail({ ar, signerName, creatorName, fileName, link, si
                 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                   <tr>
                     <td style="vertical-align:middle;text-align:${align};">
-                      <img src="${POWERCARE_LOGO_URL}" width="74" height="74" alt="PowerCare" style="display:inline-block;object-fit:contain;vertical-align:middle;" />
+                      <img src="${POWERCARE_MARK_URL}" width="74" height="74" alt="NiroVera" style="display:inline-block;object-fit:contain;vertical-align:middle;" />
                     </td>
                   </tr>
                 </table>

@@ -22,15 +22,54 @@ function requireCompanyId(companyId: unknown) {
   return id;
 }
 
+type ColorThemePref = {
+  id: string;
+  navy: string;
+  accent: string;
+};
+
+type ReportBrandingPref = {
+  logoUrl: string;
+  color: string;
+};
+
 type SettingsPayload = {
   record: CompanyRecord;
   geofenceVerificationRequired: boolean;
+  colorTheme?: ColorThemePref | null;
+  reportBranding?: ReportBrandingPref | null;
 };
+
+const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
+
+function normalizeColorTheme(raw: unknown): ColorThemePref | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as { id?: unknown; navy?: unknown; accent?: unknown };
+  const navy = String(row.navy || "").trim();
+  const accent = String(row.accent || "").trim();
+  if (!HEX_COLOR.test(navy) || !HEX_COLOR.test(accent)) return null;
+  const id = String(row.id || "custom").trim().slice(0, 32) || "custom";
+  return { id, navy: navy.toUpperCase(), accent: accent.toUpperCase() };
+}
+
+function normalizeReportBranding(raw: unknown): ReportBrandingPref | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as { logoUrl?: unknown; color?: unknown };
+  const logoUrl = String(row.logoUrl || "").trim();
+  const color = String(row.color || "").trim();
+  if (!logoUrl && !HEX_COLOR.test(color)) return null;
+  return {
+    logoUrl: logoUrl.slice(0, 800_000),
+    color: HEX_COLOR.test(color) ? color.toUpperCase() : "#14284B",
+  };
+}
 
 function emptyPayload(): SettingsPayload {
   return {
     record: normalizeCompanyRecord(null),
     geofenceVerificationRequired: true,
+    colorTheme: null,
+    reportBranding: null,
   };
 }
 
@@ -78,6 +117,8 @@ Deno.serve(async (req) => {
       if (typeof raw.geofenceVerificationRequired === "boolean") {
         base.geofenceVerificationRequired = raw.geofenceVerificationRequired;
       }
+      base.colorTheme = normalizeColorTheme(raw.colorTheme);
+      base.reportBranding = normalizeReportBranding(raw.reportBranding);
       return base;
     };
 
@@ -143,7 +184,8 @@ Deno.serve(async (req) => {
         verification,
         geofenceVerificationRequired: verification.geofenceVerificationRequired,
         rateLimits,
-        geoTitleAr: "النطاق الجغرافي للمحطات",
+        colorTheme: settings.colorTheme || null,
+        geoTitleAr: "النطاق الجغرافي للفروع",
         geoTitleEn: "Station geofences",
         geoSubAr: "تسجيل الحضور وإثبات العمل يُقبلان داخل هذا النطاق فقط.",
         geoSubEn: "Check-in and work proof are accepted inside this radius only.",
@@ -247,7 +289,7 @@ Deno.serve(async (req) => {
       if (!stationId) {
         return Response.json({
           error: "STATION_REQUIRED",
-          reason: "معرّف المحطة مطلوب.",
+          reason: "معرّف الفرع مطلوب.",
           reasonEn: "Station id is required.",
         }, { status: 400 });
       }
@@ -270,7 +312,7 @@ Deno.serve(async (req) => {
       if (!rows[0]) {
         return Response.json({
           error: "STATION_NOT_FOUND",
-          reason: "المحطة غير موجودة في نطاق الشركة.",
+          reason: "الفرع غير موجودة في نطاق الشركة.",
           reasonEn: "Station not found in this company.",
         }, { status: 404 });
       }
@@ -320,7 +362,7 @@ Deno.serve(async (req) => {
         if (!station) {
           return Response.json({
             error: "STATION_NOT_FOUND",
-            reason: "المحطة غير موجودة في نطاق الشركة.",
+            reason: "الفرع غير موجودة في نطاق الشركة.",
             reasonEn: "Station not found in this company.",
           }, { status: 404 });
         }
@@ -352,6 +394,68 @@ Deno.serve(async (req) => {
         distanceMeters: gate.distanceMeters ?? null,
         discardedCoords: true,
       });
+    }
+
+    if (action === "getColorTheme") {
+      const settings = await loadPayload();
+      return Response.json({ ok: true, colorTheme: settings.colorTheme || null });
+    }
+
+    if (action === "setColorTheme") {
+      const canTheme = auth.owner || auth.admin || ["owner", "director", "ops_manager"].includes(String(auth.role || ""));
+      if (!canTheme) {
+        return Response.json({
+          error: "FORBIDDEN",
+          reason: "تغيير ألوان المنصة لمالك الشركة أو المدير أو العمليات.",
+          reasonEn: "Platform colors can be changed by the owner, director, or operations.",
+        }, { status: 403 });
+      }
+      const next = normalizeColorTheme(body.colorTheme);
+      if (!next) {
+        return Response.json({
+          error: "INVALID_THEME",
+          reason: "اختر لوحة رسمية أو لونين بصيغة #RRGGBB.",
+          reasonEn: "Choose an official palette or two #RRGGBB colors.",
+        }, { status: 400 });
+      }
+      const settings = await loadPayload();
+      settings.colorTheme = next;
+      await savePayload(settings);
+      await audit("settings.setColorTheme", `Updated platform color theme to ${next.id}`, {
+        newValue: `${next.navy},${next.accent}`,
+      });
+      return Response.json({ ok: true, colorTheme: next });
+    }
+
+    if (action === "getReportBranding") {
+      const settings = await loadPayload();
+      return Response.json({ ok: true, reportBranding: settings.reportBranding || null });
+    }
+
+    if (action === "setReportBranding") {
+      const canBrand = auth.owner || auth.admin || ["owner", "director", "ops_manager"].includes(String(auth.role || ""));
+      if (!canBrand) {
+        return Response.json({
+          error: "FORBIDDEN",
+          reason: "شعار التقارير لمالك الشركة أو المدير أو العمليات.",
+          reasonEn: "Report branding can be changed by the owner, director, or operations.",
+        }, { status: 403 });
+      }
+      const next = normalizeReportBranding(body.reportBranding);
+      if (!next) {
+        return Response.json({
+          error: "INVALID_BRANDING",
+          reason: "ارفع شعارًا أو لونًا بصيغة #RRGGBB.",
+          reasonEn: "Upload a mark or a #RRGGBB color.",
+        }, { status: 400 });
+      }
+      const settings = await loadPayload();
+      settings.reportBranding = next;
+      await savePayload(settings);
+      await audit("settings.setReportBranding", "Updated report letterhead", {
+        newValue: next.color,
+      });
+      return Response.json({ ok: true, reportBranding: next });
     }
 
     return Response.json({ error: `Unknown action: ${action}` }, { status: 400 });

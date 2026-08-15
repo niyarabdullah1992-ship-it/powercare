@@ -3,7 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { ChevronDown, ChevronLeft, ChevronRight, Check, Globe, Mail, Phone, ShieldCheck } from "lucide-react";
 import Logo from "@/components/Logo";
 import SalesDeckStage from "@/components/landing/SalesDeckStage";
-import IpCertificateBadge from "@/components/landing/IpCertificateBadge";
+import LegalCertificatesStrip from "@/components/landing/LegalCertificatesStrip";
+import { CR_CERTIFICATE_URL } from "@/lib/crCertificate";
 import { SALES_DECK_SLIDES } from "@/lib/salesDeckContent";
 import { useI18n } from "@/lib/i18n";
 import { trackVisit } from "@/lib/trackVisit";
@@ -95,11 +96,11 @@ export default function SalesDeck() {
   const notes = ar ? slide.notesAr : slide.notesEn;
 
   return (
-    <div className="powercare-public min-h-screen bg-[#08142F] font-body text-[#101828]" dir={ar ? "rtl" : "ltr"}>
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B1A3F]/95 text-white backdrop-blur-xl">
+    <div className="powercare-public min-h-screen bg-[#0B1220] font-body text-[#101828]" dir={ar ? "rtl" : "ltr"}>
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B1220]/95 text-white backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-[1280px] items-center gap-3 px-4 sm:px-6 md:px-8">
           <Link to="/" className="flex shrink-0 items-center gap-2.5">
-            <Logo size={24} />
+            <Logo size={24} wordmark={false} />
             <span className="font-heading text-base font-semibold tracking-tight">NiroVera</span>
           </Link>
           <nav className="ms-2 hidden items-center gap-4 sm:flex">
@@ -158,7 +159,7 @@ export default function SalesDeck() {
             </div>
             <Link
               to="/"
-              className="rounded-lg bg-[#0E7A4B] px-3.5 py-2 text-[13px] text-white hover:bg-[#0B5F3A]"
+              className="rounded-lg bg-[#1E9E63] px-3.5 py-2 text-[13px] text-white hover:bg-[#178554]"
             >
               {ar ? "اطلب عرضًا" : "Request demo"}
             </Link>
@@ -167,7 +168,7 @@ export default function SalesDeck() {
       </header>
 
       <main className="mx-auto max-w-[1280px] px-0 md:px-6 md:pt-6 lg:px-8">
-        <div className="relative aspect-[16/10] min-h-[min(72vh,620px)] w-full md:min-h-[560px]">
+        <div className="relative aspect-[16/9] min-h-[min(78vh,720px)] w-full md:min-h-[600px]">
           <SalesDeckStage slides={SALES_DECK_SLIDES} index={index} ar={ar} />
 
           <button
@@ -175,7 +176,7 @@ export default function SalesDeck() {
             onClick={prev}
             disabled={index === 0}
             aria-label={ar ? "الشريحة السابقة" : "Previous slide"}
-            className="absolute start-2 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-white/20 bg-[#0B1A3F]/70 p-2.5 text-white backdrop-blur disabled:opacity-30 md:inline-flex"
+            className="absolute start-2 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-white/20 bg-[#14284B]/70 p-2.5 text-white backdrop-blur disabled:opacity-30 md:inline-flex"
           >
             {ar ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
           </button>
@@ -184,7 +185,7 @@ export default function SalesDeck() {
             onClick={next}
             disabled={index === total - 1}
             aria-label={ar ? "الشريحة التالية" : "Next slide"}
-            className="absolute end-2 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-white/20 bg-[#0B1A3F]/70 p-2.5 text-white backdrop-blur disabled:opacity-30 md:inline-flex"
+            className="absolute end-2 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-white/20 bg-[#14284B]/70 p-2.5 text-white backdrop-blur disabled:opacity-30 md:inline-flex"
           >
             {ar ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
           </button>
@@ -205,7 +206,7 @@ export default function SalesDeck() {
               type="button"
               onClick={next}
               disabled={index === total - 1}
-              className="inline-flex items-center gap-1 rounded-lg bg-[#0E7A4B] px-3 py-2 text-[13px] text-white disabled:opacity-35 md:hidden"
+              className="inline-flex items-center gap-1 rounded-lg bg-[#1E9E63] px-3 py-2 text-[13px] text-white disabled:opacity-35 md:hidden"
             >
               {ar ? "التالي" : "Next"}
               {ar ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -225,7 +226,7 @@ export default function SalesDeck() {
                 title={ar ? s.labelAr : s.labelEn}
                 onClick={() => goTo(i)}
                 className={`h-2 w-2 shrink-0 rounded-full transition-all ${
-                  i === index ? "w-6 bg-[#3FBF80]" : "bg-white/25 hover:bg-white/45"
+                  i === index ? "w-6 bg-[#1E9E63]" : "bg-white/25 hover:bg-white/45"
                 }`}
               />
             ))}
@@ -238,7 +239,7 @@ export default function SalesDeck() {
 
         {notes ? (
           <aside className="mb-8 border border-white/10 bg-white/[0.03] px-4 py-4 text-[13px] leading-relaxed text-[#A8B4C8] sm:px-5">
-            <p className="text-[10px] font-semibold tracking-[0.14em] text-[#3FBF80]">
+            <p className="text-[10px] font-semibold tracking-[0.14em] text-[#1E9E63]">
               {ar ? "ملاحظات المتحدث" : "SPEAKER NOTES"}
             </p>
             <p className="mt-2">{notes}</p>
@@ -246,13 +247,13 @@ export default function SalesDeck() {
         ) : null}
       </main>
 
-      <footer className="border-t border-white/10 bg-[#061028] px-6 py-8 md:px-8">
+      <footer className="border-t border-white/10 bg-[#0B1220] px-6 py-8 md:px-8">
         <div className="mx-auto grid max-w-[1200px] gap-7 md:grid-cols-3">
           <div>
             <h3 className="font-heading text-2xl text-white">NiroVera</h3>
             <p className="mt-3 text-sm leading-relaxed text-white/50">
               {ar
-                ? "عرض تعريفي للمستثمرين والمشترين — دورة إثبات واحدة للمحطات."
+                ? "عرض تعريفي للمستثمرين والمشترين — دورة إثبات واحدة للفروع."
                 : "Investor and buyer briefing — one proof cycle for stations."}
             </p>
           </div>
@@ -289,6 +290,11 @@ export default function SalesDeck() {
                   {ar ? "اطلب عرضًا" : "Request demo"}
                 </Link>
               </li>
+              <li>
+                <a href={CR_CERTIFICATE_URL} target="_blank" rel="noreferrer" className="hover:text-[#3FBF80]">
+                  {ar ? "السجل التجاري" : "Commercial registration"}
+                </a>
+              </li>
             </ul>
           </div>
           <div>
@@ -313,9 +319,7 @@ export default function SalesDeck() {
             </ul>
           </div>
         </div>
-        <div className="mx-auto max-w-[1200px]">
-          <IpCertificateBadge lang={lang} />
-        </div>
+        <LegalCertificatesStrip lang={lang} />
       </footer>
     </div>
   );

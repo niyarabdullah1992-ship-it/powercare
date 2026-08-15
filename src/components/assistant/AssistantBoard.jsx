@@ -6,7 +6,9 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { getCompanyToken } from "@/lib/store";
 import { allowedNavFor } from "@/lib/navVisibility";
 import { checkAskGate } from "@/lib/assistantDerivations";
+import { INK, ACCENT, BRAND, MUTED, NAVY, ui, SURFACE, CARD } from "@/lib/platformStyles";
 import { toast } from "@/components/ui/use-toast";
+import { ChromeBox } from "@/components/shared/IdentityCard";
 
 async function assistantApi(payload) {
   const res = await base44.functions.invoke("assistant", payload);
@@ -36,7 +38,6 @@ export default function AssistantBoard({ lang = "ar", onPickPrompt }) {
   const [prompts, setPrompts] = useState([]);
   const [busy, setBusy] = useState(false);
   const [gateHint, setGateHint] = useState(null);
-  const [empty, setEmpty] = useState(false);
 
   const actor = currentUser
     ? {
@@ -61,7 +62,6 @@ export default function AssistantBoard({ lang = "ar", onPickPrompt }) {
   const applyRemote = (remote) => {
     if (remote?.answer) setAnswer(remote.answer);
     if (Array.isArray(remote?.prompts)) setPrompts(remote.prompts);
-    setEmpty(!!remote?.empty);
   };
 
   const load = async (promptId) => {
@@ -114,94 +114,80 @@ export default function AssistantBoard({ lang = "ar", onPickPrompt }) {
   if (!company?.id) return null;
 
   return (
-    <div className="mb-4 space-y-3" dir={ar ? "rtl" : "ltr"}>
-      <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <span className="w-7 h-7 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center text-accent">
-            <Sparkles className="w-4 h-4" />
-          </span>
-          <span className="text-sm font-semibold font-heading">
-            {ar ? "سؤالك" : "Your question"}
-          </span>
-          {busy && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground ms-auto" />}
-        </div>
+    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 10 }} dir={ar ? "rtl" : "ltr"}>
+      {gateHint && (
+        <p style={{ margin: 0, fontSize: 12, color: "#DC2626", border: "1px solid #FECACA", background: "#FEF2F2", borderRadius: 9, padding: "10px 12px" }}>
+          {gateHint}
+        </p>
+      )}
 
-        {gateHint && (
-          <p className="text-xs text-destructive font-body border border-destructive/30 bg-destructive/5 rounded-lg px-3 py-2">
-            {gateHint}
-          </p>
-        )}
-
-        {empty && !answer && (
-          <p className="text-sm text-muted-foreground font-body">
-            {ar ? "لا بيانات مشتقة بعد في نطاق شركتك." : "No derived facts in your company scope yet."}
-          </p>
-        )}
-
-        {answer && (
-          <>
-            <p className="text-sm text-foreground font-body leading-relaxed">
-              {ar ? answer.questionAr : answer.questionEn}
-            </p>
-            <div className="h-px bg-border" />
-            <p className="text-sm text-foreground/85 font-body leading-relaxed">
-              {ar ? answer.answerAr : answer.answerEn}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+      {answer && (
+        <ChromeBox>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <Sparkles className="h-4 w-4" style={{ color: ACCENT }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: NAVY }}>{ar ? answer.questionAr : answer.questionEn}</span>
+            {busy && <Loader2 className="h-4 w-4 animate-spin" style={{ color: MUTED, marginInlineStart: "auto" }} />}
+          </div>
+          <div style={{ fontSize: 13, color: INK, lineHeight: 1.75 }}>
+            {ar ? answer.answerAr : answer.answerEn}
+          </div>
+          {(answer.evidence || []).length > 0 && (
+            <div className="nv-kpi-strip" style={{ marginTop: 12, border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden" }}>
               {(answer.evidence || []).map((e, i) => (
-                <div key={i} className="rounded-xl border border-border bg-muted/40 px-3 py-2.5">
-                  <div className="text-[10px] tracking-wide text-muted-foreground uppercase">
-                    {ar ? e.sourceAr : e.sourceEn}
-                  </div>
-                  <div className="text-lg font-semibold font-heading mt-1" dir="ltr" style={{ textAlign: ar ? "right" : "left" }}>
+                <div key={i} style={{ padding: "10px 14px", minWidth: 0, background: SURFACE }}>
+                  <div style={{ fontSize: 10, color: MUTED }}>{ar ? e.sourceAr : e.sourceEn}</div>
+                  <div dir="ltr" style={{ fontSize: 18, fontWeight: 600, fontFamily: "'IBM Plex Sans',sans-serif", marginTop: 4, color: NAVY }}>
                     {e.value}
                   </div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">
-                    {ar ? e.labelAr : e.labelEn}
-                  </div>
+                  <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{ar ? e.labelAr : e.labelEn}</div>
                 </div>
               ))}
             </div>
-            <div className="flex flex-wrap gap-2 pt-1">
-              {(answer.goOps || answer.goSafety) && (
-                <Link
-                  to={answer.goSafety || answer.goOps}
-                  className="inline-flex items-center px-3.5 py-2 rounded-lg bg-accent text-accent-foreground text-xs font-medium hover:opacity-90"
-                >
-                  {ar ? answer.primaryActionAr : answer.primaryActionEn}
-                </Link>
-              )}
-              <button
-                type="button"
-                className="inline-flex items-center px-3.5 py-2 rounded-lg border border-border bg-background text-muted-foreground text-xs font-medium hover:border-foreground/40"
-                onClick={() => toast({
-                  description: ar ? answer.secondaryActionAr : answer.secondaryActionEn,
-                })}
-              >
-                {ar ? answer.secondaryActionAr : answer.secondaryActionEn}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
+          )}
+          <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+            {(answer.goOps || answer.goSafety) && (
+              <Link to={answer.goSafety || answer.goOps} style={{ ...ui.btnPrimary, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+                {ar ? answer.primaryActionAr : answer.primaryActionEn}
+              </Link>
+            )}
+            <button
+              type="button"
+              style={{ ...ui.btnSecondary }}
+              onClick={() => toast({ description: ar ? answer.secondaryActionAr : answer.secondaryActionEn })}
+            >
+              {ar ? answer.secondaryActionAr : answer.secondaryActionEn}
+            </button>
+          </div>
+        </ChromeBox>
+      )}
 
-      <div className="flex flex-wrap gap-2">
-        {prompts.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            disabled={busy || p.allowed === false}
-            onClick={() => pickPrompt(p)}
-            title={p.allowed === false ? (ar ? "لا صلاحية" : "Not allowed") : undefined}
-            className={`px-3.5 py-2 rounded-full border text-xs font-body disabled:opacity-45 ${
-              answer?.promptId === p.id
-                ? "border-accent bg-accent/10 text-accent"
-                : "border-border bg-card text-muted-foreground hover:border-foreground/30"
-            }`}
-          >
-            {ar ? p.textAr : p.textEn}
-          </button>
-        ))}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {prompts.map((p) => {
+          const active = answer?.promptId === p.id;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              disabled={busy || p.allowed === false}
+              onClick={() => pickPrompt(p)}
+              title={p.allowed === false ? (ar ? "لا صلاحية" : "Not allowed") : undefined}
+              style={{
+                padding: "7px 12px",
+                borderRadius: 9,
+                border: active ? `1px solid ${BRAND}` : "1px solid #E2E8F0",
+                background: active ? "color-mix(in oklab, #1E9E63 10%, #fff)" : CARD,
+                color: active ? "#14683F" : NAVY,
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                opacity: busy || p.allowed === false ? 0.45 : 1,
+              }}
+            >
+              {ar ? p.textAr : p.textEn}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

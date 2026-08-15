@@ -1,6 +1,6 @@
 import { jsPDF } from 'npm:jspdf@4.2.1';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
-import { POWERCARE_LOGO_URL } from './brand.ts';
+import { POWERCARE_MARK_URL } from './brand.ts';
 
 const toBase64Url = (value) => {
   const bytes = new TextEncoder().encode(value);
@@ -32,7 +32,7 @@ const createInvoicePdf = async (invoice) => {
   doc.circle(18, 278, 48, 'F');
 
   try {
-    const logoResponse = await fetch(POWERCARE_LOGO_URL);
+    const logoResponse = await fetch(POWERCARE_MARK_URL);
     if (logoResponse.ok) doc.addImage(new Uint8Array(await logoResponse.arrayBuffer()), 'PNG', 18, 15, 22, 22);
   } catch (error) {
     console.error('Invoice logo load failed:', error.message);

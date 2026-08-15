@@ -8,6 +8,7 @@ import {
   checkWorkspaceSearchGate,
   derivePublicWorkspaceCard,
 } from '../../shared/workspaceDerivations.ts';
+import { POWERCARE_MARK_URL } from '../../shared/brand.ts';
 
 // System emails (OTP codes, welcome messages) go out through the app's connected
 // Gmail account, because the built-in email service refuses recipients who are
@@ -19,8 +20,7 @@ function toBase64Url(str) {
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// Branded HTML email template — uses the same logo asset as the PowerCare website.
-const EMAIL_LOGO = 'https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/1914d20bd_.png';
+// Branded HTML email template — local N mark, same asset as other NiroVera mailers.
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 function emailHtml({ title, lines = [], code = null, footerNote = '' }) {
   const paragraphs = lines.map((line) => `<p style="margin:0 auto 22px;max-width:520px;font-size:20px;line-height:1.55;color:#17202b;text-align:center;" dir="auto">${escapeHtml(line)}</p>`).join('');
@@ -32,7 +32,7 @@ function emailHtml({ title, lines = [], code = null, footerNote = '' }) {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:650px;background:#ffffff;border:1px solid #d8d8d4;border-radius:8px;overflow:hidden;box-shadow:0 10px 28px rgba(24,42,60,.08);">
       <tr><td align="center" style="background:#183957;padding:29px 20px;">
         <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-          <td style="padding-right:12px;"><img src="${EMAIL_LOGO}" width="42" height="42" alt="PowerCare" style="display:block;width:42px;height:42px;object-fit:contain;border:0;" /></td>
+          <td style="padding-right:12px;"><img src="${POWERCARE_MARK_URL}" width="42" height="42" alt="NiroVera" style="display:block;width:42px;height:42px;object-fit:contain;border:0;" /></td>
           <td style="font-size:29px;line-height:42px;font-weight:600;color:#ffffff;letter-spacing:-.5px;">PowerCare</td>
         </tr></table>
       </td></tr>
@@ -950,13 +950,18 @@ Deno.serve(async (req) => {
       const actorRole = context.actor?.role;
       const privilege = await getActorPrivilege();
       let allowed = false;
-      if (['companyMeta', 'files', 'orgTree', 'smartPositions', 'complaintEscalationChain', 'cameras'].includes(category)) allowed = context.senior;
+      if (['companyMeta', 'files', 'orgTree', 'smartPositions', 'complaintEscalationChain', 'branchEscalationChains', 'workProofs', 'cameras'].includes(category)) allowed = context.senior;
       else if (['hrLevels', 'hrClusters', 'jobGrades'].includes(category)) allowed = context.senior && (!context.actor || context.actor.role === 'director');
       else if (category === 'payrollRuns') allowed = context.senior || context.permissions.has('manage_payroll');
       else if (category === 'schedules') allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole) || context.permissions.has('manage_schedules');
       else if (category === 'safety') allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole);
       else if (['plans', 'templates', 'targets'].includes(category)) allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole);
-      else if (['tasks', 'reports', 'anonymousReports', 'publicReports', 'notifications', 'personalPlaces', 'personalAttendance', 'plannerItems', 'journalEntries'].includes(category)) allowed = privilege === 'full';
+      else if (category === 'tasks') {
+        const taskManagers = ['owner', 'director', 'ops_manager', 'pgm', 'station_manager', 'admin'];
+        allowed = privilege === 'full' || context.senior
+          || taskManagers.includes(actorRole) || taskManagers.includes(auth.role);
+      }
+      else if (['reports', 'anonymousReports', 'publicReports', 'notifications', 'personalPlaces', 'personalAttendance', 'plannerItems', 'journalEntries'].includes(category)) allowed = privilege === 'full';
       // Regular employees may write their OWN records in these categories — their
       // reports and personal entries must never be silently dropped.
       const SELF_WRITABLE = ['anonymousReports', 'publicReports', 'notifications', 'personalPlaces', 'personalAttendance', 'plannerItems', 'journalEntries'];

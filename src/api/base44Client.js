@@ -18,6 +18,8 @@ export const base44 = createClient({
 // has to (and no page can forge a role — the server derives it from the session).
 const SESSION_SECURED_FUNCTIONS = new Set([
   'supabaseAttendance',
+  'attendance',
+  'compliance',
   'supabaseTargets',
   'operations',
   'workforce',
@@ -26,6 +28,7 @@ const SESSION_SECURED_FUNCTIONS = new Set([
   'dailyReport',
   'hiring',
   'org',
+  'hcm',
   'payroll',
   'signing',
   'stock',

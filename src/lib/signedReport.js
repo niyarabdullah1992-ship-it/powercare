@@ -4,8 +4,7 @@ import { makeVerificationBadgeCanvas, generateVerificationId, loadBadgeQr } from
 import { imageBlobToPdf } from "@/lib/signPdf";
 import { sha256HexOfBuffer } from "@/lib/fileHash";
 import { PDF_THEME } from "@/lib/pdfTheme";
-import { POWERCARE_LOGO_URL } from "@/lib/brand";
-import { getReportVisualTheme } from "@/lib/reportVisualThemes";
+import { POWERCARE_MARK_URL } from "@/lib/brand";
 
 // Draws the report DIRECTLY on canvas (title + table + signature + verification
 // badge) — fully deterministic, full Arabic/RTL support, no HTML rendering step
@@ -40,34 +39,18 @@ function drawReportCanvas({ title, companyName, dir, headers, rows }) {
   canvas.height = H;
   const ctx = canvas.getContext("2d");
   const rtl = dir === "rtl";
-  const visual = getReportVisualTheme(title);
-
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = PDF_THEME.ink;
-  ctx.fillRect(0, 0, W * 0.72, 10);
-  ctx.fillStyle = visual.accent;
-  ctx.fillRect(W * 0.72, 0, W * 0.28, 10);
-  ctx.save();
-  ctx.globalAlpha = 0.08;
-  ctx.strokeStyle = visual.accent;
-  ctx.lineWidth = 3;
-  for (let offset = 0; offset < 260; offset += 34) {
-    ctx.beginPath();
-    ctx.moveTo(W - 300 + offset, 12);
-    ctx.lineTo(W - 150 + offset, 162);
-    ctx.stroke();
-  }
-  ctx.restore();
+  ctx.fillRect(0, 0, W, 8);
   ctx.direction = rtl ? "rtl" : "ltr";
   ctx.textAlign = rtl ? "right" : "left";
   const xTitle = rtl ? W - 120 : 120;
 
-  // NiroVera identity and report header
   ctx.textAlign = rtl ? "right" : "left";
-  ctx.fillStyle = visual.accent;
+  ctx.fillStyle = PDF_THEME.muted;
   ctx.font = "700 13px Tahoma, Arial, sans-serif";
-  ctx.fillText("POWERCARE • SIGNED REPORT", xTitle, 46);
+  ctx.fillText("NIROVERA", xTitle, 46);
   ctx.fillStyle = PDF_THEME.ink;
   ctx.font = "600 34px Georgia, Tahoma, serif";
   ctx.fillText(title, xTitle, 86);
@@ -122,7 +105,7 @@ export async function generateSignedReport({ title, companyName, dir, headers, r
 
   // Add the company logo to the report header without replacing NiroVera's verification identity.
   const sigId = generateVerificationId();
-  const [qr, sigImg, logoImg, platformLogo] = await Promise.all([loadBadgeQr(sigId), loadImage(signatureUrl), loadImage(logoUrl), loadImage(POWERCARE_LOGO_URL)]);
+  const [qr, sigImg, logoImg, platformLogo] = await Promise.all([loadBadgeQr(sigId), loadImage(signatureUrl), loadImage(logoUrl), loadImage(POWERCARE_MARK_URL)]);
   if (platformLogo) {
     const x = dir === "rtl" ? canvas.width - 112 : 48;
     ctx.drawImage(platformLogo, x, 28, 72, 72);

@@ -1,7 +1,8 @@
 // Shared escalation-chain helpers, used by both anonymous and public complaints.
-// Escalation chain: level 0 = the station manager, then straight up the company's
-// customizable HR tiers (see the HR page), lowest to highest authority.
+// Each branch has its own ladder from the org tree (branch manager → parents → apex).
+// Falls back to company HR tiers when the tree has no path for that branch.
 import { groupLevelsByOrder, levelName } from "./hrLevels";
+import { deriveBranchEscalationChain } from "./orgDerivations";
 
 const escalationGroups = (data) => groupLevelsByOrder(data?.hrLevels || []).filter((group) => group.manager?.active !== false);
 
@@ -25,12 +26,22 @@ const manualChain = (data) => sortComplaintChainByTree(data?.complaintEscalation
   return node && access?.permissions?.complaints === "manage" ? data.employees?.find((employee) => employee.id === id) : null;
 }).filter(Boolean);
 
-export const escalationStageCount = (data) => escalationGroups(data).length + 1;
-export const complaintEscalationStageCount = (data) => manualChain(data).length || escalationStageCount(data);
+export const escalationStageCount = (data, stationId) => {
+  const branch = deriveBranchEscalationChain(stationId, data);
+  if (branch.length) return branch.length;
+  return escalationGroups(data).length + 1;
+};
+export const complaintEscalationStageCount = (data, stationId) => manualChain(data).length || escalationStageCount(data, stationId);
 export const usesManualComplaintEscalation = (data) => manualChain(data).length > 0;
 export const isManualComplaintHandler = (employee, data) => manualChain(data).some((handler) => handler.id === employee?.id);
 
 export function handlersForLevel(levelIdx, r, data) {
+  const branch = deriveBranchEscalationChain(r?.stationId, data);
+  if (branch.length) {
+    const step = branch[levelIdx];
+    if (!step) return [];
+    return (data.employees || []).filter((e) => String(e.id) === String(step.employeeId));
+  }
   if (levelIdx === 0) return data.employees.filter((e) => e.role === "station_manager" && (e.stationId === r.stationId || (e.managedStations || []).includes(r.stationId)));
   const group = escalationGroups(data)[levelIdx - 1];
   if (!group?.manager) return [];
@@ -51,7 +62,12 @@ export function complaintHandlersForLevel(levelIdx, r, data) {
   return manual.length ? (manual[levelIdx] ? [manual[levelIdx]] : []) : handlersForLevel(levelIdx, r, data);
 }
 
-export function levelLabel(levelIdx, data, t, lang) {
+export function levelLabel(levelIdx, data, t, lang, stationId) {
+  const branch = deriveBranchEscalationChain(stationId, data);
+  if (branch[levelIdx]) {
+    const step = branch[levelIdx];
+    return step.title ? `${step.name} — ${step.title}` : step.name;
+  }
   if (levelIdx === 0) return t("stationManager");
   const group = escalationGroups(data)[levelIdx - 1];
   return group ? levelName(group.manager || group.assistant, lang) : "";
@@ -69,7 +85,16 @@ export const hasHandlerAtLevel = (levelIdx, r, data) => handlersForLevel(levelId
 export const complaintHasHandlerAtLevel = (levelIdx, r, data) => complaintHandlersForLevel(levelIdx, r, data).length > 0;
 
 export function buildEscalationSteps(currentLevel, r, data, t, lang, stageCount) {
-  return Array.from({ length: stageCount }).map((_, idx) => ({ idx, label: levelLabel(idx, data, t, lang), hasHandler: hasHandlerAtLevel(idx, r, data), state: idx < currentLevel ? "done" : idx === currentLevel ? "current" : "pending" }));
+  const branch = deriveBranchEscalationChain(r?.stationId, data);
+  const count = branch.length || stageCount;
+  return Array.from({ length: count }).map((_, idx) => ({
+    idx,
+    label: branch[idx]
+      ? (branch[idx].title ? `${branch[idx].name} — ${branch[idx].title}` : branch[idx].name)
+      : levelLabel(idx, data, t, lang, r?.stationId),
+    hasHandler: branch[idx] ? true : hasHandlerAtLevel(idx, r, data),
+    state: idx < currentLevel ? "done" : idx === currentLevel ? "current" : "pending",
+  }));
 }
 
 export function buildComplaintEscalationSteps(currentLevel, r, data, t, lang, stageCount) {

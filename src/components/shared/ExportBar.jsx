@@ -1,77 +1,83 @@
 import React from "react";
 import { FileSpreadsheet, Printer } from "lucide-react";
-import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { usePeriod } from "@/lib/PeriodContext";
+import { useI18n } from "@/lib/i18n";
 import { exportExcelColored } from "@/lib/exportExcelColored";
 import { printReport } from "@/lib/printReport";
-import { canUsePlanFeature } from "@/lib/navVisibility";
-import PlanFeatureNotice from "@/components/subscription/PlanFeatureNotice";
+import { brandReportColor, PDF_THEME } from "@/lib/pdfTheme";
+import { ACCENT, BORDER, CARD, NAVY } from "@/lib/platformStyles";
 
-// The one export bar: Excel + PDF, same look and place everywhere, and it
-// always carries the currently selected period into the exported file.
-export default function ExportBar({ title, headers, rows, pdfHeaders = headers, pdfRows = rows, stats = [], theme = "default" }) {
-  const { t, dir, lang } = useI18n();
-  const { data, company } = useAuth();
-  const { resolved } = usePeriod();
-  // An invalid custom range must never be exported — the file would carry a
-  // range the user did not ask for.
-  const hasRows = Array.isArray(rows) && rows.length > 0 && resolved.valid;
+export default function ExportBar({
+  title,
+  headers,
+  rows,
+  pdfHeaders = headers,
+  pdfRows = rows,
+  stats = [],
+  theme = "default",
+  compact = false,
+}) {
+  const { t, lang } = useI18n();
+  const { company, data } = useAuth();
+  const ar = lang === "ar";
   const branding = data?.reportBranding || {};
-  const color = branding.color || "#b07d3f";
-  if (!canUsePlanFeature(company, "exports")) return <PlanFeatureNotice />;
+  const color = brandReportColor(branding.color || PDF_THEME.navy);
+  const companyName = company?.name || data?.name || "";
+  const logoUrl = branding.logoUrl || "";
+  const dir = ar ? "rtl" : "ltr";
+  const filename = String(title || "report").replace(/[^\w\u0600-\u06FF-]+/g, "_").slice(0, 80);
 
-  const periodSuffix = resolved.label;
-  const onExcel = () =>
+  const doExcel = () => {
     exportExcelColored({
-      filename: `${title}_${resolved.startDay}_${resolved.endDay}`.replace(/\s+/g, "_"),
-      title: `${title} — ${periodSuffix}`,
+      filename,
+      title,
       headers,
       rows,
       color,
       dir,
+      companyName,
+      logoUrl,
     });
+  };
 
-  const onPdf = () =>
+  const doPdf = () => {
     printReport({
       title,
-      companyName: company?.name || "",
-      periodLabel: periodSuffix,
+      companyName,
       dir,
       stats,
-      sections: [{ heading: title, headers: pdfHeaders, rows: pdfRows }],
-      logoUrl: branding.logoUrl || "",
-      color,
       theme,
+      logoUrl,
+      color,
+      sections: [{ heading: title, headers: pdfHeaders, rows: pdfRows }],
     });
+  };
 
-  const btn = "flex items-center gap-1.5 px-3.5 min-h-[40px] rounded-lg border border-border text-sm font-body hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
+  const btn = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: compact ? 5 : 6,
+    height: compact ? 28 : 32,
+    padding: compact ? "0 9px" : "0 12px",
+    borderRadius: 8,
+    border: `1px solid ${BORDER}`,
+    background: CARD,
+    color: NAVY,
+    fontSize: compact ? 11 : 12,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  };
 
   return (
-    <div className="flex items-center gap-2">
-      <button
-        disabled={!hasRows}
-        onClick={onExcel}
-        title={hasRows
-          ? (lang === "ar" ? "Excel — الجدول المعروض حالياً بنطاقه وفلاتره" : "Excel — the table currently shown, with its range and filters")
-          : !resolved.valid
-            ? (lang === "ar" ? "النطاق المختار غير صالح — صحّح التاريخين أولاً" : "The selected range is invalid — fix the dates first")
-            : (lang === "ar" ? "لا توجد بيانات للتصدير في هذه الفترة" : "No data to export in this period")}
-        className={btn}
-      >
-        <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> {t("exportExcel")}
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      <button type="button" onClick={doExcel} style={btn} disabled={!rows?.length}>
+        <FileSpreadsheet style={{ width: 14, height: 14, color: ACCENT }} />
+        {t("exportExcel")}
       </button>
-      <button
-        disabled={!hasRows}
-        onClick={onPdf}
-        title={hasRows
-          ? (lang === "ar" ? "PDF — الجدول المعروض حالياً بنطاقه وفلاتره" : "PDF — the table currently shown, with its range and filters")
-          : !resolved.valid
-            ? (lang === "ar" ? "النطاق المختار غير صالح — صحّح التاريخين أولاً" : "The selected range is invalid — fix the dates first")
-            : (lang === "ar" ? "لا توجد بيانات للتصدير في هذه الفترة" : "No data to export in this period")}
-        className={btn}
-      >
-        <Printer className="w-4 h-4" /> {dir === "rtl" ? "تصدير PDF" : "Export PDF"}
+      <button type="button" onClick={doPdf} style={btn} disabled={!rows?.length}>
+        <Printer style={{ width: 14, height: 14, color: NAVY }} />
+        {t("exportPdf")}
       </button>
     </div>
   );

@@ -1,6 +1,8 @@
+
 import React from "react";
 import { FileText, Download, Paperclip } from "lucide-react";
 import { formatDateTime } from "@/lib/dateFormat";
+import { ACCENT, CARD, MUTED, NAVY, SURFACE } from "@/lib/chatUiStyles";
 
 const isImage = (name = "", type = "") =>
   /^image\/(png|jpe?g|gif|webp|svg)$/i.test(type) || /\.(png|jpe?g|gif|webp|svg)$/i.test(name);
@@ -13,18 +15,18 @@ export default function ChatMediaGallery({ messages, t, lang }) {
 
   if (items.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground font-body">
-        <div className="text-center">
-          <Paperclip className="w-6 h-6 mx-auto mb-2 opacity-40" />
-          {t("noMediaShared")}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 32 }}>
+        <div style={{ textAlign: "center", color: MUTED }}>
+          <Paperclip style={{ width: 22, height: 22, margin: "0 auto 10px", opacity: 0.45 }} />
+          <p style={{ margin: 0, fontSize: 13 }}>{t("noMediaShared")}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-5 py-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))", gap: 12 }}>
         {items.map((f, i) => (
           <a
             key={i}
@@ -32,22 +34,48 @@ export default function ChatMediaGallery({ messages, t, lang }) {
             target="_blank"
             rel="noopener noreferrer"
             download={f.name}
-            className="group p-2.5 rounded-lg border border-border bg-background hover:bg-muted transition-colors space-y-1.5"
+            style={{
+              display: "block",
+              padding: 10,
+              borderRadius: 12,
+              border: "1px solid #E2E8F0",
+              background: CARD,
+              textDecoration: "none",
+              color: "inherit",
+            }}
           >
             {isImage(f.name, f.type) ? (
-              <img src={f.url} alt={f.name} className="w-full h-24 rounded-md object-cover" />
+              <img
+                src={f.url}
+                alt={f.name}
+                style={{ width: "100%", height: 96, borderRadius: 9, objectFit: "cover", display: "block", background: SURFACE }}
+              />
             ) : isAudio(f.name, f.type) ? (
-              <audio src={f.url} controls className="w-full h-8" onClick={(e) => e.stopPropagation()} />
+              <audio src={f.url} controls style={{ width: "100%", height: 36 }} onClick={(e) => e.stopPropagation()} />
             ) : (
-              <div className="w-full h-24 rounded-md bg-muted flex items-center justify-center">
-                <FileText className="w-6 h-6 text-accent" />
+              <div
+                style={{
+                  width: "100%",
+                  height: 96,
+                  borderRadius: 9,
+                  background: SURFACE,
+                  border: "1px solid #E2E8F0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: ACCENT,
+                }}
+              >
+                <FileText style={{ width: 22, height: 22 }} />
               </div>
             )}
-            <div className="flex items-center justify-between gap-1">
-              <p className="text-xs font-body truncate">{f.name}</p>
-              <Download className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginTop: 8 }}>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: NAVY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {f.name}
+              </p>
+              <Download style={{ width: 14, height: 14, color: MUTED, flexShrink: 0 }} />
             </div>
-            <p className="text-[11px] text-muted-foreground font-body truncate">
+            <p style={{ margin: "4px 0 0", fontSize: 11, color: MUTED, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {t("sharedBy")} {f.userName} · {formatDateTime(f.createdAt, lang)}
             </p>
           </a>

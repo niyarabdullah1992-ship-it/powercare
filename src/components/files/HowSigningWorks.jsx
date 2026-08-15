@@ -1,55 +1,51 @@
-import React, { useState } from "react";
-import { ShieldCheck, Fingerprint, QrCode, FileWarning, ChevronDown } from "lucide-react";
+import React from "react";
+import { ShieldCheck, Fingerprint, QrCode, FileWarning } from "lucide-react";
+import SigningPanel from "./SigningPanel";
+import { MUTED, NAVY, BORDER, SURFACE } from "@/lib/platformStyles";
 
-// Collapsible explainer: how the signature verification (SHA-256 + QR) works
-// and why a copied badge is always detected.
 export default function HowSigningWorks({ ar }) {
-  const [open, setOpen] = useState(false);
-
   const steps = ar
     ? [
-        { icon: Fingerprint, title: "بصمة رقمية فريدة", text: "عند التوقيع تُحسب بصمة SHA-256 من كل بايت في الملف الموقّع وتُسجَّل في سجل التحقق مع رقم تحقق مشفّر لا يتكرر." },
-        { icon: QrCode, title: "ختم برمز QR", text: "يُطبع على المستند ختم يحوي رقم التحقق ورمز QR — مسحه يفتح صفحة التحقق العامة مباشرة." },
-        { icon: ShieldCheck, title: "تحقق فوري", text: "أي جهة ترفع الملف في صفحة التحقق تُقارَن بصمته بالسجل: تطابق = الملف سليم وموثّق." },
-        { icon: FileWarning, title: "كشف التزوير", text: "لو نُسخ الختم على ملف آخر أو عُدّل حرف واحد بعد التوقيع، تتغير البصمة بالكامل ويظهر فورًا «مزوّر أو معدّل»." },
+        { icon: Fingerprint, title: "بصمة الختم", text: "الختم يحمل رمز إصبع تقني مشتق من الرقم المشفّر، وليس بصمة حيوية أو نفاذ." },
+        { icon: QrCode, title: "QR ورقم مشفّر", text: "كل ختم يحمل رمز QR ورقمًا PWC يمكن مسحه أو نسخه للتحقق دون كشف بيانات زائدة." },
+        { icon: ShieldCheck, title: "تحقق لأي جهة", text: "ارفع الملف أو أدخل المعرّف: تطابق البصمة يعني أن النسخة لم تُعدَّل بعد التوقيع." },
+        { icon: FileWarning, title: "كشف التلاعب", text: "نسخ الختم على ملف آخر أو تغيير حرف واحد يغيّر البصمة ويظهر عدم التطابق فورًا." },
       ]
     : [
-        { icon: Fingerprint, title: "Unique digital fingerprint", text: "On signing, a SHA-256 fingerprint is computed from every byte of the signed file and registered with a one-time encrypted verification ID." },
-        { icon: QrCode, title: "QR-coded stamp", text: "A stamp with the verification ID and a QR code is printed on the document — scanning it opens the public verification page." },
-        { icon: ShieldCheck, title: "Instant verification", text: "Anyone can upload the file on the verify page: a matching fingerprint means the document is authentic." },
-        { icon: FileWarning, title: "Forgery detection", text: "If the stamp is copied onto another file or a single character changes after signing, the fingerprint changes completely and it's flagged as tampered." },
+        { icon: Fingerprint, title: "Seal fingerprint", text: "The stamp carries a technical finger mark derived from the encrypted id — not a biometric scan or Nafath." },
+        { icon: QrCode, title: "QR and encrypted id", text: "Every stamp carries a QR code and a PWC serial that can be scanned or copied without extra disclosure." },
+        { icon: ShieldCheck, title: "Anyone can verify", text: "Upload the file or enter the id: a matching fingerprint means the copy was not altered after signing." },
+        { icon: FileWarning, title: "Tamper detection", text: "Copying the seal onto another file or changing a single character fails verification immediately." },
       ];
 
   return (
-    <div className="rounded-xl border border-accent/30 bg-accent/5">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between gap-2 px-5 py-3.5 text-start"
-      >
-        <span className="flex items-center gap-2 font-heading text-sm font-semibold">
-          <ShieldCheck className="w-4 h-4 text-accent" />
-          {ar ? "كيف تعمل خاصية التوقيع الموثّق وكشف التزوير؟" : "How does verified signing & forgery detection work?"}
-        </span>
-        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && (
-        <div className="px-5 pb-5 grid sm:grid-cols-2 gap-3">
-          {steps.map((s, i) => (
-            <div key={i} className="flex gap-3 p-3 rounded-lg bg-card border border-border">
-              <s.icon className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-semibold font-body">{s.title}</p>
-                <p className="text-[11px] text-muted-foreground font-body mt-0.5 leading-relaxed">{s.text}</p>
-              </div>
+    <SigningPanel icon={ShieldCheck} title={ar ? "كيف يُحفظ التوقيع ويُكشف التلاعب؟" : "How is the signature kept and tampering detected?"}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+        {steps.map((s) => {
+          const Icon = s.icon;
+          return (
+          <div key={s.title} style={{
+            display: "flex",
+            gap: 10,
+            padding: 12,
+            borderRadius: 10,
+            background: SURFACE,
+            border: `1px solid ${BORDER}`,
+          }}>
+            <Icon style={{ width: 16, height: 16, color: NAVY, flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: NAVY }}>{s.title}</p>
+              <p style={{ margin: "4px 0 0", fontSize: 11, color: MUTED, lineHeight: 1.6 }}>{s.text}</p>
             </div>
-          ))}
-          <p className="sm:col-span-2 text-[11px] text-muted-foreground font-body bg-muted rounded-md px-3 py-2">
-            {ar
-              ? "القاعدة الذهبية: لا تُعتمد الوثيقة بشكل الختم، بل بنتيجة التحقق — امسح رمز QR أو ارفع الملف في قسم «التحقق من حالة ملف موقّع» أدناه."
-              : "Golden rule: trust the verification result, not the stamp's look — scan the QR or upload the file in the \"Verify a signed document\" section below."}
-          </p>
-        </div>
-      )}
-    </div>
+          </div>
+          );
+        })}
+      </div>
+      <p style={{ margin: "10px 0 0", fontSize: 11, color: MUTED, lineHeight: 1.6 }}>
+        {ar
+          ? "يُعتمد التحقق من السجل لا شكل الختم. هذا سجل إلكتروني داخل المنشأة، وليس شهادة رقمية مؤهلة صادرة عن مركز تصديق مرخّص."
+          : "Trust the registry result, not the stamp’s look. This is an in-company electronic record, not a qualified certificate issued by a licensed CSP."}
+      </p>
+    </SigningPanel>
   );
 }

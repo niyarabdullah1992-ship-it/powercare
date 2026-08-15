@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
       const stationId = String(body.stationId || "").trim();
       const limit = Number(body.limit);
       if (!stationId || !Number.isFinite(limit) || limit < 0) {
-        return Response.json({ error: "BUDGET_INVALID", reason: "محطة وحدّ ميزانية صالحان مطلوبان." }, { status: 400 });
+        return Response.json({ error: "BUDGET_INVALID", reason: "فرع وحدّ ميزانية صالحان مطلوبان." }, { status: 400 });
       }
       const data = await loadPayload();
       const idx = data.budgets.findIndex((b) => b.stationId === stationId);

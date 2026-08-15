@@ -17,13 +17,11 @@ export function useOrgTerms() {
   const tt = useMemo(() => (key, ...args) => orgAwareT(t, terms, key, ...args), [t, terms]);
 
   /**
-   * Prefer reading terms. Prefer not mutating orgType after signup —
-   * company vs government use separate login portals and accounts.
-   * setOrgType remains for rare migrations / owner repair only.
+   * Prefer reading terms. Organization type is company-only.
    */
-  const setOrgType = (next) => {
+  const setOrgType = (_next) => {
     if (!company?.id) return;
-    const value = next === ORG_TYPES.GOV ? ORG_TYPES.GOV : ORG_TYPES.COMPANY;
+    const value = ORG_TYPES.COMPANY;
     if (getOrgType(data) === value) return;
     updateCompany(company.id, (d) => {
       d.settings = { ...(d.settings || {}), orgType: value };

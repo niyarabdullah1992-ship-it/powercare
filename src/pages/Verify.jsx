@@ -4,10 +4,9 @@ import { base44 } from "@/api/base44Client";
 import { useI18n } from "@/lib/i18n";
 import Logo from "@/components/Logo";
 import VerifyDocumentCard from "@/components/files/VerifyDocumentCard";
+import IdentityCard from "@/components/shared/IdentityCard";
+import { MUTED, NAVY, SURFACE, usePublicPlatformTheme } from "@/lib/publicChrome";
 
-// Public document-verification page — opened by scanning the badge QR code
-// (/verify?id=PWC-XXXX-XXXX-XXXX). Shows the signature details and lets anyone
-// upload the document to compare its SHA-256 hash against the registry.
 export default function Verify() {
   const { lang } = useI18n();
   const ar = lang === "ar";
@@ -15,6 +14,7 @@ export default function Verify() {
   const id = urlParams.get("id") || "";
   const [info, setInfo] = useState(null);
   const [loading, setLoading] = useState(!!id);
+  usePublicPlatformTheme();
 
   useEffect(() => {
     if (!id) return;
@@ -26,51 +26,30 @@ export default function Verify() {
   }, [id]);
 
   return (
-    <div className="powercare-public min-h-screen bg-landing-cinema px-4 py-10 text-white">
-      <div className="max-w-xl mx-auto space-y-5">
-        <div className="flex items-center gap-3">
-          <Logo size={40} />
-          <div>
-            <h1 className="font-heading text-2xl font-semibold">
-              {ar ? "التحقق من توقيع المستندات" : "Document Signature Verification"}
-            </h1>
-            <p className="text-xs text-muted-foreground font-body">
-              {ar ? "منصة NiroVera للتوثيق الرقمي" : "NiroVera digital verification"}
-            </p>
-          </div>
+    <div className="powercare-public" style={{ minHeight: "100vh", background: SURFACE, color: "var(--nv-ink)", padding: "40px 16px" }} dir={ar ? "rtl" : "ltr"}>
+      <div style={{ maxWidth: 560, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <Logo size={28} />
         </div>
 
         {loading && (
-          <div className="p-5 rounded-xl border border-border bg-card flex items-center gap-2 text-sm text-muted-foreground font-body">
-            <Loader2 className="w-4 h-4 animate-spin" /> {ar ? "جارٍ جلب بيانات التوقيع…" : "Loading signature details…"}
-          </div>
+          <IdentityCard title={ar ? "جارٍ جلب بيانات التوقيع…" : "Loading signature details…"}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: MUTED, fontSize: 13 }}>
+              <Loader2 style={{ width: 16, height: 16 }} className="animate-spin" />
+            </div>
+          </IdentityCard>
         )}
 
-        {/* Signature details from the QR's verification ID */}
         {!loading && id && info?.found && (
-          <div className="flex items-center gap-4 rounded-xl border-2 border-accent/50 bg-card p-5 text-card-foreground">
-            <Fingerprint className="h-10 w-10 shrink-0 text-accent" />
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Encrypted verification ID</p>
-              <p className="font-mono text-lg font-semibold text-primary" dir="ltr">{info.verificationId}</p>
-              <p className="text-sm font-semibold text-primary">
-                {info.signerName} — {info.signedAt ? new Date(info.signedAt).toLocaleDateString("en-GB") : ""}
-              </p>
-              {info.fileName && <p className="truncate text-xs text-muted-foreground">{info.fileName}</p>}
-            </div>
-          </div>
+          <IdentityCard icon={Fingerprint} kicker="Encrypted verification ID" title={`${info.signerName} — ${info.signedAt ? new Date(info.signedAt).toLocaleDateString("en-GB") : ""}`} subtitle={info.fileName} dir="ltr" bodySurface>
+            <p style={{ margin: 0, fontFamily: "ui-monospace, monospace", fontSize: 16, fontWeight: 600, color: NAVY }} dir="ltr">{info.verificationId}</p>
+          </IdentityCard>
         )}
 
         {!loading && id && info && !info.found && (
-          <div className="p-4 rounded-xl border border-red-300 bg-red-50 flex items-center gap-2">
-            <ShieldX className="w-4 h-4 text-red-700 shrink-0" />
-            <p className="text-sm text-red-800 font-body">
-              {ar ? "رقم التحقق هذا غير موجود في السجل." : "This verification ID does not exist in the registry."}
-            </p>
-          </div>
+          <IdentityCard icon={ShieldX} rail="#DC2626" title={ar ? "رقم التحقق هذا غير موجود في السجل." : "This verification ID does not exist in the registry."} />
         )}
 
-        {/* Upload the document → recompute SHA-256 → VALID / TAMPERED */}
         <VerifyDocumentCard ar={ar} initialId={id} />
       </div>
     </div>

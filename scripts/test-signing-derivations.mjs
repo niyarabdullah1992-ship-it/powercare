@@ -8,6 +8,7 @@ import {
   isChainComplete,
   checkRaiseGate,
   checkSignGate,
+  checkSignIntentGate,
   checkVerifySealGate,
   checkSendSignedGate,
 } from "../src/lib/signingDerivations.js";
@@ -53,6 +54,8 @@ const doc = {
 assert.equal(chainHeadIndex(doc.signers), 0);
 assert.equal(checkSignGate(doc, { userId: "u2" }).error, "NOT_YOUR_TURN");
 assert.equal(checkSignGate(doc, { userId: "u1" }).ok, true);
+assert.equal(checkSignIntentGate(false).error, "INTENT_REQUIRED");
+assert.equal(checkSignIntentGate(true).ok, true);
 
 const signedAt = "2026-08-11T10:00:00Z";
 const sealId = sealIdFor(doc, doc.signers[0], signedAt);

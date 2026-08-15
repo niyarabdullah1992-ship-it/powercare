@@ -1,6 +1,7 @@
 import React from "react";
 import { AlertCircle, MapPin } from "lucide-react";
 import PayrollRow from "@/components/payroll/PayrollRow";
+import { ACCENT, MUTED, NAVY, BORDER, SURFACE } from "@/lib/platformStyles";
 
 export default function PayrollTableRows({ items, stations, getStationId, employeeForItem, ar, onChange, onTogglePaid, onPayslip, onDeductions }) {
   const groups = stations.map((station) => ({
@@ -13,15 +14,39 @@ export default function PayrollTableRows({ items, stations, getStationId, employ
 
   return groups.map((group) => (
     <React.Fragment key={group.id}>
-      <tr className={group.unassigned ? "border-y border-amber-300 bg-amber-50/80 dark:border-amber-800 dark:bg-amber-950/25" : "border-y border-border bg-secondary/70"}>
-        <td colSpan={8} className="px-4 py-3 text-start">
-          <div className="flex items-center gap-2">
-            {group.unassigned ? <AlertCircle className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" /> : <MapPin className="h-4 w-4 shrink-0 text-accent" />}
-            <div><p className="text-sm font-semibold">{group.name}</p>{group.unassigned && <p className="text-[11px] font-normal text-muted-foreground">{ar ? "موظفون غير مرتبطين بمحطة" : "Employees not linked to a station"}</p>}</div>
+      <tr style={{
+        borderTop: `1px solid ${group.unassigned ? "#FDE68A" : BORDER}`,
+        borderBottom: `1px solid ${group.unassigned ? "#FDE68A" : BORDER}`,
+        background: group.unassigned ? "#FFFBEB" : SURFACE,
+      }}>
+        <td colSpan={9} style={{ padding: "12px 16px", textAlign: "start" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {group.unassigned
+              ? <AlertCircle style={{ width: 16, height: 16, flexShrink: 0, color: "#B45309" }} />
+              : <MapPin style={{ width: 16, height: 16, flexShrink: 0, color: ACCENT }} />}
+            <div>
+              <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: NAVY }}>{group.name}</p>
+              {group.unassigned && (
+                <p style={{ margin: "2px 0 0", fontSize: "11px", fontWeight: 400, color: MUTED }}>
+                  {ar ? "موظفون غير مرتبطين بفرع" : "Employees not linked to a station"}
+                </p>
+              )}
+            </div>
           </div>
         </td>
       </tr>
-      {group.items.map((item) => <PayrollRow key={item.id} item={item} employee={employeeForItem(item)} ar={ar} onChange={(field, value) => onChange(item.id, field, value)} onTogglePaid={(paid) => onTogglePaid(item, paid)} onPayslip={() => onPayslip(item)} onDeductions={() => onDeductions(item)} />)}
+      {group.items.map((item) => (
+        <PayrollRow
+          key={item.id}
+          item={item}
+          employee={employeeForItem(item)}
+          ar={ar}
+          onChange={(field, value) => onChange(item.id, field, value)}
+          onTogglePaid={(paid) => onTogglePaid(item, paid)}
+          onPayslip={() => onPayslip(item)}
+          onDeductions={() => onDeductions(item)}
+        />
+      ))}
     </React.Fragment>
   ));
 }

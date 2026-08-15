@@ -137,7 +137,7 @@ export function deriveChatBoard(input) {
       unreadTotal,
       messageCount: msgs.length,
     },
-    activeHintAr: "قنوات لكل محطة · الرسائل جزء من سجل التشغيل",
+    activeHintAr: "قنوات لكل فرع · الرسائل جزء من سجل التشغيل",
     activeHintEn: "A channel per station · messages are part of the operations log",
   };
 }
@@ -183,7 +183,7 @@ export function checkSendGate(input) {
     return {
       ok: false,
       error: "STATION_REQUIRED",
-      reason: "اختر محطة أو قناة قبل الإرسال.",
+      reason: "اختر فرع أو قناة قبل الإرسال.",
       reasonEn: "Pick a station or channel before sending.",
     };
   }
@@ -194,7 +194,7 @@ export function checkSendGate(input) {
     return {
       ok: false,
       error: "FORBIDDEN",
-      reason: "هذه القناة خارج نطاق محطتك.",
+      reason: "هذه القناة خارج نطاق فرعك.",
       reasonEn: "This channel is outside your station scope.",
     };
   }
@@ -260,7 +260,7 @@ export function checkListGate(input) {
     return {
       ok: false,
       error: "STATION_REQUIRED",
-      reason: "اختر محطة أو قناة لعرض الرسائل.",
+      reason: "اختر فرع أو قناة لعرض الرسائل.",
       reasonEn: "Pick a station or channel to view messages.",
     };
   }
@@ -270,7 +270,7 @@ export function checkListGate(input) {
     return {
       ok: false,
       error: "FORBIDDEN",
-      reason: "هذه القناة خارج نطاق محطتك.",
+      reason: "هذه القناة خارج نطاق فرعك.",
       reasonEn: "This channel is outside your station scope.",
     };
   }
@@ -294,7 +294,7 @@ export function demoChatFacts(companyId) {
       companyId,
       stationKey: "supervisors",
       kind: "supervisors",
-      nameAr: "مشرفو المحطات",
+      nameAr: "مشرفو الفروع",
       nameEn: "Station supervisors",
       memberCount: 6,
       accent: "#1E9E63",
@@ -314,7 +314,7 @@ export function demoChatFacts(companyId) {
       companyId,
       stationKey: "safety",
       kind: "safety",
-      nameAr: "السلامة — كل المحطات",
+      nameAr: "السلامة — كل الفروع",
       nameEn: "Safety — all stations",
       memberCount: 12,
       accent: "#F59E0B",
@@ -342,7 +342,7 @@ export function demoChatFacts(companyId) {
     { id: "m6", companyId, channelId: "supervisors", authorId: "u_fahd", authorName: "فهد القحطاني", text: "جدول الورديات القادم منشور — راجعوا تغطية الليلية قبل الخميس.", createdAt: iso(8, 12) },
     { id: "m7", companyId, channelId: "supervisors", authorId: "u_you", authorName: "أنت", text: "راجعته. ينبع تحتاج مناوبًا إضافيًا يوم الأربعاء.", createdAt: iso(8, 26) },
     { id: "m8", companyId, channelId: "safety", authorId: "u_muna", authorName: "منى العتيبي", text: "تسريب زيت عند مضخة التغذية 3 — أوقفت العمل وعزلت المنطقة.", attachmentRef: "HSE-0908", createdAt: iso(7, 14) },
-    { id: "m9", companyId, channelId: "purchasing", authorId: "u_khalid", authorName: "خالد الزهراني", text: "مخزون الصمامات تحت حد إعادة الطلب في ثلاث محطات.", createdAt: iso(10, 5) },
+    { id: "m9", companyId, channelId: "purchasing", authorId: "u_khalid", authorName: "خالد الزهراني", text: "مخزون الصمامات تحت حد إعادة الطلب في ثلاث فروع.", createdAt: iso(10, 5) },
     { id: "m10", companyId, channelId: "jbl1", authorId: "u_noura", authorName: "نورة الرشيد", text: "ثلاث شهادات سلامة تنتهي هذا الشهر — أرفقت القائمة.", createdAt: iso(12, 10) },
   ];
 

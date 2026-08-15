@@ -1,43 +1,83 @@
 import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { visibleStations, visibleEmployees, canReplyAnon, isCompanyOwner } from "@/lib/permissions";
-import TeamStatusPanel from "@/components/dashboard/TeamStatusPanel";
-import { AlertTriangle, FileText, Megaphone, Palette } from "lucide-react";
-import DashboardStatCards from "@/components/dashboard/DashboardStatCards";
-import PendingActionsPanel from "@/components/dashboard/PendingActionsPanel";
-import ExecutiveDashboard from "@/pages/ExecutiveDashboard";
+import { visibleStations, visibleEmployees } from "@/lib/permissions";
 import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
-import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
-import StationManagerDashboard from "@/components/dashboard/StationManagerDashboard";
-import PullToRefresh from "@/components/mobile/PullToRefresh";
 import { queryClientInstance } from "@/lib/query-client";
-import BrandingSettingsCard from "@/components/reports/BrandingSettingsCard";
-import CommandCenterHero from "@/components/dashboard/CommandCenterHero";
-import RiskForecastPanel from "@/components/dashboard/RiskForecastPanel";
-import NiroPredictiveCenter from "@/components/dashboard/NiroPredictiveCenter";
 import { getRiskWeights } from "@/lib/riskWeights";
-import { isActiveAttendance, isScheduledToday } from "@/lib/attendance";
-import { isOnLeaveToday } from "@/lib/leaveTypes";
-import useProactiveAlerts from "@/hooks/useProactiveAlerts";
-import OperationalAlerts from "@/components/dashboard/OperationalAlerts";
-import SigningStatusPanel from "@/components/dashboard/SigningStatusPanel";
-import OperationsModuleGrid from "@/components/dashboard/OperationsModuleGrid";
-import ProofCycleRibbon from "@/components/claude/ProofCycleRibbon";
-import AttendanceTrendChart from "@/components/dashboard/AttendanceTrendChart";
-import HandoffCommandBoard from "@/components/dashboard/HandoffCommandBoard";
+import { deriveTeamAttendanceToday } from "@/lib/attendance";
+import { listLocalTodayAttendance, mergeAttendanceRows } from "@/lib/localAttendanceFallback";
+import { isOnLeaveToday, leaveTypeLabel } from "@/lib/leaveTypes";
+import useStationScope, { matchesStationScope } from "@/hooks/useStationScope";
+import PlatformStampShell from "@/components/shared/PlatformStampShell";
+import PullToRefresh from "@/components/mobile/PullToRefresh";
 import DashboardPersonaBar from "@/components/dashboard/DashboardPersonaBar";
+import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
+import HandoffCommandBoard from "@/components/dashboard/HandoffCommandBoard";
+import OperationsModuleGrid from "@/components/dashboard/OperationsModuleGrid";
+import StationManagerDashboard from "@/components/dashboard/StationManagerDashboard";
+
+function pendingSigningCount(data) {
+  return (data?.signatureRequests || []).filter((row) => {
+    const status = String(row.status || "").toLowerCase();
+    return status === "pending" || status === "awaiting" || status === "in_progress";
+  }).length;
+}
+
+function pendingExpenseCount(data) {
+  return (data?.expenses || data?.expenseClaims || []).filter((row) =>
+    ["submitted", "manager_approved", "pending"].includes(row.status),
+  ).length;
+}
+
+function openHazardCount(data) {
+  return (data?.safety || []).reduce(
+    (sum, rec) => sum + (rec.hazards || []).filter((hazard) => !hazard.closedAt).length,
+    0,
+  );
+}
+
+function buildModuleMetrics(data, extra = {}) {
+  const tasks = data?.tasks || [];
+  const reports = data?.reports || [];
+  const completed = extra.completedTasks ?? tasks.filter((task) => task.status === "completed").length;
+  const taskTotal = extra.tasks ?? tasks.length;
+  return {
+    stations: data?.stations?.length || 0,
+    tasks: taskTotal,
+    completedTasks: completed,
+    openTasks: extra.openTasks ?? Math.max(0, taskTotal - completed),
+    complaints: extra.complaints ?? (data?.anonymousReports || []).filter((row) => row.status === "open").length,
+    reports: extra.reports ?? reports.length,
+    pendingReports: extra.pendingReports ?? reports.filter((row) => row.status === "pending").length,
+    payroll: data?.payroll?.length || 0,
+    attendanceRate: extra.attendanceRate ?? 0,
+    checkedIn: extra.checkedIn ?? 0,
+    absentCount: extra.absentCount ?? 0,
+    scheduled: extra.scheduled ?? 0,
+    signing: extra.signing ?? pendingSigningCount(data),
+    performance: extra.performance ?? (taskTotal ? Math.round((completed / taskTotal) * 100) : 0),
+    employees: extra.employees ?? (data?.employees?.length || 0),
+    activeMembers: extra.activeMembers ?? 0,
+    pendingLeave: extra.pendingLeave ?? 0,
+    offboarding: extra.offboarding ?? 0,
+    safety: (data?.safety || []).length,
+    hazards: extra.hazards ?? openHazardCount(data),
+    expenses: extra.pendingExpenses ?? pendingExpenseCount(data),
+    inventory: data?.inventory?.length || data?.inventoryItems?.length || 0,
+    files: data?.files?.length || 0,
+    messages: data?.messages?.length || 0,
+  };
+}
 
 export default function Dashboard() {
-  const { t, lang } = useI18n();
-  const { data, currentUser, company, session, refresh } = useAuth();
+  const { lang } = useI18n();
+  const headerScope = useStationScope();
+  const { data, currentUser, company, refresh } = useAuth();
   const [stoppageCount, setStoppageCount] = useState(0);
-  const [showBranding, setShowBranding] = useState(false);
-  const [showOpsDetails, setShowOpsDetails] = useState(false);
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [targetRows, setTargetRows] = useState([]);
-  const { alerts: proactiveAlerts, loading: proactiveLoading } = useProactiveAlerts(data, currentUser, session);
 
   const loadStoppage = async () => {
     if (!currentUser) return;
@@ -68,84 +108,130 @@ export default function Dashboard() {
     loadStoppage();
   }, [currentUser?.id]);
 
-  // Today's attendance for the visible team — powers the attendance-rate stat card.
-  useEffect(() => {
+  const loadAttendance = () => {
     if (!currentUser || !data) return;
     const ids = visibleEmployees(currentUser, data).map((e) => e.id);
-    if (!ids.length) return;
+    const apply = (cloudRows) => {
+      setAttendanceRows(mergeAttendanceRows(cloudRows || [], listLocalTodayAttendance(company?.id, data)));
+    };
+    if (!ids.length) {
+      apply([]);
+      return;
+    }
     base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: ids })
-      .then((res) => setAttendanceRows(res?.data?.rows || []))
-      .catch(() => setAttendanceRows([]));
-  }, [currentUser?.id, data?.employees?.length]);
+      .then((res) => apply(res?.data?.rows || []))
+      .catch(() => apply([]));
+  };
 
-  // Pull-to-refresh: full state reload — local fetches, tanstack-query caches,
-  // and the AuthContext offline/online store sync.
+  useEffect(() => {
+    loadAttendance();
+    const onUpdated = () => loadAttendance();
+    window.addEventListener("attendance-updated", onUpdated);
+    return () => window.removeEventListener("attendance-updated", onUpdated);
+  }, [currentUser?.id, data?.employees?.length, data?.personalAttendance?.length, company?.id]);
+
   const handleRefresh = async () => {
     await Promise.allSettled([loadStoppage(), queryClientInstance.invalidateQueries()]);
+    loadAttendance();
     refresh();
   };
 
   if (!data || !currentUser) return null;
 
-  const stations = visibleStations(currentUser, data);
+  const stations = visibleStations(currentUser, data).filter((s) => matchesStationScope(s.id, headerScope));
   const stationIds = new Set(stations.map((s) => s.id));
-
-  const anonOpenCount = data.anonymousReports.filter((a) => stationIds.has(a.stationId) && a.status === "open").length;
-
+  const anonOpenCount = (data.anonymousReports || []).filter((a) => stationIds.has(a.stationId) && a.status === "open").length;
   const isEmployee = currentUser.role === "employee";
-  const canEditBranding = isCompanyOwner(currentUser, data) || currentUser.role === "director";
-
-  if (isEmployee) return (
-    <PullToRefresh onRefresh={handleRefresh}>
-      <div className="field-dashboard space-y-4">
-        <DashboardPersonaBar lang={lang} />
-        <EmployeeDashboard user={currentUser} company={company} data={data} />
-        <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
-        <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
-      </div>
-    </PullToRefresh>
+  const teamEmployees = visibleEmployees(currentUser, data).filter((employee) =>
+    matchesStationScope(employee.stationId, headerScope),
   );
+  const mergedAttendanceRows = mergeAttendanceRows(
+    attendanceRows,
+    listLocalTodayAttendance(company?.id, data),
+  );
+  const todayAtt = deriveTeamAttendanceToday(teamEmployees, mergedAttendanceRows, data);
+  const attendanceRate = todayAtt.rate;
+  const checkedInCount = todayAtt.presentLike;
+  const absentCount = todayAtt.absent;
+  const attendanceExtras = {
+    attendanceRate,
+    checkedIn: checkedInCount,
+    absentCount,
+    scheduled: todayAtt.scheduled,
+    activeMembers: todayAtt.presentLike,
+    employees: teamEmployees.length,
+  };
 
-  // Station-scoped managers get the same Command Center language, station-scoped.
-  if (currentUser.role === "station_manager" || currentUser.role === "pgm") {
+  if (isEmployee) {
     return (
       <PullToRefresh onRefresh={handleRefresh}>
-        <div className="ops-command-dashboard space-y-4">
-          <DashboardPersonaBar lang={lang} />
-          <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
-          <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
-          <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
-        </div>
+        <PlatformStampShell
+          ar={lang === "ar"}
+          title={lang === "ar" ? "لوحة العمل" : "Work dashboard"}
+          hint={lang === "ar" ? "حضور اليوم، المهام، ودورة الإثبات في مكان واحد." : "Today's attendance, tasks, and the proof cycle in one place."}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <DashboardPersonaBar lang={lang} />
+            <EmployeeDashboard user={currentUser} company={company} data={data} />
+            <OperationsModuleGrid
+              metrics={buildModuleMetrics(data, attendanceExtras)}
+              lang={lang}
+              user={currentUser}
+              data={data}
+              company={company}
+            />
+          </div>
+        </PlatformStampShell>
       </PullToRefresh>
     );
   }
 
-  // Manager dashboard
+  if (currentUser.role === "station_manager" || currentUser.role === "pgm") {
+    return (
+      <PullToRefresh onRefresh={handleRefresh}>
+        <PlatformStampShell
+          ar={lang === "ar"}
+          title={lang === "ar" ? "مركز القيادة" : "Command center"}
+          hint={lang === "ar" ? "قرارات اليوم على نطاق فرعك." : "Today's decisions for your station scope."}
+          maxWidth={1280}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <DashboardPersonaBar lang={lang} />
+            <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
+            <OperationsModuleGrid
+              metrics={buildModuleMetrics(data, attendanceExtras)}
+              lang={lang}
+              user={currentUser}
+              data={data}
+              company={company}
+            />
+          </div>
+        </PlatformStampShell>
+      </PullToRefresh>
+    );
+  }
+
   const sourceTasks = targetRows.length ? targetRows : data.tasks;
   const tasks = sourceTasks.filter((task) => stationIds.has(task.stationId || task.station_id || task.assignment_id));
-  const reports = data.reports.filter((r) => stationIds.has(r.stationId));
-  const anon = data.anonymousReports;
+  const reports = (data.reports || []).filter((r) => stationIds.has(r.stationId));
   const pendingReports = reports.filter((r) => r.status === "pending").length;
   const completed = tasks.filter((tk) => tk.status === "completed").length;
 
-  const teamEmployees = visibleEmployees(currentUser, data);
-  const scheduledEmployees = teamEmployees.filter((employee) => isScheduledToday(employee, data) && !isOnLeaveToday(employee));
-  const scheduledIds = new Set(scheduledEmployees.map((employee) => employee.id));
-  const checkedInCount = attendanceRows.filter((row) => isActiveAttendance(row) && scheduledIds.has(row.employee_id)).length;
-  const activeMembersCount = new Set(attendanceRows.filter((row) => ["present", "late"].includes(row.status) || isActiveAttendance(row)).map((row) => row.employee_id)).size;
-  const attendanceRate = scheduledEmployees.length ? Math.round((checkedInCount / scheduledEmployees.length) * 100) : 0;
-  const absentCount = Math.max(0, scheduledEmployees.length - checkedInCount);
+  const activeMembersCount = todayAtt.presentLike;
+  const presentIds = new Set(
+    mergedAttendanceRows
+      .filter((row) => row.check_in_at || row.checkInAt)
+      .map((row) => String(row.employee_id ?? row.employeeId)),
+  );
   const now = Date.now();
   const delayedTasks = tasks.filter((task) => {
     const deadline = task.dueDate || task.endDate || task.end_date;
     return task.status !== "completed" && deadline && new Date(deadline).getTime() <= now + 3 * 86400000;
   }).length;
-  // Safety (HSE) risk — critical stations, open hazards and incidents in the last 30 days.
   const safetyRecs = (data.safety || []).filter((s) => stationIds.has(s.stationId));
   const criticalStations = safetyRecs.filter((s) => s.level === "red").length;
   const openHazards = safetyRecs.reduce((sum, s) => sum + (s.hazards?.length || 0), 0);
   const recentIncidents = safetyRecs.reduce((sum, s) => sum + (s.incidentLog || []).filter((i) => i.at && now - new Date(i.at).getTime() <= 30 * 86400000).length, 0);
-  // Incidents logged today only — drives the shield color on the hero card.
   const todayStr = new Date().toDateString();
   const todayIncidents = safetyRecs.reduce((sum, s) => sum + (s.incidentLog || []).filter((i) => i.at && new Date(i.at).toDateString() === todayStr).length, 0);
   const riskWeights = getRiskWeights(data);
@@ -154,43 +240,6 @@ export default function Dashboard() {
     (pendingReports * riskWeights.reports) + (criticalStations * riskWeights.critical) +
     (recentIncidents * riskWeights.incidents) + (openHazards * riskWeights.hazards)
   ));
-
-  const pendingActionItems = [
-    { key: "reports", icon: FileText, label: t("pendingReports"), count: pendingReports, to: "/app/daily-report" },
-    { key: "stoppage", icon: AlertTriangle, label: t("stoppageIssues"), count: stoppageCount, to: "/app/performance" },
-    ...(canReplyAnon(currentUser) ? [{ key: "anon", icon: Megaphone, label: t("anonymous"), count: anonOpenCount, to: "/app/complaints" }] : []),
-  ];
-
-  // Real six-month task activity — stable across renders and based on company data.
-  const monthBuckets = [];
-  for (let i = 5; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(1);
-    date.setMonth(date.getMonth() - i);
-    monthBuckets.push({
-      key: `${date.getFullYear()}-${date.getMonth()}`,
-      label: formatDate(date, lang, { month: "short" }),
-    });
-  }
-  const chartData = monthBuckets.map(({ key, label }) => {
-    const monthlyTasks = tasks.filter((task) => {
-      const date = new Date(task.createdAt || task.created_at || task.startDate || task.start_date);
-      return !Number.isNaN(date.getTime()) && `${date.getFullYear()}-${date.getMonth()}` === key;
-    });
-    return {
-      month: label,
-      completed: monthlyTasks.reduce((sum, task) => sum + Number(task.completed_tasks ?? (task.status === "completed" ? 1 : 0)), 0),
-      pending: monthlyTasks.reduce((sum, task) => sum + Math.max(0, Number(task.task_target ?? 1) - Number(task.completed_tasks ?? (task.status === "completed" ? 1 : 0))), 0),
-    };
-  });
-
-  const recent = [
-    ...tasks.map((tk) => ({ type: "task", text: `${tk.title} — ${t(tk.status)}`, at: tk.createdAt || tk.created_at })),
-    ...reports.map((r) => ({ type: "report", text: `${r.title} — ${t(r.status)}`, at: r.createdAt })),
-    ...anon.map((a) => ({ type: "anon", text: `${t(a.type)} (${t(a.priority)}) — ${t(a.status)}`, at: a.createdAt })),
-  ]
-    .sort((a, b) => new Date(b.at) - new Date(a.at))
-    .slice(0, 8);
 
   const pendingLeaveCount = teamEmployees.reduce(
     (sum, employee) => sum + (employee.leaveRequests || []).filter((request) => request.status === "pending").length,
@@ -202,7 +251,7 @@ export default function Dashboard() {
       .map((request) => ({
         id: `${employee.id}-${request.id || request.createdAt || request.startDate}`,
         name: employee.name,
-        type: lang === "ar" ? (request.typeAr || request.type || "إجازة") : (request.type || "Leave"),
+        type: leaveTypeLabel(request.typeAr || request.type, lang === "ar"),
         date: formatDate(request.createdAt || request.startDate || new Date(), lang, { day: "numeric", month: "short" }),
         status: lang === "ar"
           ? (request.awaiting === "finance" ? "بانتظار المالية" : request.awaiting === "hr" ? "بانتظار HR" : "بانتظار المدير")
@@ -230,14 +279,13 @@ export default function Dashboard() {
 
   const monthHired = teamEmployees.filter((e) => {
     const d = new Date(e.createdAt || e.hiredAt || e.startDate || 0);
-    const now = new Date();
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    const hiredNow = new Date();
+    return d.getMonth() === hiredNow.getMonth() && d.getFullYear() === hiredNow.getFullYear();
   }).length;
 
-  // Readiness is inverse of operational risk (Platform Command Center score).
   const readinessScore = Math.max(0, Math.min(100, 100 - riskScore));
   const readinessFactors = [
-    { label: lang === "ar" ? "حضور" : "Attendance", pct: attendanceRate },
+    { label: lang === "ar" ? "حضور اليوم" : "Today's attendance", pct: attendanceRate },
     { label: lang === "ar" ? "مهام" : "Tasks", pct: tasks.length ? Math.round((completed / tasks.length) * 100) : 100 },
     { label: lang === "ar" ? "سلامة" : "Safety", pct: Math.max(0, 100 - openHazards * 12 - criticalStations * 20) },
     { label: lang === "ar" ? "اعتمادات" : "Approvals", pct: Math.max(0, 100 - (pendingLeaveCount + pendingReports) * 8) },
@@ -245,125 +293,69 @@ export default function Dashboard() {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-    <div className="ops-command-dashboard space-y-5">
-      <DashboardPersonaBar lang={lang} />
-
-      <HandoffCommandBoard
-        lang={lang}
-        readinessScore={readinessScore}
-        factors={readinessFactors}
-        employeesCount={teamEmployees.length}
-        employeesDelta={monthHired || null}
-        attendanceRate={attendanceRate}
-        pendingLeave={pendingLeaveCount}
-        pendingReports={pendingReports}
-        leaveQueue={handoffQueue}
-        alerts={handoffAlerts}
-        stationsCount={stations.length}
-        openHazards={openHazards}
-        payrollCount={data.payroll?.length || teamEmployees.length}
-        avgApprovalHours={pendingLeaveCount + pendingReports > 0 ? 6 : null}
-      />
-
-      <button
-        type="button"
-        onClick={() => setShowOpsDetails((v) => !v)}
-        className="w-full rounded-[10px] border border-[#E4E7EC] bg-white px-4 py-3.5 text-start text-sm font-semibold text-[#101828] hover:bg-[#F9FAFB]"
+      <PlatformStampShell
+        ar={lang === "ar"}
+        title={lang === "ar" ? "مركز القيادة" : "Command center"}
+        hint={lang === "ar" ? "نظرة قرار على الناس والرعاية والعمليات والثقة." : "A decision glance across people, care, operations, and trust."}
+        maxWidth={1280}
       >
-        <span className="flex items-center justify-between gap-3">
-          <span>{lang === "ar" ? "دورة الإثبات وتفاصيل التشغيل" : "Proof cycle & operations detail"}</span>
-          <span className="text-xs font-normal text-[#667085]">
-            {showOpsDetails ? (lang === "ar" ? "إخفاء" : "Hide") : (lang === "ar" ? "عرض" : "Show")}
-          </span>
-        </span>
-      </button>
-
-      {showOpsDetails && (
-        <div className="space-y-6">
-          <ProofCycleRibbon lang={lang} />
-          <div className="space-y-6 rounded-[10px] border border-[#E4E7EC] bg-white px-4 py-5">
-          <CommandCenterHero companyName={data.name} riskScore={riskScore} activeStations={stations.length} breakdown={{ absentCount, delayedTasks, stoppageCount, pendingReports, criticalStations, openHazards, recentIncidents, weights: riskWeights }} safety={{ criticalStations, openHazards, recentIncidents, todayIncidents }} lang={lang} companyId={company.id} canEditWeights={canEditBranding} />
-
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <DashboardPersonaBar lang={lang} />
+          <HandoffCommandBoard
+            lang={lang}
+            readinessScore={readinessScore}
+            factors={readinessFactors}
+            employeesCount={todayAtt.scheduled}
+            employeesDelta={monthHired || null}
+            attendanceRate={attendanceRate}
+            pendingLeave={pendingLeaveCount}
+            pendingReports={pendingReports}
+            leaveQueue={handoffQueue}
+            alerts={handoffAlerts}
+            stations={stations.map((s) => {
+              const crew = teamEmployees.filter((e) => (e.stationId || null) === s.id && presentIds.has(String(e.id))).length;
+              const open = tasks.filter((tk) => (tk.stationId || tk.station_id) === s.id && tk.status !== "completed").length
+                + ((safetyRecs.find((r) => r.stationId === s.id)?.hazards || []).filter((h) => !h.closedAt).length);
+              return {
+                id: s.id,
+                name: s.name,
+                code: s.code || s.shortCode || "",
+                crew,
+                open,
+              };
+            })}
+            openHazards={openHazards}
+            criticalHazards={criticalStations}
+            presentCount={checkedInCount}
+            lateCount={mergedAttendanceRows.filter((row) => row.status === "late").length}
+            leaveCount={teamEmployees.filter((e) => isOnLeaveToday(e)).length}
+            absentCount={absentCount}
+            daysClear={todayIncidents > 0 ? 0 : null}
+          />
           <OperationsModuleGrid
-            metrics={{
-              stations: stations.length, tasks: tasks.length, completedTasks: completed, complaints: anonOpenCount,
-              reports: reports.length, pendingReports, payroll: data.payroll?.length || 0,
-              attendanceRate, checkedIn: checkedInCount, signing: data.signatureRequests?.length || data.signedDocuments?.length || 0,
+            metrics={buildModuleMetrics(data, {
+              tasks: tasks.length,
+              completedTasks: completed,
+              openTasks: Math.max(0, tasks.length - completed),
+              complaints: anonOpenCount,
+              reports: reports.length,
+              pendingReports,
+              attendanceRate,
+              checkedIn: checkedInCount,
+              absentCount,
+              scheduled: todayAtt.scheduled,
+              signing: pendingSigningCount(data),
               performance: tasks.length ? Math.round((completed / tasks.length) * 100) : 0,
-              employees: teamEmployees.length, activeMembers: activeMembersCount,
+              employees: teamEmployees.length,
+              activeMembers: activeMembersCount,
               pendingLeave: pendingLeaveCount,
-              offboarding: teamEmployees.filter((employee) => employee.profile?.offboarding?.status === "in_progress").length,
-              safety: safetyRecs.length, hazards: openHazards,
-              expenses: data.expenses?.length || 0, inventory: data.inventory?.length || data.inventoryItems?.length || 0,
-              files: data.files?.length || 0, messages: data.messages?.length || 0,
-            }}
+              hazards: openHazards,
+              pendingExpenses: pendingExpenseCount(data),
+            })}
             lang={lang} user={currentUser} data={data} company={company}
           />
-
-          <div className="space-y-4">
-            <OperationalAlerts alerts={proactiveAlerts} loading={proactiveLoading} lang={lang} />
-            <SigningStatusPanel companyId={company.id} user={currentUser} lang={lang} />
-            <PendingActionsPanel items={pendingActionItems} t={t} />
-          </div>
-
-          {["ops_manager", "director"].includes(currentUser.role) && <ExecutiveDashboard embedded />}
-          {canEditBranding && (
-            <div className="flex justify-end">
-              <button onClick={() => setShowBranding((value) => !value)} className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-body hover:bg-muted">
-                <Palette className="h-3.5 w-3.5 text-accent" />{t("logoSettings")}
-              </button>
-            </div>
-          )}
-
-          {showBranding && canEditBranding && (
-            <BrandingSettingsCard
-              companyId={company.id}
-              branding={data.reportBranding}
-              companyName={data.name || company?.name || ""}
-              lang={lang}
-              onClose={() => setShowBranding(false)}
-            />
-          )}
-
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <RiskForecastPanel absentCount={absentCount} delayedTasks={delayedTasks} stoppageCount={stoppageCount} criticalStations={criticalStations} openHazards={openHazards} recentIncidents={recentIncidents} lang={lang} />
-            <NiroPredictiveCenter
-              data={data}
-              metrics={{ absentCount, delayedTasks, pendingReports, anonOpenCount, safetySignals: criticalStations + recentIncidents + openHazards }}
-              alerts={proactiveAlerts}
-              lang={lang}
-            />
-          </div>
-
-          <DashboardStatCards
-            attendanceRate={attendanceRate}
-            activeMembers={activeMembersCount}
-            totalMembers={teamEmployees.length}
-            t={t}
-          />
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <AttendanceTrendChart data={chartData} t={t} />
-            </div>
-            <TeamStatusPanel employees={teamEmployees} companyId={company.id} t={t} lang={lang} />
-          </div>
-
-          <div className="rounded-[10px] border border-[#E4E7EC] bg-white p-4">
-            <p className="mb-2 text-sm font-semibold">{t("recentActivity")}</p>
-            <div className="divide-y divide-border">
-              {recent.map((r, i) => (
-                <div key={i} className="flex items-center gap-3 py-3">
-                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${r.type === "anon" ? "bg-destructive" : r.type === "report" ? "bg-amber-500" : "bg-accent"}`} />
-                  <p className="text-sm font-body flex-1">{r.text}</p>
-                  <p className="text-xs text-muted-foreground font-body shrink-0">{formatDate(r.at, lang)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          </div>
         </div>
-      )}
-    </div>
+      </PlatformStampShell>
     </PullToRefresh>
   );
 }

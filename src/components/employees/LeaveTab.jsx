@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { submitLeaveRequest, setLeaveRequestStatus } from "@/lib/store";
 import { Send } from "lucide-react";
@@ -7,16 +7,18 @@ import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import LeaveBalanceCard from "@/components/employees/LeaveBalanceCard";
 import LeaveTotalsEditor from "@/components/employees/LeaveTotalsEditor";
 import LeaveRequestItem from "@/components/employees/LeaveRequestItem";
-import { LEAVE_TYPES, LEAVE_THRESHOLD_DAYS, computeDays } from "@/lib/leaveTypes";
+import { LEAVE_TYPES, LEAVE_THRESHOLD_DAYS, computeDays, leaveTypesForProfile } from "@/lib/leaveTypes";
 import { checkApproveLeaveGate } from "@/lib/leaveDerivations";
 import { generateAbsenceDeduction } from "@/lib/deductionGenerators";
 import { base44 } from "@/api/base44Client";
+import { MUTED, NAVY, NAVY_FILL, field, CARD } from "@/lib/platformStyles";
 
 async function workforce(payload) {
   const res = await base44.functions.invoke("workforce", payload);
   return res?.data ?? res;
 }
 
+/** Platform leave tab primary = balances (L2695–2710). Request UI is app secondary. */
 export default function LeaveTab({ employee, companyId, currentUser, isSelf, canApprove }) {
   const { t, lang } = useI18n();
   const ar = lang === "ar";
@@ -27,6 +29,7 @@ export default function LeaveTab({ employee, companyId, currentUser, isSelf, can
   const [files, setFiles] = useState([]);
   const [error, setError] = useState("");
   const requests = employee.leaveRequests || [];
+  const leaveTypes = leaveTypesForProfile(employee.profile);
 
   const days = computeDays(startDate, endDate);
   const typeConfig = LEAVE_TYPES.find((ty) => ty.key === type);
@@ -73,59 +76,102 @@ export default function LeaveTab({ employee, companyId, currentUser, isSelf, can
     }
   };
 
+  const inputStyle = { ...field };
+
   return (
-    <div className="space-y-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }} dir={ar ? "rtl" : "ltr"}>
       <LeaveBalanceCard profile={employee.profile} requests={requests} />
-      {canApprove && <LeaveTotalsEditor employee={employee} companyId={companyId} />}
 
-      {isSelf && (
-        <form onSubmit={submit} className="space-y-3 rounded-xl border border-border bg-card p-5">
-          <h3 className="font-heading font-semibold">{t("submitRequest")}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <select value={type} onChange={(e) => setType(e.target.value)} className="px-3 py-2 rounded-md border border-input text-sm font-body">
-              {LEAVE_TYPES.map((ty) => <option key={ty.key} value={ty.key}>{t(ty.key)}</option>)}
-            </select>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required className="px-3 py-2 rounded-md border border-input text-sm font-body" />
+      {(isSelf || canApprove || requests.length > 0) && (
+        <details style={{
+          background: CARD,
+          border: "1px solid #E2E8F0",
+          borderRadius: "16px",
+          padding: "14px 18px",
+        }}
+        >
+          <summary style={{ cursor: "pointer", fontSize: "13px", fontWeight: 600, color: NAVY, listStyle: "none" }}>
+            {ar ? "طلبات الإجازة وإدارة الأرصدة" : "Leave requests and balance admin"}
+          </summary>
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "14px" }}>
+            {canApprove && <LeaveTotalsEditor employee={employee} companyId={companyId} />}
+
+            {isSelf && (
+              <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>{t("submitRequest")}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: "10px" }}>
+                  <select value={type} onChange={(e) => setType(e.target.value)} style={inputStyle}>
+                    {leaveTypes.map((ty) => <option key={ty.key} value={ty.key}>{t(ty.key)}</option>)}
+                  </select>
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required style={inputStyle} />
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required style={inputStyle} />
+                </div>
+                {days > 0 && (
+                  <div style={{ fontSize: "12px", color: MUTED }}>{t("daysRequested")}: {days}</div>
+                )}
+                <textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder={t("reason")}
+                  rows={2}
+                  style={{
+                    ...inputStyle,
+                    height: "auto",
+                    padding: "10px 11px",
+                    resize: "vertical",
+                    borderColor: needsReason && !reason.trim() ? "#DC2626" : "#E2E8F0",
+                  }}
+                />
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "flex-end" }}>
+                  <CommentFiles files={files} setFiles={setFiles} />
+                  <VoiceRecorder files={files} setFiles={setFiles} />
+                </div>
+                {typeConfig?.requiresFile && (
+                  <div style={{ fontSize: "12px", color: MUTED }}>{t("medicalReport")} — {t("attachmentRequired")}</div>
+                )}
+                {overThreshold && (
+                  <div style={{ fontSize: "12px", color: "#B45309" }}>{t("thresholdNote")} {LEAVE_THRESHOLD_DAYS} {t("days")}</div>
+                )}
+                {error && <div style={{ fontSize: "12px", color: "#DC2626" }}>{error}</div>}
+                <button
+                  type="submit"
+                  style={{
+                    alignSelf: "flex-start",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px 15px",
+                    borderRadius: "9px",
+                    border: "none",
+                    background: NAVY_FILL,
+                    color: "#fff",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  <Send style={{ width: 14, height: 14 }} /> {t("submitRequest")}
+                </button>
+              </form>
+            )}
+
+            <div>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY, marginBottom: "10px" }}>{t("leaveRequests")}</div>
+              {error && !isSelf && <div style={{ fontSize: "12px", color: "#DC2626", marginBottom: "8px" }}>{error}</div>}
+              {requests.length === 0 ? (
+                <div style={{ fontSize: "13px", color: MUTED }}>{t("noLeaveRequests")}</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {requests.map((r) => (
+                    <LeaveRequestItem key={r.id} request={r} canApprove={canApprove} onDecide={decide} />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-          {days > 0 && (
-            <p className="text-xs text-muted-foreground font-body">{t("daysRequested")}: {days}</p>
-          )}
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder={t("reason")}
-            rows={2}
-            className={`w-full px-3 py-2 rounded-md border text-sm font-body resize-none ${needsReason && !reason.trim() ? "border-destructive" : "border-input"}`}
-          />
-          <div className="flex flex-wrap items-end gap-2">
-            <CommentFiles files={files} setFiles={setFiles} />
-            <VoiceRecorder files={files} setFiles={setFiles} />
-          </div>
-          {typeConfig?.requiresFile && (
-            <p className="text-xs text-muted-foreground font-body">{t("medicalReport")} — {t("attachmentRequired")}</p>
-          )}
-          {overThreshold && (
-            <p className="text-xs text-amber-600 font-body">{t("thresholdNote")} {LEAVE_THRESHOLD_DAYS} {t("days")}</p>
-          )}
-          {error && <p className="text-xs text-destructive font-body">{error}</p>}
-          <button type="submit" className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">
-            <Send className="w-4 h-4" /> {t("submitRequest")}
-          </button>
-        </form>
+        </details>
       )}
-
-      <div className="space-y-3">
-        <h3 className="font-heading font-semibold">{t("leaveRequests")}</h3>
-        {error && !isSelf && <p className="text-xs text-destructive font-body">{error}</p>}
-        {requests.length === 0 ? (
-          <p className="text-sm text-muted-foreground font-body">{t("noLeaveRequests")}</p>
-        ) : (
-          requests.map((r) => (
-            <LeaveRequestItem key={r.id} request={r} canApprove={canApprove} onDecide={decide} />
-          ))
-        )}
-      </div>
     </div>
   );
 }

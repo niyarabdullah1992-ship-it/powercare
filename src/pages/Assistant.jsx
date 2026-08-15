@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+﻿import React, { useState, useRef, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
@@ -12,13 +12,15 @@ import NiroVoiceSettings from "@/components/assistant/NiroVoiceSettings";
 import AutomationApprovalCard from "@/components/assistant/AutomationApprovalCard";
 import AssistantImageUpload from "@/components/assistant/AssistantImageUpload";
 import AssistantBoard from "@/components/assistant/AssistantBoard";
-import { Sparkles, Send, Loader2 } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import speak, { stopSpeaking } from "@/components/assistant/speak";
 import formatNiroImageAnalysis from "@/lib/formatNiroImageAnalysis";
 import { loadAssistantMemory, saveAssistantMemory } from "@/lib/assistantMemory";
 import { needsWebSearch, relevantDocumentUrls, selectAssistantContext } from "@/lib/assistantRetrieval";
 import { allowedNavFor } from "@/lib/navVisibility";
 import { toast } from "@/components/ui/use-toast";
+import PlatformStampShell from "@/components/shared/PlatformStampShell";
+import { BORDER, CARD, MUTED, SURFACE, field, ui } from "@/lib/platformStyles";
 
 export default function Assistant() {
   const { t, lang } = useI18n();
@@ -405,63 +407,87 @@ Answer the last user question.`,
   };
 
   return (
-    <div className="max-w-3xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-accent" />
-        </div>
-        <div>
-          <h1 className="font-heading text-2xl font-semibold">{t("aiAssistant")}</h1>
-          <p className="text-xs text-muted-foreground font-body">{t("aiAssistantDesc")}</p>
-        </div>
-        <NiroVoiceSettings gender={voiceGender} onGenderChange={changeVoiceGender} ar={lang === "ar"} />
-      </div>
+    <PlatformStampShell
+      ar={lang === "ar"}
+      title={lang === "ar" ? "المساعد الذكي" : "AI Assistant"}
+      hint={t("aiAssistantDesc")}
+      maxWidth={1600}
+      meta={<NiroVoiceSettings gender={voiceGender} onGenderChange={changeVoiceGender} ar={lang === "ar"} />}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: "min(68vh, 720px)" }}>
+        <AssistantBoard lang={lang} onPickPrompt={(q) => { setInput(q); ask(q); }} />
 
-      <AssistantBoard lang={lang} onPickPrompt={(q) => { setInput(q); }} />
-
-      <div className="flex-1 overflow-y-auto space-y-3 pb-4">
-        {messages.length === 0 && (
-          <div className="p-5 rounded-xl border border-border bg-card space-y-3">
-            <p className="text-sm font-body text-muted-foreground">{t("aiIntro")}</p>
-            <SuggestedQuestions onPick={ask} disabled={loading} />
-          </div>
-        )}
-        {messages.map((m, i) => (
-          <AssistantMessage key={i} message={m} ar={lang === "ar"} onDelete={() => deleteMessage(i)} onFeedback={m.role === "assistant" ? (value) => rateMessage(i, value) : undefined} />
-        ))}
-        <AutomationApprovalCard actions={pendingActions} loading={approvalLoading} ar={lang === "ar"} onApprove={approvePending} onReject={rejectPending} />
-        {loading && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground font-body px-2">
-            <Loader2 className="w-4 h-4 animate-spin text-accent" /> {t("aiThinking")}
-          </div>
-        )}
-        <div ref={bottomRef} />
-      </div>
-
-      <form
-        onSubmit={(e) => { e.preventDefault(); imageFile ? analyzeImage(input) : ask(input); }}
-        className="flex items-center gap-2 pt-3 border-t border-border"
-      >
-        <div className="relative flex-1">
-          <AssistantImageUpload file={imageFile} onSelect={setImageFile} disabled={loading || pendingActions.length > 0} ar={lang === "ar"} />
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={t("aiPlaceholder")}
-            dir="auto"
-            className="w-full py-2.5 pe-12 ps-12 rounded-md border border-input bg-card text-sm font-body focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <VoiceControl onCommand={(cmd) => ask(cmd, true)} voiceGender={voiceGender} />
-        </div>
-        <button
-          type="submit"
-          disabled={loading || pendingActions.length > 0 || (!input.trim() && !imageFile)}
-          className="p-2.5 rounded-md bg-foreground text-background hover:bg-accent disabled:opacity-50"
-          aria-label={t("send")}
+        <div style={{
+          flex: 1,
+          minHeight: 420,
+          display: "flex",
+          flexDirection: "column",
+          background: CARD,
+          border: `1px solid ${BORDER}`,
+          borderRadius: 16,
+          overflow: "hidden",
+        }}
         >
-          <Send className="w-4 h-4" />
-        </button>
-      </form>
-    </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            {messages.length === 0 && (
+              <div>
+                <p style={{ margin: 0, fontSize: 13, color: MUTED, lineHeight: 1.7 }}>{t("aiIntro")}</p>
+                <div style={{ marginTop: 12 }}>
+                  <SuggestedQuestions onPick={ask} disabled={loading} />
+                </div>
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <AssistantMessage key={i} message={m} ar={lang === "ar"} onDelete={() => deleteMessage(i)} onFeedback={m.role === "assistant" ? (value) => rateMessage(i, value) : undefined} />
+            ))}
+            <AutomationApprovalCard actions={pendingActions} loading={approvalLoading} ar={lang === "ar"} onApprove={approvePending} onReject={rejectPending} />
+            {loading && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: MUTED }}>
+                <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> {t("aiThinking")}
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          <form
+            onSubmit={(e) => { e.preventDefault(); imageFile ? analyzeImage(input) : ask(input); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, borderTop: `1px solid ${BORDER}`, padding: 12, background: SURFACE }}
+          >
+            <div style={{ position: "relative", flex: 1 }}>
+              <AssistantImageUpload file={imageFile} onSelect={setImageFile} disabled={loading || pendingActions.length > 0} ar={lang === "ar"} />
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={t("aiPlaceholder")}
+                dir="auto"
+                style={{
+                  ...field,
+                  paddingInlineStart: 48,
+                  paddingInlineEnd: 48,
+                }}
+              />
+              <VoiceControl onCommand={(cmd) => ask(cmd, true)} voiceGender={voiceGender} />
+            </div>
+            <button
+              type="submit"
+              disabled={loading || pendingActions.length > 0 || (!input.trim() && !imageFile)}
+              aria-label={t("send")}
+              style={{
+                ...ui.btnPrimary,
+                height: 36,
+                width: 36,
+                padding: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: loading || pendingActions.length > 0 || (!input.trim() && !imageFile) ? 0.5 : 1,
+              }}
+            >
+              <Send style={{ width: 14, height: 14 }} />
+            </button>
+          </form>
+        </div>
+      </div>
+    </PlatformStampShell>
   );
 }

@@ -1,13 +1,64 @@
 import React from "react";
 import { Flag, Plus } from "lucide-react";
+import { ACCENT, CARD } from "@/lib/platformStyles";
 
-export default function ComplaintEscalationBadge({ level, canManage, ar, onToggle }) {
+export default function ComplaintEscalationBadge({ level, canManage, ar, onToggle, sharedLabel = "" }) {
   if (!level && !canManage) return null;
-  const label = level ? (ar ? `شكوى ${level}` : `Complaint ${level}`) : (ar ? "إضافة للتصعيد" : "Add to escalation");
+  const label = level
+    ? (sharedLabel || (ar ? `تصعيد ${level}` : `Escalation ${level}`))
+    : "";
   const help = level
-    ? (ar ? `المستوى ${level} في تصعيد الشكاوى؛ المستوى 1 يستلم أولًا ثم ينتقل لما بعده.` : `Complaint escalation level ${level}; level 1 receives first, then it moves upward.`)
-    : (ar ? "إضافة هذا الشخص إلى مسار تصعيد الشكاوى" : "Add this person to the complaint escalation path");
-  return <button type="button" disabled={!canManage} title={help} aria-label={help} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); if (canManage) onToggle(); }} className={`absolute -end-2 -top-2 z-10 flex h-7 items-center gap-1 rounded-full border px-2 text-[9px] font-bold shadow-md disabled:cursor-help ${level ? "border-accent bg-accent text-accent-foreground" : "border-dashed border-accent/60 bg-card text-accent"}`}>
-    {level ? <Flag className="h-3 w-3" /> : <Plus className="h-3 w-3" />}{level ? label : <span className="hidden xl:inline">{label}</span>}
-  </button>;
+    ? (sharedLabel
+      ? (ar
+        ? `${sharedLabel} — اضغط لتغيير الرقم أو عدد الفروع.`
+        : `${sharedLabel} — click to change the rank or how many branches it holds.`)
+      : (ar ? `تصعيد ${level} — اضغط لتحديد كم فرعًا يمسك.` : `Escalation ${level} — click to set how many branches it holds.`))
+    : (ar ? "أضف هذا الشخص وحدّد رقم التصعيد وكم فرعًا يمسك." : "Add this person and set the rank plus how many branches it holds.");
+
+  return (
+    <button
+      type="button"
+      disabled={!canManage}
+      title={help}
+      aria-label={help}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (canManage) onToggle();
+      }}
+      style={{
+        position: "absolute",
+        insetInlineEnd: 8,
+        top: -11,
+        zIndex: 10,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        height: level ? 22 : 22,
+        minWidth: 22,
+        padding: level ? "0 9px" : 0,
+        justifyContent: "center",
+        borderRadius: 999,
+        border: level
+          ? "1px solid transparent"
+          : `1px dashed color-mix(in oklab, ${ACCENT} 45%, #fff)`,
+        background: level ? ACCENT : CARD,
+        color: level ? "#fff" : "#14683F",
+        fontSize: 10,
+        fontWeight: 600,
+        boxShadow: level ? "0 6px 14px color-mix(in oklab, #1E9E63 28%, transparent)" : "0 2px 6px rgba(20,40,75,.06)",
+        whiteSpace: "nowrap",
+        maxWidth: 168,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        cursor: canManage ? "pointer" : "help",
+        fontFamily: "inherit",
+      }}
+    >
+      {level
+        ? <Flag style={{ width: 10, height: 10 }} strokeWidth={2} />
+        : <Plus style={{ width: 12, height: 12 }} strokeWidth={2} />}
+      {level ? label : null}
+    </button>
+  );
 }

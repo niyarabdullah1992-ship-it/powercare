@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
-import { Image } from "@/components/ui/image";
+import StampOnPage from "@/components/files/StampOnPage";
 import { STAMP_CANVAS_HEIGHT, STAMP_CANVAS_WIDTH, STAMP_WIDTH_PERCENT } from "@/lib/signatureStampGeometry";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -19,22 +19,27 @@ export default function InlinePdfPlacement({ url, fields, onFieldsChange, textVa
   const visible = fields.filter((field) => field.page === page);
   const selected = visible.find((field) => field.id === selectedId);
   return (
-    <div className="document-first-page-preview relative flex min-h-[78vh] w-full min-w-0 justify-center overflow-auto bg-primary/95 p-4 pb-24 sm:p-7 sm:pb-24">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-accent to-transparent" />
-      <div ref={wrapRef} className="relative h-fit max-w-full overflow-visible bg-white shadow-2xl ring-1 ring-accent/35">
+    <div className="document-first-page-preview relative flex min-h-[78vh] w-full min-w-0 justify-center overflow-auto bg-[#F7F8FA] p-4 pb-24 sm:p-7 sm:pb-24">
+      <div ref={wrapRef} className="relative h-fit max-w-full overflow-visible bg-white shadow-sm ring-1 ring-[#E2E8F0]">
         <canvas ref={canvasRef} className="document-first-page-canvas block max-w-full" />
         {visible.map((field) => {
           const fieldWidth = (field.type === "signature" ? STAMP_WIDTH_PERCENT : 26) * ((field.scale || 100) / 100);
           const active = selectedId === field.id;
-          return <div key={field.id} onPointerDown={(event) => drag(event, field)} className={`absolute flex cursor-move touch-none items-center justify-center overflow-visible rounded-md border-2 ${active ? "border-accent bg-accent/15 shadow-lg" : "border-dashed"} ${field.type === "signature" ? "border-accent bg-accent/10" : "border-blue-600 bg-blue-50/90 px-2 text-xs font-bold text-blue-700"}`} style={{ left: `${field.x}%`, top: `${field.y}%`, width: `${fieldWidth}%`, minHeight: field.type === "text" ? 32 : undefined, aspectRatio: field.type === "signature" ? `${STAMP_CANVAS_WIDTH} / ${STAMP_CANVAS_HEIGHT}` : undefined, transform: "translate(-50%, -50%)" }}>
-            {field.type === "signature" && signaturePreview ? <Image src={signaturePreview} alt={ar ? "التوقيع" : "Signature"} fittingType="fit" className="pointer-events-none absolute inset-0 block h-full w-full overflow-hidden rounded" /> : field.type === "text" ? (textValues[field.id] || field.label) : (ar ? "التوقيع" : "Signature")}
-            {active && <span onPointerDown={(event) => resize(event, field)} className="absolute -bottom-2 -end-2 h-5 w-5 cursor-se-resize rounded-sm border-2 border-white bg-accent shadow-md" />}
-            <button type="button" aria-label={ar ? "حذف الحقل" : "Delete field"} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onFieldsChange(fields.filter((item) => item.id !== field.id)); setSelectedId(null); }} className="absolute -end-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-destructive text-destructive-foreground shadow-md"><X className="h-3.5 w-3.5" /></button>
+          return <div key={field.id} onPointerDown={(event) => drag(event, field)} className={`absolute cursor-move touch-none overflow-visible ${field.type === "text" ? "flex items-center justify-center rounded-md border-2 border-[#14284B] bg-[#F7F8FA]/95 px-2 text-xs font-bold text-[#14284B]" : ""}`} style={{ left: `${field.x}%`, top: `${field.y}%`, width: `${fieldWidth}%`, minHeight: field.type === "text" ? 32 : undefined, aspectRatio: field.type === "signature" ? `${STAMP_CANVAS_WIDTH} / ${STAMP_CANVAS_HEIGHT}` : undefined, transform: "translate(-50%, -50%)", zIndex: active ? 3 : 1 }}>
+            {field.type === "signature" ? (
+              <StampOnPage src={signaturePreview} name={ar ? "التوقيع" : "Signature"} color="#1E9E63" selected={active} onRemove={() => { onFieldsChange(fields.filter((item) => item.id !== field.id)); setSelectedId(null); }} onResizeStart={(event) => resize(event, field)} />
+            ) : (
+              <>
+                {textValues[field.id] || field.label}
+                {active ? <span data-resize="true" onPointerDown={(event) => resize(event, field)} className="absolute -bottom-2 -end-2 h-5 w-5 cursor-se-resize rounded-sm border-2 border-white bg-[#1E9E63] shadow-md" /> : null}
+                <button type="button" aria-label={ar ? "حذف الحقل" : "Delete field"} onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onFieldsChange(fields.filter((item) => item.id !== field.id)); setSelectedId(null); }} className="absolute -end-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-destructive text-destructive-foreground shadow-md"><X className="h-3.5 w-3.5" /></button>
+              </>
+            )}
           </div>;
         })}
       </div>
       {loading && <div className="absolute inset-0 flex items-center justify-center bg-primary/70"><Loader2 className="h-7 w-7 animate-spin text-accent" /></div>}
-      <div className="absolute bottom-4 left-1/2 flex w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 items-center justify-between gap-3 rounded-xl border border-accent/30 bg-card/95 px-3 py-2.5 shadow-xl backdrop-blur">
+      <div className="absolute bottom-4 left-1/2 flex w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 items-center justify-between gap-3 rounded-2xl border border-[#E2E8F0] bg-white/95 px-3 py-2.5 shadow-xl backdrop-blur">
         <div className="flex items-center gap-2"><button type="button" disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="rounded-lg border p-1.5 disabled:opacity-35">{ar ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}</button><span className="min-w-14 text-center text-xs font-bold">{page} / {pages}</span><button type="button" disabled={page === pages} onClick={() => setPage((value) => Math.min(pages, value + 1))} className="rounded-lg border p-1.5 disabled:opacity-35">{ar ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</button></div>
         {selected ? <div className="flex min-w-0 flex-1 items-center gap-2"><span className="shrink-0 text-[10px] font-bold text-muted-foreground">{ar ? "الحجم" : "Size"} {selected.scale || 100}%</span><input type="range" min="40" max="200" step="5" value={selected.scale || 100} onChange={(event) => updateField(selected.id, { scale: Number(event.target.value) })} className="min-w-0 flex-1 accent-current" /></div> : <span className="text-[10px] text-muted-foreground">{ar ? "اسحب التوقيع وحدده لتغيير حجمه" : "Drag the signature and select it to resize"}</span>}
       </div>

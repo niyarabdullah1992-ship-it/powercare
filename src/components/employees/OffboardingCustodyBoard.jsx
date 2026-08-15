@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, Package, UserMinus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import {
@@ -7,6 +7,7 @@ import {
   checkMarkReturnedGate,
 } from "@/lib/offboardingDerivations";
 import { toast } from "@/components/ui/use-toast";
+import { BRAND, BRAND_DEEP, MUTED, NAVY, OK, WARN, BAD, NEUTRAL, CARD, SURFACE } from "@/lib/platformStyles";
 
 async function offboardingApi(payload) {
   const res = await base44.functions.invoke("offboarding", payload);
@@ -22,15 +23,66 @@ const STEP_LABEL = {
   certificate: { ar: "شهادة الخبرة", en: "Experience certificate" },
 };
 
-const STATE_LABEL = {
-  blocked: { ar: "موقوف", en: "Blocked", cls: "border-red-200 bg-red-50 text-red-700" },
-  done: { ar: "مكتمل", en: "Done", cls: "border-emerald-200 bg-emerald-50 text-emerald-800" },
-  ready: { ar: "جاهز للاحتساب", en: "Ready to compute", cls: "border-amber-200 bg-amber-50 text-amber-900" },
-  on_completion: { ar: "عند الإغلاق", en: "On completion", cls: "border-border bg-muted text-muted-foreground" },
-};
+function stepChip(state, ar) {
+  if (state === "blocked") return { text: ar ? "موقوف" : "Blocked", style: BAD };
+  if (state === "done") {
+    return { text: ar ? "مكتمل" : "Done", style: OK };
+  }
+  if (state === "ready") return { text: ar ? "جاهز للاحتساب" : "Ready to compute", style: WARN };
+  return { text: ar ? "عند الإغلاق" : "On completion", style: NEUTRAL };
+}
+
+function accessChip(state, ar, completed) {
+  if (completed || state === "done") {
+    return { text: ar ? "أُلغيت" : "Revoked", style: OK };
+  }
+  return { text: ar ? "عند الإغلاق" : "On completion", style: NEUTRAL };
+}
+
+function qiwaChip(state, ar, completed) {
+  if (completed || state === "done") {
+    return { text: ar ? "أُرسل" : "Submitted", style: OK };
+  }
+  return { text: ar ? "عند الإغلاق" : "On completion", style: NEUTRAL };
+}
+
+function certChip(state, ar, completed) {
+  if (completed || state === "done") {
+    return { text: ar ? "صدرت" : "Issued", style: OK };
+  }
+  return { text: ar ? "عند الإغلاق" : "On completion", style: NEUTRAL };
+}
+
+function chipForStep(step, ar, completed) {
+  if (step.id === "access") return accessChip(step.state, ar, completed);
+  if (step.id === "qiwa") return qiwaChip(step.state, ar, completed);
+  if (step.id === "certificate") return certChip(step.state, ar, completed);
+  return stepChip(step.state, ar);
+}
 
 const fmt = (n) => Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 
+const card = {
+  background: CARD,
+  border: "1px solid #E2E8F0",
+  borderRadius: "14px",
+  padding: "18px 20px",
+};
+
+const actStyle = {
+  padding: "5px 13px",
+  borderRadius: "8px",
+  border: `1px solid ${BRAND}`,
+  background: CARD,
+  color: BRAND_DEEP,
+  fontSize: "11px",
+  fontWeight: 600,
+  cursor: "pointer",
+  fontFamily: "inherit",
+  whiteSpace: "nowrap",
+};
+
+/** Platform isTabOff — L2811–2872 */
 export default function OffboardingCustodyBoard({ employee, canManage = false, lang = "ar" }) {
   const ar = lang === "ar";
   const { company, currentUser } = useAuth();
@@ -57,8 +109,8 @@ export default function OffboardingCustodyBoard({ employee, canManage = false, l
           employeeName: employee.name,
           stationId: employee.stationId || null,
           hireDate: employee.profile?.hireDate || employee.hireDate || undefined,
-          base: employee.profile?.salary?.base ?? employee.salary?.base,
-          allowances: employee.profile?.salary?.allowances ?? employee.salary?.allowances,
+          base: employee.profile?.baseSalary ?? employee.profile?.salary?.base ?? employee.salary?.base,
+          allowances: employee.profile?.allowances ?? employee.profile?.salary?.allowances ?? employee.salary?.allowances,
           annualLeaveUsed: employee.profile?.leave?.annual,
         });
       }
@@ -115,12 +167,12 @@ export default function OffboardingCustodyBoard({ employee, canManage = false, l
     }
     if (!window.confirm(
       ar
-        ? "سيتم إنهاء الخدمة وإلغاء الصلاحيات وإشعار قوى. هل تريد المتابعة؟"
-        : "This will complete offboarding, revoke access and notify Qiwa. Continue?",
+        ? "سيتم إنهاء الخدمة وإلغاء الصلاحيات وإكمال قائمة قوى الداخلية. الإرسال الحي لمنصة قوى غير مفعّل بعد. هل تريد المتابعة؟"
+        : "This will complete offboarding, revoke access and close the internal Qiwa checklist. Live Qiwa API send is not enabled yet. Continue?",
     )) return;
     await run(
       { action: "complete" },
-      ar ? "أُنهيت الخدمة وأُلغيت الصلاحيات وأُشعرت قوى" : "Offboarding completed, access revoked and Qiwa notified",
+      ar ? "أُنهيت الخدمة وأُلغيت الصلاحيات — قائمة قوى الداخلية مكتملة (بلا إرسال حي)" : "Offboarding completed, access revoked — internal Qiwa checklist closed (no live send)",
     );
   };
 
@@ -131,147 +183,251 @@ export default function OffboardingCustodyBoard({ employee, canManage = false, l
   const outstanding = caseRow?.outstandingCount || 0;
   const gateOpen = !!caseRow?.gateOpen;
 
+  const offGateStyle = (completed || outstanding === 0)
+    ? {
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      padding: "13px 16px",
+      borderRadius: "12px",
+      background: "#ECFDF3",
+      border: "1px solid #BBF7D0",
+      fontSize: "13px",
+      color: "#15803D",
+      fontWeight: 500,
+    }
+    : {
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      padding: "13px 16px",
+      borderRadius: "12px",
+      background: "#FEF2F2",
+      border: "1px solid #FECACA",
+      fontSize: "13px",
+      color: "#991B1B",
+      fontWeight: 500,
+    };
+
+  const gateText = completed
+    ? (ar ? "أُنهيت الخدمة — الصلاحيات ملغاة وقائمة قوى الداخلية مكتملة" : "Offboarding completed — access revoked and internal Qiwa checklist closed")
+    : outstanding > 0
+      ? (ar
+        ? `${outstanding} عهدة لم تُستلم — إنهاء الخدمة موقوف`
+        : `${outstanding} assets outstanding — offboarding is blocked`)
+      : (ar ? "كل العهد مُستلمة — يمكن إنهاء الخدمة" : "All assets returned — offboarding can complete");
+
+  const offCompleteStyle = completed
+    ? {
+      marginTop: "16px",
+      padding: "10px 20px",
+      borderRadius: "9px",
+      background: SURFACE,
+      color: MUTED,
+      border: "1px solid #E2E8F0",
+      fontSize: "13px",
+      fontWeight: 600,
+      cursor: "default",
+      fontFamily: "inherit",
+    }
+    : gateOpen
+      ? {
+        marginTop: "16px",
+        padding: "10px 20px",
+        borderRadius: "9px",
+        background: BRAND,
+        color: "#fff",
+        border: "none",
+        fontSize: "13px",
+        fontWeight: 600,
+        cursor: busy ? "wait" : "pointer",
+        fontFamily: "inherit",
+        opacity: busy ? 0.6 : 1,
+      }
+      : {
+        marginTop: "16px",
+        padding: "10px 20px",
+        borderRadius: "9px",
+        background: "#E2E8F0",
+        color: MUTED,
+        border: "none",
+        fontSize: "13px",
+        fontWeight: 600,
+        cursor: "not-allowed",
+        fontFamily: "inherit",
+      };
+
+  const yearsLabel = eos?.preStart
+    ? (ar ? "لم تبدأ الخدمة بعد" : "Service has not commenced")
+    : eos
+      ? (ar ? `${Number(eos.years || 0).toFixed(1)} سنة خدمة` : `${Number(eos.years || 0).toFixed(1)} years of service`)
+      : "";
+
   return (
-    <section className="space-y-4" dir={ar ? "rtl" : "ltr"}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <span className="rounded-lg bg-accent/15 p-2"><UserMinus className="h-5 w-5 text-accent" /></span>
-          <div>
-            <h2 className="font-heading text-lg font-semibold">
-              {ar ? "إنهاء الخدمة" : "Offboarding"}
-            </h2>
-            <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-              {ar
-                ? "لا يُغلق إنهاء الخدمة قبل استلام كل العهد وإلغاء الصلاحيات — الخطوتان مترابطتان في النظام."
-                : "Offboarding cannot close before every asset is returned and access is revoked — the two steps are linked."}
-            </p>
-          </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }} dir={ar ? "rtl" : "ltr"}>
+      <div style={offGateStyle}>{gateText}</div>
+
+      <div style={card}>
+        <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>
+          {ar ? "العهد المسجّلة" : "Assigned assets"}
         </div>
-        <span className={`rounded-full border px-3 py-1 text-xs font-medium ${
-          completed
-            ? "border-border bg-muted text-muted-foreground"
-            : gateOpen
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-red-200 bg-red-50 text-red-700"
-        }`}>
-          {completed
-            ? (ar ? "مكتمل" : "Completed")
-            : gateOpen
-              ? (ar ? "جاهز للإغلاق" : "Ready to close")
-              : (ar ? "موقوف على العهدة" : "Blocked on custody")}
-        </span>
-      </div>
-
-      <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium ${
-        completed || gateOpen
-          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-          : "border-red-200 bg-red-50 text-red-800"
-      }`}>
-        <Package className="h-4 w-4 shrink-0" />
-        {completed
-          ? (ar ? "أُنهيت الخدمة — الصلاحيات ملغاة وقوى أُشعرت" : "Offboarding completed — access revoked and Qiwa notified")
-          : outstanding > 0
-            ? (ar
-              ? `${outstanding} عهدة لم تُستلم — إنهاء الخدمة موقوف`
-              : `${outstanding} assets outstanding — offboarding is blocked`)
-            : (ar ? "كل العهد مُستلمة — يمكن إنهاء الخدمة" : "All assets returned — offboarding can complete")}
-      </div>
-
-      <div className="rounded-xl border bg-card p-4">
-        <h3 className="text-sm font-semibold">{ar ? "العهد المسجّلة" : "Assigned assets"}</h3>
-        <ul className="mt-3 divide-y">
+        <div style={{ display: "flex", flexDirection: "column", marginTop: "8px" }}>
           {(caseRow?.assets || []).map((asset) => {
             const returned = asset.status === "returned";
             return (
-              <li key={asset.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <div>
-                  <p className="text-sm font-medium">{asset.name}</p>
-                  <p className="font-mono text-[11px] text-muted-foreground" dir="ltr">{asset.serial || "—"}</p>
+              <div
+                key={asset.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "12px 0",
+                  borderTop: "1px solid #F1F5F9",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+                  <div style={{ fontSize: "13px", color: NAVY }}>{asset.name}</div>
+                  <div style={{ fontSize: "11px", color: MUTED, marginTop: "3px", fontFamily: "'IBM Plex Mono',monospace" }} dir="ltr">
+                    {asset.serial || "—"}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`rounded-md border px-2 py-0.5 text-[11px] font-medium ${
-                    returned
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : "border-red-200 bg-red-50 text-red-700"
-                  }`}>
-                    {returned ? (ar ? "مُستلم" : "Returned") : (ar ? "لم يُسلَّم" : "Outstanding")}
-                  </span>
-                  {canManage && !completed && !returned && (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => markReturned(asset)}
-                      className="rounded-md border border-accent/40 bg-white px-3 py-1.5 text-[11px] font-semibold text-accent disabled:opacity-50"
-                    >
-                      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (ar ? "استلمت العهدة" : "Mark returned")}
-                    </button>
-                  )}
-                  {returned && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
-                </div>
-              </li>
+                <span style={returned ? OK : BAD}>
+                  {returned ? (ar ? "مُستلم" : "Returned") : (ar ? "لم يُسلَّم" : "Outstanding")}
+                </span>
+                {canManage && !completed && !returned && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => markReturned(asset)}
+                    style={{ ...actStyle, opacity: busy ? 0.5 : 1 }}
+                  >
+                    {busy ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : null}
+                    {" "}{ar ? "استلمت العهدة" : "Mark returned"}
+                  </button>
+                )}
+              </div>
             );
           })}
           {!caseRow?.assets?.length && (
-            <li className="py-6 text-center text-sm text-muted-foreground">
+            <div style={{ padding: "22px 0", textAlign: "center", fontSize: "13px", color: MUTED }}>
               {ar ? "لا عهد مسجّلة بعد." : "No custody assets yet."}
-            </li>
+            </div>
           )}
-        </ul>
+        </div>
       </div>
 
       {eos && (
-        <div className="rounded-xl border bg-card p-4">
-          <h3 className="text-sm font-semibold">{ar ? "مكافأة نهاية الخدمة" : "End-of-service award"}</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
+        <div style={card}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>
+              {ar ? "مكافأة نهاية الخدمة" : "End-of-service award"}
+            </div>
+            <div style={{ fontSize: "11px", color: MUTED }}>{yearsLabel}</div>
+          </div>
+          <div style={{ fontSize: "11px", color: MUTED, marginTop: "4px", lineHeight: 1.65, textWrap: "pretty" }}>
             {ar
               ? "محسوبة وفق المادة 84 من نظام العمل السعودي على آخر أجر شامل، مضافًا إليها بدل الإجازات غير المستنفدة."
               : "Computed under Article 84 of the Saudi Labor Law on the final total wage, plus payment for unused annual leave."}
-          </p>
+          </div>
           {eos.preStart ? (
-            <p className="mt-3 text-sm text-amber-800">
+            <div style={{
+              marginTop: "12px",
+              padding: "11px 13px",
+              borderRadius: "10px",
+              background: "#FFFBEB",
+              border: "1px solid #FDE68A",
+              fontSize: "11px",
+              color: "#92400E",
+              lineHeight: 1.7,
+              textWrap: "pretty",
+            }}
+            >
               {ar
                 ? "لا تستحق مكافأة نهاية خدمة قبل أول يوم عمل فعلي."
                 : "No end-of-service gratuity accrues before the first actual working day."}
-            </p>
+            </div>
           ) : (
-            <dl className="mt-3 space-y-2 text-sm">
-              <div className="flex justify-between gap-3"><dt className="text-muted-foreground">{ar ? "آخر أجر شامل" : "Final wage"}</dt><dd className="font-mono" dir="ltr">{fmt(eos.wage)}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-muted-foreground">{ar ? "نصف شهر × أول 5 سنوات" : "Half month × first 5 years"}</dt><dd className="font-mono" dir="ltr">{fmt(eos.firstFive)}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-muted-foreground">{ar ? "شهر كامل × ما بعد 5 سنوات" : "Full month × years beyond 5"}</dt><dd className="font-mono" dir="ltr">{fmt(eos.beyondFive)}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-muted-foreground">{ar ? `بدل ${eos.unusedAnnualDays} يوم إجازة` : `${eos.unusedAnnualDays} days unused leave`}</dt><dd className="font-mono" dir="ltr">{fmt(eos.leaveCash)}</dd></div>
-              <div className="flex justify-between gap-3 border-t pt-2 font-semibold"><dt>{ar ? "الإجمالي المستحق" : "Total due"}</dt><dd className="font-mono" dir="ltr">{fmt(eos.total)}</dd></div>
-            </dl>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "14px" }}>
+              {[
+                { label: ar ? "آخر أجر شامل (أساسي + بدلات)" : "Final wage (base + allowances)", value: fmt(eos.wage) },
+                { label: ar ? "نصف شهر × أول 5 سنوات" : "Half month × first 5 years", value: fmt(eos.firstFive) },
+                { label: ar ? "شهر كامل × ما بعد 5 سنوات" : "Full month × years beyond 5", value: fmt(eos.beyondFive) },
+                {
+                  label: ar ? `بدل ${eos.unusedAnnualDays} يوم إجازة غير مستنفدة` : `${eos.unusedAnnualDays} days unused annual leave`,
+                  value: fmt(eos.leaveCash),
+                },
+              ].map((r) => (
+                <div
+                  key={r.label}
+                  style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    paddingBottom: "10px",
+                    borderBottom: "1px solid #F1F5F9",
+                  }}
+                >
+                  <span style={{ fontSize: "12px", color: MUTED }}>{r.label}</span>
+                  <span dir="ltr" style={{ fontSize: "13px", fontWeight: 500, fontFamily: "'IBM Plex Sans',sans-serif", textAlign: "right", color: NAVY }}>
+                    {r.value}
+                  </span>
+                </div>
+              ))}
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px" }}>
+                <span style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>
+                  {ar ? "الإجمالي المستحق" : "Total due"}
+                </span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                  <span dir="ltr" style={{ fontSize: "22px", fontWeight: 600, fontFamily: "'IBM Plex Sans',sans-serif", textAlign: "right", color: NAVY }}>
+                    {fmt(eos.total)}
+                  </span>
+                  <span style={{ fontSize: "12px", color: MUTED }}>SAR</span>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}
 
-      <div className="rounded-xl border bg-card p-4">
-        <h3 className="mb-3 text-sm font-semibold">{ar ? "خطوات الإغلاق" : "Closure steps"}</h3>
-        <ul className="space-y-2">
+      <div style={card}>
+        <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>
+          {ar ? "إنهاء الخدمة" : "Offboarding"}
+        </div>
+        <div style={{ fontSize: "11px", color: MUTED, marginTop: "4px", lineHeight: 1.65, textWrap: "pretty" }}>
+          {ar
+            ? "لا يُغلق إنهاء الخدمة قبل استلام كل العهد وإلغاء الصلاحيات — الخطوتان مترابطتان في النظام."
+            : "Offboarding cannot close before every asset is returned and access is revoked — the two steps are linked."}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", marginTop: "12px" }}>
           {(caseRow?.steps || []).map((step) => {
             const label = STEP_LABEL[step.id] || { ar: step.id, en: step.id };
-            const state = STATE_LABEL[step.state] || STATE_LABEL.on_completion;
+            const chip = chipForStep(step, ar, completed);
             return (
-              <li key={step.id} className="flex items-center justify-between gap-3 text-sm">
-                <span>{ar ? label.ar : label.en}</span>
-                <span className={`rounded-md border px-2 py-0.5 text-[11px] font-medium ${state.cls}`}>
-                  {ar ? state.ar : state.en}
-                </span>
-              </li>
+              <div
+                key={step.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "11px 0",
+                  borderTop: "1px solid #F1F5F9",
+                }}
+              >
+                <span style={{ flex: 1, fontSize: "13px", color: NAVY }}>{ar ? label.ar : label.en}</span>
+                <span style={chip.style}>{chip.text}</span>
+              </div>
             );
           })}
-        </ul>
+        </div>
 
-        {canManage && (
+        {canManage ? (
           <button
             type="button"
             disabled={busy || completed || !gateOpen}
             onClick={complete}
-            className={`mt-4 inline-flex h-10 items-center gap-2 rounded-md px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
-              completed || !gateOpen
-                ? "border border-border bg-muted text-muted-foreground"
-                : "bg-primary text-primary-foreground"
-            }`}
+            style={offCompleteStyle}
             title={
               completed
                 ? (ar ? "الخدمة منتهية بالفعل" : "Already completed")
@@ -280,18 +436,18 @@ export default function OffboardingCustodyBoard({ employee, canManage = false, l
                   : undefined
             }
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserMinus className="h-4 w-4" />}
+            {busy ? <Loader2 style={{ width: 14, height: 14, display: "inline", verticalAlign: "middle" }} className="animate-spin" /> : null}
+            {" "}
             {completed
               ? (ar ? "أُنهيت الخدمة" : "Offboarding completed")
               : (ar ? "أنهِ الخدمة" : "Complete offboarding")}
           </button>
-        )}
-        {!canManage && (
-          <p className="mt-3 text-xs text-muted-foreground">
+        ) : (
+          <div style={{ marginTop: "14px", fontSize: "12px", color: MUTED }}>
             {ar ? "إجراءات إنهاء الخدمة متاحة للإدارة والموارد البشرية فقط." : "Offboarding is available to management and HR only."}
-          </p>
+          </div>
         )}
       </div>
-    </section>
+    </div>
   );
 }

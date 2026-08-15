@@ -1,22 +1,45 @@
 import React from "react";
 import { Clock3 } from "lucide-react";
 import { useTimeFormat } from "@/hooks/useTimeFormat";
+import { ACCENT, BORDER, MUTED, SURFACE } from "@/lib/platformStyles";
+
+const segment = (active) => ({
+  height: "26px",
+  minWidth: "34px",
+  padding: "0 9px",
+  border: "none",
+  borderRadius: "7px",
+  background: active ? ACCENT : "transparent",
+  color: active ? "#fff" : MUTED,
+  fontSize: "11px",
+  fontWeight: 600,
+  cursor: "pointer",
+  fontFamily: "inherit",
+});
 
 export default function TimeFormatToggle({ lang }) {
   const { format, setFormat } = useTimeFormat();
-  const label = lang === "ar" ? "نظام الساعة" : "Time format";
+  const ar = lang === "ar";
 
   return (
-    <div className="flex shrink-0 items-center gap-1 rounded-md border border-border p-1 text-xs font-body">
-      <Clock3 className="mx-1 h-3.5 w-3.5 text-muted-foreground" />
-      <span className="hidden sm:inline text-muted-foreground">{label}</span>
+    <div
+      dir={ar ? "rtl" : "ltr"}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "6px",
+        flexShrink: 0,
+        height: "34px",
+        padding: "0 5px",
+        borderRadius: "9px",
+        border: `1px solid ${BORDER}`,
+        background: SURFACE,
+      }}
+    >
+      <Clock3 style={{ width: 13, height: 13, color: MUTED, marginInlineStart: "5px" }} />
+      <span style={{ fontSize: "11px", color: MUTED }}>{ar ? "نظام الساعة" : "Time format"}</span>
       {["12", "24"].map((value) => (
-        <button
-          key={value}
-          type="button"
-          onClick={() => setFormat(value)}
-          className={`rounded px-2 py-1 transition ${format === value ? "bg-foreground text-background" : "hover:bg-muted"}`}
-        >
+        <button key={value} type="button" dir="ltr" onClick={() => setFormat(value)} style={segment(format === value)}>
           {value}
         </button>
       ))}

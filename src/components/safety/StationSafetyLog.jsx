@@ -1,7 +1,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { X, BadgeCheck, AlertTriangle, History } from "lucide-react";
-import { formatDateTime } from "@/lib/dateFormat";
+import { formatDateTime, formatOpenDuration } from "@/lib/dateFormat";
 
 // Full permanent record for one station: every approval, incident and closed hazard,
 // merged chronologically. Data is stored on the station's safety record and
@@ -11,7 +11,17 @@ export default function StationSafetyLog({ station, rec, lang, onClose }) {
   const entries = [
     ...((rec?.approvalLog || []).map((a) => ({ type: "approval", at: a.at, who: a.by, text: ar ? "اعتماد بيانات السلامة" : "Safety data approved" }))),
     ...((rec?.incidentLog || []).map((i) => ({ type: "incident", at: i.at, who: i.by || "", text: i.description || (ar ? "حادثة سلامة" : "Safety incident") }))),
-    ...((rec?.hazardLog || []).map((h) => ({ type: "hazard", at: h.closedAt, who: h.closedBy || "", text: `${ar ? "أُغلق الخطر" : "Hazard closed"}: ${h.description}` }))),
+    ...((rec?.hazardLog || []).map((h) => {
+      const duration = h.openedAt
+        ? formatOpenDuration(h.openedAt, lang, h.closedAt ? new Date(h.closedAt).getTime() : Date.now())
+        : "";
+      return {
+        type: "hazard",
+        at: h.closedAt,
+        who: h.closedBy || "",
+        text: `${ar ? "أُغلق الخطر" : "Hazard closed"}: ${h.description}${duration ? (ar ? ` — بقي مفتوحًا ${duration}` : ` — open for ${duration}`) : ""}${h.beforePhoto?.url && h.afterPhoto?.url ? (ar ? " (قبل/بعد)" : " (before/after)") : ""}`,
+      };
+    })),
   ].sort((a, b) => new Date(b.at) - new Date(a.at));
 
   // Rendered through a portal onto <body> so no page container (overflow,
@@ -23,7 +33,7 @@ export default function StationSafetyLog({ station, rec, lang, onClose }) {
           <div className="flex items-center gap-2">
             <History className="w-4 h-4 text-accent" />
             <div>
-              <h3 className="font-body font-semibold text-sm">{ar ? "سجل المحطة" : "Station record"}</h3>
+              <h3 className="font-body font-semibold text-sm">{ar ? "سجل الفرع" : "Station record"}</h3>
               <p className="text-[11px] text-muted-foreground font-body">{station.name}</p>
             </div>
           </div>

@@ -3,32 +3,42 @@ import { cva } from "class-variance-authority";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ToastProvider = React.forwardRef(({ ...props }, ref) => (
-  <div
-    ref={ref}
-    className="fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]"
-    {...props}
-  />
+const ToastProvider = React.forwardRef(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("contents", className)} {...props} />
 ));
 ToastProvider.displayName = "ToastProvider";
 
-const ToastViewport = React.forwardRef(({ ...props }, ref) => (
+const ToastViewport = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className="fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]"
+    className={cn(
+      "fixed bottom-4 end-4 z-[100] flex max-h-[min(100vh,480px)] w-full max-w-[min(100vw-1.5rem,380px)] flex-col gap-2 p-0",
+      "pointer-events-none",
+      className
+    )}
     {...props}
   />
 ));
 ToastViewport.displayName = "ToastViewport";
 
 const toastVariants = cva(
-  "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full",
+  [
+    "group pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden",
+    "rounded-[12px] border px-3.5 py-3 pe-10",
+    "shadow-[0_10px_32px_rgba(20,40,75,0.12)]",
+    "will-change-transform",
+  ].join(" "),
   {
     variants: {
       variant: {
-        default: "border bg-background text-foreground",
+        default:
+          "border-[#E2E8F0] bg-white text-[#14284B] before:absolute before:inset-y-0 before:start-0 before:w-[3px] before:bg-[#14284B]",
+        success:
+          "border-[color-mix(in_oklab,#1E9E63_32%,#fff)] bg-[color-mix(in_oklab,#1E9E63_9%,#fff)] text-[#14284B] before:absolute before:inset-y-0 before:start-0 before:w-[3px] before:bg-[#1E9E63]",
+        warning:
+          "border-[#FDE68A] bg-[#FFFBEB] text-[#14284B] before:absolute before:inset-y-0 before:start-0 before:w-[3px] before:bg-[#D97706]",
         destructive:
-          "destructive group border-destructive bg-destructive text-destructive-foreground",
+          "destructive border-[#FECACA] bg-[#FEF2F2] text-[#991B1B] before:absolute before:inset-y-0 before:start-0 before:w-[3px] before:bg-[#DC2626]",
       },
     },
     defaultVariants: {
@@ -41,6 +51,7 @@ const Toast = React.forwardRef(({ className, variant, ...props }, ref) => {
   return (
     <div
       ref={ref}
+      data-state="open"
       className={cn(toastVariants({ variant }), className)}
       {...props}
     />
@@ -49,10 +60,13 @@ const Toast = React.forwardRef(({ className, variant, ...props }, ref) => {
 Toast.displayName = "Toast";
 
 const ToastAction = React.forwardRef(({ className, ...props }, ref) => (
-  <div
+  <button
+    type="button"
     ref={ref}
     className={cn(
-      "inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground group-[.destructive]:focus:ring-destructive",
+      "inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white px-3 text-xs font-medium text-[#14284B]",
+      "transition-colors hover:bg-[#F7F8FA] focus:outline-none focus:ring-2 focus:ring-[#1E9E63]/40",
+      "disabled:pointer-events-none disabled:opacity-50",
       className
     )}
     {...props}
@@ -62,15 +76,18 @@ ToastAction.displayName = "ToastAction";
 
 const ToastClose = React.forwardRef(({ className, ...props }, ref) => (
   <button
+    type="button"
     ref={ref}
     className={cn(
-      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
+      "absolute end-2 top-2 rounded-md p-1 text-[#5A6B85]/70 transition-opacity",
+      "opacity-70 hover:opacity-100 hover:text-[#14284B] focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-[#14284B]/20",
+      "group-[.destructive]:text-[#B91C1C]/70 group-[.destructive]:hover:text-[#991B1B]",
       className
     )}
     toast-close=""
     {...props}
   >
-    <X className="h-4 w-4" />
+    <X className="h-3.5 w-3.5" />
   </button>
 ));
 ToastClose.displayName = "ToastClose";
@@ -78,7 +95,7 @@ ToastClose.displayName = "ToastClose";
 const ToastTitle = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-sm font-semibold", className)}
+    className={cn("text-[13px] font-semibold leading-snug text-start", className)}
     {...props}
   />
 ));
@@ -87,7 +104,7 @@ ToastTitle.displayName = "ToastTitle";
 const ToastDescription = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-sm opacity-90", className)}
+    className={cn("text-[12.5px] leading-[1.55] text-start text-[#5A6B85] group-[.destructive]:text-[#991B1B]/90", className)}
     {...props}
   />
 ));
@@ -101,4 +118,4 @@ export {
   ToastDescription,
   ToastClose,
   ToastAction,
-}; 
+};

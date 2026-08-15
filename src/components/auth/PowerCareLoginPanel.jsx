@@ -10,7 +10,7 @@ import GoogleAccountPicker from "@/components/landing/GoogleAccountPicker";
 
 /**
  * @param {object} props
- * @param {"company"|"gov"|"individual"} [props.fixedKind] — locks portal; no cross-type login.
+ * @param {"company"|"individual"} [props.fixedKind] — locks portal; no cross-type login.
  * @param {string} [props.returnPath]
  * @param {boolean} [props.showTypeSelector] — legacy company/individual toggle (avoid when fixedKind set).
  */
@@ -38,6 +38,6 @@ export default function PowerCareLoginPanel({ showTypeSelector = false, fixedKin
       {flow.error && <p className="text-sm text-destructive">{flow.error}</p>}
       <button disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2 text-xs font-semibold text-primary-foreground disabled:opacity-60">{flow.loading && <Loader2 className="h-4 w-4 animate-spin" />}{flow.loading ? t("pleaseWaitBtn") : t("login")}</button>
     </form>
-    <Link to={`/forgot-password?type=${flow.kind}`} className="block text-center text-sm font-semibold text-accent hover:underline">{t("forgotPasswordLink")}</Link>
+      <Link to={`/forgot-password?type=${flow.kind}`} className="block text-center text-sm font-semibold text-[var(--nv-ink)] underline underline-offset-4">{t("forgotPasswordLink")}</Link>
   </div>;
 }

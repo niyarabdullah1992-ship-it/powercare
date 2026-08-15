@@ -1,73 +1,213 @@
 import React from "react";
 import { FileText, CheckCircle2, Circle, ListChecks } from "lucide-react";
-import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
+import EmployeeIdentityRow from "@/components/employees/EmployeeIdentityRow";
 import { netOf } from "@/lib/payroll";
+import { checkArticle90Gate, article90MaxDeduction } from "@/lib/payrollDerivations";
+import { buildWpsFileRows, wpsRowBlockers } from "@/lib/complianceDerivations";
+import { deductionLines, sourceLabel } from "@/lib/payrollDeductions";
 import { normalizeLocalizedNumber } from "@/lib/localizedNumber";
+import { BAD, OK, CARD, SURFACE } from "@/lib/platformStyles";
+
+const NAVY = "#14284B";
+const MUTED = "#5A6B85";
+const BORDER = "#E2E8F0";
+const GREEN = "#1E9E63";
+
+// Money keeps Western digits on every payroll surface so a run reads the same
+// way in the table, the totals, and the exported WPS file.
+const money = (value) => Number(value || 0).toLocaleString("en-US");
+
+function mudadFileStatus(item, employee, ar) {
+  const profile = employee?.profile || {};
+  const base = Number(item.base) || 0;
+  const allowances = Number(item.allowances) || 0;
+  const [row] = buildWpsFileRows([{
+    employeeId: item.employeeId,
+    employeeName: employee?.name || "",
+    nationalId: profile.nationalId || employee?.nationalId || "",
+    iban: profile.iban || "",
+    netPay: netOf(item),
+    base,
+    allowances,
+    qiwaWage: item.qiwaWage != null ? item.qiwaWage : base + allowances,
+  }]);
+  const blocker = wpsRowBlockers(row, ar)[0];
+  return blocker || (ar ? "ملف مدى جاهز" : "Mudad file ready");
+}
+
+function attendanceChip(item, ar) {
+  const att = deductionLines(item).find((line) => line.source === "attendance");
+  if (att) {
+    const ref = att.sourceRefId ? ` · ${att.sourceRefId}` : "";
+    return `${sourceLabel("attendance", ar)}${ref}`;
+  }
+  if (Number(item.deductions) > 0) return ar ? "خصم موثّق" : "Documented deduction";
+  return ar ? "بلا خصم حضور" : "No attendance deduction";
+}
 
 export default function PayrollRow({ item, employee, ar, onChange, onTogglePaid, onPayslip, onDeductions }) {
   const num = (v) => Number(v) || 0;
-  const cell = (field, editable = true) => (
-    <input
-      type="text"
-      inputMode="decimal"
-      value={item[field] ?? 0}
-      disabled={!editable || item.paid}
-      onChange={(e) => onChange(field, Number(normalizeLocalizedNumber(e.target.value)) || 0)}
-      aria-invalid={field === "base" && !item.isOwner && num(item.base) <= 0}
-      title={["base", "allowances"].includes(field) ? (ar ? "يُحفظ التعديل تلقائيًا في ملف الموظف" : "Changes are saved automatically to the employee profile") : undefined}
-      className={`h-8 w-full max-w-24 rounded-md border bg-background px-2 text-center text-sm font-body disabled:opacity-60 ${field === "base" && !item.isOwner && num(item.base) <= 0 ? "border-destructive/60" : "border-input"}`}
-      dir="ltr"
-    />
-  );
+  const baseMissing = !item.isOwner && num(item.base) <= 0;
+  const attLabel = attendanceChip(item, ar);
+  const mudadLabel = mudadFileStatus(item, employee, ar);
+  const mudadReady = mudadLabel === (ar ? "ملف مدى جاهز" : "Mudad file ready");
+  const cell = (field, editable = true) => {
+    const invalid = field === "base" && baseMissing;
+    return (
+      <input
+        type="text"
+        inputMode="decimal"
+        value={item[field] ?? 0}
+        disabled={!editable || item.paid}
+        onChange={(e) => onChange(field, Number(normalizeLocalizedNumber(e.target.value)) || 0)}
+        aria-invalid={invalid}
+        title={["base", "allowances"].includes(field) ? (ar ? "يُحفظ التعديل تلقائيًا في ملف الموظف" : "Changes are saved automatically to the employee profile") : undefined}
+        style={{
+          height: "32px",
+          width: "100%",
+          maxWidth: "96px",
+          borderRadius: "8px",
+          border: `1px solid ${invalid ? "#FCA5A5" : BORDER}`,
+          background: item.paid ? "#F7F8FA" : CARD,
+          color: NAVY,
+          padding: "0 8px",
+          textAlign: "center",
+          fontSize: "12.5px",
+          fontFamily: "inherit",
+          opacity: !editable || item.paid ? 0.7 : 1,
+        }}
+        dir="ltr"
+      />
+    );
+  };
+  const a90 = checkArticle90Gate(item);
+  const a90Max = article90MaxDeduction(item);
+  const cellStyle = { padding: "12px 8px", textAlign: "center", borderBottom: `1px solid ${BORDER}` };
+  const chainChip = {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "1px 7px",
+    borderRadius: 20,
+    fontSize: 10,
+    fontWeight: 600,
+    background: SURFACE,
+    color: MUTED,
+    border: `1px solid ${BORDER}`,
+    lineHeight: 1.4,
+    maxWidth: 160,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  };
   return (
-    <tr className={`align-middle [&>td]:px-2 [&>td]:py-3 [&>td]:text-center md:[&>td]:h-20 ${item.paid ? "opacity-70" : ""}`}>
-      <td data-label={ar ? "الموظف" : "Employee"}>
-        <EmployeeNameLink employeeId={employee?.role ? item.employeeId : null} employeeName={employee?.name || "—"} className="block text-center text-sm font-body font-medium" />
-        <p className="text-[11px] text-muted-foreground font-body">{employee?.position || employee?.role || ""}</p>
+    <tr style={{ opacity: item.paid ? 0.72 : 1 }}>
+      <td data-label={ar ? "الموظف" : "Employee"} style={{ ...cellStyle, textAlign: "start" }}>
+        <EmployeeIdentityRow
+          employee={employee}
+          employeeId={employee?.role ? item.employeeId : null}
+          name={employee?.name || "—"}
+          subtitle={employee?.position || employee?.role || ""}
+          showId={false}
+          compact
+          link={!!employee?.role}
+        />
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4, marginTop: 6 }}>
+          <span style={chainChip} title={attLabel}>{attLabel}</span>
+          <span style={{ fontSize: 10, color: MUTED }} aria-hidden>→</span>
+          <span style={chainChip} dir="ltr">{ar ? "صافٍ" : "Net"} {money(netOf(item))}</span>
+          <span style={{ fontSize: 10, color: MUTED }} aria-hidden>→</span>
+          <span style={mudadReady ? OK : BAD} title={mudadLabel}>{mudadLabel}</span>
+        </div>
       </td>
-      <td data-label={ar ? "الأساسي" : "Base"}>{cell("base")}</td>
-      <td data-label={ar ? "البدلات" : "Allowances"}>{cell("allowances")}</td>
-      <td data-label={ar ? "مكافآت" : "Bonus"}>{cell("bonus")}</td>
+      <td data-label={ar ? "الأساسي" : "Base"} style={cellStyle}>{cell("base")}</td>
+      <td data-label={ar ? "البدلات" : "Allowances"} style={cellStyle}>{cell("allowances")}</td>
+      <td data-label={ar ? "مكافآت" : "Bonus"} style={cellStyle}>{cell("bonus")}</td>
       {/* Deductions are never typed freely — the total is the sum of documented lines. */}
-      <td data-label={ar ? "خصومات" : "Deductions"}>
+      <td data-label={ar ? "خصومات" : "Deductions"} style={cellStyle}>
         <button
           type="button"
           onClick={onDeductions}
           title={ar ? "عرض بنود الخصم الموثّقة" : "View documented deduction lines"}
-          className="mx-auto flex h-8 w-full max-w-24 items-center justify-center gap-1 rounded-md border border-input bg-background px-2 text-sm font-body hover:bg-muted"
+          style={{
+            height: "32px",
+            width: "100%",
+            maxWidth: "96px",
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
+            borderRadius: "8px",
+            border: `1px solid ${BORDER}`,
+            background: CARD,
+            color: NAVY,
+            fontSize: "12.5px",
+            fontFamily: "inherit",
+            cursor: "pointer",
+          }}
         >
-          <span dir="ltr">{num(item.deductions).toLocaleString()}</span>
-          <ListChecks className="h-3.5 w-3.5 text-accent" />
+          <span dir="ltr">{money(item.deductions)}</span>
+          <ListChecks style={{ width: 13, height: 13, color: GREEN }} />
         </button>
       </td>
-      <td data-label={ar ? "الصافي" : "Net"}>
-        <span className="text-sm font-body font-semibold text-accent" dir="ltr">
-          {netOf(item).toLocaleString()} {item.currency}
+      <td data-label={ar ? "سقف م.90" : "Art. 90 cap"} style={cellStyle}>
+        <span
+          style={a90.ok ? OK : BAD}
+          title={ar
+            ? `المادة 90: الخصم ${money(item.deductions)} من سقف ${money(a90Max)}`
+            : `Art. 90: deducted ${money(item.deductions)} of ${money(a90Max)} cap`}
+        >
+          {a90.ok
+            ? (ar ? `${money(item.deductions)} / ${money(a90Max)}` : `${money(item.deductions)} / ${money(a90Max)}`)
+            : (ar ? "تجاوز نصف الأجر" : "Over half the wage")}
         </span>
       </td>
-      <td data-label={ar ? "الحالة" : "Status"}>
+      <td data-label={ar ? "الصافي" : "Net"} style={cellStyle}>
+        <span dir="ltr" style={{ fontSize: "12.5px", fontWeight: 600, color: NAVY }}>
+          {money(netOf(item))} {item.currency}
+        </span>
+      </td>
+      <td data-label={ar ? "الحالة" : "Status"} style={cellStyle}>
         <button
           onClick={() => onTogglePaid(!item.paid)}
-          disabled={!item.isOwner && !item.paid && num(item.base) <= 0}
-          title={!item.isOwner && !item.paid && num(item.base) <= 0 ? (ar ? "حدّد الراتب الأساسي أولاً" : "Set the base salary first") : undefined}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-body font-medium border transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-            item.paid
-              ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800"
-              : "bg-muted text-muted-foreground border-border hover:bg-secondary"
-          }`}
+          disabled={baseMissing && !item.paid}
+          title={baseMissing && !item.paid ? (ar ? "حدّد الراتب الأساسي أولاً" : "Set the base salary first") : undefined}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "4px 11px",
+            borderRadius: "20px",
+            fontSize: "11px",
+            fontWeight: 500,
+            fontFamily: "inherit",
+            border: `1px solid ${item.paid ? "#BBF7D0" : BORDER}`,
+            background: item.paid ? "#ECFDF3" : "#F7F8FA",
+            color: item.paid ? "#15803D" : MUTED,
+            cursor: baseMissing && !item.paid ? "not-allowed" : "pointer",
+            opacity: baseMissing && !item.paid ? 0.45 : 1,
+          }}
         >
-          {item.paid ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />}
+          {item.paid ? <CheckCircle2 style={{ width: 13, height: 13 }} /> : <Circle style={{ width: 13, height: 13 }} />}
           {item.paid ? (ar ? "مدفوع" : "Paid") : (ar ? "غير مدفوع" : "Unpaid")}
         </button>
       </td>
-      <td data-label={ar ? "قسيمة" : "Payslip"}>
+      <td data-label={ar ? "قسيمة" : "Payslip"} style={cellStyle}>
         <button
           onClick={onPayslip}
           disabled={num(item.base) + num(item.allowances) === 0}
           title={ar ? "قسيمة الراتب PDF" : "Payslip PDF"}
-          className="p-2 rounded-md border border-border hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-40"
+          style={{
+            padding: "7px",
+            borderRadius: "8px",
+            border: `1px solid ${BORDER}`,
+            background: CARD,
+            color: MUTED,
+            cursor: num(item.base) + num(item.allowances) === 0 ? "not-allowed" : "pointer",
+            opacity: num(item.base) + num(item.allowances) === 0 ? 0.4 : 1,
+          }}
         >
-          <FileText className="w-4 h-4" strokeWidth={1.75} />
+          <FileText style={{ width: 15, height: 15 }} strokeWidth={1.75} />
         </button>
       </td>
     </tr>

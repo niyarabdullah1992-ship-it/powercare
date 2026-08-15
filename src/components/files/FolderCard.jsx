@@ -3,40 +3,75 @@ import { Folder, Trash2, Pencil } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import RenameDialog from "@/components/files/RenameDialog";
+import { BORDER, MUTED, NAVY, CARD } from "@/lib/platformStyles";
+import { identityIconWrap } from "@/components/shared/IdentityCard";
+
+const iconBtn = {
+  width: 26,
+  height: 26,
+  border: "none",
+  background: "transparent",
+  color: MUTED,
+  borderRadius: 8,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+};
 
 export default function FolderCard({ folder, count, onOpen, onDelete, onRename }) {
   const { t, lang } = useI18n();
   const [renameOpen, setRenameOpen] = useState(false);
   return (
-    <div className="group relative bg-card border border-border rounded-lg p-4 hover:border-accent/60 hover:shadow-sm transition-all cursor-pointer" onClick={onOpen}>
-      <Folder className="w-8 h-8 text-accent mb-2" strokeWidth={1.5} fill="currentColor" fillOpacity={0.15} />
-      <p className="text-sm font-medium font-body truncate" dir="auto">{folder.name}</p>
-      <p className="text-[11px] text-muted-foreground mt-0.5">{count} {t("itemsUnit")}</p>
-      <div onClick={(e) => e.stopPropagation()} className="absolute top-2 end-2 flex items-center gap-0.5">
-        {onRename && (
-          <button
-            onClick={() => setRenameOpen(true)}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
-            aria-label={lang === "ar" ? "تعديل" : "Edit"}
-          >
-            <Pencil className="w-3.5 h-3.5" />
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+      style={{
+        position: "relative",
+        background: CARD,
+        border: `1px solid ${BORDER}`,
+        borderRadius: 16,
+        padding: "14px 14px 12px",
+        cursor: "pointer",
+        fontFamily: "inherit",
+      }}
+    >
+      <span style={{ ...identityIconWrap, width: 36, height: 36, borderRadius: 10 }}>
+        <Folder style={{ width: 16, height: 16 }} strokeWidth={1.75} />
+      </span>
+      <p style={{ margin: "10px 0 0", fontSize: 13, fontWeight: 600, color: NAVY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} dir="auto">
+        {folder.name}
+      </p>
+      <p style={{ margin: "3px 0 0", fontSize: 11, color: MUTED }}>
+        {count} {t("itemsUnit")}
+      </p>
+      <div onClick={(e) => e.stopPropagation()} style={{ position: "absolute", top: 8, insetInlineEnd: 8, display: "flex", gap: 2 }}>
+        {onRename ? (
+          <button type="button" onClick={() => setRenameOpen(true)} style={iconBtn} aria-label={lang === "ar" ? "تعديل" : "Edit"}>
+            <Pencil style={{ width: 13, height: 13 }} />
           </button>
-        )}
-        {onDelete && <ConfirmDeleteDialog
-          onConfirm={onDelete}
-          trigger={
-            <button
-              className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
-              aria-label={t("delete")}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          }
-        />}
+        ) : null}
+        {onDelete ? (
+          <ConfirmDeleteDialog
+            onConfirm={onDelete}
+            trigger={
+              <button type="button" style={iconBtn} aria-label={t("delete")}>
+                <Trash2 style={{ width: 13, height: 13 }} />
+              </button>
+            }
+          />
+        ) : null}
       </div>
-      {onRename && (
+      {onRename ? (
         <RenameDialog open={renameOpen} onOpenChange={setRenameOpen} initialName={folder.name} onRename={onRename} />
-      )}
+      ) : null}
     </div>
   );
 }

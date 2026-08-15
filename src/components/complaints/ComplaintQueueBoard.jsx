@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { ArrowUpCircle, Check, Loader2, MessageSquareWarning } from "lucide-react";
+import { ArrowUpCircle, Check, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import {
   checkCloseGate,
   checkEscalateGate,
+  deriveComplaintStats,
+  matchesVoiceChannel,
 } from "@/lib/complaintDerivations";
+import { matchesStationScope } from "@/hooks/useStationScope";
+import { ACCENT, MUTED, NAVY, BAD, OK, WARN, NEUTRAL, num, tableShell, CARD } from "@/lib/platformStyles";
 import { toast } from "@/components/ui/use-toast";
 
 async function complaintsApi(payload) {
@@ -14,11 +18,19 @@ async function complaintsApi(payload) {
 }
 
 const KIND_LABEL = {
-  anonymous: { ar: "مجهول", en: "Anonymous", cls: "border-border bg-muted text-foreground" },
-  safety: { ar: "سلامة", en: "Safety", cls: "border-red-200 bg-red-50 text-red-700" },
-  suggestion: { ar: "اقتراح", en: "Suggestion", cls: "border-emerald-200 bg-emerald-50 text-emerald-800" },
-  facilities: { ar: "مرافق", en: "Facilities", cls: "border-amber-200 bg-amber-50 text-amber-900" },
-  public: { ar: "مُعرَّف", en: "Named", cls: "border-border bg-muted text-muted-foreground" },
+  anonymous: { ar: "مجهول", en: "Anonymous" },
+  safety: { ar: "سلامة", en: "Safety" },
+  suggestion: { ar: "اقتراح", en: "Suggestion" },
+  facilities: { ar: "مرافق", en: "Facilities" },
+  public: { ar: "مُعرَّف", en: "Named" },
+};
+
+const KIND_STYLE = {
+  anonymous: NEUTRAL,
+  safety: BAD,
+  suggestion: OK,
+  facilities: WARN,
+  public: NEUTRAL,
 };
 
 function slaText(r, ar) {
@@ -39,17 +51,15 @@ function slaText(r, ar) {
   return ar ? `${Math.round(h)} ساعات` : `${Math.round(h)}h`;
 }
 
-export default function ComplaintQueueBoard({ lang = "ar" }) {
+export default function ComplaintQueueBoard({ lang = "ar", stationScope = "all", voice = "all" }) {
   const ar = lang === "ar";
   const { company, currentUser } = useAuth();
   const [reports, setReports] = useState([]);
-  const [stats, setStats] = useState(null);
   const [chain, setChain] = useState([]);
   const [busy, setBusy] = useState(false);
 
   const applyRemote = (remote) => {
     if (Array.isArray(remote?.reports)) setReports(remote.reports);
-    if (remote?.stats) setStats(remote.stats);
     if (Array.isArray(remote?.chain)) setChain(remote.chain);
   };
 
@@ -115,167 +125,219 @@ export default function ComplaintQueueBoard({ lang = "ar" }) {
 
   if (!currentUser) return null;
 
+  // Scope narrows the queue in place; the counters are re-derived from the same
+  // rows so a station's figures never disagree with the list under them.
+  const scopedReports = reports.filter((r) =>
+    (stationScope === "all" || matchesStationScope(r.stationId, stationScope))
+    && matchesVoiceChannel(r, voice),
+  );
+  const scopedStats = deriveComplaintStats(scopedReports);
+
+  const voiceCopy = voice === "suggestion"
+    ? {
+      open: ar ? "اقتراحات مفتوحة" : "Open suggestions",
+      openSuffix: ar ? "بانتظار المراجعة" : "awaiting review",
+      avg: ar ? "متوسط زمن المراجعة" : "Average review time",
+      breach: ar ? "تجاوزت زمن المراجعة" : "Review overdue",
+      breachSuffix: ar ? "تُرفع للمدير التالي" : "raised to next manager",
+      closed: ar ? "أُغلقت هذا الشهر" : "Closed this month",
+      closedEmpty: ar ? "لا اقتراحات مغلقة بعد" : "no suggestions closed yet",
+      list: ar ? "قائمة الاقتراحات" : "Suggestion queue",
+      listHint: ar
+        ? "الاقتراح يصل باسم صاحبه — يُراجع ثم يُعتمد أو يُعاد بملاحظة"
+        : "Suggestions arrive with the author’s name — review, adopt, or return with a note",
+      emptyAll: ar ? "لا اقتراحات في الصندوق." : "No suggestions in the queue.",
+      emptyStation: ar ? "لا اقتراحات على هذا الفرع." : "No suggestions for this station.",
+    }
+    : voice === "anonymous"
+      ? {
+        open: ar ? "بلاغات مجهولة مفتوحة" : "Open anonymous reports",
+        openSuffix: ar ? "الهوية محمية" : "identity protected",
+        avg: ar ? "متوسط زمن الاستجابة" : "Average response time",
+        breach: ar ? "تجاوزت زمن الاستجابة" : "Breached SLA",
+        breachSuffix: ar ? "صُعّدت تلقائيًا" : "auto-escalated",
+        closed: ar ? "أُغلقت هذا الشهر" : "Closed this month",
+        closedEmpty: ar ? "لا بلاغات مغلقة بعد" : "no reports closed yet",
+        list: ar ? "قائمة البلاغات المجهولة" : "Anonymous queue",
+        listHint: ar
+          ? "تصل دون كشف هوية المُبلِّغ — تجاوز الزمن يصعّد تلقائيًا"
+          : "Arrive without revealing the reporter — SLA breach auto-escalates",
+        emptyAll: ar ? "لا بلاغات مجهولة في الصندوق." : "No anonymous reports in the queue.",
+        emptyStation: ar ? "لا بلاغات مجهولة على هذا الفرع." : "No anonymous reports for this station.",
+      }
+      : {
+        open: ar ? "شكاوى مفتوحة" : "Open complaints",
+        openSuffix: ar ? "هوية المُبلِّغ ظاهرة" : "reporter identified",
+        avg: ar ? "متوسط زمن الاستجابة" : "Average response time",
+        breach: ar ? "تجاوزت زمن الاستجابة" : "Breached SLA",
+        breachSuffix: ar ? "صُعّدت تلقائيًا" : "auto-escalated",
+        closed: ar ? "أُغلقت هذا الشهر" : "Closed this month",
+        closedEmpty: ar ? "لا شكاوى مغلقة بعد" : "no complaints closed yet",
+        list: ar ? "قائمة الشكاوى" : "Complaint queue",
+        listHint: ar
+          ? "الشكاوى الجهرية تُعالج بالاسم — تجاوز الزمن يصعّد تلقائيًا"
+          : "Named complaints are handled in the open — SLA breach auto-escalates",
+        emptyAll: ar ? "لا شكاوى في الصندوق." : "No complaints in the queue.",
+        emptyStation: ar ? "لا شكاوى على هذا الفرع." : "No complaints for this station.",
+      };
+
   const statCards = [
     {
-      label: ar ? "بلاغات مفتوحة" : "Open reports",
-      value: stats?.openCount ?? "—",
-      suffix: stats?.anonymousOpen
-        ? (ar ? `${stats.anonymousOpen} منها مجهولة` : `${stats.anonymousOpen} anonymous`)
-        : (ar ? "لا بلاغات مجهولة" : "none anonymous"),
+      label: voiceCopy.open,
+      value: scopedStats?.openCount ?? "—",
+      suffix: voiceCopy.openSuffix,
     },
     {
-      label: ar ? "متوسط زمن الاستجابة" : "Average response time",
-      value: stats?.avgResponseHours ?? "—",
+      label: voiceCopy.avg,
+      value: scopedStats?.avgResponseHours ?? "—",
       suffix: ar ? "ساعات" : "hours",
       accent: true,
     },
     {
-      label: ar ? "تجاوزت زمن الاستجابة" : "Breached SLA",
-      value: stats?.breachedCount ?? "—",
-      suffix: ar ? "صُعّدت تلقائيًا" : "auto-escalated",
+      label: voiceCopy.breach,
+      value: scopedStats?.breachedCount ?? "—",
+      suffix: voiceCopy.breachSuffix,
       danger: true,
     },
     {
-      label: ar ? "أُغلقت هذا الشهر" : "Closed this month",
-      value: stats?.closedThisMonth ?? "—",
-      suffix: stats?.avgSatisfaction != null
-        ? (ar ? `بنسبة رضا ${stats.avgSatisfaction}٪` : `${stats.avgSatisfaction}% satisfaction`)
-        : (ar ? "لا بلاغات مغلقة بعد" : "no reports closed yet"),
+      label: voiceCopy.closed,
+      value: scopedStats?.closedThisMonth ?? "—",
+      suffix: scopedStats?.avgSatisfaction != null
+        ? (ar ? `بنسبة رضا ${scopedStats.avgSatisfaction}٪` : `${scopedStats.avgSatisfaction}% satisfaction`)
+        : voiceCopy.closedEmpty,
     },
   ];
 
   return (
-    <section className="space-y-4" dir={ar ? "rtl" : "ltr"}>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((s) => (
-          <div key={s.label} className="rounded-xl border bg-card px-4 py-3">
-            <div className="text-[11px] text-muted-foreground">{s.label}</div>
-            <div className="mt-2 flex flex-wrap items-baseline gap-1.5">
-              <span
-                className={`font-heading text-2xl font-semibold tabular-nums ${
-                  s.danger ? "text-red-600" : s.accent ? "text-accent" : "text-foreground"
-                }`}
-                dir="ltr"
-              >
-                {s.value}
+    <section style={{ width: "100%", display: "flex", flexDirection: "column" }} dir={ar ? "rtl" : "ltr"}>
+      <div style={tableShell}>
+        <div className="nv-voice-kpis">
+          {statCards.map((s) => (
+            <div key={s.label} style={{ padding: "12px 16px", minWidth: 0 }}>
+              <div style={{ fontSize: "11px", color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.label}</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "6px", marginTop: "6px", flexWrap: "wrap" }}>
+                <span dir="ltr" style={{ ...num(s.danger ? "#DC2626" : s.accent ? ACCENT : NAVY) }}>
+                  {s.value}
+                </span>
+                <span style={{ fontSize: "11px", color: MUTED }}>{s.suffix}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "10px 16px", borderTop: "1px solid #E2E8F0", borderBottom: scopedReports.length ? "1px solid #E2E8F0" : "none", flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>{voiceCopy.list}</div>
+            <div style={{ fontSize: "11px", color: MUTED, marginTop: "2px" }}>
+              {voiceCopy.listHint}
+            </div>
+          </div>
+          {busy && <Loader2 className="h-4 w-4 animate-spin" style={{ color: MUTED }} />}
+        </div>
+
+        {scopedReports.length === 0 ? (
+          <div style={{ padding: "18px 16px", textAlign: "center", fontSize: "13px", color: MUTED }}>
+            {stationScope === "all" ? voiceCopy.emptyAll : voiceCopy.emptyStation}
+          </div>
+        ) : scopedReports.map((r) => {
+          const kindKey = r.kind || "public";
+          const kindStyle = KIND_STYLE[kindKey] || KIND_STYLE.public;
+          const tier = ar ? r.currentTierLabelAr : r.currentTierLabelEn;
+          const slaColor = r.slaBreached ? "#DC2626" : r.slaHoursLeft != null && r.slaHoursLeft < 8 ? "#B45309" : MUTED;
+          return (
+            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 18px", borderBottom: "1px solid #F1F5F9", flexWrap: "wrap" }}>
+              <span style={kindStyle}>{ar ? (KIND_LABEL[kindKey]?.ar || kindKey) : (KIND_LABEL[kindKey]?.en || kindKey)}</span>
+              <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+                <div style={{ fontSize: "13px", fontWeight: 500, color: NAVY }}>{r.title}</div>
+                <div style={{ fontSize: "11px", color: MUTED, marginTop: "2px" }}>
+                  {[r.stationName, r.anonymousId || (r.reporterName ? (ar ? `بُلّغ عنه بواسطة ${r.reporterName}` : `reported by ${r.reporterName}`) : null)]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", minWidth: "96px" }}>
+                <span style={{ fontSize: "10px", color: MUTED }}>{ar ? "المتبقي" : "Remaining"}</span>
+                <span style={{ fontSize: "11px", fontWeight: 600, color: slaColor }}>{slaText(r, ar)}</span>
+              </div>
+              <span style={{ fontSize: "11px", color: MUTED, whiteSpace: "nowrap" }}>
+                {r.lastEscalationReason === "SLA_BREACH"
+                  ? (ar ? `صُعّد تلقائيًا · ${tier}` : `Auto-escalated · ${tier}`)
+                  : (ar ? `لدى ${tier}` : `With ${tier}`)}
               </span>
-              <span className="text-[11px] text-muted-foreground">{s.suffix}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="overflow-hidden rounded-xl border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-          <div className="flex items-center gap-2">
-            <MessageSquareWarning className="h-4 w-4 text-accent" />
-            <div>
-              <div className="text-sm font-semibold">{ar ? "قائمة البلاغات" : "Report queue"}</div>
-              <div className="text-[11px] text-muted-foreground">
-                {ar
-                  ? "البلاغات المجهولة تصل دون كشف هوية المُبلِّغ — تجاوز زمن الاستجابة يصعّد تلقائيًا"
-                  : "Anonymous reports arrive without revealing the reporter — SLA breach auto-escalates"}
+              {r.status === "open" && !r.atTop && (
+                <button type="button" disabled={busy} onClick={() => escalate(r)} style={{
+                  padding: "7px 13px",
+                  borderRadius: "9px",
+                  border: `1px solid ${ACCENT}`,
+                  background: CARD,
+                  color: "#14683F",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  opacity: busy ? 0.5 : 1,
+                }}>
+                  <ArrowUpCircle className="h-3.5 w-3.5" />
+                  {ar ? "صعّد" : "Escalate"}
+                </button>
+              )}
+              {r.status === "open" && r.atTop && (
+                <span style={NEUTRAL}>{ar ? "أعلى مستوى" : "Top tier"}</span>
+              )}
+              {r.status === "open" && (
+                <button type="button" disabled={busy} onClick={() => close(r)} style={{
+                  padding: "7px 13px",
+                  borderRadius: "9px",
+                  border: "1px solid #E2E8F0",
+                  background: CARD,
+                  color: MUTED,
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  opacity: busy ? 0.5 : 1,
+                }}>
+                  <Check className="h-3.5 w-3.5" />
+                  {ar ? "أغلق" : "Close"}
+                </button>
+              )}
+              <div style={{ flexBasis: "100%", display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap", paddingTop: "4px" }}>
+                <span style={{ fontSize: "9px", color: MUTED, letterSpacing: "0.06em", marginInlineEnd: "4px" }}>
+                  {ar ? "سلسلة التصعيد" : "Escalation chain"}
+                </span>
+                {(r.steps || []).map((st, i) => (
+                  <span key={st.id || i} style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    fontSize: "11px",
+                    color: st.state === "current" ? ACCENT : MUTED,
+                    fontWeight: st.state === "current" ? 600 : 400,
+                  }}>
+                    <span style={{
+                      width: "6px",
+                      height: "6px",
+                      borderRadius: "50%",
+                      background: st.state === "done" ? "#CBD5E1" : st.state === "current" ? ACCENT : "transparent",
+                      border: st.state === "pending" ? "1px solid #CBD5E1" : "none",
+                      flexShrink: 0,
+                    }} />
+                    {ar ? st.labelAr : st.labelEn}
+                    {i < (r.steps?.length || 0) - 1 && (
+                      <span style={{ width: "14px", height: "1px", background: "#E2E8F0", margin: "0 2px" }} />
+                    )}
+                  </span>
+                ))}
               </div>
             </div>
-          </div>
-          {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-        </div>
-
-        <div className="divide-y">
-          {reports.length === 0 && (
-            <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-              {ar ? "لا بلاغات في الطابور." : "No reports in the queue."}
-            </div>
-          )}
-          {reports.map((r) => {
-            const kind = KIND_LABEL[r.kind] || KIND_LABEL.public;
-            const tier = ar ? r.currentTierLabelAr : r.currentTierLabelEn;
-            return (
-              <div key={r.id} className="space-y-2 px-4 py-3 hover:bg-muted/40">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className={`rounded-md border px-2 py-0.5 text-[10px] font-semibold ${kind.cls}`}>
-                    {kind[ar ? "ar" : "en"]}
-                  </span>
-                  <div className="min-w-0 flex-1 basis-[260px]">
-                    <div className="text-sm font-medium text-foreground text-pretty">{r.title}</div>
-                    <div className="mt-0.5 text-[11px] text-muted-foreground">
-                      {[r.stationName, r.anonymousId || (r.reporterName ? (ar ? `بُلّغ عنه بواسطة ${r.reporterName}` : `reported by ${r.reporterName}`) : null)]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </div>
-                  </div>
-                  <div className="min-w-[96px]">
-                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      {ar ? "المتبقي" : "Remaining"}
-                    </div>
-                    <div className={`text-xs font-semibold ${r.slaBreached ? "text-red-600" : r.slaHoursLeft != null && r.slaHoursLeft < 8 ? "text-amber-700" : "text-muted-foreground"}`}>
-                      {slaText(r, ar)}
-                    </div>
-                  </div>
-                  <span className="whitespace-nowrap text-[11px] text-muted-foreground">
-                    {r.lastEscalationReason === "SLA_BREACH"
-                      ? (ar ? `صُعّد تلقائيًا · ${tier}` : `Auto-escalated · ${tier}`)
-                      : (ar ? `لدى ${tier}` : `With ${tier}`)}
-                  </span>
-                  {r.status === "open" && !r.atTop && (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => escalate(r)}
-                      className="inline-flex h-8 items-center gap-1 rounded-md border border-accent bg-white px-2.5 text-[11px] font-semibold text-accent disabled:opacity-50"
-                    >
-                      <ArrowUpCircle className="h-3.5 w-3.5" />
-                      {ar ? "صعّد" : "Escalate"}
-                    </button>
-                  )}
-                  {r.status === "open" && r.atTop && (
-                    <span className="rounded-md border bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
-                      {ar ? "أعلى مستوى" : "Top tier"}
-                    </span>
-                  )}
-                  {r.status === "open" && (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => close(r)}
-                      className="inline-flex h-8 items-center gap-1 rounded-md border px-2.5 text-[11px] font-semibold disabled:opacity-50"
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                      {ar ? "أغلق" : "Close"}
-                    </button>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  <span className="me-1 text-[9px] tracking-wide text-muted-foreground">
-                    {ar ? "سلسلة التصعيد" : "Escalation chain"}
-                  </span>
-                  {(r.steps || []).map((st, i) => (
-                    <span
-                      key={st.id || i}
-                      className={`inline-flex items-center gap-1 text-[11px] ${
-                        st.state === "current" ? "font-semibold text-accent" : "text-muted-foreground"
-                      }`}
-                    >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          st.state === "done"
-                            ? "bg-border"
-                            : st.state === "current"
-                              ? "bg-accent"
-                              : "border border-border bg-white"
-                        }`}
-                      />
-                      {ar ? st.labelAr : st.labelEn}
-                      {i < (r.steps?.length || 0) - 1 && (
-                        <span className={`mx-0.5 h-px w-3.5 ${st.state === "done" ? "bg-border" : "bg-border/60"}`} />
-                      )}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+          );
+        })}
       </div>
     </section>
   );

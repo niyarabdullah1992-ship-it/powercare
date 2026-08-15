@@ -1,105 +1,308 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { updateEmployeeProfile } from "@/lib/store";
-import { Pencil, Check, Briefcase, Building2, CalendarDays, IdCard, MapPin, FileText, Heart, Flag, GraduationCap, PhoneCall, User, Landmark, Layers3, MapPinned } from "lucide-react";
+import {
+  PROFILE_GROUPS,
+  canEditProfileKey,
+  canonicalFieldValue,
+  displayProfileField,
+  isProfileFieldVisible,
+  profileFieldLabel,
+  profileFieldOptions,
+  profileFieldValue,
+} from "@/lib/employeeProfileFields";
 import MobileSelect from "@/components/mobile/MobileSelect";
+import { MUTED, NAVY, NAVY_FILL, OK, WARN, BAD, field, cardShell, CARD } from "@/lib/platformStyles";
 
-// Field groups: label = i18n key for original groups; ar/en = inline labels for
-// the HR data-collection group. This list also powers ProfileCompletionCard.
-export const PROFILE_GROUPS = [
-  { label: "employmentInfo", fields: [
-    { key: "position", icon: Briefcase },
-    { key: "department", icon: Building2 },
-    { key: "hireDate", icon: CalendarDays, type: "date" },
-  ] },
-  { label: "personalInfo", fields: [
-    { key: "nationalId", icon: IdCard },
-    { key: "address", icon: MapPin },
-    { key: "notes", icon: FileText, area: true, optional: true },
-  ] },
-  { ar: "بيانات الموارد البشرية", en: "HR Information", fields: [
-    { key: "birthDate", icon: CalendarDays, type: "date", ar: "تاريخ الميلاد", en: "Birth date" },
-    { key: "nationality", icon: Flag, ar: "الجنسية", en: "Nationality" },
-    { key: "maritalStatus", icon: Heart, ar: "الحالة الاجتماعية", en: "Marital status" },
-    { key: "qualification", icon: GraduationCap, ar: "المؤهل العلمي", en: "Qualification" },
-    { key: "emergencyName", icon: User, ar: "جهة اتصال الطوارئ", en: "Emergency contact" },
-    { key: "emergencyPhone", icon: PhoneCall, ar: "هاتف الطوارئ", en: "Emergency phone", dir: "ltr" },
-    { key: "iban", icon: Landmark, ar: "الحساب البنكي (IBAN)", en: "Bank account (IBAN)", dir: "ltr" },
-  ] },
-];
+export { PROFILE_GROUPS };
 
-export default function ProfessionalInfoTab({ employee, companyId, canEdit, isSelf, canEditGrade, grades, fallbackPosition }) {
+function daysTo(iso) {
+  if (!iso) return null;
+  const d = Math.round((new Date(`${String(iso).slice(0, 10)}T00:00:00`) - Date.now()) / 86400000);
+  return Number.isFinite(d) ? d : null;
+}
+
+function expiryChip(iso, ar) {
+  const d = daysTo(iso);
+  if (d === null) return null;
+  if (d < 0) return { text: ar ? "منتهٍ" : "Expired", style: BAD };
+  if (d <= 60) return { text: ar ? `${d} يومًا` : `${d} days`, style: WARN };
+  return { text: ar ? "ساري" : "Valid", style: OK };
+}
+
+function niceDate(iso, ar) {
+  if (!iso) return "";
+  try {
+    return new Date(`${String(iso).slice(0, 10)}T00:00:00`).toLocaleDateString(
+      ar ? "ar-SA-u-ca-gregory-nu-latn" : "en-GB",
+      { year: "numeric", month: "short", day: "numeric" },
+    );
+  } catch {
+    return String(iso).slice(0, 10);
+  }
+}
+
+const inputStyle = { ...field };
+
+/** Platform isTabInfo — L2669–2692, grouped to MHRSD employee-file order. */
+export default function ProfessionalInfoTab({
+  employee,
+  companyId,
+  canEdit,
+  isSelf,
+  canEditGrade,
+  grades,
+  fallbackPosition,
+  stationName,
+  autoEdit = false,
+}) {
   const { t, lang } = useI18n();
   const ar = lang === "ar";
-  const [editing, setEditing] = useState(false);
+  const canManage = Boolean(canEdit);
+  const canFill = canManage;
+  const [editing, setEditing] = useState(Boolean(autoEdit && canFill));
   const profile = employee.profile || {};
-  const allFields = PROFILE_GROUPS.flatMap((g) => g.fields.map((f) => f.key));
+
+  useEffect(() => {
+    if (autoEdit && canFill) setEditing(true);
+  }, [autoEdit, canFill]);
+
+  const allFields = PROFILE_GROUPS.flatMap((g) => g.fields);
+  const allKeys = allFields.map((f) => f.key);
   const [form, setForm] = useState(() => ({
-    ...allFields.reduce((acc, f) => ({ ...acc, [f]: profile[f] || (f === "position" ? fallbackPosition || "" : "") }), {}),
-    gradeId: profile.gradeId || "", maxStations: profile.maxStations ?? "",
+    ...allFields.reduce((acc, fieldDef) => {
+      let v = profileFieldValue(profile, fieldDef.key, employee);
+      if (fieldDef.key === "position") v = profile.position || fallbackPosition || "";
+      return { ...acc, [fieldDef.key]: canonicalFieldValue(fieldDef, v) };
+    }, {}),
+    gradeId: profile.gradeId || "",
+    maxStations: profile.maxStations ?? "",
   }));
 
-  const labelOf = (item) => (item.label ? t(item.label) : ar ? item.ar : item.en);
+  const readVal = (key) => {
+    if (key === "position") return profile.position || fallbackPosition || "";
+    return profileFieldValue(profile, key, employee);
+  };
+
+  const displayVal = (fieldDef) => {
+    const raw = editing ? form[fieldDef.key] : readVal(fieldDef.key);
+    if (!raw) return "—";
+    if (fieldDef.type === "date" && !editing) return niceDate(raw, ar) || "—";
+    const labelled = displayProfileField(fieldDef, raw, ar);
+    return labelled || raw;
+  };
 
   const save = () => {
     const payload = { ...form, maxStations: form.maxStations === "" ? null : Number(form.maxStations) };
-    if (!canEditGrade) { delete payload.gradeId; delete payload.maxStations; }
-    if (!isSelf) delete payload.position;
-    if (isSelf && !canEdit) allFields.filter((key) => key !== "position").forEach((key) => delete payload[key]);
+    if (!canEditGrade) {
+      delete payload.gradeId;
+      delete payload.maxStations;
+    }
+    if (!canManage) {
+      allKeys.forEach((key) => delete payload[key]);
+      delete payload.gradeId;
+      delete payload.maxStations;
+      return;
+    }
+    allKeys.forEach((key) => {
+      if (!canEditProfileKey(key, { canManage, isSelf })) delete payload[key];
+    });
     updateEmployeeProfile(companyId, employee.id, payload);
     setEditing(false);
   };
 
+  const ghostBtn = {
+    padding: "7px 13px",
+    borderRadius: "9px",
+    border: "1px solid #E2E8F0",
+    background: CARD,
+    color: MUTED,
+    fontSize: "12px",
+    cursor: "pointer",
+    fontFamily: "inherit",
+  };
+
+  const primaryBtn = {
+    ...ghostBtn,
+    background: NAVY_FILL,
+    color: "#fff",
+    border: "none",
+    fontWeight: 600,
+  };
+
+  const gradeCard = (canEditGrade || profile.gradeId || profile.maxStations) ? (
+    <div style={cardShell}>
+      <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>{t("gradeAndStationScope")}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: "14px", marginTop: "16px" }}>
+        <div>
+          <div style={{ fontSize: "11px", color: MUTED }}>{t("jobGrade")}</div>
+          <div style={{ marginTop: "6px" }}>
+            {editing && canEditGrade ? (
+              <MobileSelect
+                value={form.gradeId}
+                onChange={(gradeId) => setForm({ ...form, gradeId })}
+                options={[{ value: "", label: "—" }, ...grades.map((g) => ({ value: g.id, label: `${g.gradeNumber} · ${g.title}` }))]}
+              />
+            ) : (
+              <span style={{ fontSize: "13px", color: NAVY }}>
+                {grades.find((g) => g.id === profile.gradeId)
+                  ? `${grades.find((g) => g.id === profile.gradeId).gradeNumber} · ${grades.find((g) => g.id === profile.gradeId).title}`
+                  : "—"}
+              </span>
+            )}
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize: "11px", color: MUTED }}>{t("maxStations")}</div>
+          <div style={{ marginTop: "6px" }}>
+            {editing && canEditGrade ? (
+              <input
+                type="number"
+                min="1"
+                value={form.maxStations}
+                onChange={(e) => setForm({ ...form, maxStations: e.target.value })}
+                placeholder="∞"
+                style={inputStyle}
+              />
+            ) : (
+              <span style={{ fontSize: "13px", color: NAVY }}>{profile.maxStations || "∞"}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   return (
-    <div className="space-y-4">
-      {(canEdit || isSelf || canEditGrade) && (
-        <div className="flex justify-end">
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }} dir={ar ? "rtl" : "ltr"}>
+      <div style={cardShell}>
+        <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>
+          {ar ? "ملف العامل وفق سياسة الوزارة" : "Employee file — MHRSD order"}
+        </div>
+        <div style={{ fontSize: "11px", color: MUTED, marginTop: "4px", lineHeight: 1.7, textWrap: "pretty" }}>
+          {ar
+            ? "يُرتَّب الملف كما تفحصه وزارة الموارد البشرية والتنمية الاجتماعية: الهوية والجوازات، ثم التأمينات والضمان الصحي، ثم التوظيف في قوى وحماية الأجور. العقد والأجر والإجازات والشهادات تلي هذا السجل."
+            : "The file follows MHRSD inspection order: identity and Jawazat, then GOSI and medical cover, then Qiwa employment and wage protection. Contract, pay, leave, and certificates follow this register."}
+        </div>
+      </div>
+
+      {isSelf && !canManage && (
+        <p style={{ margin: 0, fontSize: "12px", color: MUTED, lineHeight: 1.7 }}>
+          {ar
+            ? "ملف المعلومات المهنية للعرض فقط — تُكمله الإدارة أو الموارد البشرية."
+            : "Professional info is view-only — management or HR completes this file."}
+        </p>
+      )}
+
+      {(canFill || canEditGrade) && (
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
           {editing ? (
-            <button onClick={save} className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
-              <Check className="w-3.5 h-3.5" /> {t("save")}
-            </button>
+            <>
+              <button type="button" onClick={() => setEditing(false)} style={ghostBtn}>
+                {ar ? "إلغاء" : "Cancel"}
+              </button>
+              <button type="button" onClick={save} style={primaryBtn}>
+                {t("save")}
+              </button>
+            </>
           ) : (
-            <button onClick={() => setEditing(true)} className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-              <Pencil className="w-3.5 h-3.5" /> {t("edit")}
+            <button type="button" onClick={() => setEditing(true)} style={ghostBtn}>
+              {t("edit")}
             </button>
           )}
         </div>
       )}
 
-      <div className="space-y-4 rounded-xl border border-border bg-card p-5">
-        <h3 className="font-heading text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t("gradeAndStationScope")}</h3>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div><label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground"><Layers3 className="h-3.5 w-3.5 text-accent" />{t("jobGrade")}</label>{editing && canEditGrade ? <MobileSelect value={form.gradeId} onChange={(gradeId) => setForm({ ...form, gradeId })} options={[{ value: "", label: "—" }, ...grades.map((grade) => ({ value: grade.id, label: `${grade.gradeNumber} · ${grade.title}` }))]} /> : <p className="min-h-[42px] rounded-lg border border-border bg-background px-3 py-2 text-sm">{grades.find((grade) => grade.id === profile.gradeId) ? `${grades.find((grade) => grade.id === profile.gradeId).gradeNumber} · ${grades.find((grade) => grade.id === profile.gradeId).title}` : "—"}</p>}</div>
-          <div><label className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground"><MapPinned className="h-3.5 w-3.5 text-accent" />{t("maxStations")}</label>{editing && canEditGrade ? <input type="number" min="1" value={form.maxStations} onChange={(event) => setForm({ ...form, maxStations: event.target.value })} placeholder="∞" className="w-full rounded-md border border-input px-3 py-2 text-sm" /> : <p className="min-h-[42px] rounded-lg border border-border bg-background px-3 py-2 text-sm">{profile.maxStations || "∞"}</p>}</div>
-        </div>
-      </div>
-
-      {PROFILE_GROUPS.map((group, gi) => (
-        <div key={gi} className="space-y-4 rounded-xl border border-border bg-card p-5">
-          <h3 className="font-heading font-semibold text-sm text-muted-foreground uppercase tracking-wide">{labelOf(group)}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {group.fields.map((field) => {
-              const { key, icon: Icon, type, area } = field;
-              return (
-                <div key={key} className={area ? "md:col-span-2" : ""}>
-                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground font-body mb-1.5">
-                    <Icon className="w-3.5 h-3.5 text-accent" /> {group.label ? t(key) : labelOf(field)}
-                  </label>
-                  {editing && ((key === "position" && isSelf) || (key !== "position" && canEdit)) ? (
-                    area ? (
-                      <textarea value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} rows={3} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
-                    ) : (
-                      <input type={type || "text"} dir={field.dir} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-                    )
-                  ) : (
-                    <p className="min-h-[42px] rounded-lg border border-border bg-background px-3 py-2 text-sm font-body" dir={profile[key] ? field.dir : undefined}>{profile[key] || (key === "position" ? fallbackPosition : "") || "—"}</p>
-                  )}
+      {PROFILE_GROUPS.map((group) => {
+        const fields = group.fields.filter((f) => isProfileFieldVisible(f, { profile, form, editing }));
+        const idType = editing ? form.idType : readVal("idType");
+        return (
+          <React.Fragment key={group.id}>
+            <div style={cardShell}>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>
+                {ar ? group.ar : group.en}
+              </div>
+              {group.noteAr && (
+                <div style={{ fontSize: "11px", color: MUTED, marginTop: "4px", lineHeight: 1.6, textWrap: "pretty" }}>
+                  {ar ? group.noteAr : group.noteEn}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: "14px", marginTop: "16px" }}>
+                {group.showStation && (
+                  <div>
+                    <div style={{ fontSize: "11px", color: MUTED }}>
+                      {ar ? "الفرع" : "Branch"}
+                      <span style={{ marginInlineStart: 6, fontSize: 10, color: "#94A3B8" }}>
+                        {ar ? "· من الهيكل" : "· from org tree"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "6px" }}>
+                      <span style={{ flex: 1, fontSize: "13px", color: NAVY, minWidth: 0, wordBreak: "break-word" }}>
+                        {stationName || "—"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {fields.map((fieldDef) => {
+                  const canEditField = editing && canEditProfileKey(fieldDef.key, { canManage, isSelf });
+                  const chip = !editing && fieldDef.expiry ? expiryChip(readVal(fieldDef.key), ar) : null;
+                  const opts = profileFieldOptions(fieldDef);
+                  return (
+                    <div key={fieldDef.key} style={fieldDef.area ? { gridColumn: "1 / -1" } : undefined}>
+                      <div style={{ fontSize: "11px", color: MUTED }}>
+                        {profileFieldLabel(fieldDef, idType, ar)}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "6px" }}>
+                        {canEditField ? (
+                          fieldDef.area ? (
+                            <textarea
+                              value={form[fieldDef.key]}
+                              onChange={(e) => setForm({ ...form, [fieldDef.key]: e.target.value })}
+                              rows={3}
+                              dir={fieldDef.dir}
+                              style={{ ...inputStyle, height: "auto", padding: "10px 11px", resize: "vertical" }}
+                            />
+                          ) : opts ? (
+                            <select
+                              value={form[fieldDef.key]}
+                              onChange={(e) => setForm({ ...form, [fieldDef.key]: e.target.value })}
+                              style={inputStyle}
+                            >
+                              <option value="">—</option>
+                              {opts.map((o) => (
+                                <option key={o.value} value={o.value}>{ar ? o.ar : o.en}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type={fieldDef.type || "text"}
+                              dir={fieldDef.dir}
+                              value={form[fieldDef.key]}
+                              onChange={(e) => setForm({ ...form, [fieldDef.key]: e.target.value })}
+                              style={inputStyle}
+                            />
+                          )
+                        ) : (
+                          <>
+                            <span
+                              dir={fieldDef.dir && displayVal(fieldDef) !== "—" ? fieldDef.dir : "auto"}
+                              style={{ flex: 1, fontSize: "13px", color: NAVY, minWidth: 0, wordBreak: "break-word" }}
+                            >
+                              {displayVal(fieldDef)}
+                            </span>
+                            {chip && <span style={chip.style}>{chip.text}</span>}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            {group.id === "employment" ? gradeCard : null}
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 }

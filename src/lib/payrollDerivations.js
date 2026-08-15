@@ -4,6 +4,8 @@ export const SHIFT_HOURS_PER_DAY = 8;
 export const DAYS_PER_MONTH = 30;
 export const OT_RATE = 1.5;
 export const WPS_DEADLINE_DAY = 3;
+/** Article 90 — deductions may not exceed half the contractual monthly wage. */
+export const ARTICLE_90_CAP = 0.5;
 
 export function parseMonth(month) {
   const m = String(month || "").match(/^(\d{4})-(\d{2})$/);
@@ -37,6 +39,31 @@ export function lineNet(line) {
   return lineGross(line) - (Number(line.deductions) || 0);
 }
 
+export function contractWage(line) {
+  return (Number(line.base) || 0) + (Number(line.allowances) || 0);
+}
+
+export function article90MaxDeduction(line) {
+  return Math.round(contractWage(line) * ARTICLE_90_CAP * 100) / 100;
+}
+
+export function checkArticle90Gate(line) {
+  const wage = contractWage(line);
+  const deductions = Number(line.deductions) || 0;
+  if (wage <= 0) return { ok: true, wage, deductions, max: 0 };
+  const max = article90MaxDeduction(line);
+  if (deductions <= max) return { ok: true, wage, deductions, max };
+  return {
+    ok: false,
+    error: "ARTICLE_90_EXCEEDED",
+    reason: `مجموع الخصومات (${deductions.toLocaleString()} ر.س) يتجاوز نصف الأجر (${max.toLocaleString()} ر.س) — المادة 90 من نظام العمل.`,
+    reasonEn: `Total deductions (${deductions} SAR) exceed half the contractual wage (${max} SAR) — Labour Law Art. 90.`,
+    wage,
+    deductions,
+    max,
+  };
+}
+
 export function lineIssues(line) {
   const issues = [];
   if (!Number.isFinite(Number(line?.base)) || Number(line.base) < 0 || Number(line.base) <= 0) issues.push("BASE_REQUIRED");
@@ -45,6 +72,7 @@ export function lineIssues(line) {
     if (v != null && (!Number.isFinite(Number(v)) || Number(v) < 0)) issues.push("INVALID_AMOUNTS");
   }
   if (lineNet(line) <= 0) issues.push("NET_REQUIRED");
+  if (!checkArticle90Gate(line).ok) issues.push("ARTICLE_90_EXCEEDED");
   const currency = String(line?.currency || "SAR").toUpperCase();
   if (!/^[A-Z]{3}$/.test(currency)) issues.push("CURRENCY_REQUIRED");
   return [...new Set(issues)];
@@ -66,6 +94,8 @@ export function enrichLine(line) {
     gross: lineGross({ ...line, overtimePay: otPay }),
     net: lineNet({ ...line, overtimePay: otPay }),
     qiwaMatched: qiwaMatches(line),
+    contractWage: contractWage(line),
+    article90Max: article90MaxDeduction(line),
     issues: lineIssues({ ...line, overtimePay: otPay }),
   };
 }
@@ -99,6 +129,7 @@ export function deriveRunTotals(items = []) {
     qiwaTotal: enriched.length,
     issueCount: enriched.filter((i) => i.issues.length > 0).length,
     otRule: "ARTICLE_107_150",
+    deductionCapRule: "ARTICLE_90_50",
   };
 }
 
@@ -145,10 +176,10 @@ export function checkApprovePayrollGate(run) {
 export function checkSendWpsGate(run, now = new Date()) {
   if (!run) return { ok: false, error: "RUN_NOT_FOUND", reason: "مسير الرواتب غير موجود.", reasonEn: "Payroll run not found." };
   if (run.status === "sent" || run.wpsSentAt) {
-    return { ok: false, error: "ALREADY_SENT", reason: "ملف حماية الأجور مُرسل بالفعل.", reasonEn: "The WPS file has already been sent." };
+    return { ok: false, error: "ALREADY_SENT", reason: "ملف حماية الأجور بُني بالفعل.", reasonEn: "The WPS file has already been built." };
   }
   if (run.status !== "approved") {
-    return { ok: false, error: "RUN_NOT_APPROVED", reason: "لا إرسال لملف WPS قبل اعتماد المسير.", reasonEn: "Cannot send the WPS file before the run is approved." };
+    return { ok: false, error: "RUN_NOT_APPROVED", reason: "لا بناء لملف WPS قبل اعتماد المسير.", reasonEn: "Cannot build the WPS file before the run is approved." };
   }
   const items = (run.items || []).map(enrichLine);
   const mismatches = items.filter((i) => !i.qiwaMatched);
@@ -156,14 +187,33 @@ export function checkSendWpsGate(run, now = new Date()) {
     return {
       ok: false,
       error: "QIWA_MISMATCH",
-      reason: `مبالغ ${mismatches.length} موظفًا لا تطابق عقود قوى — يُمنع الإرسال.`,
-      reasonEn: `${mismatches.length} employee amount(s) do not match Qiwa contracts — send blocked.`,
+      reason: `مبالغ ${mismatches.length} موظفًا لا تطابق عقود قوى — يُمنع بناء الملف.`,
+      reasonEn: `${mismatches.length} employee amount(s) do not match Qiwa contracts — file build blocked.`,
       count: mismatches.length,
       matched: items.length - mismatches.length,
       total: items.length,
     };
   }
   return { ok: true, late: isWpsLate(run.month, now), deadline: wpsDeadline(run.month) };
+}
+
+/**
+ * Monthly wage-protection procedure used by the payroll workspace.
+ * prepare → review (Art. 90 / 107) → approve → Mudad/WPS (day-3 deadline).
+ */
+export function payrollCycleState({ hasRun, heads = 0, issueCount = 0, status = "", wpsLate = false } = {}) {
+  const prepared = Boolean(hasRun && heads > 0);
+  const reviewed = prepared && issueCount === 0;
+  const approved = status === "approved" || status === "sent";
+  const sent = status === "sent";
+  const steps = [
+    { key: "prepare", tab: "run", done: prepared },
+    { key: "review", tab: "lines", done: reviewed },
+    { key: "approve", tab: "run", done: approved },
+    { key: "protect", tab: "wps", done: sent, warn: Boolean(wpsLate) && !sent },
+  ];
+  const current = steps.find((step) => !step.done) || steps[3];
+  return { steps, currentKey: current.key, prepared, reviewed, approved, sent };
 }
 
 export function deriveWpsStatus(run, now = new Date()) {

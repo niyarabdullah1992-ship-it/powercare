@@ -1,28 +1,15 @@
 import React from "react";
-import { BarChart3 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import PageHeader from "@/components/PageHeader";
 import ReportLibraryBoard from "@/components/reports/ReportLibraryBoard";
+import useStationScope from "@/hooks/useStationScope";
 
-/** One-job surface: report library & analytics (Platform `reports`) — separate from daily station filing. */
+/** Platform `reports` — library & scheduled analytics (separate from daily station filing). */
 export default function Reports() {
   const { lang } = useI18n();
   const { data, currentUser } = useAuth();
+  const stationScope = useStationScope();
   if (!data || !currentUser) return null;
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title={lang === "ar" ? "التقارير والتحليلات" : "Reports & Analytics"}
-        description={
-          lang === "ar"
-            ? "مكتبة التقارير والجدولة التلقائية"
-            : "Report library and automated scheduling"
-        }
-        icon={BarChart3}
-      />
-      <ReportLibraryBoard lang={lang} />
-    </div>
-  );
+  return <ReportLibraryBoard lang={lang} stationScope={stationScope} />;
 }

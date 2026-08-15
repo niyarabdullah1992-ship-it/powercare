@@ -1,27 +1,41 @@
 import React, { useEffect, useState } from "react";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { updateCompany, addNotification, getCompanyToken, setAnonRateLimits } from "@/lib/store";
-import { visibleStations, hasHRPermission, hrScopeStations, canManageStations } from "@/lib/permissions";
+import { visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
+import useStationScope, { matchesStationScope } from "@/hooks/useStationScope";
 import { complaintHandlersForLevel, complaintHasHandlerAtLevel, complaintLevelLabel, buildComplaintEscalationSteps, complaintEscalationStageCount, isManualComplaintHandler, usesManualComplaintEscalation } from "@/lib/escalation";
-import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, ChevronRight, ArrowLeft, X as XIcon } from "lucide-react";
+import { ShieldCheck, Send, Lock, LockOpen, ArrowUpCircle, Building2, ArrowLeft, X as XIcon } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import FlowSwipeAction from "@/components/flow/FlowSwipeAction";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import EscalationSteps from "@/components/escalation/EscalationSteps";
 import EscalationInfoBox from "@/components/escalation/EscalationInfoBox";
 import MobileSelect from "@/components/mobile/MobileSelect";
+import VoiceStationList from "@/components/complaints/VoiceStationList";
+import { ACCENT, BORDER, MUTED, NAVY, SURFACE, cardShell, field, labelMuted, textarea, ui, BAD, WARN, OK, NEUTRAL } from "@/lib/platformStyles";
 
-const TYPES = ["complaint", "suggestion"];
+const STAT_TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
 
-export default function AnonymousReports() {
+const card = { ...cardShell, padding: "16px 18px" };
+
+function ToneBadge({ text, tone = "muted" }) {
+  const style =
+    tone === "destructive" ? BAD
+      : tone === "accent" ? OK
+        : tone === "warn" ? WARN
+          : NEUTRAL;
+  return <span style={style}>{text}</span>;
+}
+
+export default function AnonymousReports({ underQueue = false }) {
   const { t, dir, lang } = useI18n();
   const { data, currentUser, company, refresh } = useAuth();
+  const stationScope = useStationScope();
   const [submitting, setSubmitting] = useState(false);
-  const [type, setType] = useState("complaint");
+  const [type] = useState("complaint");
   const [priority, setPriority] = useState("medium");
   const [message, setMessage] = useState("");
   const [replyText, setReplyText] = useState({});
@@ -31,6 +45,10 @@ export default function AnonymousReports() {
   const [selectedStation, setSelectedStation] = useState(null);
   const [monthlyLimitInput, setMonthlyLimitInput] = useState("");
   const [ownReportIds, setOwnReportIds] = useState([]);
+
+  useEffect(() => {
+    setSelectedStation(null);
+  }, [stationScope]);
 
   useEffect(() => {
     if (!company?.id || !currentUser?.id) return;
@@ -50,7 +68,7 @@ export default function AnonymousReports() {
   const hrStations = manualHandler ? null : isHRAnon ? hrScopeStations(currentUser, data) : [];
   const isOwner = currentUser.id === data.ownerId;
   const isStaff = isHRAnon || currentUser.role === "director" || currentUser.role === "ops_manager" || currentUser.role === "station_manager" || isOwner;
-  const myAnon = data.anonymousReports.filter((report) => ownReportIds.includes(report.id));
+  const myAnon = (data.anonymousReports || []).filter((report) => ownReportIds.includes(report.id));
   const now = Date.now();
   const usage = {
     day: myAnon.filter((r) => now - new Date(r.createdAt).getTime() < 86400000).length,
@@ -61,13 +79,13 @@ export default function AnonymousReports() {
     monthLimit: data.settings?.rateLimitMonthly ?? 30,
   };
 
-  const stationName = (id) => data.stations.find((s) => s.id === id)?.name || "—";
+  const stationName = (id) => (data.stations || []).find((s) => s.id === id)?.name || "—";
   const assignedStationIds = [...new Set([
     currentUser.stationId,
     ...(currentUser.stationIds || []),
     ...(currentUser.managedStations || []),
   ].filter(Boolean))];
-  const assignedStations = data.stations.filter((station) => assignedStationIds.includes(station.id));
+  const assignedStations = (data.stations || []).filter((station) => assignedStationIds.includes(station.id));
   const effectiveReportStationId = assignedStations.some((station) => station.id === reportStationId)
     ? reportStationId
     : assignedStations[0]?.id || "";
@@ -80,7 +98,8 @@ export default function AnonymousReports() {
   };
 
   // Reports visible to a staff member based on HR scope (or full oversight for director/owner/ops manager)
-  const visibleReports = data.anonymousReports.filter((r) => {
+  const visibleReports = (data.anonymousReports || []).filter((r) => {
+    if (!matchesStationScope(r.stationId, stationScope)) return false;
     if (currentUser.role === "director" || currentUser.role === "ops_manager" || isOwner) return true;
     if (currentUser.role === "station_manager") {
       const managed = currentUser.managedStations?.length ? currentUser.managedStations : [currentUser.stationId];
@@ -117,7 +136,7 @@ export default function AnonymousReports() {
     if (!message.trim() || submitting) return;
     const assignedStation = assignedStations.find((station) => station.id === effectiveReportStationId);
     if (!assignedStation) {
-      alert(lang === "ar" ? "يجب تعيين محطة للموظف قبل إرسال شكوى سرية." : "The employee must have an assigned station before filing an anonymous complaint.");
+      alert(lang === "ar" ? "يجب تعيين فرع للموظف قبل إرسال شكوى سرية." : "The employee must have an assigned station before filing an anonymous complaint.");
       return;
     }
     if (usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit) return;
@@ -223,129 +242,118 @@ export default function AnonymousReports() {
   };
 
   // Station grouping for staff navigation — merges role-based scope with HR scope
-  const hrStationList = isHRAnon ? (hrStations === null ? data.stations : data.stations.filter((s) => hrStations.includes(s.id))) : [];
+  const hrStationList = isHRAnon ? (hrStations === null ? (data.stations || []) : (data.stations || []).filter((s) => hrStations.includes(s.id))) : [];
   const stationMap = new Map();
   [...visibleStations(currentUser, data), ...hrStationList].forEach((s) => stationMap.set(s.id, s));
-  const myStations = Array.from(stationMap.values());
+  const myStations = Array.from(stationMap.values()).filter((s) => matchesStationScope(s.id, stationScope));
+  const scopedToOne = stationScope !== "all";
+  const activeStation = scopedToOne ? stationScope : selectedStation;
   const stationGroups = myStations.map((s) => ({
     key: s.id,
     name: s.name,
     count: visibleReports.filter((r) => r.stationId === s.id).length,
   }));
-  const stationReports = selectedStation ? visibleReports.filter((r) => r.stationId === selectedStation) : [];
-  const selectedStationName = selectedStation ? stationName(selectedStation) : "";
+  const stationReports = activeStation ? visibleReports.filter((r) => r.stationId === activeStation) : [];
+  const selectedStationName = activeStation ? stationName(activeStation) : "";
 
-  // Drag-and-drop reordering of the station cards (reorders the underlying station list).
-  const canReorderStations = canManageStations(currentUser);
-  const handleStationDragEnd = (result) => {
-    if (!result.destination || !canReorderStations) return;
-    const ids = stationGroups.map((g) => g.key);
-    const reordered = Array.from(ids);
-    const [moved] = reordered.splice(result.source.index, 1);
-    reordered.splice(result.destination.index, 0, moved);
-    updateCompany(company.id, (d) => {
-      const byId = Object.fromEntries(d.stations.map((s) => [s.id, s]));
-      const positions = [];
-      d.stations.forEach((s, i) => { if (ids.includes(s.id)) positions.push(i); });
-      const next = [...d.stations];
-      positions.forEach((pos, idx) => { next[pos] = byId[reordered[idx]]; });
-      d.stations = next;
-    });
-  };
+  const emptyMsg = { margin: 0, fontSize: "13px", color: MUTED, textAlign: "center", padding: "20px 0" };
+  const metaRow = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", fontSize: "11px", color: MUTED };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-3xl font-semibold">{t("anonymous")}</h1>
-        <p className="text-muted-foreground font-body text-sm mt-1">{isStaff ? t("overview") : t("identityProtected")}</p>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }} dir={dir}>
+      <p style={{ margin: 0, fontSize: "12px", color: MUTED, lineHeight: 1.6 }}>
+        {isStaff ? t("overview") : t("identityProtected")}
+      </p>
 
       <EscalationInfoBox t={t} />
 
-      {/* Employee: file report */}
       {!isStaff && (
         <>
-          <div className="p-4 rounded-xl border border-accent/30 bg-accent/5 flex items-center gap-3">
-            <ShieldCheck className="w-5 h-5 text-accent shrink-0" />
-            <p className="text-sm font-body text-accent">{t("identityProtected")}</p>
-            <Lock className="w-4 h-4 text-accent ms-auto" />
+          <div style={{
+            ...card,
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            borderColor: "color-mix(in oklab, #1E9E63 28%, #fff)",
+            background: "color-mix(in oklab, #1E9E63 8%, #fff)",
+          }}
+          >
+            <ShieldCheck style={{ width: 18, height: 18, color: ACCENT, flexShrink: 0 }} />
+            <p style={{ margin: 0, flex: 1, fontSize: "13px", color: "#14683F" }}>{t("identityProtected")}</p>
+            <Lock style={{ width: 14, height: 14, color: ACCENT }} />
           </div>
 
-          <form onSubmit={submit} className="p-5 rounded-xl border border-border bg-card space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-muted-foreground font-body mb-1">{t("type")}</label>
-                <select value={type} onChange={(e) => setType(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
-                  {TYPES.map((ty) => <option key={ty} value={ty}>{t(ty)}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-muted-foreground font-body mb-1">{t("priority")}</label>
-                <select value={priority} onChange={(e) => setPriority(e.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body">
-                  {PRIORITIES.map((p) => <option key={p} value={p}>{t(p)}</option>)}
-                </select>
-              </div>
+          <form onSubmit={submit} style={{ ...card, display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div>
+              <label style={labelMuted}>{t("priority")}</label>
+              <select value={priority} onChange={(e) => setPriority(e.target.value)} style={field}>
+                {PRIORITIES.map((p) => <option key={p} value={p}>{t(p)}</option>)}
+              </select>
             </div>
             {assignedStations.length > 1 ? (
               <div>
-                <label className="block text-xs text-muted-foreground font-body mb-1">{t("station")}</label>
+                <label style={labelMuted}>{t("station")}</label>
                 <MobileSelect value={effectiveReportStationId} onChange={setReportStationId} searchable searchPlaceholder={t("search")} placeholder={t("selectStation")} className="w-full" options={assignedStations.map((station) => ({ value: station.id, label: station.location ? `${station.name} — ${station.location}` : station.name }))} />
               </div>
             ) : (
-              <div className={`flex items-center gap-1.5 text-xs font-body ${effectiveReportStationId ? "text-muted-foreground" : "text-destructive"}`}>
-                <Building2 className="w-3.5 h-3.5" />
-                {t("station")}: {effectiveReportStationId ? stationName(effectiveReportStationId) : (lang === "ar" ? "لا توجد محطة معيّنة" : "No assigned station")}
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: effectiveReportStationId ? MUTED : "#DC2626" }}>
+                <Building2 style={{ width: 14, height: 14 }} />
+                {t("station")}: {effectiveReportStationId ? stationName(effectiveReportStationId) : (lang === "ar" ? "لا توجد فرع معيّنة" : "No assigned station")}
               </div>
             )}
-            <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder={t("fileReport")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
-            <div className="flex flex-wrap items-end gap-2">
+            <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder={t("fileReport")} required style={{ ...textarea, resize: "none" }} />
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "8px" }}>
               <CommentFiles files={files} setFiles={setFiles} />
               <VoiceRecorder files={files} setFiles={setFiles} />
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground font-body">
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+              <p style={{ margin: 0, fontSize: "11px", color: MUTED }}>
                 {usage.dayLimit - usage.day} {t("remaining")} · {usage.weekLimit - usage.week} {t("weekRemaining")} · {usage.monthLimit - usage.month} {t("monthRemaining")}
               </p>
-              <button type="submit" disabled={submitting || !effectiveReportStationId || usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit} className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent disabled:opacity-40">
-                <Send className="w-4 h-4" /> {t("fileReport")}
+              <button
+                type="submit"
+                disabled={submitting || !effectiveReportStationId || usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit}
+                style={{ ...ui.btnPrimary, display: "inline-flex", alignItems: "center", gap: "6px", opacity: submitting || !effectiveReportStationId || usage.day >= usage.dayLimit || usage.week >= usage.weekLimit || usage.month >= usage.monthLimit ? 0.4 : 1 }}
+              >
+                <Send style={{ width: 14, height: 14 }} /> {t("fileReport")}
               </button>
             </div>
           </form>
 
           <div>
-            <h3 className="font-heading font-semibold mb-3">{t("yourReports")}</h3>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY, marginBottom: "10px" }}>{t("yourReports")}</div>
             {myAnon.length === 0 ? (
-              <p className="text-sm text-muted-foreground font-body">{t("noReply")}</p>
+              <p style={emptyMsg}>{t("noReply")}</p>
             ) : (
-              <div className="space-y-3">
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {myAnon.map((r) => (
-                  <div key={r.id} className="p-4 rounded-xl border border-border bg-card space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-muted-foreground">{displayCode(r)}</span>
+                  <div key={r.id} style={{ ...card, display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                      <div style={metaRow}>
+                        <span dir="ltr" style={{ fontFamily: "'IBM Plex Mono',monospace" }}>{displayCode(r)}</span>
                         {r.stationId && (
-                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-body">
-                            <Building2 className="w-3 h-3" /> {stationName(r.stationId)}
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            <Building2 style={{ width: 12, height: 12 }} /> {stationName(r.stationId)}
                           </span>
                         )}
                       </div>
-                      <div className="flex gap-2">
-                        <Badge text={t(r.type)} />
-                        <Badge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
-                        <Badge text={currentHandlerLabel(r)} tone="accent" />
-                        {r.confidential && <Badge text={t("confidential")} tone="destructive" />}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                        <ToneBadge text={t(r.type)} />
+                        <ToneBadge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
+                        <ToneBadge text={currentHandlerLabel(r)} tone="accent" />
+                        {r.confidential && <ToneBadge text={t("confidential")} tone="destructive" />}
                       </div>
                     </div>
-                    <p className="text-sm font-body">{r.message}</p>
+                    <p style={{ margin: 0, fontSize: "13px", color: NAVY, lineHeight: 1.65 }}>{r.message}</p>
                     <CommentAttachments files={r.files} />
                     {renderTimeline(r)}
                     {!isAtTop(r) && r.status === "rejected" && (
-                      <button onClick={() => escalate(r.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300 text-amber-700 text-xs font-body hover:bg-amber-50">
-                        <ArrowUpCircle className="w-3.5 h-3.5" /> {t("notConvinced")}
+                      <button type="button" onClick={() => escalate(r.id)} style={{ ...ui.btnGhost, display: "inline-flex", alignItems: "center", gap: "6px", borderColor: "#FDE68A", color: "#B45309", alignSelf: "flex-start" }}>
+                        <ArrowUpCircle style={{ width: 14, height: 14 }} /> {t("notConvinced")}
                       </button>
                     )}
                     {isAtTop(r) && r.status === "rejected" && (
-                      <p className="text-xs text-muted-foreground font-body italic">{t("finalLevel")}</p>
+                      <p style={{ margin: 0, fontSize: "11px", color: MUTED, fontStyle: "italic" }}>{t("finalLevel")}</p>
                     )}
                   </div>
                 ))}
@@ -355,167 +363,131 @@ export default function AnonymousReports() {
         </>
       )}
 
-      {/* Staff: manage reports */}
       {isStaff && (
         <>
           {(currentUser.role === "director" || isOwner) && (
-            <div className="p-4 rounded-xl border border-border bg-card flex flex-wrap items-center gap-3">
-              <label className="text-xs text-muted-foreground font-body">{t("monthlyLimit")}</label>
+            <div style={{ ...card, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px" }}>
+              <label style={{ ...labelMuted, marginBottom: 0 }}>{t("monthlyLimit")}</label>
               <input
                 type="number"
                 min="1"
                 placeholder={String(data.settings?.rateLimitMonthly ?? 30)}
                 value={monthlyLimitInput}
                 onChange={(e) => setMonthlyLimitInput(e.target.value)}
-                className="w-24 px-2 py-1.5 rounded-md border border-input text-sm font-body"
+                style={{ ...field, width: "96px" }}
               />
-              <button onClick={saveMonthlyLimit} className="px-3 py-1.5 rounded-md bg-foreground text-background text-xs font-body">{t("save")}</button>
+              <button type="button" onClick={saveMonthlyLimit} style={ui.btnPrimary}>{t("save")}</button>
             </div>
           )}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {TYPES.map((ty) => (
-              <div key={ty} className="p-4 rounded-xl border border-border bg-card">
-                <p className="text-2xl font-heading font-semibold">{stats[ty]}</p>
-                <p className="text-xs text-muted-foreground font-body">{t(ty)}</p>
+          {!underQueue && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: "10px" }}>
+            {STAT_TYPES.map((ty) => (
+              <div key={ty} style={card}>
+                <div dir="ltr" style={{ fontSize: "22px", fontWeight: 600, color: NAVY, fontFamily: "'IBM Plex Sans',sans-serif" }}>{stats[ty]}</div>
+                <div style={{ fontSize: "11px", color: MUTED, marginTop: "4px" }}>{t(ty)}</div>
               </div>
             ))}
           </div>
+          )}
 
-          {!selectedStation ? (
-            <div className="space-y-3">
-              <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
-                <Building2 className="w-4 h-4" /> {t("stations")}
-              </h2>
-              {stationGroups.length === 0 ? (
-                <p className="text-sm text-muted-foreground font-body">{t("noReply")}</p>
-              ) : (
-                <DragDropContext onDragEnd={handleStationDragEnd}>
-                  <Droppable droppableId="anon-station-groups">
-                    {(provided) => (
-                      <div ref={provided.innerRef} {...provided.droppableProps} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {stationGroups.map((g, index) => (
-                          <Draggable key={g.key} draggableId={g.key} index={index} isDragDisabled={!canReorderStations}>
-                            {(dragProvided, dragSnapshot) => (
-                              <button
-                                ref={dragProvided.innerRef}
-                                {...dragProvided.draggableProps}
-                                {...dragProvided.dragHandleProps}
-                                onClick={() => setSelectedStation(g.key)}
-                                className={`flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-muted transition text-start ${dragSnapshot.isDragging ? "shadow-lg ring-2 ring-accent/40" : ""}`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                                    <Building2 className="w-4 h-4" />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-medium font-body">{g.name}</p>
-                                    <p className="text-xs text-muted-foreground font-body">{g.count} {t("anonymous")}</p>
-                                  </div>
-                                </div>
-                                <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
-                              </button>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </DragDropContext>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <button onClick={() => setSelectedStation(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
-                <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
+          {!underQueue && !activeStation ? (
+            <VoiceStationList
+              stations={stationGroups}
+              onPick={setSelectedStation}
+              emptyLabel={t("noReply")}
+            />
+          ) : activeStation ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {!scopedToOne && (
+              <>
+              <button type="button" onClick={() => setSelectedStation(null)} style={{ ...ui.btnGhost, display: "inline-flex", alignItems: "center", gap: "6px", alignSelf: "flex-start" }}>
+                <ArrowLeft style={{ width: 14, height: 14, transform: dir === "rtl" ? "scaleX(-1)" : "none" }} /> {t("back")}
               </button>
-              <p className="font-heading text-base font-semibold flex items-center gap-1.5">
-                <Building2 className="w-4 h-4" /> {selectedStationName}
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: NAVY }}>
+                <Building2 style={{ width: 16, height: 16 }} /> {selectedStationName}
+              </div>
+              </>
+              )}
               {stationReports.length === 0 ? (
-                <p className="text-sm text-muted-foreground font-body">{t("noReply")}</p>
+                scopedToOne ? null : <p style={emptyMsg}>{t("noReply")}</p>
               ) : (
                 stationReports.map((r) => (
-              <div key={r.id} className="p-4 rounded-xl border border-border bg-card space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-muted-foreground">{displayCode(r)}</span>
-                    {r.stationId && (
-                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-body">
-                        <Building2 className="w-3 h-3" /> {stationName(r.stationId)}
-                      </span>
+                  <div key={r.id} style={{ ...card, display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                      <div style={metaRow}>
+                        <span dir="ltr" style={{ fontFamily: "'IBM Plex Mono',monospace" }}>{displayCode(r)}</span>
+                        {r.stationId && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            <Building2 style={{ width: 12, height: 12 }} /> {stationName(r.stationId)}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                        <ToneBadge text={t(r.type)} />
+                        <ToneBadge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
+                        <ToneBadge text={currentHandlerLabel(r)} tone="accent" />
+                        <ToneBadge text={t(r.status)} tone={r.status === "closed" ? (r.resolution === "approved" ? "accent" : "destructive") : "muted"} />
+                        {r.confidential && <ToneBadge text={t("confidential")} tone="destructive" />}
+                      </div>
+                    </div>
+                    {isConfidentialHidden(r) ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: MUTED, fontStyle: "italic", padding: "10px 12px", borderRadius: "9px", background: SURFACE }}>
+                        <Lock style={{ width: 14, height: 14 }} /> {t("confidentialHidden")}
+                      </div>
+                    ) : (
+                      <>
+                        <p style={{ margin: 0, fontSize: "13px", color: NAVY, lineHeight: 1.65 }}>{r.message}</p>
+                        <CommentAttachments files={r.files} />
+                        {renderTimeline(r)}
+                      </>
+                    )}
+                    {canReplyTo(r) && !isConfidentialHidden(r) && r.status === "open" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "10px", borderTop: `1px solid ${BORDER}` }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "8px" }}>
+                          <CommentFiles files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
+                          <VoiceRecorder files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
+                        </div>
+                        <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} style={field} />
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                          {(replyText[r.id] || "").trim() && (
+                            <div style={{ width: "100%" }}>
+                              <FlowSwipeAction sensitive label={lang === "ar" ? "اسحب لاعتماد وإغلاق البلاغ" : "Swipe to approve and close"} onAction={() => decide(r.id, "approved")} confirmLabel={t("confirm")} cancelLabel={t("cancel")} />
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            disabled={!(replyText[r.id] || "").trim()}
+                            onClick={() => decide(r.id, "rejected")}
+                            style={{ ...ui.btnDanger, display: "inline-flex", alignItems: "center", gap: "6px", opacity: !(replyText[r.id] || "").trim() ? 0.4 : 1 }}
+                          >
+                            <XIcon style={{ width: 14, height: 14 }} /> {t("rejectReport")}
+                          </button>
+                          {!isAtTop(r) && (
+                            <div style={{ width: "100%" }}>
+                              <FlowSwipeAction label={lang === "ar" ? "اسحب للتصعيد للمستوى التالي" : "Swipe to escalate"} onAction={() => escalate(r.id)} onUndo={() => undoEscalate(r.id, r)} undoLabel={lang === "ar" ? "تراجع عن التصعيد" : "Undo escalation"} />
+                            </div>
+                          )}
+                          {(!r.confidential || r.confidentialBy === currentUser.id) && (
+                            <button type="button" onClick={() => toggleConfidential(r.id)} style={{ ...ui.btnGhost, display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                              {r.confidential ? <LockOpen style={{ width: 14, height: 14 }} /> : <Lock style={{ width: 14, height: 14 }} />}
+                              {r.confidential ? t("removeConfidential") : t("makeConfidential")}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {!canReplyTo(r) && r.status !== "closed" && !isConfidentialHidden(r) && (
+                      <p style={{ margin: 0, fontSize: "11px", color: MUTED, fontStyle: "italic" }}>
+                        {isHRAnon && !canAct ? t("auditTrail") : `${t("escalatedTo")} ${currentHandlerLabel(r)}`}
+                      </p>
                     )}
                   </div>
-                  <div className="flex gap-2">
-                    <Badge text={t(r.type)} />
-                    <Badge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
-                    <Badge text={currentHandlerLabel(r)} tone="accent" />
-                    <Badge text={t(r.status)} tone={r.status === "closed" ? (r.resolution === "approved" ? "accent" : "destructive") : "muted"} />
-                    {r.confidential && <Badge text={t("confidential")} tone="destructive" />}
-                  </div>
-                </div>
-                {isConfidentialHidden(r) ? (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-body italic p-3 rounded-md bg-muted/40">
-                    <Lock className="w-3.5 h-3.5" /> {t("confidentialHidden")}
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-sm font-body">{r.message}</p>
-                    <CommentAttachments files={r.files} />
-                    {renderTimeline(r)}
-                  </>
-                )}
-                {canReplyTo(r) && !isConfidentialHidden(r) && r.status === "open" && (
-                  <div className="space-y-2 pt-1 border-t border-border">
-                    <div className="flex flex-wrap items-end gap-2">
-                      <CommentFiles files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
-                      <VoiceRecorder files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
-                    </div>
-                    <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} className="w-full px-3 py-1.5 rounded-md border border-input text-sm font-body" />
-                    <div className="flex flex-wrap gap-2">
-                      {(replyText[r.id] || "").trim() && (
-                        <div className="w-full">
-                          <FlowSwipeAction sensitive label={lang === "ar" ? "اسحب لاعتماد وإغلاق البلاغ" : "Swipe to approve and close"} onAction={() => decide(r.id, "approved")} confirmLabel={t("confirm")} cancelLabel={t("cancel")} />
-                        </div>
-                      )}
-                      <button disabled={!(replyText[r.id] || "").trim()} onClick={() => decide(r.id, "rejected")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground text-xs font-body hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
-                        <XIcon className="w-3.5 h-3.5" /> {t("rejectReport")}
-                      </button>
-                      {!isAtTop(r) && (
-                        <div className="w-full">
-                          <FlowSwipeAction label={lang === "ar" ? "اسحب للتصعيد للمستوى التالي" : "Swipe to escalate"} onAction={() => escalate(r.id)} onUndo={() => undoEscalate(r.id, r)} undoLabel={lang === "ar" ? "تراجع عن التصعيد" : "Undo escalation"} />
-                        </div>
-                      )}
-                      {(!r.confidential || r.confidentialBy === currentUser.id) && (
-                        <button onClick={() => toggleConfidential(r.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-xs font-body hover:bg-muted">
-                          {r.confidential ? <LockOpen className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                          {r.confidential ? t("removeConfidential") : t("makeConfidential")}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {!canReplyTo(r) && r.status !== "closed" && !isConfidentialHidden(r) && (
-                  <p className="text-xs text-muted-foreground font-body italic">
-                    {isHRAnon && !canAct ? t("auditTrail") : `${t("escalatedTo")} ${currentHandlerLabel(r)}`}
-                  </p>
-                )}
-              </div>
-            ))
+                ))
               )}
             </div>
-          )}
+          ) : null}
         </>
       )}
     </div>
   );
-}
-
-function Badge({ text, tone = "muted" }) {
-  const tones = {
-    muted: "bg-muted text-muted-foreground",
-    destructive: "bg-destructive/15 text-destructive",
-    accent: "bg-accent/15 text-accent",
-  };
-  return <span className={`px-2 py-0.5 rounded-full text-[10px] font-body whitespace-nowrap ${tones[tone]}`}>{text}</span>;
 }

@@ -22,7 +22,7 @@ export default function TruePerfEquation({ equation }) {
                 </div>
               )}
               <div className="flex-1 rounded-lg border border-border bg-card p-4 text-center">
-                <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-md bg-primary text-landing-gold-light">
+                <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-md bg-primary text-accent">
                   <Icon className="h-5 w-5" strokeWidth={1.6} />
                 </span>
                 <p className="mt-3 font-heading text-lg font-semibold text-primary">{input.labelAr}</p>
@@ -38,7 +38,7 @@ export default function TruePerfEquation({ equation }) {
 
       <div className="rounded-lg border border-accent bg-primary px-5 py-4 text-center text-primary-foreground">
         <div className="flex items-center justify-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-landing-gold-light" strokeWidth={1.7} />
+          <ShieldCheck className="h-5 w-5 text-accent" strokeWidth={1.7} />
           <p className="font-heading text-xl font-semibold">{equation.ruleAr}</p>
         </div>
         <p className="mt-1 text-[12px] text-primary-foreground/80">{equation.ruleSubAr}</p>

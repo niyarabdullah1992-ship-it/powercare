@@ -12,7 +12,7 @@ export default function useOrgTreeViewport(viewportRef, zoom, setZoom, offset, s
     if (points.length === 2) gesture.current = { type: "pinch", distance: distance(points), zoom };
   };
   const onPointerDown = (event) => {
-    if (event.target.closest("button, input, textarea, select")) return;
+    if (event.target.closest("button, input, textarea, select, [data-org-hit], a")) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     begin();

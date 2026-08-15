@@ -32,8 +32,12 @@ export function AuthProvider({ children }) {
   });
   const [tick, setTick] = useState(0); // force refresh on store changes
   const [isSyncing, setIsSyncing] = useState(false); // true while pulling the latest data from the cloud
-  const [planConfig, setPlanConfig] = useState(null);
-  const [planLoading, setPlanLoading] = useState(true);
+  const [planConfig, setPlanConfig] = useState(() => {
+    const s = getSession();
+    const meta = s?.companyId ? getCompanyMeta(s.companyId) : null;
+    return planConfigForName(DEFAULT_SUBSCRIPTION_PLANS, meta?.plan || "free");
+  });
+  const [planLoading, setPlanLoading] = useState(false);
   // Per-collection version stamps from the last successful pull — lets each poll skip
   // downloading collections that haven't changed on the server (delta sync).
   const lastVersionsRef = useRef({});

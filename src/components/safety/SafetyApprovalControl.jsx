@@ -1,27 +1,188 @@
+
 import React from "react";
-import { AlertTriangle, BadgeCheck } from "lucide-react";
+import { AlertTriangle, BadgeCheck, ArrowLeftRight } from "lucide-react";
 import { formatDateTime } from "@/lib/dateFormat";
 import FlowSwipeAction from "@/components/flow/FlowSwipeAction";
+import { ACCENT, MUTED, NAVY, CARD } from "@/lib/platformStyles";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export default function SafetyApprovalControl({ rec, canApprove, approvalIssues, lang, onApprove, onRevoke }) {
+function isHazardIssue(issue) {
+  return /open hazard|مخاطر مفتوحة/i.test(issue);
+}
+
+export default function SafetyApprovalControl({
+  rec,
+  canApprove,
+  approvalIssues = [],
+  openHazardCount = 0,
+  lang,
+  onApprove,
+  onRevoke,
+}) {
   const ar = lang === "ar";
-  const L = (a, e) => ar ? a : e;
+  const L = (a, e) => (ar ? a : e);
+  const hazardCount = openHazardCount || (rec?.hazards || []).length;
+  const softIssues = approvalIssues.filter((issue) => !isHazardIssue(issue));
+  const hardBlock = hazardCount > 0;
+
   if (rec?.approvedBy) {
     const approvedAt = new Date(rec.approvedAt).getTime();
-    const canRevoke = canApprove && Number.isFinite(approvedAt) && Date.now() - approvedAt >= 0 && Date.now() - approvedAt <= DAY_MS;
-    return <div className="space-y-2">
-      <p className="text-[11px] text-muted-foreground"><BadgeCheck className="me-1 inline h-3.5 w-3.5 text-emerald-600" />{L("اعتمده", "Approved by")} <strong>{rec.approvedBy}</strong>{rec.approvedAt && ` — ${formatDateTime(rec.approvedAt, lang)}`}</p>
-      {canRevoke && <FlowSwipeAction sensitive label={L("اسحب للتراجع عن الاعتماد", "Swipe to revoke approval")} onAction={onRevoke} confirmLabel={L("تأكيد التراجع", "Confirm revocation")} cancelLabel={L("إلغاء", "Cancel")} />}
-    </div>;
+    const canRevoke =
+      canApprove && Number.isFinite(approvedAt) && Date.now() - approvedAt >= 0 && Date.now() - approvedAt <= DAY_MS;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+            padding: "12px 12px",
+            borderRadius: 11,
+            border: "1px solid #BBF7D0",
+            background: "#ECFDF3",
+          }}
+        >
+          <span
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              background: CARD,
+              color: ACCENT,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              border: "1px solid #BBF7D0",
+            }}
+          >
+            <BadgeCheck style={{ width: 15, height: 15 }} strokeWidth={1.75} />
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "#15803D" }}>{L("معتمد", "Approved")}</div>
+            <div style={{ fontSize: 12, color: NAVY, marginTop: 2, lineHeight: 1.5 }}>
+              {rec.approvedBy}
+              {rec.approvedAt ? (
+                <span style={{ display: "block", fontSize: 10, color: MUTED, marginTop: 2 }}>
+                  {formatDateTime(rec.approvedAt, lang)}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+        {canRevoke && (
+          <FlowSwipeAction
+            sensitive
+            label={L("اسحب للتراجع عن الاعتماد", "Swipe to revoke approval")}
+            onAction={onRevoke}
+            confirmLabel={L("تأكيد التراجع", "Confirm revocation")}
+            cancelLabel={L("إلغاء", "Cancel")}
+          />
+        )}
+      </div>
+    );
   }
+
   if (canApprove) {
-    const hardBlock = approvalIssues.some((issue) => /open hazard|مخاطر مفتوحة/i.test(issue));
-    return <div className="space-y-2">
-      {approvalIssues.length > 0 && <div className={`rounded-lg border p-2.5 ${hardBlock ? "border-red-300 bg-red-50 text-red-800" : "border-amber-300 bg-amber-50 text-amber-800"}`}><p className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold"><AlertTriangle className="h-3.5 w-3.5" />{hardBlock ? L("موقوف — أغلق المخاطر أولًا", "Blocked — close hazards first") : L("تحذيرات قبل الاعتماد", "Warnings before approval")}</p><ul className="list-disc space-y-1 ps-4 text-[10px]">{approvalIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul></div>}
-      {!hardBlock && <FlowSwipeAction sensitive label={L("اسحب لاعتماد بيانات السلامة", "Swipe to approve safety data")} onAction={onApprove} confirmLabel={L("تأكيد المتابعة والاعتماد", "Confirm and approve")} cancelLabel={L("إلغاء", "Cancel")} />}
-    </div>;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {hardBlock && (
+          <div
+            style={{
+              borderRadius: 11,
+              border: "1px solid #FECACA",
+              background: "#FEF2F2",
+              padding: "11px 12px",
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 11,
+                fontWeight: 600,
+                color: "#B91C1C",
+              }}
+            >
+              <AlertTriangle style={{ width: 14, height: 14 }} strokeWidth={1.75} />
+              {L("موقوف عن الاعتماد", "Approval blocked")}
+            </p>
+            <p style={{ margin: "6px 0 0", fontSize: 11, lineHeight: 1.55, color: "#991B1B" }}>
+              {L(
+                `${hazardCount} مخاطر مفتوحة — أغلقها من بطاقة العمل أولًا.`,
+                `${hazardCount} open hazard${hazardCount === 1 ? "" : "s"} — close them in the work card first.`
+              )}
+            </p>
+            <p
+              style={{
+                margin: "8px 0 0",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                fontSize: 10,
+                fontWeight: 600,
+                color: "#B91C1C",
+                opacity: 0.85,
+              }}
+            >
+              <ArrowLeftRight style={{ width: 12, height: 12 }} strokeWidth={1.75} />
+              {L("العمل ← ثم الاعتماد", "Work → then approve")}
+            </p>
+          </div>
+        )}
+
+        {!hardBlock && softIssues.length > 0 && (
+          <div
+            style={{
+              borderRadius: 11,
+              border: "1px solid #FDE68A",
+              background: "#FFFBEB",
+              padding: "11px 12px",
+            }}
+          >
+            <p
+              style={{
+                margin: "0 0 8px",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 11,
+                fontWeight: 600,
+                color: "#B45309",
+              }}
+            >
+              <AlertTriangle style={{ width: 14, height: 14 }} strokeWidth={1.75} />
+              {L("تحذيرات قبل الاعتماد", "Warnings before approval")}
+            </p>
+            <ul style={{ margin: 0, paddingInlineStart: 18, display: "flex", flexDirection: "column", gap: 4 }}>
+              {softIssues.map((issue) => (
+                <li key={issue} style={{ fontSize: 11, lineHeight: 1.5, color: "#92400E" }}>
+                  {issue}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {!hardBlock && (
+          <FlowSwipeAction
+            sensitive
+            label={L("اسحب لاعتماد بيانات السلامة", "Swipe to approve safety data")}
+            onAction={onApprove}
+            confirmLabel={L("تأكيد المتابعة والاعتماد", "Confirm and approve")}
+            cancelLabel={L("إلغاء", "Cancel")}
+          />
+        )}
+      </div>
+    );
   }
-  return <p className="text-[10px] text-muted-foreground">{L("بانتظار اعتماد الإدارة", "Awaiting approval")}</p>;
+
+  return (
+    <p style={{ margin: 0, fontSize: 11, color: MUTED, lineHeight: 1.55 }}>
+      {L("بانتظار اعتماد الإدارة", "Awaiting approval")}
+    </p>
+  );
 }

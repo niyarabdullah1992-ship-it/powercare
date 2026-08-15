@@ -3,9 +3,13 @@ import { authPowerCareSession } from "../../shared/powerCareSession.ts";
 import {
   checkAcceptGate,
   checkApproveWorkProofGate,
+  checkEditWorkProofGate,
+  checkEndWorkProofGate,
   deriveProofCounts,
   deriveProofStage,
+  isSameProofBranch,
   sealIdFor,
+  shouldSealOnEnd,
   type WorkProofLike,
 } from "../../shared/workProofDerivations.ts";
 
@@ -87,12 +91,13 @@ Deno.serve(async (req) => {
 
     if (action === "raise") {
       const title = String(body.title || "").trim();
-      const client = String(body.client || "").trim();
+      const workReason = String(body.workReason || "").trim();
+      const entityName = String(body.entityName || body.client || "").trim();
+      const client = String(body.client || entityName).trim();
       const stationId = String(body.stationId || auth.stationId || "").trim();
       const beforeStamp = String(body.beforeStamp || "").trim();
-      const afterStamp = String(body.afterStamp || "").trim();
-      if (!title || !client || !stationId || !beforeStamp) {
-        return Response.json({ error: "Missing title, client, stationId, or beforeStamp" }, { status: 400 });
+      if (!title || !workReason || !entityName || !stationId || !beforeStamp) {
+        return Response.json({ error: "Missing title, workReason, entityName, stationId, or beforeStamp" }, { status: 400 });
       }
       const geoVerdict = String(body.geoVerdict || "in").toLowerCase().startsWith("out") ? "out" : "in";
       const ref = String(body.ref || `WP-${Date.now().toString().slice(-6)}`);
@@ -101,17 +106,37 @@ Deno.serve(async (req) => {
         companyId: auth.companyId,
         ref,
         title,
+        workReason,
+        entityKind: String(body.entityKind || "company").trim() || "company",
+        entityName,
+        entityUnified: String(body.entityUnified || "").trim() || null,
+        entityCr: String(body.entityCr || "").trim() || null,
+        entityQiwa: String(body.entityQiwa || "").trim() || null,
+        entitySite: String(body.entitySite || "").trim() || null,
+        entityProject: String(body.entityProject || "").trim() || null,
+        entityContact: String(body.entityContact || "").trim() || null,
+        entityPhone: String(body.entityPhone || "").trim() || null,
+        entityEmail: String(body.entityEmail || "").trim() || null,
+        personName: String(body.personName || "").trim() || null,
+        personId: String(body.personId || "").trim() || null,
+        personTitle: String(body.personTitle || "").trim() || null,
+        personPhone: String(body.personPhone || "").trim() || null,
+        startedAt: body.startedAt || new Date().toISOString(),
+        endedAt: null,
+        vehicle: body.vehicle && typeof body.vehicle === "object" ? body.vehicle : {},
         client,
         stationId,
         techId: body.techId ? String(body.techId) : auth.userId,
         raiserId: auth.userId,
         beforeStamp,
-        afterStamp: afterStamp || null,
+        afterStamp: null,
         beforeUrl: body.beforeUrl || null,
-        afterUrl: body.afterUrl || null,
+        afterUrl: null,
         geoVerdict,
         geoCleared: false,
-        status: afterStamp ? "ready" : "await",
+        status: "await",
+        endedById: null,
+        endedBy: null,
         createdAt: new Date().toISOString(),
       };
       const proofs = await listProofs();
@@ -121,34 +146,111 @@ Deno.serve(async (req) => {
       return Response.json({ proof: { ...proof, stage: deriveProofStage(proof) }, ok: true });
     }
 
-    if (action === "attachAfter") {
+    if (action === "attachAfter" || action === "end") {
       const id = String(body.id || body.ref || "").trim();
       const afterStamp = String(body.afterStamp || "").trim();
-      if (!id || !afterStamp) return Response.json({ error: "Missing id/ref or afterStamp" }, { status: 400 });
+      const afterUrl = body.afterUrl || null;
+      if (!id || !afterStamp || !afterUrl) return Response.json({ error: "Missing id/ref, afterStamp, or afterUrl" }, { status: 400 });
       const proofs = await listProofs();
       const idx = proofs.findIndex((p) => p.id === id || p.ref === id);
       if (idx < 0) return Response.json({ error: "PROOF_NOT_FOUND" }, { status: 404 });
       const p = { ...proofs[idx] };
-      if (p.raiserId && auth.userId && p.raiserId !== auth.userId && !isManager) {
-        return Response.json({ error: "Forbidden" }, { status: 403 });
+      const sameBranch = isSameProofBranch(auth.stationId, p.stationId);
+      const gate = checkEndWorkProofGate({ proof: p, actorUserId: auth.userId, sameBranch, isManager });
+      if (!gate.ok) {
+        return Response.json({ error: gate.error, reason: gate.reason, reasonEn: gate.reasonEn, gate }, { status: 422 });
       }
+      p.endedAt = body.endedAt || new Date().toISOString();
       p.afterStamp = afterStamp;
-      (p as any).afterUrl = body.afterUrl || (p as any).afterUrl || null;
+      (p as any).afterUrl = afterUrl;
+      (p as any).endedById = auth.userId;
+      (p as any).endedBy = auth.name;
       p.status = "ready";
       p.sealId = null;
       p.approvedAt = null;
+      const approve = checkApproveWorkProofGate({
+        proof: p,
+        actorUserId: auth.userId,
+        geoClearReason: body.geoClearReason || "إنهاء العمل بصورة البعد",
+      });
+      if (approve.ok) {
+        if (String(p.geoVerdict || "").toLowerCase().startsWith("out")) {
+          p.geoCleared = true;
+          p.geoClearReason = String(body.geoClearReason || "إنهاء العمل بصورة البعد").trim();
+        }
+        p.approvedBy = auth.name;
+        p.approvedAt = new Date().toISOString();
+        p.sealId = approve.sealId;
+        p.status = "sealed";
+      }
       proofs[idx] = p;
       await saveProofs(proofs);
+      await audit(
+        p.status === "sealed" ? "work_proof_ended_sealed" : "work_proof_ended",
+        `Work proof ${p.ref} ended by ${auth.name}${p.sealId ? ` sealed ${p.sealId}` : ""}`,
+      );
+      return Response.json({ proof: { ...p, stage: deriveProofStage(p) }, ok: true });
+    }
+
+    if (action === "edit") {
+      const id = String(body.id || body.ref || "").trim();
+      const proofs = await listProofs();
+      const idx = proofs.findIndex((p) => p.id === id || p.ref === id);
+      if (idx < 0) return Response.json({ error: "PROOF_NOT_FOUND" }, { status: 404 });
+      const current = proofs[idx];
+      const sameBranch = isSameProofBranch(auth.stationId, current.stationId);
+      const gate = checkEditWorkProofGate({ proof: current, actorUserId: auth.userId, sameBranch, isManager });
+      if (!gate.ok) {
+        return Response.json({ error: gate.error, reason: gate.reason, reasonEn: gate.reasonEn, gate }, { status: 422 });
+      }
+      const title = String(body.title || "").trim();
+      const workReason = String(body.workReason || "").trim();
+      const entityName = String(body.entityName || body.client || "").trim();
+      if (!title || !workReason || !entityName) {
+        return Response.json({ error: "MISSING_FIELDS", reason: "الوصف وسبب العمل واسم المستفيد مطلوبة." }, { status: 400 });
+      }
+      const p = {
+        ...current,
+        title,
+        workReason,
+        entityKind: String(body.entityKind || current.entityKind || "company").trim(),
+        entityName,
+        entityUnified: String(body.entityUnified ?? (current as any).entityUnified ?? "").trim() || null,
+        entityCr: String(body.entityCr ?? (current as any).entityCr ?? "").trim() || null,
+        entityQiwa: String(body.entityQiwa ?? (current as any).entityQiwa ?? "").trim() || null,
+        entitySite: String(body.entitySite ?? (current as any).entitySite ?? "").trim() || null,
+        entityProject: String(body.entityProject ?? (current as any).entityProject ?? "").trim() || null,
+        entityContact: String(body.entityContact ?? (current as any).entityContact ?? "").trim() || null,
+        entityPhone: String(body.entityPhone ?? (current as any).entityPhone ?? "").trim() || null,
+        entityEmail: String(body.entityEmail ?? (current as any).entityEmail ?? "").trim() || null,
+        personName: String(body.personName ?? (current as any).personName ?? "").trim() || null,
+        personId: String(body.personId ?? (current as any).personId ?? "").trim() || null,
+        personTitle: String(body.personTitle ?? (current as any).personTitle ?? "").trim() || null,
+        personPhone: String(body.personPhone ?? (current as any).personPhone ?? "").trim() || null,
+        startedAt: body.startedAt || (current as any).startedAt || null,
+        vehicle: body.vehicle && typeof body.vehicle === "object" ? body.vehicle : (current as any).vehicle,
+        client: String(body.client || body.entityContact || entityName).trim(),
+        stationId: String(body.stationId || current.stationId || "").trim(),
+        geoVerdict: String(body.geoVerdict || current.geoVerdict || "in").toLowerCase().startsWith("out") ? "out" : "in",
+        editedAt: new Date().toISOString(),
+        editedBy: auth.name,
+        editedById: auth.userId,
+      };
+      proofs[idx] = p;
+      await saveProofs(proofs);
+      await audit("work_proof_edited", `Work proof ${p.ref} edited by ${auth.name}`);
       return Response.json({ proof: { ...p, stage: deriveProofStage(p) }, ok: true });
     }
 
     if (action === "approve") {
-      if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
       const id = String(body.id || body.ref || "").trim();
       const proofs = await listProofs();
       const idx = proofs.findIndex((p) => p.id === id || p.ref === id);
       if (idx < 0) return Response.json({ error: "PROOF_NOT_FOUND" }, { status: 404 });
       let p = { ...proofs[idx] };
+      if (!isManager && !isSameProofBranch(auth.stationId, p.stationId)) {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
       const gate = checkApproveWorkProofGate({
         proof: p,
         actorUserId: auth.userId,
@@ -172,13 +274,15 @@ Deno.serve(async (req) => {
     }
 
     if (action === "reject") {
-      if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
       const id = String(body.id || body.ref || "").trim();
       const reason = String(body.reason || "").trim();
       const proofs = await listProofs();
       const idx = proofs.findIndex((p) => p.id === id || p.ref === id);
       if (idx < 0) return Response.json({ error: "PROOF_NOT_FOUND" }, { status: 404 });
       const p = { ...proofs[idx] };
+      if (!isManager && !isSameProofBranch(auth.stationId, p.stationId)) {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
       if (auth.userId && p.raiserId && String(auth.userId) === String(p.raiserId)) {
         return Response.json({
           error: "SELF_APPROVE_FORBIDDEN",

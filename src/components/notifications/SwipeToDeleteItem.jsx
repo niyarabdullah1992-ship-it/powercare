@@ -32,7 +32,7 @@ export default function SwipeToDeleteItem({ onDelete, children }) {
 
   return (
     <div className="relative overflow-hidden">
-      <div className="absolute inset-0 flex items-center justify-center bg-destructive/15 text-destructive">
+      <div className="absolute inset-0 flex items-center justify-center" style={{ background: "#FEF2F2", color: "#DC2626" }}>
         <Trash2 className="w-4 h-4" />
       </div>
       <div

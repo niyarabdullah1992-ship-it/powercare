@@ -8,6 +8,35 @@ import { appParams } from "@/lib/app-params";
 export const LOCAL_PREVIEW_COMPANY_ID = "local-preview-nirovera";
 export const LOCAL_PREVIEW_FLAG = "powercare_local_preview";
 
+/** Demo branch labels — free names, not a forced East/West region layer. */
+const PREVIEW_BRANCH_RENAMES = {
+  "الفرع الشمالية": "فرع الخفجي",
+  "الفرع الشرقية": "فرع رابغ",
+  "North Station": "Khafji Branch",
+  "East Station": "Rabigh Branch",
+};
+
+/** Rewrite legacy compass demo names on already-seeded local preview data. */
+export function migratePreviewBranchNames(data) {
+  if (!data?.stations?.length) return data;
+  let changed = false;
+  const stations = data.stations.map((st) => {
+    const next = PREVIEW_BRANCH_RENAMES[st.name];
+    if (!next || next === st.name) return st;
+    changed = true;
+    return { ...st, name: next };
+  });
+  if (!changed) return data;
+  const tasks = (data.tasks || []).map((t) => {
+    let title = t.title || "";
+    for (const [from, to] of Object.entries(PREVIEW_BRANCH_RENAMES)) {
+      if (title.includes(from)) title = title.split(from).join(to);
+    }
+    return title === t.title ? t : { ...t, title };
+  });
+  return { ...data, stations, tasks };
+}
+
 export function isBase44BackendConfigured() {
   return Boolean(appParams.appBaseUrl && String(appParams.appId || "").trim());
 }
@@ -70,8 +99,8 @@ export function enterLocalPreview() {
     directorId: ownerId,
     ownerId,
     stations: [
-      { id: stationNorth, name: "المحطة الشمالية", createdAt: now, managerId },
-      { id: stationEast, name: "المحطة الشرقية", createdAt: now },
+      { id: stationNorth, name: "فرع الخفجي", createdAt: now, managerId },
+      { id: stationEast, name: "فرع رابغ", createdAt: now },
     ],
     employees: [
       {
@@ -79,7 +108,8 @@ export function enterLocalPreview() {
         name: "نيار عبدالله",
         email: "preview@nirovera.local",
         role: "director",
-        stationId: null,
+        stationId: stationNorth,
+        managedStations: [stationNorth, stationEast],
         phone: "0595414472",
         anonymousId: "a_owner",
         createdAt: now,
@@ -105,6 +135,7 @@ export function enterLocalPreview() {
         email: "omar@nirovera.local",
         role: "employee",
         stationId: stationNorth,
+        attendanceStatus: "absent",
         phone: "",
         anonymousId: "a_emp",
         createdAt: now,
@@ -127,43 +158,121 @@ export function enterLocalPreview() {
     tasks: [
       {
         id: "tk_1",
+        ref: "LOC-001",
         title: "فحص وصيانة مضخات الخط الثالث",
-        status: "in_progress",
+        status: "active",
         stationId: stationNorth,
         assignedTo: employeeId,
+        ownerId: employeeId,
+        priority: "high",
+        effortWeight: 4,
         weight: 4,
+        workKind: "cm",
+        mode: "onsite",
+        completedCount: 34,
         completed_tasks: 34,
+        targetCount: 50,
         task_target: 50,
+        planHorizon: "w",
         createdAt: now,
+        dueAt: new Date(Date.now() + 2 * 86400000).toISOString(),
         dueDate: new Date(Date.now() + 2 * 86400000).toISOString(),
       },
       {
         id: "tk_2",
+        ref: "LOC-002",
         title: "تحديث لوحات السلامة",
-        status: "pending",
+        status: "active",
         stationId: stationEast,
         assignedTo: hseId,
+        ownerId: hseId,
+        priority: "medium",
+        effortWeight: 2,
         weight: 2,
+        workKind: "pm",
+        mode: "onsite",
+        completedCount: 0,
         completed_tasks: 0,
+        targetCount: 1,
         task_target: 1,
+        planHorizon: "w",
         createdAt: now,
+        dueAt: new Date(Date.now() + 86400000).toISOString(),
         dueDate: new Date(Date.now() + 86400000).toISOString(),
       },
       {
         id: "tk_3",
+        ref: "LOC-003",
         title: "قراءة العداد الشهرية",
         status: "completed",
+        approvedAt: now,
         stationId: stationNorth,
         assignedTo: employeeId,
+        ownerId: employeeId,
+        priority: "low",
+        effortWeight: 1,
         weight: 1,
+        workKind: "pm",
+        mode: "remote",
+        completedCount: 1,
         completed_tasks: 1,
+        targetCount: 1,
         task_target: 1,
+        planHorizon: "m",
+        attestation: "أُنجزت القراءة الميدانية وفق الجدول",
         createdAt: now,
+        dueAt: now,
+      },
+      {
+        id: "tk_4",
+        ref: "LOC-004",
+        title: "جولة سلامة أسبوعية — فرع الخفجي",
+        status: "active",
+        stationId: stationNorth,
+        assignedTo: managerId,
+        ownerId: managerId,
+        priority: "medium",
+        effortWeight: 3,
+        workKind: "cp",
+        mode: "onsite",
+        completedCount: 0,
+        targetCount: 1,
+        planHorizon: "w",
+        createdAt: now,
+        dueAt: new Date(Date.now() + 3 * 86400000).toISOString(),
       },
     ],
     reports: [
-      { id: "rp_1", title: "تقرير وردية صباحية", status: "pending", stationId: stationNorth, createdAt: now },
-      { id: "rp_2", title: "تقرير سلامة أسبوعي", status: "approved", stationId: stationEast, createdAt: now },
+      {
+        id: "rp_1",
+        kind: "daily",
+        title: "تقرير وردية صباحية",
+        status: "pending",
+        stationId: stationNorth,
+        dateKey: (() => {
+          const d = new Date();
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        })(),
+        filedAt: "13:10",
+        filedBy: "أحمد السالم",
+        note: "الوردية مستقرة · مضخة الخط الثالث تحت الصيانة",
+        approved: false,
+        createdAt: now,
+      },
+      {
+        id: "rp_2",
+        kind: "daily",
+        title: "تقرير وردية — الشرقية",
+        status: "missing",
+        stationId: stationEast,
+        dateKey: (() => {
+          const d = new Date();
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        })(),
+        filedAt: null,
+        approved: false,
+        createdAt: now,
+      },
     ],
     anonymousReports: [
       { id: "an_1", type: "suggestion", priority: "medium", status: "open", stationId: stationNorth, createdAt: now },
@@ -174,11 +283,27 @@ export function enterLocalPreview() {
         id: "sf_1",
         stationId: stationNorth,
         level: "yellow",
-        hazards: [{ id: "hz_1", title: "عمل على ارتفاع" }],
+        hazards: [{ id: "hz_1", title: "عمل على ارتفاع", severity: 3, likelihood: 3, status: "open" }],
+        incidentLog: [
+          { at: now, description: "شبه حادثة — سقوط أداة من السقالة", reporter: "سارة حسن" },
+        ],
+        daysWithoutIncident: 12,
+      },
+      {
+        id: "sf_2",
+        stationId: stationEast,
+        level: "green",
+        hazards: [],
         incidentLog: [],
+        daysWithoutIncident: 45,
       },
     ],
-    files: [{ id: "fl_1", name: "عقد عمل — نموذج.pdf", createdAt: now }],
+    files: [
+      { id: "fld_contracts", type: "folder", name: "العقود", stationId: stationNorth, parentId: null, createdAt: now },
+      { id: "fld_hse", type: "folder", name: "السلامة", stationId: stationEast, parentId: null, createdAt: now },
+      { id: "fl_1", type: "file", name: "عقد عمل — نموذج.pdf", stationId: stationNorth, parentId: "fld_contracts", createdAt: now },
+      { id: "fl_2", type: "file", name: "تصريح عمل مرتفعات.pdf", stationId: stationEast, parentId: "fld_hse", createdAt: now },
+    ],
     plans: [],
     notifications: [
       { id: "nt_1", userId: ownerId, title: "طلب إجازة بانتظار الاعتماد", read: false, createdAt: now },
@@ -188,22 +313,128 @@ export function enterLocalPreview() {
     hrLevels: [],
     jobGrades: [],
     hrClusters: [],
-    schedules: [],
+    schedules: (() => {
+      const d = new Date();
+      const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      return [
+        {
+          id: "sch_1",
+          stationId: stationNorth,
+          published: true,
+          shiftTypes: [{ id: "morning", start: "07:00", end: "15:00", label: "صباحي" }],
+          assignments: {
+            [dateKey]: { morning: [ownerId, managerId, employeeId] },
+          },
+        },
+        {
+          id: "sch_2",
+          stationId: stationEast,
+          published: true,
+          shiftTypes: [{ id: "morning", start: "07:00", end: "15:00", label: "صباحي" }],
+          assignments: {
+            [dateKey]: { morning: [hseId] },
+          },
+        },
+      ];
+    })(),
     stationChatGroups: [],
     personalPlaces: [],
     personalAttendance: [],
+    attendanceSettings: { schedule_required: false, gps_enabled: false },
     plannerItems: [],
     journalEntries: [],
-    payrollRuns: [{ id: "pr_1", month: "2026-08", status: "ready", items: [], createdAt: now }],
+    payrollRuns: [{
+      id: "pr_1",
+      month: "2026-08",
+      status: "ready",
+      createdAt: now,
+      items: [
+        { id: "pi_1", employeeId: ownerId, employeeName: "نيار عبدالله", employeeStationId: null, base: 18000, allowances: 3000, bonus: 0, deductions: 0, currency: "SAR", paid: false },
+        { id: "pi_2", employeeId: managerId, employeeName: "أحمد السالم", employeeStationId: stationNorth, base: 12000, allowances: 2500, bonus: 500, deductions: 200, currency: "SAR", paid: false },
+        { id: "pi_3", employeeId, employeeName: "عمر ناصر", employeeStationId: stationNorth, base: 7500, allowances: 1500, bonus: 0, deductions: 0, currency: "SAR", paid: false },
+        { id: "pi_4", employeeId: hseId, employeeName: "سارة حسن", employeeStationId: stationEast, base: 9000, allowances: 1800, bonus: 0, deductions: 0, currency: "SAR", paid: false },
+      ],
+    }],
     payroll: [{ id: "py_1", month: "2026-08" }],
+    orgTree: [
+      { id: "org_owner", type: "employee", refId: ownerId, title: "المدير", parentId: null, order: 0 },
+      { id: "org_mgr", type: "employee", refId: managerId, title: "مدير الفرع", parentId: "org_owner", order: 0 },
+      { id: "org_st_n", type: "station", refId: stationNorth, title: "فرع الخفجي", parentId: "org_mgr", order: 0 },
+      { id: "org_hse", type: "employee", refId: hseId, title: "سلامة الفرع", parentId: "org_owner", order: 1 },
+      { id: "org_st_e", type: "station", refId: stationEast, title: "فرع رابغ", parentId: "org_hse", order: 0 },
+      { id: "org_field", type: "employee", refId: employeeId, title: "فني", parentId: "org_st_n", order: 0 },
+    ],
     smartPositions: [],
     complaintEscalationChain: [],
-    signatureRequests: [{ id: "sg_1", status: "pending", createdAt: now }],
-    signedDocuments: [],
-    expenses: [{ id: "ex_1", status: "pending", amount: 450, createdAt: now }],
-    inventory: [{ id: "inv_1", name: "قفازات عازلة", qty: 24 }],
-    inventoryItems: [{ id: "ivi_1", name: "قاطع 32A", qty: 3 }],
-    messages: [{ id: "ms_1", text: "اكتمل الفحص", createdAt: now }],
+    signatureRequests: [{
+      id: "sg_1",
+      status: "pending",
+      title: "شهادة إنجاز — فحص المضخات",
+      source: "workproof",
+      createdAt: now,
+      stationId: stationNorth,
+    }],
+    signedDocuments: [{
+      id: "sd_1",
+      title: "قرار إجازة — أحمد السالم",
+      source: "leave",
+      status: "signed",
+      sealId: "NV-SIG-A1B2-C3D4",
+      signedAt: now,
+      stationId: stationNorth,
+    }],
+    expenses: [
+      {
+        id: "ex_1",
+        status: "submitted",
+        amount: 450,
+        afterTaxAmount: 450,
+        beforeTaxAmount: 450,
+        taxAmount: 0,
+        stationId: stationNorth,
+        stationIds: [stationNorth],
+        title: "قطع غيار مضخة",
+        description: "قطع غيار مضخة",
+        expenseType: "tools_equipment",
+        requesterName: "عمر ناصر",
+        expenseDate: now.slice(0, 10),
+        currency: "SAR",
+        receiptUrl: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="100%" height="100%" fill="#F7F8FA"/><text x="24" y="48" font-size="18" fill="#14284B">إيصال — قطع غيار</text><text x="24" y="80" font-size="13" fill="#5A6B85">450 SAR</text></svg>'),
+        createdAt: now,
+      },
+      {
+        id: "ex_2",
+        status: "finance_approved",
+        amount: 120,
+        afterTaxAmount: 120,
+        beforeTaxAmount: 120,
+        taxAmount: 0,
+        stationId: stationEast,
+        stationIds: [stationEast],
+        title: "مستلزمات سلامة",
+        description: "مستلزمات سلامة",
+        expenseType: "tools_equipment",
+        requesterName: "سارة حسن",
+        expenseDate: now.slice(0, 10),
+        currency: "SAR",
+        receiptUrl: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="100%" height="100%" fill="#F7F8FA"/><text x="24" y="48" font-size="18" fill="#14284B">إيصال — سلامة</text><text x="24" y="80" font-size="13" fill="#5A6B85">120 SAR</text></svg>'),
+        createdAt: now,
+      },
+    ],
+    expenseClaims: [],
+    stationBudgets: [
+      { stationId: stationNorth, stationName: "فرع الخفجي", limit: 50000, currency: "SAR" },
+      { stationId: stationEast, stationName: "فرع رابغ", limit: 40000, currency: "SAR" },
+    ],
+    inventory: [{ id: "inv_1", name: "قفازات عازلة", qty: 24, stationId: stationNorth, itemCode: "PPE-0120", minimumStock: 20 }],
+    inventoryItems: [
+      { id: "ivi_1", name: "قاطع 32A", itemCode: "BRK-32A", qty: 3, stationId: stationNorth, minQty: 5, leadDays: 10 },
+      { id: "ivi_2", name: "كبل XLPE 4×95", itemCode: "CBL-495", qty: 12, stationId: stationEast, minQty: 4, leadDays: 14 },
+    ],
+    messages: [
+      { id: "ms_1", text: "اكتمل الفحص", stationId: stationNorth, createdAt: now },
+      { id: "ms_2", text: "يرجى مراجعة تصريح العمل", stationId: stationEast, createdAt: now },
+    ],
     settings: { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30 },
     reportBranding: {},
   };

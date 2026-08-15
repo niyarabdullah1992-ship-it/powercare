@@ -1,51 +1,103 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Logo from "@/components/Logo";
 
-function SlideShell({ children, tone = "light", className = "" }) {
-  const tones = {
-    navy: "bg-[#0B1A3F] text-white",
-    light: "bg-[#F7F8FA] text-[#0B1A3F]",
-    white: "bg-white text-[#0B1A3F]",
-  };
+const W = 1920;
+const H = 1080;
+const FONT = "'IBM Plex Sans Arabic', sans-serif";
+const FONT_LATIN = "'IBM Plex Sans', 'IBM Plex Sans Arabic', sans-serif";
+
+const TONES = {
+  navy: { background: "var(--nv-navy, #14284B)", color: "#FFFFFF" },
+  light: { background: "var(--nv-soft, #F7F8FA)", color: "var(--nv-ink, #14284B)" },
+  white: { background: "var(--nv-card, #FFFFFF)", color: "var(--nv-ink, #14284B)" },
+};
+
+function SlideShell({ children, tone = "light", style = {}, ar }) {
   return (
-    <div className={`relative flex h-full min-h-0 flex-col overflow-hidden ${tones[tone]} ${className}`}>
-      <div
-        className="pointer-events-none absolute inset-0 opacity-50"
-        style={{
-          background:
-            tone === "navy"
-              ? "radial-gradient(ellipse at 80% 10%, rgba(14,122,75,0.22), transparent 50%)"
-              : "radial-gradient(ellipse at 0% 100%, rgba(14,122,75,0.06), transparent 45%)",
-        }}
-        aria-hidden
-      />
-      <div className="relative z-10 flex h-full min-h-0 flex-col px-6 py-8 sm:px-10 sm:py-10 md:px-14 md:py-12 lg:px-16">
-        {children}
-      </div>
+    <div
+      dir={ar ? "rtl" : "ltr"}
+      style={{
+        width: W,
+        height: H,
+        boxSizing: "border-box",
+        padding: "100px 100px 80px",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        fontFamily: FONT,
+        ...TONES[tone],
+        ...style,
+      }}
+    >
+      {children}
     </div>
   );
 }
 
 function SlideCover({ slide, ar }) {
   return (
-    <SlideShell tone="navy">
-      <div className="flex items-center gap-3">
-        <Logo size={40} />
-        <span className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">NiroVera</span>
+    <SlideShell tone="navy" ar={ar} style={{ justifyContent: "space-between" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
+        <Logo size={72} />
+        <span
+          style={{
+            fontFamily: FONT_LATIN,
+            fontSize: 40,
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          NiroVera
+        </span>
       </div>
-      <div className="mt-auto max-w-4xl">
-        <h1 className="font-heading text-[clamp(2rem,5.5vw,4.75rem)] font-semibold leading-[1.12] tracking-[-0.03em]">
+      <div>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 104,
+            fontWeight: 600,
+            lineHeight: 1.15,
+            letterSpacing: "-0.03em",
+            maxWidth: 1400,
+            textWrap: "pretty",
+          }}
+        >
           {ar ? slide.titleAr : slide.titleEn}
         </h1>
-        <p className="mt-6 max-w-3xl text-[clamp(1rem,2vw,1.65rem)] font-light leading-[1.55] text-[#A8B4C8]">
+        <p
+          style={{
+            margin: "40px 0 0",
+            fontSize: 44,
+            fontWeight: 300,
+            color: "#94A3B8",
+            maxWidth: 1200,
+            lineHeight: 1.5,
+          }}
+        >
           {ar ? slide.subAr : slide.subEn}
         </p>
       </div>
-      <div className="mt-10 flex items-center gap-3 text-sm text-[#64748B] sm:text-base">
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 28,
+          fontSize: 28,
+          color: "#64748B",
+        }}
+      >
         <span>{ar ? "عرض تعريفي" : "Sales briefing"}</span>
-        <span className="h-1.5 w-1.5 rounded-full bg-[#0E7A4B]" aria-hidden />
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: "#1E9E63",
+            flexShrink: 0,
+          }}
+          aria-hidden
+        />
         <span>{ar ? "أغسطس 2026" : "August 2026"}</span>
       </div>
     </SlideShell>
@@ -54,11 +106,28 @@ function SlideCover({ slide, ar }) {
 
 function SlideDivider({ slide, ar }) {
   return (
-    <SlideShell tone="navy" className="justify-center">
-      <span className="font-heading text-sm font-semibold tracking-[0.16em] text-[#3FBF80] sm:text-base" dir="ltr">
+    <SlideShell tone="navy" ar={ar} style={{ justifyContent: "center" }}>
+      <span
+        dir="ltr"
+        style={{
+          fontFamily: FONT_LATIN,
+          fontSize: 32,
+          fontWeight: 600,
+          color: "#1E9E63",
+          letterSpacing: "0.14em",
+        }}
+      >
         {slide.chapter}
       </span>
-      <h1 className="mt-5 font-heading text-[clamp(3rem,10vw,6.5rem)] font-semibold leading-none tracking-[-0.03em]">
+      <h1
+        style={{
+          margin: "28px 0 0",
+          fontSize: 120,
+          fontWeight: 600,
+          letterSpacing: "-0.03em",
+          lineHeight: 1,
+        }}
+      >
         {ar ? slide.titleAr : slide.titleEn}
       </h1>
     </SlideShell>
@@ -67,34 +136,85 @@ function SlideDivider({ slide, ar }) {
 
 function SlideProblem({ slide, ar }) {
   return (
-    <SlideShell tone="light">
-      <h1 className="font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-[-0.02em]">
+    <SlideShell tone="light" ar={ar}>
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 72,
+          fontWeight: 600,
+          letterSpacing: "-0.02em",
+        }}
+      >
         {ar ? slide.titleAr : slide.titleEn}
       </h1>
-      <p className="mt-4 max-w-3xl text-[clamp(0.95rem,1.6vw,1.25rem)] leading-[1.6] text-[#5A6B85]">
+      <p
+        style={{
+          margin: "28px 0 0",
+          fontSize: 34,
+          color: "#5A6B85",
+          maxWidth: 1200,
+          lineHeight: 1.6,
+        }}
+      >
         {ar ? slide.subAr : slide.subEn}
       </p>
-      <div className="mt-10 grid flex-1 gap-4 md:grid-cols-3 md:gap-5">
-        {slide.stats.map((stat) => (
-          <div key={stat.bodyEn} className="flex flex-col border border-[#E2E8F0] bg-white p-5 sm:p-6">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 32,
+          marginTop: 80,
+        }}
+      >
+        {slide.stats.map((stat) => {
+          const unit = ar ? stat.unitAr : stat.unitEn;
+          return (
             <div
-              className={`font-heading text-[clamp(2.75rem,6vw,4.5rem)] font-semibold leading-none ${
-                stat.tone === "danger" ? "text-[#DC2626]" : "text-[#0B1A3F]"
-              }`}
-              dir="ltr"
+              key={stat.bodyEn}
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid #E2E8F0",
+                borderRadius: 20,
+                padding: 44,
+              }}
             >
-              {stat.value}
-              {(ar ? stat.unitAr : stat.unitEn) ? (
-                <span className="ms-2 text-[clamp(0.95rem,1.5vw,1.35rem)] font-normal text-[#5A6B85]">
-                  {ar ? stat.unitAr : stat.unitEn}
-                </span>
-              ) : null}
+              <div
+                dir="ltr"
+                style={{
+                  fontFamily: FONT_LATIN,
+                  fontSize: 96,
+                  fontWeight: 600,
+                  lineHeight: 1,
+                  color: stat.tone === "danger" ? "#DC2626" : "#14284B",
+                }}
+              >
+                {stat.value}
+                {unit ? (
+                  <span
+                    style={{
+                      fontSize: 44,
+                      fontWeight: 400,
+                      color: "#5A6B85",
+                      paddingRight: 10,
+                    }}
+                  >
+                    {unit}
+                  </span>
+                ) : null}
+              </div>
+              <p
+                style={{
+                  margin: "24px 0 0",
+                  fontSize: 32,
+                  lineHeight: 1.5,
+                  color: "#14284B",
+                }}
+              >
+                {ar ? stat.bodyAr : stat.bodyEn}
+              </p>
             </div>
-            <p className="mt-5 text-[clamp(0.9rem,1.3vw,1.1rem)] leading-[1.55] text-[#0B1A3F]">
-              {ar ? stat.bodyAr : stat.bodyEn}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </SlideShell>
   );
@@ -102,29 +222,79 @@ function SlideProblem({ slide, ar }) {
 
 function SlideCost({ slide, ar }) {
   return (
-    <SlideShell tone="white">
-      <h1 className="font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-[-0.02em]">
+    <SlideShell tone="white" ar={ar}>
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 72,
+          fontWeight: 600,
+          letterSpacing: "-0.02em",
+        }}
+      >
         {ar ? slide.titleAr : slide.titleEn}
       </h1>
-      <div className="mt-10 grid flex-1 gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
-        <div className="space-y-8">
+      <div
+        style={{
+          display: "flex",
+          gap: 80,
+          marginTop: 72,
+          alignItems: "flex-start",
+        }}
+      >
+        <div style={{ flex: 1 }}>
           {slide.items.map((item, i) => (
             <div
               key={item.titleEn}
-              className={`border-t pt-6 ${i === 0 ? "border-[#0B1A3F] border-t-2" : "border-[#E2E8F0]"}`}
+              style={{
+                borderTop: i === 0 ? "2px solid #14284B" : "1px solid #E2E8F0",
+                paddingTop: 32,
+                marginTop: i === 0 ? 0 : 40,
+              }}
             >
-              <h2 className="text-[clamp(1.1rem,1.8vw,1.35rem)] font-semibold">{ar ? item.titleAr : item.titleEn}</h2>
-              <p className="mt-3 text-[clamp(0.95rem,1.4vw,1.15rem)] leading-[1.6] text-[#5A6B85]">
+              <div style={{ fontSize: 34, fontWeight: 600 }}>
+                {ar ? item.titleAr : item.titleEn}
+              </div>
+              <p
+                style={{
+                  margin: "16px 0 0",
+                  fontSize: 30,
+                  color: "#5A6B85",
+                  lineHeight: 1.6,
+                }}
+              >
                 {ar ? item.bodyAr : item.bodyEn}
               </p>
             </div>
           ))}
         </div>
-        <aside className="bg-[#0B1A3F] p-7 text-white sm:p-8">
-          <p className="text-[11px] font-semibold tracking-[0.14em] text-[#3FBF80]">
+        <aside
+          style={{
+            width: 620,
+            flexShrink: 0,
+            background: "#14284B",
+            borderRadius: 20,
+            padding: 56,
+            color: "#FFFFFF",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 28,
+              color: "#1E9E63",
+              fontWeight: 600,
+              letterSpacing: "0.1em",
+            }}
+          >
             {ar ? "المحصلة" : "OUTCOME"}
-          </p>
-          <p className="mt-6 text-[clamp(1.15rem,2vw,1.55rem)] font-light leading-[1.55]">
+          </div>
+          <p
+            style={{
+              margin: "32px 0 0",
+              fontSize: 40,
+              lineHeight: 1.55,
+              fontWeight: 300,
+            }}
+          >
             {ar ? slide.outcomeAr : slide.outcomeEn}
           </p>
         </aside>
@@ -135,47 +305,128 @@ function SlideCost({ slide, ar }) {
 
 function SlideCommand({ slide, ar }) {
   return (
-    <SlideShell tone="light">
-      <h1 className="font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-[-0.02em]">
+    <SlideShell tone="light" ar={ar}>
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 72,
+          fontWeight: 600,
+          letterSpacing: "-0.02em",
+        }}
+      >
         {ar ? slide.titleAr : slide.titleEn}
       </h1>
-      <p className="mt-4 max-w-3xl text-[clamp(0.95rem,1.6vw,1.25rem)] leading-[1.6] text-[#5A6B85]">
+      <p
+        style={{
+          margin: "28px 0 0",
+          fontSize: 34,
+          color: "#5A6B85",
+          maxWidth: 1300,
+          lineHeight: 1.6,
+        }}
+      >
         {ar ? slide.subAr : slide.subEn}
       </p>
-      <div className="mt-8 grid flex-1 gap-4 lg:grid-cols-[0.9fr_1.1fr] lg:gap-5">
-        <div className="flex flex-col bg-[#0B1A3F] p-6 text-white sm:p-8">
-          <p className="text-[11px] font-semibold tracking-[0.12em] text-[#6EE7B7]">
+      <div
+        style={{
+          display: "flex",
+          gap: 36,
+          marginTop: 64,
+          alignItems: "stretch",
+        }}
+      >
+        <div
+          style={{
+            width: 520,
+            flexShrink: 0,
+            background: "#14284B",
+            borderRadius: 20,
+            padding: 52,
+            color: "#FFFFFF",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 26,
+              letterSpacing: "0.1em",
+              color: "#6EE7B7",
+              fontWeight: 600,
+            }}
+          >
             {ar ? slide.scoreHintAr : slide.scoreHintEn}
-          </p>
-          <div className="mt-4 flex items-baseline gap-2" dir="ltr">
-            <span className="font-heading text-[clamp(4rem,10vw,7rem)] font-semibold leading-none tracking-[-0.04em]">
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: 16,
+              marginTop: 28,
+            }}
+          >
+            <span
+              dir="ltr"
+              style={{
+                fontFamily: FONT_LATIN,
+                fontSize: 140,
+                fontWeight: 600,
+                lineHeight: 1,
+                letterSpacing: "-0.04em",
+              }}
+            >
               {slide.score}
             </span>
-            <span className="text-2xl text-[#64748B]">/100</span>
+            <span dir="ltr" style={{ fontSize: 40, color: "#64748B" }}>
+              /100
+            </span>
           </div>
-          <p className="mt-6 text-[clamp(0.9rem,1.3vw,1.05rem)] leading-[1.6] text-[#94A3B8]">
+          <p
+            style={{
+              margin: "32px 0 0",
+              fontSize: 28,
+              color: "#94A3B8",
+              lineHeight: 1.6,
+            }}
+          >
             {ar ? slide.scoreBodyAr : slide.scoreBodyEn}
           </p>
         </div>
-        <div className="flex flex-col justify-center gap-0 border border-[#E2E8F0] bg-white px-5 py-2 sm:px-7">
+        <div
+          style={{
+            flex: 1,
+            background: "#FFFFFF",
+            border: "1px solid #E2E8F0",
+            borderRadius: 20,
+            padding: 52,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: 36,
+          }}
+        >
           {slide.queue.map((item, i) => (
-            <div
-              key={item.titleEn}
-              className={`flex flex-wrap items-center gap-3 py-5 ${i < slide.queue.length - 1 ? "border-b border-[#E2E8F0]" : ""}`}
-            >
-              <span
-                className={`h-3 w-3 shrink-0 rounded-full ${
-                  item.severity === "danger" ? "bg-[#DC2626]" : "bg-[#F59E0B]"
-                }`}
-                aria-hidden
-              />
-              <span className="min-w-0 flex-1 text-[clamp(0.95rem,1.5vw,1.2rem)] font-medium">
-                {ar ? item.titleAr : item.titleEn}
-              </span>
-              <span className="text-[clamp(0.85rem,1.2vw,1rem)] text-[#5A6B85]">
-                {ar ? item.metaAr : item.metaEn}
-              </span>
-            </div>
+            <React.Fragment key={item.titleEn}>
+              {i > 0 ? (
+                <div style={{ height: 1, background: "#E2E8F0" }} />
+              ) : null}
+              <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+                <span
+                  style={{
+                    width: 14,
+                    height: 14,
+                    borderRadius: "50%",
+                    background: item.severity === "danger" ? "#DC2626" : "#F59E0B",
+                    flexShrink: 0,
+                  }}
+                  aria-hidden
+                />
+                <span style={{ flex: 1, fontSize: 34, fontWeight: 500 }}>
+                  {ar ? item.titleAr : item.titleEn}
+                </span>
+                <span style={{ fontSize: 28, color: "#5A6B85" }}>
+                  {ar ? item.metaAr : item.metaEn}
+                </span>
+              </div>
+            </React.Fragment>
           ))}
         </div>
       </div>
@@ -185,22 +436,48 @@ function SlideCommand({ slide, ar }) {
 
 function SlideModules({ slide, ar }) {
   return (
-    <SlideShell tone="white">
-      <h1 className="font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-[-0.02em]">
+    <SlideShell tone="white" ar={ar}>
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 72,
+          fontWeight: 600,
+          letterSpacing: "-0.02em",
+        }}
+      >
         {ar ? slide.titleAr : slide.titleEn}
       </h1>
-      <p className="mt-4 max-w-3xl text-[clamp(0.95rem,1.6vw,1.2rem)] leading-[1.6] text-[#5A6B85]">
+      <p
+        style={{
+          margin: "28px 0 0",
+          fontSize: 34,
+          color: "#5A6B85",
+          maxWidth: 1300,
+          lineHeight: 1.6,
+        }}
+      >
         {ar ? slide.subAr : slide.subEn}
       </p>
-      <div className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-3">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(5, 1fr)",
+          gap: 18,
+          marginTop: 56,
+        }}
+      >
         {slide.modules.map((mod) => (
           <div
             key={mod.en}
-            className={`px-3 py-3.5 text-[clamp(0.78rem,1.1vw,0.98rem)] font-medium leading-snug sm:px-4 sm:py-4 ${
-              mod.featured
-                ? "border border-[#0B1A3F] bg-[#0B1A3F] text-white"
-                : "border border-[#E2E8F0] bg-[#F7F8FA] text-[#0B1A3F]"
-            }`}
+            style={{
+              background: mod.featured ? "#14284B" : "#F7F8FA",
+              border: mod.featured ? "1px solid #14284B" : "1px solid #E2E8F0",
+              borderRadius: 14,
+              padding: "26px 22px",
+              fontSize: 27,
+              fontWeight: 500,
+              color: mod.featured ? "#FFFFFF" : "#14284B",
+            }}
           >
             {ar ? mod.ar : mod.en}
           </div>
@@ -212,31 +489,108 @@ function SlideModules({ slide, ar }) {
 
 function SlideAssistant({ slide, ar }) {
   return (
-    <SlideShell tone="light">
-      <h1 className="font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-[-0.02em]">
+    <SlideShell tone="light" ar={ar}>
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 72,
+          fontWeight: 600,
+          letterSpacing: "-0.02em",
+        }}
+      >
         {ar ? slide.titleAr : slide.titleEn}
       </h1>
-      <div className="mt-8 flex flex-1 flex-col border border-[#E2E8F0] bg-white p-5 sm:p-8">
-        <p className="text-[11px] font-semibold tracking-[0.1em] text-[#5A6B85]">
+      <div
+        style={{
+          background: "#FFFFFF",
+          border: "1px solid #E2E8F0",
+          borderRadius: 20,
+          padding: 56,
+          marginTop: 56,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 28,
+            color: "#5A6B85",
+            fontWeight: 600,
+            letterSpacing: "0.08em",
+          }}
+        >
           {ar ? "السؤال" : "QUESTION"}
-        </p>
-        <p className="mt-3 text-[clamp(1.1rem,2.2vw,1.65rem)] font-medium leading-[1.45]">
+        </div>
+        <p
+          style={{
+            margin: "20px 0 0",
+            fontSize: 44,
+            fontWeight: 500,
+            lineHeight: 1.5,
+          }}
+        >
           {ar ? slide.questionAr : slide.questionEn}
         </p>
-        <div className="my-6 h-px bg-[#E2E8F0]" />
-        <p className="max-w-4xl text-[clamp(0.95rem,1.5vw,1.25rem)] leading-[1.7] text-[#334155]">
+        <div style={{ height: 1, background: "#E2E8F0", margin: "40px 0" }} />
+        <p
+          style={{
+            margin: 0,
+            fontSize: 34,
+            lineHeight: 1.7,
+            color: "#334155",
+            maxWidth: 1500,
+          }}
+        >
           {ar ? slide.answerAr : slide.answerEn}
         </p>
-        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div style={{ display: "flex", gap: 24, marginTop: 44 }}>
           {slide.metrics.map((m) => (
-            <div key={m.labelEn} className="border border-[#E2E8F0] bg-[#F7F8FA] p-4 sm:p-5">
-              <p className="text-[11px] tracking-[0.08em] text-[#5A6B85]">{ar ? m.labelAr : m.labelEn}</p>
-              <p className="mt-2 font-heading text-[clamp(1.5rem,3vw,2rem)] font-semibold" dir="ltr">
+            <div
+              key={m.labelEn}
+              style={{
+                flex: 1,
+                background: "#F7F8FA",
+                border: "1px solid #E2E8F0",
+                borderRadius: 16,
+                padding: 32,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 24,
+                  color: "#5A6B85",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                {ar ? m.labelAr : m.labelEn}
+              </div>
+              <div
+                dir="ltr"
+                style={{
+                  fontFamily: FONT_LATIN,
+                  fontSize: 48,
+                  fontWeight: 600,
+                  marginTop: 14,
+                  textAlign: ar ? "right" : "left",
+                }}
+              >
                 {m.value}
-              </p>
+              </div>
             </div>
           ))}
-          <div className="flex items-center justify-center bg-[#0E7A4B] px-4 py-5 text-center text-[clamp(0.95rem,1.4vw,1.15rem)] font-semibold text-white sm:col-span-2 lg:col-span-1">
+          <div
+            style={{
+              flex: 1.4,
+              background: "#1E9E63",
+              borderRadius: 16,
+              padding: 32,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#FFFFFF",
+              fontSize: 32,
+              fontWeight: 600,
+              textAlign: "center",
+            }}
+          >
             {ar ? slide.actionAr : slide.actionEn}
           </div>
         </div>
@@ -247,25 +601,77 @@ function SlideAssistant({ slide, ar }) {
 
 function SlideSafety({ slide, ar }) {
   return (
-    <SlideShell tone="white">
-      <h1 className="font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-[-0.02em]">
+    <SlideShell tone="white" ar={ar}>
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 72,
+          fontWeight: 600,
+          letterSpacing: "-0.02em",
+        }}
+      >
         {ar ? slide.titleAr : slide.titleEn}
       </h1>
-      <div className="mt-10 grid gap-8 md:grid-cols-3">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 32,
+          marginTop: 72,
+        }}
+      >
         {slide.pillars.map((p) => (
-          <div key={p.titleEn} className="border-t-2 border-[#0E7A4B] pt-6">
-            <h2 className="text-[clamp(1.1rem,1.8vw,1.4rem)] font-semibold">{ar ? p.titleAr : p.titleEn}</h2>
-            <p className="mt-4 text-[clamp(0.9rem,1.3vw,1.1rem)] leading-[1.65] text-[#5A6B85]">
+          <div
+            key={p.titleEn}
+            style={{ borderTop: "2px solid #1E9E63", paddingTop: 36 }}
+          >
+            <div style={{ fontSize: 38, fontWeight: 600 }}>
+              {ar ? p.titleAr : p.titleEn}
+            </div>
+            <p
+              style={{
+                margin: "20px 0 0",
+                fontSize: 30,
+                color: "#5A6B85",
+                lineHeight: 1.65,
+              }}
+            >
               {ar ? p.bodyAr : p.bodyEn}
             </p>
           </div>
         ))}
       </div>
-      <div className="mt-auto flex items-center gap-5 bg-[#F7F8FA] p-5 sm:gap-8 sm:p-7">
-        <span className="font-heading text-[clamp(2.5rem,6vw,4.5rem)] font-semibold leading-none text-[#0E7A4B]" dir="ltr">
+      <div
+        style={{
+          marginTop: "auto",
+          display: "flex",
+          alignItems: "center",
+          gap: 40,
+          background: "#F7F8FA",
+          borderRadius: 20,
+          padding: 48,
+        }}
+      >
+        <div
+          dir="ltr"
+          style={{
+            fontFamily: FONT_LATIN,
+            fontSize: 96,
+            fontWeight: 600,
+            lineHeight: 1,
+            color: "#1E9E63",
+          }}
+        >
           {slide.streak}
-        </span>
-        <p className="text-[clamp(0.95rem,1.4vw,1.2rem)] leading-[1.5] text-[#0B1A3F]">
+        </div>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 34,
+            color: "#14284B",
+            lineHeight: 1.5,
+          }}
+        >
           {ar ? slide.streakAr : slide.streakEn}
         </p>
       </div>
@@ -275,34 +681,94 @@ function SlideSafety({ slide, ar }) {
 
 function SlideCompare({ slide, ar }) {
   return (
-    <SlideShell tone="light">
-      <h1 className="font-heading text-[clamp(1.5rem,3.5vw,2.5rem)] font-semibold tracking-[-0.02em]">
+    <SlideShell tone="light" ar={ar}>
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 72,
+          fontWeight: 600,
+          letterSpacing: "-0.02em",
+        }}
+      >
         {ar ? slide.titleAr : slide.titleEn}
       </h1>
-      <div className="mt-8 overflow-hidden border border-[#E2E8F0] bg-white">
-        <div className="grid grid-cols-3 bg-[#0B1A3F] text-white">
-          <div className="px-3 py-3 text-[clamp(0.75rem,1.1vw,0.95rem)] font-semibold sm:px-5 sm:py-4">
+      <div
+        style={{
+          marginTop: 64,
+          background: "#FFFFFF",
+          border: "1px solid #E2E8F0",
+          borderRadius: 20,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            background: "#14284B",
+            color: "#FFFFFF",
+          }}
+        >
+          <div style={{ padding: "32px 40px", fontSize: 30, fontWeight: 600 }}>
             {ar ? "المعيار" : "Criterion"}
           </div>
-          <div className="px-3 py-3 text-[clamp(0.75rem,1.1vw,0.95rem)] font-semibold text-[#94A3B8] sm:px-5 sm:py-4">
-            {ar ? "نظام تقليدي" : "Traditional"}
+          <div
+            style={{
+              padding: "32px 40px",
+              fontSize: 30,
+              fontWeight: 600,
+              color: "#94A3B8",
+            }}
+          >
+            {ar ? "نظام موارد تقليدي" : "Traditional"}
           </div>
-          <div className="px-3 py-3 text-[clamp(0.75rem,1.1vw,0.95rem)] font-semibold text-[#6EE7B7] sm:px-5 sm:py-4">
+          <div
+            style={{
+              padding: "32px 40px",
+              fontSize: 30,
+              fontWeight: 600,
+              color: "#6EE7B7",
+            }}
+          >
             NiroVera
           </div>
         </div>
         {slide.rows.map((row, i) => (
           <div
             key={row.criterionEn}
-            className={`grid grid-cols-3 ${i < slide.rows.length - 1 ? "border-b border-[#E2E8F0]" : ""}`}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              borderBottom:
+                i < slide.rows.length - 1 ? "1px solid #E2E8F0" : "none",
+            }}
           >
-            <div className="px-3 py-3.5 text-[clamp(0.75rem,1.1vw,0.95rem)] font-medium sm:px-5 sm:py-4">
+            <div
+              style={{
+                padding: "34px 40px",
+                fontSize: 30,
+                fontWeight: 500,
+              }}
+            >
               {ar ? row.criterionAr : row.criterionEn}
             </div>
-            <div className="px-3 py-3.5 text-[clamp(0.75rem,1.1vw,0.95rem)] text-[#5A6B85] sm:px-5 sm:py-4">
+            <div
+              style={{
+                padding: "34px 40px",
+                fontSize: 30,
+                color: "#5A6B85",
+              }}
+            >
               {ar ? row.otherAr : row.otherEn}
             </div>
-            <div className="px-3 py-3.5 text-[clamp(0.75rem,1.1vw,0.95rem)] font-medium text-[#0B1A3F] sm:px-5 sm:py-4">
+            <div
+              style={{
+                padding: "34px 40px",
+                fontSize: 30,
+                color: "#14284B",
+                fontWeight: 500,
+              }}
+            >
               {ar ? row.oursAr : row.oursEn}
             </div>
           </div>
@@ -314,23 +780,60 @@ function SlideCompare({ slide, ar }) {
 
 function SlideRoi({ slide, ar }) {
   return (
-    <SlideShell tone="navy">
-      <h1 className="font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-[-0.02em]">
+    <SlideShell tone="navy" ar={ar}>
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 72,
+          fontWeight: 600,
+          letterSpacing: "-0.02em",
+        }}
+      >
         {ar ? slide.titleAr : slide.titleEn}
       </h1>
-      <p className="mt-4 max-w-3xl text-[clamp(0.95rem,1.5vw,1.15rem)] leading-[1.6] text-[#94A3B8]">
+      <p
+        style={{
+          margin: "28px 0 0",
+          fontSize: 32,
+          color: "#94A3B8",
+          maxWidth: 1300,
+          lineHeight: 1.6,
+        }}
+      >
         {ar ? slide.subAr : slide.subEn}
       </p>
-      <div className="mt-auto grid gap-8 pt-10 md:grid-cols-3 md:gap-10">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 48,
+          marginTop: "auto",
+        }}
+      >
         {slide.figures.map((fig) => (
           <div key={fig.value}>
-            <p
-              className="font-heading text-[clamp(2.75rem,7vw,5rem)] font-semibold leading-none tracking-[-0.04em] text-[#6EE7B7]"
+            <div
               dir="ltr"
+              style={{
+                fontFamily: FONT_LATIN,
+                fontSize: 130,
+                fontWeight: 600,
+                lineHeight: 1,
+                letterSpacing: "-0.04em",
+                color: "#6EE7B7",
+                textAlign: ar ? "right" : "left",
+              }}
             >
               {fig.value}
-            </p>
-            <p className="mt-5 text-[clamp(0.95rem,1.4vw,1.15rem)] leading-[1.55] text-[#E2E8F0]">
+            </div>
+            <p
+              style={{
+                margin: "28px 0 0",
+                fontSize: 32,
+                lineHeight: 1.55,
+                color: "#E2E8F0",
+              }}
+            >
               {ar ? fig.bodyAr : fig.bodyEn}
             </p>
           </div>
@@ -342,122 +845,241 @@ function SlideRoi({ slide, ar }) {
 
 function SlideRollout({ slide, ar }) {
   return (
-    <SlideShell tone="white">
-      <h1 className="font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-[-0.02em]">
+    <SlideShell tone="white" ar={ar}>
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 72,
+          fontWeight: 600,
+          letterSpacing: "-0.02em",
+        }}
+      >
         {ar ? slide.titleAr : slide.titleEn}
       </h1>
-      <div className="mt-10 grid flex-1 gap-0 md:grid-cols-3">
+      <div
+        style={{
+          display: "flex",
+          gap: 0,
+          marginTop: 80,
+          alignItems: "stretch",
+        }}
+      >
         {slide.weeks.map((week, i) => (
-          <div
-            key={week.weekEn}
-            className={`py-2 md:px-6 ${i === 0 ? "md:ps-0" : ""} ${i === slide.weeks.length - 1 ? "md:pe-0" : ""} ${
-              i > 0 ? "border-t border-[#E2E8F0] pt-6 md:border-t-0 md:border-s md:pt-2" : ""
-            }`}
-          >
-            <p className="text-[11px] font-semibold tracking-[0.12em] text-[#0E7A4B]" dir="ltr">
-              {ar ? week.weekAr : week.weekEn}
-            </p>
-            <h2 className="mt-3 text-[clamp(1.2rem,2vw,1.55rem)] font-semibold">
-              {ar ? week.titleAr : week.titleEn}
-            </h2>
-            <p className="mt-3 text-[clamp(0.9rem,1.3vw,1.1rem)] leading-[1.65] text-[#5A6B85]">
-              {ar ? week.bodyAr : week.bodyEn}
-            </p>
-          </div>
+          <React.Fragment key={week.weekEn}>
+            {i > 0 ? (
+              <div style={{ width: 1, background: "#E2E8F0", flexShrink: 0 }} />
+            ) : null}
+            <div
+              style={{
+                flex: 1,
+                paddingInlineStart: i === 0 ? 0 : 48,
+                paddingInlineEnd: i === slide.weeks.length - 1 ? 0 : 48,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: FONT_LATIN,
+                  fontSize: 28,
+                  fontWeight: 600,
+                  color: "#1E9E63",
+                  letterSpacing: "0.1em",
+                }}
+              >
+                {ar ? week.weekAr : week.weekEn}
+              </div>
+              <div style={{ fontSize: 42, fontWeight: 600, marginTop: 20 }}>
+                {ar ? week.titleAr : week.titleEn}
+              </div>
+              <p
+                style={{
+                  margin: "20px 0 0",
+                  fontSize: 30,
+                  color: "#5A6B85",
+                  lineHeight: 1.65,
+                }}
+              >
+                {ar ? week.bodyAr : week.bodyEn}
+              </p>
+            </div>
+          </React.Fragment>
         ))}
       </div>
-      <p className="mt-8 bg-[#F7F8FA] px-5 py-5 text-[clamp(0.95rem,1.4vw,1.15rem)] leading-[1.55] text-[#0B1A3F] sm:px-7">
+      <div
+        style={{
+          marginTop: "auto",
+          background: "#F7F8FA",
+          borderRadius: 20,
+          padding: "44px 48px",
+          fontSize: 32,
+          color: "#14284B",
+          lineHeight: 1.55,
+        }}
+      >
         {ar ? slide.footnoteAr : slide.footnoteEn}
-      </p>
+      </div>
     </SlideShell>
   );
 }
 
 function SlidePlans({ slide, ar }) {
   return (
-    <SlideShell tone="light">
-      <h1 className="font-heading text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-[-0.02em]">
+    <SlideShell tone="light" ar={ar}>
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 72,
+          fontWeight: 600,
+          letterSpacing: "-0.02em",
+        }}
+      >
         {ar ? slide.titleAr : slide.titleEn}
       </h1>
-      <p className="mt-3 max-w-2xl text-[clamp(0.9rem,1.4vw,1.1rem)] text-[#5A6B85]">
-        {ar ? slide.subAr : slide.subEn}
-      </p>
-      <div className="mt-8 grid flex-1 gap-4 md:grid-cols-3">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 32,
+          marginTop: 72,
+          flex: 1,
+        }}
+      >
         {slide.plans.map((plan) => (
           <div
             key={plan.nameEn}
-            className={`flex flex-col p-6 sm:p-7 ${
-              plan.featured
-                ? "border border-[#0B1A3F] bg-[#0B1A3F] text-white"
-                : "border border-[#E2E8F0] bg-white text-[#0B1A3F]"
-            }`}
+            style={{
+              background: plan.featured ? "#14284B" : "#FFFFFF",
+              border: plan.featured ? "1px solid #14284B" : "1px solid #E2E8F0",
+              borderRadius: 20,
+              padding: 48,
+              display: "flex",
+              flexDirection: "column",
+              color: plan.featured ? "#FFFFFF" : "#14284B",
+            }}
           >
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-[clamp(1.2rem,2vw,1.45rem)] font-semibold">
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <span style={{ fontSize: 38, fontWeight: 600 }}>
                 {ar ? plan.nameAr : plan.nameEn}
-              </h2>
-              {plan.featured && (
-                <span className="rounded-full bg-[#0E7A4B] px-2.5 py-0.5 text-[11px] font-semibold text-white">
+              </span>
+              {plan.featured && (ar ? plan.badgeAr : plan.badgeEn) ? (
+                <span
+                  style={{
+                    fontSize: 26,
+                    background: "#1E9E63",
+                    borderRadius: 20,
+                    padding: "6px 16px",
+                    fontWeight: 600,
+                    color: "#FFFFFF",
+                  }}
+                >
                   {ar ? plan.badgeAr : plan.badgeEn}
+                </span>
+              ) : null}
+            </div>
+            <div
+              style={{
+                marginTop: 24,
+                display: "flex",
+                alignItems: "baseline",
+                gap: 12,
+              }}
+            >
+              {plan.priceNum ? (
+                <>
+                  <span
+                    dir="ltr"
+                    style={{
+                      fontFamily: FONT_LATIN,
+                      fontSize: 72,
+                      fontWeight: 600,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {plan.priceNum}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 28,
+                      color: plan.featured ? "#94A3B8" : "#5A6B85",
+                    }}
+                  >
+                    {ar ? plan.priceUnitAr : plan.priceUnitEn}
+                  </span>
+                </>
+              ) : (
+                <span style={{ fontSize: 52, fontWeight: 600, lineHeight: 1 }}>
+                  {ar ? plan.priceLabelAr : plan.priceLabelEn}
                 </span>
               )}
             </div>
-            <p className={`mt-4 font-heading text-[clamp(1.4rem,2.5vw,1.9rem)] font-semibold ${plan.featured ? "text-white" : "text-[#0B1A3F]"}`}>
-              {ar ? plan.priceAr : plan.priceEn}
-            </p>
-            <p className={`mt-4 text-[clamp(0.9rem,1.3vw,1.05rem)] leading-[1.65] ${plan.featured ? "text-[#CBD5E1]" : "text-[#5A6B85]"}`}>
+            <p
+              style={{
+                margin: "32px 0 0",
+                fontSize: 30,
+                color: plan.featured ? "#CBD5E1" : "#5A6B85",
+                lineHeight: 1.65,
+              }}
+            >
               {ar ? plan.bodyAr : plan.bodyEn}
             </p>
           </div>
         ))}
       </div>
-      <Link
-        to="/pricing"
-        className="mt-6 inline-flex text-[13px] font-medium text-[#0E7A4B] hover:underline"
-      >
-        {ar ? "افتح التسعير الحي ←" : "Open live pricing →"}
-      </Link>
     </SlideShell>
   );
 }
 
 function SlideClose({ slide, ar }) {
   return (
-    <SlideShell tone="navy">
-      <div className="flex items-center gap-3">
-        <Logo size={32} />
-        <span className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">NiroVera</span>
+    <SlideShell tone="navy" ar={ar} style={{ justifyContent: "space-between" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
+        <Logo size={60} />
+        <span
+          style={{
+            fontFamily: FONT_LATIN,
+            fontSize: 34,
+            fontWeight: 600,
+          }}
+        >
+          NiroVera
+        </span>
       </div>
-      <div className="mt-auto max-w-4xl">
-        <h1 className="font-heading text-[clamp(1.85rem,5vw,3.75rem)] font-semibold leading-[1.15] tracking-[-0.03em]">
+      <div>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 88,
+            fontWeight: 600,
+            letterSpacing: "-0.03em",
+            lineHeight: 1.2,
+            maxWidth: 1400,
+            textWrap: "pretty",
+          }}
+        >
           {ar ? slide.titleAr : slide.titleEn}
         </h1>
-        <p className="mt-6 max-w-3xl text-[clamp(1rem,1.8vw,1.4rem)] leading-[1.55] text-[#94A3B8]">
+        <p
+          style={{
+            margin: "36px 0 0",
+            fontSize: 38,
+            color: "#94A3B8",
+            maxWidth: 1200,
+            lineHeight: 1.5,
+          }}
+        >
           {ar ? slide.subAr : slide.subEn}
         </p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            to="/"
-            className="institutional-cta rounded-[10px] bg-[#0E7A4B] px-6 py-3 text-[14px] font-medium text-white hover:bg-[#0B5F3A]"
-          >
-            {ar ? "اطلب العرض التجريبي" : "Request the pilot"}
-          </Link>
-          <a
-            href={`mailto:${slide.email}?subject=${encodeURIComponent(ar ? "طلب تجربة محطة — نيروفيرا" : "NiroVera station pilot request")}`}
-            className="rounded-[10px] border border-white/25 bg-white/5 px-6 py-3 text-[14px] text-white hover:bg-white/10"
-          >
-            {ar ? "راسلنا" : "Email us"}
-          </a>
-        </div>
       </div>
-      <div className="mt-10 flex flex-wrap gap-x-8 gap-y-2 text-[clamp(0.85rem,1.2vw,1.05rem)] text-[#CBD5E1]">
+      <div
+        style={{
+          display: "flex",
+          gap: 64,
+          fontSize: 30,
+          color: "#CBD5E1",
+        }}
+      >
         <span>{ar ? slide.contactNameAr : slide.contactNameEn}</span>
-        <a href={`mailto:${slide.email}`} className="hover:text-white" dir="ltr">
-          {slide.email}
-        </a>
-        <a href="tel:+966595414472" className="hover:text-white" dir="ltr">
-          {slide.phone}
-        </a>
+        <span dir="ltr">{slide.email}</span>
+        <span dir="ltr">{slide.phone}</span>
       </div>
     </SlideShell>
   );
@@ -482,21 +1104,62 @@ const RENDERERS = {
 export default function SalesDeckStage({ slides, index, ar }) {
   const slide = slides[index];
   const Renderer = RENDERERS[slide.kind] || SlideCover;
+  const containerRef = React.useRef(null);
+  const [scale, setScale] = React.useState(1);
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return undefined;
+
+    const measure = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (w <= 0 || h <= 0) return;
+      setScale(Math.min(w / W, h / H));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   return (
-    <div className="sales-deck-stage relative h-full w-full overflow-hidden rounded-none bg-[#08142F] shadow-none md:rounded-[14px] md:shadow-[0_24px_60px_rgba(8,20,47,0.45)]">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={slide.id}
-          className="h-full w-full"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <Renderer slide={slide} ar={ar} />
-        </motion.div>
-      </AnimatePresence>
+    <div
+      ref={containerRef}
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        background: "#0B1220",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          width: W,
+          height: H,
+          flexShrink: 0,
+          transform: `scale(${scale})`,
+          transformOrigin: "center center",
+        }}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={slide.id}
+            style={{ width: W, height: H }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Renderer slide={slide} ar={ar} />
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

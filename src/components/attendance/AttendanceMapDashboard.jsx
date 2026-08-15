@@ -8,7 +8,8 @@ import { Loader2, MapPin } from "lucide-react";
 import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import "leaflet/dist/leaflet.css";
 import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
-import MobileSelect from "@/components/mobile/MobileSelect";
+import { useI18n } from "@/lib/i18n";
+import { ACCENT, MUTED, NAVY, field, tableShell } from "@/lib/platformStyles";
 
 const stationIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -16,7 +17,6 @@ const stationIcon = new L.Icon({
   iconAnchor: [12, 41],
 });
 
-// Auto-fits the map to show every plotted point whenever they change.
 function FitBounds({ points }) {
   const map = useMap();
   useEffect(() => {
@@ -35,10 +35,10 @@ function distanceMeters(a, b) {
   return Math.round(2 * R * Math.asin(Math.sqrt(value)));
 }
 
-// Manager map dashboard — plots every check-in location for a chosen day against
-// station locations/radii so managers can verify attendance data accuracy.
 export default function AttendanceMapDashboard({ employees, t }) {
   const { data } = useAuth();
+  const { lang } = useI18n();
+  const ar = lang === "ar";
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -47,7 +47,8 @@ export default function AttendanceMapDashboard({ employees, t }) {
   useEffect(() => {
     if (employees.length === 0) return;
     setLoading(true);
-    base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: employees.map((e) => e.id), date })
+    base44.functions
+      .invoke("supabaseAttendance", { action: "listDaily", employeeIds: employees.map((e) => e.id), date })
       .then((res) => setRows(res?.data?.rows || []))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
@@ -55,53 +56,83 @@ export default function AttendanceMapDashboard({ employees, t }) {
 
   const allStations = data?.stations || [];
   const defaultStationId = allStations[0]?.id || null;
-  const located = rows.filter((r) => r.check_in_lat != null && r.check_in_lng != null)
+  const located = rows
+    .filter((r) => r.check_in_lat != null && r.check_in_lng != null)
     .map((r) => {
       const stationId = r.station_id || defaultStationId;
       const station = allStations.find((s) => s.id === stationId && s.lat != null && s.lng != null);
-      const distance = station ? distanceMeters({ lat: Number(r.check_in_lat), lng: Number(r.check_in_lng) }, { lat: Number(station.lat), lng: Number(station.lng) }) : null;
-      return { ...r, mapStationId: stationId, mapDistance: distance, mapInside: distance != null && distance <= (Number(station.radiusMeters) || 200) };
+      const distance = station
+        ? distanceMeters(
+            { lat: Number(r.check_in_lat), lng: Number(r.check_in_lng) },
+            { lat: Number(station.lat), lng: Number(station.lng) }
+          )
+        : null;
+      return {
+        ...r,
+        mapStationId: stationId,
+        mapDistance: distance,
+        mapInside: distance != null && distance <= (Number(station.radiusMeters) || 200),
+      };
     })
     .filter((r) => stationFilter === "all" || r.mapStationId === stationFilter);
-  const stations = allStations.filter((s) => s.lat != null && s.lng != null)
+  const stations = allStations
+    .filter((s) => s.lat != null && s.lng != null)
     .filter((s) => stationFilter === "all" || s.id === stationFilter);
 
-  const points = [
-    ...located.map((r) => [r.check_in_lat, r.check_in_lng]),
-    ...stations.map((s) => [s.lat, s.lng]),
-  ];
+  const points = [...located.map((r) => [r.check_in_lat, r.check_in_lng]), ...stations.map((s) => [s.lat, s.lng])];
   const insideCount = located.filter((r) => r.mapInside).length;
   const outsideCount = located.length - insideCount;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="px-3 py-2 rounded-md border border-input text-sm font-body bg-card"
-        />
-        <MobileSelect value={stationFilter} onChange={setStationFilter} searchable searchPlaceholder={t("search")} placeholder={t("all")} className="min-w-52" options={[{ value: "all", label: t("all") }, ...(data?.stations || []).map((station) => ({ value: station.id, label: station.location ? `${station.name} — ${station.location}` : station.name }))]} />
-        {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+    <div style={tableShell} dir={ar ? "rtl" : "ltr"}>
+      <div style={{ padding: "11px 14px", borderBottom: "1px solid #E2E8F0", display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+        <div style={{ flex: "1 1 180px" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: NAVY }}>{t("mapTab")}</div>
+          <div style={{ fontSize: 10, color: MUTED, marginTop: 3 }}>{date}</div>
+        </div>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ ...field, width: "auto" }} />
+        <select value={stationFilter} onChange={(e) => setStationFilter(e.target.value)} style={{ ...field, minWidth: 140, maxWidth: 220 }}>
+          <option value="all">{t("all")}</option>
+          {(data?.stations || []).map((station) => (
+            <option key={station.id} value={station.id}>
+              {station.location ? `${station.name} — ${station.location}` : station.name}
+            </option>
+          ))}
+        </select>
+        {loading && <Loader2 style={{ width: 16, height: 16, color: MUTED, animation: "spin 1s linear infinite" }} />}
         <ComparisonExportButtons
           title={`${t("mapTab")} — ${date}`}
-          headers={[t("employeeName"), t("checkIn"), t("locationStatus"), t("distanceMeters"), "Latitude", "Longitude"]}
-          rows={located.map((r) => [r.employee_name || r.employee_id, r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—", r.mapInside ? t("insideLocation") : t("outsideLocation"), r.mapDistance ?? "—", r.check_in_lat, r.check_in_lng])}
+          headers={[t("employeeName"), t("checkIn"), t("locationStatus"), t("distanceMeters"), "Lat", "Lng"]}
+          rows={located.map((r) => [
+            r.employee_name || r.employee_id,
+            r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—",
+            r.mapInside ? t("insideLocation") : t("outsideLocation"),
+            r.mapDistance ?? "—",
+            r.check_in_lat,
+            r.check_in_lng,
+          ])}
+          compact
         />
-        <div className="flex items-center gap-3 text-xs font-body ms-auto">
-          <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-500" /> {t("insideLocation")} ({insideCount})</span>
-          <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-red-500" /> {t("outsideLocation")} ({outsideCount})</span>
-          <span className="inline-flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-muted-foreground" /> {t("stationLocation")}</span>
-        </div>
+      </div>
+
+      <div style={{ padding: "8px 14px", borderBottom: "1px solid #F1F5F9", display: "flex", flexWrap: "wrap", gap: 12, fontSize: 11, color: MUTED }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: ACCENT }} />
+          {t("insideLocation")} ({insideCount})
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#DC2626" }} />
+          {t("outsideLocation")} ({outsideCount})
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <MapPin style={{ width: 12, height: 12 }} /> {t("stationLocation")}
+        </span>
       </div>
 
       {located.length === 0 && stations.length === 0 ? (
-        <div className="p-8 rounded-xl border border-border bg-card text-center text-sm text-muted-foreground font-body">
-          {t("noMapData")}
-        </div>
+        <div style={{ padding: 32, textAlign: "center", fontSize: 12, color: MUTED }}>{t("noMapData")}</div>
       ) : (
-        <div className="h-[480px] rounded-xl border border-border overflow-hidden relative">
+        <div style={{ height: 420, position: "relative" }}>
           <MapContainer center={points[0] || [24.7, 46.7]} zoom={12} style={{ height: "100%", width: "100%" }}>
             <GoogleTiles />
             <FitBounds points={points} />
@@ -132,11 +163,11 @@ export default function AttendanceMapDashboard({ employees, t }) {
                 }}
               >
                 <Popup>
-                  <div className="text-xs space-y-0.5" dir="auto">
-                    <EmployeeNameLink employeeId={r.employee_id} employeeName={r.employee_name || r.employee_id} className="font-semibold" />
-                    <p>{t("checkedInAt")} {r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—"}</p>
-                    {r.mapDistance != null && <p>{t("distanceMeters")}: {r.mapDistance}m</p>}
-                    <p className={r.mapInside ? "text-emerald-700" : "text-red-700"}>
+                  <div style={{ fontSize: 11 }} dir="auto">
+                    <EmployeeNameLink employeeId={r.employee_id} employeeName={r.employee_name || r.employee_id} style={{ fontWeight: 600, color: NAVY }} />
+                    <p style={{ margin: "4px 0 0" }}>{t("checkedInAt")} {r.check_in_at ? new Date(r.check_in_at).toLocaleTimeString() : "—"}</p>
+                    {r.mapDistance != null && <p style={{ margin: "2px 0 0" }}>{t("distanceMeters")}: {r.mapDistance}m</p>}
+                    <p style={{ margin: "2px 0 0", color: r.mapInside ? "#15803D" : "#DC2626" }}>
                       {r.mapInside ? t("insideLocation") : t("outsideLocation")}
                     </p>
                   </div>
@@ -148,7 +179,7 @@ export default function AttendanceMapDashboard({ employees, t }) {
       )}
 
       {rows.length > 0 && located.length === 0 && (
-        <p className="text-xs text-muted-foreground font-body">{t("noLocatedCheckins")}</p>
+        <p style={{ padding: "10px 14px", fontSize: 11, color: MUTED }}>{t("noLocatedCheckins")}</p>
       )}
     </div>
   );

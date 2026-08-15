@@ -1,35 +1,71 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, canManageSchedule } from "@/lib/permissions";
-import { ArrowLeft, CalendarClock } from "lucide-react";
-import StationScheduleEditor, { getMonthDates, dateKey } from "@/components/schedules/StationScheduleEditor";
-import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
-import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
+import StationScheduleEditor from "@/components/schedules/StationScheduleEditor";
+import { Radio } from "lucide-react";
+import { ACCENT, MUTED, NAVY, SURFACE, CARD } from "@/lib/platformStyles";
 
-// Monthly station shift schedule — now embedded as a tab inside Attendance instead of
-// a separate page, since both cover the same "who works when" concept.
-export default function ScheduleTab() {
+/** Monthly station shift schedule — Platform matrix chrome lives in StationScheduleEditor. */
+export default function ScheduleTab({ preferredStationId = null, hidePickerWhenScoped = false }) {
   const { t, lang } = useI18n();
-  const { format } = useTimeFormat();
   const { data, company, currentUser } = useAuth();
-  const [selectedStation, setSelectedStation] = useState(null);
+  const [selectedStation, setSelectedStation] = useState(preferredStationId || null);
+  const ar = lang === "ar";
+
+  useEffect(() => {
+    if (preferredStationId) setSelectedStation(preferredStationId);
+  }, [preferredStationId]);
 
   if (!data || !currentUser) return null;
   const stations = visibleStations(currentUser, data);
 
   if (!selectedStation) {
+    // The scoped host already names this gate above the matrix — repeating it
+    // here printed the same blocking reason twice.
+    if (hidePickerWhenScoped) return null;
     return (
-      <div className="space-y-4">
-        <p className="text-muted-foreground font-body text-sm">{t("manageScheduleNote")}</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 12 }}>
+        <p style={{ margin: 0, fontSize: 12, color: MUTED, lineHeight: 1.65 }}>{t("manageScheduleNote")}</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(214px,1fr))", gap: 10 }}>
           {stations.map((s) => (
-            <button key={s.id} onClick={() => setSelectedStation(s.id)} className="text-start p-5 rounded-xl border border-border bg-card hover:border-accent transition-colors space-y-2">
-              <div className="flex items-center gap-2">
-                <CalendarClock className="w-4 h-4 text-accent" />
-                <h3 className="font-heading font-semibold">{s.name}</h3>
-              </div>
-              <p className="text-sm text-muted-foreground font-body">{t("monthlySchedule")}</p>
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setSelectedStation(s.id)}
+              style={{
+                borderRadius: 13,
+                border: "1px solid #E2E8F0",
+                background: CARD,
+                padding: "14px 16px",
+                textAlign: "start",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                boxShadow: "0 1px 0 #E2E8F0",
+              }}
+            >
+              <span
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "#ECFDF3",
+                  color: ACCENT,
+                  flexShrink: 0,
+                }}
+              >
+                <Radio style={{ width: 16, height: 16 }} strokeWidth={1.75} />
+              </span>
+              <span style={{ minWidth: 0 }}>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: NAVY }}>{s.name}</span>
+                <span style={{ display: "block", fontSize: 11, color: MUTED, marginTop: 3 }}>{t("monthlySchedule")}</span>
+              </span>
             </button>
           ))}
         </div>
@@ -40,28 +76,45 @@ export default function ScheduleTab() {
   const station = data.stations.find((s) => s.id === selectedStation);
   const canManage = canManageSchedule(currentUser, data, selectedStation);
 
-  const schedule = (data.schedules || []).find((s) => s.stationId === selectedStation);
-  const shiftTypes = schedule?.shiftTypes || [];
-  const now = new Date();
-  const monthDates = getMonthDates(now.getFullYear(), now.getMonth());
-  const exportHeaders = [t("shift"), ...monthDates.map((d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" }))];
-  const exportRows = shiftTypes.map((st) => [
-    `${st.label} (${formatTime(st.start, format, lang)}–${formatTime(st.end, format, lang)})`,
-    ...monthDates.map((d) => {
-      const ids = schedule?.assignments?.[dateKey(d)]?.[st.id] || [];
-      return ids.map((id) => data.employees.find((e) => e.id === id)?.name).filter(Boolean).join(", ");
-    }),
-  ]);
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <button onClick={() => setSelectedStation(null)} className="p-2 rounded-md hover:bg-muted shrink-0">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <h3 className="flex-1 text-center font-heading text-xl font-semibold">{station?.name}</h3>
-        <ComparisonExportButtons title={`${t("monthlySchedule")} — ${station?.name || ""}`} headers={exportHeaders} rows={exportRows} />
-      </div>
+    <div>
+      {!preferredStationId && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginTop: 12,
+            marginBottom: 4,
+            padding: "10px 12px",
+            borderRadius: 12,
+            border: "1px solid #E2E8F0",
+            background: SURFACE,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setSelectedStation(null)}
+            style={{
+              border: "1px solid #E2E8F0",
+              background: CARD,
+              color: MUTED,
+              borderRadius: 9,
+              height: 32,
+              padding: "0 12px",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            {ar ? "← الفروع" : "← Stations"}
+          </button>
+          <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: NAVY, textAlign: "center" }}>
+            {station?.name}
+          </div>
+        </div>
+      )}
       <StationScheduleEditor companyId={company.id} stationId={selectedStation} canManage={canManage} />
     </div>
   );

@@ -1,269 +1,245 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Globe, ChevronDown, Check, Phone, Mail, ShieldCheck } from "lucide-react";
-import Logo from "@/components/Logo";
-import MobileFieldHero from "@/components/landing/MobileFieldHero";
-import MobileFieldScreens from "@/components/landing/MobileFieldScreens";
-import IpCertificateBadge from "@/components/landing/IpCertificateBadge";
+import MarketingChrome from "@/components/landing/MarketingChrome";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/PowerCareAuth";
 import { trackVisit } from "@/lib/trackVisit";
+import { MUTED, INK, CARD, SURFACE } from "@/lib/platformStyles";
 
-const CHAIN = [
-  {
-    ar: "الحضور يثبت المكان والوقت",
-    en: "Attendance proves place and time",
-    to: "/app/attendance",
-  },
-  {
-    ar: "المهمة تحمل وزن الجهد والإسناد",
-    en: "Tasks carry effort weight and assignment",
-    to: "/app/tasks",
-  },
-  {
-    ar: "الإثبات يغلق العمل بصورة مختومة",
-    en: "Proof closes work with a stamped photo",
-    to: "/app/work-proof",
-  },
-  {
-    ar: "البلاغ المجهول يحمي الصوت الميداني",
-    en: "Anonymous report protects the field voice",
-    to: "/app/complaints",
-  },
-];
+/** Thin phone bezel — content styles from Mobile.dc.html (android-frame.jsx not copied). */
+function PhoneFrame({ title, children, dir }) {
+  return (
+    <div
+      title={title}
+      style={{
+        width: "392px",
+        height: "844px",
+        borderRadius: "36px",
+        border: "10px solid var(--nv-navy)",
+        overflow: "hidden",
+        background: SURFACE,
+        boxShadow: "0 24px 60px rgba(20,40,75,.18)",
+        flexShrink: 0,
+      }}
+    >
+      <div dir={dir} style={{ height: "100%", overflow: "auto" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
+/**
+ * Field companion marketing — NiroVera Mobile.dc.html L23–210.
+ */
 export default function Mobile() {
-  const { t, lang, setLang, languages } = useI18n();
-  const [langOpen, setLangOpen] = useState(false);
+  const { lang, setLang } = useI18n();
+  const { session, currentUser } = useAuth();
+  const loggedIn = Boolean(session?.userId && currentUser);
   const ar = lang === "ar";
-  const currentLang = languages.find((l) => l.code === lang);
+  const dir = ar ? "rtl" : "ltr";
+  const T = (a, e) => (ar ? a : e);
 
   useEffect(() => {
     trackVisit("/mobile");
   }, []);
 
-  useEffect(() => {
-    const close = () => setLangOpen(false);
-    if (langOpen) {
-      document.addEventListener("click", close);
-      return () => document.removeEventListener("click", close);
-    }
-  }, [langOpen]);
-
   return (
-    <div className="powercare-public min-h-screen bg-[#F7F8FA] font-body text-[#101828]" dir={ar ? "rtl" : "ltr"}>
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B1A3F]/92 text-white backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-[1200px] items-center gap-4 px-6 md:px-8">
-          <Link to="/" className="flex shrink-0 items-center gap-2.5">
-            <Logo size={24} />
-            <span className="font-heading text-base font-semibold tracking-tight">NiroVera</span>
-          </Link>
-          <nav className="hidden flex-1 items-center justify-center gap-5 sm:flex">
-            <Link to="/" className="text-[12.8px] text-[#B9C3D8] transition-colors hover:text-white">
-              {ar ? "الرئيسية" : "Home"}
-            </Link>
-            <a href="#field-screens" className="text-[12.8px] text-[#B9C3D8] transition-colors hover:text-white">
-              {ar ? "الشاشات" : "Screens"}
-            </a>
-            <a href="#proof-chain" className="text-[12.8px] text-[#B9C3D8] transition-colors hover:text-white">
-              {ar ? "دورة الإثبات" : "Proof cycle"}
-            </a>
-          </nav>
-          <div className="ms-auto flex items-center gap-2">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLangOpen((v) => !v);
-                }}
-                className="flex items-center gap-1.5 rounded-md border border-white/15 bg-white/5 px-2.5 py-2 text-xs text-[#C7D2E6] hover:bg-white/10"
-              >
-                <Globe className="h-3.5 w-3.5" strokeWidth={1.75} />
-                <span className="hidden sm:inline">{currentLang?.flag}</span>
-                <ChevronDown className={`h-3 w-3 transition-transform ${langOpen ? "rotate-180" : ""}`} />
-              </button>
-              {langOpen && (
-                <div className="absolute end-0 z-50 mt-2 max-h-72 w-48 overflow-y-auto rounded-lg border border-[#E4E7EC] bg-white py-1 text-[#101828] shadow-xl">
-                  {languages.map((l) => (
-                    <button
-                      key={l.code}
-                      type="button"
-                      onClick={() => {
-                        setLang(l.code);
-                        setLangOpen(false);
-                      }}
-                      className={`flex w-full items-center justify-between px-3 py-2 text-sm ${
-                        lang === l.code ? "bg-[#E8F3ED] text-[#0E7A4B]" : "hover:bg-[#F7F8FA]"
-                      }`}
-                    >
-                      <span>
-                        {l.flag} {l.label}
-                      </span>
-                      {lang === l.code && <Check className="h-3.5 w-3.5" strokeWidth={2} />}
-                    </button>
-                  ))}
-                </div>
-              )}
+    <MarketingChrome ar={ar} lang={lang} loggedIn={loggedIn} onToggleLang={() => setLang(ar ? "en" : "ar")} ctaHref="/pricing">
+      <div style={{ maxWidth: "1500px", margin: "0 auto", padding: "44px 40px 60px" }}>
+
+        <h1 style={{ margin: "26px 0 0", fontSize: "34px", fontWeight: 600, letterSpacing: "-0.02em" }}>
+          {T("ما يراه الفني في الفرع", "What the technician sees on site")}
+        </h1>
+        <p style={{ margin: "12px 0 0", fontSize: "16px", color: MUTED, maxWidth: "760px", lineHeight: 1.7, textWrap: "pretty" }}>
+          {T(
+            "أربع شاشات تغطي يوم عمل كامل: تسجيل الحضور بالموقع، المهام المسندة، إغلاق العمل بالصورة، والبلاغ المجهول. لا قوائم ولا إعدادات — كل شاشة فعل واحد.",
+            "Four screens cover a full workday: geo check-in, assigned tasks, closing work with a photo, and anonymous reporting. No menus, no settings — one action per screen.",
+          )}
+        </p>
+
+        <div style={{ display: "flex", gap: "36px", marginTop: "44px", flexWrap: "wrap", alignItems: "flex-start" }}>
+          {/* 01 Attendance L38–73 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "392px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
+              <span style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "13px", fontWeight: 600, color: "#1E9E63" }}>01</span>
+              <span style={{ fontSize: "16px", fontWeight: 600 }}>{T("تسجيل الحضور", "Check-in")}</span>
             </div>
-            <Link
-              to="/login"
-              state={{ from: "/app/attendance" }}
-              className="rounded-lg bg-[#0E7A4B] px-3.5 py-2 text-[13px] text-white hover:bg-[#0B5F3A]"
-            >
-              {ar ? "دخول" : "Sign in"}
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <MobileFieldHero ar={ar} />
-
-      <MobileFieldScreens ar={ar} />
-
-      <section id="proof-chain" className="bg-white">
-        <div className="mx-auto max-w-[1200px] px-6 py-16 md:px-8 md:py-[72px]">
-          <p className="text-[11px] font-semibold tracking-[0.16em] text-[#0E7A4B]">
-            {ar ? "من الجيب إلى المنصة" : "POCKET TO PLATFORM"}
-          </p>
-          <h2 className="mt-3 max-w-xl font-heading text-[28px] font-semibold text-[#0B1A3F] md:text-[32px]">
-            {ar ? "نفس دورة الإثبات — بدون شاشات المكتب" : "The same proof cycle — without the desk UI"}
-          </h2>
-          <p className="mt-3 max-w-xl text-[15px] leading-[1.85] text-[#5A6478]">
-            {ar
-              ? "كل فعل ميداني يغذي الحضور والمهام والإثبات والبلاغ في المنصة. لا مسار موازٍ ولا أرقام ثابتة على الشاشة."
-              : "Every field action feeds attendance, tasks, proof, and complaints in the platform. No parallel path, no hard-coded numbers on screen."}
-          </p>
-          <ol className="mt-10 grid gap-0 border border-[#E4E7EC] md:grid-cols-4">
-            {CHAIN.map((item, i) => (
-              <li
-                key={item.en}
-                className="border-b border-[#E4E7EC] p-5 last:border-b-0 md:border-b-0 md:border-e md:last:border-e-0"
-              >
-                <span className="font-heading text-[12px] font-semibold text-[#0E7A4B]" dir="ltr">
-                  0{i + 1}
-                </span>
-                <p className="mt-2 text-[14px] font-medium leading-snug text-[#0B1A3F]">
-                  {ar ? item.ar : item.en}
-                </p>
-                <Link
-                  to="/login"
-                  state={{ from: item.to }}
-                  className="mt-3 inline-block text-[12.5px] text-[#0E7A4B] hover:underline"
-                >
-                  {ar ? "افتح في المنصة" : "Open in platform"}
-                </Link>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      <section className="bg-[#0B1A3F]">
-        <div className="mx-auto flex max-w-[1200px] flex-col items-start gap-6 px-6 py-16 md:flex-row md:items-center md:justify-between md:px-8 md:py-[72px]">
-          <div className="max-w-lg">
-            <h2 className="m-0 font-heading text-[26px] font-semibold text-white md:text-[30px]">
-              {ar ? "جاهز ليوم الميدان؟" : "Ready for the field day?"}
-            </h2>
-            <p className="mt-3 text-[14.5px] leading-[1.8] text-[#B9C3D8]">
-              {ar
-                ? "ادخل بحساب الشركة أو الجهة — الشاشات الأربع فوق نفس جلسة المنصة وصلاحياتها."
-                : "Sign in with your company account — the four screens sit on the same platform session and permissions."}
+            <p style={{ margin: 0, fontSize: "14px", color: MUTED, lineHeight: 1.65 }}>
+              {T("الزر يعمل فقط داخل نطاق الفرع. خارجه يظهر السبب والمسافة، لا رسالة خطأ مبهمة.", "The button works only inside the station geofence. Outside it, you see the reason and distance — not a vague error.")}
             </p>
+            <PhoneFrame title={T("الحضور", "Attendance")} dir={dir}>
+              <div style={{ fontFamily: "'IBM Plex Sans Arabic',sans-serif", background: SURFACE, height: "100%", padding: "20px 18px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ background: "#14284B", borderRadius: "18px", padding: "22px", color: "#fff" }}>
+                  <div style={{ fontSize: "12px", color: "#6EE7B7", letterSpacing: "0.1em", fontWeight: 600 }}>{T("وردية الصباح", "Morning shift")}</div>
+                  <div dir="ltr" style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "52px", fontWeight: 600, lineHeight: 1, marginTop: "12px", textAlign: "right" }}>05:47</div>
+                  <div style={{ fontSize: "14px", color: "#94A3B8", marginTop: "6px" }}>{T("الأحد 9 أغسطس · فرع الجبيل 1", "Sunday 9 Aug · Jubail 1")}</div>
+                </div>
+                <div style={{ background: CARD, border: "1px solid #E2E8F0", borderRadius: "16px", padding: "18px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#1E9E63", flexShrink: 0 }} />
+                    <span style={{ fontSize: "15px", fontWeight: 500 }}>{T("داخل نطاق الفرع", "Inside station geofence")}</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: MUTED, marginTop: "8px", lineHeight: 1.6 }}>{T("تبعد 12 مترًا عن مركز الفرع. دقة الموقع 4 أمتار.", "12m from station centre. Location accuracy 4m.")}</div>
+                </div>
+                <button type="button" style={{ width: "100%", height: "64px", borderRadius: "16px", background: "#1E9E63", color: "#fff", border: "none", fontFamily: "inherit", fontSize: "19px", fontWeight: 600, cursor: "pointer" }}>
+                  {T("تسجيل الدخول للوردية", "Check in to shift")}
+                </button>
+                <div style={{ background: CARD, border: "1px solid #E2E8F0", borderRadius: "16px", padding: "18px" }}>
+                  <div style={{ fontSize: "13px", fontWeight: 600, color: MUTED }}>{T("وردية أمس", "Yesterday's shift")}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "12px" }}>
+                    <span dir="ltr" style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "15px", fontWeight: 500 }}>05:52</span>
+                    <span style={{ flex: 1, height: "3px", background: "#E2E8F0", borderRadius: "3px" }} />
+                    <span dir="ltr" style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "15px", fontWeight: 500 }}>14:06</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: MUTED, marginTop: "10px" }}>{T("8 ساعات و14 دقيقة · بلا ملاحظات", "8h 14m · no notes")}</div>
+                </div>
+              </div>
+            </PhoneFrame>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              to="/login"
-              state={{ from: "/app/attendance" }}
-              className="institutional-cta rounded-[10px] bg-[#0E7A4B] px-7 py-3.5 text-[15px] font-medium text-white hover:bg-[#0B5F3A]"
-            >
-              {ar ? "دخول الميدان" : "Enter the field"}
-            </Link>
-            <Link
-              to="/"
-              className="rounded-[10px] border border-white/25 bg-white/5 px-7 py-3.5 text-[15px] text-white hover:bg-white/10"
-            >
-              {ar ? "العودة للرئيسية" : "Back to home"}
-            </Link>
-          </div>
-        </div>
-      </section>
 
-      <footer className="border-t border-white/10 bg-[#08142F] px-6 py-8 md:px-8">
-        <div className="mx-auto grid max-w-[1200px] gap-7 md:grid-cols-3">
-          <div>
-            <h3 className="font-heading text-2xl text-white">NiroVera</h3>
-            <p className="mt-3 text-sm leading-relaxed text-white/50">
-              {ar
-                ? "تطبيق الفني الميداني — حضور، مهام، إثبات، بلاغ."
-                : "Field technician companion — attendance, tasks, proof, report."}
+          {/* 02 Tasks L75–126 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "392px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
+              <span style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "13px", fontWeight: 600, color: "#1E9E63" }}>02</span>
+              <span style={{ fontSize: "16px", fontWeight: 600 }}>{T("مهامي", "My tasks")}</span>
+            </div>
+            <p style={{ margin: 0, fontSize: "14px", color: MUTED, lineHeight: 1.65 }}>
+              {T("مهام اليوم فقط، مرتبة بأولويتها. المتأخرة أعلى القائمة بلونها.", "Today's tasks only, ordered by priority. Overdue items sit at the top in colour.")}
             </p>
+            <PhoneFrame title={T("مهامي", "My tasks")} dir={dir}>
+              <div style={{ fontFamily: "'IBM Plex Sans Arabic',sans-serif", background: SURFACE, height: "100%", padding: "20px 18px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <span style={{ padding: "8px 14px", borderRadius: "20px", background: "#14284B", color: "#fff", fontSize: "14px", fontWeight: 600 }}>{T("اليوم · 4", "Today · 4")}</span>
+                  <span style={{ padding: "8px 14px", borderRadius: "20px", background: CARD, border: "1px solid #E2E8F0", color: MUTED, fontSize: "14px" }}>{T("الأسبوع · 11", "Week · 11")}</span>
+                </div>
+                <div style={{ background: CARD, border: "1px solid #FECACA", borderRadius: "16px", padding: "18px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#DC2626", flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontSize: "16px", fontWeight: 600, lineHeight: 1.4 }}>{T("استبدال صمام الضغط العالي", "Replace high-pressure valve")}</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: "#DC2626", marginTop: "10px", fontWeight: 500 }}>{T("متأخرة يومين · وحدة التبريد الرئيسية", "2 days overdue · main chiller")}</div>
+                  <div style={{ display: "flex", gap: "8px", marginTop: "14px" }}>
+                    <button type="button" style={{ flex: 1, height: "44px", borderRadius: "12px", background: "#1E9E63", color: "#fff", border: "none", fontFamily: "inherit", fontSize: "15px", fontWeight: 600, cursor: "pointer" }}>{T("ابدأ", "Start")}</button>
+                    <button type="button" style={{ height: "44px", padding: "0 16px", borderRadius: "12px", background: CARD, border: "1px solid #E2E8F0", color: MUTED, fontFamily: "inherit", fontSize: "15px", cursor: "pointer" }}>{T("تفاصيل", "Details")}</button>
+                  </div>
+                </div>
+                <div style={{ background: CARD, border: "1px solid #E2E8F0", borderRadius: "16px", padding: "18px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#F59E0B", flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontSize: "16px", fontWeight: 600, lineHeight: 1.4 }}>{T("فحص دوري لوحدة التبريد", "Chiller periodic inspection")}</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: MUTED, marginTop: "10px" }}>{T("اليوم 16:00 · قيد التنفيذ 70%", "Today 16:00 · 70% in progress")}</div>
+                  <div style={{ height: "5px", borderRadius: "4px", background: "#F1F5F9", marginTop: "12px", overflow: "hidden" }}>
+                    <span style={{ display: "block", width: "70%", height: "100%", background: "#F59E0B", borderRadius: "4px" }} />
+                  </div>
+                </div>
+                <div style={{ background: CARD, border: "1px solid #E2E8F0", borderRadius: "16px", padding: "18px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#94A3B8", flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontSize: "16px", fontWeight: 600, lineHeight: 1.4 }}>{T("معايرة أجهزة قياس التدفق", "Flow meter calibration")}</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: MUTED, marginTop: "10px" }}>{T("غدًا · لم تبدأ", "Tomorrow · not started")}</div>
+                </div>
+                <div style={{ background: CARD, border: "1px solid #E2E8F0", borderRadius: "16px", padding: "18px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#94A3B8", flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontSize: "16px", fontWeight: 600, lineHeight: 1.4 }}>{T("جرد قطع الغيار الحرجة", "Critical spares stocktake")}</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: MUTED, marginTop: "10px" }}>{T("بعد 4 أيام · لم تبدأ", "In 4 days · not started")}</div>
+                </div>
+              </div>
+            </PhoneFrame>
           </div>
-          <div>
-            <h4 className="font-heading text-lg text-white">{ar ? "روابط" : "Links"}</h4>
-            <ul className="mt-3 space-y-2 text-sm text-white/55">
-              <li>
-                <Link to="/" className="hover:text-[#3FBF80]">
-                  {ar ? "الرئيسية" : "Home"}
-                </Link>
-              </li>
-              <li>
-                <Link to="/about" className="hover:text-[#3FBF80]">
-                  {t("footerAbout")}
-                </Link>
-              </li>
-              <li>
-                <Link to="/deck" className="hover:text-[#3FBF80]">
-                  {ar ? "عرض المبيعات" : "Sales deck"}
-                </Link>
-              </li>
-              <li>
-                <Link to="/careers" className="hover:text-[#3FBF80]">
-                  {t("footerCareers")}
-                </Link>
-              </li>
-              <li>
-                <Link to="/workspace" className="hover:text-[#3FBF80]">
-                  {ar ? "مساحة الشركة" : "Company workspace"}
-                </Link>
-              </li>
-              <li>
-                <Link to="/security" className="hover:text-[#3FBF80]">
-                  {ar ? "الأمان والامتثال" : "Security & Compliance"}
-                </Link>
-              </li>
-              <li>
-                <Link to="/login" className="hover:text-[#3FBF80]">
-                  {ar ? "دخول المنصة" : "Enter platform"}
-                </Link>
-              </li>
-            </ul>
+
+          {/* 03 Close L128–175 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "392px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
+              <span style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "13px", fontWeight: 600, color: "#1E9E63" }}>03</span>
+              <span style={{ fontSize: "16px", fontWeight: 600 }}>{T("إغلاق العمل", "Close work")}</span>
+            </div>
+            <p style={{ margin: 0, fontSize: "14px", color: MUTED, lineHeight: 1.65 }}>
+              {T("لا يُغلق العمل دون صورة بعد التنفيذ، مختومة بالموقع والوقت تلقائيًا.", "Work does not close without an after photo, stamped with location and time automatically.")}
+            </p>
+            <PhoneFrame title={T("إثبات العمل", "Work proof")} dir={dir}>
+              <div style={{ fontFamily: "'IBM Plex Sans Arabic',sans-serif", background: SURFACE, height: "100%", padding: "20px 18px", display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div>
+                  <div style={{ fontSize: "17px", fontWeight: 600, lineHeight: 1.4 }}>{T("استبدال صمام الضغط العالي", "Replace high-pressure valve")}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "13px", color: "#94A3B8", marginTop: "4px" }}>OPS-4821</div>
+                </div>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <div style={{ flex: 1, height: "150px", background: CARD, border: "1px solid #E2E8F0", borderRadius: "14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "12px", color: "#94A3B8", letterSpacing: "0.08em" }}>{T("قبل", "BEFORE")}</span>
+                    <span dir="ltr" style={{ fontSize: "14px", color: "#CBD5E1", fontFamily: "'IBM Plex Sans',sans-serif" }}>06:18</span>
+                    <span style={{ fontSize: "12px", color: "#1E9E63", fontWeight: 500 }}>{T("مرفوعة", "Uploaded")}</span>
+                  </div>
+                  <div style={{ flex: 1, height: "150px", background: CARD, border: "2px dashed #1E9E63", borderRadius: "14px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "12px", color: "#94A3B8", letterSpacing: "0.08em" }}>{T("بعد", "AFTER")}</span>
+                    <span style={{ fontSize: "14px", color: "#1E9E63", fontWeight: 600 }}>{T("التقط صورة", "Take photo")}</span>
+                  </div>
+                </div>
+                <div style={{ background: CARD, border: "1px solid #E2E8F0", borderRadius: "14px", padding: "16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#1E9E63", flexShrink: 0 }} />
+                    <span style={{ fontSize: "14px", color: INK }}>{T("داخل نطاق الجبيل 1 · 5 أمتار", "Inside Jubail 1 · 5m")}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "12px" }}>
+                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#CBD5E1", flexShrink: 0 }} />
+                    <span style={{ fontSize: "14px", color: MUTED }}>{T("يراجعها فهد القحطاني بعد الرفع", "Reviewed by F. Alqahtani after upload")}</span>
+                  </div>
+                </div>
+                <div style={{ background: CARD, border: "1px solid #E2E8F0", borderRadius: "14px", padding: "16px" }}>
+                  <div style={{ fontSize: "13px", fontWeight: 600, color: MUTED }}>{T("ملاحظة التنفيذ", "Execution note")}</div>
+                  <div style={{ fontSize: "14px", color: "#94A3B8", marginTop: "8px", lineHeight: 1.6 }}>{T("اكتب ما تغيّر، أو ما يحتاج متابعة لاحقة…", "Note what changed, or what needs follow-up…")}</div>
+                </div>
+                <div style={{ marginTop: "auto", display: "flex", gap: "10px" }}>
+                  <button type="button" style={{ flex: 1, height: "56px", borderRadius: "14px", background: "#E2E8F0", color: "#94A3B8", border: "none", fontFamily: "inherit", fontSize: "17px", fontWeight: 600 }}>{T("أغلق العمل", "Close work")}</button>
+                </div>
+                <div style={{ fontSize: "12px", color: "#94A3B8", textAlign: "center" }}>{T("يُفعَّل الزر بعد رفع صورة \"بعد\"", "Enabled after the after photo is uploaded")}</div>
+              </div>
+            </PhoneFrame>
           </div>
-          <div>
-            <h4 className="font-heading text-lg text-white">{t("footerContactHeading")}</h4>
-            <ul className="mt-3 space-y-2.5 text-sm text-white/55">
-              <li className="flex items-center gap-2">
-                <ShieldCheck className="h-3.5 w-3.5 text-[#3FBF80]" />
-                {ar ? "نيار عبدالله سويلم الرنياوي" : "Niyar Abdullah Sweilem Al-Raniawi"}
-              </li>
-              <li className="flex items-center gap-2">
-                <Phone className="h-3.5 w-3.5 text-[#3FBF80]" />
-                <a href="tel:+966595414472" dir="ltr" className="hover:text-[#3FBF80]">
-                  0595414472
-                </a>
-              </li>
-              <li className="flex items-center gap-2">
-                <Mail className="h-3.5 w-3.5 text-[#3FBF80]" />
-                <a href="mailto:niyar@powercares.pro" className="hover:text-[#3FBF80]">
-                  niyar@powercares.pro
-                </a>
-              </li>
-            </ul>
+
+          {/* 04 Anonymous L177–207 */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "392px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
+              <span style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "13px", fontWeight: 600, color: "#1E9E63" }}>04</span>
+              <span style={{ fontSize: "16px", fontWeight: 600 }}>{T("بلاغ مجهول", "Anonymous report")}</span>
+            </div>
+            <p style={{ margin: 0, fontSize: "14px", color: MUTED, lineHeight: 1.65 }}>
+              {T("الرمز يتغيّر كل ثلاثين يومًا. الشاشة تقول صراحةً من يقرأ البلاغ ومن لا يقرأه.", "The code rotates every thirty days. The screen states clearly who can read the report and who cannot.")}
+            </p>
+            <PhoneFrame title={T("بلاغ مجهول", "Anonymous report")} dir={dir}>
+              <div style={{ fontFamily: "'IBM Plex Sans Arabic',sans-serif", background: SURFACE, height: "100%", padding: "20px 18px", display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div style={{ background: "#14284B", borderRadius: "16px", padding: "20px", color: "#fff" }}>
+                  <div style={{ fontSize: "13px", color: "#6EE7B7", fontWeight: 600 }}>{T("هويتك محمية", "Your identity is protected")}</div>
+                  <p style={{ margin: "10px 0 0", fontSize: "14px", lineHeight: 1.7, color: "#CBD5E1" }}>{T("يصل بلاغك برمز مؤقت. لا يستطيع مديرك ولا مدير النظام ربطه بك.", "Your report arrives under a temporary code. Neither your manager nor the system admin can link it to you.")}</p>
+                  <div dir="ltr" style={{ marginTop: "14px", fontFamily: "'IBM Plex Mono',monospace", fontSize: "16px", background: "rgba(255,255,255,.08)", borderRadius: "9px", padding: "10px 14px", textAlign: "center" }}>ANON-4F2B91C0</div>
+                  <div style={{ fontSize: "12px", color: "#94A3B8", marginTop: "8px", textAlign: "center" }}>{T("يتغيّر الرمز بعد 21 يومًا", "Code rotates in 21 days")}</div>
+                </div>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  <span style={{ padding: "9px 15px", borderRadius: "20px", background: "#14284B", color: "#fff", fontSize: "14px", fontWeight: 600 }}>{T("سلامة", "Safety")}</span>
+                  <span style={{ padding: "9px 15px", borderRadius: "20px", background: CARD, border: "1px solid #E2E8F0", color: MUTED, fontSize: "14px" }}>{T("سلوك", "Conduct")}</span>
+                  <span style={{ padding: "9px 15px", borderRadius: "20px", background: CARD, border: "1px solid #E2E8F0", color: MUTED, fontSize: "14px" }}>{T("مرافق", "Facilities")}</span>
+                  <span style={{ padding: "9px 15px", borderRadius: "20px", background: CARD, border: "1px solid #E2E8F0", color: MUTED, fontSize: "14px" }}>{T("اقتراح", "Suggestion")}</span>
+                </div>
+                <div style={{ flex: 1, background: CARD, border: "1px solid #E2E8F0", borderRadius: "16px", padding: "18px" }}>
+                  <div style={{ fontSize: "15px", color: "#94A3B8", lineHeight: 1.7 }}>{T("اشرح ما حدث، ومتى، وأين. أرفق صورة إن أمكن.", "Explain what happened, when, and where. Attach a photo if you can.")}</div>
+                </div>
+                <button type="button" style={{ width: "100%", height: "56px", borderRadius: "14px", background: "#1E9E63", color: "#fff", border: "none", fontFamily: "inherit", fontSize: "17px", fontWeight: 600, cursor: "pointer" }}>{T("أرسل البلاغ", "Send report")}</button>
+                <div style={{ fontSize: "12px", color: "#94A3B8", textAlign: "center", lineHeight: 1.6 }}>{T("يصل إلى منسق السلامة مباشرة، ويُصعَّد تلقائيًا إن تجاوز 24 ساعة", "Goes straight to the safety coordinator and escalates automatically after 24 hours")}</div>
+              </div>
+            </PhoneFrame>
           </div>
         </div>
-        <div className="mx-auto max-w-[1200px]">
-          <IpCertificateBadge lang={lang} />
+
+        <div style={{ marginTop: "40px", display: "flex", flexWrap: "wrap", gap: "16px", fontSize: "13px", color: MUTED }}>
+          <Link to="/" style={{ color: MUTED }}>{T("الرئيسية", "Home")}</Link>
+          <Link to="/login" style={{ color: MUTED }}>{T("دخول المنصة", "Platform login")}</Link>
+          <Link to="/app/attendance" style={{ color: MUTED }}>{T("الحضور", "Attendance")}</Link>
+          <Link to="/app/tasks" style={{ color: MUTED }}>{T("المهام", "Tasks")}</Link>
         </div>
-      </footer>
-    </div>
+      </div>
+    </MarketingChrome>
   );
 }

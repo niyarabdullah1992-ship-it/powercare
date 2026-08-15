@@ -38,6 +38,95 @@ export function blendHseTerm(closurePct: number, reportPct: number) {
   return Math.round(Math.max(0, Number(closurePct) || 0) * 0.7 + Math.max(0, Number(reportPct) || 0) * 0.3);
 }
 
+export type FairHseInput = {
+  /** Closed hazards attributed to this person (not the station pile). */
+  hazardClosed?: number;
+  /** Open + closed attributed to this person. Empty / unknown = no duty. */
+  hazardTotal?: number | null;
+  reportPts?: number;
+  maxReportPts?: number;
+  /** Open hazards this person owns. */
+  assignedOpen?: number;
+  /** Open incidents / observations written against this person. */
+  personalNotes?: number;
+};
+
+/**
+ * Empty personal ledger is credit, not failure.
+ * Safety is scored only on items attributed to the person.
+ * No owned hazard and no observation → 100 / 100.
+ */
+export function deriveFairHseRates(input: FairHseInput = {}) {
+  const assignedOpen = Math.max(0, Number(input.assignedOpen) || 0);
+  const notes = Math.max(0, Number(input.personalNotes) || 0);
+  const closed = Math.max(0, Number(input.hazardClosed) || 0);
+  const totalRaw = input.hazardTotal;
+  const total = totalRaw == null || totalRaw === ("" as never)
+    ? (assignedOpen + closed)
+    : Math.max(0, Number(totalRaw) || 0);
+  const hasDuty = assignedOpen > 0 || notes > 0 || total > 0;
+  const closurePct = hasDuty && total > 0
+    ? Math.round((Math.min(closed, total) / total) * 100)
+    : 100;
+
+  const reportPts = Math.max(0, Number(input.reportPts) || 0);
+  const maxReport = Math.max(0, Number(input.maxReportPts) || 0);
+  let reportPct = 100;
+  if (assignedOpen > 0 || notes > 0) {
+    reportPct = reportPts <= 0 ? 0 : (maxReport > 0 ? Math.round((reportPts / maxReport) * 100) : 100);
+  } else if (reportPts > 0 && maxReport > 0) {
+    reportPct = Math.max(100, Math.round((reportPts / maxReport) * 100));
+  }
+
+  const safeClosure = Math.min(100, Math.max(0, closurePct));
+  const safeReport = Math.min(100, Math.max(0, reportPct));
+  return {
+    closurePct: safeClosure,
+    reportPct: safeReport,
+    hsePct: blendHseTerm(safeClosure, safeReport),
+    emptyLedger: !hasDuty && reportPts <= 0,
+  };
+}
+
+function samePerson(value: unknown, employeeId: string, employeeName: string) {
+  const raw = String(value || "").trim();
+  if (!raw) return false;
+  if (employeeId && raw === employeeId) return true;
+  return !!(employeeName && raw.toLocaleLowerCase() === employeeName);
+}
+
+/** Count only hazards / incidents attributed to this person. */
+export function countPersonalHseDuty(
+  records: Array<Record<string, unknown>> | null | undefined,
+  employeeId?: string | null,
+  employeeName?: string | null,
+) {
+  const id = String(employeeId || "");
+  const name = String(employeeName || "").trim().toLocaleLowerCase();
+  let assignedOpen = 0;
+  let assignedClosed = 0;
+  let personalNotes = 0;
+  for (const rec of Array.isArray(records) ? records : []) {
+    for (const raw of (Array.isArray(rec.hazards) ? rec.hazards : []) as Array<Record<string, unknown>>) {
+      const owned = [raw.ownerId, raw.assigneeId, raw.employeeId, raw.responsibleId, raw.owner, raw.ownerName, raw.assignee]
+        .some((value) => samePerson(value, id, name));
+      if (owned && !raw.closedAt) assignedOpen += 1;
+      if (owned && raw.closedAt) assignedClosed += 1;
+    }
+    for (const raw of (Array.isArray(rec.hazardLog) ? rec.hazardLog : []) as Array<Record<string, unknown>>) {
+      const owned = [raw.ownerId, raw.assigneeId, raw.employeeId, raw.responsibleId, raw.owner, raw.closedBy]
+        .some((value) => samePerson(value, id, name));
+      if (owned) assignedClosed += 1;
+    }
+    for (const raw of (Array.isArray(rec.incidentLog) ? rec.incidentLog : []) as Array<Record<string, unknown>>) {
+      const onThem = [raw.employeeId, raw.involvedId, raw.againstId, raw.subjectId]
+        .some((value) => samePerson(value, id, name));
+      if (onThem && String(raw.status || "open") !== "closed") personalNotes += 1;
+    }
+  }
+  return { assignedOpen, assignedClosed, personalNotes, assignedTotal: assignedOpen + assignedClosed };
+}
+
 export function scoreEmployee(input: PerfInputs) {
   const pts = Math.max(0, Number(input.pts) || 0);
   const maxPts = Math.max(1, Number(input.maxPts) || 1);
@@ -93,21 +182,33 @@ export function scoreBoard(
     closure?: number;
     reportPts?: number;
     coverPts?: number;
+    assignedOpen?: number;
+    assignedClosed?: number;
+    assignedTotal?: number | null;
+    hazardTotal?: number | null;
+    personalNotes?: number;
   }>,
 ) {
   const list = Array.isArray(rows) ? rows : [];
   const maxPts = Math.max(1, ...list.map((r) => Number(r.pts) || 0), 1);
-  const maxClosure = Math.max(1, ...list.map((r) => Number(r.closure) || 0), 1);
-  const maxReport = Math.max(1, ...list.map((r) => Number(r.reportPts) || 0), 1);
+  const maxReport = Math.max(0, ...list.map((r) => Number(r.reportPts) || 0), 0);
   const maxCover = Math.max(1, ...list.map((r) => Number(r.coverPts) || 0), 1);
 
   const scored = list.map((r) => {
+    const hse = deriveFairHseRates({
+      hazardClosed: Number(r.assignedClosed) || 0,
+      hazardTotal: r.assignedTotal ?? r.hazardTotal,
+      reportPts: Number(r.reportPts) || 0,
+      maxReportPts: maxReport,
+      assignedOpen: Number(r.assignedOpen) || 0,
+      personalNotes: Number(r.personalNotes) || 0,
+    });
     const result = scoreEmployee({
       pts: Number(r.pts) || 0,
       maxPts,
       ontimePct: Number(r.ontimePct) || 0,
-      closurePct: maxClosure ? Math.round(((Number(r.closure) || 0) / maxClosure) * 100) : 0,
-      reportPct: maxReport ? Math.round(((Number(r.reportPts) || 0) / maxReport) * 100) : 0,
+      closurePct: hse.closurePct,
+      reportPct: hse.reportPct,
       coverPct: maxCover ? Math.round(((Number(r.coverPts) || 0) / maxCover) * 100) : 0,
     });
     return {

@@ -133,7 +133,7 @@ export function derivePublicWorkspaceCard(account, extras = {}) {
   const name = String(account?.name || "").trim() || companyId;
   const slug = slugifyCompanyName(name, companyId);
   const plan = String(account?.plan || "Starter").trim() || "Starter";
-  const orgType = account?.orgType === "gov" ? "gov" : "company";
+  const orgType = "company";
   const trial = isWorkspaceTrial(account);
   const sites = Number.isFinite(Number(extras.sites)) ? Number(extras.sites) : 0;
   const staff = Number.isFinite(Number(extras.staff)) ? Number(extras.staff) : 0;
@@ -156,7 +156,7 @@ export function derivePublicWorkspaceCard(account, extras = {}) {
     commercialRegistration: cr || null,
     // Public path only — never ownerEmail / credentials.
     urlPath: `/workspace/${encodeURIComponent(slug)}`,
-    staffLoginPath: `/login/${orgType === "gov" ? "gov" : "company"}?company=${encodeURIComponent(companyId)}`,
+    staffLoginPath: `/login/company?company=${encodeURIComponent(companyId)}`,
     careersPath: `/careers?company=${encodeURIComponent(companyId)}`,
   };
 }

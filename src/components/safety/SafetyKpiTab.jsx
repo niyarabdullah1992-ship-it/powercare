@@ -3,6 +3,8 @@ import { safetyKpis } from "@/lib/safetyStandards";
 import DailyHoursTable from "@/components/safety/DailyHoursTable";
 import SafetyLtiEntries from "@/components/safety/SafetyLtiEntries";
 import SafetyMonthPicker from "@/components/safety/SafetyMonthPicker";
+import IdentityCard from "@/components/shared/IdentityCard";
+import { ACCENT, num } from "@/lib/platformStyles";
 
 function KpiBar({ label, value, target, inverse = true }) {
   const ratio = target ? Math.min(100, (value / target) * 100) : 0;
@@ -18,7 +20,9 @@ export default function SafetyKpiTab({ rec, canEdit, lang, onUpdate }) {
   const L = (a, e) => ar ? a : e;
   const kpi = safetyKpis(rec, selectedMonth);
   return <div className="space-y-4">
-    <div className="rounded-xl border border-accent/25 bg-accent/10 p-5 text-center"><p className="text-xs text-muted-foreground">{L("أيام بدون حوادث", "Days without incidents")}</p><p className="font-heading text-5xl font-semibold text-accent">{kpi.days}</p></div>
+    <IdentityCard kicker={L("سلامة", "Safety")} title={L("أيام بدون حوادث", "Days without incidents")} dir={ar ? "rtl" : "ltr"}>
+      <p style={{ margin: 0, ...num(ACCENT), fontSize: 40, textAlign: "center" }}>{kpi.days}</p>
+    </IdentityCard>
     <SafetyMonthPicker value={selectedMonth} dailyHours={rec?.dailyHours} ltiEntries={rec?.ltiEntries} lang={lang} onChange={setSelectedMonth} />
     <DailyHoursTable selectedMonth={selectedMonth} dailyHours={rec?.dailyHours || []} totalHours={kpi.hours} canEdit={canEdit} lang={lang} onChange={(dailyHours) => onUpdate({ dailyHours })} />
     <SafetyLtiEntries selectedMonth={selectedMonth} entries={rec?.ltiEntries || []} canEdit={canEdit} lang={lang} onChange={(ltiEntries) => onUpdate({ ltiEntries })} />

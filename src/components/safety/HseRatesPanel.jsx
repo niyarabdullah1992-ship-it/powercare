@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { deriveHseRates } from "@/lib/hseDerivations";
+import useStationScope, { matchesStationScope } from "@/hooks/useStationScope";
+import { MUTED, INK, BORDER, CARD } from "@/lib/platformStyles";
 
 async function scores(payload) {
   const res = await base44.functions.invoke("scores", payload);
@@ -14,29 +16,72 @@ const TARGETS = {
   dart: 1.5,
 };
 
-function band(value, target) {
-  if (value <= target * 0.6) return "good";
-  if (value <= target) return "watch";
-  return "bad";
+const ACCENT = "#1E9E63";
+
+const SHELL = {
+  maxWidth: "1320px",
+  background: CARD,
+  border: "1px solid #E2E8F0",
+  borderRadius: "16px",
+  padding: "18px 20px",
+  boxShadow: "0 1px 0 #E2E8F0",
+};
+
+const GRID = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit,minmax(168px,1fr))",
+  gap: "12px",
+  marginTop: "14px",
+};
+
+function kpiCardStyle(ok) {
+  return {
+    padding: "14px 16px",
+    borderRadius: "12px",
+    border: `1px solid ${ok ? BORDER : "#FDE68A"}`,
+    background: ok ? CARD : "#FFFBEB",
+  };
+}
+
+function kpiValueStyle(ok) {
+  return {
+    fontFamily: "'IBM Plex Sans',sans-serif",
+    fontSize: "26px",
+    fontWeight: 600,
+    lineHeight: 1,
+    color: ok ? ACCENT : "#B45309",
+  };
+}
+
+function kpiTargetStyle(ok) {
+  return {
+    fontSize: "11px",
+    fontWeight: 500,
+    marginTop: "5px",
+    color: ok ? "#5A6B85" : "#92400E",
+  };
 }
 
 /**
  * HSE KPI strip — TRIR / LTIFR / DART / days clear / near-miss ratio.
  * Rates from scores.hseSummary (exposure = headcount × 2080).
  */
-export default function HseRatesPanel({ lang }) {
+export default function HseRatesPanel({ lang, stationScope }) {
   const { company, data } = useAuth();
+  const headerScope = useStationScope();
+  const scope = stationScope || headerScope || "all";
   const ar = lang === "ar";
   const [rates, setRates] = useState(null);
   const [daysClear, setDaysClear] = useState(null);
 
   useEffect(() => {
-    const headcount = (data?.employees || []).length || 1;
+    const scopedEmployees = (data?.employees || []).filter((e) => matchesStationScope(e.stationId, scope));
+    const scopedSafety = (data?.safety || []).filter((s) => matchesStationScope(s.stationId, scope));
+    const headcount = scopedEmployees.length || 1;
     const local = deriveHseRates(headcount, { lti: 0, restrict: 0, medical: 0, nearMiss: 0 });
     setRates(local);
 
-    // Days since last recorded incident across station safety logs (client fallback).
-    const incidents = (data?.safety || []).flatMap((s) => s.incidentLog || []);
+    const incidents = scopedSafety.flatMap((s) => s.incidentLog || []);
     const last = incidents
       .map((i) => (i.at ? new Date(i.at).getTime() : 0))
       .filter(Boolean)
@@ -44,89 +89,96 @@ export default function HseRatesPanel({ lang }) {
     setDaysClear(last ? Math.max(0, Math.floor((Date.now() - last) / 86400000)) : null);
 
     if (!company?.id) return;
-    scores({ action: "hseSummary", companyId: company.id })
+    scores({
+      action: "hseSummary",
+      companyId: company.id,
+      ...(scope !== "all" ? { stationId: scope } : {}),
+    })
       .then((remote) => {
         if (remote?.rates) setRates(remote.rates);
         if (remote?.daysClear != null) setDaysClear(Number(remote.daysClear));
       })
       .catch(() => {});
-  }, [company?.id, data?.employees?.length, data?.safety]);
+  }, [company?.id, data?.employees, data?.safety, scope]);
 
   if (!rates) return null;
+
+  const scoped = scope !== "all";
+  const clearVal = daysClear != null ? daysClear : 0;
+  const nmRatio = rates.nearMissRatio ?? 0;
 
   const cards = [
     {
       key: "TRIR",
       value: rates.trir.toFixed(2),
-      target: `≤ ${TARGETS.trir}`,
-      sub: ar ? "لكل 200 ألف ساعة" : "per 200k hours",
-      band: band(rates.trir, TARGETS.trir),
+      label: "TRIR",
+      sub: ar ? "معدل الحوادث المسجَّلة" : "Total recordable incident rate",
+      target: ar ? `الهدف ≤ ${TARGETS.trir.toFixed(2)}` : `Target ≤ ${TARGETS.trir.toFixed(2)}`,
+      ok: rates.trir <= TARGETS.trir,
     },
     {
       key: "LTIFR",
       value: rates.ltifr.toFixed(2),
-      target: `≤ ${TARGETS.ltifr}`,
-      sub: ar ? "لكل مليون ساعة" : "per 1M hours",
-      band: band(rates.ltifr, TARGETS.ltifr),
+      label: "LTIFR",
+      sub: ar ? "الحوادث المفقِدة لوقت العمل" : "Lost-time injury frequency",
+      target: ar ? `الهدف ≤ ${TARGETS.ltifr.toFixed(2)}` : `Target ≤ ${TARGETS.ltifr.toFixed(2)}`,
+      ok: rates.ltifr <= TARGETS.ltifr,
     },
     {
       key: "DART",
       value: rates.dartRate.toFixed(2),
-      target: `≤ ${TARGETS.dart}`,
-      sub: ar ? "غياب/تقييد لكل 200 ألف" : "days away/restricted per 200k",
-      band: band(rates.dartRate, TARGETS.dart),
+      label: "DART",
+      sub: ar ? "أيام غياب أو عمل مقيَّد" : "Days away / restricted / transfer",
+      target: ar ? `الهدف ≤ ${TARGETS.dart.toFixed(2)}` : `Target ≤ ${TARGETS.dart.toFixed(2)}`,
+      ok: rates.dartRate <= TARGETS.dart,
     },
     {
-      key: ar ? "أيام بلا حادث" : "Days clear",
+      key: "days-clear",
       value: daysClear != null ? String(daysClear) : "—",
+      label: ar ? "بلا حادث" : "Days clear",
+      sub: scoped
+        ? (ar ? "يومًا دون حادث مفقِد لوقت العمل في هذا الفرع" : "days without a lost-time injury at this station")
+        : (ar
+          ? "يومًا دون حادث — محسوبة على أضعف فرع، فحادث في أي منها يقطع سجل الشركة"
+          : "days clear — measured at the weakest station, since one incident anywhere breaks the company streak"),
       target: ar ? "مستمر" : "ongoing",
-      sub: ar ? "منذ آخر حادث مسجّل" : "since last recorded incident",
-      band: "good",
-      accent: true,
+      ok: clearVal >= 180,
     },
     {
-      key: ar ? "قرب حادث : قابل للتسجيل" : "Near-miss : recordable",
-      value: String(rates.nearMissRatio ?? 0),
-      target: "≥ 10:1",
-      sub: ar ? `${rates.nearMiss || 0} قرب حادث` : `${rates.nearMiss || 0} near misses`,
-      band: (rates.nearMissRatio || 0) >= 10 ? "good" : "watch",
+      key: "near-miss",
+      value: `${nmRatio}:1`,
+      label: ar ? "وشيك : مسجَّل" : "Near-miss ratio",
+      sub: ar ? "كل حادث مسجَّل يقابله هذا العدد من التبليغات الوشيكة" : "near-miss reports per recordable incident",
+      target: ar ? "الهدف ≥ 10:1" : "Target ≥ 10:1",
+      ok: nmRatio >= 10,
     },
   ];
 
-  const tone = {
-    good: "border-[#BBF7D0] bg-[#ECFDF3] text-[#15803D]",
-    watch: "border-[#FDE68A] bg-[#FFFBEB] text-[#B45309]",
-    bad: "border-[#FECACA] bg-[#FEF2F2] text-[#B91C1C]",
-  };
-
   return (
-    <section className="space-y-3 rounded-[14px] border border-[#E2E8F0] bg-white p-4" dir={ar ? "rtl" : "ltr"}>
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h3 className="m-0 font-heading text-[15px] font-semibold text-[#14284B]">
-            {ar ? "مؤشرات السلامة المعيارية" : "Standard safety indicators"}
-          </h3>
-          <p className="m-0 mt-1 text-[12px] text-[#5A6B85]">
-            {ar
-              ? `ساعات التعرّض = ${rates.headcount} × 2080 = ${rates.exposureHours.toLocaleString("en-US")} — لا من ساعات مُعلَنة يدويًا.`
-              : `Exposure hours = ${rates.headcount} × 2080 = ${rates.exposureHours.toLocaleString("en-US")} — not manually declared.`}
-          </p>
+    <section dir={ar ? "rtl" : "ltr"} style={SHELL}>
+      <div>
+        <div style={{ fontSize: "13px", fontWeight: 600 }}>
+          {ar ? "مؤشرات السلامة المعيارية" : "Standard safety indicators"}
+        </div>
+        <div style={{ fontSize: "11px", color: MUTED, marginTop: "4px", lineHeight: 1.7, maxWidth: "900px" }}>
+          {ar
+            ? `ساعات التعرّض = ${rates.headcount} × 2080 = ${rates.exposureHours.toLocaleString("en-US")} — لا من ساعات مُعلَنة يدويًا.`
+            : `Exposure hours = ${rates.headcount} × 2080 = ${rates.exposureHours.toLocaleString("en-US")} — not manually declared.`}
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+      <div style={GRID}>
         {cards.map((c) => (
-          <div key={c.key} className="rounded-[13px] border border-[#E2E8F0] px-3.5 py-3.5">
-            <p className="m-0 text-[11px] text-[#5A6B85]">{c.key}</p>
-            <p
-              className="m-0 mt-2 font-heading text-[26px] font-semibold leading-none"
-              style={{ color: c.accent ? "#1E9E63" : "#14284B" }}
-            >
+          <div key={c.key} style={kpiCardStyle(c.ok)}>
+            <div dir="ltr" style={kpiValueStyle(c.ok)}>
               {c.value}
-            </p>
-            <p className="m-0 mt-2 text-[11px] text-[#5A6B85]">{c.sub}</p>
-            <span className={`mt-2 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-medium ${tone[c.band]}`}>
-              {ar ? "الهدف" : "Target"} {c.target}
-            </span>
+            </div>
+            <div style={{ fontSize: "11px", fontWeight: 600, color: INK, marginTop: "7px" }}>
+              {c.label}
+            </div>
+            <div style={{ fontSize: "10px", color: MUTED, marginTop: "3px", lineHeight: 1.5 }}>
+              {c.sub}
+            </div>
+            <div style={kpiTargetStyle(c.ok)}>{c.target}</div>
           </div>
         ))}
       </div>

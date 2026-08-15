@@ -152,14 +152,14 @@ export default function TruePerformanceDoc() {
           <div className="space-y-3">
             {TP_FLOW.steps.map((step, index) => (
               <div key={step.ar} className="flex items-center gap-4 rounded-lg border border-border bg-card px-5 py-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary font-heading text-base font-semibold text-landing-gold-light">{index + 1}</span>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary font-heading text-base font-semibold text-accent">{index + 1}</span>
                 <p className="text-sm leading-6 text-foreground">{step.ar}</p>
               </div>
             ))}
           </div>
           <div className="mt-10 rounded-lg border border-accent/40 bg-primary p-7 text-primary-foreground">
             <div className="flex items-center gap-3">
-              <ShieldCheck className="h-6 w-6 text-landing-gold-light" strokeWidth={1.6} />
+              <ShieldCheck className="h-6 w-6 text-accent" strokeWidth={1.6} />
               <h3 className="font-heading text-2xl font-semibold">{TP_CLOSING.titleAr}</h3>
             </div>
             <p className="mt-3 text-sm leading-7 text-primary-foreground/85">{TP_CLOSING.textAr}</p>

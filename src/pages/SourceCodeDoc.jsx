@@ -24,9 +24,9 @@ const TEXTS = {
     collecting: "جاري تجميع كل ملفات الكود…",
     deposit: "SOURCE CODE DEPOSIT — نسخة إيداع الكود المصدري",
     title: "منصة NiroVera",
-    subtitle: "وثيقة إيداع الكود المصدري المقدّمة إلى الهيئة السعودية للملكية الفكرية لمصنف برمجي سحابي متكامل لإدارة المحطات، الموارد البشرية، الحضور، المهام، السلامة، والتوقيع الرقمي للمستندات.",
+    subtitle: "وثيقة إيداع الكود المصدري المقدّمة إلى الهيئة السعودية للملكية الفكرية لمصنف برمجي سحابي متكامل لإدارة الفروع، الموارد البشرية، الحضور، المهام، السلامة، والتوقيع الرقمي للمستندات.",
     rows: {
-      workName: ["اسم المصنف", "NiroVera — منصة إدارة المحطات والقوى العاملة"],
+      workName: ["اسم المصنف", "NiroVera — منصة إدارة الفروع والقوى العاملة"],
       author: "اسم المؤلف / المبرمج",
       langs: ["لغة/لغات البرمجة المستخدمة", "JavaScript (React JSX)، TypeScript، HTML، CSS (Tailwind)، JSON"],
       os: ["نظام التشغيل", "مستقل عن نظام التشغيل — يعمل عبر المتصفح على Windows، macOS، Linux، Android، iOS"],
@@ -101,13 +101,13 @@ export default function SourceCodeDoc() {
       <style>{`
         @page { size: A4 portrait; margin: 12mm; }
         @media print { .no-print { display: none !important; } }
-        .code-block { direction: ltr; text-align: left; font-family: "Courier New", monospace; font-size: 8.5px; line-height: 1.45; white-space: pre-wrap; word-break: break-all; background: #faf8f5; border: 1px solid #e5ddd0; padding: 10px; }
+        .code-block { direction: ltr; text-align: left; font-family: "Courier New", monospace; font-size: 8.5px; line-height: 1.45; white-space: pre-wrap; word-break: break-all; background: #F7F8FA; border: 1px solid #E2E8F0; padding: 10px; }
         .file-head { break-inside: avoid; }
       `}</style>
 
       {/* شريط التحكم — لا يظهر في الطباعة */}
       <div className="no-print sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex flex-wrap items-center gap-3">
-        <FileCode2 className="w-5 h-5 text-amber-700" />
+        <FileCode2 className="w-5 h-5 text-[#14284B]" />
         <p className="text-sm font-semibold">{T.bar}</p>
         <button
           onClick={() => setDocLang(isAr ? "en" : "ar")}
@@ -138,7 +138,7 @@ export default function SourceCodeDoc() {
       <div className="max-w-[190mm] mx-auto px-6 py-10">
         {/* صفحة الغلاف — بيانات المصنف */}
         <div className="border-2 border-black p-10 mb-10" style={{ breakAfter: "page" }}>
-          <p className="text-xs tracking-widest text-amber-800 font-bold mb-4">{T.deposit}</p>
+          <p className="text-xs tracking-widest text-[#14284B] font-bold mb-4">{T.deposit}</p>
           <h1 className="text-3xl font-bold mb-2">{T.title}</h1>
           <p className="text-sm text-gray-700 mb-8">{T.subtitle}</p>
 

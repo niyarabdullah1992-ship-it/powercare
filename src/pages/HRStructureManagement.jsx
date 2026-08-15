@@ -1,58 +1,66 @@
 import React, { useState } from "react";
-import { ChevronDown, UserCog } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { useOrgTerms } from "@/hooks/useOrgTerms";
-import FlexOrgTree from "@/components/hr/FlexOrgTree";
 import JobGradeManager from "@/components/employees/JobGradeManager";
-import PageHeader from "@/components/PageHeader";
+import HrDirectoryBoard from "@/components/hr/HrDirectoryBoard";
+import ComplianceMhrsdBoard from "@/components/hr/ComplianceMhrsdBoard";
+import useStationScope from "@/hooks/useStationScope";
+import PlatformStampShell from "@/components/shared/PlatformStampShell";
 
-/** One-job surface: people directory & grades (Platform `hr`). Org/settings live on their own routes. */
+/**
+ * Platform `hr` — directory table, onboarding pipeline, grades, and the single
+ * canonical home of the MHRSD compliance centre (Settings links here).
+ */
 export default function HRStructureManagement() {
   const { t, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
-  const { terms } = useOrgTerms();
   const [gradesOpen, setGradesOpen] = useState(false);
+  const stationScope = useStationScope();
   if (!data || !currentUser) return null;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={lang === "ar" ? "الموارد البشرية" : "Human Resources"}
-        description={
-          lang === "ar"
-            ? `دليل الموظفين والتعيين · ${terms.stations} · رأس الهيكل: ${terms.ceo}`
-            : `Employee directory and onboarding · ${terms.stations} · hierarchy head: ${terms.ceo}`
-        }
-        icon={UserCog}
-      />
-
-      <div className="flex flex-wrap gap-2 text-sm">
-        <Link to="/app/org" className="rounded-lg border border-border bg-card px-3 py-2 text-foreground hover:border-accent/40">
+    <PlatformStampShell
+      ar={lang === "ar"}
+      title={lang === "ar" ? "الموارد البشرية" : "Human resources"}
+      hint={lang === "ar" ? "الدليل الوظيفي، الدرجات، ومركز امتثال وزارة الموارد البشرية." : "Directory, grades, and the MHRSD compliance centre."}
+      maxWidth={1280}
+    >
+      <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Link to="/app/org" className="nv-btn-ghost inline-flex h-[34px] items-center px-3.5">
           {lang === "ar" ? "الهيكل التنظيمي" : "Org structure"}
         </Link>
-        <Link to="/app/hiring" className="rounded-lg border border-border bg-card px-3 py-2 text-foreground hover:border-accent/40">
+        <Link to="/app/hiring" className="nv-btn-ghost inline-flex h-[34px] items-center px-3.5">
           {lang === "ar" ? "التوظيف" : "Recruitment"}
         </Link>
-        <Link to="/app/settings" className="rounded-lg border border-border bg-card px-3 py-2 text-foreground hover:border-accent/40">
+        <Link to="/app/settings" className="nv-btn-ghost inline-flex h-[34px] items-center px-3.5">
           {lang === "ar" ? "إعدادات الشركة" : "Company settings"}
         </Link>
       </div>
 
-      <div className="space-y-3">
+      <HrDirectoryBoard lang={lang} stationScope={stationScope} />
+
+      <div className="nv-card overflow-hidden">
         <button
           type="button"
           onClick={() => setGradesOpen((open) => !open)}
           aria-expanded={gradesOpen}
-          className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-start font-heading text-lg font-semibold"
+          className="flex w-full items-center justify-between px-[18px] py-3.5 text-start text-[13px] font-semibold text-[#14284B]"
         >
           {t("jobGradesManage")}
-          <ChevronDown className={`h-5 w-5 transition-transform ${gradesOpen ? "rotate-180" : ""}`} />
+          <ChevronDown className={`h-4 w-4 text-[#5A6B85] transition-transform ${gradesOpen ? "rotate-180" : ""}`} />
         </button>
-        {gradesOpen && <JobGradeManager companyId={company.id} data={data} />}
+        {gradesOpen && (
+          <div className="border-t border-[#E2E8F0] px-[18px] py-4">
+            <JobGradeManager companyId={company.id} data={data} />
+          </div>
+        )}
       </div>
-      <FlexOrgTree data={data} company={company} currentUser={currentUser} lang={lang} />
-    </div>
+
+      <ComplianceMhrsdBoard />
+      </div>
+    </PlatformStampShell>
   );
 }

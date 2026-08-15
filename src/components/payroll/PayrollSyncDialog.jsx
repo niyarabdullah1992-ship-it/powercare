@@ -1,25 +1,60 @@
 import React from "react";
-import { RefreshCw } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { RefreshCw, X } from "lucide-react";
+import { ACCENT, MUTED, NAVY, BORDER, SURFACE, BRAND_SOFT, dialogOverlay, dialogCard, ui } from "@/lib/platformStyles";
 
 export default function PayrollSyncDialog({ open, onOpenChange, onConfirm, ar }) {
+  if (!open) return null;
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent dir={ar ? "rtl" : "ltr"} className="overflow-hidden border-accent/40 bg-card p-0 shadow-elevated sm:max-w-md">
-        <div className="border-b border-accent/30 bg-primary px-6 py-5 text-primary-foreground">
-          <AlertDialogHeader className={ar ? "text-right sm:text-right" : "text-left"}>
-            <span className="mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-accent/45 bg-accent/10 text-accent">
-              <RefreshCw className="h-5 w-5" strokeWidth={1.75} />
-            </span>
-            <AlertDialogTitle className="font-heading text-xl text-primary-foreground">{ar ? "تحديث بيانات الرواتب" : "Refresh payroll data"}</AlertDialogTitle>
-            <AlertDialogDescription className="leading-7 text-primary-foreground/75">{ar ? "سيتم تحديث الراتب الأساسي والبدلات والعملة للموظفين غير المدفوعين فقط." : "Base salary, allowances, and currency will be refreshed for unpaid employees only."}</AlertDialogDescription>
-          </AlertDialogHeader>
+    <div
+      style={dialogOverlay}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onOpenChange?.(false);
+      }}
+    >
+      <div style={{ ...dialogCard, maxWidth: "440px", padding: 0, overflow: "hidden" }} dir={ar ? "rtl" : "ltr"} role="dialog" aria-modal="true">
+        <div style={{ padding: "18px 20px", borderBottom: `1px solid ${BORDER}`, background: SURFACE }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+            <div>
+              <span style={{
+                display: "inline-flex",
+                height: "36px",
+                width: "36px",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "999px",
+                border: `1px solid ${BORDER}`,
+                background: BRAND_SOFT,
+                color: ACCENT,
+                marginBottom: "10px",
+              }}>
+                <RefreshCw style={{ width: 18, height: 18 }} strokeWidth={1.75} />
+              </span>
+              <h2 style={{ margin: 0, fontSize: "16px", fontWeight: 600, color: NAVY }}>
+                {ar ? "تحديث بيانات الرواتب" : "Refresh payroll data"}
+              </h2>
+              <p style={{ margin: "8px 0 0", fontSize: "13px", color: MUTED, lineHeight: 1.7 }}>
+                {ar ? "سيتم تحديث الراتب الأساسي والبدلات والعملة للموظفين غير المدفوعين فقط." : "Base salary, allowances, and currency will be refreshed for unpaid employees only."}
+              </p>
+            </div>
+            <button type="button" onClick={() => onOpenChange?.(false)} aria-label={ar ? "إغلاق" : "Close"} style={{ ...ui.btnGhost, padding: "6px" }}>
+              <X style={{ width: 16, height: 16 }} />
+            </button>
+          </div>
         </div>
-        <AlertDialogFooter className="gap-2 px-6 pb-6 sm:space-x-0">
-          <AlertDialogCancel>{ar ? "إلغاء" : "Cancel"}</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} className="bg-accent font-semibold text-accent-foreground hover:bg-accent/90">{ar ? "تأكيد التحديث" : "Confirm refresh"}</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", padding: "14px 20px" }}>
+          <button type="button" onClick={() => onOpenChange?.(false)} style={ui.btnSecondary}>
+            {ar ? "إلغاء" : "Cancel"}
+          </button>
+          <button
+            type="button"
+            onClick={() => { onConfirm?.(); onOpenChange?.(false); }}
+            style={ui.btnPrimary}
+          >
+            {ar ? "تأكيد التحديث" : "Confirm refresh"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

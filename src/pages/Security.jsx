@@ -2,11 +2,11 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { ShieldCheck, KeyRound, Lock, Building2, ScrollText, FileCheck2, EyeOff, UserCog, ArrowLeft } from "lucide-react";
-import Logo from "@/components/Logo";
+import IdentityCard from "@/components/shared/IdentityCard";
+import PublicPaperShell from "@/components/shared/PublicPaperShell";
 import SecurityFeatureCard from "@/components/security/SecurityFeatureCard";
+import { NAVY, ui } from "@/lib/platformStyles";
 
-// Public "Security & Compliance" page — describes the platform's real,
-// implemented protections. Built for enterprise evaluations (e.g. ACWA Power).
 export default function Security() {
   const { lang } = useI18n();
   const ar = lang === "ar";
@@ -71,51 +71,36 @@ export default function Security() {
   ];
 
   return (
-    <div className="powercare-public min-h-screen bg-landing-cinema font-body text-white">
-      <div className="sticky top-0 z-50 flex items-center justify-between border-b border-accent/20 bg-landing-cinema/90 px-4 py-3 backdrop-blur-xl sm:px-6 md:px-10">
-        <Link to="/" className="flex items-center gap-2">
-          <Logo size={30} />
-          <span className="font-heading text-lg font-semibold text-white">NiroVera</span>
-        </Link>
-        <Link to="/" className="flex items-center gap-1.5 text-sm font-body font-semibold text-landing-gold hover:underline">
-          <ArrowLeft className={`h-4 w-4 ${ar ? "rotate-180" : ""}`} strokeWidth={1.75} />
+    <PublicPaperShell dir={ar ? "rtl" : "ltr"} maxWidth={1100}>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <Link to="/" style={{ ...ui.btnGhost, display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+          <ArrowLeft style={{ width: 14, height: 14, transform: ar ? "rotate(180deg)" : undefined }} />
           {ar ? "الرئيسية" : "Home"}
         </Link>
       </div>
-
-      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 md:px-10 md:py-20">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-accent/35 bg-accent/10 text-accent shadow-lg shadow-accent/10">
-            <ShieldCheck className="h-8 w-8" strokeWidth={1.5} />
-          </span>
-          <h1 className="mt-6 font-heading text-4xl font-semibold text-white sm:text-5xl md:text-6xl">
-            {ar ? "الأمان والامتثال" : "Security & Compliance"}
-          </h1>
-          <p className="mt-5 text-base leading-relaxed text-white/60">
-            {ar
-              ? "الأمان ليس ميزة إضافية في NiroVera — إنه الأساس. كل طبقة من المنصة مبنية لحماية بيانات شركتك وموظفيك."
-              : "Security isn't an add-on in NiroVera — it's the foundation. Every layer of the platform is built to protect your company and your people."}
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((f) => (
-            <SecurityFeatureCard key={f.title} {...f} />
-          ))}
-        </div>
-
-        <div className="mx-auto mt-14 max-w-2xl rounded-2xl border border-accent/20 bg-card p-8 text-center text-card-foreground shadow-xl shadow-accent/5">
-          <h2 className="font-heading text-2xl text-primary">
-            {ar ? "جاهزون لأسئلة فريق الأمن لديكم" : "Ready for your security team's questions"}
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {ar
-              ? "تواصل معنا للحصول على تفاصيل تقنية إضافية أو عرض مباشر لآليات الحماية."
-              : "Contact us for deeper technical details or a live walkthrough of our protection mechanisms."}
-          </p>
-          <p className="mt-4 text-sm font-body font-semibold text-landing-gold" dir="ltr">niyar@powercares.pro</p>
-        </div>
+      <IdentityCard
+        icon={ShieldCheck}
+        kicker={ar ? "ثقة" : "Trust"}
+        title={ar ? "الأمان والامتثال" : "Security & Compliance"}
+        subtitle={ar
+          ? "الأمان ليس ميزة إضافية في NiroVera — إنه الأساس. كل طبقة من المنصة مبنية لحماية بيانات شركتك وموظفيك."
+          : "Security isn't an add-on in NiroVera — it's the foundation. Every layer of the platform is built to protect your company and your people."}
+        dir={ar ? "rtl" : "ltr"}
+      />
+      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+        {features.map((f) => (
+          <SecurityFeatureCard key={f.title} {...f} dir={ar ? "rtl" : "ltr"} />
+        ))}
       </div>
-    </div>
+      <IdentityCard
+        title={ar ? "جاهزون لأسئلة فريق الأمن لديكم" : "Ready for your security team's questions"}
+        subtitle={ar
+          ? "تواصل معنا للحصول على تفاصيل تقنية إضافية أو عرض مباشر لآليات الحماية."
+          : "Contact us for deeper technical details or a live walkthrough of our protection mechanisms."}
+        dir={ar ? "rtl" : "ltr"}
+      >
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: NAVY }} dir="ltr">niyar@powercares.pro</p>
+      </IdentityCard>
+    </PublicPaperShell>
   );
 }

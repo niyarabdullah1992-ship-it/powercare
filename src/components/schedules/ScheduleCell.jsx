@@ -1,14 +1,60 @@
-import React, { useState } from "react";
-import { Plus, X, Check } from "lucide-react";
-import EmployeeAvatar from "./EmployeeAvatar";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { X, Check } from "lucide-react";
 import { assignEmployeeToShift, unassignEmployeeFromShift } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
+import { BRAND_BORDER, BRAND_DEEP, BRAND_SOFT, MUTED, NAVY, CARD, SURFACE } from "@/lib/platformStyles";
 
-export default function ScheduleCell({ companyId, stationId, day, shiftTypeId, employeeIds, employees, canManage }) {
-  const { t } = useI18n();
+function initials(name = "") {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase() || "?";
+}
+
+function visibleName(name = "", compact = false) {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (compact) return parts[0] || name;
+  if (parts.length <= 2) return parts.join(" ");
+  return `${parts[0]} ${parts[1]}`;
+}
+
+/** Compact equal-height day cell — faces overlap; click opens assign. */
+export default function ScheduleCell({
+  companyId,
+  stationId,
+  day,
+  shiftTypeId,
+  employeeIds,
+  employees,
+  canManage,
+  isRestDay = false,
+  rowHeight = 44,
+}) {
+  const { t, lang } = useI18n();
+  const ar = lang === "ar";
   const [open, setOpen] = useState(false);
-
   const assigned = employees.filter((e) => employeeIds.includes(e.id));
+  const shown = assigned.slice(0, 2);
+  const extra = assigned.length - shown.length;
+
+  const close = (e) => {
+    e?.stopPropagation();
+    e?.preventDefault();
+    setOpen(false);
+  };
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
 
   const toggle = (empId) => {
     if (employeeIds.includes(empId)) unassignEmployeeFromShift(companyId, stationId, day, shiftTypeId, empId);
@@ -16,60 +62,164 @@ export default function ScheduleCell({ companyId, stationId, day, shiftTypeId, e
   };
 
   return (
-    <div className="space-y-1 min-w-[110px]">
-      {assigned.map((emp) => (
-        <div key={emp.id} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/60 text-xs font-body">
-          <EmployeeAvatar name={emp.name} size={18} />
-          <span className="truncate flex-1">{emp.name}</span>
-          {canManage && (
-            <button onClick={() => toggle(emp.id)} className="text-muted-foreground hover:text-destructive shrink-0">
-              <X className="w-3 h-3" />
-            </button>
-          )}
-        </div>
-      ))}
-      {canManage && (
-        <button
-          onClick={() => setOpen(true)}
-          className="w-full flex items-center justify-center gap-1 px-2 py-1 rounded-md border border-dashed border-border text-[11px] font-body text-muted-foreground hover:border-accent hover:text-accent transition-colors"
-        >
-          <Plus className="w-3 h-3" /> {t("add")}
-        </button>
+    <div
+      role={canManage ? "button" : undefined}
+      tabIndex={canManage ? 0 : undefined}
+      onClick={(e) => {
+        if (!canManage || open) return;
+        e.stopPropagation();
+        setOpen(true);
+      }}
+      onKeyDown={(e) => {
+        if (canManage && !open && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          setOpen(true);
+        }
+      }}
+      className="nv-shift-cell"
+      title={assigned.map((e) => e.name).join(" · ") || (ar ? "إسناد" : t("add"))}
+      style={{
+        width: "100%",
+        height: "100%",
+        minHeight: rowHeight,
+        padding: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 0,
+        background: isRestDay ? "#FAFBFC" : "transparent",
+        boxSizing: "border-box",
+        cursor: canManage ? "pointer" : "default",
+        overflow: "hidden",
+      }}
+    >
+      {shown.length === 0 ? (
+        canManage ? (
+          <span className="nv-shift-plus" aria-hidden>+</span>
+        ) : null
+      ) : (
+        <span className="nv-shift-who">
+          {shown.map((emp) => (
+            <span key={emp.id} className="nv-shift-who-name" title={emp.name}>
+              {visibleName(emp.name, shown.length > 1)}
+            </span>
+          ))}
+          {extra > 0 && <span className="nv-shift-who-more">+{extra}</span>}
+        </span>
       )}
-      {/* Native-style overlay panel: bottom sheet on phones, centered on larger screens */}
-      {open && (
-        <div
-          className="fixed inset-0 z-[60] bg-black/50 flex items-end sm:items-center sm:justify-center"
-          onClick={() => setOpen(false)}
-        >
+
+      {open &&
+        createPortal(
           <div
-            className="w-full sm:max-w-sm bg-card rounded-t-2xl sm:rounded-xl border border-border max-h-[70vh] overflow-y-auto pb-safe shadow-xl"
-            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 80,
+              background: "rgba(20,40,75,.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "16px",
+            }}
+            onMouseDown={close}
           >
-            <p className="px-4 pt-4 pb-2 text-xs uppercase tracking-wider text-muted-foreground font-body sticky top-0 bg-card">
-              {t("add")}
-            </p>
-            {employees.map((emp) => {
-              const isAssigned = employeeIds.includes(emp.id);
-              return (
-                <button
-                  key={emp.id}
-                  type="button"
-                  onClick={() => toggle(emp.id)}
-                  className={`w-full flex items-center justify-between gap-2 px-4 py-3 text-sm font-body text-start hover:bg-muted ${isAssigned ? "text-accent font-medium" : ""}`}
-                >
-                  <span className="flex items-center gap-2 truncate">
-                    <EmployeeAvatar name={emp.name} size={20} />
-                    <span className="truncate">{emp.name}</span>
-                  </span>
-                  {isAssigned && <Check className="w-4 h-4 shrink-0" />}
-                </button>
-              );
-            })}
-            {employees.length === 0 && <p className="text-sm text-muted-foreground font-body px-4 py-3">{t("noTasks")}</p>}
-          </div>
-        </div>
-      )}
+            <div
+              role="dialog"
+              aria-modal="true"
+              style={{
+                width: "100%",
+                maxWidth: "320px",
+                maxHeight: "70vh",
+                overflowY: "auto",
+                background: CARD,
+                border: "1px solid #E2E8F0",
+                borderRadius: "14px",
+                boxShadow: "0 14px 32px rgba(20,40,75,.14)",
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ padding: "14px 16px", borderBottom: "1px solid #E2E8F0", fontSize: "12px", fontWeight: 600, color: NAVY }}>
+                {ar ? "إسناد موظف" : t("add")}
+              </div>
+              {employees.map((emp) => {
+                const isAssigned = employeeIds.includes(emp.id);
+                return (
+                  <button
+                    key={emp.id}
+                    type="button"
+                    onClick={() => toggle(emp.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "10px",
+                      width: "100%",
+                      padding: "11px 16px",
+                      border: "none",
+                      borderBottom: "1px solid #F1F5F9",
+                      background: isAssigned ? BRAND_SOFT : CARD,
+                      color: isAssigned ? BRAND_DEEP : NAVY,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      fontSize: "13px",
+                      textAlign: "start",
+                    }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                      <span
+                        style={{
+                          width: "26px",
+                          height: "26px",
+                          borderRadius: "50%",
+                          background: BRAND_SOFT,
+                          color: BRAND_DEEP,
+                          border: `1px solid ${BRAND_BORDER}`,
+                          fontSize: "9px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          fontFamily: "'IBM Plex Sans',sans-serif",
+                        }}
+                      >
+                        {initials(emp.name)}
+                      </span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{emp.name}</span>
+                    </span>
+                    {isAssigned ? <Check style={{ width: 14, height: 14, flexShrink: 0 }} /> : null}
+                  </button>
+                );
+              })}
+              {employees.length === 0 && (
+                <p style={{ margin: 0, padding: "16px", fontSize: "13px", color: MUTED }}>{t("noTasks")}</p>
+              )}
+              <button
+                type="button"
+                onClick={close}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "6px",
+                  width: "100%",
+                  padding: "12px",
+                  border: "none",
+                  borderTop: "1px solid #E2E8F0",
+                  background: SURFACE,
+                  color: MUTED,
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                <X style={{ width: 12, height: 12 }} />
+                {ar ? "إغلاق" : "Close"}
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

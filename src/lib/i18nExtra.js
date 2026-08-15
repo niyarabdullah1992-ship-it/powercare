@@ -3,7 +3,7 @@
 export const extraTranslations = {
   de: {
     attendanceScheduling: "Anwesenheit & Planung", chat: "Chat", files: "Dateien", fileSigning: "Dokumentensignatur",
-    aiAssistant: "Niro KI", allComplaints: "Beschwerden & Meldungen", hr: "Personal", tasksReport: "Aufgabenbericht",
+    aiAssistant: "Niro KI", allComplaints: "Beschwerden & Meldungen", workProof: "Arbeitsnachweis", hr: "Personal", tasksReport: "Aufgabenbericht",
     userGuide: "Benutzerhandbuch", viewProfile: "Profil anzeigen", dayPlanner: "Tagesplaner", lifeJournal: "Mein Lebensjournal",
     monthlyCalendar: "Monatskalender", publicComplaints: "Öffentliche Beschwerden",
     attendance: "Anwesenheit", checkIn: "Einchecken", checkOut: "Auschecken",
@@ -61,7 +61,7 @@ export const extraTranslations = {
   },
   fr: {
     attendanceScheduling: "Présence & Planification", chat: "Discussion", files: "Fichiers", fileSigning: "Signature de documents",
-    aiAssistant: "Niro IA", allComplaints: "Plaintes & Signalements", hr: "Ressources humaines", tasksReport: "Rapport des tâches",
+    aiAssistant: "Niro IA", allComplaints: "Plaintes & Signalements", workProof: "Preuve de travail", hr: "Ressources humaines", tasksReport: "Rapport des tâches",
     userGuide: "Guide d'utilisation", viewProfile: "Voir le profil", dayPlanner: "Planning du jour", lifeJournal: "Mon journal de vie",
     monthlyCalendar: "Calendrier mensuel", publicComplaints: "Plaintes publiques",
     attendance: "Présence", checkIn: "Pointer l'arrivée", checkOut: "Pointer le départ",
@@ -119,7 +119,7 @@ export const extraTranslations = {
   },
   es: {
     attendanceScheduling: "Asistencia y horarios", chat: "Chat", files: "Archivos", fileSigning: "Firma de documentos",
-    aiAssistant: "Niro IA", allComplaints: "Quejas y reportes", hr: "Recursos humanos", tasksReport: "Informe de tareas",
+    aiAssistant: "Niro IA", allComplaints: "Quejas y reportes", workProof: "Prueba de trabajo", hr: "Recursos humanos", tasksReport: "Informe de tareas",
     userGuide: "Guía de uso", viewProfile: "Ver perfil", dayPlanner: "Planificador diario", lifeJournal: "Mi diario de vida",
     monthlyCalendar: "Calendario mensual", publicComplaints: "Quejas públicas",
     attendance: "Asistencia", checkIn: "Registrar entrada", checkOut: "Registrar salida",
@@ -177,7 +177,7 @@ export const extraTranslations = {
   },
   pt: {
     attendanceScheduling: "Presença e escalas", chat: "Chat", files: "Arquivos", fileSigning: "Assinatura de documentos",
-    aiAssistant: "Niro IA", allComplaints: "Reclamações e denúncias", hr: "Recursos humanos", tasksReport: "Relatório de tarefas",
+    aiAssistant: "Niro IA", allComplaints: "Reclamações e denúncias", workProof: "Prova de trabalho", hr: "Recursos humanos", tasksReport: "Relatório de tarefas",
     userGuide: "Guia do usuário", viewProfile: "Ver perfil", dayPlanner: "Planejador diário", lifeJournal: "Meu diário de vida",
     monthlyCalendar: "Calendário mensal", publicComplaints: "Reclamações públicas",
     attendance: "Presença", checkIn: "Registrar entrada", checkOut: "Registrar saída",
@@ -235,7 +235,7 @@ export const extraTranslations = {
   },
   ru: {
     attendanceScheduling: "Посещаемость и графики", chat: "Чат", files: "Файлы", fileSigning: "Подписание документов",
-    aiAssistant: "Niro ИИ", allComplaints: "Жалобы и обращения", hr: "Кадры", tasksReport: "Отчёт по задачам",
+    aiAssistant: "Niro ИИ", allComplaints: "Жалобы и обращения", workProof: "Доказательство работы", hr: "Кадры", tasksReport: "Отчёт по задачам",
     userGuide: "Руководство пользователя", viewProfile: "Профиль", dayPlanner: "Планер дня", lifeJournal: "Мой дневник",
     monthlyCalendar: "Месячный календарь", publicComplaints: "Открытые жалобы",
     attendance: "Посещаемость", checkIn: "Отметить приход", checkOut: "Отметить уход",

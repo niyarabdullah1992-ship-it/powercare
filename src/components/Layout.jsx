@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useOrgTerms } from "@/hooks/useOrgTerms";
@@ -8,11 +7,11 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Search,
-  Bell, LogOut, Globe, ChevronDown, ChevronLeft, ChevronRight, Trophy, UserCog, Megaphone, MessageSquare, FileText, PenLine, ClipboardCheck, X, FolderOpen, Sparkles, Banknote, Warehouse, ReceiptText, Camera, Briefcase, CalendarClock, CalendarOff, Network, Settings2, BarChart3,
+                  Bell, LogOut, ChevronDown, ChevronLeft, ChevronRight, Trophy, UserCog, MessageCircle, MessageSquare, FileText, PenLine, ClipboardCheck, FolderOpen, Sparkles, Banknote, Warehouse, ReceiptText, Camera, Briefcase, CalendarClock, CalendarOff, Network, Settings2, BarChart3,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
-import SwipeToDeleteItem from "@/components/notifications/SwipeToDeleteItem";
+import NotificationPanel from "@/components/notifications/NotificationPanel";
 import SyncStatusIndicator from "@/components/SyncStatusIndicator";
 import ThemeToggle from "@/components/ThemeToggle";
 import { allowedNavFor } from "@/lib/navVisibility";
@@ -21,8 +20,16 @@ import BackButton from "@/components/mobile/BackButton";
 import ProductFeedbackPrompt from "@/components/ProductFeedbackPrompt";
 import { shouldShowNotification } from "@/lib/notificationFilters";
 import { routeForNotification } from "@/lib/notificationRoute";
-import SectionGuide from "@/components/SectionGuide";
 import GlobalSearch from "@/components/navigation/GlobalSearch";
+import StationScopeControl from "@/components/navigation/StationScopeControl";
+import SectionReportPicker from "@/components/reports/SectionReportPicker";
+import StationQuickSwitch from "@/components/navigation/StationQuickSwitch";
+import { OPEN_STATION_SWITCH_EVENT } from "@/hooks/useStationSwitcher";
+import { setStationScope, getStationScope } from "@/lib/stationScopeStore";
+import { visibleStations } from "@/lib/permissions";
+import PageErrorBoundary from "@/components/PageErrorBoundary";
+import { BORDER, CARD, INK, MUTED, NAVY, NAVY_FILL, SURFACE } from "@/lib/platformStyles";
+import { THEME_CHANGE_EVENT, applyPlatformTheme, applyStoredPlatformTheme, persistPlatformTheme } from "@/lib/platformTheme";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -34,7 +41,6 @@ export default function Layout({ children }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [proactiveAlerts, setProactiveAlerts] = useState([]);
   const langRef = useRef(null);
   const notifRef = useRef(null);
   const userRef = useRef(null);
@@ -42,18 +48,48 @@ export default function Layout({ children }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("powercare_sidebar_collapsed") === "true");
   const [navFold, setNavFold] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("powercare_nav_fold_v1") || '{"money":true,"admin":true}');
+      const raw = JSON.parse(localStorage.getItem("powercare_nav_fold_v6") || "{}");
+      return {
+        workforce: raw.workforce !== false,
+        compliance: raw.compliance !== false,
+        money: raw.money !== false,
+        admin: raw.admin !== false,
+      };
     } catch {
-      return { money: true, admin: true };
+      return { workforce: true, compliance: true, money: true, admin: true };
     }
   });
+  const [scopeSwitchOpen, setScopeSwitchOpen] = useState(false);
+
+  useEffect(() => {
+    applyStoredPlatformTheme(company?.id);
+    const onChange = (event) => {
+      if (event?.detail) applyPlatformTheme(event.detail);
+    };
+    window.addEventListener(THEME_CHANGE_EVENT, onChange);
+    if (!company?.id) {
+      return () => window.removeEventListener(THEME_CHANGE_EVENT, onChange);
+    }
+    let cancelled = false;
+    base44.functions.invoke("settings", { action: "getColorTheme", companyId: company.id })
+      .then((res) => {
+        const remote = res?.data?.colorTheme ?? res?.colorTheme;
+        if (cancelled || !remote) return;
+        applyPlatformTheme(persistPlatformTheme(remote, company.id));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      window.removeEventListener(THEME_CHANGE_EVENT, onChange);
+    };
+  }, [company?.id]);
 
   useEffect(() => {
     localStorage.setItem("powercare_sidebar_collapsed", String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
   useEffect(() => {
-    localStorage.setItem("powercare_nav_fold_v1", JSON.stringify(navFold));
+    localStorage.setItem("powercare_nav_fold_v6", JSON.stringify(navFold));
   }, [navFold]);
 
   useEffect(() => {
@@ -66,25 +102,44 @@ export default function Layout({ children }) {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
+  // Ctrl/Cmd+K searches; the same chord with Shift switches station in place.
   useEffect(() => {
-    const openSearch = (event) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setSearchOpen(true); }
+    // Step only through stations this user may see — the same list the palette shows.
+    const stepStation = (delta) => {
+      const allowed = data && currentUser ? visibleStations(currentUser, data) : [];
+      const ring = ["all", ...allowed.map((s) => String(s.id))];
+      if (ring.length < 2) return;
+      const at = ring.indexOf(getStationScope());
+      setStationScope(ring[((at < 0 ? 0 : at) + delta + ring.length) % ring.length]);
+    };
+    const onKey = (event) => {
+      const chord = event.metaKey || event.ctrlKey;
+      if (chord && event.shiftKey && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(false);
+        setScopeSwitchOpen(true);
+        return;
+      }
+      if (chord && event.shiftKey && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+        event.preventDefault();
+        stepStation(event.key === "ArrowDown" ? 1 : -1);
+        return;
+      }
+      if (chord && !event.shiftKey && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(true);
+        return;
+      }
       if (event.key === "Escape") setSearchOpen(false);
     };
-    window.addEventListener("keydown", openSearch);
-    return () => window.removeEventListener("keydown", openSearch);
-  }, []);
-
-  useEffect(() => {
-    setProactiveAlerts([]);
-    const receive = (event) => {
-      const key = `powercare_proactive_read_${company?.id}_${currentUser?.id}`;
-      const readIds = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
-      setProactiveAlerts((event.detail || []).map((alert) => ({ ...alert, read: readIds.has(alert.id) })));
+    const openSwitch = () => setScopeSwitchOpen(true);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener(OPEN_STATION_SWITCH_EVENT, openSwitch);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener(OPEN_STATION_SWITCH_EVENT, openSwitch);
     };
-    window.addEventListener("powercare:proactive-alerts", receive);
-    return () => window.removeEventListener("powercare:proactive-alerts", receive);
-  }, [company?.id, currentUser?.id]);
+  }, [data, currentUser]);
 
   // Real-time notification polling (Supabase → local bell)
   useEffect(() => {
@@ -142,41 +197,58 @@ export default function Layout({ children }) {
 
   if (!currentUser || !data) return children;
 
-  // Platform IA — day rhythm: Daily → Workforce → Compliance → Money → Admin
+  // Outstanding daily reports = stations without an approved filing today (Platform nav badge).
+  const dailyReportBadge = (() => {
+    const d = new Date();
+    const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const stations = data?.stations || [];
+    const filed = (data?.reports || []).filter((r) =>
+      r && (r.kind === "daily" || r.type === "daily" || !r.kind)
+      && (!r.dateKey || r.dateKey === dayKey),
+    );
+    const byStation = new Map(filed.map((r) => [String(r.stationId), r]));
+    const open = stations.filter((st) => {
+      const r = byStation.get(String(st.id));
+      return !(r && r.approved);
+    }).length;
+    return open > 0 ? open : undefined;
+  })();
+
+  // Proof-cycle IA: Attendance → Tasks → Work proof → Signing, then people / care / money / institution.
   const navItems = [
     { to: "/app", icon: LayoutDashboard, label: lang === "ar" ? "مركز القيادة" : "Command Center", end: true, category: "daily" },
-    { to: "/app/tasks", icon: ListTodo, label: lang === "ar" ? "المهام والعمليات" : "Operations", category: "daily" },
     { to: "/app/attendance", icon: ClipboardCheck, label: lang === "ar" ? "الحضور والانصراف" : "Attendance", category: "daily" },
-    { to: "/app/daily-report", icon: FileText, label: lang === "ar" ? "التقرير اليومي" : "Daily Report", category: "daily" },
+    { to: "/app/tasks", icon: ListTodo, label: lang === "ar" ? "المهام والعمليات" : "Operations", category: "daily" },
+    { to: "/app/work-proof", icon: Camera, label: lang === "ar" ? "إثبات العمل" : "Work Proof", category: "daily" },
+    { to: "/app/signing", icon: PenLine, label: lang === "ar" ? "التوقيع الرقمي" : "Digital Signing", category: "daily" },
+    { to: "/app/daily-report", icon: FileText, label: lang === "ar" ? "التقرير اليومي" : "Daily Report", category: "daily", badge: dailyReportBadge },
+    { to: "/app/reports", icon: BarChart3, label: lang === "ar" ? "التقارير والتحليلات" : "Reports & Analytics", category: "daily" },
     { to: "/app/chat", icon: MessageSquare, label: lang === "ar" ? "المحادثات التشغيلية" : "Operations Chat", category: "daily" },
-    { to: "/app/shifts", icon: CalendarClock, label: lang === "ar" ? "الورديات" : "Shifts", category: "workforce" },
-    { to: "/app/leave", icon: CalendarOff, label: lang === "ar" ? "طلبات الإجازة" : "Leave Requests", category: "workforce" },
-    { to: "/app/hr", icon: UserCog, label: lang === "ar" ? "الموارد البشرية" : "Human Resources", category: "workforce" },
-    { to: "/app/hiring", icon: Briefcase, label: lang === "ar" ? "التوظيف" : "Recruitment", category: "workforce" },
-    { to: "/app/performance", icon: Trophy, label: lang === "ar" ? "الأداء" : "Performance", category: "workforce" },
-    { to: "/app/org", icon: Network, label: lang === "ar" ? "الهيكل التنظيمي" : "Org Structure", category: "workforce" },
-    { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة HSE" : "Safety HSE", category: "compliance" },
-    { to: "/app/work-proof", icon: Camera, label: lang === "ar" ? "إثبات العمل" : "Work Proof", category: "compliance" },
-    { to: "/app/signing", icon: PenLine, label: lang === "ar" ? "التوقيع الرقمي" : "Digital Signing", category: "compliance" },
-    { to: "/app/complaints", icon: Megaphone, label: lang === "ar" ? "الشكاوى والبلاغات" : "Reports & Complaints", category: "compliance" },
+    { to: "/app/shifts", icon: CalendarClock, label: lang === "ar" ? "الورديات" : "Shifts", category: "workforce", fold: "workforce" },
+    { to: "/app/leave", icon: CalendarOff, label: lang === "ar" ? "طلبات الإجازة" : "Leave Requests", category: "workforce", fold: "workforce" },
+    { to: "/app/hr", icon: UserCog, label: lang === "ar" ? "الموارد البشرية" : "Human Resources", category: "workforce", fold: "workforce" },
+    { to: "/app/hiring", icon: Briefcase, label: lang === "ar" ? "التوظيف" : "Recruitment", category: "workforce", fold: "workforce" },
+    { to: "/app/performance", icon: Trophy, label: lang === "ar" ? "الأداء" : "Performance", category: "workforce", fold: "workforce" },
+    { to: "/app/org", icon: Network, label: lang === "ar" ? "الهيكل التنظيمي" : "Org Structure", category: "workforce", fold: "workforce" },
+    { to: "/app/safety", icon: ShieldQuestion, label: lang === "ar" ? "السلامة HSE" : "Safety HSE", category: "compliance", fold: "compliance" },
+    { to: "/app/complaints", icon: MessageCircle, label: lang === "ar" ? "صوت الموظف" : "Employee Voice", category: "compliance", fold: "compliance" },
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "money", fold: "money" },
     { to: "/app/expenses", icon: ReceiptText, label: lang === "ar" ? "المصروفات" : "Expenses", category: "money", fold: "money" },
     { to: "/app/inventory", icon: Warehouse, label: lang === "ar" ? "المخزون والأصول" : "Inventory & Assets", category: "money", fold: "money" },
-    { to: "/app/reports", icon: BarChart3, label: lang === "ar" ? "التقارير والتحليلات" : "Reports & Analytics", category: "admin", fold: "admin" },
-    { to: "/app/assistant", icon: Sparkles, label: lang === "ar" ? "المساعد الذكي" : "AI Assistant", category: "admin", fold: "admin" },
     { to: "/app/files", icon: FolderOpen, label: lang === "ar" ? "الملفات" : "Files", category: "admin", fold: "admin" },
+    { to: "/app/assistant", icon: Sparkles, label: lang === "ar" ? "المساعد الذكي" : "AI Assistant", category: "admin", fold: "admin" },
     { to: "/app/settings", icon: Settings2, label: lang === "ar" ? "إعدادات الشركة" : "Company Settings", category: "admin", fold: "admin" },
   ];
 
   const navGroupLabels = {
-    daily: lang === "ar" ? "يومي" : "Daily",
+    daily: lang === "ar" ? "دورة الإثبات" : "Proof cycle",
     workforce: lang === "ar" ? "القوى العاملة" : "Workforce",
-    compliance: lang === "ar" ? "الالتزام والإثبات" : "Compliance & Evidence",
-    money: lang === "ar" ? "المال والأصول" : "Money & Assets",
-    admin: lang === "ar" ? "الإدارة" : "Admin",
+    compliance: lang === "ar" ? "الالتزام والرعاية" : "Care & compliance",
+    money: lang === "ar" ? "المال والأصول" : "Money & assets",
+    admin: lang === "ar" ? "المؤسسة" : "Institution",
   };
   const categoryOrder = ["daily", "workforce", "compliance", "money", "admin"];
-  const foldableCategories = new Set(["money", "admin"]);
+  const foldableCategories = new Set(["workforce", "compliance", "money", "admin"]);
 
   const allowedNav = allowedNavFor(currentUser, data, company);
   const visibleNavItems = navItems.filter((i) => allowedNav.has(i.to));
@@ -193,12 +265,9 @@ export default function Layout({ children }) {
     setNavFold((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const myNotifs = [
-    ...proactiveAlerts,
-    ...data.notifications.filter(
-      (notification) => notification.userId === currentUser.id && shouldShowNotification(notification.text, data)
-    ),
-  ];
+  const myNotifs = data.notifications.filter(
+    (notification) => notification.userId === currentUser.id && shouldShowNotification(notification.text, data)
+  );
   const unread = myNotifs.filter((n) => !n.read).length;
 
   const markAllRead = () => {
@@ -207,16 +276,9 @@ export default function Layout({ children }) {
         if (n.userId === currentUser.id) n.read = true;
       });
     });
-    const ids = proactiveAlerts.map((alert) => alert.id);
-    localStorage.setItem(`powercare_proactive_read_${company.id}_${currentUser.id}`, JSON.stringify(ids));
-    setProactiveAlerts((alerts) => alerts.map((alert) => ({ ...alert, read: true })));
   };
 
   const dismissNotification = (id) => {
-    if (proactiveAlerts.some((alert) => alert.id === id)) {
-      setProactiveAlerts((alerts) => alerts.filter((alert) => alert.id !== id));
-      return;
-    }
     if (String(id).startsWith("snf_")) {
       const remoteId = String(id).slice(4);
       const key = `powercare_notification_dismissed_${company.id}_${currentUser.id}`;
@@ -238,119 +300,222 @@ export default function Layout({ children }) {
 
   // Clicking a notification marks it read and jumps to the page it refers to.
   const openNotification = (n) => {
-    if (n.type === "proactive") {
-      const key = `powercare_proactive_read_${company.id}_${currentUser.id}`;
-      const ids = new Set(JSON.parse(localStorage.getItem(key) || "[]"));
-      ids.add(n.id); localStorage.setItem(key, JSON.stringify([...ids]));
-      setProactiveAlerts((alerts) => alerts.map((alert) => alert.id === n.id ? { ...alert, read: true } : alert));
-    } else {
-      updateCompany(company.id, (d) => {
-        const target = d.notifications.find((x) => x.id === n.id);
-        if (target) target.read = true;
-      });
-    }
+    updateCompany(company.id, (d) => {
+      const target = d.notifications.find((x) => x.id === n.id);
+      if (target) target.read = true;
+    });
     setNotifOpen(false);
     navigate(n.to || routeForNotification(n.text));
   };
 
   const sidebarSide = dir === "rtl" ? "right-0" : "left-0";
 
-  const pageTitles = {
-    "/app": lang === "ar" ? "مركز القيادة" : "Command Center",
-    "/app/hr": lang === "ar" ? "الموارد البشرية" : "Human Resources",
-    "/app/org": lang === "ar" ? "الهيكل التنظيمي" : "Org Structure",
-    "/app/settings": lang === "ar" ? "إعدادات الشركة" : "Company Settings",
-    "/app/hiring": lang === "ar" ? "التوظيف" : "Recruitment",
-    "/app/attendance": lang === "ar" ? "الحضور والانصراف" : "Attendance",
-    "/app/shifts": lang === "ar" ? "الورديات" : "Shifts",
-    "/app/leave": lang === "ar" ? "طلبات الإجازة" : "Leave Requests",
-    "/app/payroll": lang === "ar" ? "الرواتب" : "Payroll",
-    "/app/performance": lang === "ar" ? "الأداء" : "Performance",
-    "/app/tasks": lang === "ar" ? "المهام والعمليات" : "Operations",
-    "/app/daily-report": lang === "ar" ? "التقرير اليومي" : "Daily Report",
-    "/app/reports": lang === "ar" ? "التقارير والتحليلات" : "Reports & Analytics",
-    "/app/inventory": lang === "ar" ? "المخزون والأصول" : "Inventory & Assets",
-    "/app/expenses": lang === "ar" ? "المصروفات" : "Expenses",
-    "/app/safety": lang === "ar" ? "السلامة HSE" : "Safety HSE",
-    "/app/files": lang === "ar" ? "الملفات" : "Files",
-    "/app/signing": lang === "ar" ? "التوقيع الرقمي" : "Digital Signing",
-    "/app/work-proof": lang === "ar" ? "إثبات العمل" : "Work Proof",
-    "/app/client-proof": lang === "ar" ? "إثبات العمل للعميل" : "Client work proof",
-    "/app/complaints": lang === "ar" ? "الشكاوى والبلاغات" : "Reports & Complaints",
-    "/app/assistant": lang === "ar" ? "المساعد الذكي" : "AI Assistant",
-    "/app/chat": lang === "ar" ? "المحادثات التشغيلية" : "Operations Chat",
-    "/app/manual": lang === "ar" ? "دليل الاستخدام" : "User guide",
+  const pageMeta = {
+    "/app": {
+      title: lang === "ar" ? "مركز القيادة" : "Command Center",
+      sub: lang === "ar" ? "نظرة واحدة على جاهزية التشغيل الآن" : "One view of operational readiness right now",
+    },
+    "/app/hr": {
+      title: lang === "ar" ? "الموارد البشرية" : "Human Resources",
+      sub: lang === "ar"
+        ? `${(data.employees || []).length} موظفًا · ${(data.stations || []).length} فروع`
+        : `${(data.employees || []).length} employees · ${(data.stations || []).length} stations`,
+    },
+    "/app/org": {
+      title: lang === "ar" ? "الهيكل التنظيمي" : "Org Structure",
+      sub: lang === "ar" ? "منه تُشتق الصلاحيات وسلسلة التصعيد" : "Permissions and the escalation chain derive from it",
+    },
+    "/app/settings": {
+      title: lang === "ar" ? "إعدادات الشركة" : "Company Settings",
+      sub: lang === "ar" ? "الحساب والنطاق الجغرافي والصلاحيات" : "Account, geofences and permissions",
+    },
+    "/app/hiring": {
+      title: lang === "ar" ? "التوظيف" : "Recruitment",
+      sub: lang === "ar" ? "من طلب التوظيف إلى أول يوم عمل — بمهلة لكل مرحلة" : "From requisition to first day — with a deadline on every stage",
+    },
+    "/app/attendance": {
+      title: lang === "ar" ? "الحضور والانصراف" : "Attendance",
+      sub: lang === "ar" ? "يضع حضر بنفسه — يغذي المهام والرواتب" : "Marks present in person — feeds tasks and payroll",
+    },
+    "/app/shifts": {
+      title: lang === "ar" ? "الورديات" : "Shifts",
+      sub: lang === "ar" ? "جدول شهري لكل فرع · الفحص النظامي قبل النشر" : "A monthly schedule per station · statutory checks before publishing",
+    },
+    "/app/leave": {
+      title: lang === "ar" ? "طلبات الإجازة" : "Leave Requests",
+      sub: lang === "ar" ? "الرصيد يُخصم عند الاعتماد فقط" : "Balance is deducted only on approval",
+    },
+    "/app/payroll": {
+      title: lang === "ar" ? "الرواتب" : "Payroll",
+      sub: lang === "ar"
+        ? "دورة نظامية: تجهيز البنود · المادة 90 و107 · الاعتماد · حماية الأجور قبل اليوم 3"
+        : "Statutory cycle: prepare lines · Art. 90 & 107 · approve · wage protection before day 3",
+    },
+    "/app/performance": {
+      title: lang === "ar" ? "الأداء" : "Performance",
+      sub: lang === "ar" ? "مبني على بيانات فعلية لا تقييم يدوي" : "From actual data, not manual ratings",
+    },
+    "/app/tasks": {
+      title: lang === "ar" ? "المهام والعمليات" : "Operations",
+      sub: lang === "ar" ? "جهد وإثبات · مراجعة بسبب · تصعيد عند احتراق المهلة" : "Effort and proof · review with reason · escalate when the quota burns",
+    },
+    "/app/daily-report": {
+      title: lang === "ar" ? "التقرير اليومي" : "Daily Report",
+      sub: lang === "ar" ? "تقرير واحد لكل فرع، يُعتمد قبل نهاية الوردية" : "One report per station, approved before the shift ends",
+    },
+    "/app/reports": {
+      title: lang === "ar" ? "التقارير والتحليلات" : "Reports & Analytics",
+      sub: lang === "ar" ? "مكتبة التقارير والجدولة التلقائية" : "Report library and automated scheduling",
+    },
+    "/app/inventory": {
+      title: lang === "ar" ? "المخزون والأصول" : "Inventory & Assets",
+      sub: lang === "ar" ? "شراء · رصيد الفرع · صرف للعمل" : "Purchase · station balance · issue to work",
+    },
+    "/app/expenses": {
+      title: lang === "ar" ? "المصروفات" : "Expenses",
+      sub: lang === "ar" ? "مطالبات ومصروفات تشغيلية مقابل ميزانية كل فرع" : "Claims and operating spend against each station's budget",
+    },
+    "/app/safety": {
+      title: lang === "ar" ? "السلامة HSE" : "Safety HSE",
+      sub: lang === "ar" ? "المخاطر المفتوحة وسجل الحوادث" : "Open hazards and incident log",
+    },
+    "/app/files": {
+      title: lang === "ar" ? "الملفات" : "Files",
+      sub: lang === "ar" ? "مستندات مقيّدة بالصلاحية ومربوطة بالفرع" : "Permission-scoped documents linked to their station",
+    },
+    "/app/signing": {
+      title: lang === "ar" ? "التوقيع الرقمي" : "Digital Signing",
+      sub: lang === "ar" ? "فردي · جماعي · الصندوق · تحقق" : "Individual · group · inbox · verify",
+    },
+    "/app/work-proof": {
+      title: lang === "ar" ? "إثبات العمل" : "Work Proof",
+      sub: lang === "ar" ? "دليل ميداني + إفصاح العميل ورابط تحقق" : "Field evidence + client disclosure and a verify link",
+    },
+    "/app/help": {
+      title: lang === "ar" ? "دليل الاستخدام" : "User guide",
+      sub: lang === "ar" ? "مرجع الأقسام من الدخول حتى الأمن" : "Section reference from sign-in through security",
+    },
+    "/app/complaints": {
+      title: lang === "ar" ? "صوت الموظف" : "Employee Voice",
+      sub: lang === "ar" ? "اقتراح · شكوى · بلاغ مجهول" : "Suggestion · complaint · anonymous report",
+    },
+    "/app/assistant": {
+      title: lang === "ar" ? "المساعد الذكي" : "AI Assistant",
+      sub: lang === "ar" ? "يقرأ بياناتك ويجيب بالمصدر" : "Reads your data, answers with sources",
+    },
+    "/app/chat": {
+      title: lang === "ar" ? "المحادثات التشغيلية" : "Operations Chat",
+      sub: lang === "ar" ? "قنوات لكل فرع · الرسائل جزء من سجل التشغيل" : "A channel per station · messages are part of the operations log",
+    },
+    "/app/manual": {
+      title: lang === "ar" ? "دليل الاستخدام" : "User guide",
+      sub: lang === "ar" ? "مرجع التشغيل والصلاحيات" : "Operating reference and permissions",
+    },
   };
-  const pageTitle = (() => {
+  const resolvePageMeta = () => {
     const path = location.pathname;
-    if (pageTitles[path]) return pageTitles[path];
-    const hit = Object.keys(pageTitles).find((key) => key !== "/app" && path.startsWith(key));
-    return hit ? pageTitles[hit] : (lang === "ar" ? "نيروفيرا" : "NiroVera");
-  })();
-  const periodLabel = new Date().toLocaleDateString(lang === "ar" ? "ar-SA" : "en-GB", { month: "long", year: "numeric" });
+    if (pageMeta[path]) return pageMeta[path];
+    // An employee file is about a named person — the header must say whose file
+    // is open, not fall back to the product name.
+    const employeeMatch = path.match(/^\/app\/employees\/([^/]+)/);
+    if (employeeMatch) {
+      const person = (data?.employees || []).find((e) => e.id === employeeMatch[1]);
+      const station = (data?.stations || []).find((s) => s.id === person?.stationId);
+      const roleLabel = person ? (t(person.role) || person.role) : "";
+      return {
+        title: person?.name || (lang === "ar" ? "ملف موظف" : "Employee file"),
+        sub: person
+          ? [roleLabel, station?.name].filter(Boolean).join(" · ")
+            || (lang === "ar" ? "الملف الوظيفي والإسناد" : "Employment file and assignment")
+          : (lang === "ar" ? "لا يوجد موظف بهذا المعرّف في هذه الشركة" : "No employee with this id in this company"),
+      };
+    }
+    const hit = Object.keys(pageMeta).find((key) => key !== "/app" && path.startsWith(key));
+    return hit
+      ? pageMeta[hit]
+      : { title: lang === "ar" ? "نيروفيرا" : "NiroVera", sub: lang === "ar" ? "منظومة الموارد البشرية" : "HR operating system" };
+  };
+  const { title: pageTitle, sub: pageSubtitle } = resolvePageMeta();
+  // period footer removed from design shell — user chip only (L93–99)
   const roleTitle = currentUser.role === "director" || currentUser.role === "owner"
     ? terms.ceo
     : (t(currentUser.role) || currentUser.role);
   const roleInitials = currentUser.name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?";
 
-  // Soft compliance signal for the header chip (attendance + open risks).
-  const compliancePct = (() => {
-    const team = (data.employees || []).length || 1;
-    const openAnon = (data.anonymousReports || []).filter((a) => a.status === "open").length;
-    const openReports = (data.reports || []).filter((r) => r.status === "pending").length;
-    const penalty = Math.min(25, openAnon * 2 + openReports);
-    return Math.max(70, Math.min(99, 98 - penalty + Math.min(5, Math.floor(team / 50))));
-  })();
-
   return (
-    <div className="powercare-shell min-h-screen bg-background flex" dir={dir}>
-      {/* Desktop navigation — Claude handoff shell */}
-      <aside className={`corporate-sidebar hidden md:flex flex-col ${sidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-[250px] opacity-100"} ${sidebarSide} top-0 h-screen sticky overflow-hidden bg-[#0B1A3F] pt-safe z-40 transition-[width,opacity] duration-200`}>
-        <div className={`flex flex-col gap-1.5 ${sidebarCollapsed ? "px-2 pb-4 pt-5" : "px-5 pb-5 pt-5"}`}>
-          <div className={`flex items-center gap-2.5 ${sidebarCollapsed ? "justify-center" : ""}`}>
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-white p-[3px]">
-              <Logo size={31} />
-            </span>
-            {!sidebarCollapsed && (
-              <span className="font-heading text-[17px] font-semibold leading-none text-white">NiroVera</span>
-            )}
-          </div>
+    <div className="powercare-shell flex min-h-screen" dir={dir}>
+      {/* Desktop navigation — Platform.dc.html light shell */}
+      {/* Platform.dc.html L54–99 sidebar — literal metrics */}
+      <aside
+        data-nv="sidebar"
+        className={`corporate-sidebar hidden md:flex flex-col ${sidebarCollapsed ? "w-0 opacity-0 pointer-events-none" : ""} ${sidebarSide} top-0 z-40 h-screen sticky overflow-hidden pt-safe`}
+        style={{
+          width: sidebarCollapsed ? 0 : "250px",
+          flexShrink: 0,
+          background: CARD,
+          borderInlineEnd: `1px solid ${BORDER}`,
+          transition: "width .2s, opacity .2s",
+        }}
+      >
+        <div style={{ padding: sidebarCollapsed ? "18px 8px 14px" : "18px 16px 14px", display: "flex", alignItems: "center", gap: "10px", justifyContent: sidebarCollapsed ? "center" : "flex-start" }}>
+          <span style={{ width: 32, height: 32, borderRadius: 8, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
+            <Logo size={22} wordmark={false} />
+          </span>
           {!sidebarCollapsed && (
-            <p className="text-[11.5px] text-[#8C9AB8]">{lang === "ar" ? "منظومة الموارد البشرية" : "HR operating system"}</p>
+            <div data-nv="wide" style={{ lineHeight: 1.15, minWidth: 0 }}>
+              <div style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em", color: INK }}>NiroVera</div>
+              <div style={{ fontSize: "10px", color: MUTED, letterSpacing: "0.04em" }}>
+                {lang === "ar" ? "حزمة التشغيل" : "Operations Suite"}
+              </div>
+            </div>
           )}
         </div>
 
-        <nav className={`flex-1 w-full flex flex-col gap-1 overflow-y-auto no-scrollbar no-select ${sidebarCollapsed ? "px-2" : "px-3"}`}>
+        <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: sidebarCollapsed ? "4px 8px 12px" : "4px 10px 12px", display: "flex", flexDirection: "column", gap: "2px" }} className="no-scrollbar no-select">
           {categoryOrder.map((category) => {
             const items = orderedNavItems.filter((item) => item.category === category);
             if (!items.length) return null;
             const foldKey = foldableCategories.has(category) ? category : null;
             const folded = !!(foldKey && navFold[foldKey] && activeFoldKey !== foldKey);
             return (
-              <div key={category} className="pb-2" data-nv="navgroup">
+              <div key={category} data-nv="navgroup">
                 {!sidebarCollapsed && (
                   foldKey ? (
-                    <button
-                      type="button"
-                      onClick={() => toggleFold(foldKey)}
-                      className="mb-1 flex w-full items-center justify-between px-3 pb-1 pt-2 text-start"
-                    >
-                      <span className="text-[10.5px] font-semibold tracking-[0.12em] text-[#5C6E96]">
-                        {navGroupLabels[category]}
-                      </span>
-                      <span className="text-[11px] text-[#5C6E96]">{folded ? "+" : "−"}</span>
-                    </button>
+                    <div style={{ padding: "14px 10px 6px" }}>
+                      <button
+                        type="button"
+                        onClick={() => toggleFold(foldKey)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          width: "100%",
+                          background: "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          padding: 0,
+                          textAlign: "start",
+                        }}
+                      >
+                        <span style={{ fontSize: "11px", letterSpacing: "0.04em", color: INK, fontWeight: 600 }}>
+                          {navGroupLabels[category]}
+                        </span>
+                        <span style={{ flex: 1 }} />
+                        <span dir="ltr" style={{ fontSize: "12px", color: MUTED, lineHeight: 1 }}>{folded ? "+" : "−"}</span>
+                      </button>
+                    </div>
                   ) : (
-                    <div className="mb-1 px-3 pb-1 pt-2">
-                      <p className="text-[10.5px] font-semibold tracking-[0.12em] text-[#5C6E96]">
-                        {navGroupLabels[category]}
-                      </p>
+                    <div data-nv="navgroup" style={{ padding: "14px 10px 6px", fontSize: "11px", letterSpacing: "0.04em", color: INK, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden" }}>
+                      {navGroupLabels[category]}
                     </div>
                   )
                 )}
                 {items.map((item) => {
-                  // Keep foldable items in the DOM so the icon rail still has targets.
                   const hideInExpanded = folded && !sidebarCollapsed;
+                  const aliasActive = (item.aliases || []).some(
+                    (path) => location.pathname === path || location.pathname.startsWith(`${path}/`),
+                  );
                   return (
                     <NavLink
                       key={item.to}
@@ -359,17 +524,58 @@ export default function Layout({ children }) {
                       title={item.label}
                       data-nv="navbtn"
                       data-fold={item.fold || undefined}
-                      style={hideInExpanded ? { display: "none" } : undefined}
-                      className={({ isActive }) =>
-                        `mb-0.5 flex w-full items-center rounded-lg px-3 py-2 text-[13px] transition-colors ${sidebarCollapsed ? "justify-center" : "gap-2.5"} ${
-                          isActive
-                            ? "bg-[#16274F] text-white"
-                            : "text-[#B9C3D8] hover:bg-[#16274F] hover:text-white"
-                        }`
-                      }
+                      style={({ isActive }) => {
+                        const active = isActive || aliasActive;
+                        return {
+                        display: hideInExpanded ? "none" : "flex",
+                        alignItems: "center",
+                        gap: sidebarCollapsed ? 0 : "10px",
+                        justifyContent: sidebarCollapsed ? "center" : "flex-start",
+                        width: "100%",
+                        padding: "8px 10px",
+                        borderRadius: "9px",
+                        border: "none",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        fontSize: "13px",
+                        textAlign: dir === "rtl" ? "right" : "left",
+                        textDecoration: "none",
+                        transition: "background .12s",
+                        background: active ? "var(--nv-accent-soft)" : "transparent",
+                        color: active ? "var(--nv-accent-deep)" : MUTED,
+                        fontWeight: active ? 600 : 400,
+                      };
+                      }}
                     >
-                      <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.7} />
-                      {!sidebarCollapsed && <span className="truncate text-[13px] font-medium">{item.label}</span>}
+                      <span style={{ width: "18px", height: "18px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <item.icon style={{ width: 18, height: 18 }} strokeWidth={1.7} />
+                      </span>
+                      {!sidebarCollapsed && (
+                        <span data-nv="wide" style={{ flex: 1, textAlign: dir === "rtl" ? "right" : "left", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {item.label}
+                        </span>
+                      )}
+                      {!sidebarCollapsed && item.badge != null && (
+                        <span
+                          dir="ltr"
+                          style={{
+                            minWidth: "18px",
+                            height: "18px",
+                            padding: "0 5px",
+                            borderRadius: "9px",
+                            background: "var(--nv-accent-soft)",
+                            color: "var(--nv-accent-deep)",
+                            fontSize: "10px",
+                            fontWeight: 600,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontFamily: "'IBM Plex Sans',sans-serif",
+                          }}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
                     </NavLink>
                   );
                 })}
@@ -379,27 +585,33 @@ export default function Layout({ children }) {
         </nav>
 
         {!sidebarCollapsed && (
-          <div className="mt-auto flex flex-col gap-2.5 border-t border-[#1B2C55] px-3 pb-4 pt-4">
-            <div className="px-2 text-[11.5px] leading-relaxed text-[#8C9AB8]">
-              {lang === "ar" ? "الفترة الحالية" : "Current period"}
-              <br />
-              <span className="text-[13px] text-white">{periodLabel}</span>
-            </div>
+          <div style={{ padding: "12px 10px", borderTop: `1px solid ${BORDER}`, display: "flex", alignItems: "center", gap: "10px" }}>
             <button
               type="button"
               onClick={() => navigate(`/app/employees/${currentUser.id}`)}
-              className="flex items-center gap-2.5 rounded-lg bg-[#0F2148] p-2 text-start transition hover:bg-[#16274F]"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                width: "100%",
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                padding: 0,
+                textAlign: "start",
+              }}
             >
-              <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0E7A4B] text-xs text-white">
+              <span style={{ width: "30px", height: "30px", borderRadius: "50%", background: NAVY_FILL, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 600, flexShrink: 0, overflow: "hidden" }}>
                 {currentUser.profile?.avatarUrl ? (
-                  <img src={currentUser.profile.avatarUrl} alt={currentUser.name} className="h-full w-full object-cover" />
+                  <img src={currentUser.profile.avatarUrl} alt={currentUser.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
                   roleInitials
                 )}
               </span>
-              <span className="min-w-0">
-                <span className="block truncate text-[12.5px] text-white">{currentUser.name}</span>
-                <span className="block truncate text-[11px] text-[#8C9AB8]">{roleTitle}</span>
+              <span data-nv="wide" style={{ flex: 1, lineHeight: 1.3, minWidth: 0 }}>
+                <span style={{ display: "block", fontSize: "12px", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: INK }}>{currentUser.name}</span>
+                <span style={{ display: "block", fontSize: "10px", color: "#A8B4C8" }}>{roleTitle}</span>
               </span>
             </button>
           </div>
@@ -409,200 +621,473 @@ export default function Layout({ children }) {
         type="button"
         onClick={() => setSidebarCollapsed((value) => !value)}
         title={sidebarCollapsed ? (lang === "ar" ? "إظهار القائمة" : "Show navigation") : (lang === "ar" ? "إخفاء القائمة" : "Hide navigation")}
-        className={`fixed top-[70px] z-50 hidden h-8 w-8 items-center justify-center rounded-full border border-[#1B2C55] bg-[#0B1A3F] text-[#B9C3D8] shadow-md transition-[left,right] duration-200 hover:bg-[#16274F] hover:text-white md:flex ${dir === "rtl" ? (sidebarCollapsed ? "right-3" : "right-[238px]") : (sidebarCollapsed ? "left-3" : "left-[238px]")}`}
+        className={`nv-collapse-btn fixed top-[70px] z-50 hidden items-center justify-center transition-[left,right] duration-200 md:flex ${dir === "rtl" ? (sidebarCollapsed ? "right-3" : "right-[239px]") : (sidebarCollapsed ? "left-3" : "left-[239px]")}`}
         aria-label={sidebarCollapsed ? (lang === "ar" ? "إظهار القائمة" : "Show navigation") : (lang === "ar" ? "إخفاء القائمة" : "Hide navigation")}
       >
-        {sidebarCollapsed ? (dir === "rtl" ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />) : (dir === "rtl" ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />)}
+        {sidebarCollapsed ? (dir === "rtl" ? <ChevronLeft strokeWidth={1.75} /> : <ChevronRight strokeWidth={1.75} />) : (dir === "rtl" ? <ChevronRight strokeWidth={1.75} /> : <ChevronLeft strokeWidth={1.75} />)}
       </button>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header — handoff: title + search + compliance + tools */}
-        <header className="powercare-global-header sticky top-0 z-40 overflow-visible border-b border-[#E4E7EC] bg-white pt-safe text-foreground">
-          <div className="flex flex-wrap items-center gap-3 px-4 py-3 md:gap-4 md:px-[26px] md:py-[13px]">
-            <div className="md:hidden flex min-w-0 items-center gap-2">
-              <BackButton />
-              <h1 className="truncate text-[15px] font-semibold text-[#101828]">{pageTitle}</h1>
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Header — Platform.dc.html L103–107 title+subtitle literal */}
+        <header
+          data-nv="pad"
+          className="powercare-global-header sticky top-0 z-40 overflow-visible pt-safe"
+          style={{
+            height: "58px",
+            flexShrink: 0,
+            background: CARD,
+            borderBottom: `1px solid ${BORDER}`,
+            display: "flex",
+            alignItems: "center",
+            gap: "16px",
+            padding: "0 22px",
+            color: INK,
+          }}
+        >
+          <div className="flex min-w-0 items-center gap-2 md:hidden" style={{ flex: 1, minWidth: 0 }}>
+            <BackButton />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pageTitle}</div>
+              <div style={{ fontSize: "11px", color: MUTED, marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pageSubtitle}</div>
+            </div>
+          </div>
+
+          <div className="hidden md:block" style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pageTitle}</div>
+            <div style={{ fontSize: "11px", color: MUTED, marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pageSubtitle}</div>
+          </div>
+
+            {/* Scope chrome — Platform.dc.html L108–125 metrics, one station picker */}
+            <StationScopeControl />
+
+            <div className="hidden md:flex" style={{ alignItems: "center", minWidth: 0, flexShrink: 1 }}>
+              <SectionReportPicker lang={lang} compact />
             </div>
 
-            <h1 className="hidden m-0 text-[17px] font-semibold text-[#101828] md:block">{pageTitle}</h1>
+            {/* topmeta — Platform.dc.html L127–137 search + live + lang */}
+            <div
+              data-nv="topmeta"
+              className="hidden md:flex"
+              style={{ alignItems: "center", gap: "8px", flexShrink: 0 }}
+            >
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  height: "34px",
+                  padding: "0 12px",
+                  borderRadius: "9px",
+                  border: `1px solid ${BORDER}`,
+                  background: SURFACE,
+                  minWidth: "140px",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  textAlign: "start",
+                }}
+              >
+                <span style={{ color: MUTED, fontSize: "12px" }}>⌕</span>
+                <span style={{ fontSize: "12px", color: MUTED }}>
+                  {lang === "ar" ? "ابحث أو اكتب أمرًا" : "Search or type a command"}
+                </span>
+              </button>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  height: "34px",
+                  padding: "0 11px",
+                  borderRadius: "9px",
+                  background: "var(--nv-accent-soft)",
+                  border: "1px solid var(--nv-accent-border)",
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: "var(--nv-accent)",
+                    animation: "nvPulse 2.2s ease-in-out infinite",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 500,
+                    color: "var(--nv-accent-deep)",
+                  }}
+                >
+                  {lang === "ar" ? "مباشر" : "Live"}
+                </span>
+              </div>
+            </div>
 
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="hidden min-w-[180px] max-w-[360px] flex-1 items-center gap-2 rounded-lg border border-[#E4E7EC] bg-[#F9FAFB] px-3 py-2 text-start text-[13px] text-[#98A2B3] md:flex"
+              aria-label={lang === "ar" ? "البحث العام" : "Global search"}
+              className="flex md:hidden"
+              style={{
+                alignItems: "center",
+                justifyContent: "center",
+                height: "34px",
+                width: "34px",
+                borderRadius: "9px",
+                border: `1px solid ${BORDER}`,
+                background: CARD,
+                color: MUTED,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                padding: 0,
+              }}
             >
-              <Search className="h-4 w-4 shrink-0" />
-              <span className="truncate">{lang === "ar" ? "بحث عن موظف، طلب، أو مستند…" : "Search employee, request, or document…"}</span>
-              <span className="ms-auto text-[11px] text-[#98A2B3]">⌘K</span>
+              <Search style={{ width: 16, height: 16 }} />
             </button>
 
-            <div className="ms-auto flex items-center gap-2 md:gap-3">
-              <span className="hidden rounded-md bg-[#E8F3ED] px-2.5 py-1.5 text-xs font-semibold text-[#0E7A4B] sm:inline">
-                {lang === "ar" ? `التزام النظام ${compliancePct}%` : `Compliance ${compliancePct}%`}
-              </span>
-              <span className="hidden rounded-md border border-[#E4E7EC] px-2.5 py-1.5 text-xs text-[#475467] md:inline">{periodLabel}</span>
+            <SyncStatusIndicator isSyncing={isSyncing} />
+            <ThemeToggle />
 
-              <button onClick={() => setSearchOpen(true)} aria-label={lang === "ar" ? "البحث العام" : "Global search"} className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-md text-[#475467] hover:bg-[#F2F4F7] md:hidden"><Search className="h-5 w-5" /></button>
-              <SyncStatusIndicator isSyncing={isSyncing} />
-              <ThemeToggle />
-              {/* Language */}
-              <div className="relative" ref={langRef}>
-                <button
-                  onClick={() => setLangOpen((o) => !o)}
-                  className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium text-[#475467] hover:bg-[#F2F4F7] font-body focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label={t("language")}
+            <div className="relative" ref={langRef} style={{ position: "relative", flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => setLangOpen((o) => !o)}
+                aria-label={t("language")}
+                style={{
+                  flexShrink: 0,
+                  height: "34px",
+                  minWidth: "38px",
+                  padding: "0 11px",
+                  borderRadius: "9px",
+                  border: `1px solid ${BORDER}`,
+                  background: CARD,
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  color: MUTED,
+                  cursor: "pointer",
+                  fontFamily: "'IBM Plex Sans',sans-serif",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--nv-accent)";
+                  e.currentTarget.style.color = "var(--nv-accent)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = BORDER;
+                  e.currentTarget.style.color = MUTED;
+                }}
+              >
+                {lang === "ar" ? "EN" : "ع"}
+              </button>
+              {langOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    insetInlineEnd: 0,
+                    zIndex: 50,
+                    marginTop: "6px",
+                    width: "176px",
+                    background: CARD,
+                    border: `1px solid ${BORDER}`,
+                    borderRadius: "11px",
+                    boxShadow: "0 14px 32px rgba(20,40,75,.14)",
+                    padding: "5px",
+                  }}
                 >
-                  <Globe className="w-4 h-4" strokeWidth={1.75} />
-                  <span className="hidden sm:inline">{languages.find((l) => l.code === lang)?.flag}</span>
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-                {langOpen && (
-                  <div className={`absolute mt-2 ${dir === "rtl" ? "left-0" : "right-0"} w-44 bg-card text-foreground border border-border rounded-md shadow-lg py-1 z-50`}>
-                    {languages.map((l) => (
-                      <button
-                        key={l.code}
-                        onClick={() => { setLang(l.code); setLangOpen(false); }}
-                        className={`w-full text-start px-3 py-2 text-sm font-body flex items-center gap-2 hover:bg-muted ${
-                          lang === l.code ? "text-accent font-medium" : "text-foreground"
-                        }`}
-                      >
-                        <span>{l.flag}</span> {l.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                  {languages.map((l) => (
+                    <button
+                      key={l.code}
+                      type="button"
+                      onClick={() => { setLang(l.code); setLangOpen(false); }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        width: "100%",
+                        padding: "9px 11px",
+                        borderRadius: "8px",
+                        border: "none",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        fontSize: "12px",
+                        textAlign: "start",
+                        background: lang === l.code ? SURFACE : "transparent",
+                        color: lang === l.code ? INK : MUTED,
+                        fontWeight: lang === l.code ? 600 : 400,
+                      }}
+                    >
+                      <span>{l.flag}</span> {l.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-              {/* Notifications */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginInlineStart: "auto" }}>
               <div className="relative" ref={notifRef}>
                 <button
+                  type="button"
                   onClick={() => setNotifOpen((o) => !o)}
-                  className="relative p-2 rounded-md text-[#475467] hover:bg-[#F2F4F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label={t("notifications")}
+                  style={{
+                    position: "relative",
+                    width: 34,
+                    height: 34,
+                    borderRadius: 9,
+                    border: notifOpen ? `1px solid ${NAVY}` : `1px solid ${BORDER}`,
+                    background: notifOpen ? NAVY : CARD,
+                    color: notifOpen ? "#fff" : MUTED,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
                 >
-                  <Bell className="w-5 h-5" strokeWidth={1.75} />
+                  <Bell style={{ width: 16, height: 16 }} strokeWidth={1.75} />
                   {unread > 0 && (
-                    <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-white text-[9px] font-body flex items-center justify-center">
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: -4,
+                        insetInlineEnd: -4,
+                        minWidth: 16,
+                        height: 16,
+                        padding: "0 4px",
+                        borderRadius: 20,
+                        background: "#DC2626",
+                        color: "#fff",
+                        fontSize: 9,
+                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontFamily: "'IBM Plex Sans',sans-serif",
+                        border: "2px solid #fff",
+                      }}
+                    >
                       {unread > 9 ? "9+" : unread}
                     </span>
                   )}
                 </button>
                 {notifOpen && (
-                  <div className={`absolute mt-2 ${dir === "rtl" ? "left-0" : "right-0"} w-80 max-w-[90vw] bg-card text-foreground border border-border rounded-md shadow-xl z-50`}>
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                      <p className="font-heading font-semibold text-sm">{t("notifications")}</p>
-                      {unread > 0 && (
-                        <button onClick={markAllRead} className="text-xs text-accent hover:underline">
-                          {t("markRead")}
-                        </button>
-                      )}
-                    </div>
-                    <div className="max-h-80 overflow-y-auto">
-                      {myNotifs.length === 0 ? (
-                        <p className="px-4 py-6 text-sm text-muted-foreground text-center">{t("noNotifications")}</p>
-                      ) : (
-                        myNotifs.slice(0, 12).map((n) => (
-                          <SwipeToDeleteItem key={n.id} onDelete={() => dismissNotification(n.id)}>
-                            <div className={`flex items-start gap-2 px-4 py-3 border-b border-border/60 ${n.read ? "opacity-60" : ""}`}>
-                              <button
-                                onClick={() => openNotification(n)}
-                                className="flex-1 min-w-0 text-start hover:opacity-80 transition-opacity"
-                              >
-                                <p className="text-sm font-body">{n.text}</p>
-                                <p className="text-[10px] text-muted-foreground mt-1">
-                                  {new Date(n.createdAt).toLocaleString(lang)}
-                                </p>
-                              </button>
-                              <button
-                                onClick={() => dismissNotification(n.id)}
-                                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
-                                aria-label="dismiss"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </SwipeToDeleteItem>
-                        ))
-                      )}
-                    </div>
+                  <div
+                    style={{
+                      position: "absolute",
+                      marginTop: 8,
+                      [dir === "rtl" ? "left" : "right"]: 0,
+                      zIndex: 50,
+                    }}
+                  >
+                    <NotificationPanel
+                      items={myNotifs}
+                      unread={unread}
+                      lang={lang}
+                      t={t}
+                      onOpen={openNotification}
+                      onDismiss={dismissNotification}
+                      onMarkAll={markAllRead}
+                    />
                   </div>
                 )}
               </div>
 
-              {/* User switcher */}
               <div className="relative" ref={userRef}>
                 <button
+                  type="button"
                   onClick={() => setUserOpen((o) => !o)}
-                  className="flex items-center justify-center gap-2 rounded-md text-foreground hover:bg-[#F2F4F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-expanded={userOpen}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    height: 36,
+                    padding: "0 6px 0 4px",
+                    borderRadius: 10,
+                    border: userOpen ? "1px solid var(--nv-accent-border)" : `1px solid ${BORDER}`,
+                    background: userOpen ? "var(--nv-accent-soft)" : CARD,
+                    cursor: "pointer",
+                  }}
                 >
-                  <div className="flex h-[34px] w-[34px] items-center justify-center overflow-hidden rounded-full bg-[#0B1A3F] text-[12.5px] font-medium text-white">
+                  <span
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      background: NAVY_FILL,
+                      color: "#fff",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      overflow: "hidden",
+                      flexShrink: 0,
+                    }}
+                  >
                     {currentUser.profile?.avatarUrl ? (
-                      <img src={currentUser.profile.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+                      <img src={currentUser.profile.avatarUrl} alt={currentUser.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       roleInitials
                     )}
-                  </div>
-                  <ChevronDown className="w-3 h-3 hidden sm:block text-[#98A2B3]" />
+                  </span>
+                  <ChevronDown className="hidden h-3.5 w-3.5 sm:block" style={{ color: "#A8B4C8" }} strokeWidth={1.75} />
                 </button>
                 {userOpen && (
-                  <div className={`absolute mt-2 ${dir === "rtl" ? "left-0" : "right-0"} w-64 bg-card text-foreground border border-border rounded-md shadow-xl z-50`}>
+                  <div
+                    style={{
+                      position: "absolute",
+                      marginTop: 8,
+                      [dir === "rtl" ? "left" : "right"]: 0,
+                      width: 260,
+                      background: CARD,
+                      border: `1px solid ${BORDER}`,
+                      borderRadius: 14,
+                      boxShadow: "0 14px 32px rgba(20,40,75,.14)",
+                      zIndex: 50,
+                      overflow: "hidden",
+                    }}
+                  >
                     <button
+                      type="button"
                       onClick={() => { navigate(`/app/employees/${currentUser.id}`); setUserOpen(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 border-b border-border hover:bg-muted text-start"
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "14px",
+                        border: "none",
+                        borderBottom: `1px solid ${BORDER}`,
+                        background: SURFACE,
+                        cursor: "pointer",
+                        textAlign: "start",
+                        fontFamily: "inherit",
+                      }}
                     >
-                      <div className="w-9 h-9 rounded-full bg-[#0B1A3F] text-white flex items-center justify-center text-sm font-medium overflow-hidden shrink-0">
+                      <span
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 11,
+                          background: NAVY_FILL,
+                          color: "#fff",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          overflow: "hidden",
+                          flexShrink: 0,
+                        }}
+                      >
                         {currentUser.profile?.avatarUrl ? (
-                          <img src={currentUser.profile.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+                          <img src={currentUser.profile.avatarUrl} alt={currentUser.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         ) : (
                           roleInitials
                         )}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{currentUser.name}</p>
-                        <p className="text-xs text-accent">{t("viewProfile")}</p>
-                      </div>
+                      </span>
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {currentUser.name}
+                        </span>
+                        <span style={{ display: "block", marginTop: 2, fontSize: 11, fontWeight: 600, color: "var(--nv-accent)" }}>
+                          {t("viewProfile")}
+                        </span>
+                      </span>
                     </button>
                     <button
-                      onClick={() => window.dispatchEvent(new Event("powercare:open-feedback"))}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-sm text-foreground hover:bg-muted font-body"
+                      type="button"
+                      onClick={() => { window.dispatchEvent(new Event("powercare:open-feedback")); setUserOpen(false); }}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: "12px 14px",
+                        border: "none",
+                        background: CARD,
+                        color: INK,
+                        fontSize: 13,
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        textAlign: "start",
+                      }}
                     >
-                      <MessageSquare className="w-4 h-4" strokeWidth={1.75} />
+                      <span
+                        style={{
+                          width: 30,
+                          height: 30,
+                          borderRadius: 9,
+                          background: "var(--nv-accent-soft)",
+                          color: "var(--nv-accent)",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <MessageSquare style={{ width: 14, height: 14 }} strokeWidth={1.75} />
+                      </span>
                       {lang === "ar" ? "التقييم والاقتراحات" : "Feedback & suggestions"}
                     </button>
                     <button
+                      type="button"
                       onClick={() => { logout(); navigate("/"); }}
-                      className="w-full flex items-center gap-2 px-4 py-3 border-t border-border text-sm text-destructive hover:bg-muted font-body"
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: "12px 14px",
+                        border: "none",
+                        borderTop: `1px solid ${BORDER}`,
+                        background: CARD,
+                        color: "#DC2626",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        textAlign: "start",
+                      }}
                     >
-                      <LogOut className="w-4 h-4" strokeWidth={1.75} />
+                      <span
+                        style={{
+                          width: 30,
+                          height: 30,
+                          borderRadius: 9,
+                          background: "#FEF2F2",
+                          color: "#DC2626",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <LogOut style={{ width: 14, height: 14 }} strokeWidth={1.75} />
+                      </span>
                       {t("logout")}
                     </button>
                   </div>
                 )}
               </div>
             </div>
-          </div>
         </header>
 
-        <main className="flex-1 p-[22px] pb-28 md:px-[26px] md:pb-8 md:pt-[22px]">
-          {/* Native-style page transition between routes */}
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={location.pathname}
-              className="powercare-interior-page mx-auto w-full max-w-[1600px]"
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-            >
-              <SectionGuide lang={lang} t={t} />
-              {children}
-            </motion.div>
-          </AnimatePresence>
+        <main className="platform-main-scroll flex-1 overflow-y-auto p-5 pb-28 md:px-[22px] md:pb-10 md:pt-5">
+          <div className="powercare-interior-page mx-auto w-full max-w-[1600px]">
+            <PageErrorBoundary resetKey={location.pathname}>{children}</PageErrorBoundary>
+          </div>
         </main>
       </div>
 
-      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} items={visibleNavItems} data={data} currentUser={currentUser} lang={lang} />
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} items={orderedNavItems} data={data} currentUser={currentUser} lang={lang} />
+      <StationQuickSwitch open={scopeSwitchOpen} onClose={() => setScopeSwitchOpen(false)} />
       {/* Native-style bottom tab bar (mobile only) */}
       <BottomTabBar />
       <ProductFeedbackPrompt companyId={company.id} role={currentUser.role} />

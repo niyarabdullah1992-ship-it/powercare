@@ -1,32 +1,75 @@
 import React, { useEffect, useState } from "react";
-import { Check, Loader2, ReceiptText, X } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
+import { getCompanyToken } from "@/lib/store";
+import { isLocalPreviewActive, LOCAL_PREVIEW_COMPANY_ID } from "@/lib/localPreview";
+import { localBudgetCall } from "@/lib/localExpensesFallback";
 import { checkApproveClaimGate, checkMarkPaidGate } from "@/lib/expenseDerivations";
 import { toast } from "@/components/ui/use-toast";
+import { ACCENT, MUTED, NAVY, OK, WARN, BAD, NEUTRAL, bar, dot, ui, cardShell, tableShell, CARD } from "@/lib/platformStyles";
 
-async function budgetApi(payload) {
-  const res = await base44.functions.invoke("budget", payload);
-  return res?.data ?? res;
+function isLocalWorkspace(companyId) {
+  return isLocalPreviewActive() || companyId === LOCAL_PREVIEW_COMPANY_ID;
 }
 
+async function budgetApi(companyId, payload) {
+  if (isLocalWorkspace(companyId)) return localBudgetCall(companyId, payload);
+  try {
+    const res = await base44.functions.invoke("budget", {
+      ...payload,
+      companyId,
+      sessionToken: getCompanyToken(companyId),
+    });
+    const data = res?.data ?? res;
+    if (data?.error) throw new Error(data.error);
+    return data;
+  } catch {
+    return localBudgetCall(companyId, payload);
+  }
+}
+
+const TAG_STYLE = {
+  on_track: OK,
+  watch: WARN,
+  near_limit: BAD,
+  over: BAD,
+};
+
+const STATUS_STYLE = {
+  pending: WARN,
+  approved: OK,
+  rejected: BAD,
+  paid: NEUTRAL,
+};
+
 const TAG_LABEL = {
-  on_track: { ar: "ضمن الحد", en: "On track", cls: "border-emerald-200 bg-emerald-50 text-emerald-800" },
-  watch: { ar: "مراقبة", en: "Watch", cls: "border-amber-200 bg-amber-50 text-amber-900" },
-  near_limit: { ar: "قارب النفاد", en: "Near limit", cls: "border-red-200 bg-red-50 text-red-700" },
-  over: { ar: "متجاوز", en: "Over", cls: "border-red-300 bg-red-100 text-red-800" },
+  on_track: { ar: "ضمن الحد", en: "On track" },
+  watch: { ar: "مراقبة", en: "Watch" },
+  near_limit: { ar: "قارب النفاد", en: "Near limit" },
+  over: { ar: "متجاوز", en: "Over" },
 };
 
 const STATUS_LABEL = {
-  pending: { ar: "بانتظار الاعتماد", en: "Awaiting approval", cls: "border-amber-200 bg-amber-50 text-amber-900" },
-  approved: { ar: "معتمدة", en: "Approved", cls: "border-emerald-200 bg-emerald-50 text-emerald-800" },
-  rejected: { ar: "مرفوضة", en: "Rejected", cls: "border-red-200 bg-red-50 text-red-700" },
-  paid: { ar: "مصروفة", en: "Paid", cls: "border-border bg-muted text-muted-foreground" },
+  pending: { ar: "بانتظار الاعتماد", en: "Awaiting approval" },
+  approved: { ar: "معتمدة", en: "Approved" },
+  rejected: { ar: "مرفوضة", en: "Rejected" },
+  paid: { ar: "مصروفة", en: "Paid" },
 };
 
 const fmt = (n) => Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 
-export default function ExpenseBudgetBoard({ lang = "ar" }) {
+const claimsRow = {
+  display: "grid",
+  gridTemplateColumns: "minmax(220px,1.8fr) 130px 110px 110px 130px",
+  gap: "12px",
+  padding: "12px 18px",
+  borderBottom: "1px solid #F1F5F9",
+  alignItems: "center",
+};
+
+/** Platform expenses — budget bars + claims list (L1842+). */
+export default function ExpenseBudgetBoard({ lang = "ar", stationScope = "all" }) {
   const ar = lang === "ar";
   const { company, currentUser } = useAuth();
   const [budgets, setBudgets] = useState([]);
@@ -34,6 +77,14 @@ export default function ExpenseBudgetBoard({ lang = "ar" }) {
   const [companySum, setCompanySum] = useState(null);
   const [alert, setAlert] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [hoverClaim, setHoverClaim] = useState(null);
+
+  const visibleBudgets = stationScope === "all"
+    ? budgets
+    : budgets.filter((b) => String(b.stationId) === String(stationScope));
+  const visibleClaims = stationScope === "all"
+    ? claims
+    : claims.filter((c) => String(c.stationId) === String(stationScope));
 
   const applyRemote = (remote) => {
     if (Array.isArray(remote?.budgets)) setBudgets(remote.budgets);
@@ -45,10 +96,7 @@ export default function ExpenseBudgetBoard({ lang = "ar" }) {
   const load = async () => {
     if (!company?.id) return;
     try {
-      let remote = await budgetApi({ action: "list", companyId: company.id });
-      if (Array.isArray(remote?.budgets) && remote.budgets.length === 0) {
-        remote = await budgetApi({ action: "seedDemo", companyId: company.id });
-      }
+      const remote = await budgetApi(company.id, { action: "list" });
       applyRemote(remote);
     } catch {
       setBudgets([]);
@@ -62,7 +110,7 @@ export default function ExpenseBudgetBoard({ lang = "ar" }) {
     if (!company?.id) return;
     setBusy(true);
     try {
-      const remote = await budgetApi({ ...payload, companyId: company.id });
+      const remote = await budgetApi(company.id, payload);
       if (remote?.error) {
         toast({
           description: ar ? (remote.reason || remote.error) : (remote.reasonEn || remote.reason || remote.error),
@@ -100,119 +148,146 @@ export default function ExpenseBudgetBoard({ lang = "ar" }) {
 
   if (!currentUser) return null;
 
-  const barColor = (tag) => {
-    if (tag === "near_limit" || tag === "over") return "#DC2626";
-    if (tag === "watch") return "#F59E0B";
-    return "hsl(var(--accent))";
+  const barColor = (t) => {
+    if (t === "near_limit" || t === "over") return "#DC2626";
+    if (t === "watch") return "#F59E0B";
+    return ACCENT;
+  };
+
+  const dotColor = (status) => {
+    if (status === "rejected") return "#DC2626";
+    if (status === "pending") return "#F59E0B";
+    if (status === "approved") return ACCENT;
+    return "#94A3B8";
   };
 
   return (
-    <section className="space-y-4" dir={ar ? "rtl" : "ltr"}>
-      <div className="rounded-xl border bg-card p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <span className="rounded-lg bg-accent/15 p-2"><ReceiptText className="h-5 w-5 text-accent" /></span>
-            <div>
-              <h2 className="font-heading text-lg font-semibold">
-                {ar ? "استهلاك الميزانية التشغيلية" : "Operating budget consumption"}
-              </h2>
-              <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-                {ar
-                  ? "يُحدَّث لحظيًا مع كل مطالبة معتمدة · الإيصال مطلوب قبل الاعتماد"
-                  : "Updates live with every approved claim · receipt required before approval"}
-              </p>
+    <section dir={ar ? "rtl" : "ltr"} style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "1320px" }}>
+      {/* Budget card — L1844 */}
+      <div style={cardShell}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>
+              {ar ? "استهلاك الميزانية التشغيلية" : "Operating budget consumption"}
+            </div>
+            <div style={{ fontSize: "11px", color: MUTED, marginTop: "2px" }}>
+              {ar
+                ? "يُحدَّث لحظيًا مع كل مطالبة معتمدة · الإيصال مطلوب قبل الاعتماد"
+                : "Updates live with every approved claim · receipt required before approval"}
             </div>
           </div>
-          <div className="text-end">
-            <div className="font-heading text-2xl font-semibold tabular-nums" dir="ltr">
+          <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
+            <span
+              dir="ltr"
+              style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "26px", fontWeight: 600, lineHeight: 1, color: NAVY }}
+            >
               {fmt(companySum?.spent)}
-            </div>
-            <div className="text-xs text-muted-foreground">
+            </span>
+            <span style={{ fontSize: "12px", color: MUTED }}>
               {ar ? `من ${fmt(companySum?.limit)} ر.س` : `of ${fmt(companySum?.limit)} SAR`}
-            </div>
+            </span>
           </div>
         </div>
 
         {(alert?.delayedPayoutCount > 0 || alert?.pendingCount > 0) && (
-          <p className="mt-3 text-xs text-amber-800">
+          <p style={{ margin: "12px 0 0", fontSize: "11px", color: "#B45309" }}>
             {ar
               ? `${alert.delayedPayoutCount} معتمدة لم تُصرف خلال 48 ساعة · ${alert.pendingCount} بانتظار الاعتماد`
               : `${alert.delayedPayoutCount} approved unpaid after 48h · ${alert.pendingCount} awaiting approval`}
           </p>
         )}
 
-        <div className="mt-4 space-y-3">
-          {budgets.map((b) => {
-            const tag = TAG_LABEL[b.tag] || TAG_LABEL.on_track;
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "18px" }}>
+          {visibleBudgets.map((b) => {
+            const tagKey = b.tag || "on_track";
+            const tagLbl = TAG_LABEL[tagKey] || TAG_LABEL.on_track;
             return (
-              <div key={b.stationId} className="flex items-center gap-3 text-xs">
-                <span className="w-24 shrink-0 text-muted-foreground">{b.stationName || b.stationId}</span>
-                <span className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                  <span
-                    className="block h-full rounded-full"
-                    style={{ width: `${Math.min(100, b.pct || 0)}%`, background: barColor(b.tag) }}
-                  />
+              <div key={b.stationId} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span style={{ width: "96px", fontSize: "12px", color: MUTED, flexShrink: 0 }}>
+                  {b.stationName || b.stationId}
                 </span>
-                <span className="w-12 text-end tabular-nums text-muted-foreground" dir="ltr">{b.pct}%</span>
-                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${tag.cls}`}>
-                  {ar ? tag.ar : tag.en}
+                <span style={{ flex: 1, height: "8px", borderRadius: "5px", background: "#F1F5F9", overflow: "hidden" }}>
+                  <span style={bar(Math.min(100, b.pct || 0), barColor(tagKey))} />
                 </span>
+                <span
+                  dir="ltr"
+                  style={{ width: "56px", textAlign: "right", fontSize: "12px", fontFamily: "'IBM Plex Sans',sans-serif", color: MUTED }}
+                >
+                  {b.pct}%
+                </span>
+                <span style={TAG_STYLE[tagKey] || OK}>{ar ? tagLbl.ar : tagLbl.en}</span>
               </div>
             );
           })}
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-          <h3 className="text-sm font-semibold">{ar ? "المطالبات" : "Claims"}</h3>
-          <span className="text-xs text-muted-foreground">
+      {/* Claims table — L1867 */}
+      <div style={tableShell}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "14px 18px", borderBottom: "1px solid #E2E8F0", flexWrap: "wrap" }}>
+          <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>{ar ? "المطالبات" : "Claims"}</div>
+          <div style={{ fontSize: "11px", color: MUTED }}>
             {ar ? "المطالبة تحتاج إيصالًا مرفقًا قبل الاعتماد" : "A receipt attachment is required before approval"}
-          </span>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse text-xs">
-            <thead>
-              <tr className="text-muted-foreground">
-                <th className="border-b p-2 text-start">{ar ? "المطالبة" : "Claim"}</th>
-                <th className="border-b p-2 text-start">{ar ? "المسؤول" : "Owner"}</th>
-                <th className="border-b p-2 text-start">{ar ? "المحطة" : "Station"}</th>
-                <th className="border-b p-2 text-start">{ar ? "المبلغ" : "Amount"}</th>
-                <th className="border-b p-2 text-start">{ar ? "الحالة" : "Status"}</th>
-                <th className="border-b p-2 text-start">{ar ? "إجراء" : "Action"}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {claims.map((c) => {
-                const st = STATUS_LABEL[c.status] || STATUS_LABEL.pending;
+        <div style={{ overflowX: "auto" }}>
+          <div style={{ minWidth: "820px" }}>
+            {visibleClaims.length === 0 ? (
+              <div style={{ padding: "26px 18px", textAlign: "center", fontSize: "13px", color: MUTED }}>
+                {ar ? "لا مطالبات على اللوح بعد." : "No claims on the board yet."}
+              </div>
+            ) : (
+              visibleClaims.map((c) => {
+                const stKey = c.status || "pending";
+                const stLbl = STATUS_LABEL[stKey] || STATUS_LABEL.pending;
                 const station = budgets.find((b) => b.stationId === c.stationId);
+                const statusNote = [
+                  c.delayed ? (ar ? "متأخر" : "delayed") : "",
+                  !c.hasReceipt && c.status === "pending" ? (ar ? "بلا إيصال" : "no receipt") : "",
+                ].filter(Boolean).join(" · ");
                 return (
-                  <tr key={c.id}>
-                    <td className="border-b p-2">
-                      <div className="font-medium">{c.title}</div>
-                      <div className="font-mono text-[10px] text-muted-foreground" dir="ltr">{c.ref}</div>
-                    </td>
-                    <td className="border-b p-2 text-muted-foreground">{c.owner || "—"}</td>
-                    <td className="border-b p-2 text-muted-foreground">{station?.stationName || c.stationId}</td>
-                    <td className="border-b p-2 tabular-nums font-semibold" dir="ltr">{fmt(c.amount)}</td>
-                    <td className="border-b p-2">
-                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${st.cls}`}>
-                        {ar ? st.ar : st.en}
-                        {c.delayed ? (ar ? " · متأخر" : " · delayed") : ""}
-                        {!c.hasReceipt && c.status === "pending" ? (ar ? " · بلا إيصال" : " · no receipt") : ""}
+                  <div
+                    key={c.id}
+                    style={{
+                      ...claimsRow,
+                      background: hoverClaim === c.id ? "#F7F8FA" : undefined,
+                    }}
+                    onMouseEnter={() => setHoverClaim(c.id)}
+                    onMouseLeave={() => setHoverClaim(null)}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                      <span style={dot(dotColor(stKey))} />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: "13px", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: NAVY }}>
+                          {c.title}
+                        </div>
+                        <div style={{ fontSize: "11px", color: MUTED, marginTop: "2px", fontFamily: "'IBM Plex Mono',monospace" }} dir="ltr">
+                          {c.ref}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: "12px", color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {c.owner || "—"}
+                    </div>
+                    <div style={{ fontSize: "12px", color: MUTED }}>{station?.stationName || c.stationId}</div>
+                    <div dir="ltr" style={{ fontSize: "13px", fontWeight: 600, fontFamily: "'IBM Plex Sans',sans-serif", textAlign: "right", color: NAVY }}>
+                      {fmt(c.amount)}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-start" }}>
+                      <span style={STATUS_STYLE[stKey] || WARN}>
+                        {ar ? stLbl.ar : stLbl.en}
+                        {statusNote ? ` · ${statusNote}` : ""}
                       </span>
-                    </td>
-                    <td className="border-b p-2">
-                      <div className="flex flex-wrap gap-1">
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                         {c.status === "pending" && (
                           <>
                             <button
                               type="button"
                               disabled={busy}
                               onClick={() => approve(c)}
-                              className="inline-flex h-7 items-center gap-1 rounded-md bg-accent px-2 text-[10px] font-semibold text-accent-foreground disabled:opacity-50"
+                              style={{ ...ui.btnRow, padding: "4px 10px", fontSize: "10px", opacity: busy ? 0.5 : 1, display: "inline-flex", alignItems: "center", gap: "4px" }}
                             >
-                              {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                              {busy ? <Loader2 style={{ width: 12, height: 12 }} /> : <Check style={{ width: 12, height: 12 }} />}
                               {ar ? "اعتماد" : "Approve"}
                             </button>
                             <button
@@ -222,9 +297,23 @@ export default function ExpenseBudgetBoard({ lang = "ar" }) {
                                 { action: "reject", claimId: c.id, reason: c.hasReceipt ? "rejected" : "no receipt" },
                                 ar ? "رُفضت المطالبة" : "Claim rejected",
                               )}
-                              className="inline-flex h-7 items-center gap-1 rounded-md border px-2 text-[10px] font-semibold disabled:opacity-50"
+                              style={{
+                                padding: "4px 10px",
+                                borderRadius: "8px",
+                                border: "1px solid #E2E8F0",
+                                background: CARD,
+                                color: MUTED,
+                                fontSize: "10px",
+                                fontWeight: 500,
+                                cursor: "pointer",
+                                fontFamily: "inherit",
+                                opacity: busy ? 0.5 : 1,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                              }}
                             >
-                              <X className="h-3 w-3" />
+                              <X style={{ width: 12, height: 12 }} />
                               {ar ? "رفض" : "Reject"}
                             </button>
                           </>
@@ -234,22 +323,30 @@ export default function ExpenseBudgetBoard({ lang = "ar" }) {
                             type="button"
                             disabled={busy}
                             onClick={() => markPaid(c)}
-                            className="inline-flex h-7 items-center gap-1 rounded-md border px-2 text-[10px] font-semibold disabled:opacity-50"
+                            style={{
+                              padding: "4px 10px",
+                              borderRadius: "8px",
+                              border: "1px solid #E2E8F0",
+                              background: CARD,
+                              color: MUTED,
+                              fontSize: "10px",
+                              fontWeight: 500,
+                              cursor: "pointer",
+                              fontFamily: "inherit",
+                              opacity: busy ? 0.5 : 1,
+                            }}
                           >
                             {ar ? "سجّل الصرف" : "Mark paid"}
                           </button>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 );
-              })}
-            </tbody>
-          </table>
+              })
+            )}
+          </div>
         </div>
-        {claims.length === 0 && (
-          <p className="p-4 text-sm text-muted-foreground">{ar ? "لا مطالبات على اللوح بعد." : "No claims on the board yet."}</p>
-        )}
       </div>
     </section>
   );
