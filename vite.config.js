@@ -1,7 +1,8 @@
 import base44 from "@base44/vite-plugin"
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
-import { readFileSync } from 'node:fs'
+import { readFileSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
 
 const normalizeRawUrl = (value = "") => value.replace(/([?&])raw=(?=(&|$))/g, "$1raw");
 
@@ -42,6 +43,15 @@ export default defineConfig({
       visualEditAgent: false
     }),
     react(),
+    {
+      name: "omit-legacy-public-dumps",
+      apply: "build",
+      closeBundle() {
+        for (const rel of ["claude-handoff-hr.html", "design"]) {
+          rmSync(join("dist", rel), { recursive: true, force: true });
+        }
+      },
+    },
   ],
   optimizeDeps: {
     include: ["qrcode"],
