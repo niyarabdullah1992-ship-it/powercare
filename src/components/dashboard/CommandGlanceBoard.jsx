@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { CheckCircle2, Clock3, FileText, MessageCircle } from "lucide-react";
 import { deriveProofStage } from "@/lib/workProofDerivations";
 import { ACCENT, BORDER, CARD, INK, MUTED, NAVY, SURFACE } from "@/lib/platformStyles";
 
@@ -110,12 +111,12 @@ function initials(name = "") {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "—";
 }
 
-function KpiCard({ value, label, hint, badge, badgeTone = "ok", to }) {
+function KpiCard({ value, label, hint, badge, badgeTone = "ok", to, icon: Icon }) {
   const tone = badgeTone === "warn"
-    ? { bg: "rgba(245,158,11,.12)", color: "#B45309" }
+    ? { bg: "#FFF7ED", color: "#C2410C" }
     : badgeTone === "bad"
-      ? { bg: "rgba(220,38,38,.1)", color: "#DC2626" }
-      : { bg: "rgba(30,158,99,.12)", color: "#15803D" };
+      ? { bg: "#FEF2F2", color: "#DC2626" }
+      : { bg: "#ECFDF5", color: "#15803D" };
   const inner = (
     <div
       style={{
@@ -123,17 +124,22 @@ function KpiCard({ value, label, hint, badge, badgeTone = "ok", to }) {
         background: CARD,
         border: `1px solid ${BORDER}`,
         borderRadius: 16,
-        padding: "20px 22px 18px",
-        minHeight: 118,
+        padding: "22px 22px 20px",
+        minHeight: 132,
         boxShadow: "0 8px 24px rgba(20,40,75,.04)",
       }}
     >
+      {Icon ? (
+        <span style={{ position: "absolute", top: 18, insetInlineEnd: 18, color: MUTED }}>
+          <Icon style={{ width: 18, height: 18 }} strokeWidth={1.7} />
+        </span>
+      ) : null}
       {badge != null && badge !== "" ? (
         <span
           style={{
             position: "absolute",
-            top: 14,
-            insetInlineStart: 14,
+            top: 16,
+            insetInlineStart: 16,
             minWidth: 28,
             height: 28,
             padding: "0 8px",
@@ -235,26 +241,20 @@ export default function CommandGlanceBoard({
         className="nv-glance-kpis"
       >
         <KpiCard
-          value={openTasks}
-          label={ar ? "مهام مفتوحة" : "Open tasks"}
-          hint={ar ? `${inProgress} قيد التنفيذ` : `${inProgress} in progress`}
-          badge={taskDelta}
-          to="/app/tasks"
-        />
-        <KpiCard
           value={present}
           label={ar ? "الحضور اليوم" : "Attendance today"}
           hint={ar ? `من ${scheduled}` : `of ${scheduled}`}
           badge={attendanceDelta}
+          icon={Clock3}
           to="/app/attendance"
         />
         <KpiCard
-          value={openReports}
-          label={ar ? "بلاغات مفتوحة" : "Open reports"}
-          hint={ar ? `${urgentReports} عاجل` : `${urgentReports} urgent`}
-          badge={urgentReports ? String(urgentReports) : "0"}
-          badgeTone={urgentReports ? "bad" : "ok"}
-          to="/app/complaints"
+          value={openTasks}
+          label={ar ? "مهام مفتوحة" : "Open tasks"}
+          hint={ar ? `${inProgress} قيد التنفيذ` : `${inProgress} in progress`}
+          badge={taskDelta}
+          icon={CheckCircle2}
+          to="/app/tasks"
         />
         <KpiCard
           value={pendingProofs}
@@ -262,7 +262,17 @@ export default function CommandGlanceBoard({
           hint={ar ? "بانتظار الاعتماد" : "Awaiting approval"}
           badge={newProofs ? `${newProofs}+` : "0"}
           badgeTone={newProofs ? "warn" : "ok"}
+          icon={FileText}
           to="/app/work-proof"
+        />
+        <KpiCard
+          value={openReports}
+          label={ar ? "بلاغات مفتوحة" : "Open reports"}
+          hint={ar ? `${urgentReports} عاجل` : `${urgentReports} urgent`}
+          badge={urgentReports ? String(urgentReports) : "0"}
+          badgeTone={urgentReports ? "bad" : "ok"}
+          icon={MessageCircle}
+          to="/app/complaints"
         />
       </div>
 
@@ -274,7 +284,7 @@ export default function CommandGlanceBoard({
         }}
         className="nv-glance-lists"
       >
-        <Panel title={ar ? "المهام القريبة" : "Upcoming tasks"} allTo="/app/tasks" allLabel={ar ? "عرض الكل" : "View all"}>
+        <Panel title={ar ? "المهام القريبة" : "Upcoming tasks"} allTo="/app/tasks" allLabel={ar ? "المهام" : "Tasks"}>
           {upcomingTasks.length === 0 ? (
             <p style={{ margin: 0, padding: "8px 18px 22px", fontSize: 13, color: MUTED }}>{emptyTask}</p>
           ) : upcomingTasks.map((task) => (
@@ -358,8 +368,8 @@ export default function CommandGlanceBoard({
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
-                    color: row.kind === "proof" ? "#B45309" : ACCENT,
-                    background: row.kind === "proof" ? "rgba(245,158,11,.12)" : "rgba(30,158,99,.12)",
+                    color: row.kind === "proof" ? "#6D28D9" : ACCENT,
+                    background: row.kind === "proof" ? "rgba(109,40,217,.1)" : "rgba(30,158,99,.12)",
                     borderRadius: 999,
                     padding: "2px 8px",
                   }}

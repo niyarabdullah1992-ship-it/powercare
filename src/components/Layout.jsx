@@ -6,7 +6,7 @@ import { useOrgTerms } from "@/hooks/useOrgTerms";
 import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
-  LayoutDashboard, ListTodo, ShieldQuestion, Search,
+  LayoutDashboard, LayoutGrid, ListTodo, ShieldQuestion, Search,
                   Bell, LogOut, ChevronDown, ChevronLeft, ChevronRight, Trophy, UserCog, MessageCircle, MessageSquare, FileText, PenLine, ClipboardCheck, FolderOpen, Sparkles, Banknote, Warehouse, ReceiptText, Camera, Briefcase, CalendarClock, CalendarOff, Network, Settings2, BarChart3,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
@@ -22,7 +22,6 @@ import { shouldShowNotification } from "@/lib/notificationFilters";
 import { routeForNotification } from "@/lib/notificationRoute";
 import GlobalSearch from "@/components/navigation/GlobalSearch";
 import StationScopeControl from "@/components/navigation/StationScopeControl";
-import SectionReportPicker from "@/components/reports/SectionReportPicker";
 import StationQuickSwitch from "@/components/navigation/StationQuickSwitch";
 import { OPEN_STATION_SWITCH_EVENT } from "@/hooks/useStationSwitcher";
 import { setStationScope, getStationScope } from "@/lib/stationScopeStore";
@@ -46,19 +45,6 @@ export default function Layout({ children }) {
   const userRef = useRef(null);
   const notificationPollInFlightRef = useRef(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem("powercare_sidebar_collapsed") === "true");
-  const [navFold, setNavFold] = useState(() => {
-    try {
-      const raw = JSON.parse(localStorage.getItem("powercare_nav_fold_v6") || "{}");
-      return {
-        workforce: raw.workforce !== false,
-        compliance: raw.compliance !== false,
-        money: raw.money !== false,
-        admin: raw.admin !== false,
-      };
-    } catch {
-      return { workforce: true, compliance: true, money: true, admin: true };
-    }
-  });
   const [scopeSwitchOpen, setScopeSwitchOpen] = useState(false);
 
   useEffect(() => {
@@ -87,10 +73,6 @@ export default function Layout({ children }) {
   useEffect(() => {
     localStorage.setItem("powercare_sidebar_collapsed", String(sidebarCollapsed));
   }, [sidebarCollapsed]);
-
-  useEffect(() => {
-    localStorage.setItem("powercare_nav_fold_v6", JSON.stringify(navFold));
-  }, [navFold]);
 
   useEffect(() => {
     const onClick = (e) => {
@@ -240,30 +222,13 @@ export default function Layout({ children }) {
     { to: "/app/settings", icon: Settings2, label: lang === "ar" ? "إعدادات الشركة" : "Company Settings", category: "admin", fold: "admin" },
   ];
 
-  const navGroupLabels = {
-    daily: lang === "ar" ? "دورة الإثبات" : "Proof cycle",
-    workforce: lang === "ar" ? "القوى العاملة" : "Workforce",
-    compliance: lang === "ar" ? "الالتزام والرعاية" : "Care & compliance",
-    money: lang === "ar" ? "المال والأصول" : "Money & assets",
-    admin: lang === "ar" ? "المؤسسة" : "Institution",
-  };
   const categoryOrder = ["daily", "workforce", "compliance", "money", "admin"];
-  const foldableCategories = new Set(["workforce", "compliance", "money", "admin"]);
 
   const allowedNav = allowedNavFor(currentUser, data, company);
   const visibleNavItems = navItems.filter((i) => allowedNav.has(i.to));
   const orderedNavItems = [...visibleNavItems].sort(
     (a, b) => categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category),
   );
-
-  const activeFoldKey = orderedNavItems.find((item) => {
-    if (item.end) return location.pathname === item.to;
-    return location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
-  })?.fold;
-
-  const toggleFold = (key) => {
-    setNavFold((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
 
   const myNotifs = data.notifications.filter(
     (notification) => notification.userId === currentUser.id && shouldShowNotification(notification.text, data)
@@ -452,8 +417,8 @@ export default function Layout({ children }) {
         style={{
           width: sidebarCollapsed ? 0 : "250px",
           flexShrink: 0,
-          background: CARD,
-          borderInlineEnd: `1px solid ${BORDER}`,
+          background: "#14284B",
+          borderInlineEnd: "none",
           transition: "width .2s, opacity .2s",
         }}
       >
@@ -463,10 +428,7 @@ export default function Layout({ children }) {
           </span>
           {!sidebarCollapsed && (
             <div data-nv="wide" style={{ lineHeight: 1.15, minWidth: 0 }}>
-              <div style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em", color: INK }}>NiroVera</div>
-              <div style={{ fontSize: "10px", color: MUTED, letterSpacing: "0.04em" }}>
-                {lang === "ar" ? "حزمة التشغيل" : "Operations Suite"}
-              </div>
+              <div className="nv-brand-title" style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em", color: "#fff" }}>NiroVera</div>
             </div>
           )}
         </div>
@@ -475,44 +437,9 @@ export default function Layout({ children }) {
           {categoryOrder.map((category) => {
             const items = orderedNavItems.filter((item) => item.category === category);
             if (!items.length) return null;
-            const foldKey = foldableCategories.has(category) ? category : null;
-            const folded = !!(foldKey && navFold[foldKey] && activeFoldKey !== foldKey);
             return (
               <div key={category} data-nv="navgroup">
-                {!sidebarCollapsed && (
-                  foldKey ? (
-                    <div style={{ padding: "14px 10px 6px" }}>
-                      <button
-                        type="button"
-                        onClick={() => toggleFold(foldKey)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          width: "100%",
-                          background: "transparent",
-                          border: "none",
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          padding: 0,
-                          textAlign: "start",
-                        }}
-                      >
-                        <span style={{ fontSize: "11px", letterSpacing: "0.04em", color: INK, fontWeight: 600 }}>
-                          {navGroupLabels[category]}
-                        </span>
-                        <span style={{ flex: 1 }} />
-                        <span dir="ltr" style={{ fontSize: "12px", color: MUTED, lineHeight: 1 }}>{folded ? "+" : "−"}</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div data-nv="navgroup" style={{ padding: "14px 10px 6px", fontSize: "11px", letterSpacing: "0.04em", color: INK, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden" }}>
-                      {navGroupLabels[category]}
-                    </div>
-                  )
-                )}
                 {items.map((item) => {
-                  const hideInExpanded = folded && !sidebarCollapsed;
                   const aliasActive = (item.aliases || []).some(
                     (path) => location.pathname === path || location.pathname.startsWith(`${path}/`),
                   );
@@ -527,7 +454,7 @@ export default function Layout({ children }) {
                       style={({ isActive }) => {
                         const active = isActive || aliasActive;
                         return {
-                        display: hideInExpanded ? "none" : "flex",
+                        display: "flex",
                         alignItems: "center",
                         gap: sidebarCollapsed ? 0 : "10px",
                         justifyContent: sidebarCollapsed ? "center" : "flex-start",
@@ -541,12 +468,24 @@ export default function Layout({ children }) {
                         textAlign: dir === "rtl" ? "right" : "left",
                         textDecoration: "none",
                         transition: "background .12s",
-                        background: active ? "var(--nv-accent-soft)" : "transparent",
-                        color: active ? "var(--nv-accent-deep)" : MUTED,
+                        background: active ? "rgba(30,158,99,.16)" : "transparent",
+                        color: active ? "#6EE7B7" : "#C7D2E6",
                         fontWeight: active ? 600 : 400,
                       };
                       }}
                     >
+                      <span
+                        className="handoff-nav-dot"
+                        aria-hidden
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          background: "currentColor",
+                          opacity: 0.35,
+                          flexShrink: 0,
+                        }}
+                      />
                       <span style={{ width: "18px", height: "18px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <item.icon style={{ width: 18, height: 18 }} strokeWidth={1.7} />
                       </span>
@@ -585,7 +524,7 @@ export default function Layout({ children }) {
         </nav>
 
         {!sidebarCollapsed && (
-          <div style={{ padding: "12px 10px", borderTop: `1px solid ${BORDER}`, display: "flex", alignItems: "center", gap: "10px" }}>
+          <div className="nv-side-foot" style={{ padding: "12px 10px", borderTop: "1px solid rgba(255,255,255,.1)", display: "flex", alignItems: "center", gap: "10px" }}>
             <button
               type="button"
               onClick={() => navigate(`/app/employees/${currentUser.id}`)}
@@ -610,7 +549,7 @@ export default function Layout({ children }) {
                 )}
               </span>
               <span data-nv="wide" style={{ flex: 1, lineHeight: 1.3, minWidth: 0 }}>
-                <span style={{ display: "block", fontSize: "12px", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: INK }}>{currentUser.name}</span>
+                <span style={{ display: "block", fontSize: "12px", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "#fff" }}>{currentUser.name}</span>
                 <span style={{ display: "block", fontSize: "10px", color: "#A8B4C8" }}>{roleTitle}</span>
               </span>
             </button>
@@ -653,80 +592,37 @@ export default function Layout({ children }) {
             </div>
           </div>
 
-          <div className="hidden md:block" style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pageTitle}</div>
-            <div style={{ fontSize: "11px", color: MUTED, marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pageSubtitle}</div>
+          <div className="hidden md:flex" style={{ alignItems: "center", gap: 10, minWidth: 0, flexShrink: 0 }}>
+            <LayoutGrid style={{ width: 18, height: 18, color: MUTED }} strokeWidth={1.7} />
+            <div style={{ fontSize: "16px", fontWeight: 600, letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>{pageTitle}</div>
           </div>
 
-            {/* Scope chrome — Platform.dc.html L108–125 metrics, one station picker */}
-            <StationScopeControl />
-
-            <div className="hidden md:flex" style={{ alignItems: "center", minWidth: 0, flexShrink: 1 }}>
-              <SectionReportPicker lang={lang} compact />
-            </div>
-
-            {/* topmeta — Platform.dc.html L127–137 search + live + lang */}
-            <div
-              data-nv="topmeta"
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
               className="hidden md:flex"
-              style={{ alignItems: "center", gap: "8px", flexShrink: 0 }}
+              style={{
+                flex: 1,
+                alignItems: "center",
+                gap: 8,
+                height: 38,
+                padding: "0 16px",
+                borderRadius: 12,
+                border: `1px solid ${BORDER}`,
+                background: SURFACE,
+                minWidth: 180,
+                maxWidth: 560,
+                margin: "0 auto",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                textAlign: "start",
+              }}
             >
-              <button
-                type="button"
-                onClick={() => setSearchOpen(true)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "7px",
-                  height: "34px",
-                  padding: "0 12px",
-                  borderRadius: "9px",
-                  border: `1px solid ${BORDER}`,
-                  background: SURFACE,
-                  minWidth: "140px",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  textAlign: "start",
-                }}
-              >
-                <span style={{ color: MUTED, fontSize: "12px" }}>⌕</span>
-                <span style={{ fontSize: "12px", color: MUTED }}>
-                  {lang === "ar" ? "ابحث في المنصة..." : "Search the platform..."}
-                </span>
-              </button>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  height: "34px",
-                  padding: "0 11px",
-                  borderRadius: "9px",
-                  background: "var(--nv-accent-soft)",
-                  border: "1px solid var(--nv-accent-border)",
-                }}
-              >
-                <span
-                  aria-hidden
-                  style={{
-                    width: "6px",
-                    height: "6px",
-                    borderRadius: "50%",
-                    background: "var(--nv-accent)",
-                    animation: "nvPulse 2.2s ease-in-out infinite",
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 500,
-                    color: "var(--nv-accent-deep)",
-                  }}
-                >
-                  {lang === "ar" ? "مباشر" : "Live"}
-                </span>
-              </div>
-            </div>
+              <Search style={{ width: 15, height: 15, color: MUTED }} />
+              <span style={{ fontSize: 13, color: MUTED }}>
+                {lang === "ar" ? "ابحث في المنصة..." : "Search the platform..."}
+              </span>
+            </button>
 
             <button
               type="button"
@@ -750,8 +646,8 @@ export default function Layout({ children }) {
               <Search style={{ width: 16, height: 16 }} />
             </button>
 
-            <SyncStatusIndicator isSyncing={isSyncing} />
-            <ThemeToggle />
+            <span className="md:hidden"><SyncStatusIndicator isSyncing={isSyncing} /></span>
+            <span className="md:hidden"><ThemeToggle /></span>
 
             <div className="relative" ref={langRef} style={{ position: "relative", flexShrink: 0 }}>
               <button
@@ -828,7 +724,7 @@ export default function Layout({ children }) {
               )}
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginInlineStart: "auto" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
               <div className="relative" ref={notifRef}>
                 <button
                   type="button"
@@ -896,7 +792,7 @@ export default function Layout({ children }) {
                 )}
               </div>
 
-              <div className="relative" ref={userRef}>
+              <div className="relative md:hidden" ref={userRef}>
                 <button
                   type="button"
                   onClick={() => setUserOpen((o) => !o)}
@@ -1077,6 +973,7 @@ export default function Layout({ children }) {
                 )}
               </div>
             </div>
+            <StationScopeControl />
         </header>
 
         <main className="platform-main-scroll flex-1 overflow-y-auto p-5 pb-28 md:px-[22px] md:pb-10 md:pt-5">
