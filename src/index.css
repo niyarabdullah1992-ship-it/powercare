@@ -600,23 +600,22 @@ html:not(.dark) .powercare-shell {
   color: var(--nv-ink);
 }
 .powercare-shell > aside.corporate-sidebar {
-  background: #14284B !important;
-  border-inline-end: none;
-  color: #fff;
+  background: var(--nv-card) !important;
+  border-inline-end: 1px solid var(--nv-line);
+  color: var(--nv-ink);
 }
-.powercare-shell > aside.corporate-sidebar .nv-brand-title { color: #fff; }
+.powercare-shell > aside.corporate-sidebar .nv-brand-title { color: var(--nv-ink); }
 .powercare-shell > aside.corporate-sidebar .nv-brand-sub,
 .powercare-shell > aside.corporate-sidebar .nv-nav-group,
-.powercare-shell > aside.corporate-sidebar .nv-side-meta { color: #A8B4C8; }
-.powercare-shell > aside.corporate-sidebar a { color: #C7D2E6; }
-.powercare-shell > aside.corporate-sidebar a:hover { color: #fff; background: rgba(255,255,255,.06); }
+.powercare-shell > aside.corporate-sidebar .nv-side-meta { color: var(--nv-muted); }
+.powercare-shell > aside.corporate-sidebar a { color: var(--nv-muted); }
+.powercare-shell > aside.corporate-sidebar a:hover { color: inherit; background: var(--nv-soft); }
 .powercare-shell > aside.corporate-sidebar a[aria-current="page"] {
+  /* Active state applied via inline NavLink style (Platform L3865–3868) */
   box-shadow: none;
-  background: rgba(30,158,99,.16);
-  color: #6EE7B7;
 }
 .powercare-shell > aside.corporate-sidebar a[aria-current="page"] svg.lucide {
-  color: #6EE7B7;
+  color: var(--nv-accent);
   filter: none;
 }
 .powercare-shell > aside.corporate-sidebar svg.lucide {
@@ -628,14 +627,14 @@ html:not(.dark) .powercare-shell {
   filter: none;
 }
 .powercare-shell > aside.corporate-sidebar .nv-side-foot {
-  border-top: 1px solid rgba(255,255,255,.1);
+  border-top: 1px solid var(--nv-line);
 }
 .powercare-shell > aside.corporate-sidebar .nv-side-user {
-  background: transparent;
-  border: none;
+  background: var(--nv-soft);
+  border: 1px solid var(--nv-line);
 }
 .powercare-shell > aside.corporate-sidebar .nv-side-user:hover {
-  border-color: transparent;
+  border-color: var(--nv-accent-border);
 }
 .powercare-shell .nv-collapse-btn {
   width: 22px;
@@ -664,8 +663,8 @@ html:not(.dark) .powercare-shell {
   background: var(--nv-card);
 }
 .powercare-shell .platform-main-scroll { background: var(--nv-soft); }
-.powercare-shell .handoff-nav-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: rgba(255,255,255,.28); opacity: 1; }
-.powercare-shell a[aria-current="page"] .handoff-nav-dot { background: #1E9E63; }
+.powercare-shell .handoff-nav-dot { width: 5px; height: 5px; border-radius: 50%; flex: none; background: #A8B4C8; }
+.powercare-shell a[aria-current="page"] .handoff-nav-dot { background: var(--nv-accent); }
 .powercare-shell .nv-live-chip {
   display: inline-flex;
   align-items: center;
