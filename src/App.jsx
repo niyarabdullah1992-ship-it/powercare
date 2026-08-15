@@ -53,7 +53,6 @@ const Performance = lazy(() => import('./pages/Performance'));
 const Safety = lazy(() => import('./pages/Safety'));
 const DailyReport = lazy(() => import('./pages/DailyReport'));
 const Attendance = lazy(() => import('./pages/Attendance'));
-const Files = lazy(() => import('./pages/Files'));
 const FileSigning = lazy(() => import('./pages/FileSigning'));
 const About = lazy(() => import('./pages/About'));
 const Help = lazy(() => import('./pages/Help'));
@@ -194,7 +193,6 @@ function AppRoutes() {
       <Route path="/app/attendance/leave" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/shifts" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/leave" element={<RequireAuth><Attendance /></RequireAuth>} />
-      <Route path="/app/files" element={<RequireAuth><Files /></RequireAuth>} />
       <Route path="/app/inventory" element={<RequireAuth><Inventory /></RequireAuth>} />
       <Route path="/app/expenses" element={<RequireAuth><Expenses /></RequireAuth>} />
       <Route path="/app/stations/:stationId/expenses" element={<RequireAuth><StationExpenses /></RequireAuth>} />
