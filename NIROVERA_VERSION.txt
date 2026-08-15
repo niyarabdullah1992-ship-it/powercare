@@ -10,3 +10,4 @@ Not included in the clean pack:
 
 This is not a Base44 Builder export and not an older zip remixed into the tree.
 Date: 2026-08-15
+Base44 sync: 2026.08.15-eac2bd10 — light shell + readiness board
