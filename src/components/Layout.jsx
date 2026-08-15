@@ -235,6 +235,7 @@ export default function Layout({ children }) {
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "money", fold: "money" },
     { to: "/app/expenses", icon: ReceiptText, label: lang === "ar" ? "المصروفات" : "Expenses", category: "money", fold: "money" },
     { to: "/app/inventory", icon: Warehouse, label: lang === "ar" ? "المخزون والأصول" : "Inventory & Assets", category: "money", fold: "money" },
+    { to: "/app/files", icon: FolderOpen, label: lang === "ar" ? "الملفات" : "Files", category: "admin", fold: "admin" },
     { to: "/app/assistant", icon: Sparkles, label: lang === "ar" ? "المساعد الذكي" : "AI Assistant", category: "admin", fold: "admin" },
     { to: "/app/settings", icon: Settings2, label: lang === "ar" ? "إعدادات الشركة" : "Company Settings", category: "admin", fold: "admin" },
   ];
@@ -378,6 +379,10 @@ export default function Layout({ children }) {
       title: lang === "ar" ? "السلامة HSE" : "Safety HSE",
       sub: lang === "ar" ? "المخاطر المفتوحة وسجل الحوادث" : "Open hazards and incident log",
     },
+    "/app/files": {
+      title: lang === "ar" ? "الملفات" : "Files",
+      sub: lang === "ar" ? "مستندات مقيّدة بالصلاحية ومربوطة بالفرع" : "Permission-scoped documents linked to their station",
+    },
     "/app/signing": {
       title: lang === "ar" ? "التوقيع الرقمي" : "Digital Signing",
       sub: lang === "ar" ? "فردي · جماعي · الصندوق · تحقق" : "Individual · group · inbox · verify",
@@ -401,6 +406,10 @@ export default function Layout({ children }) {
     "/app/chat": {
       title: lang === "ar" ? "المحادثات التشغيلية" : "Operations Chat",
       sub: lang === "ar" ? "قنوات لكل فرع · الرسائل جزء من سجل التشغيل" : "A channel per station · messages are part of the operations log",
+    },
+    "/app/manual": {
+      title: lang === "ar" ? "دليل الاستخدام" : "User guide",
+      sub: lang === "ar" ? "مرجع التشغيل والصلاحيات" : "Operating reference and permissions",
     },
   };
   const resolvePageMeta = () => {

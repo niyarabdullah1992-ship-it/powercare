@@ -11,6 +11,7 @@ const BASE = [
   "/app/shifts",
   "/app/leave",
   "/app/chat",
+  "/app/files",
   "/app/inventory",
   "/app/expenses",
   "/app/signing",
@@ -19,6 +20,7 @@ const BASE = [
   "/app/complaints",
   "/app/performance",
   "/app/reports",
+  "/app/manual",
 ];
 const MANAGER_EXTRA = ["/app/safety", "/app/hiring"];
 const EXEC_EXTRA = ["/app/hr", "/app/org", "/app/settings", "/app/payroll", "/app/hiring"];
@@ -41,6 +43,7 @@ const PLAN_ROUTE_SECTIONS = {
   "/app/payroll": "payroll",
   "/app/safety": "safety",
   "/app/complaints": "complaints",
+  "/app/files": "files",
   "/app/signing": "signing",
   "/app/chat": "chat",
   "/app/work-proof": "signing",

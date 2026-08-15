@@ -35,6 +35,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const OwnerPanel = lazy(() => import('./pages/OwnerPanel'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const PricingSuccess = lazy(() => import('./pages/PricingSuccess'));
+const Mobile = lazy(() => import('./pages/Mobile'));
 const SalesDeck = lazy(() => import('./pages/SalesDeck'));
 const Careers = lazy(() => import('./pages/Careers'));
 const Workspace = lazy(() => import('./pages/Workspace'));
@@ -52,6 +53,7 @@ const Performance = lazy(() => import('./pages/Performance'));
 const Safety = lazy(() => import('./pages/Safety'));
 const DailyReport = lazy(() => import('./pages/DailyReport'));
 const Attendance = lazy(() => import('./pages/Attendance'));
+const Files = lazy(() => import('./pages/Files'));
 const FileSigning = lazy(() => import('./pages/FileSigning'));
 const About = lazy(() => import('./pages/About'));
 const Help = lazy(() => import('./pages/Help'));
@@ -61,10 +63,15 @@ const Privacy = lazy(() => import('./pages/Privacy'));
 const Security = lazy(() => import('./pages/Security'));
 const Terms = lazy(() => import('./pages/Terms'));
 const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
+const PowerCarePresentation = lazy(() => import('./pages/PowerCarePresentation'));
+const PowerCareProfile = lazy(() => import('./pages/PowerCareProfile'));
+const PowerCareSapComparisonV2 = lazy(() => import('./pages/PowerCareSapComparisonV2'));
+const AcwaComprehensiveProposal = lazy(() => import('./pages/AcwaComprehensiveProposal'));
 const AdAudio = lazy(() => import('./pages/AdAudio'));
 const CopyrightDoc = lazy(() => import('./pages/CopyrightDoc'));
 const SourceCodeDoc = lazy(() => import('./pages/SourceCodeDoc'));
 const ProjectGuideDoc = lazy(() => import('./pages/ProjectGuideDoc'));
+const TiktokAd = lazy(() => import('./pages/TiktokAd'));
 const TruePerformanceDoc = lazy(() => import('./pages/TruePerformanceDoc'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const Expenses = lazy(() => import('./pages/Expenses'));
@@ -133,6 +140,7 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/preview" element={<LocalPreviewEntry />} />
       <Route path="/about" element={<About />} />
+      <Route path="/mobile" element={<Mobile />} />
       <Route path="/deck" element={<SalesDeck />} />
       <Route path="/careers" element={<Careers />} />
       <Route path="/workspace" element={<Workspace />} />
@@ -151,11 +159,19 @@ function AppRoutes() {
       <Route path="/security" element={<Security />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/refund-policy" element={<RefundPolicy />} />
+      <Route path="/powercare-presentation" element={<PowerCarePresentation />} />
+      <Route path="/powercare-profile" element={<PowerCareProfile />} />
+      <Route path="/powercare-sap-comparison" element={<PowerCareSapComparisonV2 />} />
+      <Route path="/powercare-sap-comparison-v2" element={<Navigate to="/powercare-sap-comparison" replace />} />
+      <Route path="/acwa-powercare-proposal" element={<AcwaComprehensiveProposal />} />
+      <Route path="/acwa-executive-brief" element={<Navigate to="/acwa-powercare-proposal" replace />} />
+      <Route path="/acwa-pilot-proposal" element={<Navigate to="/acwa-powercare-proposal" replace />} />
       <Route path="/ad-audio" element={<AdAudio />} />
       <Route path="/copyright-doc" element={<CopyrightDoc />} />
       <Route path="/source-code-doc" element={<SourceCodeDoc />} />
       <Route path="/project-guide" element={<ProjectGuideDoc />} />
       <Route path="/manual" element={<ProjectGuideDoc />} />
+      <Route path="/tiktok-ad" element={<TiktokAd />} />
       <Route path="/true-performance" element={<TruePerformanceDoc />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/owner-panel" element={<OwnerPanel />} />
@@ -184,6 +200,7 @@ function AppRoutes() {
       <Route path="/app/attendance/leave" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/shifts" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/leave" element={<RequireAuth><Attendance /></RequireAuth>} />
+      <Route path="/app/files" element={<RequireAuth><Files /></RequireAuth>} />
       <Route path="/app/inventory" element={<RequireAuth><Inventory /></RequireAuth>} />
       <Route path="/app/expenses" element={<RequireAuth><Expenses /></RequireAuth>} />
       <Route path="/app/stations/:stationId/expenses" element={<RequireAuth><StationExpenses /></RequireAuth>} />
@@ -192,6 +209,7 @@ function AppRoutes() {
       <Route path="/app/work-proof" element={<RequireAuth><WorkProof /></RequireAuth>} />
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
       <Route path="/app/help" element={<RequireAuth><Help /></RequireAuth>} />
+      <Route path="/app/manual" element={<RequireAuth><ProjectGuideDoc /></RequireAuth>} />
       <Route path="/api/*" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
