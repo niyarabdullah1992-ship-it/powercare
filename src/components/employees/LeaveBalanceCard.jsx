@@ -1,41 +1,53 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n";
-import { CalendarDays } from "lucide-react";
-import { getLeaveTotal, usedLeaveDays, visibleLeaveTypes } from "@/lib/leaveTypes";
+import { getLeaveTotal, usedLeaveDays, leaveTypesForProfile } from "@/lib/leaveTypes";
+import { ACCENT, MUTED, NAVY, bar, cardShell } from "@/lib/platformStyles";
 
+/** Platform isTabLeave balances — L2695–2710 */
 export default function LeaveBalanceCard({ profile, requests }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const ar = lang === "ar";
+
+  const items = leaveTypesForProfile(profile).filter((ty) => ty.key !== "unpaid").map((ty) => {
+    const total = getLeaveTotal(profile, ty.key);
+    const used = usedLeaveDays(requests, ty.key);
+    const p = total ? Math.min(100, Math.round((used / total) * 100)) : 0;
+    return {
+      key: ty.key,
+      label: t(ty.key),
+      used: total != null ? `${used}/${total}` : `${used}`,
+      barStyle: bar(total != null ? (p || 2) : 2, p >= 90 ? "#DC2626" : p >= 70 ? "#F59E0B" : ACCENT),
+    };
+  });
 
   return (
-    <div className="p-5 rounded-xl border border-border bg-card space-y-3">
-      <h3 className="flex items-center gap-2 font-heading font-semibold">
-        <CalendarDays className="w-4 h-4 text-accent" /> {t("leaveBalance")}
-      </h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {visibleLeaveTypes(profile).filter((ty) => ty.key !== "unpaid" && ty.defaultTotal !== null).map((ty) => {
-          const total = getLeaveTotal(profile, ty.key) ?? 0;
-          const used = usedLeaveDays(requests, ty.key);
-          const remaining = Math.max(0, total - used);
-          const pct = total > 0 ? Math.min(100, Math.round((remaining / total) * 100)) : 0;
-          return (
-            <div key={ty.key} className="p-3 rounded-lg border border-border bg-background">
-              <p className="text-xs text-muted-foreground font-body truncate">{t(ty.key)}</p>
-              <p className="text-lg font-heading font-semibold leading-tight">
-                {remaining}<span className="text-xs text-muted-foreground font-body"> / {total} {t("days")}</span>
-              </p>
-              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden mt-1.5">
-                <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
-              </div>
+    <div style={cardShell} dir={ar ? "rtl" : "ltr"}>
+      <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>
+        {ar ? "أرصدة الإجازات النظامية" : "Statutory leave balances"}
+      </div>
+      <div style={{ fontSize: "11px", color: MUTED, marginTop: "4px", lineHeight: 1.6, textWrap: "pretty" }}>
+        {ar
+          ? "الأرصدة وفق نظام العمل (المادة 109 وما يليها): 21 يومًا سنويًا، و30 بعد خمس سنوات. يُخصم الرصيد عند الاعتماد فقط."
+          : "Balances follow the Labour Law (Art. 109+): 21 days annual leave, 30 after five years. Days are deducted only on approval."}
+      </div>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))",
+        gap: "16px",
+        marginTop: "18px",
+      }}
+      >
+        {items.map((l) => (
+          <div key={l.key}>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "10px" }}>
+              <span style={{ fontSize: "13px", color: NAVY }}>{l.label}</span>
+              <span dir="ltr" style={{ fontSize: "12px", fontFamily: "'IBM Plex Sans',sans-serif", color: MUTED }}>
+                {l.used}
+              </span>
             </div>
-          );
-        })}
-        {["sick", "exam", "patientCompanion", "otherLeave"].map((key) => (
-          <div key={key} className="p-3 rounded-lg border border-border bg-background flex flex-col justify-center">
-            <p className="text-xs text-muted-foreground font-body truncate">{t(key)}</p>
-            <p className="text-lg font-heading font-semibold leading-tight">{t("unlimited")}</p>
-            <p className="text-xs text-muted-foreground font-body mt-0.5">
-              {usedLeaveDays(requests, key)} {t("days")}
-            </p>
+            <div style={{ height: "6px", borderRadius: "5px", background: "#F1F5F9", overflow: "hidden", marginTop: "8px" }}>
+              <span style={l.barStyle} />
+            </div>
           </div>
         ))}
       </div>

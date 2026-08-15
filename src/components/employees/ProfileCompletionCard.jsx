@@ -1,38 +1,117 @@
-import React from "react";
-import { ClipboardCheck } from "lucide-react";
-import { PROFILE_GROUPS } from "@/components/employees/ProfessionalInfoTab";
+import React, { useMemo } from "react";
+import { ClipboardCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import { profileCompletionStats as computeProfileCompletion } from "@/lib/employeeProfileFields";
+import { CARD, INK, MUTED } from "@/lib/platformStyles";
 
-// HR file completeness: percentage of the profile fields actually filled in.
-// Shown to the employee as a nudge to complete their own file, and to
-// managers/HR as a data-quality indicator.
-export default function ProfileCompletionCard({ employee, isSelf, ar }) {
-  const profile = employee.profile || {};
-  const fields = PROFILE_GROUPS.flatMap((g) => g.fields).filter((f) => !f.optional);
-  const filled = fields.filter((f) => String(profile[f.key] || "").trim()).length;
-  const pct = Math.round((filled / fields.length) * 100);
-  const done = pct === 100;
+/** Required MHRSD file fields — drives the “complete your file” path. */
+export function profileCompletionStats(employee) {
+  return computeProfileCompletion(employee);
+}
+
+export default function ProfileCompletionCard({ employee, isSelf, ar, onContinue }) {
+  const { missing, filled, fields, pct, done } = useMemo(
+    () => profileCompletionStats(employee),
+    [employee],
+  );
+  const next = missing.slice(0, 3);
+  const Chevron = ar ? ChevronLeft : ChevronRight;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
-      <div className="flex items-center gap-2.5">
-        <span className="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center">
-          <ClipboardCheck className="w-4 h-4" strokeWidth={1.75} />
+    <div
+      style={{
+        borderRadius: "16px",
+        border: `1px solid ${done ? "#BBF7D0" : "#E2E8F0"}`,
+        background: done ? "#ECFDF3" : CARD,
+        padding: "16px 18px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <span
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: done ? "#DCFCE7" : "#ECFDF3",
+            color: "#1E9E63",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <ClipboardCheck style={{ width: 16, height: 16 }} strokeWidth={1.75} />
         </span>
-        <div className="min-w-0">
-          <h3 className="font-heading font-semibold text-sm">{ar ? "اكتمال الملف" : "Profile completion"}</h3>
-          <p className="text-[11px] text-muted-foreground font-body">{filled}/{fields.length} {ar ? "حقلًا" : "fields"}</p>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>
+            {ar ? "اكتمال ملف الموظف" : "Employee file completeness"}
+          </div>
+          <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+            {filled}/{fields.length} {ar ? "حقلًا مطلوبًا" : "required fields"}
+          </div>
         </div>
-        <span className={`ms-auto font-heading font-semibold ${done ? "text-emerald-600" : "text-accent"}`} dir="ltr">{pct}%</span>
+        <span
+          dir="ltr"
+          style={{ fontSize: 18, fontWeight: 600, color: done ? "#15803D" : "#1E9E63" }}
+        >
+          {pct}%
+        </span>
       </div>
-      <div className="h-2 rounded-full bg-muted overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${done ? "bg-emerald-500" : "bg-accent"}`} style={{ width: `${pct}%` }} />
+
+      <div style={{ height: 8, borderRadius: 99, background: "#F1F5F9", overflow: "hidden", marginTop: 12 }}>
+        <div
+          style={{
+            height: "100%",
+            width: `${pct}%`,
+            borderRadius: 99,
+            background: done ? "#22C55E" : "#1E9E63",
+            transition: "width .25s ease",
+          }}
+        />
       </div>
+
       {!done && (
-        <p className="text-xs text-muted-foreground font-body leading-relaxed">
-          {isSelf
-            ? (ar ? "أكمل بياناتك من تبويب «المعلومات المهنية» ليستفيد منها قسم الموارد البشرية." : "Complete your details from the “Professional info” tab so HR can use them.")
-            : (ar ? "ملف هذا الموظف غير مكتمل — يمكنه إكماله بنفسه من حسابه." : "This employee's file is incomplete — they can complete it themselves from their account.")}
-        </p>
+        <>
+          {next.length > 0 && (
+            <div style={{ marginTop: 12, fontSize: 11, color: MUTED, lineHeight: 1.6 }}>
+              {ar ? "التالي: " : "Next: "}
+              {next.map((f) => (ar ? f.ar : f.en)).join(ar ? " · " : " · ")}
+            </div>
+          )}
+          {!isSelf && (
+            <button
+              type="button"
+              onClick={onContinue}
+              style={{
+                marginTop: 12,
+                height: 38,
+                width: "100%",
+                borderRadius: 9,
+                border: "none",
+                background: "#1E9E63",
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+              }}
+            >
+              {ar ? "أكمل الملف الآن" : "Complete file now"}
+              <Chevron style={{ width: 16, height: 16 }} />
+            </button>
+          )}
+          <p style={{ margin: "10px 0 0", fontSize: 11, color: MUTED, lineHeight: 1.65 }}>
+            {isSelf
+              ? (ar
+                ? "الملف للعرض فقط — تُكمل الإدارة أو الموارد البشرية كل البيانات."
+                : "View only — management or HR completes all of this file.")
+              : (ar
+                ? "كل حقول المعلومات المهنية للإدارة أو الموارد البشرية."
+                : "All professional-info fields are for management or HR.")}
+          </p>
+        </>
       )}
     </div>
   );

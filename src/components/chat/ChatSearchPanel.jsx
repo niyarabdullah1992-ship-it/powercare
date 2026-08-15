@@ -1,26 +1,17 @@
-import React, { useState, useMemo } from "react";
-import { Search } from "lucide-react";
-import ChatBubble from "@/components/chat/ChatBubble";
 
-export default function ChatSearchPanel({ messages, tasks, currentUserId, t, lang }) {
+import React, { useState, useMemo } from "react";
+import { Search, X } from "lucide-react";
+import ChatBubble from "@/components/chat/ChatBubble";
+import { ACCENT, CARD, MUTED, SURFACE, field } from "@/lib/chatUiStyles";
+
+/** Compact chat search — single tight toolbar. */
+export default function ChatSearchPanel({ messages, currentUserId, t, lang }) {
   const [query, setQuery] = useState("");
   const [date, setDate] = useState("");
-  const [taskType, setTaskType] = useState("all");
-
-  const taskTypes = useMemo(() => {
-    const set = new Set();
-    (tasks || []).forEach((tk) => { if (tk.taskType) set.add(tk.taskType); });
-    return [...set];
-  }, [tasks]);
+  const ar = lang === "ar";
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    // Titles of tasks belonging to the selected type — a message "matches" a type
-    // if it mentions the type name itself or any task title of that type.
-    const typeTerms = taskType === "all" ? null : [
-      taskType.toLowerCase(),
-      ...(tasks || []).filter((tk) => tk.taskType === taskType).map((tk) => (tk.title || "").toLowerCase()).filter(Boolean),
-    ];
     return (messages || []).filter((m) => {
       const body = (m.text || "").toLowerCase();
       if (q && !body.includes(q) && !(m.user_name || "").toLowerCase().includes(q)) return false;
@@ -28,60 +19,99 @@ export default function ChatSearchPanel({ messages, tasks, currentUserId, t, lan
         const d = new Date(m.created_at || m.createdAt);
         if (isNaN(d) || d.toISOString().slice(0, 10) !== date) return false;
       }
-      if (typeTerms && !typeTerms.some((term) => body.includes(term))) return false;
       return true;
     });
-  }, [messages, query, date, taskType, tasks]);
+  }, [messages, query, date]);
+
+  const clear = () => { setQuery(""); setDate(""); };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      <div className="px-5 py-3 border-b border-border space-y-2">
-        <div className="relative">
-          <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <div
+        style={{
+          padding: "8px 12px",
+          borderBottom: "1px solid #E2E8F0",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          flexWrap: "nowrap",
+        }}
+      >
+        <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
+          <Search
+            style={{
+              position: "absolute",
+              insetInlineStart: 10,
+              top: "50%",
+              transform: "translateY(-50%)",
+              width: 13,
+              height: 13,
+              color: MUTED,
+              pointerEvents: "none",
+            }}
+          />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("searchChatPlaceholder")}
-            className="w-full ps-9 pe-3 py-2 rounded-md border border-input bg-card text-sm font-body focus:outline-none focus:ring-2 focus:ring-ring"
+            placeholder={ar ? "ابحث…" : "Search…"}
             dir="auto"
             autoFocus
+            style={{
+              ...field,
+              height: 32,
+              background: SURFACE,
+              paddingInlineStart: 30,
+              paddingInlineEnd: 10,
+              fontSize: 12,
+            }}
           />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="px-3 py-1.5 rounded-md border border-input bg-card text-xs font-body"
-            aria-label={t("byDateFilter")}
-          />
-          <select
-            value={taskType}
-            onChange={(e) => setTaskType(e.target.value)}
-            className="px-3 py-1.5 rounded-md border border-input bg-card text-xs font-body"
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          aria-label={t("byDateFilter")}
+          style={{
+            ...field,
+            width: 118,
+            maxWidth: "32%",
+            height: 32,
+            background: SURFACE,
+            fontSize: 11,
+            flexShrink: 0,
+            paddingInline: 8,
+          }}
+        />
+        {(query || date) && (
+          <button
+            type="button"
+            onClick={clear}
+            aria-label={t("cancel")}
+            title={t("cancel")}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: "1px solid #E2E8F0",
+              background: CARD,
+              color: MUTED,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
           >
-            <option value="all">{t("allTaskTypes")}</option>
-            {taskTypes.map((tt) => (
-              <option key={tt} value={tt}>{tt}</option>
-            ))}
-          </select>
-          {(query || date || taskType !== "all") && (
-            <button
-              type="button"
-              onClick={() => { setQuery(""); setDate(""); setTaskType("all"); }}
-              className="text-xs text-accent hover:underline font-body"
-            >
-              {t("cancel")}
-            </button>
-          )}
-          <span className="ms-auto text-[11px] text-muted-foreground font-body">
-            {results.length} {t("matchingMessages")}
-          </span>
-        </div>
+            <X style={{ width: 13, height: 13 }} />
+          </button>
+        )}
+        <span style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", flexShrink: 0, fontWeight: 600 }}>
+          <span style={{ color: ACCENT }}>{results.length}</span>
+        </span>
       </div>
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+      <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
         {results.length === 0 ? (
-          <p className="text-sm text-muted-foreground font-body text-center mt-10">{t("noMessages")}</p>
+          <p style={{ margin: "28px 0 0", textAlign: "center", fontSize: 13, color: MUTED }}>{t("noMessages")}</p>
         ) : (
           results.map((m) => (
             <ChatBubble key={m.id} msg={m} isMine={m.user_id === currentUserId} lang={lang} />

@@ -50,6 +50,18 @@ export const AuthProvider = ({ children }) => {
       } catch (appError) {
         console.error('App state check failed:', appError);
         
+        // Offline / frontend-only: Base44 proxy is often unset locally.
+        // Do not block the PowerCare company login or local preview.
+        if (!appParams.appBaseUrl) {
+          setAppPublicSettings(null);
+          setAuthError(null);
+          setIsAuthenticated(false);
+          setAuthChecked(true);
+          setIsLoadingPublicSettings(false);
+          setIsLoadingAuth(false);
+          return;
+        }
+
         // Handle app-level errors
         if (appError.status === 403 && appError.data?.extra_data?.reason) {
           const reason = appError.data.extra_data.reason;
@@ -77,6 +89,7 @@ export const AuthProvider = ({ children }) => {
         }
         setIsLoadingPublicSettings(false);
         setIsLoadingAuth(false);
+        setAuthChecked(true);
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -128,7 +141,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
+    // Without a Base44 backend URL, SDK redirect lands on a dead /api/... path (404).
+    // Keep users inside the app login page for local/frontend-only previews.
+    if (!appParams.appBaseUrl) {
+      window.location.href = "/login";
+      return;
+    }
     base44.auth.redirectToLogin(window.location.href);
   };
 

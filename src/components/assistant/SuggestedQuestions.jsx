@@ -11,7 +11,7 @@ export default function SuggestedQuestions({ onPick, disabled }) {
           key={q}
           onClick={() => onPick(q)}
           disabled={disabled}
-          className="px-3 py-1.5 rounded-full border border-border bg-card text-xs font-body text-foreground/80 hover:bg-accent/10 hover:text-accent hover:border-accent/40 disabled:opacity-50"
+          className="px-3 py-1.5 rounded-full border border-[#E2E8F0] bg-white text-xs font-body text-[#14284B] hover:bg-[#F7F8FA] hover:border-[#14284B] disabled:opacity-50"
           dir="auto"
         >
           {q}

@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { canSeeAllStations, visibleStations, isCompanyOwner, canTransferOwnership } from "@/lib/permissions";
-import { updateCompany, addStationChatGroup, removeStationChatGroup } from "@/lib/store";
-import { MessageSquare, Send, ArrowLeft, Building2, Radio, Link2 } from "lucide-react";
+import { updateCompany, addStationChatGroup, removeStationChatGroup, getCompanyToken } from "@/lib/store";
+import { MessageSquare, Building2, Radio, Link2, Users, Settings2, Mail, Search, Paperclip } from "lucide-react";
 import ChatBubble from "@/components/chat/ChatBubble";
 import ChatContactList from "@/components/chat/ChatContactList";
 import ChatMediaGallery from "@/components/chat/ChatMediaGallery";
@@ -12,28 +12,33 @@ import ChatGroupManager from "@/components/chat/ChatGroupManager";
 import ChatSearchPanel from "@/components/chat/ChatSearchPanel";
 import CompanyEmailComposer from "@/components/chat/CompanyEmailComposer";
 import CommentFiles from "@/components/tasks/CommentFiles";
+import { checkSendGate } from "@/lib/chatDerivations";
 import { toast } from "@/components/ui/use-toast";
-import useSmartPolling from "@/hooks/useSmartPolling";
+import useStationScope from "@/hooks/useStationScope";
+import PlatformStampShell from "@/components/shared/PlatformStampShell";
+import { ACCENT, BORDER, CARD, MUTED, NAVY, SURFACE, NEUTRAL, pane, paneHeader, channelBtn, composerInput, iconTile, ui } from "@/lib/chatUiStyles";
 
 export default function StationChat() {
   const { t, dir, lang } = useI18n();
   const { data, currentUser, company } = useAuth();
   const [selectedStation, setSelectedStation] = useState(null);
-  const [activeChat, setActiveChat] = useState(null); // { type: "general" } | { type: "dm", userId, name }
+  const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [files, setFiles] = useState([]);
   const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState("chat");
+  const [showEmail, setShowEmail] = useState(false);
   const bottomRef = useRef(null);
+  const headerScope = useStationScope();
 
   const baseRooms = !data || !currentUser ? [] : canSeeAllStations(currentUser)
-    ? data.stations.map((s) => ({ key: s.id, name: s.name }))
+    ? (data.stations || []).map((s) => ({ key: s.id, name: s.name }))
     : ["pgm", "station_manager"].includes(currentUser.role)
       ? visibleStations(currentUser, data).map((s) => ({ key: s.id, name: s.name }))
       : [{
           key: currentUser.stationId || "hq",
-          name: currentUser.stationId ? (data.stations.find((s) => s.id === currentUser.stationId)?.name || t("station")) : t("hq"),
+          name: currentUser.stationId ? ((data.stations || []).find((s) => s.id === currentUser.stationId)?.name || t("station")) : t("hq"),
         }];
   const isOwner = isCompanyOwner(currentUser, data) || canTransferOwnership(currentUser);
   const chatGroups = data?.stationChatGroups || [];
@@ -47,6 +52,17 @@ export default function StationChat() {
     ...groupRooms,
     ...baseRooms,
   ];
+  const scopedRooms = headerScope && headerScope !== "all"
+    ? stationRooms.filter((r) => {
+        if (String(r.key) === String(headerScope)) return true;
+        if (r.key === "all") return false;
+        if (r.isGroup) {
+          const group = chatGroups.find((g) => `group_${g.id}` === r.key);
+          return (group?.stationIds || []).includes(headerScope);
+        }
+        return false;
+      })
+    : stationRooms;
   const activeGroup = selectedStation?.startsWith("group_")
     ? chatGroups.find((g) => `group_${g.id}` === selectedStation)
     : null;
@@ -58,11 +74,28 @@ export default function StationChat() {
   const addChatGroup = ({ name, stationIds }) => addStationChatGroup(company.id, { name, stationIds });
   const deleteChatGroup = (groupId) => removeStationChatGroup(company.id, groupId);
 
-  useEffect(() => {
-    if (stationRooms.length === 1 && !selectedStation) setSelectedStation(stationRooms[0].key);
-  }, [stationRooms.length, selectedStation]);
+  const pickRoom = (key) => {
+    setSelectedStation(key);
+    setActiveChat({ type: "general" });
+    setActiveTab("chat");
+    setShowEmail(false);
+  };
 
-  const contacts = !data || !selectedStation ? [] : data.employees.filter((e) => {
+  useEffect(() => {
+    if (scopedRooms.length !== 1 || selectedStation) return;
+    setSelectedStation(scopedRooms[0].key);
+    setActiveChat({ type: "general" });
+  }, [scopedRooms.length, selectedStation]);
+
+  const roomKeys = scopedRooms.map((r) => String(r.key)).join("|");
+  useEffect(() => {
+    if (headerScope === "all") return;
+    if (!roomKeys.split("|").includes(String(headerScope))) return;
+    setSelectedStation(String(headerScope));
+    setActiveChat((current) => current || { type: "general" });
+  }, [headerScope, roomKeys]);
+
+  const contacts = !data || !selectedStation ? [] : (data.employees || []).filter((e) => {
     if (e.id === currentUser.id) return false;
     if (selectedStation === "all") return true;
     if (activeGroup) {
@@ -72,37 +105,35 @@ export default function StationChat() {
     return selectedStation === "hq" ? !e.stationId : e.stationId === selectedStation;
   });
 
-  // Returns true when the room actually received new messages, so the shared
-  // polling engine can slow down while a conversation is idle.
   const fetchMessages = async () => {
-    if (!activeChat) return false;
+    if (!activeChat) return;
     try {
-      let rows = [];
       if (activeChat.type === "general") {
         const res = await base44.functions.invoke("supabaseTargets", { action: "listChatMessages", stationId: selectedStation });
-        rows = [...(res?.data?.messages || [])].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        const rows = [...(res?.data?.messages || [])].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        setMessages(rows);
       } else {
         const res = await base44.functions.invoke("supabaseTargets", { action: "listDirectMessages", userId: currentUser.id, otherUserId: activeChat.userId });
-        rows = (res?.data?.messages || [])
+        const rows = (res?.data?.messages || [])
           .map((m) => ({ ...m, user_id: m.sender_id, user_name: m.sender_name }))
           .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        setMessages(rows);
       }
-      let changed = false;
-      setMessages((previous) => {
-        changed = previous.length !== rows.length || previous[previous.length - 1]?.id !== rows[rows.length - 1]?.id;
-        return changed ? rows : previous;
-      });
-      return changed;
     } catch {
       setMessages([]);
-      return false;
     }
   };
 
-  useSmartPolling(fetchMessages, { baseInterval: 4000, maxInterval: 30000, enabled: !!activeChat });
+  useEffect(() => {
+    if (!activeChat) return;
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 4000);
+    return () => clearInterval(interval);
+  }, [activeChat, selectedStation]);
 
   useEffect(() => {
     setActiveTab("chat");
+    setShowEmail(false);
   }, [activeChat]);
 
   useEffect(() => {
@@ -112,9 +143,52 @@ export default function StationChat() {
   const sendMessage = async (e) => {
     e.preventDefault();
     const trimmed = text.trim();
-    if (!trimmed && files.length === 0) return;
+    const gate = checkSendGate({
+      text: trimmed,
+      hasFiles: files.length > 0,
+      channelId: selectedStation || activeChat?.userId || null,
+      stationKey: selectedStation || null,
+      companyId: company?.id,
+      actor: {
+        role: currentUser?.role,
+        owner: isOwner,
+        admin: currentUser?.role === "admin",
+        userId: currentUser?.id,
+        stationId: currentUser?.stationId || null,
+        stationIds: currentUser?.stationId
+          ? [currentUser.stationId, ...(currentUser.managedStations || [])]
+          : (currentUser?.managedStations || []),
+        allStations: canSeeAllStations(currentUser),
+      },
+      crossStationChatEnabled: !!data?.crossStationChatEnabled,
+    });
+    if (!gate.ok) {
+      toast({
+        title: lang === "ar" ? gate.reason : gate.reasonEn,
+        variant: "destructive",
+      });
+      return;
+    }
     setSending(true);
     try {
+      if (activeChat.type === "general" && company?.id && selectedStation) {
+        try {
+          await base44.functions.invoke("chat", {
+            action: "send",
+            companyId: company.id,
+            sessionToken: getCompanyToken(company.id),
+            channelId: selectedStation,
+            stationKey: selectedStation,
+            text: trimmed,
+            files,
+            stationIds: currentUser?.stationId
+              ? [currentUser.stationId, ...(currentUser.managedStations || [])]
+              : (currentUser?.managedStations || []),
+          });
+        } catch {
+          // Board blob may not have this station key yet — legacy path still runs.
+        }
+      }
       if (activeChat.type === "general") {
         await base44.functions.invoke("supabaseTargets", {
           action: "sendChatMessage", stationId: selectedStation, userId: currentUser.id, userName: currentUser.name, text: trimmed, files,
@@ -128,7 +202,8 @@ export default function StationChat() {
       setFiles([]);
       fetchMessages();
     } catch (err) {
-      toast({ variant: "destructive", title: t("chat"), description: err?.response?.data?.error || (lang === "ar" ? "تعذر إرسال الرسالة" : "Failed to send message") });
+      const msg = err?.response?.data?.reason || err?.response?.data?.error || "Failed to send message";
+      toast({ title: msg, variant: "destructive" });
     } finally {
       setSending(false);
     }
@@ -140,150 +215,315 @@ export default function StationChat() {
       await base44.functions.invoke("supabaseTargets", { action, messageId: msg.id, userId: currentUser.id });
       fetchMessages();
     } catch (err) {
-      toast({ variant: "destructive", title: t("chat"), description: err?.response?.data?.error || (lang === "ar" ? "تعذر حذف الرسالة" : "Failed to delete message") });
+      alert(err?.response?.data?.error || "Failed to delete message");
     }
   };
 
   if (!data || !currentUser) return null;
 
-  const stationName = stationRooms.find((r) => r.key === selectedStation)?.name || "";
+  const stationName = scopedRooms.find((r) => r.key === selectedStation)?.name
+    || stationRooms.find((r) => r.key === selectedStation)?.name
+    || "";
   const chatTitle = activeChat?.type === "general" ? t("generalChat") : activeChat?.name || "";
+  const ar = lang === "ar";
+  const canSend = text.trim().length > 0 || files.length > 0;
+  const sendStyle = {
+    ...ui.btnPrimary,
+    opacity: canSend && !sending ? 1 : 0.45,
+    cursor: canSend && !sending ? "pointer" : "not-allowed",
+  };
+
+  const roomIcon = (r) => {
+    const props = { width: 14, height: 14, strokeWidth: 1.75, style: { flexShrink: 0, color: selectedStation === r.key ? ACCENT : MUTED } };
+    if (r.key === "all") return <MessageSquare {...props} />;
+    if (r.isGroup) return <Link2 {...props} />;
+    if (r.key === "hq") return <Building2 {...props} />;
+    return <Radio {...props} />;
+  };
+
+  const openTool = (key) => {
+    setShowEmail(false);
+    setActiveTab(key);
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="border-b border-border pb-6">
-        <p className="text-[11px] tracking-widest-xl uppercase text-muted-foreground font-body mb-2">{t("station")}</p>
-        <h1 className="hero-title text-4xl md:text-5xl">{t("chat")}</h1>
-      </div>
+    <PlatformStampShell
+      ar={ar}
+      title={ar ? "المحادثات التشغيلية" : "Operations Chat"}
+      hint={ar ? "القائمة تختار · الخيط يقرّر · المرفق يُثبت" : "List chooses · thread decides · attachment proves"}
+      meta={<span style={NEUTRAL}>{ar ? "غرفة عمليات" : "Ops room"}</span>}
+    >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(260px, 300px) minmax(0, 1fr)",
+          gap: 14,
+          height: "min(78vh, 840px)",
+          minHeight: 540,
+        }}
+        className="ops-chat-grid"
+      >
+        {/* Context column — choose only */}
+        <aside style={{ ...pane, height: "100%", minHeight: 0, overflow: "hidden" }}>
+          <div style={{ ...paneHeader, fontSize: 12, fontWeight: 600, color: NAVY, flexShrink: 0, letterSpacing: "0.02em" }}>
+            {ar ? "السياق" : "Context"}
+          </div>
 
-      {!selectedStation ? (
-        <div className="border border-border bg-card p-6 space-y-4">
+          <div style={{ flexShrink: 0, padding: "10px 10px 8px", borderBottom: "1px solid #E2E8F0" }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: MUTED, letterSpacing: "0.05em", marginBottom: 8, paddingInline: 4 }}>
+              {ar ? "الفرع / المجموعة" : "Station / group"}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 148, overflowY: "auto", overscrollBehavior: "contain" }}>
+              {scopedRooms.map((r) => {
+                const active = selectedStation === r.key;
+                return (
+                  <button key={r.key} type="button" onClick={() => pickRoom(r.key)} style={channelBtn(active)}>
+                    {roomIcon(r)}
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", padding: "10px 10px 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, paddingInline: 4, flexShrink: 0 }}>
+              <Users style={{ width: 13, height: 13, color: MUTED }} strokeWidth={1.75} />
+              <span style={{ fontSize: 10, fontWeight: 600, color: MUTED, letterSpacing: "0.05em" }}>
+                {ar ? "الأعضاء" : "Members"}
+              </span>
+            </div>
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                borderRadius: 12,
+                border: `1px solid ${BORDER}`,
+                overflow: "hidden",
+                background: CARD,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              {selectedStation ? (
+                <ChatContactList
+                  contacts={contacts}
+                  activeChat={activeChat}
+                  onSelectGeneral={() => { setActiveChat({ type: "general" }); openTool("chat"); }}
+                  onSelectContact={(c) => { setActiveChat({ type: "dm", userId: c.id, name: c.name }); openTool("chat"); }}
+                  t={t}
+                  companyId={company?.id}
+                  lang={lang}
+                />
+              ) : (
+                <p style={{ margin: "auto", padding: 20, textAlign: "center", fontSize: 12, color: MUTED }}>
+                  {ar ? "اختر فرع أولاً" : "Pick a station first"}
+                </p>
+              )}
+            </div>
+          </div>
+
           {isOwner && (
-            <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
-              <div className="flex items-center gap-3">
-                <MessageSquare className="w-4 h-4 text-accent shrink-0" />
-                <div>
-                  <p className="text-sm font-medium font-body">{t("enableCrossStationChat")}</p>
-                  <p className="text-xs text-muted-foreground font-body">{t("crossStationChatNote")}</p>
+            <details style={{ flexShrink: 0, borderTop: `1px solid ${BORDER}`, padding: "8px 12px 12px", background: SURFACE }}>
+              <summary
+                style={{
+                  cursor: "pointer",
+                  listStyle: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: NAVY,
+                  padding: "6px 0",
+                }}
+              >
+                <Settings2 style={{ width: 14, height: 14, color: ACCENT }} strokeWidth={1.75} />
+                {ar ? "إعدادات القنوات" : "Channel settings"}
+              </summary>
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    borderRadius: 11,
+                    border: `1px solid ${BORDER}`,
+                    background: CARD,
+                    padding: "11px 13px",
+                  }}
+                >
+                  <span style={{ fontSize: 12, fontWeight: 600, color: NAVY }}>{t("enableCrossStationChat")}</span>
+                  <button
+                    type="button"
+                    onClick={toggleCrossStationChat}
+                    aria-pressed={!!data.crossStationChatEnabled}
+                    style={{
+                      position: "relative",
+                      width: 40,
+                      height: 22,
+                      borderRadius: 20,
+                      border: "none",
+                      background: data.crossStationChatEnabled ? ACCENT : "#CBD5E1",
+                      cursor: "pointer",
+                      padding: 0,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: 2,
+                        insetInlineStart: data.crossStationChatEnabled ? 20 : 2,
+                        width: 18,
+                        height: 18,
+                        borderRadius: "50%",
+                        background: CARD,
+                        boxShadow: "0 1px 2px rgba(20,40,75,.2)",
+                      }}
+                    />
+                  </button>
+                </div>
+                <ChatGroupManager t={t} stations={data.stations} groups={chatGroups} onAdd={addChatGroup} onDelete={deleteChatGroup} />
+              </div>
+            </details>
+          )}
+        </aside>
+
+        {/* Thread column — decide + prove */}
+        <section style={{ ...pane, height: "100%", minHeight: 0, minWidth: 0 }}>
+          {!selectedStation || !activeChat ? (
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 32, flexDirection: "column", gap: 8 }}>
+              <span style={{ ...iconTile, width: 48, height: 48, borderRadius: 14 }}>
+                <MessageSquare style={{ width: 22, height: 22 }} strokeWidth={1.75} />
+              </span>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: NAVY }}>
+                {ar ? "اختر قناة أو زميلاً" : "Pick a channel or colleague"}
+              </p>
+              <p style={{ margin: 0, fontSize: 12, color: MUTED, textAlign: "center", maxWidth: 280 }}>
+                {ar ? "المحادثة العامة أولاً، ثم الرسائل المباشرة حسب الحالة." : "General channel first, then DMs by presence."}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div style={{ ...paneHeader, justifyContent: "space-between", flexWrap: "wrap", padding: "12px 16px", gap: 10, flexShrink: 0 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: NAVY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {chatTitle || stationName}
+                  </div>
+                  <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                    {stationName}{ar ? " · مرتبطة بالفرع" : " · bound to the station"}
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={NEUTRAL}>
+                    {ar ? "مؤرشفة في سجل التشغيل" : "Archived in the operations log"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setShowEmail((v) => !v); setActiveTab("chat"); }}
+                    style={{
+                      ...ui.btnGhost,
+                      height: 32,
+                      padding: "0 10px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      color: showEmail ? ACCENT : MUTED,
+                      borderColor: showEmail ? "var(--nv-accent-border)" : BORDER,
+                      background: showEmail ? "var(--nv-accent-soft)" : CARD,
+                    }}
+                  >
+                    <Mail style={{ width: 13, height: 13 }} strokeWidth={1.75} />
+                    {t("email")}
+                  </button>
                 </div>
               </div>
-              <button
-                onClick={toggleCrossStationChat}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${data.crossStationChatEnabled ? "bg-accent" : "bg-muted"}`}
-              >
-                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${data.crossStationChatEnabled ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0.5 rtl:-translate-x-0.5"}`} />
-              </button>
-            </div>
-          )}
-          {isOwner && (
-            <ChatGroupManager t={t} stations={data.stations} groups={chatGroups} onAdd={addChatGroup} onDelete={deleteChatGroup} />
-          )}
-          <CompanyEmailComposer employees={data.employees} currentUser={currentUser} companyId={company.id} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {stationRooms.map((r) => (
-              <button key={r.key} onClick={() => setSelectedStation(r.key)} className="flex items-center gap-3 p-4 rounded-lg border border-border hover:bg-muted transition text-start">
-                <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                  {r.key === "all" ? <MessageSquare className="w-4 h-4" /> : r.isGroup ? <Link2 className="w-4 h-4" /> : r.key === "hq" ? <Building2 className="w-4 h-4" /> : <Radio className="w-4 h-4" />}
-                </div>
-                <p className="text-sm font-medium font-body">{r.name}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="border border-border bg-card flex h-[70vh]">
-          <div className="w-64 shrink-0 border-e border-border flex flex-col">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-              {stationRooms.length > 1 && (
-                <button onClick={() => { setSelectedStation(null); setActiveChat(null); }} className="p-1 rounded-md hover:bg-muted text-muted-foreground">
-                  <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} />
-                </button>
-              )}
-              <p className="text-sm font-medium font-body truncate">{stationName}</p>
-            </div>
-            <ChatContactList
-              contacts={contacts}
-              activeChat={activeChat}
-              onSelectGeneral={() => setActiveChat({ type: "general" })}
-              onSelectContact={(c) => setActiveChat({ type: "dm", userId: c.id, name: c.name })}
-              t={t}
-            />
-          </div>
 
-          <div className="relative flex-1 flex flex-col">
-            {!activeChat ? (
-              <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground font-body">{t("noMessages")}</div>
-            ) : (
-              <>
-                <div className="flex flex-col gap-3 px-5 py-4 border-b border-border lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <MessageSquare className="w-4 h-4 text-accent" />
-                    <h3 className="hero-title truncate text-xl">{chatTitle}</h3>
-                  </div>
-                  <div className="flex w-full flex-wrap items-center gap-1 lg:w-auto lg:justify-end">
-                    <button onClick={() => setActiveTab("chat")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "chat" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("chat")}</button>
-                    <button onClick={() => setActiveTab("media")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "media" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("filesAndMedia")}</button>
-                    <button onClick={() => setActiveTab("search")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "search" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("search")}</button>
-                    <button onClick={() => setActiveTab("email")} className={`px-2.5 py-1 rounded-full text-xs font-body border transition ${activeTab === "email" ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>{t("email")}</button>
-                  </div>
+              {!showEmail && (
+                <div className="nv-tabrail" style={{ marginInline: 16, marginTop: 8 }}>
+                  {[
+                    { key: "chat", label: ar ? "الخيط" : "Thread", icon: MessageSquare },
+                    { key: "media", label: t("filesAndMedia"), icon: Paperclip },
+                    { key: "search", label: t("search"), icon: Search },
+                  ].map((tb) => {
+                    const Icon = tb.icon;
+                    const on = activeTab === tb.key;
+                    return (
+                      <button key={tb.key} type="button" aria-current={on ? "true" : undefined} onClick={() => openTool(tb.key)}>
+                        <Icon style={{ width: 12, height: 12 }} strokeWidth={2} />
+                        {tb.label}
+                      </button>
+                    );
+                  })}
                 </div>
-                {activeTab === "email" ? (
-                  <div className="flex-1 overflow-y-auto p-5">
-                    <CompanyEmailComposer employees={data.employees} currentUser={currentUser} companyId={company.id} />
+              )}
+
+              {showEmail ? (
+                <div style={{ flex: 1, overflowY: "auto", padding: 16, minHeight: 0 }}>
+                  <CompanyEmailComposer employees={data.employees} currentUser={currentUser} companyId={company.id} />
+                </div>
+              ) : activeTab === "search" ? (
+                <ChatSearchPanel messages={messages} currentUserId={currentUser.id} t={t} lang={lang} />
+              ) : activeTab === "media" ? (
+                <ChatMediaGallery messages={messages} t={t} lang={lang} />
+              ) : (
+                <>
+                  <div style={{ flex: 1, padding: 16, display: "flex", flexDirection: "column", gap: 12, overflowY: "auto", background: SURFACE, minHeight: 0 }}>
+                    {messages.length === 0 && (
+                      <p style={{ margin: "40px 0 0", textAlign: "center", fontSize: 13, color: MUTED }}>{t("noMessages")}</p>
+                    )}
+                    {messages.map((m) => (
+                      <ChatBubble
+                        key={m.id}
+                        msg={m}
+                        isMine={m.user_id === currentUser.id}
+                        lang={lang}
+                        onDelete={deleteMessage}
+                      />
+                    ))}
+                    <div ref={bottomRef} />
                   </div>
-                ) : activeTab === "search" ? (
-                  <ChatSearchPanel
-                    messages={messages}
-                    tasks={data.tasks || []}
-                    currentUserId={currentUser.id}
-                    t={t}
-                    lang={lang}
-                  />
-                ) : activeTab === "media" ? (
-                  <ChatMediaGallery messages={messages} t={t} lang={lang} />
-                ) : (
-                  <>
-                    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-                      {messages.length === 0 ? (
-                        <p className="text-sm text-muted-foreground font-body text-center mt-10">{t("noMessages")}</p>
-                      ) : (
-                        messages.map((m) => (
-                          <ChatBubble
-                            key={m.id}
-                            msg={m}
-                            isMine={m.user_id === currentUser.id}
-                            lang={lang}
-                            onDelete={deleteMessage}
-                          />
-                        ))
-                      )}
-                      <div ref={bottomRef} />
+                  <form onSubmit={sendMessage} style={{ background: CARD, borderTop: `1px solid ${BORDER}`, flexShrink: 0 }}>
+                    {files.length > 0 && (
+                      <div style={{ paddingTop: 10 }}>
+                        <CommentFiles files={files} setFiles={setFiles} disabled={sending} variant="icon" showList showAttach={false} />
+                      </div>
+                    )}
+                    <div style={{ padding: "10px 14px 12px", display: "flex", alignItems: "center", gap: 6 }}>
+                      <CommentFiles files={files} setFiles={setFiles} disabled={sending} variant="icon" showList={false} />
+                      <input
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        placeholder={t("typeMessage")}
+                        style={composerInput}
+                      />
+                      <button type="submit" disabled={sending || !canSend} style={sendStyle}>
+                        {ar ? "إرسال" : "Send"}
+                      </button>
                     </div>
-                    <form onSubmit={sendMessage} className="border-t border-border p-4 space-y-2">
-                      <div className="flex items-end gap-2">
-                        <textarea
-                          value={text}
-                          onChange={(e) => setText(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(e); } }}
-                          rows={1}
-                          placeholder={t("typeMessage")}
-                          className="flex-1 px-3 py-2 rounded-md border border-input text-sm font-body resize-none"
-                        />
-                        <button type="submit" disabled={sending} className="p-2.5 rounded-md bg-foreground text-background disabled:opacity-50">
-                          <Send className={`w-4 h-4 ${dir === "rtl" ? "-scale-x-100" : ""}`} />
-                        </button>
-                      </div>
-                      <div className="flex flex-wrap items-end gap-2">
-                        <CommentFiles files={files} setFiles={setFiles} disabled={sending} />
-                      </div>
-                    </form>
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+                  </form>
+                </>
+              )}
+            </>
+          )}
+        </section>
+      </div>
+
+      <style>{`
+        @media (max-width: 860px) {
+          .ops-chat-grid {
+            grid-template-columns: 1fr !important;
+            height: auto !important;
+            min-height: 0 !important;
+          }
+          .ops-chat-grid > aside,
+          .ops-chat-grid > section {
+            height: min(70vh, 640px) !important;
+          }
+        }
+      `}</style>
+    </PlatformStampShell>
   );
 }

@@ -1,9 +1,11 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n";
-import { HelpCircle, BookOpen } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import HelpSection from "@/components/help/HelpSection";
 import { PLATFORM_HELP_SECTIONS } from "@/lib/helpSections";
+import PlatformStampShell from "@/components/shared/PlatformStampShell";
+import { ui } from "@/lib/platformStyles";
 
 export default function Help() {
   const { lang } = useI18n();
@@ -15,27 +17,24 @@ export default function Help() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div>
-        <h1 className="font-heading text-3xl font-semibold flex items-center gap-2">
-          <HelpCircle className="w-6 h-6" /> {ar ? "دليل الاستخدام" : "User Guide"}
-        </h1>
-        <p className="text-muted-foreground font-body text-sm mt-1">
-          {ar
-            ? "أحدث دليل لجميع أقسام المنصة، مرتب حسب أقسام النظام من تسجيل الدخول حتى الأمن والخصوصية."
-            : "The latest guide to every platform section, ordered from sign-in through security and privacy."}
-        </p>
-      </div>
-
-      <Link to="/app/manual" className="flex items-center justify-between rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm font-semibold text-accent hover:bg-accent/10">
-        <span className="flex items-center gap-2"><BookOpen className="h-4 w-4" />{ar ? "فتح الدليل التشغيلي الشامل" : "Open the complete operations manual"}</span>
-      </Link>
-
-      <div className="grid gap-4 md:grid-cols-2">
+    <PlatformStampShell
+      ar={ar}
+      title={ar ? "دليل الاستخدام" : "User guide"}
+      hint={ar
+        ? "أحدث دليل لأقسام المنصة، من تسجيل الدخول حتى الأمن والخصوصية."
+        : "The current guide to every platform section, from sign-in through security and privacy."}
+      meta={(
+        <Link to="/app/manual" style={{ ...ui.btnSecondary, display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+          <BookOpen style={{ width: 14, height: 14 }} />
+          {ar ? "الدليل التشغيلي PDF" : "Operations manual PDF"}
+        </Link>
+      )}
+    >
+      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
         {sections.map((s) => (
-          <HelpSection key={s.title} icon={s.icon} title={s.title} steps={s.steps} />
+          <HelpSection key={s.title} icon={s.icon} title={s.title} steps={s.steps} dir={ar ? "rtl" : "ltr"} />
         ))}
       </div>
-    </div>
+    </PlatformStampShell>
   );
 }

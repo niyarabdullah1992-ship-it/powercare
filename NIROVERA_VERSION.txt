@@ -1,0 +1,12 @@
+NiroVera / PowerCare
+Product version: 2026.08.15
+Build label: current
+Host: this tree is the live app source (one version only)
+
+Not included in the clean pack:
+- .tmp-design-caps (old design dumps and screenshot audits)
+- .tmp-nirovera-pack (older packed copy of the same app)
+- node_modules, dist, .git, .env.local
+
+This is not a Base44 Builder export and not an older zip remixed into the tree.
+Date: 2026-08-15

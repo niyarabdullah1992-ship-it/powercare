@@ -5,6 +5,8 @@ import { base44 } from "@/api/base44Client";
 import { sendEmailAlert } from "./emailAlerts";
 import { toRiyadhDateKey } from "./riyadhDate";
 import { reconcileStationReferences } from "./stationConsistency";
+import { clearStationScope } from "./stationScopeStore";
+import { planDuplicateShiftMerge, shiftWindowKey } from "./shiftDerivations";
 
 const REGISTRY_KEY = "powercare_registry";
 const COMPANY_PREFIX = "powercare_company_";
@@ -12,6 +14,19 @@ const SESSION_KEY = "powercare_session";
 // Legacy identifier retained only so older stored records can be migrated safely.
 // It no longer creates, protects, sorts, or otherwise privileges any station.
 export const HQ_STATION_ID = "hq";
+// Kept as literals here (instead of importing from lib/localPreview) because
+// localPreview imports this module — importing back would be circular.
+const LOCAL_PREVIEW_COMPANY = "local-preview-nirovera";
+const LOCAL_PREVIEW_KEY = "powercare_local_preview";
+
+function isLocalPreviewWorkspace(companyId) {
+  if (companyId === LOCAL_PREVIEW_COMPANY) return true;
+  try {
+    return localStorage.getItem(LOCAL_PREVIEW_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 /* ----------------------------- helpers ----------------------------- */
 function read(key, fallback) {
@@ -173,14 +188,16 @@ function saveRegistry(reg) {
 export function listCompanies() {
   return getRegistry().companies;
 }
-export function createCompany({ name, ownerEmail, ownerPassword, plan = "Starter", allowedEmailDomain = "", subscriptionStart = null, subscriptionEnd = null }, { sync = true } = {}) {
+export function createCompany({ name, ownerEmail, ownerPassword, plan = "Starter", allowedEmailDomain = "", subscriptionStart = null, subscriptionEnd = null, orgType = "company" }, { sync = true } = {}) {
   const reg = getRegistry();
   const id = uid("comp");
-  const company = { id, name: name.trim(), ownerEmail: ownerEmail.trim().toLowerCase(), ownerPassword, plan, allowedEmailDomain: allowedEmailDomain.trim(), subscriptionStart, subscriptionEnd, createdAt: new Date().toISOString() };
+  const kind = "company";
+  const company = { id, name: name.trim(), ownerEmail: ownerEmail.trim().toLowerCase(), ownerPassword, plan, orgType: kind, allowedEmailDomain: allowedEmailDomain.trim(), subscriptionStart, subscriptionEnd, createdAt: new Date().toISOString() };
   reg.companies.push(company);
   saveRegistry(reg);
   // seed empty company workspace
   const data = emptyCompanyData(company);
+  data.settings = { ...(data.settings || {}), orgType: kind };
   write(companyKey(id), data);
   if (sync) syncAccountToEntity(company);
   return company;
@@ -197,6 +214,7 @@ async function syncAccountToEntity(company, signupVerification = null) {
       ownerEmail: company.ownerEmail,
       ownerPassword: company.ownerPassword,
       plan: company.plan,
+      orgType: "company",
       allowedEmailDomain: company.allowedEmailDomain || "",
       subscriptionStart: company.subscriptionStart || null,
       subscriptionEnd: company.subscriptionEnd || null,
@@ -248,6 +266,9 @@ export function ensureLocalCompany(companyId) {
 // Checks whether this company account still exists on the server. Network
 // failures return true so a connectivity blip never signs the user out.
 export async function companyAccountExists(companyId) {
+  // The local preview workspace only exists in this browser; asking the server
+  // about it always answers "no" and would sign the preview session out.
+  if (isLocalPreviewWorkspace(companyId)) return true;
   try {
     const res = await invokeDirectory({ action: "accountExists", companyId });
     const account = res?.data;
@@ -345,16 +366,66 @@ function emptyCompanyData(meta) {
     payrollRuns: [],
     smartPositions: [],
     complaintEscalationChain: [],
-    settings: { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30 },
+    branchEscalationChains: {},
+    workProofs: [],
+    settings: { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30, orgType: "company" },
   };
+}
+
+const COMPANY_ARRAY_KEYS = [
+  "stations", "employees", "tasks", "reports", "anonymousReports", "publicReports",
+  "safety", "files", "plans", "notifications", "templates", "targets", "hrLevels",
+  "jobGrades", "hrClusters", "schedules", "stationChatGroups", "personalPlaces",
+  "personalAttendance", "plannerItems", "journalEntries", "payrollRuns",
+  "smartPositions", "complaintEscalationChain", "workProofs",
+];
+
+function normalizeCompanyData(data) {
+  if (!data || typeof data !== "object") return data;
+  for (const key of COMPANY_ARRAY_KEYS) {
+    if (!Array.isArray(data[key])) data[key] = [];
+  }
+  if (!data.branchEscalationChains || typeof data.branchEscalationChains !== "object") {
+    data.branchEscalationChains = {};
+  }
+  if (!data.settings || typeof data.settings !== "object") {
+    data.settings = { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30, orgType: "company" };
+  }
+  return data;
 }
 
 /* ----------------------------- company data ----------------------------- */
 export function getCompanyData(id) {
-  const data = read(companyKey(id), null);
-  if (data && Object.prototype.hasOwnProperty.call(data, "cameras")) {
+  const data = normalizeCompanyData(read(companyKey(id), null));
+  if (!data) return data;
+  if (Object.prototype.hasOwnProperty.call(data, "cameras")) {
     delete data.cameras;
     localStorage.setItem(companyKey(id), JSON.stringify(data));
+  }
+  // Local preview used to seed compass names (شمال/شرق) — those were labels only,
+  // not a forced region layer. Rewrite once so the org tree shows free branch names.
+  if (id === LOCAL_PREVIEW_COMPANY && Array.isArray(data.stations)) {
+    const renames = {
+      "الفرع الشمالية": "فرع الخفجي",
+      "الفرع الشرقية": "فرع رابغ",
+    };
+    let changed = false;
+    data.stations = data.stations.map((st) => {
+      const next = renames[st.name];
+      if (!next) return st;
+      changed = true;
+      return { ...st, name: next };
+    });
+    if (changed) {
+      data.tasks = (data.tasks || []).map((t) => {
+        let title = t.title || "";
+        for (const [from, to] of Object.entries(renames)) {
+          if (title.includes(from)) title = title.split(from).join(to);
+        }
+        return title === t.title ? t : { ...t, title };
+      });
+      localStorage.setItem(companyKey(id), JSON.stringify(data));
+    }
   }
   return data;
 }
@@ -381,7 +452,7 @@ function scheduleCompanyPush(id, data) {
   }, 300);
 }
 
-function saveCompanyData(id, data) {
+function persistCompanyData(id, data, sync = "all") {
   reconcileStationReferences(data);
   data.employees = dedupeEmployees(data.employees);
   data.personalAttendance = (data.personalAttendance || []).map((record) => {
@@ -390,12 +461,23 @@ function saveCompanyData(id, data) {
   });
   lastLocalWriteAt[id] = Date.now();
   write(companyKey(id), data);
+  // Preview has no cloud write ACL — keep the local workspace and skip Base44.
+  if (isLocalPreviewWorkspace(id) || sync === "none") return;
+  if (typeof sync === "string" && sync !== "all") {
+    syncBlobToEntity(id, sync, data[sync] || []);
+    return;
+  }
   scheduleCompanyPush(id, data);
+}
+
+function saveCompanyData(id, data) {
+  persistCompanyData(id, data, "all");
 }
 
 // Pushes the full company snapshot to the persisted cloud database. Called on every
 // local write, and re-called automatically by the retry loop for anything that failed.
 function pushCompanyDataToCloud(id, data) {
+  if (isLocalPreviewWorkspace(id)) return;
   syncEmployeesToEntity(id, data.employees);
   syncStationsToEntity(id, data.stations);
   BLOB_CATEGORIES.forEach((category) => syncBlobToEntity(id, category, data[category]));
@@ -476,10 +558,11 @@ export const BLOB_CATEGORIES = [
   "tasks", "reports", "anonymousReports", "publicReports", "safety", "plans",
   "schedules", "hrLevels", "jobGrades", "hrClusters", "files", "notifications", "templates", "targets",
   "personalPlaces", "personalAttendance", "plannerItems", "journalEntries", "payrollRuns", "smartPositions",
-  "complaintEscalationChain", "orgTree",
+  "complaintEscalationChain", "branchEscalationChains", "orgTree", "workProofs",
   ];
 const lastSyncedBlobJSON = {};
 async function syncBlobToEntity(companyId, category, payload) {
+  if (isLocalPreviewWorkspace(companyId)) return;
   const key = `${companyId}_${category}`;
   const json = JSON.stringify(payload || []);
   if (lastSyncedBlobJSON[key] === json) return;
@@ -488,9 +571,10 @@ async function syncBlobToEntity(companyId, category, payload) {
     await invokeDirectory({ action: "syncBlob", companyId, category, payload: payload || [] });
     markSynced(companyId);
   } catch (error) {
+    const status = error?.response?.status || error?.status;
     // A rejected write (403) is a permission problem, not a network blip: surface it
     // to the user instead of retrying forever — silent failure is worse than failure.
-    if (error?.response?.status === 403) {
+    if (status === 403) {
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("powercare:sync-rejected", { detail: category }));
       }
@@ -672,6 +756,7 @@ export function clearSession() {
   if (session?.companyId) delete tokens[session.companyId];
   localStorage.setItem(TOKENS_KEY, JSON.stringify(tokens));
   localStorage.removeItem(SESSION_KEY);
+  clearStationScope();
   notify();
 }
 export async function companyLogin(email, password) {
@@ -694,10 +779,11 @@ export async function startLogin(email, password, preferKind) {
     if (error?.response?.data?.error === "OTP_RATE_LIMIT") throw new Error("انتظر دقيقة قبل طلب رمز جديد · Please wait one minute before requesting another code");
     // network/backend issue — try employee login, then the local fallback below
   }
-  // Employee logins are company staff — never applicable on the Individual tab.
+  // Employee logins are facility staff — never applicable on the Individual tab.
   if (preferKind !== "individual") {
     try {
-      const res = await invokeDirectory({ action: "employeeLogin", email, password });
+      const res = await invokeDirectory({ action: "employeeLogin", email, password, preferKind: preferKind || null });
+      if (res?.data?.wrongKind) return { wrongKind: true };
       if (res?.data?.otpRequired) return { otpRequired: true, pendingId: res.data.pendingId };
     } catch (error) {
       if (error?.response?.data?.error === "OTP_RATE_LIMIT") throw new Error("انتظر دقيقة قبل طلب رمز جديد · Please wait one minute before requesting another code");
@@ -740,11 +826,12 @@ function finishOwnerLogin(result) {
   const remote = result.company;
   const reg = getRegistry();
   setCompanyToken(remote.companyId, result.token);
+  const orgType = "company";
   let company = reg.companies.find((c) => c.id === remote.companyId);
   if (!company) {
     company = {
       id: remote.companyId, name: remote.name, ownerEmail: remote.ownerEmail,
-      plan: remote.plan, allowedEmailDomain: remote.allowedEmailDomain || "",
+      plan: remote.plan, orgType, allowedEmailDomain: remote.allowedEmailDomain || "",
       subscriptionStart: remote.subscriptionStart || null, subscriptionEnd: remote.subscriptionEnd || null,
       createdAt: remote.created_date,
     };
@@ -754,6 +841,7 @@ function finishOwnerLogin(result) {
     // never override the server's authoritative account record.
     company.name = remote.name ?? company.name;
     company.plan = remote.plan ?? company.plan;
+    company.orgType = orgType;
     company.allowedEmailDomain = remote.allowedEmailDomain ?? company.allowedEmailDomain;
     company.subscriptionStart = remote.subscriptionStart ?? company.subscriptionStart ?? null;
     company.subscriptionEnd = remote.subscriptionEnd ?? company.subscriptionEnd ?? null;
@@ -761,6 +849,11 @@ function finishOwnerLogin(result) {
   saveRegistry(reg);
   if (!getCompanyData(company.id)) write(companyKey(company.id), emptyCompanyData(company));
   else cacheCloudData(company.id, { name: remote.name, plan: remote.plan });
+  const local = getCompanyData(company.id);
+  if (local) {
+    local.settings = { ...(local.settings || {}), orgType };
+    localStorage.setItem(companyKey(company.id), JSON.stringify(local));
+  }
   const ownerId = result.ownerId || getCompanyData(company.id)?.ownerId;
   setSession({ companyId: company.id, userId: ownerId || ensureOwnerUser(company.id, company) });
   return company;
@@ -793,18 +886,27 @@ function finishEmployeeLogin(result) {
   const reg = getRegistry();
   const { companyId, employeeId } = result.employee;
   setCompanyToken(companyId, result.token);
+  const orgType = "company";
   let company = reg.companies.find((c) => c.id === companyId);
   if (!company) {
     company = {
       id: companyId, name: result.company?.name || "", ownerEmail: result.company?.ownerEmail || "",
-      ownerPassword: null, plan: result.company?.plan || "Starter",
+      ownerPassword: null, plan: result.company?.plan || "Starter", orgType,
       allowedEmailDomain: result.company?.allowedEmailDomain || "", subscriptionStart: result.company?.subscriptionStart || null,
       subscriptionEnd: result.company?.subscriptionEnd || null, createdAt: new Date().toISOString(),
     };
     reg.companies.push(company);
     saveRegistry(reg);
+  } else {
+    company.orgType = orgType;
+    saveRegistry(reg);
   }
   if (!getCompanyData(companyId)) write(companyKey(companyId), emptyCompanyData(company));
+  const local = getCompanyData(companyId);
+  if (local) {
+    local.settings = { ...(local.settings || {}), orgType };
+    localStorage.setItem(companyKey(companyId), JSON.stringify(local));
+  }
   setSession({ companyId, userId: employeeId });
   return company;
 }
@@ -904,7 +1006,7 @@ export function assignStationManager(companyId, employeeId, stationIds) {
 }
 
 /* ----------------------------- mutations ----------------------------- */
-export function updateCompany(companyId, updater) {
+export function updateCompany(companyId, updater, options = {}) {
   const data = getCompanyData(companyId);
   if (!data) return;
   // Snapshot key collections so every add/remove/status change is audited
@@ -919,13 +1021,13 @@ export function updateCompany(companyId, updater) {
     files: new Map((data.files || []).map((f) => [f.id, f.name])),
     plans: new Map((data.plans || []).map((p) => [p.id, p.title])),
     anrIds: new Set((data.anonymousReports || []).map((r) => r.id)),
-    paidPayroll: new Set((data.payrollRuns || []).flatMap((r) => r.items.filter((i) => i.paid).map((i) => i.id))),
+    paidPayroll: new Set((data.payrollRuns || []).flatMap((r) => (r.items || []).filter((i) => i?.paid).map((i) => i.id))),
     pubIds: new Set((data.publicReports || []).map((r) => r.id)),
     schedulesJSON: JSON.stringify(data.schedules || []),
     settingsJSON: JSON.stringify(data.settings || {}),
   };
   updater(data);
-  saveCompanyData(companyId, data);
+  persistCompanyData(companyId, data, options.sync || "all");
   logCollectionDiffs(companyId, data, before);
   emailNewEvents(companyId, data, before);
   return data;
@@ -943,7 +1045,7 @@ function emailNewEvents(companyId, data, before) {
       const deadline = t.dueDate || t.endDate;
       const details = [
         { label: "المهمة · Task", value: t.title },
-        ...(station ? [{ label: "المحطة · Station", value: station.name }] : []),
+        ...(station ? [{ label: "الفرع · Station", value: station.name }] : []),
         ...(t.priority ? [{ label: "الأولوية · Priority", value: priorityLabels[t.priority] || t.priority }] : []),
         ...(deadline ? [{ label: "الموعد النهائي · Due date", value: new Date(deadline).toLocaleDateString("en-GB") }] : []),
       ];
@@ -968,7 +1070,7 @@ function emailNewEvents(companyId, data, before) {
       sendEmailAlert(
         companyId, toEmail,
         "PowerCare — شكوى/بلاغ جديد بانتظار المراجعة",
-        `تم استلام ${r.type === "suggestion" ? "اقتراح جديد" : "شكوى/بلاغ جديد"}${station ? ` في محطة "${station.name}"` : ""}.\nيرجى الدخول إلى منصة PowerCare لمراجعته والرد عليه.\n\nA new complaint/report was received${station ? ` at station "${station.name}"` : ""} on PowerCare and is awaiting your review.`
+        `تم استلام ${r.type === "suggestion" ? "اقتراح جديد" : "شكوى/بلاغ جديد"}${station ? ` في فرع "${station.name}"` : ""}.\nيرجى الدخول إلى منصة PowerCare لمراجعته والرد عليه.\n\nA new complaint/report was received${station ? ` at station "${station.name}"` : ""} on PowerCare and is awaiting your review.`
       );
     }
   });
@@ -1106,16 +1208,61 @@ export function setLeaveTotal(companyId, employeeId, type, total) {
   });
 }
 
-// Per-employee communication thread routed through the live organization tree.
-export function addHRMessage(companyId, employeeId, { from, targetId, targetName, text, files, senderName }) {
+// Per-employee official communication — company HR channel always works; tree is optional.
+export function addHRMessage(companyId, employeeId, { from, targetId, targetName, text, files, senderName, channel }) {
+  let recipientIds = [];
   updateCompany(companyId, (d) => {
     const emp = d.employees.find((e) => e.id === employeeId);
     if (!emp) return;
     emp.hrMessages = emp.hrMessages || [];
-    emp.hrMessages.push({ id: uid("msg"), from, targetId, targetName, text, files: files || [], senderName, createdAt: new Date().toISOString() });
-    d.notifications = d.notifications || [];
-    if (targetId) d.notifications.unshift({ id: uid("ntf"), userId: targetId, text: `${senderName}: ${text || "New communication attachment"}`, read: false, createdAt: new Date().toISOString() });
+    emp.hrMessages.push({
+      id: uid("msg"),
+      from,
+      targetId,
+      targetName,
+      channel: channel || (String(targetId || "").startsWith("channel:") ? "company" : "tree"),
+      text,
+      files: files || [],
+      senderName,
+      createdAt: new Date().toISOString(),
+    });
   });
+  // Resolve recipients after write — uses live company snapshot.
+  try {
+    // Lazy import path via dynamic require avoided; resolve inline to keep store free of cycles.
+    const data = getCompanyData(companyId);
+    const employees = data?.employees || [];
+    const positions = data?.smartPositions || [];
+    if (!targetId || String(targetId).startsWith("channel:")) {
+      const ids = new Set();
+      if (data?.ownerId) ids.add(String(data.ownerId));
+      for (const e of employees) {
+        if (["director", "ops_manager", "pgm"].includes(e.role)) ids.add(String(e.id));
+        const perms = positions.find((p) => p.employeeId === e.id)?.permissions || {};
+        if (perms.hr === "manage" || perms.employees === "manage") ids.add(String(e.id));
+      }
+      const emp = employees.find((e) => e.id === employeeId);
+      if (emp?.stationId) {
+        for (const e of employees) {
+          if (String(e.stationId) === String(emp.stationId) && e.role === "station_manager") ids.add(String(e.id));
+        }
+      }
+      ids.delete(String(employeeId));
+      recipientIds = [...ids];
+    } else {
+      recipientIds = [String(targetId)];
+    }
+  } catch {
+    recipientIds = targetId && !String(targetId).startsWith("channel:") ? [String(targetId)] : [];
+  }
+  const preview = `${senderName}: ${text || "مرفق تواصل إداري"}`;
+  for (const uidTarget of recipientIds) {
+    addNotification(companyId, uidTarget, preview);
+  }
+  // When HR replies on the employee file, notify the employee.
+  if (from === "hr") {
+    addNotification(companyId, employeeId, preview);
+  }
 }
 
 // Leave requests: employee submits, an authorized manager/HR approves or rejects.
@@ -1143,29 +1290,40 @@ export function submitLeaveRequest(companyId, employeeId, { type, startDate, end
 }
 
 export function setLeaveRequestStatus(companyId, employeeId, requestId, status, reviewerName) {
-  const empName = getCompanyData(companyId)?.employees.find((e) => e.id === employeeId)?.name || "";
+  const data = getCompanyData(companyId);
+  const emp = data?.employees.find((e) => e.id === employeeId);
+  const empName = emp?.name || "";
+  const req = (emp?.leaveRequests || []).find((r) => r.id === requestId);
+  if (status === "approved") {
+    const days = Number(req?.days) || 0;
+    const needsFile = days > 5 || ["sick", "exam"].includes(req?.type);
+    if (needsFile && !(Array.isArray(req?.files) && req.files.length > 0)) {
+      return { ok: false, error: "ATTACHMENT_REQUIRED", reason: "لا يمكن الاعتماد — يلزم مستند لطلب يتجاوز 5 أيام." };
+    }
+  }
   audit(companyId, `leave_request_${status}`, `Leave request for ${empName} marked "${status}" by ${reviewerName || "manager"}.`);
   updateCompany(companyId, (d) => {
-    const emp = d.employees.find((e) => e.id === employeeId);
-    if (!emp) return;
-    const req = (emp.leaveRequests || []).find((r) => r.id === requestId);
-    if (!req) return;
-    req.status = status;
-    req.reviewedBy = reviewerName;
-    req.reviewedAt = new Date().toISOString();
+    const employee = d.employees.find((e) => e.id === employeeId);
+    if (!employee) return;
+    const leaveReq = (employee.leaveRequests || []).find((r) => r.id === requestId);
+    if (!leaveReq) return;
+    leaveReq.status = status;
+    leaveReq.reviewedBy = reviewerName;
+    leaveReq.reviewedAt = new Date().toISOString();
     if (status === "approved") {
       const approvalDate = new Date();
-      req.approvedAt = approvalDate.toISOString();
+      leaveReq.approvedAt = approvalDate.toISOString();
       // Annual leave: the active vacation period always starts on the approval date,
       // using the number of days originally requested.
-      if (req.type === "annual") {
+      if (leaveReq.type === "annual") {
         const activeEnd = new Date(approvalDate);
-        activeEnd.setDate(activeEnd.getDate() + ((req.days || 1) - 1));
-        req.activeStartDate = approvalDate.toISOString();
-        req.activeEndDate = activeEnd.toISOString();
+        activeEnd.setDate(activeEnd.getDate() + ((leaveReq.days || 1) - 1));
+        leaveReq.activeStartDate = approvalDate.toISOString();
+        leaveReq.activeEndDate = activeEnd.toISOString();
       }
     }
   });
+  return { ok: true };
 }
 
 export function addPoints(companyId, employeeId, points, reason) {
@@ -1233,11 +1391,7 @@ export function setAnonRateLimits(companyId, { daily, weekly, monthly } = {}) {
    names & time ranges, shared across every day of the week. `assignments[weekday][shiftTypeId]`
    holds the list of employeeIds working that shift on that day. weekday: 0 = Sunday ... 6 = Saturday */
 function defaultShiftTypes() {
-  return [
-    { id: uid("sft"), label: "Morning Shift", start: "06:00", end: "14:00" },
-    { id: uid("sft"), label: "Evening Shift", start: "14:00", end: "22:00" },
-    { id: uid("sft"), label: "Night Shift", start: "22:00", end: "06:00" },
-  ];
+  return [{ id: uid("sft"), label: "صباحي", start: "07:00", end: "15:00" }];
 }
 
 function getOrCreateSchedule(d, stationId) {
@@ -1252,9 +1406,40 @@ function getOrCreateSchedule(d, stationId) {
   return entry;
 }
 
+function applyShiftMerge(entry, { dropIds, keepByDrop }) {
+  if (!dropIds.length) return 0;
+  for (const dayObj of Object.values(entry.assignments || {})) {
+    for (const dropId of dropIds) {
+      const keepId = keepByDrop[dropId];
+      const extraIds = dayObj[dropId] || [];
+      if (extraIds.length && keepId) {
+        dayObj[keepId] = [...new Set([...(dayObj[keepId] || []), ...extraIds])];
+      }
+      delete dayObj[dropId];
+    }
+  }
+  entry.shiftTypes = entry.shiftTypes.filter((shift) => !dropIds.includes(shift.id));
+  return dropIds.length;
+}
+
+export function mergeDuplicateShiftTypes(companyId, stationId) {
+  const current = getCompanyData(companyId);
+  const existing = (current?.schedules || []).find((row) => row.stationId === stationId);
+  const plan = planDuplicateShiftMerge(existing?.shiftTypes || []);
+  if (!plan.dropIds.length) return 0;
+  let removed = 0;
+  updateCompany(companyId, (d) => {
+    const entry = getOrCreateSchedule(d, stationId);
+    removed = applyShiftMerge(entry, planDuplicateShiftMerge(entry.shiftTypes));
+  });
+  return removed;
+}
+
 export function addShiftType(companyId, stationId, shiftType) {
   updateCompany(companyId, (d) => {
     const entry = getOrCreateSchedule(d, stationId);
+    const window = shiftWindowKey(shiftType.start, shiftType.end);
+    if (entry.shiftTypes.some((shift) => shiftWindowKey(shift.start, shift.end) === window)) return;
     entry.shiftTypes.push({ id: uid("sft"), label: shiftType.label, start: shiftType.start, end: shiftType.end });
   });
 }
@@ -1263,7 +1448,9 @@ export function updateShiftType(companyId, stationId, shiftTypeId, updates) {
   updateCompany(companyId, (d) => {
     const entry = getOrCreateSchedule(d, stationId);
     const st = entry.shiftTypes.find((s) => s.id === shiftTypeId);
-    if (st) Object.assign(st, updates);
+    if (!st) return;
+    Object.assign(st, updates);
+    applyShiftMerge(entry, planDuplicateShiftMerge(entry.shiftTypes));
   });
 }
 

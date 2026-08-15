@@ -3,12 +3,20 @@ import { Navigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Loader2, LockKeyhole, LogOut } from "lucide-react";
 import { ALL_PLANS_CURRENTLY_FREE } from "@/lib/pricingPolicy";
+import { isLocalPreviewActive, LOCAL_PREVIEW_COMPANY_ID } from "@/lib/localPreview";
+import IdentityCard from "@/components/shared/IdentityCard";
+import { MUTED, SURFACE, ui } from "@/lib/platformStyles";
 
 export default function TrialExpiryGate({ company, children }) {
   const [access, setAccess] = useState(null);
   const [checkedCompanyId, setCheckedCompanyId] = useState(null);
   useEffect(() => {
     if (!company?.id) return;
+    if (isLocalPreviewActive() || company.id === LOCAL_PREVIEW_COMPANY_ID || company.subscriptionExempt) {
+      setAccess({ exists: true, subscriptionExempt: true });
+      setCheckedCompanyId(company.id);
+      return;
+    }
     let active = true;
     setAccess(null);
     setCheckedCompanyId(null);
@@ -16,9 +24,39 @@ export default function TrialExpiryGate({ company, children }) {
       .then((res) => { if (active) { setAccess(res.data); setCheckedCompanyId(company.id); } })
       .catch(() => { if (active) { setAccess({ exists: true }); setCheckedCompanyId(company.id); } });
     return () => { active = false; };
-  }, [company?.id]);
-  if (company?.id && (access === null || checkedCompanyId !== company.id)) return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="h-6 w-6 animate-spin text-accent" /></div>;
-  if (access?.frozen) return <div className="flex min-h-screen items-center justify-center bg-background p-6"><div className="max-w-lg rounded-3xl border border-border bg-card p-8 text-center shadow-elevated"><span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-muted"><LockKeyhole className="h-8 w-8 text-muted-foreground" /></span><h1 className="mt-5 font-heading text-3xl font-semibold">تم إيقاف الوصول مؤقتًا</h1><p className="mt-3 text-sm leading-7 text-muted-foreground">تم تجميد اشتراك هذه الشركة مؤقتًا. {access.frozenReason || "يرجى التواصل مع دعم NiroVera لمزيد من المعلومات."}</p><button onClick={() => { localStorage.removeItem("powercare_session"); window.location.href = "/"; }} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"><LogOut className="h-4 w-4" />العودة إلى الصفحة الرئيسية</button></div></div>;
+  }, [company?.id, company?.subscriptionExempt]);
+
+  if (company?.id && (access === null || checkedCompanyId !== company.id)) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: SURFACE }}>
+        <Loader2 style={{ width: 22, height: 22, color: MUTED }} className="animate-spin" />
+      </div>
+    );
+  }
+
+  if (access?.frozen) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: SURFACE, padding: 24 }} dir="rtl">
+        <div style={{ width: "100%", maxWidth: 520 }}>
+          <IdentityCard
+            icon={LockKeyhole}
+            title="تم إيقاف الوصول مؤقتًا"
+            subtitle={access.frozenReason || "يرجى التواصل مع دعم NiroVera لمزيد من المعلومات."}
+          >
+            <button
+              type="button"
+              onClick={() => { localStorage.removeItem("powercare_session"); window.location.href = "/"; }}
+              style={{ ...ui.btnPrimary, display: "inline-flex", alignItems: "center", gap: 8, height: 40 }}
+            >
+              <LogOut style={{ width: 14, height: 14 }} />
+              العودة إلى الصفحة الرئيسية
+            </button>
+          </IdentityCard>
+        </div>
+      </div>
+    );
+  }
+
   if (ALL_PLANS_CURRENTLY_FREE || access?.subscriptionExempt || company?.subscriptionExempt || !company?.subscriptionEnd) return children;
   const rawEnd = String(company.subscriptionEnd);
   const expiresAt = new Date(/^\d{4}-\d{2}-\d{2}$/.test(rawEnd) ? `${rawEnd}T23:59:59.999` : rawEnd).getTime();

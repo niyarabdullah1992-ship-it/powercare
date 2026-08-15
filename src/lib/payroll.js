@@ -2,6 +2,7 @@
 // (profile.baseSalary / allowances / currency, see SalaryTab). Stored in
 // data.payrollRuns and cloud-synced like every other collection.
 import { updateCompany } from "@/lib/store";
+import { checkArticle90Gate } from "@/lib/payrollDerivations";
 
 const uid = (p) => `${p}_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
 
@@ -35,6 +36,7 @@ export function payrollItemIssues(item) {
   const fields = ["allowances", "bonus", "deductions"];
   if (fields.some((field) => !Number.isFinite(Number(item?.[field])) || Number(item[field]) < 0)) return ["INVALID_AMOUNTS"];
   if (!item?.isOwner && netOf(item) <= 0) return ["NET_REQUIRED"];
+  if (!checkArticle90Gate(item).ok) return ["ARTICLE_90_EXCEEDED"];
   if (!/^[A-Z]{3}$/.test(String(item?.currency || ""))) return ["CURRENCY_REQUIRED"];
   return [];
 }
@@ -149,7 +151,9 @@ export function updatePayrollItem(companyId, month, itemId, updates) {
     const run = (d.payrollRuns || []).find((r) => r.month === month);
     const item = run?.items.find((i) => i.id === itemId);
     if (!item || item.paid) return;
-    const allowed = ["base", "allowances", "bonus", "deductions", "currency"];
+    // "deductions" is intentionally excluded: it is computed from documented
+    // deduction lines (see lib/payrollDeductions.js), never typed in directly.
+    const allowed = ["base", "allowances", "bonus", "currency"];
     for (const [field, value] of Object.entries(updates || {})) {
       if (!allowed.includes(field)) continue;
       if (field === "currency") item.currency = value;

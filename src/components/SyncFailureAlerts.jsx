@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "@/components/ui/use-toast";
 

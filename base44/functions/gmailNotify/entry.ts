@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
 import { fetchWithRetry } from '../../shared/fetchRetry.ts';
-import { POWERCARE_LOGO_URL, BRAND_NAME, BRAND_NAVY, BRAND_GREEN, BRAND_BG, BRAND_BORDER, BRAND_MUTED } from '../../shared/brand.ts';
+import { POWERCARE_MARK_URL } from '../../shared/brand.ts';
 
 // Sends an email from the company's connected Gmail account.
 // Authorized for the platform builder or any valid PowerCare company session.
@@ -30,38 +30,38 @@ const isAllowedCtaUrl = (value) => {
 };
 function emailHtml(title, text, details, cta) {
   const paragraphs = escapeHtml(text).split(/\n{2,}/)
-    .map((p) => `<p style="margin:0 0 12px;font-size:14px;line-height:1.8;color:${BRAND_MUTED};" dir="auto">${p.replace(/\n/g, '<br/>')}</p>`)
+    .map((p) => `<p style="margin:0 0 12px;font-size:14px;line-height:1.8;color:#52606d;" dir="auto">${p.replace(/\n/g, '<br/>')}</p>`)
     .join('');
   // Optional structured details table — [{label, value}]
   const detailsRows = Array.isArray(details) && details.length
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 16px;border:1px solid ${BRAND_BORDER};border-radius:10px;background:${BRAND_BG};">
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 16px;border:1px solid #d9cfbb;border-radius:10px;background:#fbf9f4;">
         ${details.map((d, i) => `<tr>
-          <td dir="auto" style="padding:10px 14px;font-size:12px;color:${BRAND_MUTED};white-space:nowrap;${i ? `border-top:1px solid ${BRAND_BORDER};` : ''}">${escapeHtml(d.label)}</td>
-          <td dir="auto" style="padding:10px 14px;font-size:13px;font-weight:700;color:${BRAND_NAVY};text-align:end;${i ? `border-top:1px solid ${BRAND_BORDER};` : ''}">${escapeHtml(d.value)}</td>
+          <td dir="auto" style="padding:10px 14px;font-size:12px;color:#77818b;white-space:nowrap;${i ? 'border-top:1px solid #e6dece;' : ''}">${escapeHtml(d.label)}</td>
+          <td dir="auto" style="padding:10px 14px;font-size:13px;font-weight:700;color:#13283d;text-align:end;${i ? 'border-top:1px solid #e6dece;' : ''}">${escapeHtml(d.value)}</td>
         </tr>`).join('')}
       </table>`
     : '';
   // Optional call-to-action button — {label, url}
   const ctaBtn = cta?.url
     ? `<div style="text-align:center;margin:8px 0 18px;">
-        <a href="${escapeHtml(cta.url)}" style="display:inline-block;background:${BRAND_GREEN};color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:12px 34px;border-radius:10px;">${escapeHtml(cta.label || BRAND_NAME)}</a>
+        <a href="${escapeHtml(cta.url)}" style="display:inline-block;background:linear-gradient(180deg,#d6c28f,#9e7c47);color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:12px 34px;border-radius:999px;">${escapeHtml(cta.label || 'PowerCare')}</a>
       </div>`
     : '';
-  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:${BRAND_BG};font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND_BG};padding:32px 12px;"><tr><td align="center">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid ${BRAND_BORDER};">
-      <tr><td style="background:${BRAND_NAVY};padding:26px;text-align:center;border-bottom:3px solid ${BRAND_GREEN};">
-        <img src="${POWERCARE_LOGO_URL}" width="72" height="72" alt="${BRAND_NAME}" style="display:block;margin:0 auto 8px;" />
-        <div style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:1px;">${BRAND_NAME}</div>
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f7f4ed;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f4ed;padding:32px 12px;"><tr><td align="center">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #d9cfbb;">
+      <tr><td style="background:#14284B;padding:26px;text-align:center;">
+        <img src="${POWERCARE_MARK_URL}" width="72" height="72" alt="NiroVera" style="display:block;margin:0 auto 8px;background:#fff;border-radius:8px;" />
+        <div style="font-size:20px;font-weight:700;color:#ffffff;font-family:Arial,Helvetica,sans-serif;letter-spacing:1px;">NiroVera</div>
       </td></tr>
       <tr><td style="padding:30px 30px 10px;">
-        <h1 style="margin:0 0 16px;font-size:18px;color:${BRAND_NAVY};" dir="auto">${escapeHtml(title)}</h1>
+        <h1 style="margin:0 0 16px;font-size:18px;color:#13283d;font-family:Georgia,serif;" dir="auto">${escapeHtml(title)}</h1>
         ${paragraphs}
         ${detailsRows}
         ${ctaBtn}
       </td></tr>
-      <tr><td style="padding:18px 30px 26px;border-top:1px solid ${BRAND_BORDER};">
-        <p style="margin:0;font-size:12px;color:${BRAND_MUTED};text-align:center;" dir="auto">NiroVera — منصة العمليات المؤسسية · Enterprise operations</p>
+      <tr><td style="padding:18px 30px 26px;border-top:1px solid #e6dece;">
+        <p style="margin:0;font-size:12px;color:#77818b;text-align:center;" dir="auto">NiroVera — إدارة ذكية لفريقك ومهامك · Smart workforce management</p>
       </td></tr>
     </table>
   </td></tr></table></body></html>`;
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
       }
       feedbackRecord = await base44.asServiceRole.entities.ProductFeedback.create({ companyId, role, rating, message, page });
       to = 'niyar@powercares.pro';
-      subject = `NiroVera feedback — ${rating}/5`;
+      subject = `PowerCare feedback — ${rating}/5`;
       text = message;
       details = [
         { label: 'Rating', value: `${rating}/5` },
@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
     const profile = profileRes.ok ? await profileRes.json() : null;
     if (!profile?.email) return Response.json({ error: 'Connected Gmail sender identity is unavailable' }, { status: 502 });
     const msg = createMimeMessage();
-    msg.setSender({ name: BRAND_NAME, addr: profile.email });
+    msg.setSender({ name: 'PowerCare', addr: profile.email });
     msg.setRecipient(to);
     msg.setSubject(subject);
     msg.addMessage({ contentType: 'text/html', data: emailHtml(subject, text, details, cta) });

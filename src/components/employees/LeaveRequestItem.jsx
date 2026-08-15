@@ -1,8 +1,10 @@
 import React from "react";
 import { useI18n } from "@/lib/i18n";
-import { Clock, CheckCircle2, XCircle, Check, X, CalendarClock } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, Check, X, CalendarClock, ShieldAlert } from "lucide-react";
 import { CommentAttachments } from "@/components/tasks/CommentFiles";
 import { formatDate } from "@/lib/dateFormat";
+import { LEAVE_TYPES, leaveTypeLabel } from "@/lib/leaveTypes";
+import { checkApproveLeaveGate } from "@/lib/leaveDerivations";
 
 const STATUS_STYLE = {
   pending: { tone: "bg-amber-100 text-amber-700", icon: Clock },
@@ -12,15 +14,16 @@ const STATUS_STYLE = {
 
 export default function LeaveRequestItem({ request, canApprove, onDecide }) {
   const { t, lang } = useI18n();
+  const ar = lang === "ar";
   const { tone, icon: StatusIcon } = STATUS_STYLE[request.status];
+  const typeRequiresFile = !!LEAVE_TYPES.find((ty) => ty.key === request.type)?.requiresFile;
+  const gate = checkApproveLeaveGate(request, typeRequiresFile);
+  const canOk = request.status === "pending" && gate.ok;
 
   return (
     <div className="p-4 rounded-xl border border-border bg-card space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="flex flex-wrap items-center gap-2 text-sm font-body font-medium">
-          <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-xs text-accent-text">{t(request.type)}</span>
-          {request.startDate} → {request.endDate} ({request.days || 1} {t("days")})
-        </p>
+        <p className="text-sm font-body font-medium">{leaveTypeLabel(request.type, ar)} · {request.startDate} → {request.endDate} ({request.days || 1} {t("days")})</p>
         <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-body ${tone}`}>
           <StatusIcon className="w-3 h-3" /> {t(request.status)}
         </span>
@@ -32,12 +35,25 @@ export default function LeaveRequestItem({ request, canApprove, onDecide }) {
       )}
       {request.reason && <p className="text-sm font-body text-muted-foreground">{request.reason}</p>}
       <CommentAttachments files={request.files} />
+      {request.status === "pending" && !gate.ok && gate.error === "ATTACHMENT_REQUIRED" && (
+        <p className="flex items-center gap-1.5 text-xs text-destructive font-body">
+          <ShieldAlert className="w-3.5 h-3.5" />
+          {ar ? gate.reason : "Approval blocked — a document is required for a request over 5 days."}
+        </p>
+      )}
       {canApprove && request.status === "pending" && (
         <div className="flex gap-2 pt-1">
-          <button onClick={() => onDecide(request.id, "approved")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-foreground text-background text-xs font-body">
+          <button
+            type="button"
+            disabled={!canOk}
+            onClick={() => canOk && onDecide(request.id, "approved")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-body ${
+              canOk ? "bg-foreground text-background" : "bg-muted text-muted-foreground cursor-not-allowed"
+            }`}
+          >
             <Check className="w-3.5 h-3.5" /> {t("approve")}
           </button>
-          <button onClick={() => onDecide(request.id, "rejected")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-destructive text-destructive text-xs font-body">
+          <button type="button" onClick={() => onDecide(request.id, "rejected")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-destructive text-destructive text-xs font-body">
             <X className="w-3.5 h-3.5" /> {t("reject")}
           </button>
         </div>

@@ -32,7 +32,8 @@ Deno.serve(async (req) => {
       auth = { admin: true, isManager: true, role: "owner", name: platformUser.full_name || platformUser.email || "Administrator", companyId: body.companyId || null, userId: null };
     } else {
       if (platformUser && platformUser.role === "admin") {
-        auth = { admin: true, isManager: true, role: "owner", name: platformUser.full_name || platformUser.email || "Administrator", companyId: body.companyId || null, userId: body.userId || null };
+        if (!body.companyId) return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
+        auth = { admin: true, isManager: true, role: "owner", name: platformUser.full_name || platformUser.email || "Administrator", companyId: body.companyId, userId: body.userId || null };
       } else {
         const { sessionToken, companyId } = body;
         if (sessionToken && companyId) {
@@ -63,6 +64,7 @@ Deno.serve(async (req) => {
         }
       }
       if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!auth.companyId) return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
     }
     const isManager = !!auth?.isManager;
     if (auth && !auth.admin && body.companyId && body.companyId !== auth.companyId) return Response.json({ error: "Forbidden" }, { status: 403 });
@@ -154,12 +156,12 @@ Deno.serve(async (req) => {
     // loaded from the server's own records, so an employee working across multiple
     // stations can check in at any of them — the record documents which one.
     const listWorkplaces = async () => {
-      const companyId = auth?.companyId || body.companyId;
+      const companyId = auth?.companyId;
       if (!companyId) return [];
       const out = [];
       const unrestricted = auth?.admin || ["owner", "director", "ops_manager"].includes(auth?.role);
       const stations = await base44.asServiceRole.entities.Station.filter({ companyId });
-      const allowedStationIds = new Set([auth?.stationId || stations[0]?.stationId, ...(auth?.stationIds || []), ...(auth?.managedStations || [])].filter(Boolean));
+      const allowedStationIds = new Set([auth?.stationId, ...(auth?.stationIds || []), ...(auth?.managedStations || [])].filter(Boolean));
       for (const st of stations) {
         if (!unrestricted && !allowedStationIds.has(st.stationId)) continue;
         if (st.lat != null && st.lng != null) {
@@ -217,7 +219,7 @@ Deno.serve(async (req) => {
       const { companyId } = body;
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(companyId)}`, { headers });
       const rows = await res.json();
-      const defaults = { company_id: companyId, work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: true, gps_required: true };
+      const defaults = { company_id: companyId, work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: false, gps_required: false };
       const emergency = await getEmergencyWindow(companyId);
       const policy = await getAttendancePolicy(companyId);
       const settings = (!res.ok || !Array.isArray(rows) || rows.length === 0) ? defaults : rows[0];
@@ -226,7 +228,8 @@ Deno.serve(async (req) => {
 
     if (action === "setAttendanceEmergency" || action === "clearAttendanceEmergency") {
       if (!auth?.admin && !["owner", "director", "ops_manager", "station_manager"].includes(auth?.role)) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const companyId = auth?.companyId || body.companyId;
+      const companyId = auth?.companyId;
+      if (!companyId) return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
       const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "attendanceEmergency" });
       if (action === "clearAttendanceEmergency") {
         if (blobs[0]) await base44.asServiceRole.entities.CompanyDataBlob.update(blobs[0].id, { payload: [] });
@@ -243,7 +246,8 @@ Deno.serve(async (req) => {
 
     if (action === "setScheduleRequirement") {
       if (!auth?.admin && !["owner", "director", "ops_manager"].includes(auth?.role)) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const companyId = auth?.companyId || body.companyId;
+      const companyId = auth?.companyId;
+      if (!companyId) return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
       const scheduleRequired = body.scheduleRequired !== false;
       const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category: "attendancePolicy" });
       const payload = [{ scheduleRequired }];
@@ -412,10 +416,11 @@ Deno.serve(async (req) => {
       }
       const setRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(companyId)}`, { headers });
       const setRows = await setRes.json();
-      const settings = (Array.isArray(setRows) && setRows[0]) || { work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: true, gps_required: true };
+      const settings = (Array.isArray(setRows) && setRows[0]) || { work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: false, gps_required: false };
       const emergency = await getEmergencyWindow(companyId);
-      const locationRequired = settings.gps_enabled !== false && !emergency?.active;
-      if (locationRequired && (lat == null || lng == null)) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
+      const hasCoords = lat != null && lng != null;
+      const locationRequired = settings.gps_enabled === true && settings.gps_required === true && !emergency?.active;
+      if (locationRequired && !hasCoords) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       const scheduledStationId = scheduledShift.stationId || auth?.stationId || stationId;
       let workplace = null;
       let recordedWorkplace = null;
@@ -427,6 +432,7 @@ Deno.serve(async (req) => {
         workplace = match.best;
         recordedWorkplace = match.best || match.nearest;
         nearestDist = match.nearestDist;
+        if (!workplace) return Response.json({ error: "OUTSIDE_STATION", distanceMeters: nearestDist }, { status: 400 });
       }
       const inZone = !locationRequired || !!workplace;
       const now = new Date();
@@ -439,7 +445,7 @@ Deno.serve(async (req) => {
       const inconclusiveAccuracy = Number(accuracy) > 100;
       const status = inZone && !inconclusiveAccuracy ? timelyStatus : "pending_review";
       const distMeters = recordedWorkplace?.dist ?? nearestDist;
-      const locationStatus = emergency?.active ? "emergency" : (!locationRequired ? "disabled" : (inconclusiveAccuracy ? "inconclusive" : (inZone ? "inside" : "outside")));
+      const locationStatus = emergency?.active ? "emergency" : (!locationRequired ? "manual" : (inconclusiveAccuracy ? "inconclusive" : (inZone ? "inside" : "outside")));
       const payload = {
         company_id: companyId,
         employee_id: employeeId,
@@ -509,9 +515,10 @@ Deno.serve(async (req) => {
       const emergency = await getEmergencyWindow(auth.companyId);
       const settingsRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(auth.companyId)}`, { headers });
       const settingsRows = await settingsRes.json();
-      const settings = (Array.isArray(settingsRows) && settingsRows[0]) || { gps_enabled: true };
-      const locationRequired = settings.gps_enabled !== false && !emergency?.active;
-      if (locationRequired && (lat == null || lng == null)) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
+      const settings = (Array.isArray(settingsRows) && settingsRows[0]) || { gps_enabled: false, gps_required: false };
+      const hasCoords = lat != null && lng != null;
+      const locationRequired = settings.gps_enabled === true && settings.gps_required === true && !emergency?.active;
+      if (locationRequired && !hasCoords) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       const date = toRiyadhDateKey();
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const rows = await res.json();
@@ -730,8 +737,8 @@ Deno.serve(async (req) => {
 
     if (action === "markAbsentees") {
       if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const companyId = auth?.companyId || body.companyId;
-      if (!companyId) return Response.json({ error: "Missing companyId" }, { status: 400 });
+      const companyId = auth?.companyId;
+      if (!companyId) return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
       const date = toRiyadhDateKey();
       const dirRes = await fetch(`${SUPABASE_URL}/rest/v1/employees_directory?company_id=eq.${encodeURIComponent(companyId)}&select=*`, { headers });
       const directory = await dirRes.json();

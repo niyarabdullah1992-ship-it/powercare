@@ -98,6 +98,12 @@
         "null"
       ]
     },
+    "orgType": {
+      "type": "string",
+      "enum": ["company", "gov"],
+      "default": "company",
+      "description": "Facility kind — company vs government. Locked at signup; drives login portal separation and terminology."
+    },
     "description": {
       "type": "string",
       "maxLength": 1000

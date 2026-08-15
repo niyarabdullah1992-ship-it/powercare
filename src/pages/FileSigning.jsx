@@ -1,23 +1,77 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { getCompanyToken } from "@/lib/store";
-import { PenLine, Send, Inbox, ShieldCheck } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { Inbox, PenLine, ShieldCheck, Users } from "lucide-react";
 import MySignatureCard from "@/components/files/MySignatureCard";
 import MultiSignCard from "@/components/files/MultiSignCard";
 import MultiSignInbox from "@/components/files/MultiSignInbox";
 import VerifyDocumentCard from "@/components/files/VerifyDocumentCard";
+import HowSigningWorks from "@/components/files/HowSigningWorks";
+import PlatformStampShell from "@/components/shared/PlatformStampShell";
 import { canCreateSignatureRequests, visibleEmployees } from "@/lib/permissions";
+import { MUTED, NAVY, pageCol } from "@/lib/platformStyles";
+import { ensureSignatureFonts } from "@/lib/typedSignatureImage";
 
 export default function FileSigning() {
   const { lang } = useI18n();
   const { company, data, currentUser } = useAuth();
   const ar = lang === "ar";
+  const [searchParams, setSearchParams] = useSearchParams();
   const [multiRefresh, setMultiRefresh] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => { ensureSignatureFonts(); }, []);
+
+  const canCreate = currentUser && data ? canCreateSignatureRequests(currentUser, data) : false;
+  const sections = useMemo(() => [
+    {
+      value: "individual",
+      label: ar ? "توقيع فردي" : "Individual",
+      hint: ar
+        ? "ارفع المستند، ضع ختمك على الصفحة، ثم وقّعه باسمك وبصفتك."
+        : "Upload the document, place your seal on the page, then sign in your name and capacity.",
+      icon: PenLine,
+    },
+    ...(canCreate ? [{
+      value: "group",
+      label: ar ? "توقيع جماعي" : "Group",
+      hint: ar
+        ? "المستند ثم الموقّعون ثم الحقول ثم الإرسال — نفس سلسلة الختم."
+        : "Document, then signers, then fields, then send — the same seal chain.",
+      icon: Users,
+    }] : []),
+    {
+      value: "inbox",
+      label: ar ? "الصندوق" : "Inbox",
+      hint: ar
+        ? "طلبات بانتظار توقيعك، ونسخ مكتملة جاهزة للتحميل."
+        : "Requests waiting for your signature, and completed copies ready to download.",
+      icon: Inbox,
+      count: pendingCount,
+    },
+    {
+      value: "verify",
+      label: ar ? "تحقق" : "Verify",
+      hint: ar
+        ? "ارفع النسخة الموقّعة أو أدخل رقم التحقق لمطابقة البصمة مع السجل."
+        : "Upload the signed copy or enter the verification id to match the fingerprint to the registry.",
+      icon: ShieldCheck,
+    },
+  ], [ar, canCreate, pendingCount]);
+
+  const requested = searchParams.get("tab");
+  const allowed = new Set(sections.map((section) => section.value));
+  const tool = allowed.has(requested) ? requested : "individual";
+
+  const setTool = (value) => {
+    const next = new URLSearchParams(searchParams);
+    if (value === "individual") next.delete("tab");
+    else next.set("tab", value);
+    setSearchParams(next, { replace: true });
+  };
 
   useEffect(() => {
     if (!currentUser || !company) return;
@@ -30,34 +84,63 @@ export default function FileSigning() {
     }).then((response) => setPendingCount((response.data?.requests || []).filter((request) => request.myStatus === "pending").length)).catch(() => setPendingCount(0));
   }, [company, currentUser, multiRefresh]);
 
-  if (!currentUser || !company) return null;
+  if (!currentUser || !company) {
+    return (
+      <div style={{ ...pageCol, margin: "0 auto" }}>
+        <p style={{ margin: 0, fontSize: 13, color: MUTED }}>{ar ? "جارٍ تحميل قسم التوقيع…" : "Loading signing…"}</p>
+      </div>
+    );
+  }
 
-  const canCreate = canCreateSignatureRequests(currentUser, data);
   const scopedEmployees = visibleEmployees(currentUser, data || { stations: [], employees: [] });
-  const tabs = [
-    { value: "signature", label: ar ? "توقيعي" : "My signature", icon: PenLine },
-    ...(canCreate ? [{ value: "send", label: ar ? "إرسال للتوقيع" : "Send for signing", icon: Send }] : []),
-    { value: "inbox", label: ar ? "صندوق التوقيع" : "Signing inbox", icon: Inbox, count: pendingCount },
-    { value: "verify", label: ar ? "التحقق من مستند" : "Verify document", icon: ShieldCheck },
-  ];
+  const legal = (
+    <>
+      {ar
+        ? "توقيع إلكتروني متقدم داخل المنشأة وفق نظام التعاملات الإلكترونية: هوية الموقّع، إثبات الإرادة، سلامة المحتوى، والتحقق. ليس شهادة رقمية مؤهلة من مركز تصديق مرخّص."
+        : "An advanced in-company electronic signature under the Electronic Transactions Law: signer identity, intent, content integrity, and verification. Not a qualified certificate from a licensed CSP."}
+      {" "}
+      {ar ? "التحقق العلني عبر" : "Public verification at"}{" "}
+      <Link to="/verify" style={{ color: NAVY, fontWeight: 600 }}>/verify</Link>
+      {ar ? " دون الدخول إلى المنصة." : " — no platform login required."}
+    </>
+  );
 
   return (
-    <div className="powercare-interior-page mx-auto w-full min-w-0 max-w-7xl overflow-x-hidden space-y-5">
-      <header className="signing-page-header overflow-hidden rounded-2xl border border-accent/35 bg-gradient-to-l from-primary to-sidebar px-5 py-6 text-primary-foreground shadow-elevated sm:px-7">
-        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-4"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-accent/40 bg-primary-foreground/5"><PenLine className="h-6 w-6 text-accent" /></span><div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-accent">NiroVera Secure Sign</p><h1 className="mt-1 font-heading text-3xl font-semibold !text-primary-foreground md:text-4xl">{ar ? "منصة التوقيع الرقمي" : "Digital signing workspace"}</h1></div></div>
-          <div className="flex items-center gap-2 rounded-full border border-accent/30 bg-primary-foreground/5 px-4 py-2 text-xs"><ShieldCheck className="h-4 w-4 text-accent" />{ar ? "تشفير وحماية موثّقة" : "Verified encryption & protection"}</div>
+    <PlatformStampShell ar={ar} title={ar ? "التوقيع الرقمي" : "Digital signing"} sections={sections} tool={tool} onTool={setTool} legal={legal}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {tool === "individual" && (
+        <MySignatureCard
+          companyId={company.id}
+          companyName={company.name}
+          currentUser={currentUser}
+          ar={ar}
+        />
+      )}
+      {tool === "group" && canCreate && (
+        <MultiSignCard
+          currentUser={currentUser}
+          companyId={company.id}
+          employees={scopedEmployees}
+          ar={ar}
+          onCreated={() => setMultiRefresh((n) => n + 1)}
+        />
+      )}
+      {tool === "inbox" && (
+        <MultiSignInbox
+          currentUser={currentUser}
+          companyId={company.id}
+          ar={ar}
+          refreshKey={multiRefresh}
+          onPendingChange={setPendingCount}
+        />
+      )}
+      {tool === "verify" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <VerifyDocumentCard ar={ar} />
+          <HowSigningWorks ar={ar} />
         </div>
-      </header>
-      <Tabs defaultValue="signature" dir={ar ? "rtl" : "ltr"} className="w-full min-w-0 max-w-full overflow-hidden">
-        <TabsList className="signing-page-tabs h-auto w-full min-w-0 max-w-full justify-start gap-1 overflow-x-auto rounded-xl border border-accent/20 bg-card p-1.5 shadow-sm no-scrollbar">
-          {tabs.map(({ value, label, icon: Icon, count }) => <TabsTrigger key={value} value={value} className="min-h-11 min-w-max gap-2 rounded-lg px-5 py-2.5 font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"><Icon className="h-4 w-4" />{label}{count > 0 && <Badge className="h-5 min-w-5 justify-center rounded-full bg-accent px-1.5 text-accent-foreground">{count}</Badge>}</TabsTrigger>)}
-        </TabsList>
-        <TabsContent value="signature" className="mt-5"><MySignatureCard companyId={company.id} currentUser={currentUser} ar={ar} /></TabsContent>
-        {canCreate && <TabsContent value="send" className="mt-5"><MultiSignCard currentUser={currentUser} companyId={company.id} employees={scopedEmployees} ar={ar} onCreated={() => setMultiRefresh((n) => n + 1)} /></TabsContent>}
-        <TabsContent value="inbox" className="mt-5"><MultiSignInbox currentUser={currentUser} companyId={company.id} ar={ar} refreshKey={multiRefresh} onPendingChange={setPendingCount} /></TabsContent>
-        <TabsContent value="verify" className="mt-5"><VerifyDocumentCard ar={ar} /></TabsContent>
-      </Tabs>
-    </div>
+      )}
+      </div>
+    </PlatformStampShell>
   );
 }

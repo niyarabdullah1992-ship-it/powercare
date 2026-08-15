@@ -41,5 +41,14 @@ export default defineConfig({
       visualEditAgent: false
     }),
     react(),
-  ]
+  ],
+  optimizeDeps: {
+    include: ["qrcode"],
+  },
+  // Claude Design handoff zips lock files on Windows; watching them crashes Vite (EBUSY).
+  server: {
+    watch: {
+      ignored: ["**/design-handoff-claude/**", "**/.tmp-design-caps/**"],
+    },
+  },
 });

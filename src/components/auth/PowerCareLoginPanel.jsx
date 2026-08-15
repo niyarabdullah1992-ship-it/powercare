@@ -6,16 +6,26 @@ import usePowerCareLogin from "@/hooks/usePowerCareLogin";
 import GoogleIcon from "@/components/GoogleIcon";
 import { AppleIcon, MicrosoftIcon } from "@/components/ProviderIcons";
 import OtpStep from "@/components/landing/OtpStep";
-import LoginTypeSelector from "@/components/landing/LoginTypeSelector";
 import GoogleAccountPicker from "@/components/landing/GoogleAccountPicker";
 
-export default function PowerCareLoginPanel({ showTypeSelector = false, returnPath = "/login" }) {
+/**
+ * @param {object} props
+ * @param {"company"|"individual"} [props.fixedKind] — locks portal; no cross-type login.
+ * @param {string} [props.returnPath]
+ * @param {boolean} [props.showTypeSelector] — legacy company/individual toggle (avoid when fixedKind set).
+ */
+export default function PowerCareLoginPanel({ showTypeSelector = false, fixedKind = null, returnPath = "/login" }) {
   const { t, lang } = useI18n();
-  const flow = usePowerCareLogin(returnPath);
+  const ar = lang === "ar";
+  const flow = usePowerCareLogin(returnPath, fixedKind);
   if (flow.googleAccounts.length) return <GoogleAccountPicker accounts={flow.googleAccounts} onSelect={flow.chooseGoogleAccount} onBack={() => flow.setGoogleAccounts([])} loading={flow.loading} lang={lang} />;
   if (flow.pendingId) return <OtpStep email={flow.email} accounts={flow.accounts} onVerify={flow.verify} onResend={flow.resend} onBack={flow.backFromOtp} />;
   return <div className="space-y-2">
-    {showTypeSelector && <LoginTypeSelector value={flow.kind} onChange={flow.setKind} lang={lang} />}
+    {showTypeSelector && !fixedKind && (
+      <p className="text-center text-xs text-muted-foreground">
+        {ar ? "استخدم بوابة الدخول المناسبة لنوع حسابك." : "Use the login portal that matches your account type."}
+      </p>
+    )}
     <div className="space-y-2">
       <button type="button" onClick={flow.google} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-md border border-border py-2 text-xs font-semibold hover:bg-muted disabled:opacity-50"><GoogleIcon className="h-5 w-5" />Continue with Google</button>
       <button type="button" onClick={flow.microsoft} disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-md border border-border py-2 text-xs font-semibold hover:bg-muted disabled:opacity-50"><MicrosoftIcon className="h-5 w-5" />Continue with Microsoft</button>
@@ -28,6 +38,6 @@ export default function PowerCareLoginPanel({ showTypeSelector = false, returnPa
       {flow.error && <p className="text-sm text-destructive">{flow.error}</p>}
       <button disabled={flow.loading} className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2 text-xs font-semibold text-primary-foreground disabled:opacity-60">{flow.loading && <Loader2 className="h-4 w-4 animate-spin" />}{flow.loading ? t("pleaseWaitBtn") : t("login")}</button>
     </form>
-    <Link to={`/forgot-password?type=${flow.kind}`} className="block text-center text-sm font-semibold text-accent hover:underline">{t("forgotPasswordLink")}</Link>
+      <Link to={`/forgot-password?type=${flow.kind}`} className="block text-center text-sm font-semibold text-[var(--nv-ink)] underline underline-offset-4">{t("forgotPasswordLink")}</Link>
   </div>;
 }

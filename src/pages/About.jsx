@@ -2,19 +2,21 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { ArrowLeft, ShieldCheck, MapPin, Radio, Users, Mail, Phone } from "lucide-react";
-import Logo from "@/components/Logo";
+import IdentityCard from "@/components/shared/IdentityCard";
+import PublicPaperShell from "@/components/shared/PublicPaperShell";
+import { MUTED, NAVY, ui } from "@/lib/platformStyles";
 
 const CONTENT = {
   ar: {
     back: "العودة للرئيسية",
     title: "من نحن",
     intro:
-      "NiroVera هي منصة إدارة مؤسسية متكاملة صُممت لمساعدة الشركات على إدارة محطاتها وفرقها اليومية بكفاءة واحترافية. نجمع بين إدارة المهام، الحضور والانصراف بتقنية GPS، التواصل الداخلي، وإدارة الموارد البشرية في مكان واحد.",
+      "NiroVera هي منصة إدارة مؤسسية متكاملة صُممت لمساعدة الشركات على إدارة فروعها وفرقها اليومية بكفاءة واحترافية. نجمع بين إدارة المهام، الحضور والانصراف بتقنية GPS، التواصل الداخلي، وإدارة الموارد البشرية في مكان واحد.",
     missionTitle: "رسالتنا",
     mission:
       "تمكين الشركات من إدارة عملياتها الميدانية بشفافية ودقة، مع تجربة استخدام راقية وبسيطة تناسب جميع أفراد الفريق — من الموظف الميداني إلى مدير الشركة.",
     features: [
-      { icon: Radio, title: "إدارة المحطات", text: "متابعة جميع المحطات والمواقع من لوحة تحكم واحدة مع تقارير أداء لحظية." },
+      { icon: Radio, title: "إدارة الفروع", text: "متابعة جميع الفروع والمواقع من لوحة تحكم واحدة مع تقارير أداء لحظية." },
       { icon: MapPin, title: "حضور ذكي بالموقع", text: "تسجيل حضور وانصراف موثّق بتقنية GPS عالية الدقة لضمان المصداقية." },
       { icon: Users, title: "موارد بشرية متكاملة", text: "هيكل إداري مرن، طلبات إجازات، شهادات، وتصعيد شكاوى منظم." },
       { icon: ShieldCheck, title: "خصوصية وأمان", text: "عزل كامل لبيانات كل شركة مع بلاغات مجهولة الهوية محمية بالتشفير." },
@@ -44,45 +46,31 @@ export default function About() {
   const c = CONTENT[lang === "ar" ? "ar" : "en"];
 
   return (
-    <div className="powercare-public min-h-screen bg-landing-cinema font-body text-white" dir={dir}>
-      <div className="flex items-center justify-between border-b border-accent/20 px-6 py-4 md:px-10">
-        <div className="flex items-center gap-2">
-          <Logo size={30} />
-          <span className="font-heading font-semibold text-lg">NiroVera</span>
-        </div>
-        <Link to="/" className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-sm hover:bg-white/10">
-          <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} strokeWidth={1.75} /> {c.back}
+    <PublicPaperShell dir={dir} maxWidth={880}>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <Link to="/" style={{ ...ui.btnGhost, display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+          <ArrowLeft style={{ width: 14, height: 14, transform: dir === "rtl" ? "rotate(180deg)" : undefined }} />
+          {c.back}
         </Link>
       </div>
-
-      <div className="max-w-4xl mx-auto px-6 py-14 md:py-20">
-        <h1 className="mb-6 font-heading text-5xl font-semibold text-white md:text-7xl">{c.title}</h1>
-        <p className="max-w-3xl text-base leading-relaxed text-white/60 md:text-lg">{c.intro}</p>
-
-        <div className="mt-12 rounded-2xl border border-accent/25 bg-card p-8 text-card-foreground shadow-xl shadow-accent/10">
-          <h2 className="mb-3 font-heading text-2xl">{c.missionTitle}</h2>
-          <p className="text-sm leading-relaxed text-muted-foreground md:text-base">{c.mission}</p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6 mt-10">
-          {c.features.map((f) => (
-            <div key={f.title} className="rounded-2xl border border-accent/20 bg-card p-6 text-card-foreground shadow-sm">
-              <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent"><f.icon className="h-5 w-5" strokeWidth={1.5} /></span>
-              <h3 className="mb-2 font-heading text-xl">{f.title}</h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">{f.text}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-12 rounded-2xl bg-accent p-8 text-accent-foreground shadow-lg shadow-accent/20">
-          <h2 className="font-heading text-2xl mb-4">{c.contactTitle}</h2>
-          <ul className="space-y-2.5 text-sm">
-            <li className="flex items-center gap-2"><Phone className="w-4 h-4" /> <span dir="ltr">0595414472</span></li>
-            <li className="flex items-center gap-2"><Mail className="w-4 h-4" /> niyar@powercares.pro</li>
-            <li className="flex items-center gap-2"><Mail className="w-4 h-4" /> turkialmutarir@gmail.com</li>
-          </ul>
-        </div>
+      <IdentityCard title={c.title} subtitle={c.intro} dir={dir} />
+      <IdentityCard title={c.missionTitle} dir={dir} bodySurface>
+        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: MUTED }}>{c.mission}</p>
+      </IdentityCard>
+      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+        {c.features.map((f) => (
+          <IdentityCard key={f.title} icon={f.icon} title={f.title} dir={dir} bodySurface>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.65, color: MUTED }}>{f.text}</p>
+          </IdentityCard>
+        ))}
       </div>
-    </div>
+      <IdentityCard icon={Mail} title={c.contactTitle} dir={dir} bodySurface>
+        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10, fontSize: 13, color: NAVY }}>
+          <li style={{ display: "flex", alignItems: "center", gap: 8 }}><Phone style={{ width: 16, height: 16 }} /> <span dir="ltr">0595414472</span></li>
+          <li style={{ display: "flex", alignItems: "center", gap: 8 }}><Mail style={{ width: 16, height: 16 }} /> niyar@powercares.pro</li>
+          <li style={{ display: "flex", alignItems: "center", gap: 8 }}><Mail style={{ width: 16, height: 16 }} /> turkialmutarir@gmail.com</li>
+        </ul>
+      </IdentityCard>
+    </PublicPaperShell>
   );
 }

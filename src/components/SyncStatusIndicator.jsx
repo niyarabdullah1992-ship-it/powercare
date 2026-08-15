@@ -1,11 +1,10 @@
+
 import React, { useEffect, useState } from "react";
 import { Cloud, CloudOff, RefreshCw } from "lucide-react";
 import { getSyncStatus, subscribe } from "@/lib/store";
 import { useI18n } from "@/lib/i18n";
+import { ACCENT, MUTED } from "@/lib/platformStyles";
 
-// Live cloud-sync health badge: green = everything saved to the cloud,
-// spinning = pulling latest data, amber = local changes waiting to upload
-// (offline or a failed push being retried automatically).
 export default function SyncStatusIndicator({ isSyncing }) {
   const { t } = useI18n();
   const [status, setStatus] = useState(getSyncStatus());
@@ -24,25 +23,40 @@ export default function SyncStatusIndicator({ isSyncing }) {
     };
   }, []);
 
+  const shell = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 5,
+    height: 32,
+    padding: "0 9px",
+    borderRadius: 9,
+    border: "1px solid var(--nv-line, #E2E8F0)",
+    background: "var(--nv-card, #fff)",
+    fontSize: 11,
+    fontWeight: 600,
+    fontFamily: "inherit",
+    whiteSpace: "nowrap",
+  };
+
   if (status.offline || status.pending > 0) {
     return (
-      <span className="flex items-center gap-1 text-[11px] text-amber-600" title={t("syncPendingTitle")}>
-        <CloudOff className="w-3.5 h-3.5" strokeWidth={2} />
+      <span style={{ ...shell, color: "#B45309", borderColor: "#FDE68A", background: "#FFFBEB" }} title={t("syncPendingTitle")}>
+        <CloudOff style={{ width: 14, height: 14 }} strokeWidth={1.75} />
         <span className="hidden sm:inline">{t("syncPending")}</span>
       </span>
     );
   }
   if (isSyncing) {
     return (
-      <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-        <RefreshCw className="w-3 h-3 animate-spin" strokeWidth={2} />
+      <span style={{ ...shell, color: MUTED }}>
+        <RefreshCw style={{ width: 13, height: 13 }} strokeWidth={1.75} className="animate-spin" />
         <span className="hidden sm:inline">{t("syncing")}</span>
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-1 text-[11px] text-emerald-600" title={t("syncSavedTitle")}>
-      <Cloud className="w-3.5 h-3.5" strokeWidth={2} />
+    <span style={{ ...shell, color: "#14683F", borderColor: "color-mix(in oklab, #1E9E63 35%, #fff)", background: "#ECFDF3" }} title={t("syncSavedTitle")}>
+      <Cloud style={{ width: 14, height: 14, color: ACCENT }} strokeWidth={1.75} />
       <span className="hidden sm:inline">{t("synced")}</span>
     </span>
   );

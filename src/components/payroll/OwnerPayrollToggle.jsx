@@ -1,14 +1,56 @@
 import React from "react";
-import { Switch } from "@/components/ui/switch";
+import { MUTED, NAVY, BORDER, ACCENT, CARD } from "@/lib/platformStyles";
 
 export default function OwnerPayrollToggle({ checked, onChange, ar }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4">
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: "16px",
+      borderRadius: "14px",
+      border: `1px solid ${BORDER}`,
+      background: CARD,
+      padding: "14px 16px",
+    }}>
       <div>
-        <p className="text-sm font-semibold">{ar ? "إدراج المالك في مسير الرواتب" : "Include owner in payroll"}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{ar ? "إعداد ثابت، وراتب المالك اختياري وغير إلزامي." : "Persistent setting; the owner's salary is optional."}</p>
+        <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: NAVY }}>
+          {ar ? "إدراج المالك في مسير الرواتب" : "Include owner in payroll"}
+        </p>
+        <p style={{ margin: "6px 0 0", fontSize: "12px", color: MUTED }}>
+          {ar ? "إعداد ثابت، وراتب المالك اختياري وغير إلزامي." : "Persistent setting; the owner's salary is optional."}
+        </p>
       </div>
-      <Switch checked={checked} onCheckedChange={onChange} aria-label={ar ? "إدراج المالك في الرواتب" : "Include owner in payroll"} />
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={ar ? "إدراج المالك في الرواتب" : "Include owner in payroll"}
+        onClick={() => onChange?.(!checked)}
+        style={{
+          width: "44px",
+          height: "24px",
+          borderRadius: "999px",
+          border: "none",
+          background: checked ? ACCENT : "#CBD5E1",
+          position: "relative",
+          cursor: "pointer",
+          flexShrink: 0,
+          padding: 0,
+        }}
+      >
+        <span style={{
+          position: "absolute",
+          top: "3px",
+          insetInlineStart: checked ? "23px" : "3px",
+          width: "18px",
+          height: "18px",
+          borderRadius: "999px",
+          background: CARD,
+          transition: "inset-inline-start .15s",
+          boxShadow: "0 1px 2px rgba(20,40,75,.2)",
+        }} />
+      </button>
     </div>
   );
 }

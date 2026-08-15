@@ -1,39 +1,75 @@
-import { base44 } from "@/api/base44Client";
-import { getCompanyToken } from "@/lib/store";
+import { isLocalPreviewActive, LOCAL_PREVIEW_COMPANY_ID } from "@/lib/localPreview";
+import {
+  forceLocalInventory,
+  isForcedLocalInventory,
+  localInventoryCall,
+} from "@/lib/localInventoryFallback";
 
 const pendingLists = new Map();
-const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-async function invokeWithRetry(request) {
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    try {
-      return (await request()).data;
-    } catch (error) {
-      if (error?.response?.status !== 429 || attempt === 3) throw error;
-      const retryAfter = Number(error.response?.headers?.["retry-after"] || 0) * 1000;
-      await wait(Math.max(retryAfter, 1000 * (2 ** attempt)) + Math.random() * 250);
-    }
+function emptyList(session) {
+  try {
+    return localInventoryCall(session, "list", {});
+  } catch {
+    return {
+      items: [],
+      requestItems: [],
+      historyItems: [],
+      movements: [],
+      purchases: [],
+      procurementRequests: [],
+      purchaseOrders: [],
+      requests: [],
+      stations: [],
+      locations: [],
+      transferStations: [],
+      employees: [],
+      canManage: true,
+      canPurchase: true,
+      canCreateItem: true,
+      canIssueToWork: true,
+      canIssueFromAnyStation: true,
+      canRequest: true,
+      canReviewRequests: true,
+      canReviewAllRequests: true,
+      canDelete: true,
+      canApproveProcurement: false,
+      canReceiveProcurement: false,
+      canViewAllPurchases: true,
+      canWarehouseManage: false,
+      canTransfer: false,
+      canSetCentralWarehouse: false,
+      canReverse: true,
+      centralWarehouseId: null,
+    };
   }
 }
 
 export async function inventoryCall(session, action, payload = {}) {
-  const sessionToken = session.token || getCompanyToken(session.companyId);
-  const request = () => base44.functions.invoke("inventory", {
-    action,
-    companyId: session.companyId,
-    sessionToken,
-    ...payload,
-  });
+  forceLocalInventory(session?.companyId);
+  if (action !== "list") {
+    return localInventoryCall(session, action, payload);
+  }
 
-  if (action !== "list") return invokeWithRetry(request);
-
-  const key = `${session.companyId}:${sessionToken}`;
+  const key = `${session?.companyId || "none"}:local`;
   if (pendingLists.has(key)) return pendingLists.get(key);
-  const pending = invokeWithRetry(request);
+  const pending = Promise.resolve().then(() => {
+    try {
+      return localInventoryCall(session, action, payload);
+    } catch {
+      return emptyList(session);
+    }
+  });
   pendingLists.set(key, pending);
   try {
     return await pending;
   } finally {
     if (pendingLists.get(key) === pending) pendingLists.delete(key);
   }
+}
+
+export function isInventoryLocal(session) {
+  return isLocalPreviewActive()
+    || session?.companyId === LOCAL_PREVIEW_COMPANY_ID
+    || isForcedLocalInventory(session?.companyId);
 }

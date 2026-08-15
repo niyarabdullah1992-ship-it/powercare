@@ -72,7 +72,7 @@ export default function VoiceControl({ onCommand, voiceGender }) {
   return (
     <div className="absolute end-2 top-1/2 z-10 -translate-y-1/2">
       {status && (
-        <span className={`absolute bottom-full end-0 mb-2 w-52 rounded-md border border-border bg-card px-2.5 py-2 text-xs font-body leading-relaxed shadow-sm ${awake || directReady ? "text-accent font-semibold" : (denied || micDenied) ? "text-red-500" : "text-muted-foreground"}`}>
+        <span className={`absolute bottom-full end-0 mb-2 w-52 rounded-md border border-[#E2E8F0] bg-white px-2.5 py-2 text-xs font-body leading-relaxed shadow-sm ${awake || directReady ? "text-[#1E9E63] font-semibold" : (denied || micDenied) ? "text-[#DC2626]" : "text-[#5A6B85]"}`}>
           {status}
         </span>
       )}
@@ -83,8 +83,8 @@ export default function VoiceControl({ onCommand, voiceGender }) {
         title={enabled ? (ar ? "إيقاف الاستماع" : "Stop listening") : (ar ? "بدء الاستماع" : "Start listening")}
         className={`relative flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${
           enabled
-            ? "bg-accent text-accent-foreground border-accent"
-            : "bg-secondary text-foreground border-accent/45 hover:bg-accent hover:text-accent-foreground"
+            ? "bg-[#1E9E63] text-white border-[#1E9E63]"
+            : "bg-[#F7F8FA] text-[#14284B] border-[#E2E8F0] hover:bg-white hover:border-[#14284B]"
         }`}
       >
         {enabled ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}

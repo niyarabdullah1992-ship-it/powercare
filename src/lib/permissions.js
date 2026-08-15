@@ -16,12 +16,13 @@ export const ROLE_RANK = {
 
 // Can the user see all stations in the company?
 export function canSeeAllStations(user) {
-  return ["director", "ops_manager"].includes(user.role);
+  return ["director", "ops_manager"].includes(user?.role);
 }
 
 // Stations visible to a user given the company data
 export function visibleStations(user, data) {
-  const stations = stationsInOrder(data.stations);
+  const stations = stationsInOrder(data?.stations);
+  if (!user) return [];
   if (canSeeAllStations(user) || user?.id === data?.ownerId || user.role === "safety_officer") return stations;
   if (user.role === "pgm") {
     const managed = user.managedStations || [];
@@ -60,7 +61,10 @@ export function canReplyAnon(user) {
 }
 
 // Can the user create tasks / templates / plans?
-export function canCreateTasks(user) {
+export function canCreateTasks(user, data) {
+  if (!user) return false;
+  // The company owner can always create tasks in any station branch, whatever role label they hold.
+  if (user.role === "owner" || user.isOwner || (data?.ownerId && user.id === data.ownerId)) return true;
   return ["director", "ops_manager", "pgm", "station_manager"].includes(user.role);
 }
 
@@ -190,6 +194,8 @@ export function isHRAssistant(user, data) {
 // a station manager can for their own station; HR members need the explicit
 // "manage_schedules" permission and to be in scope for that station.
 export function canManageSchedule(user, data, stationId) {
+  if (!user) return false;
+  if (user.role === "owner" || user.isOwner || (data?.ownerId && user.id === data.ownerId)) return true;
   if (user.role === "director") return true;
   if (user.role === "station_manager" && employeeStationId(user, data) === stationId) return true;
   if (hasHRPermission(user, data, "manage_schedules")) {
@@ -224,15 +230,17 @@ export function canViewEmployeeProfile(viewer, employee, data) {
 
 // Employees visible to a user (for management views)
 export function visibleEmployees(user, data) {
-  if (canSeeAllStations(user) || user?.id === data?.ownerId) return data.employees;
+  const employees = Array.isArray(data?.employees) ? data.employees : [];
+  if (!user) return [];
+  if (canSeeAllStations(user) || user?.id === data?.ownerId) return employees;
   if (user?.role === "station_manager") {
     const stationIds = new Set([employeeStationId(user, data), ...(user.managedStations || [])].filter(Boolean));
-    return data.employees.filter((employee) => stationIds.has(employeeStationId(employee, data)));
+    return employees.filter((employee) => stationIds.has(employeeStationId(employee, data)));
   }
   if (hasHRPermission(user, data, "view_employees") || hasHRPermission(user, data, "manage_employees")) {
     const scope = hrScopeStations(user, data);
-    return scope === null ? data.employees : data.employees.filter((employee) => scope.includes(employeeStationId(employee, data)));
+    return scope === null ? employees : employees.filter((employee) => scope.includes(employeeStationId(employee, data)));
   }
   const stationIds = new Set(visibleStations(user, data).map((station) => station.id));
-  return data.employees.filter((employee) => stationIds.has(employeeStationId(employee, data)));
+  return employees.filter((employee) => stationIds.has(employeeStationId(employee, data)));
 }

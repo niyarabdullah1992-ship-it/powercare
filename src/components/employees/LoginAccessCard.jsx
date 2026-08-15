@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { KeyRound } from "lucide-react";
 import { setEmployeePassword } from "@/lib/store";
+import { ACCENT, BORDER, MUTED, NAVY, field, ui, CARD } from "@/lib/platformStyles";
 
 export default function LoginAccessCard({ employee, companyId }) {
   const { t } = useI18n();
@@ -21,29 +22,29 @@ export default function LoginAccessCard({ employee, companyId }) {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
-      <div className="flex items-center gap-2 mb-1">
-        <KeyRound className="w-4 h-4 text-accent" />
-        <h3 className="font-heading text-lg">{t("loginAccess")}</h3>
+    <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: "14px", padding: "16px 18px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+        <KeyRound style={{ width: 16, height: 16, color: ACCENT }} />
+        <div style={{ fontSize: "14px", fontWeight: 600, color: NAVY }}>{t("loginAccess")}</div>
       </div>
-      <p className="text-xs text-muted-foreground font-body mb-3">{t("loginAccessNote")}</p>
+      <p style={{ margin: "0 0 12px", fontSize: "11px", color: MUTED, lineHeight: 1.6 }}>{t("loginAccessNote")}</p>
       {!employee.email ? (
-        <p className="text-xs text-destructive font-body">{t("emailRequiredForLogin")}</p>
+        <p style={{ margin: 0, fontSize: "12px", color: "#DC2626" }}>{t("emailRequiredForLogin")}</p>
       ) : (
-        <form onSubmit={save} className="flex flex-col sm:flex-row gap-2">
+        <form onSubmit={save} style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={t("newEmployeePassword")}
-            className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm font-body focus:outline-none focus:ring-2 focus:ring-ring"
+            style={{ ...field, flex: "1 1 200px" }}
           />
-          <button type="submit" disabled={saving || !password} className="px-4 py-2 rounded-lg bg-foreground text-background text-sm font-body disabled:opacity-50">
+          <button type="submit" disabled={saving || !password} style={{ ...ui.btnPrimary, opacity: saving || !password ? 0.5 : 1 }}>
             {saving ? "…" : t("save")}
           </button>
         </form>
       )}
-      {message && <p className="text-xs font-body mt-2 text-muted-foreground">{message}</p>}
+      {message && <p style={{ margin: "8px 0 0", fontSize: "11px", color: MUTED }}>{message}</p>}
     </div>
   );
 }

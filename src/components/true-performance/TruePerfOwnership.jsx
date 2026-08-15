@@ -20,7 +20,7 @@ export default function TruePerfOwnership({ ownership, fingerprintSource }) {
       <div className="space-y-3">
         {ownership.evidence.map((item, index) => (
           <div key={item.titleAr} className="flex gap-4 rounded-lg border border-border bg-card p-4">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-heading text-sm font-semibold text-landing-gold-light">{index + 1}</span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-heading text-sm font-semibold text-accent">{index + 1}</span>
             <div>
               <p className="font-heading text-base font-semibold text-primary">{item.titleAr}</p>
               <p className="mt-1 text-[12px] leading-6 text-muted-foreground">{item.textAr}</p>
@@ -42,7 +42,7 @@ export default function TruePerfOwnership({ ownership, fingerprintSource }) {
 
       <div className="rounded-lg border border-accent/40 bg-primary p-6 text-primary-foreground">
         <div className="flex items-center gap-2">
-          <FileSignature className="h-5 w-5 text-landing-gold-light" strokeWidth={1.6} />
+          <FileSignature className="h-5 w-5 text-accent" strokeWidth={1.6} />
           <h3 className="font-heading text-xl font-semibold">{ownership.declarationTitleAr}</h3>
         </div>
         <p className="mt-3 text-[13px] leading-7 text-primary-foreground/85">{ownership.declarationAr}</p>

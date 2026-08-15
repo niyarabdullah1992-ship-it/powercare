@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
 import { authPowerCareSession } from '../../shared/powerCareSession.ts';
 import { fetchWithRetry } from '../../shared/fetchRetry.ts';
-import { POWERCARE_LOGO_URL } from '../../shared/brand.ts';
+import { POWERCARE_MARK_URL } from '../../shared/brand.ts';
 
 function toBase64Url(str) {
   const bytes = new TextEncoder().encode(str);
@@ -63,21 +63,21 @@ function signatureRequestEmail({ ar, signerName, creatorName, fileName, link, si
 
   return `<!doctype html>
 <html lang="${ar ? 'ar' : 'en'}" dir="${direction}">
-  <body style="margin:0;padding:0;background:#F7F8FA;color:#14284B;font-family:Arial,'Helvetica Neue',sans-serif;">
-    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#F7F8FA;">
+  <body style="margin:0;padding:0;background:#f7f4ed;color:#13283d;font-family:Arial,'Helvetica Neue',sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f7f4ed;">
       <tr>
         <td align="center" style="padding:36px 16px;">
-          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background:#ffffff;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;box-shadow:0 8px 28px rgba(20,40,75,0.08);">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background:#ffffff;border:1px solid #d9cfbb;border-radius:16px;overflow:hidden;box-shadow:0 8px 28px rgba(48,39,29,0.08);">
             <tr>
-              <td style="padding:28px 32px;background:#14284B;border-bottom:3px solid #1E9E63;text-align:${align};">
+              <td style="padding:28px 32px;background:#13283d;text-align:${align};">
                 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                   <tr>
                     <td style="vertical-align:middle;text-align:${align};">
-                      <img src="${POWERCARE_LOGO_URL}" width="74" height="74" alt="NiroVera" style="display:inline-block;object-fit:contain;vertical-align:middle;" />
+                      <img src="${POWERCARE_MARK_URL}" width="74" height="74" alt="NiroVera" style="display:inline-block;object-fit:contain;vertical-align:middle;" />
                     </td>
                   </tr>
                 </table>
-                <h1 style="margin:22px 0 0;color:#ffffff;font-size:26px;line-height:1.35;font-weight:700;">${title}</h1>
+                <h1 style="margin:22px 0 0;color:#f7f4ed;font-size:26px;line-height:1.35;font-weight:700;">${title}</h1>
               </td>
             </tr>
             <tr>
@@ -118,20 +118,20 @@ function signatureRequestEmail({ ar, signerName, creatorName, fileName, link, si
                     </td>
                   </tr>
                 </table>
-                <div style="margin-top:14px;padding:16px 18px;background:#EAF6F0;border-left:3px solid #1E9E63;border-radius:10px;text-align:${align};">
-                  <div style="margin-bottom:5px;color:#14284B;font-size:13px;font-weight:700;">${securityLabel}</div>
-                  <div style="color:#5A6B85;font-size:12px;line-height:1.7;">${securityText}</div>
+                <div style="margin-top:14px;padding:16px 18px;background:#f1eadb;border-left:3px solid #c7ad76;border-radius:10px;text-align:${align};">
+                  <div style="margin-bottom:5px;color:#13283d;font-size:13px;font-weight:700;">${securityLabel}</div>
+                  <div style="color:#52606d;font-size:12px;line-height:1.7;">${securityText}</div>
                 </div>
 
                 <div style="padding:30px 0 24px;text-align:center;">
-                  <a href="${escapeHtml(link)}" style="display:inline-block;background:#1E9E63;color:#ffffff;text-decoration:none;padding:15px 28px;border-radius:10px;font-size:15px;font-weight:bold;line-height:1.2;box-shadow:0 5px 14px rgba(30,158,99,0.28);">${button}</a>
+                  <a href="${escapeHtml(link)}" style="display:inline-block;background:#c7ad76;color:#ffffff;text-decoration:none;padding:15px 28px;border-radius:10px;font-size:15px;font-weight:bold;line-height:1.2;box-shadow:0 5px 14px rgba(189,141,79,0.28);">${button}</a>
                 </div>
-                <p style="margin:0;padding-top:18px;border-top:1px solid #E2E8F0;color:#5A6B85;font-size:12px;line-height:1.8;text-align:center;">${note}</p>
+                <p style="margin:0;padding-top:18px;border-top:1px solid #e6dece;color:#938778;font-size:12px;line-height:1.8;text-align:center;">${note}</p>
               </td>
             </tr>
             <tr>
-              <td style="padding:18px 28px;background:#F7F8FA;border-top:1px solid #E2E8F0;color:#5A6B85;font-size:11px;line-height:1.6;text-align:center;">
-                <strong style="color:#14284B;">NiroVera</strong> · ${footer}
+              <td style="padding:18px 28px;background:#fbf9f4;border-top:1px solid #d9cfbb;color:#9b9082;font-size:11px;line-height:1.6;text-align:center;">
+                <strong style="color:#52606d;">PowerCare</strong> · ${footer}
               </td>
             </tr>
           </table>
@@ -156,7 +156,7 @@ async function sendMail(base44, to, subject, bodyText, bodyHtml = '') {
     const senderAddr = prof?.email;
     if (!senderAddr) throw new Error('gmail profile unavailable');
     const msg = createMimeMessage();
-    msg.setSender({ name: 'NiroVera', addr: senderAddr });
+    msg.setSender({ name: 'PowerCare', addr: senderAddr });
     msg.setRecipient(to);
     msg.setSubject(subject);
     msg.addMessage({ contentType: 'text/plain', data: bodyText });
@@ -173,7 +173,7 @@ async function sendMail(base44, to, subject, bodyText, bodyHtml = '') {
   }
   try {
     await base44.asServiceRole.integrations.Core.SendEmail({
-      from_name: 'NiroVera',
+      from_name: 'PowerCare',
       to,
       subject,
       body: bodyHtml || bodyText,
@@ -490,7 +490,7 @@ Deno.serve(async (req) => {
         } catch (error) {
           console.error('multiSign gmailNotify failed:', error.message);
         }
-        if (!notified) await sendMail(base44, rec.creatorEmail, subject, `${text}\n\n${newDocUrl}\n\n— NiroVera`);
+        if (!notified) await sendMail(base44, rec.creatorEmail, subject, `${text}\n\n${newDocUrl}\n\n— PowerCare`);
       }
       return Response.json({ ok: true, completed, docUrl: newDocUrl, finalHash: completed ? fileHash : null });
     }

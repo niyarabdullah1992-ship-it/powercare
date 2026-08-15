@@ -2,6 +2,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
 import { fetchWithRetry } from '../../shared/fetchRetry.ts';
 import { filterBlobPayload, redactEmployee, APPEND_ONLY_CATEGORIES, inspectAppendOnly } from '../../shared/blobVisibility.ts';
+import {
+  WORKSPACE_SEARCH_MAX,
+  accountMatchesWorkspaceQuery,
+  checkWorkspaceSearchGate,
+  derivePublicWorkspaceCard,
+} from '../../shared/workspaceDerivations.ts';
+import { POWERCARE_MARK_URL } from '../../shared/brand.ts';
 
 // System emails (OTP codes, welcome messages) go out through the app's connected
 // Gmail account, because the built-in email service refuses recipients who are
@@ -13,8 +20,7 @@ function toBase64Url(str) {
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// Branded HTML email template — uses the same logo asset as the PowerCare website.
-const EMAIL_LOGO = 'https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/1914d20bd_.png';
+// Branded HTML email template — local N mark, same asset as other NiroVera mailers.
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 function emailHtml({ title, lines = [], code = null, footerNote = '' }) {
   const paragraphs = lines.map((line) => `<p style="margin:0 auto 22px;max-width:520px;font-size:20px;line-height:1.55;color:#17202b;text-align:center;" dir="auto">${escapeHtml(line)}</p>`).join('');
@@ -26,7 +32,7 @@ function emailHtml({ title, lines = [], code = null, footerNote = '' }) {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:650px;background:#ffffff;border:1px solid #d8d8d4;border-radius:8px;overflow:hidden;box-shadow:0 10px 28px rgba(24,42,60,.08);">
       <tr><td align="center" style="background:#183957;padding:29px 20px;">
         <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-          <td style="padding-right:12px;"><img src="${EMAIL_LOGO}" width="42" height="42" alt="PowerCare" style="display:block;width:42px;height:42px;object-fit:contain;border:0;" /></td>
+          <td style="padding-right:12px;"><img src="${POWERCARE_MARK_URL}" width="42" height="42" alt="NiroVera" style="display:block;width:42px;height:42px;object-fit:contain;border:0;" /></td>
           <td style="font-size:29px;line-height:42px;font-weight:600;color:#ffffff;letter-spacing:-.5px;">PowerCare</td>
         </tr></table>
       </td></tr>
@@ -120,6 +126,19 @@ async function verifyPassword(password, stored) {
     return (await hashPassword(password, salt)) === stored;
   }
   return stored === password;
+}
+
+/** Login portal kind: individual | company | gov (company/gov exclude individual plans). */
+function accountPortalKind(account) {
+  if (String(account?.plan || '').toLowerCase() === 'individual') return 'individual';
+  return account?.orgType === 'gov' ? 'gov' : 'company';
+}
+function matchesPreferKind(account, preferKind) {
+  if (!preferKind) return true;
+  return accountPortalKind(account) === preferKind;
+}
+function normalizeOrgType(value) {
+  return value === 'gov' ? 'gov' : 'company';
 }
 
 /* ----- login OTP (email second factor) ----- */
@@ -229,6 +248,63 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action, companyId } = body;
 
+    // Public workspace registry — name/CR lookup only. Never returns owner email,
+    // passwords, employee rows, or payroll. Careers + staff login stay separate channels.
+    if (action === 'publicWorkspaceSearch') {
+      const gate = checkWorkspaceSearchGate(body.query ?? body.q);
+      if (!gate.ok) {
+        return Response.json({ error: gate.error, reason: gate.reason, reasonEn: gate.reasonEn, results: [] }, { status: 400 });
+      }
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.list('-created_date', 500);
+      const eligible = accounts.filter((account) => {
+        if (!account?.companyId || account.frozen === true) return false;
+        if (String(account.plan || '').toLowerCase() === 'individual') return false;
+        return true;
+      });
+
+      const wantDigits = String(gate.query || '').replace(/\D/g, '');
+      const crByCompany = new Map();
+      if (wantDigits.length >= 4) {
+        // Only load settings blobs when the query looks like a commercial registration.
+        const blobs = await base44.asServiceRole.entities.CompanyDataBlob.filter({ category: 'companySettings' });
+        for (const blob of blobs) {
+          const raw = blob?.payload && typeof blob.payload === 'object' ? blob.payload : {};
+          const record = raw.record && typeof raw.record === 'object' ? raw.record : raw;
+          const cr = String(record?.commercialRegistration || '').replace(/\D/g, '');
+          if (cr && blob.companyId) crByCompany.set(blob.companyId, cr);
+        }
+      }
+
+      const matched = [];
+      for (const account of eligible) {
+        const cr = crByCompany.get(account.companyId) || '';
+        if (!accountMatchesWorkspaceQuery(account, gate.query, cr)) continue;
+        matched.push(account);
+        if (matched.length >= WORKSPACE_SEARCH_MAX) break;
+      }
+
+      const results = [];
+      for (const account of matched) {
+        const [stations, employees] = await Promise.all([
+          base44.asServiceRole.entities.Station.filter({ companyId: account.companyId }),
+          base44.asServiceRole.entities.Employee.filter({ companyId: account.companyId }),
+        ]);
+        results.push(derivePublicWorkspaceCard(account, {
+          sites: stations.length,
+          staff: employees.length,
+          commercialRegistration: crByCompany.get(account.companyId) || '',
+        }));
+      }
+
+      return Response.json({
+        ok: true,
+        query: gate.query,
+        results,
+        employees: null,
+        ownerEmail: null,
+      });
+    }
+
     // Google verifies the email identity. It may belong to company owners, employees,
     // or both; when several workspaces match, the user chooses one explicitly.
     if (action === 'googleOwnerLogin') {
@@ -241,11 +317,11 @@ Deno.serve(async (req) => {
       ]);
       const wantIndividual = body.preferKind === 'individual';
       const ownerMatches = body.preferKind
-        ? ownerAccounts.filter((account) => (String(account.plan || '').toLowerCase() === 'individual') === wantIndividual)
+        ? ownerAccounts.filter((account) => matchesPreferKind(account, body.preferKind))
         : ownerAccounts;
       const options = ownerMatches.map((account) => ({
         accountKey: `owner:${account.companyId}`, kind: 'owner', companyId: account.companyId,
-        name: account.name || 'PowerCare', plan: account.plan || '',
+        name: account.name || 'PowerCare', plan: account.plan || '', orgType: accountPortalKind(account),
       }));
       if (!wantIndividual) {
         for (const credential of credentials) {
@@ -253,10 +329,11 @@ Deno.serve(async (req) => {
             base44.asServiceRole.entities.CompanyAccount.filter({ companyId: credential.companyId }),
             base44.asServiceRole.entities.Employee.filter({ companyId: credential.companyId, employeeId: credential.employeeId }),
           ]);
-          if (accounts[0] && employees[0]) options.push({
+          if (accounts[0] && employees[0] && matchesPreferKind(accounts[0], body.preferKind)) options.push({
             accountKey: `employee:${credential.companyId}:${credential.employeeId}`,
             kind: 'employee', companyId: credential.companyId, employeeId: credential.employeeId,
             name: accounts[0].name || 'PowerCare', employeeName: employees[0].name || email,
+            orgType: accountPortalKind(accounts[0]),
           });
         }
       }
@@ -284,7 +361,8 @@ Deno.serve(async (req) => {
       if (!email) return Response.json({ error: 'Missing email' }, { status: 400 });
       const existing = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email });
       const newIsIndividual = String(body.plan || '').toLowerCase() === 'individual';
-      const sameKind = existing.some((account) => (String(account.plan || '').toLowerCase() === 'individual') === newIsIndividual);
+      const signupOrg = newIsIndividual ? 'individual' : normalizeOrgType(body.orgType);
+      const sameKind = existing.some((account) => accountPortalKind(account) === signupOrg);
       if (sameKind) return Response.json({ error: 'email_exists' }, { status: 409 });
       const pendingId = await createLoginOtp(base44, { kind: 'signup', companyId: 'pending-signup', email });
       return Response.json({ otpRequired: true, pendingId });
@@ -310,7 +388,7 @@ Deno.serve(async (req) => {
       // the user into the wrong workspace.
       const wantIndividual = body.preferKind === 'individual';
       const matches = body.preferKind
-        ? allMatches.filter((a) => (String(a.plan || '').toLowerCase() === 'individual') === wantIndividual)
+        ? allMatches.filter((a) => matchesPreferKind(a, body.preferKind))
         : allMatches;
       if (allMatches.length && !matches.length) return Response.json({ wrongKind: true });
       const found = matches[0] || null;
@@ -324,7 +402,7 @@ Deno.serve(async (req) => {
       const pendingId = await createLoginOtp(base44, { kind: 'owner', companyId: found.companyId, email: found.ownerEmail });
       return Response.json({
         otpRequired: true, pendingId,
-        accounts: matches.map((a) => ({ companyId: a.companyId, name: a.name, plan: a.plan })),
+        accounts: matches.map((a) => ({ companyId: a.companyId, name: a.name, plan: a.plan, orgType: accountPortalKind(a) })),
       });
     }
 
@@ -338,6 +416,12 @@ Deno.serve(async (req) => {
         if (await verifyPassword(password, c.passwordHash)) { match = c; break; }
       }
       if (!match) return Response.json({ employee: null });
+      if (body.preferKind && body.preferKind !== 'individual') {
+        const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: match.companyId });
+        if (accounts[0] && !matchesPreferKind(accounts[0], body.preferKind)) {
+          return Response.json({ wrongKind: true });
+        }
+      }
       // Password verified — second factor: email a one-time code instead of issuing a session.
       const pendingId = await createLoginOtp(base44, { kind: 'employee', companyId: match.companyId, employeeId: match.employeeId, email: match.email });
       return Response.json({ otpRequired: true, pendingId });
@@ -466,7 +550,7 @@ Deno.serve(async (req) => {
       return Response.json({
         kind: 'employee', token,
         employee: { companyId: rec.companyId, employeeId: rec.employeeId },
-        company: { companyId: rec.companyId, name: acc.name || '', plan: acc.plan || '', allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '', emailLanguage: acc.emailLanguage || 'en', subscriptionStart: acc.subscriptionStart || null, subscriptionEnd: acc.subscriptionEnd || null, subscriptionExempt: acc.subscriptionExempt === true, frozen: acc.frozen === true, frozenAt: acc.frozenAt || null, frozenReason: acc.frozenReason || null },
+        company: { companyId: rec.companyId, name: acc.name || '', plan: acc.plan || '', orgType: accountPortalKind(acc), allowedEmailDomain: acc.allowedEmailDomain || '', ownerEmail: acc.ownerEmail || '', emailLanguage: acc.emailLanguage || 'en', subscriptionStart: acc.subscriptionStart || null, subscriptionEnd: acc.subscriptionEnd || null, subscriptionExempt: acc.subscriptionExempt === true, frozen: acc.frozen === true, frozenAt: acc.frozenAt || null, frozenReason: acc.frozenReason || null },
       });
     }
 
@@ -477,7 +561,7 @@ Deno.serve(async (req) => {
     if (action === 'accountExists') {
       const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
       const account = accounts[0];
-      return Response.json({ exists: !!account, name: account?.name || '', plan: account?.plan || '', subscriptionStart: account?.subscriptionStart || null, subscriptionEnd: account?.subscriptionEnd || null, subscriptionExempt: account?.subscriptionExempt === true, frozen: account?.frozen === true, frozenAt: account?.frozenAt || null, frozenReason: account?.frozenReason || null });
+      return Response.json({ exists: !!account, name: account?.name || '', plan: account?.plan || '', orgType: account ? accountPortalKind(account) : '', subscriptionStart: account?.subscriptionStart || null, subscriptionEnd: account?.subscriptionEnd || null, subscriptionExempt: account?.subscriptionExempt === true, frozen: account?.frozen === true, frozenAt: account?.frozenAt || null, frozenReason: account?.frozenReason || null });
     }
 
     /* ----- server-side authorization for all company-scoped actions ----- */
@@ -488,6 +572,7 @@ Deno.serve(async (req) => {
       const existing = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId });
       const email = String(ownerEmail || '').trim().toLowerCase();
       const newIsIndividual = String(plan || '').toLowerCase() === 'individual';
+      const orgType = newIsIndividual ? 'company' : normalizeOrgType(body.orgType ?? existing[0]?.orgType);
       let signupOtp = null;
 
       if (body.signupPendingId) {
@@ -522,12 +607,13 @@ Deno.serve(async (req) => {
 
       if (!existing.length) {
         const dupes = await base44.asServiceRole.entities.CompanyAccount.filter({ ownerEmail: email });
-        const sameKind = dupes.some((account) => (String(account.plan || '').toLowerCase() === 'individual') === newIsIndividual);
+        const signupPortal = newIsIndividual ? 'individual' : orgType;
+        const sameKind = dupes.some((account) => accountPortalKind(account) === signupPortal);
         if (sameKind) return Response.json({ error: 'email_exists' }, { status: 409 });
       }
 
       const supportedEmailLanguages = ['en', 'ar', 'de', 'fr', 'es', 'pt', 'ru', 'ja', 'ko'];
-      const fields = { companyId, name, ownerEmail: email, ownerPassword: storedPassword, plan, allowedEmailDomain: allowedEmailDomain || '', emailLanguage: supportedEmailLanguages.includes(emailLanguage) ? emailLanguage : (existing[0]?.emailLanguage || 'en'), subscriptionStart: Object.prototype.hasOwnProperty.call(body, 'subscriptionStart') ? subscriptionStart : (existing[0]?.subscriptionStart ?? null), subscriptionEnd: Object.prototype.hasOwnProperty.call(body, 'subscriptionEnd') ? subscriptionEnd : (existing[0]?.subscriptionEnd ?? null) };
+      const fields = { companyId, name, ownerEmail: email, ownerPassword: storedPassword, plan, orgType, allowedEmailDomain: allowedEmailDomain || '', emailLanguage: supportedEmailLanguages.includes(emailLanguage) ? emailLanguage : (existing[0]?.emailLanguage || 'en'), subscriptionStart: Object.prototype.hasOwnProperty.call(body, 'subscriptionStart') ? subscriptionStart : (existing[0]?.subscriptionStart ?? null), subscriptionEnd: Object.prototype.hasOwnProperty.call(body, 'subscriptionEnd') ? subscriptionEnd : (existing[0]?.subscriptionEnd ?? null) };
       let token = null;
       if (existing.length) {
         await base44.asServiceRole.entities.CompanyAccount.update(existing[0].id, fields);
@@ -864,13 +950,18 @@ Deno.serve(async (req) => {
       const actorRole = context.actor?.role;
       const privilege = await getActorPrivilege();
       let allowed = false;
-      if (['companyMeta', 'files', 'orgTree', 'smartPositions', 'complaintEscalationChain', 'cameras'].includes(category)) allowed = context.senior;
+      if (['companyMeta', 'files', 'orgTree', 'smartPositions', 'complaintEscalationChain', 'branchEscalationChains', 'workProofs', 'cameras'].includes(category)) allowed = context.senior;
       else if (['hrLevels', 'hrClusters', 'jobGrades'].includes(category)) allowed = context.senior && (!context.actor || context.actor.role === 'director');
       else if (category === 'payrollRuns') allowed = context.senior || context.permissions.has('manage_payroll');
       else if (category === 'schedules') allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole) || context.permissions.has('manage_schedules');
       else if (category === 'safety') allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole);
       else if (['plans', 'templates', 'targets'].includes(category)) allowed = context.senior || ['pgm', 'station_manager'].includes(actorRole);
-      else if (['tasks', 'reports', 'anonymousReports', 'publicReports', 'notifications', 'personalPlaces', 'personalAttendance', 'plannerItems', 'journalEntries'].includes(category)) allowed = privilege === 'full';
+      else if (category === 'tasks') {
+        const taskManagers = ['owner', 'director', 'ops_manager', 'pgm', 'station_manager', 'admin'];
+        allowed = privilege === 'full' || context.senior
+          || taskManagers.includes(actorRole) || taskManagers.includes(auth.role);
+      }
+      else if (['reports', 'anonymousReports', 'publicReports', 'notifications', 'personalPlaces', 'personalAttendance', 'plannerItems', 'journalEntries'].includes(category)) allowed = privilege === 'full';
       // Regular employees may write their OWN records in these categories — their
       // reports and personal entries must never be silently dropped.
       const SELF_WRITABLE = ['anonymousReports', 'publicReports', 'notifications', 'personalPlaces', 'personalAttendance', 'plannerItems', 'journalEntries'];

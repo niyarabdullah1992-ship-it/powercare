@@ -1,31 +1,82 @@
-import React, { useState, useEffect, useMemo } from "react";
-import moment from "moment";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { CalendarRange, FileText, Loader2, MapPin, PenLine } from "lucide-react";
+import { Loader2, MapPin, PenLine } from "lucide-react";
 import LocationMapModal from "@/components/attendance/LocationMapModal";
-import ComparisonExportButtons from "@/components/reports/ComparisonExportButtons";
 import { useI18n } from "@/lib/i18n";
 import { formatTime, useTimeFormat } from "@/hooks/useTimeFormat";
-import { getAttendanceStatus } from "@/lib/attendance";
-import EmployeeNameLink from "@/components/employees/EmployeeNameLink";
-import MobileSelect from "@/components/mobile/MobileSelect";
-import AttendanceDailyCharts from "@/components/attendance/AttendanceDailyCharts";
+import { deriveTeamAttendanceToday, getAttendanceStatus } from "@/lib/attendance";
+import { listLocalTodayAttendance, localAttendanceSettings, mergeAttendanceRows } from "@/lib/localAttendanceFallback";
+import EmployeeIdentityRow from "@/components/employees/EmployeeIdentityRow";
+import AttendanceKpiStrip from "@/components/attendance/AttendanceKpiStrip";
+import { ACCENT, BAD, BORDER, CARD, DANGER, MUTED, NAVY, NEUTRAL, OK, WARN, emptyState, field, tableShell, tag, SURFACE } from "@/lib/platformStyles";
 
-const REPORT_RANGES = ["daily", "weekly", "monthly", "custom"];
+const DAILY_COLS = "minmax(132px,1.2fr) 108px 68px 68px 52px minmax(118px,1fr) minmax(148px,1.15fr)";
 
-const STATUS_STYLE = {
-  present: "bg-emerald-100 text-emerald-700 border-emerald-300",
-  late: "bg-amber-100 text-amber-700 border-amber-300",
-  absent: "bg-red-100 text-red-700 border-red-300",
-  on_leave: "bg-sky-100 text-sky-700 border-sky-300",
-  not_scheduled: "bg-muted text-muted-foreground border-border",
-  off_day: "bg-muted text-muted-foreground border-border",
-  not_yet: "bg-muted text-muted-foreground border-border",
+const compactPill = (bg, fg, bd) => ({
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "1px 7px",
+  borderRadius: 20,
+  fontSize: 10,
+  fontWeight: 600,
+  background: bg,
+  color: fg,
+  border: `1px solid ${bd}`,
+  whiteSpace: "nowrap",
+  lineHeight: 1.4,
+});
+
+const STATUS_PILL = {
+  present: compactPill("#ECFDF3", "#15803D", "#BBF7D0"),
+  late: compactPill("#FFFBEB", "#B45309", "#FDE68A"),
+  absent: compactPill("#FEF2F2", "#DC2626", "#FECACA"),
+  on_leave: compactPill("#EFF6FF", "#1D4ED8", "#BFDBFE"),
+  not_scheduled: compactPill("#F7F8FA", "#5A6B85", "#E2E8F0"),
+  off_day: compactPill("#F7F8FA", "#5A6B85", "#E2E8F0"),
+  not_yet: compactPill("#F7F8FA", "#5A6B85", "#E2E8F0"),
+};
+
+const miniBtn = (variant = "ghost") => ({
+  height: 24,
+  padding: "0 8px",
+  borderRadius: 6,
+  fontSize: 10,
+  fontWeight: 600,
+  cursor: "pointer",
+  fontFamily: "inherit",
+  whiteSpace: "nowrap",
+  lineHeight: 1,
+  border: variant === "primary" ? `1px solid ${ACCENT}` : "1px solid #E2E8F0",
+  background: variant === "primary" ? ACCENT : CARD,
+  color: variant === "primary" ? "#fff" : NAVY,
+});
+
+const headCell = {
+  display: "grid",
+  gridTemplateColumns: DAILY_COLS,
+  gap: 8,
+  padding: "9px 14px",
+  background: SURFACE,
+  borderBottom: "1px solid #E2E8F0",
+  fontSize: 10,
+  letterSpacing: "0.06em",
+  color: MUTED,
+  fontWeight: 600,
+};
+
+const rowCell = {
+  display: "grid",
+  gridTemplateColumns: DAILY_COLS,
+  gap: 8,
+  padding: "9px 14px",
+  borderBottom: "1px solid #F1F5F9",
+  alignItems: "center",
+  fontSize: 12,
 };
 
 // Manager-facing daily attendance table — merges the visible employee roster (local
 // data) with today's attendance rows (Supabase) so unrecorded employees still show up.
-export default function AttendanceDailyDashboard({ employees, currentUser, company, data, t, onOpenSchedules }) {
+export default function AttendanceDailyDashboard({ employees, currentUser, company, data, t }) {
   const { lang } = useI18n();
   const { format } = useTimeFormat();
   const [rows, setRows] = useState([]);
@@ -35,45 +86,42 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
   const [checkoutEmployeeId, setCheckoutEmployeeId] = useState(null);
   const [checkoutReason, setCheckoutReason] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
-  const [reportOpen, setReportOpen] = useState(false);
-  const [reportEmployeeId, setReportEmployeeId] = useState("all");
-  const [reportRange, setReportRange] = useState("daily");
-  const [reportStart, setReportStart] = useState("");
-  const [reportEnd, setReportEnd] = useState("");
-  const [reportRows, setReportRows] = useState([]);
-
-  const reportWindow = useMemo(() => {
-    const end = reportRange === "custom" && reportEnd ? moment(reportEnd) : moment();
-    let start = moment();
-    if (reportRange === "weekly") start = moment().subtract(6, "days");
-    if (reportRange === "monthly") start = moment().startOf("month");
-    if (reportRange === "custom" && reportStart) start = moment(reportStart);
-    return { startDate: start.format("YYYY-MM-DD"), endDate: end.format("YYYY-MM-DD") };
-  }, [reportRange, reportStart, reportEnd]);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [policy, setPolicy] = useState(() => ({
+    gps_enabled: company?.attendanceSettings?.gps_enabled === true,
+    late_threshold_minutes: company?.attendanceSettings?.late_threshold_minutes ?? localAttendanceSettings().late_grace_minutes ?? 15,
+  }));
 
   const load = () => {
-    if (!employees.length) { setRows([]); setLoading(false); return; }
+    const apply = (cloudRows, settings) => {
+      setRows(mergeAttendanceRows(cloudRows || [], listLocalTodayAttendance(company?.id, data)));
+      if (settings) {
+        setPolicy({
+          gps_enabled: settings.gps_enabled === true,
+          late_threshold_minutes: settings.late_threshold_minutes ?? settings.late_grace_minutes ?? 15,
+        });
+      }
+    };
+    if (!employees.length) { apply([]); setLoading(false); return; }
     setLoading(true);
-    return base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: employees.map((e) => e.id) })
-      .then((res) => setRows(res?.data?.rows || []))
-      .catch(() => setRows([]))
+    return Promise.all([
+      base44.functions.invoke("supabaseAttendance", { action: "listDaily", employeeIds: employees.map((e) => e.id) }),
+      company?.id
+        ? base44.functions.invoke("supabaseAttendance", { action: "getSettings", companyId: company.id }).catch(() => null)
+        : Promise.resolve(null),
+    ])
+      .then(([res, setRes]) => apply(res?.data?.rows || [], setRes?.data?.settings || company?.attendanceSettings))
+      .catch(() => apply([], company?.attendanceSettings))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     load();
+    const onUpdated = () => load();
+    window.addEventListener("attendance-updated", onUpdated);
+    return () => window.removeEventListener("attendance-updated", onUpdated);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employees.map((e) => e.id).join(",")]);
-
-  useEffect(() => {
-    if (!reportOpen) return;
-    const selected = reportEmployeeId === "all" ? employees : employees.filter((employee) => employee.id === reportEmployeeId);
-    Promise.all(selected.map((employee) => base44.functions.invoke("supabaseAttendance", {
-      action: "listRange", employeeId: employee.id, ...reportWindow,
-    }).then((response) => (response?.data?.rows || []).map((row) => ({ ...row, employeeName: employee.name })))))
-      .then((results) => setReportRows(results.flat()))
-      .catch(() => setReportRows([]));
-  }, [reportOpen, reportEmployeeId, reportWindow.startDate, reportWindow.endDate, employees.map((e) => e.id).join(",")]);
+  }, [employees.map((e) => e.id).join(","), company?.id]);
 
   const isManager = currentUser?.id === data?.ownerId || ["station_manager", "ops_manager", "director"].includes(currentUser?.role);
 
@@ -83,7 +131,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
       const res = await base44.functions.invoke("supabaseAttendance", { action: "manualCheckIn", companyId: company.id, employeeId: employee.id, managerName: currentUser.name });
       const attendance = res?.data?.attendance;
       if (attendance) {
-        setRows((prev) => [...prev.filter((row) => row.employee_id !== employee.id), attendance]);
+        setRows((prev) => [...prev.filter((row) => String(row.employee_id ?? row.employeeId) !== String(employee.id)), attendance]);
         window.dispatchEvent(new CustomEvent("attendance-updated", { detail: attendance }));
       }
     } finally {
@@ -105,7 +153,7 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
       });
       const attendance = res?.data?.attendance;
       if (attendance) {
-        setRows((prev) => prev.map((row) => (row.employee_id === employee.id ? attendance : row)));
+        setRows((prev) => prev.map((row) => (String(row.employee_id ?? row.employeeId) === String(employee.id) ? attendance : row)));
         setCheckoutEmployeeId(null);
         setCheckoutReason("");
         window.dispatchEvent(new CustomEvent("attendance-updated", { detail: attendance }));
@@ -134,8 +182,8 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
     }
   };
 
-  const byEmployee = Object.fromEntries(rows.map((r) => [r.employee_id, r]));
-  const statusFor = (employee) => getAttendanceStatus(employee, byEmployee[employee.id], data);
+  const byEmployee = Object.fromEntries(rows.map((r) => [String(r.employee_id ?? r.employeeId), r]));
+  const statusFor = (employee) => getAttendanceStatus(employee, byEmployee[String(employee.id)], data);
   const counts = employees.reduce((total, employee) => {
     const status = statusFor(employee);
     if (status === "on_leave") total.onLeave++;
@@ -152,226 +200,244 @@ export default function AttendanceDailyDashboard({ employees, currentUser, compa
   };
   const isPastCheckoutMissing = (r) => r?.check_in_at && !r?.check_out_at && r?.status !== "absent";
   const dailyWorkHours = rows.reduce((sum, row) => sum + (Number(row.work_hours) || 0), 0);
-  const reportStatusCounts = reportRows.reduce((total, row) => {
-    const key = row.status === "on_leave" ? "onLeave" : row.status === "not_scheduled" ? "notScheduled" : row.status;
-    if (key in total) total[key] += 1;
-    return total;
-  }, { present: 0, late: 0, absent: 0, onLeave: 0, notScheduled: 0 });
-  const reportHours = reportRows.reduce((sum, row) => sum + (Number(row.work_hours) || 0), 0);
-  const reportStats = [
-    { label: t("totalPresent"), value: reportStatusCounts.present },
-    { label: t("totalLate"), value: reportStatusCounts.late },
-    { label: t("totalAbsent"), value: reportStatusCounts.absent },
-    { label: lang === "ar" ? "في إجازة" : "On leave", value: reportStatusCounts.onLeave },
-    { label: lang === "ar" ? "غير مجدول" : "Not scheduled", value: reportStatusCounts.notScheduled },
-    { label: t("totalWorkHours"), value: reportHours.toFixed(1) },
+  const anyCheckout = rows.some((row) => row?.check_out_at);
+  const presentLike = counts.present + counts.late;
+  const visibleEmployees = employees.filter((employee) => {
+    const status = statusFor(employee);
+    if (statusFilter === "present") return status === "present" || status === "late";
+    if (statusFilter === "absent") return status === "absent";
+    return true;
+  });
+  const filters = [
+    { key: "all", ar: "الكل", en: "All" },
+    { key: "present", ar: "حاضر", en: "Present" },
+    { key: "absent", ar: "غائب", en: "Absent" },
   ];
 
   return (
-    <div className="space-y-3">
-      <button
-        type="button"
-        onClick={() => setReportOpen((value) => !value)}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border transition ${reportOpen ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}
-      >
-        <FileText className="w-3.5 h-3.5" /> {lang === "ar" ? "تقرير الفريق (PDF / Excel)" : "Team report (PDF / Excel)"}
-      </button>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }} dir={lang === "ar" ? "rtl" : "ltr"}>
+      {!loading && employees.length > 0 && (() => {
+        const todayAtt = deriveTeamAttendanceToday(employees, rows, data);
+        const rate = todayAtt.rate;
+        const outside = rows.filter((r) => r.location_status === "outside").length;
+        const lateAvg = (() => {
+          const lateRows = rows.filter((r) => Number(r.late_minutes) > 0);
+          if (!lateRows.length) return 0;
+          return Math.round(lateRows.reduce((s, r) => s + Number(r.late_minutes || 0), 0) / lateRows.length);
+        })();
+        const grace = policy.late_threshold_minutes ?? 15;
+        return (
+          <AttendanceKpiStrip
+            items={[
+              {
+                label: lang === "ar" ? "نسبة الحضور اليوم" : "Attendance rate today",
+                value: `${rate}%`,
+                suffix: lang === "ar" ? `من ${todayAtt.scheduled} متوقعًا` : `of ${todayAtt.scheduled} expected`,
+                accent: rate >= 80,
+                hot: rate < 80,
+              },
+              {
+                label: t("totalAbsent"),
+                value: String(counts.absent),
+                suffix: lang === "ar" ? "بلا تسجيل حتى الآن" : "No punch yet",
+                hot: counts.absent > 0,
+              },
+              {
+                label: lang === "ar" ? "متوسط التأخير" : "Avg lateness",
+                value: String(lateAvg),
+                suffix: lang === "ar" ? `د · السماح ${grace} د` : `m · ${grace}m grace`,
+                hot: lateAvg > 0,
+              },
+              {
+                label: lang === "ar" ? "خارج النطاق" : "Outside geofence",
+                value: String(outside),
+                suffix: policy.gps_enabled
+                  ? (lang === "ar" ? "شرط الموقع: تشغيل" : "Location: on")
+                  : (lang === "ar" ? "شرط الموقع: إيقاف" : "Location: off"),
+                hot: outside > 0,
+              },
+              {
+                label: lang === "ar" ? "ساعات العمل" : "Work hours",
+                value: dailyWorkHours.toFixed(1),
+                suffix: anyCheckout
+                  ? (lang === "ar" ? "س" : "h")
+                  : (lang === "ar" ? "لا انصراف مسجل" : "No checkout yet"),
+              },
+            ]}
+          />
+        );
+      })()}
 
-      {reportOpen && <div className="p-4 rounded-xl border border-border bg-card space-y-3">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-          <CalendarRange className="w-3.5 h-3.5" /> {lang === "ar" ? "تقرير حضور الفريق حسب الفترة" : "Team attendance report by period"}
-        </p>
-        <MobileSelect
-          value={reportEmployeeId}
-          onChange={setReportEmployeeId}
-          placeholder={t("employeeName")}
-          searchable
-          className="w-full sm:w-72"
-          options={[{ value: "all", label: lang === "ar" ? "كل الموظفين" : "All employees" }, ...employees.map((employee) => ({ value: employee.id, label: employee.name }))]}
-        />
-        <div className="flex flex-wrap gap-2">
-          {REPORT_RANGES.map((value) => (
-            <button key={value} type="button" onClick={() => setReportRange(value)} className={`px-3 py-1.5 rounded-full text-xs font-body border transition ${reportRange === value ? "bg-foreground text-background border-foreground" : "border-border hover:bg-muted"}`}>
-              {({ daily: lang === "ar" ? "يومي" : "Daily", weekly: lang === "ar" ? "أسبوعي" : "Weekly", monthly: t("rangeMonthly"), custom: t("rangeCustom") })[value]}
-            </button>
-          ))}
+    <div style={tableShell}>
+      <div style={{ padding: "11px 14px", borderBottom: `1px solid ${BORDER}`, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+        <div style={{ flex: "1 1 200px" }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: NAVY }}>{t("dailyAttendance")}</div>
+          <div style={{ fontSize: 10, color: MUTED, marginTop: 3 }}>
+            {lang === "ar"
+              ? `حضور الفريق اليوم: ${presentLike} حاضر ، ${counts.absent} غائب`
+              : `Team attendance today: ${presentLike} present, ${counts.absent} absent`}
+          </div>
         </div>
-        {reportRange === "custom" && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input type="date" value={reportStart} onChange={(event) => setReportStart(event.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-          <input type="date" value={reportEnd} onChange={(event) => setReportEnd(event.target.value)} className="w-full px-3 py-2 rounded-md border border-input text-sm font-body" />
-        </div>}
-        <ComparisonExportButtons
-          title={`${lang === "ar" ? "تقرير حضور الفريق" : "Team attendance report"} — ${reportWindow.startDate} → ${reportWindow.endDate}`}
-          headers={[t("employeeName"), t("date"), t("status"), t("checkIn"), t("checkOut"), t("workHoursLabel"), t("locationStatus"), lang === "ar" ? "التحضير" : "Attendance source"]}
-          rows={reportRows.map((row) => [row.employeeName || "—", row.date || "—", statusLabel(row.status), row.check_in_at ? formatTime(row.check_in_at, format, lang) : "—", row.check_out_at ? formatTime(row.check_out_at, format, lang) : "—", row.work_hours ?? "—", row.location_status || "—", (row.manual_override || row.location_status === "manual") ? `${lang === "ar" ? "يدوي" : "Manual"} — ${row.override_by || row.excused_by_name || "—"}` : "—"])}
-          stats={reportStats}
-          theme="attendanceModern"
-          compact
-        />
-      </div>}
+        <div style={{ display: "flex", gap: 6 }}>
+          {filters.map((item) => {
+            const on = statusFilter === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setStatusFilter(item.key)}
+                style={{
+                  height: 28,
+                  padding: "0 11px",
+                  borderRadius: 20,
+                  border: `1px solid ${on ? "#BBF7D0" : BORDER}`,
+                  background: on ? "#ECFDF3" : CARD,
+                  color: on ? NAVY : MUTED,
+                  fontSize: 11,
+                  fontWeight: on ? 600 : 500,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {lang === "ar" ? item.ar : item.en}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      <div className="p-5 rounded-xl border border-border bg-card space-y-3">
-        <h3 className="font-heading text-lg font-semibold">{t("dailyAttendance")}</h3>
-      {!loading && employees.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-          <div className="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-center"><strong className="block text-lg text-emerald-700">{counts.present}</strong><span className="text-xs text-emerald-700">{t("totalPresent")}</span></div>
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-center"><strong className="block text-lg text-amber-700">{counts.late}</strong><span className="text-xs text-amber-700">{t("totalLate")}</span></div>
-          <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-center"><strong className="block text-lg text-red-700">{counts.absent}</strong><span className="text-xs text-red-700">{t("totalAbsent")}</span></div>
-          <div className="rounded-lg border border-sky-300 bg-sky-50 p-3 text-center"><strong className="block text-lg text-sky-700">{counts.onLeave}</strong><span className="text-xs text-sky-700">{t("onLeaveStatus")}</span></div>
-          <div className="rounded-lg border border-border bg-muted p-3 text-center"><strong className="block text-lg">{counts.notScheduled}</strong><span className="text-xs text-muted-foreground">{lang === "ar" ? "غير مجدول" : "Not scheduled"}</span></div>
-        </div>
-      )}
+      <div style={{ padding: "0 14px 14px" }}>
       {loading ? (
-        <p className="text-sm text-muted-foreground font-body">…</p>
+        <div style={{ padding: "24px 0", textAlign: "center", fontSize: 12, color: MUTED }}>…</div>
       ) : employees.length === 0 ? (
-        <p className="text-sm text-muted-foreground font-body">{t("noAttendanceRecords")}</p>
+        <div style={{ ...emptyState, marginTop: 12 }}>{t("noAttendanceRecords")}</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] table-fixed text-sm font-body">
-            <colgroup>
-              <col className="w-[15%]" />
-              <col className="w-[16%]" />
-              <col className="w-[10%]" />
-              <col className="w-[10%]" />
-              <col className="w-[10%]" />
-              <col className="w-[17%]" />
-              <col className="w-[22%]" />
-            </colgroup>
-            <thead>
-              <tr className="text-start text-xs text-muted-foreground border-b border-border">
-                <th className="px-2 py-3 text-start">{t("employeeName")}</th>
-                <th className="px-2 py-3 text-center">{t("status")}</th>
-                <th className="px-2 py-3 text-center">{t("checkIn")}</th>
-                <th className="px-2 py-3 text-center">{t("checkOut")}</th>
-                <th className="px-2 py-3 text-center">{t("workHoursLabel")}</th>
-                <th className="px-2 py-3 text-center">{t("locationStatus")}</th>
-                <th className="px-2 py-3 text-center">{lang === "ar" ? "الإجراء" : "Action"}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((e) => {
-                const r = byEmployee[e.id];
-                const status = statusFor(e);
-                // Unscheduled isn't missing data — it's a state that needs an action.
-                if (status === "not_scheduled" && !r) {
-                  return (
-                    <tr key={e.id} className="border-b border-border/60 align-middle">
-                      <td className="px-2 py-3 text-start"><EmployeeNameLink employeeId={e.id} employeeName={e.name} className="block font-medium leading-tight" /></td>
-                      <td className="px-2 py-3 text-center">
-                        <span className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLE.not_scheduled}`}>{statusLabel(status)}</span>
-                      </td>
-                      <td colSpan={5} className="px-2 py-3">
-                        <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground font-body">
-                          <span>{lang === "ar" ? "لم يُدرج في جدول اليوم" : "Not on today's schedule"}</span>
-                          {isManager && onOpenSchedules && (
-                            <button onClick={onOpenSchedules} className="rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-muted">
-                              {lang === "ar" ? "جدولة" : "Schedule"}
+        <div style={{ overflowX: "auto", marginTop: 12 }}>
+          <div style={{ minWidth: 860 }}>
+            <div style={headCell}>
+              <div>{lang === "ar" ? "الاسم" : "Name"}</div>
+              <div style={{ textAlign: "center" }}>{lang === "ar" ? "الحالة" : "Status"}</div>
+              <div style={{ textAlign: "center" }}>{lang === "ar" ? "حضور" : "In"}</div>
+              <div style={{ textAlign: "center" }}>{lang === "ar" ? "انصراف" : "Out"}</div>
+              <div style={{ textAlign: "center" }}>{lang === "ar" ? "ساعات" : "Hours"}</div>
+              <div style={{ textAlign: "center" }}>{lang === "ar" ? "الموقع" : "Location"}</div>
+              <div style={{ textAlign: "center" }}>{lang === "ar" ? "إجراء" : "Action"}</div>
+            </div>
+            {visibleEmployees.map((e) => {
+              const r = byEmployee[String(e.id)];
+              const status = statusFor(e);
+              return (
+                <div
+                  key={e.id}
+                  style={rowCell}
+                  onMouseEnter={(ev) => { ev.currentTarget.style.background = SURFACE; }}
+                  onMouseLeave={(ev) => { ev.currentTarget.style.background = "transparent"; }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <EmployeeIdentityRow employee={e} employeeId={e.id} name={e.name} showId={false} compact />
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                      <span style={STATUS_PILL[status] || NEUTRAL}>{statusLabel(status)}</span>
+                      {status === "late" && Number(r?.late_minutes) > 0 && (
+                        <span style={{ fontSize: 10, color: "#B45309" }}>{t("lateBy")} {r.late_minutes} {t("minutesUnit")}</span>
+                      )}
+                      {r?.excused && <span style={{ fontSize: 10, color: "#15803D" }}>{t("excused")}</span>}
+                      {isPastCheckoutMissing(r) && <span style={BAD}>{t("missingCheckoutLabel")}</span>}
+                      {r?.early_checkout && <span style={WARN}>{t("earlyCheckoutLabel")}</span>}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "center", color: MUTED, fontFamily: "'IBM Plex Sans',sans-serif" }}>
+                    {r?.check_in_at ? formatTime(r.check_in_at, format, lang) : "—"}
+                  </div>
+                  <div style={{ textAlign: "center", color: MUTED, fontFamily: "'IBM Plex Sans',sans-serif" }}>
+                    {r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—"}
+                  </div>
+                  <div style={{ textAlign: "center", color: MUTED }}>{r?.work_hours ?? "—"}</div>
+                  <div style={{ textAlign: "center" }}>
+                    {r?.location_status === "manual" ? (
+                      <span style={NEUTRAL}>
+                        <MapPin style={{ width: 10, height: 10, display: "inline", verticalAlign: "middle", marginInlineEnd: 3 }} />
+                        {lang === "ar" ? "غير متحقق" : "Not verified"}
+                      </span>
+                    ) : r?.location_status ? (
+                      <button
+                        type="button"
+                        onClick={() => setMapRow(r)}
+                        title={t("viewOnMap")}
+                        style={{
+                          ...(r.location_status === "inside" ? OK : BAD),
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        <MapPin style={{ width: 10, height: 10, display: "inline", verticalAlign: "middle", marginInlineEnd: 3 }} />
+                        {r.location_status === "inside" ? t("insideLocation") : t("outsideLocation")}
+                        {r.distance_meters != null && ` · ${r.distance_meters}m`}
+                      </button>
+                    ) : <span style={{ color: MUTED }}>—</span>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    {isManager && isPastCheckoutMissing(r) && (
+                      checkoutEmployeeId === e.id ? (
+                        <div style={{ width: "100%", padding: 8, borderRadius: 8, border: "1px solid #E2E8F0", background: SURFACE }}>
+                          <input
+                            value={checkoutReason}
+                            onChange={(ev) => { setCheckoutReason(ev.target.value); setCheckoutError(""); }}
+                            placeholder={lang === "ar" ? "سبب الإغلاق" : "Reason for closing"}
+                            style={{ ...field, height: 30, fontSize: 11, marginBottom: 6 }}
+                            autoFocus
+                          />
+                          {checkoutError && <p style={{ fontSize: 10, color: DANGER, margin: "0 0 6px" }}>{checkoutError}</p>}
+                          <div style={{ display: "flex", gap: 4 }}>
+                            <button type="button" onClick={() => manualCheckOut(e)} disabled={manualLoadingId === e.id} style={miniBtn("primary")}>
+                              {manualLoadingId === e.id && <Loader2 style={{ width: 10, height: 10, display: "inline", animation: "spin 1s linear infinite" }} />}
+                              {lang === "ar" ? "حفظ" : "Save"}
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                }
-                return (
-                  <tr key={e.id} className="border-b border-border/60 align-middle">
-                    <td className="px-2 py-3 text-start"><EmployeeNameLink employeeId={e.id} employeeName={e.name} className="block font-medium leading-tight" /></td>
-                    <td className="px-2 py-3 text-center">
-                      <div className="flex flex-col items-center justify-center gap-1.5">
-                        <span className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLE[status]}`}>
-                          {statusLabel(status)}
-                        </span>
-                        {status === "late" && Number(r?.late_minutes) > 0 && (
-                          <span className="text-[11px] text-amber-700">{t("lateBy")} {r.late_minutes} {t("minutesUnit")}</span>
-                        )}
-                        {r?.excused && <span className="text-[11px] text-emerald-700">{t("excused")}</span>}
-                        {isPastCheckoutMissing(r) && (
-                          <span className="whitespace-nowrap rounded-full border border-red-300 bg-red-50 px-1.5 py-0.5 text-[10px] text-red-700">{t("missingCheckoutLabel")}</span>
-                        )}
-                        {r?.early_checkout && (
-                          <span className="whitespace-nowrap rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-700">{t("earlyCheckoutLabel")}</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-2 py-3 text-center text-muted-foreground">{r?.check_in_at ? formatTime(r.check_in_at, format, lang) : "—"}</td>
-                    <td className="px-2 py-3 text-center text-muted-foreground">{r?.check_out_at ? formatTime(r.check_out_at, format, lang) : "—"}</td>
-                    <td className="px-2 py-3 text-center text-muted-foreground">{r?.work_hours ?? "—"}</td>
-                    <td className="px-2 py-3 text-center">
-                      {r?.location_status === "manual" ? (
-                        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">
-                          <MapPin className="h-3 w-3" />{lang === "ar" ? "الموقع غير متحقق" : "Location not verified"}
-                        </span>
-                      ) : r?.location_status ? (
-                        <button
-                          onClick={() => setMapRow(r)}
-                          className={`mx-auto flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-1 text-xs hover:opacity-80 ${r.location_status === "inside" ? "border-emerald-300 bg-emerald-100 text-emerald-700" : "border-red-300 bg-red-100 text-red-700"}`}
-                          title={t("viewOnMap")}
-                        >
-                          <MapPin className="h-3 w-3" />
-                          {r.location_status === "inside" ? t("insideLocation") : t("outsideLocation")}
-                          {r.distance_meters != null && ` · ${r.distance_meters}m`}
-                        </button>
-                      ) : <span className="text-muted-foreground">—</span>}
-                    </td>
-                    <td className="px-2 py-3 text-center">
-                      <div className="flex flex-col items-center justify-center gap-1.5">
-                      {isManager && isPastCheckoutMissing(r) && (
-                        checkoutEmployeeId === e.id ? (
-                          <div className="w-full space-y-1.5 rounded-md border border-border bg-muted p-2 text-start">
-                            <input
-                              value={checkoutReason}
-                              onChange={(event) => { setCheckoutReason(event.target.value); setCheckoutError(""); }}
-                              placeholder={lang === "ar" ? "سبب الإغلاق" : "Reason for closing"}
-                              className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-xs"
-                              autoFocus
-                            />
-                            {checkoutError && <p className="text-[11px] text-destructive">{checkoutError}</p>}
-                            <div className="flex gap-1">
-                              <button onClick={() => manualCheckOut(e)} disabled={manualLoadingId === e.id} className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground disabled:opacity-50">
-                                {manualLoadingId === e.id && <Loader2 className="h-3 w-3 animate-spin" />}{lang === "ar" ? "حفظ" : "Save"}
-                              </button>
-                              <button onClick={() => { setCheckoutEmployeeId(null); setCheckoutReason(""); setCheckoutError(""); }} className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground">
-                                {lang === "ar" ? "إلغاء" : "Cancel"}
-                              </button>
-                            </div>
+                            <button type="button" onClick={() => { setCheckoutEmployeeId(null); setCheckoutReason(""); setCheckoutError(""); }} style={miniBtn()}>
+                              {lang === "ar" ? "إلغاء" : "Cancel"}
+                            </button>
                           </div>
-                        ) : (
-                          <button onClick={() => { setCheckoutEmployeeId(e.id); setCheckoutReason(""); setCheckoutError(""); }} className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-border bg-card px-2 py-1 text-xs text-muted-foreground hover:bg-muted">
-                            <PenLine className="h-3.5 w-3.5" />{lang === "ar" ? "إغلاق يدوي" : "Manual check-out"}
-                          </button>
-                        )
-                      )}
-                      {(r?.manual_override || r?.location_status === "manual") ? (
-                        <span title={`${lang === "ar" ? "حضور يدوي بواسطة" : "Manual by"} ${r.override_by || r.excused_by_name || "—"}`} className="inline-flex max-w-full items-center gap-1 whitespace-nowrap rounded-md border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">
-                          <PenLine className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{lang === "ar" ? "يدوي" : "Manual"} · {r.override_by || r.excused_by_name || "—"}</span>
-                        </span>
-                      ) : isManager && !r?.check_in_at ? (
-                        <button onClick={() => manualCheckIn(e)} disabled={manualLoadingId === e.id} className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-border bg-card px-2 py-1 text-xs text-muted-foreground hover:bg-muted disabled:opacity-50" title={lang === "ar" ? "استثناء يُسجَّل باسمك في سجل التدقيق" : "Exception — recorded in the audit trail under your name"}>
-                          {manualLoadingId === e.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PenLine className="h-3.5 w-3.5" />}{lang === "ar" ? "تحضير يدوي" : "Manual check-in"}
+                        </div>
+                      ) : (
+                        <button type="button" onClick={() => { setCheckoutEmployeeId(e.id); setCheckoutReason(""); setCheckoutError(""); }} style={miniBtn()}>
+                          <PenLine style={{ width: 11, height: 11, display: "inline", verticalAlign: "middle", marginInlineEnd: 3 }} />
+                          {lang === "ar" ? "إغلاق يدوي" : "Manual out"}
                         </button>
-                      ) : null}
-                      {(status === "late" || status === "absent") && r?.id && (
-                        <button
-                          onClick={() => toggleExcuse(r)}
-                          className={`whitespace-nowrap rounded-md border px-2 py-1 text-xs font-body transition ${r?.excused ? "border-border text-muted-foreground hover:bg-muted" : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"}`}
-                        >
-                          {status === "absent"
-                            ? (r?.excused ? (lang === "ar" ? "إلغاء إعفاء الغياب" : "Remove absence excuse") : (lang === "ar" ? "إعفاء الغياب" : "Excuse absence"))
-                            : (r?.excused ? t("unexcuseLate") : t("excuseLate"))}
-                        </button>
-                      )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      )
+                    )}
+                    {(r?.manual_override || r?.location_status === "manual") ? (
+                      <span title={`${lang === "ar" ? "حضور يدوي بواسطة" : "Manual by"} ${r.override_by || r.excused_by_name || "—"}`} style={tag("#F5F3FF", "#6D28D9", "#DDD6FE")}>
+                        <PenLine style={{ width: 10, height: 10 }} />
+                        {lang === "ar" ? "يدوي" : "Manual"} · {r.override_by || r.excused_by_name || "—"}
+                      </span>
+                    ) : isManager && !r?.check_in_at ? (
+                      <button type="button" onClick={() => manualCheckIn(e)} disabled={manualLoadingId === e.id} style={{ ...miniBtn("primary"), opacity: manualLoadingId === e.id ? 0.6 : 1 }}>
+                        {manualLoadingId === e.id ? <Loader2 style={{ width: 11, height: 11, display: "inline" }} /> : null}
+                        {lang === "ar" ? "حضر" : "Present"}
+                      </button>
+                    ) : null}
+                    {(status === "late" || status === "absent") && r?.id && (
+                      <button
+                        type="button"
+                        onClick={() => toggleExcuse(r)}
+                        style={r?.excused ? miniBtn() : { ...miniBtn(), border: "1px solid #BBF7D0", color: "#15803D" }}
+                      >
+                        {status === "absent"
+                          ? (r?.excused ? (lang === "ar" ? "إلغاء إعفاء" : "Remove excuse") : (lang === "ar" ? "إعفاء الغياب" : "Excuse absence"))
+                          : (r?.excused ? t("unexcuseLate") : t("excuseLate"))}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
-      {!loading && employees.length > 0 && <AttendanceDailyCharts counts={counts} totalHours={dailyWorkHours} lang={lang} />}
       {mapRow && <LocationMapModal row={mapRow} t={t} onClose={() => setMapRow(null)} />}
       </div>
+    </div>
     </div>
   );
 }

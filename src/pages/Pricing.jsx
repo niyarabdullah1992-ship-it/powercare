@@ -4,13 +4,13 @@ import { base44 } from "@/api/base44Client";
 import { activateCompanySession, createCompany, deleteCompany, syncCompanyAccount, getCompanyToken, updateCompanyPlan } from "@/lib/store";
 import { useAuth as usePowerCareAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
-import { Check, Loader2, ArrowLeft } from "lucide-react";
-import Logo from "@/components/Logo";
+import { Check, Loader2 } from "lucide-react";
+import MarketingChrome from "@/components/landing/MarketingChrome";
 import SignupDialog from "@/components/pricing/SignupDialog";
 import { DEFAULT_SUBSCRIPTION_PLANS, planDisplayName, planFeatures } from "@/lib/subscriptionPlans";
 
 export default function Pricing() {
-  const { t, lang } = useI18n();
+  const { t, lang, setLang } = useI18n();
   const navigate = useNavigate();
   const { session, company } = usePowerCareAuth();
   const ownerUpgrade = session?.role === "owner" && !!company;
@@ -41,7 +41,10 @@ export default function Pricing() {
     base44.auth.me().then((user) => setGoogleEmail(user.email || "")).catch(() => setError(lang === "ar" ? `تعذر التسجيل باستخدام ${provider}.` : `${provider} sign-up could not be completed.`));
   }, []);
 
-  const saveSocialSignup = () => sessionStorage.setItem("powercare_social_signup", JSON.stringify({ planId: activePlan.slug, billing }));
+  const saveSocialSignup = () => {
+    const orgType = "company";
+    sessionStorage.setItem("powercare_social_signup", JSON.stringify({ planId: activePlan.slug, billing, orgType }));
+  };
   const handleGoogleSignup = () => {
     saveSocialSignup();
     base44.auth.loginWithProvider("sso", "/pricing?google_signup=1");
@@ -57,18 +60,19 @@ export default function Pricing() {
 
   const handleTrialSignup = async ({ companyName, ownerEmail, ownerPassword, authMethod, pendingId, otpCode }) => {
     setError("");
+    const orgType = "company";
     if (!pendingId) {
       try {
-        const response = await base44.functions.invoke("companyDirectory", { action: "startSignupOtp", email: ownerEmail, plan: activePlan.slug });
+        const response = await base44.functions.invoke("companyDirectory", { action: "startSignupOtp", email: ownerEmail, plan: activePlan.slug, orgType });
         return response.data;
       } catch (error) {
-        setError(error?.response?.data?.error === "email_exists" ? (lang === "ar" ? "هذا البريد مسجل مسبقًا." : "This email is already registered.") : (lang === "ar" ? "تعذر إرسال رمز التحقق." : "Could not send the verification code."));
+        setError(error?.response?.data?.error === "email_exists" ? (lang === "ar" ? "هذا البريد مسجل مسبقًا في نفس نوع الجهة." : "This email is already registered for this organization type.") : (lang === "ar" ? "تعذر إرسال رمز التحقق." : "Could not send the verification code."));
         return false;
       }
     }
     const activationDate = new Date().toISOString().slice(0, 10);
     const company = pendingCompanyRef.current || createCompany(
-      { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: activePlan.nameEn, subscriptionStart: activationDate, subscriptionEnd: null },
+      { name: companyName, ownerEmail, ownerPassword: authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : ownerPassword, plan: activePlan.nameEn, subscriptionStart: activationDate, subscriptionEnd: null, orgType },
       { sync: false }
     );
     pendingCompanyRef.current = company;
@@ -143,38 +147,33 @@ export default function Pricing() {
   };
 
   return (
-    <div className="powercare-public min-h-screen bg-landing-cinema px-6 py-12 text-white">
-      <div className="max-w-6xl mx-auto">
-        <button
-          onClick={() => navigate("/")}
-          className="mb-4 flex items-center gap-1.5 text-sm text-white/55 hover:text-white"
-        >
-          <ArrowLeft className="w-4 h-4 rtl:rotate-180" /> {t("backBtn")}
-        </button>
-        <div className="flex items-center gap-2 justify-center mb-3">
-          <Logo size={32} />
-        </div>
-        <h1 className="mb-3 text-center font-heading text-5xl font-semibold text-white md:text-6xl">{t("pricingHeading")}</h1>
-        <p className="mb-12 text-center text-white/55">{t("pricingSubheading")}</p>
+    <MarketingChrome ar={lang === "ar"} lang={lang} loggedIn={!!session} onToggleLang={() => setLang(lang === "ar" ? "en" : "ar")} ctaHref="/login">
+      <div className="max-w-6xl mx-auto px-6 py-12">
+        <h1 className="mb-3 text-center text-4xl font-semibold text-[var(--nv-ink)] md:text-5xl">{t("pricingHeading")}</h1>
+        <p className="mb-4 text-center text-[var(--nv-muted)]">{t("pricingSubheading")}</p>
+        <p className="mx-auto mb-10 w-fit rounded-full border border-[var(--nv-line)] bg-[var(--nv-card)] px-4 py-1.5 text-sm font-semibold text-[var(--nv-ink)]">
+          {lang === "ar" ? "تسجيل شركة / مؤسسة" : "Company signup"}
+        </p>
 
         {error && <p className="text-center text-sm text-red-500 font-body mb-6">{error}</p>}
 
         <div className="mb-8 flex flex-col items-center gap-4">
-          <div className="flex rounded-full border border-accent/35 bg-card p-1 text-sm text-card-foreground"><button onClick={() => setBilling("monthly")} className={`rounded-full px-4 py-2 ${billing === "monthly" ? "bg-accent text-accent-foreground" : ""}`}>{lang === "ar" ? "شهري" : "Monthly"}</button><button onClick={() => setBilling("yearly")} className={`rounded-full px-4 py-2 ${billing === "yearly" ? "bg-accent text-accent-foreground" : ""}`}>{lang === "ar" ? "سنوي" : "Yearly"}</button></div>
-          <div className="w-fit rounded-full border border-accent/35 bg-accent/10 px-5 py-2 text-sm font-semibold text-accent shadow-sm">{plans.every((plan) => plan.freeNow || (billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice) === 0) ? (lang === "ar" ? "عرض ترويجي: جميع الباقات مجانية حاليًا" : "Promotion: all plans are currently free") : (lang === "ar" ? "دفع آمن عبر Tap Payments" : "Secure payment via Tap Payments")}</div>
+          <div className="flex rounded-full border border-[var(--nv-line)] bg-[var(--nv-card)] p-1 text-sm text-[var(--nv-ink)]"><button onClick={() => setBilling("monthly")} className={`rounded-full px-4 py-2 ${billing === "monthly" ? "bg-[var(--nv-accent)] text-white" : ""}`}>{lang === "ar" ? "شهري" : "Monthly"}</button><button onClick={() => setBilling("yearly")} className={`rounded-full px-4 py-2 ${billing === "yearly" ? "bg-[var(--nv-accent)] text-white" : ""}`}>{lang === "ar" ? "سنوي" : "Yearly"}</button></div>
+          <div className="w-fit rounded-full border border-[var(--nv-accent-border)] bg-[var(--nv-accent-soft)] px-5 py-2 text-sm font-semibold text-[var(--nv-accent-deep)]">{plans.every((plan) => plan.freeNow || (billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice) === 0) ? (lang === "ar" ? "عرض ترويجي: جميع الباقات مجانية حاليًا" : "Promotion: all plans are currently free") : (lang === "ar" ? "دفع آمن عبر Tap Payments" : "Secure payment via Tap Payments")}</div>
         </div>
 
         <div className="grid md:grid-cols-4 gap-6">
           {plans.map((plan) => (
-            <div key={plan.id || plan.slug} className="flex flex-col rounded-2xl border border-accent/20 bg-card p-6 text-card-foreground shadow-xl shadow-accent/5">
-              <h3 className="mb-1 font-heading text-2xl text-primary">{planDisplayName(plan, lang)}</h3>
-              <p className="font-heading text-3xl text-accent">{billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice} {plan.currency}</p>
-              <p className="mb-3 text-xs text-muted-foreground">{billing === "yearly" ? (lang === "ar" ? "سنويًا" : "per year") : (lang === "ar" ? "شهريًا" : "per month")}</p>
-              {plan.freeNow ? <p className="mb-4 text-xs font-medium text-landing-gold">{lang === "ar" ? "متاحة مجانًا في الوقت الراهن" : "Available free for the time being"}</p> : <p className="mb-4 text-xs text-muted-foreground">{lang === "ar" ? "تضاف ضريبة القيمة المضافة 15% عند الدفع" : "15% VAT is added at checkout"}</p>}
+            <div key={plan.id || plan.slug} className="flex flex-col rounded-2xl border border-[var(--nv-line)] bg-[var(--nv-card)] p-6 text-[var(--nv-ink)] shadow-[0_8px_24px_rgba(20,40,75,.06)]">
+              <div className="mb-4 h-[3px] rounded-full bg-[var(--nv-navy)]" />
+              <h3 className="mb-1 text-xl font-semibold text-[var(--nv-ink)]">{planDisplayName(plan, lang)}</h3>
+              <p className="text-3xl font-semibold text-[var(--nv-ink)]">{billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice} {plan.currency}</p>
+              <p className="mb-3 text-xs text-[var(--nv-muted)]">{billing === "yearly" ? (lang === "ar" ? "سنويًا" : "per year") : (lang === "ar" ? "شهريًا" : "per month")}</p>
+              {plan.freeNow ? <p className="mb-4 text-xs font-medium text-[var(--nv-accent-deep)]">{lang === "ar" ? "متاحة مجانًا في الوقت الراهن" : "Available free for the time being"}</p> : <p className="mb-4 text-xs text-[var(--nv-muted)]">{lang === "ar" ? "تضاف ضريبة القيمة المضافة 15% عند الدفع" : "15% VAT is added at checkout"}</p>}
               <ul className="space-y-2 mb-6 flex-1">
                 {planFeatures(plan, lang).map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <Check className="w-4 h-4 text-landing-gold shrink-0 mt-0.5" strokeWidth={2} />
+                  <li key={f} className="flex items-start gap-2 text-sm text-[var(--nv-muted)]">
+                    <Check className="w-4 h-4 text-[var(--nv-accent)] shrink-0 mt-0.5" strokeWidth={2} />
                     {f}
                   </li>
                 ))}
@@ -182,14 +181,14 @@ export default function Pricing() {
               <button
                 onClick={() => ownerUpgrade ? handleOwnerUpgrade(plan) : setActivePlan(plan)}
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-2.5 text-sm font-semibold text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-[9px] bg-[var(--nv-accent)] py-2.5 text-sm font-semibold text-white disabled:opacity-50"
               >
                 {loading && activePlan?.slug === plan.slug ? <Loader2 className="w-4 h-4 animate-spin" /> : ownerUpgrade ? (lang === "ar" ? `ترقية إلى ${plan.nameAr}` : `Upgrade to ${plan.nameEn}`) : (plan.freeNow || (billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice) === 0) ? (lang === "ar" ? "ابدأ مجانًا" : "Start free") : (lang === "ar" ? "اشترك الآن" : "Subscribe now")}
               </button>
             </div>
           ))}
         </div>
-        <div className="mt-10 flex flex-wrap justify-center gap-5 text-xs text-white/55"><Link to="/privacy" className="hover:text-accent">{lang === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}</Link><Link to="/terms" className="hover:text-accent">{lang === "ar" ? "الشروط والأحكام" : "Terms & Conditions"}</Link><Link to="/refund-policy" className="hover:text-accent">{lang === "ar" ? "سياسة الاسترجاع" : "Refund Policy"}</Link></div>
+        <div className="mt-10 flex flex-wrap justify-center gap-5 text-xs text-[var(--nv-muted)]"><Link to="/privacy" className="hover:text-[var(--nv-ink)]">{lang === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}</Link><Link to="/terms" className="hover:text-[var(--nv-ink)]">{lang === "ar" ? "الشروط والأحكام" : "Terms & Conditions"}</Link><Link to="/refund-policy" className="hover:text-[var(--nv-ink)]">{lang === "ar" ? "سياسة الاسترجاع" : "Refund Policy"}</Link></div>
       </div>
 
       {activePlan && (
@@ -206,6 +205,6 @@ export default function Pricing() {
           error={error}
         />
       )}
-    </div>
+    </MarketingChrome>
   );
 }

@@ -50,6 +50,7 @@ export default function PricingSuccess() {
       ownerEmail: session.ownerEmail,
       ownerPassword: session.authMethod === "google" ? crypto.randomUUID() + crypto.randomUUID() : password,
       plan: PLAN_LABELS[session.plan] || "Starter",
+      orgType: "company",
     }, { sync: false });
     pendingCompanyRef.current = company;
     const saved = await syncCompanyAccount(company);
@@ -68,21 +69,21 @@ export default function PricingSuccess() {
   };
 
   return (
-    <div className="powercare-public flex min-h-screen items-center justify-center bg-landing-cinema px-6">
-      <div className="w-full max-w-sm space-y-4 rounded-2xl border border-accent/25 bg-card p-8 text-center shadow-2xl shadow-accent/10">
+    <div className="powercare-public flex min-h-screen items-center justify-center bg-[var(--nv-soft)] px-6">
+      <div className="w-full max-w-sm space-y-4 rounded-2xl border border-[var(--nv-line)] bg-[var(--nv-card)] p-8 text-center shadow-[0_8px_24px_rgba(20,40,75,.06)]">
         <div className="flex justify-center"><Logo size={40} /></div>
 
         {status === "verifying" && (
           <>
-            <Loader2 className="w-8 h-8 text-landing-gold mx-auto animate-spin" />
-            <p className="text-sm text-[#3a2f22]/60 font-body">{t("confirmingPayment")}</p>
+            <Loader2 className="w-8 h-8 text-[var(--nv-accent)] mx-auto animate-spin" />
+            <p className="text-sm text-[var(--nv-muted)] font-body">{t("confirmingPayment")}</p>
           </>
         )}
 
         {status === "password" && (
           <>
             <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
-            <p className="text-sm text-[#3a2f22]/60 font-body">{t("paymentConfirmedText")}</p>
+            <p className="text-sm text-[var(--nv-muted)] font-body">{t("paymentConfirmedText")}</p>
             <form onSubmit={finishSetup} className="space-y-3 text-start">
               {session.authMethod !== "google" && (
                 <input
@@ -92,11 +93,11 @@ export default function PricingSuccess() {
                   placeholder={t("choosePasswordPlaceholder")}
                   minLength={6}
                   required
-                  className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
+                  className="w-full px-3 py-2.5 rounded-[9px] border border-[var(--nv-line)] bg-[var(--nv-card)] text-[var(--nv-ink)] text-sm font-body focus:outline-none focus:ring-2 focus:ring-[var(--nv-navy)]"
                 />
               )}
               {setupError && <p className="text-xs text-red-500 font-body">{setupError}</p>}
-              <button disabled={submitting} type="submit" className="w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-accent-foreground hover:bg-accent/90 disabled:opacity-50">
+              <button disabled={submitting} type="submit" className="w-full rounded-[9px] bg-[var(--nv-accent)] py-2.5 text-sm font-semibold text-white disabled:opacity-50">
                 {submitting ? t("pleaseWaitBtn") : t("finishSetupBtn")}
               </button>
             </form>
@@ -106,15 +107,15 @@ export default function PricingSuccess() {
         {status === "success" && (
           <>
             <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
-            <p className="text-sm text-[#3a2f22]/60 font-body">{t("accountReadyText")}</p>
+            <p className="text-sm text-[var(--nv-muted)] font-body">{t("accountReadyText")}</p>
           </>
         )}
 
         {status === "error" && (
           <>
             <XCircle className="w-10 h-10 text-red-500 mx-auto" />
-            <p className="text-sm text-[#3a2f22]/60 font-body">{t("paymentNotConfirmedText")}</p>
-            <button onClick={() => navigate("/pricing")} className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity">
+            <p className="text-sm text-[var(--nv-muted)] font-body">{t("paymentNotConfirmedText")}</p>
+            <button onClick={() => navigate("/pricing")} className="w-full py-2.5 rounded-[9px] bg-[var(--nv-accent)] text-white text-sm font-semibold">
               {t("backToPricingBtn")}
             </button>
           </>

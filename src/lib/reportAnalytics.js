@@ -1,4 +1,4 @@
-const STATION_TERMS = ["station", "site", "المحطة", "الموقع"];
+const STATION_TERMS = ["station", "site", "الفرع", "الموقع"];
 const EMPLOYEE_TERMS = ["employee", "requester", "assignee", "staff", "الموظف", "مقدم الطلب", "المسند إليه"];
 
 const numberValue = (value) => {
@@ -32,7 +32,7 @@ export function deriveReportAnalytics(headers = [], rows = []) {
   const charts = [];
   if (labelIndex >= 0) charts.push(makeChart(ar ? "نظرة تنفيذية" : "Executive overview", dataRows.map((row) => ({ label: String(row[labelIndex] || "—"), value: numberValue(row[metricIndex]) || 0 }))));
 
-  [[STATION_TERMS, ar ? "تحليل حسب المحطة" : "Analysis by station"], [EMPLOYEE_TERMS, ar ? "تحليل حسب الموظف" : "Analysis by employee"]].forEach(([terms, title]) => {
+  [[STATION_TERMS, ar ? "تحليل حسب الفرع" : "Analysis by station"], [EMPLOYEE_TERMS, ar ? "تحليل حسب الموظف" : "Analysis by employee"]].forEach(([terms, title]) => {
     const groupIndex = headers.findIndex((header) => includesTerm(header, terms));
     if (groupIndex < 0) return;
     const grouped = new Map();

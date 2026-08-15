@@ -6,9 +6,8 @@ import { base44 } from "@/api/base44Client";
 import { LANGUAGES } from "@/lib/i18n";
 import { updateCompany, setEmployeePassword, changeOwnerPassword, purgeCompanyAccount } from "@/lib/store";
 import { KeyRound, Pencil, AlertTriangle, Loader2, Building2 } from "lucide-react";
+import { ACCENT, BORDER, MUTED, NAVY, DANGER, field, labelMuted, ui, CARD } from "@/lib/platformStyles";
 
-// Self-service account settings — any signed-in user can change their own
-// display name and login password from their profile page.
 export default function AccountSettingsCard({ employee, company }) {
   const { t, lang } = useI18n();
   const ar = lang === "ar";
@@ -20,7 +19,7 @@ export default function AccountSettingsCard({ employee, company }) {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [ownerStep, setOwnerStep] = useState(0); // 0 = idle, 1 = first confirm, 2 = final confirm
+  const [ownerStep, setOwnerStep] = useState(0);
   const [deleting, setDeleting] = useState(false);
 
   const isOwner = !!company.ownerEmail && (employee.email || "").toLowerCase() === company.ownerEmail.toLowerCase();
@@ -63,93 +62,82 @@ export default function AccountSettingsCard({ employee, company }) {
   };
 
   return (
-    <div className="space-y-4 rounded-2xl border border-border bg-card p-5">
-      <h3 className="font-heading font-semibold">{t("myAccount")}</h3>
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="flex-1 min-w-[200px]">
-          <label className="text-xs text-muted-foreground font-body flex items-center gap-1 mb-1"><Pencil className="w-3 h-3" /> {t("employeeName")}</label>
-          <input dir="auto" value={name} onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm font-body" />
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px", background: CARD, border: `1px solid ${BORDER}`, borderRadius: "14px", padding: "16px 18px" }}>
+      <div style={{ fontSize: "14px", fontWeight: 600, color: NAVY }}>{t("myAccount")}</div>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "8px" }}>
+        <div style={{ flex: "1 1 200px" }}>
+          <label style={{ ...labelMuted, display: "flex", alignItems: "center", gap: "4px" }}>
+            <Pencil style={{ width: 12, height: 12 }} /> {t("employeeName")}
+          </label>
+          <input dir="auto" value={name} onChange={(e) => setName(e.target.value)} style={field} />
         </div>
-        <button onClick={saveName} className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-body">{t("save")}</button>
+        <button type="button" onClick={saveName} style={ui.btnPrimary}>{t("save")}</button>
       </div>
       {(isOwner || employee.email) ? (
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="flex-1 min-w-[200px]">
-            <label className="text-xs text-muted-foreground font-body flex items-center gap-1 mb-1"><KeyRound className="w-3 h-3" /> {t("newEmployeePassword")}</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm font-body" />
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "8px" }}>
+          <div style={{ flex: "1 1 200px" }}>
+            <label style={{ ...labelMuted, display: "flex", alignItems: "center", gap: "4px" }}>
+              <KeyRound style={{ width: 12, height: 12 }} /> {t("newEmployeePassword")}
+            </label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={field} />
           </div>
-          <button onClick={savePassword} disabled={saving || !password}
-            className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-body disabled:opacity-50">{t("save")}</button>
+          <button type="button" onClick={savePassword} disabled={saving || !password} style={{ ...ui.btnPrimary, opacity: saving || !password ? 0.5 : 1 }}>{t("save")}</button>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground font-body">{t("emailRequiredForLogin")}</p>
+        <p style={{ margin: 0, fontSize: "11px", color: MUTED }}>{t("emailRequiredForLogin")}</p>
       )}
       {isOwner && (
-        <div className="flex flex-wrap items-end gap-2 border-t border-border pt-4">
-          <div className="min-w-[220px] flex-1">
-            <label className="mb-1 block text-xs text-muted-foreground font-body">
-              {ar ? "لغة رسائل البريد الإلكتروني" : "Email message language"}
-            </label>
-            <select value={emailLanguage} onChange={(event) => setEmailLanguage(event.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-body">
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "8px", borderTop: `1px solid ${BORDER}`, paddingTop: "14px" }}>
+          <div style={{ flex: "1 1 220px" }}>
+            <label style={labelMuted}>{ar ? "لغة رسائل البريد الإلكتروني" : "Email message language"}</label>
+            <select value={emailLanguage} onChange={(event) => setEmailLanguage(event.target.value)} style={field}>
               {LANGUAGES.map((language) => <option key={language.code} value={language.code}>{language.flag} {language.label}</option>)}
             </select>
           </div>
-          <button onClick={saveEmailLanguage} disabled={savingEmailLanguage} className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-body disabled:opacity-50">
+          <button type="button" onClick={saveEmailLanguage} disabled={savingEmailLanguage} style={{ ...ui.btnPrimary, opacity: savingEmailLanguage ? 0.5 : 1 }}>
             {savingEmailLanguage ? (ar ? "جارٍ الحفظ..." : "Saving...") : t("save")}
           </button>
         </div>
       )}
-      {msg && <p className="text-xs text-accent font-body">{msg}</p>}
+      {msg && <p style={{ margin: 0, fontSize: "11px", color: ACCENT }}>{msg}</p>}
 
-      {/* Delete Company Account — owner-only permanent purge with double-confirmation. */}
       {isOwner && (
-        <div className="pt-3 border-t border-border space-y-2">
-          <h4 className="text-sm font-body font-medium text-destructive flex items-center gap-1.5">
-            <Building2 className="w-3.5 h-3.5" /> {ar ? "حذف حساب الشركة" : "Delete Company Account"}
-          </h4>
-          <p className="text-xs text-muted-foreground font-body">
+        <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 600, color: DANGER }}>
+            <Building2 style={{ width: 14, height: 14 }} /> {ar ? "حذف حساب الشركة" : "Delete Company Account"}
+          </div>
+          <p style={{ margin: 0, fontSize: "11px", color: MUTED, lineHeight: 1.6 }}>
             {ar
-              ? "هذا الإجراء يحذف الشركة نهائيًا: جميع المحطات والموظفين وكل البيانات المخزّنة ستُمسح ولا يمكن استرجاعها."
+              ? "هذا الإجراء يحذف الشركة نهائيًا: جميع الفروع والموظفين وكل البيانات المخزّنة ستُمسح ولا يمكن استرجاعها."
               : "This permanently purges the company: all stations, employees and every stored data record will be erased and cannot be recovered."}
           </p>
           {ownerStep === 0 && (
-            <button
-              onClick={() => setOwnerStep(1)}
-              className="px-4 py-2 rounded-md border border-destructive/50 text-destructive text-sm font-body hover:bg-destructive/10"
-            >
+            <button type="button" onClick={() => setOwnerStep(1)} style={ui.btnDanger}>
               {ar ? "حذف حساب الشركة" : "Delete Company Account"}
             </button>
           )}
           {ownerStep === 1 && (
-            <div className="p-3 rounded-lg border border-destructive/40 bg-destructive/5 space-y-2">
-              <p className="text-xs text-destructive font-body flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            <div style={{ padding: "12px", borderRadius: "10px", border: "1px solid #FECACA", background: "#FEF2F2", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <p style={{ margin: 0, fontSize: "12px", color: DANGER, display: "flex", alignItems: "center", gap: "6px" }}>
+                <AlertTriangle style={{ width: 14, height: 14, flexShrink: 0 }} />
                 {ar
-                  ? "تحذير: سيتم مسح الشركة بالكامل — المحطات، الموظفون، المهام، التقارير وكل البيانات."
-                  : "Warning: the entire company will be wiped — stations, employees, tasks, reports and all data."}
+                  ? "تحذير: سيتم مسح الشركة بالكامل — الفروع، الموظفون، المهام، التقارير وكل البيانات."
+                  : "Warning: the company will be wiped — stations, employees, tasks, reports and all data."}
               </p>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setOwnerStep(2)} className="px-4 py-2 rounded-md border border-destructive text-destructive text-sm font-body hover:bg-destructive/10">
-                  {ar ? "أفهم ذلك — متابعة" : "I understand — continue"}
-                </button>
-                <button onClick={() => setOwnerStep(0)} className="px-4 py-2 rounded-md border border-border text-sm font-body">
-                  {t("cancel")}
-                </button>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <button type="button" onClick={() => setOwnerStep(2)} style={ui.btnDanger}>{ar ? "أفهم — متابعة" : "I understand — continue"}</button>
+                <button type="button" onClick={() => setOwnerStep(0)} style={ui.btnGhost}>{t("cancel")}</button>
               </div>
             </div>
           )}
           {ownerStep === 2 && (
-            <div className="p-3 rounded-lg border border-destructive bg-destructive/10 space-y-2">
-              <p className="text-xs text-destructive font-body font-medium flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                {ar
-                  ? "التأكيد النهائي: هذا آخر تحذير — لا يمكن التراجع بعد الآن."
-                  : "Final confirmation: this is the last warning — there is no undo after this."}
+            <div style={{ padding: "12px", borderRadius: "10px", border: "1px solid #FECACA", background: "#FEF2F2", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <p style={{ margin: 0, fontSize: "12px", color: DANGER, fontWeight: 600 }}>
+                {ar ? "تأكيد نهائي — لا يمكن التراجع." : "Final confirmation — this cannot be undone."}
               </p>
-              <div className="flex items-center gap-2">
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 <button
+                  type="button"
                   disabled={deleting}
                   onClick={async () => {
                     setDeleting(true);
@@ -161,20 +149,17 @@ export default function AccountSettingsCard({ employee, company }) {
                       setMsg(ar ? "تعذّر حذف حساب الشركة — حاول مجددًا." : "Couldn't delete the company account — please try again.");
                     }
                   }}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-destructive text-destructive-foreground text-sm font-body disabled:opacity-50"
+                  style={{ ...ui.btnDanger, display: "inline-flex", alignItems: "center", gap: "6px", opacity: deleting ? 0.5 : 1 }}
                 >
-                  {deleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {deleting ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : null}
                   {ar ? "احذف الشركة نهائيًا" : "Permanently delete company"}
                 </button>
-                <button disabled={deleting} onClick={() => setOwnerStep(0)} className="px-4 py-2 rounded-md border border-border text-sm font-body">
-                  {t("cancel")}
-                </button>
+                <button type="button" disabled={deleting} onClick={() => setOwnerStep(0)} style={ui.btnGhost}>{t("cancel")}</button>
               </div>
             </div>
           )}
         </div>
       )}
-
     </div>
   );
 }

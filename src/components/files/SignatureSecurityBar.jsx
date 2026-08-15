@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Check, Copy, Fingerprint, LockKeyhole, ShieldCheck, Timer } from "lucide-react";
+import SigningPanel from "./SigningPanel";
+import { MUTED, NAVY, BORDER, SURFACE, CARD } from "@/lib/platformStyles";
 
 export default function SignatureSecurityBar({ signatureId, timestamp, verified, ar }) {
   const [copied, setCopied] = useState(false);
@@ -9,23 +11,77 @@ export default function SignatureSecurityBar({ signatureId, timestamp, verified,
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
-  const formatted = timestamp ? new Date(timestamp).toLocaleString(ar ? "ar-SA" : "en-GB", { dateStyle: "full", timeStyle: "medium" }) : "—";
+  const formatted = timestamp
+    ? new Date(timestamp).toLocaleString(ar ? "ar-SA" : "en-GB", { timeZone: "Asia/Riyadh", dateStyle: "full", timeStyle: "medium" })
+    : "—";
 
-  if (!verified) return (
-    <section className="rounded-2xl border border-accent/30 bg-card px-5 py-4 shadow-soft">
-      <p className="flex items-start gap-3 text-sm leading-6 text-muted-foreground"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" />{ar ? "بعد توقيع المستند، إذا أردت التأكد من موثوقية الملف فاستخدم قسم التحقق وارفع الملف الموقّع." : "After signing, use the verification section and upload the signed file if you want to confirm its authenticity."}</p>
-    </section>
-  );
+  const cell = {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 10,
+    padding: "12px 14px",
+    background: SURFACE,
+    border: `1px solid ${BORDER}`,
+    borderRadius: 10,
+  };
+
+  if (!verified) {
+    return (
+      <SigningPanel icon={ShieldCheck} title={ar ? "التحقق بعد التوقيع" : "Verify after signing"}>
+        <p style={{ margin: 0, display: "flex", alignItems: "flex-start", gap: 10, fontSize: 12, lineHeight: 1.65, color: MUTED }}>
+          <ShieldCheck style={{ width: 16, height: 16, color: NAVY, flexShrink: 0, marginTop: 2 }} />
+          {ar
+            ? "بعد توقيع المستند استخدم تبويب التحقق وارفع النسخة الموقّعة لمطابقة البصمة."
+            : "After signing, use the Verify tab and upload the signed copy to match the fingerprint."}
+        </p>
+      </SigningPanel>
+    );
+  }
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-accent/40 bg-gradient-to-l from-primary to-sidebar text-primary-foreground shadow-elevated">
-      <div className="flex items-center justify-center gap-2 bg-emerald-600 px-4 py-3 text-sm font-bold text-white"><ShieldCheck className="h-5 w-5" />{ar ? "تم تسجيل بصمة المستند الموقّع" : "Signed document fingerprint registered"}</div>
-      <div className="grid gap-px bg-primary-foreground/10 sm:grid-cols-3">
-        <div className="flex items-center gap-3 bg-primary/70 p-4"><Timer className="h-5 w-5 shrink-0 text-accent" /><div><p className="text-[10px] uppercase tracking-widest text-primary-foreground/55">{ar ? "الختم الزمني" : "Timestamp"}</p><p className="mt-1 text-xs font-medium" dir="auto">{verified ? formatted : (ar ? "يُنشأ بعد التوقيع" : "Created after signing")}</p></div></div>
-        <div className="flex items-center gap-3 bg-primary/70 p-4"><Fingerprint className="h-5 w-5 shrink-0 text-accent" /><div className="min-w-0 flex-1"><p className="text-[10px] uppercase tracking-widest text-primary-foreground/55">{ar ? "بصمة تحقق المستند" : "Document verification fingerprint"}</p><p className="mt-1 truncate font-mono text-xs" dir={verified ? "ltr" : "auto"}>{verified ? (signatureId || "PWC-••••-••••-••••") : (ar ? "بانتظار توقيع الملف" : "Waiting for signing")}</p></div><button type="button" onClick={copy} disabled={!verified || !signatureId} className="rounded-lg border border-primary-foreground/15 p-2 hover:bg-primary-foreground/10 disabled:opacity-40" aria-label={ar ? "نسخ رمز التحقق" : "Copy verification code"}>{copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4 text-accent" />}</button></div>
-        <div className="flex items-center gap-3 bg-primary/70 p-4"><LockKeyhole className="h-5 w-5 shrink-0 text-accent" /><div><p className="text-[10px] uppercase tracking-widest text-primary-foreground/55">{ar ? "حماية المستند" : "Document protection"}</p><p className="mt-1 text-xs font-medium">{verified ? (ar ? "بصمة SHA-256 وسجل غير قابل للتعديل" : "SHA-256 fingerprint and immutable record") : (ar ? "تُفعّل بعد اكتمال التوقيع" : "Activated after signing is complete")}</p></div></div>
+    <SigningPanel icon={ShieldCheck} title={ar ? "سُجّلت بصمة المستند الموقّع" : "Signed document fingerprint registered"}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+        <div style={cell}>
+          <Timer style={{ width: 16, height: 16, color: NAVY, flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <p style={{ margin: 0, fontSize: 10, color: MUTED }}>{ar ? "الختم الزمني (الرياض)" : "Timestamp (Riyadh)"}</p>
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: NAVY }} dir="auto">{formatted}</p>
+          </div>
+        </div>
+        <div style={cell}>
+          <Fingerprint style={{ width: 16, height: 16, color: NAVY, flexShrink: 0, marginTop: 2 }} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <p style={{ margin: 0, fontSize: 10, color: MUTED }}>{ar ? "معرّف التحقق" : "Verification id"}</p>
+            <p style={{ margin: "4px 0 0", fontSize: 12, fontFamily: "'IBM Plex Mono',monospace", color: NAVY }} dir="ltr">
+              {signatureId || "PWC-••••"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={copy}
+            disabled={!signatureId}
+            style={{
+              border: `1px solid ${BORDER}`,
+              background: CARD,
+              borderRadius: 8,
+              padding: 6,
+              cursor: signatureId ? "pointer" : "default",
+            }}
+            aria-label={ar ? "نسخ رمز التحقق" : "Copy verification code"}
+          >
+            {copied ? <Check style={{ width: 14, height: 14, color: "#15803D" }} /> : <Copy style={{ width: 14, height: 14, color: MUTED }} />}
+          </button>
+        </div>
+        <div style={cell}>
+          <LockKeyhole style={{ width: 16, height: 16, color: NAVY, flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <p style={{ margin: 0, fontSize: 10, color: MUTED }}>{ar ? "حماية المحتوى" : "Content protection"}</p>
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: NAVY }}>
+              {ar ? "بصمة مرتبطة بالمستند وسجل غير قابل للتعديل" : "Fingerprint bound to the document and an immutable record"}
+            </p>
+          </div>
+        </div>
       </div>
-      <p className="flex items-start gap-2 border-t border-primary-foreground/10 bg-primary/80 px-4 py-3 text-xs leading-5 text-primary-foreground/75"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" />{ar ? "إذا أردت التأكد من موثوقية الملف، استخدم قسم التحقق وارفع النسخة الموقّعة." : "To confirm the file's authenticity, use the verification section and upload the signed copy."}</p>
-    </section>
+    </SigningPanel>
   );
 }

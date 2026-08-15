@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { setLeaveTotal } from "@/lib/store";
-import { LEAVE_TYPES, getLeaveTotal } from "@/lib/leaveTypes";
+import { getLeaveTotal, leaveTypesForProfile } from "@/lib/leaveTypes";
 import { Pencil, Check } from "lucide-react";
 
 export default function LeaveTotalsEditor({ employee, companyId }) {
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const profile = employee.profile || {};
-  const types = LEAVE_TYPES.filter((ty) => ty.defaultTotal !== null);
+  const types = leaveTypesForProfile(profile).filter((ty) => ty.defaultTotal !== null);
   const [form, setForm] = useState(() => types.reduce((acc, ty) => ({ ...acc, [ty.key]: getLeaveTotal(profile, ty.key) ?? 0 }), {}));
 
   const save = () => {

@@ -8,6 +8,7 @@ import {
 } from "./store";
 import { base44 } from "@/api/base44Client";
 import { DEFAULT_SUBSCRIPTION_PLANS, planConfigForName } from "@/lib/subscriptionPlans";
+import { isLocalPreviewActive, LOCAL_PREVIEW_COMPANY_ID } from "@/lib/localPreview";
 
 // Skip merging in cloud data if this browser wrote locally very recently —
 // gives the in-flight edit a moment to finish syncing before a poll/refresh
@@ -31,8 +32,12 @@ export function AuthProvider({ children }) {
   });
   const [tick, setTick] = useState(0); // force refresh on store changes
   const [isSyncing, setIsSyncing] = useState(false); // true while pulling the latest data from the cloud
-  const [planConfig, setPlanConfig] = useState(null);
-  const [planLoading, setPlanLoading] = useState(true);
+  const [planConfig, setPlanConfig] = useState(() => {
+    const s = getSession();
+    const meta = s?.companyId ? getCompanyMeta(s.companyId) : null;
+    return planConfigForName(DEFAULT_SUBSCRIPTION_PLANS, meta?.plan || "free");
+  });
+  const [planLoading, setPlanLoading] = useState(false);
   // Per-collection version stamps from the last successful pull — lets each poll skip
   // downloading collections that haven't changed on the server (delta sync).
   const lastVersionsRef = useRef({});
@@ -46,12 +51,34 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!company?.plan) { setPlanConfig(planConfigForName(DEFAULT_SUBSCRIPTION_PLANS, "free")); setPlanLoading(false); return; }
+    // Local preview: never wait on Base44 plan entities.
+    if (isLocalPreviewActive() || company.id === LOCAL_PREVIEW_COMPANY_ID) {
+      setPlanConfig(planConfigForName(DEFAULT_SUBSCRIPTION_PLANS, company.plan || "enterprise"));
+      setPlanLoading(false);
+      return;
+    }
     let active = true;
-    const loadPlan = () => base44.entities.SubscriptionPlan.list("sortOrder", 50).then((plans) => { if (active) setPlanConfig(planConfigForName(plans.length ? plans : DEFAULT_SUBSCRIPTION_PLANS, company.plan)); }).finally(() => { if (active) setPlanLoading(false); });
+    const applyLocalPlan = () => {
+      if (active) setPlanConfig(planConfigForName(DEFAULT_SUBSCRIPTION_PLANS, company.plan));
+    };
+    const loadPlan = () => base44.entities.SubscriptionPlan.list("sortOrder", 50)
+      .then((plans) => {
+        if (active) setPlanConfig(planConfigForName(plans.length ? plans : DEFAULT_SUBSCRIPTION_PLANS, company.plan));
+      })
+      .catch(() => {
+        applyLocalPlan();
+      })
+      .finally(() => { if (active) setPlanLoading(false); });
     setPlanLoading(true); loadPlan();
-    const unsubscribe = base44.entities.SubscriptionPlan.subscribe(() => loadPlan());
+    let unsubscribe = null;
+    try {
+      unsubscribe = base44.entities.SubscriptionPlan.subscribe(() => loadPlan());
+    } catch {
+      applyLocalPlan();
+      setPlanLoading(false);
+    }
     return () => { active = false; if (typeof unsubscribe === "function") unsubscribe(); };
-  }, [company?.plan]);
+  }, [company?.plan, company?.id]);
 
   const refresh = useCallback(() => {
     const s = getSession();
@@ -86,6 +113,10 @@ export function AuthProvider({ children }) {
       // Keep the audit trail attributed to whoever is actually acting in this session.
       const actorName = s.userId ? localData?.employees?.find((e) => e.id === s.userId)?.name : null;
       setAuditActor(actorName || getCompanyMeta(s.companyId)?.ownerEmail || "owner");
+      // Local preview workspace is offline-only — never wait on cloud hydration.
+      if (isLocalPreviewActive() || s.companyId === LOCAL_PREVIEW_COMPANY_ID) {
+        return;
+      }
       // Always reconcile with the persisted database (not just on an empty cache) so
       // records created on another device/browser eventually show up here too. Local-only
       // records (not yet synced) are kept as-is; server records are merged in additively.

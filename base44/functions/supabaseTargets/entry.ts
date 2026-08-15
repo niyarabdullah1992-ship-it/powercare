@@ -93,14 +93,17 @@ Deno.serve(async (req) => {
       if (!auth) {
         const platformUser = await base44.auth.me().catch(() => null);
         if (platformUser && platformUser.role === "admin") {
-          const employees = body.companyId && body.userId
+          // Admin must still name a company — no tenantless target access.
+          if (!body.companyId) return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
+          const employees = body.userId
             ? await base44.asServiceRole.entities.Employee.filter({ companyId: body.companyId, employeeId: body.userId })
             : [];
           const employee = employees[0] || null;
-          auth = { admin: true, isManager: true, role: employee?.role || "owner", companyId: body.companyId || null, userId: body.userId || null, name: employee?.name || platformUser.full_name || "Admin" };
+          auth = { admin: true, isManager: true, role: employee?.role || "owner", companyId: body.companyId, userId: body.userId || null, name: employee?.name || platformUser.full_name || "Admin" };
         }
       }
       if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (!auth.companyId) return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
     }
     const isManager = !!auth?.isManager;
     const canSetCompletionMode = !!auth?.admin || ["owner", "director", "ops_manager", "station_manager"].includes(auth?.role);
@@ -141,6 +144,10 @@ Deno.serve(async (req) => {
         remoteConvertedAt: metadata?.remoteConvertedAt || null,
         effortWeight: Number(metadata?.effortWeight) || 1,
         evidenceType: metadata?.evidenceType || null,
+        clientCompany: metadata?.clientCompany || "",
+        clientProject: metadata?.clientProject || "",
+        clientContact: metadata?.clientContact || "",
+        clientPhone: metadata?.clientPhone || "",
         pendingReviewAt: metadata?.pendingReviewAt || null,
         reviewedAt: metadata?.reviewedAt || null,
         reviewedBy: metadata?.reviewedBy || null,
@@ -195,22 +202,24 @@ Deno.serve(async (req) => {
     // priority value × the task's effort weight. Both approval paths (a supervisor
     // approving, and the deadline auto-approval) call this — so the same task can
     // never be worth two different amounts depending on who closed it.
-    const DEFAULT_PRIORITY_POINTS = { urgent: 150, high: 100, medium: 75, low: 50 };
+    // Design formula (Platform Component): High 3 · Medium 2 · Low 1 × effort weight.
+    // urgent maps to high. Company rewardPoints overrides remain allowed when set.
+    const DEFAULT_PRIORITY_POINTS = { urgent: 3, high: 3, medium: 2, low: 1 };
     const taskPointsFor = async (target) => {
       const meta = await getCompanyMeta().catch(() => ({}));
       const configured = Number(meta.rewardPoints?.[target.priority]);
-      const base = Number.isFinite(configured) && configured > 0 ? configured : (DEFAULT_PRIORITY_POINTS[target.priority] || 75);
+      const base = Number.isFinite(configured) && configured > 0 ? configured : (DEFAULT_PRIORITY_POINTS[target.priority] || 1);
       return base * (Number(target.effortWeight) || 1);
     };
     const pointRecipientsFor = async (target) => {
       if (target.assignment_type === "member" && target.employee_id) return [target.employee_id];
-      const [emps, stations] = await Promise.all([
-        base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId }),
-        base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId }),
-      ]);
-      const fallbackStation = stations[0]?.stationId || null;
-      const stationKey = target.assignment_type === "hq_team" ? fallbackStation : target.assignment_id;
-      return emps.filter((e) => (e.stationId || fallbackStation) === stationKey).map((e) => e.employeeId);
+      const emps = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId });
+      if (target.assignment_type === "hq_team") {
+        return emps.filter((e) => !e.stationId).map((e) => e.employeeId);
+      }
+      const stationKey = target.assignment_id || target.station_id;
+      if (!stationKey) return [];
+      return emps.filter((e) => e.stationId === stationKey).map((e) => e.employeeId);
     };
     const awardTargetPoints = async (target, awardedBy, reason) => {
       const points = await taskPointsFor(target);
@@ -225,7 +234,6 @@ Deno.serve(async (req) => {
       const rows = await getRes.json();
       const tg = Array.isArray(rows) && rows[0];
       if (!tg) return null;
-      if (auth?.admin && !auth?.companyId) return tg;
       if (!auth?.companyId) return null;
       const scope = await getCompanyScope();
       return targetInScope(tg, scope) ? await withTaskMetadata(tg) : null;
@@ -289,7 +297,7 @@ Deno.serve(async (req) => {
     const resolveRoomId = async (stationId) => {
       const id = String(stationId || "");
       if (!id) return null;
-      if (auth?.admin && !auth.companyId) return id;
+      if (!auth?.companyId) return null;
       const senior = auth?.admin || ["owner", "director", "ops_manager"].includes(auth?.role);
       const meta = await getCompanyMeta();
       if (id === "hq") return senior || !auth.stationId ? `${auth.companyId}_hq` : null;
@@ -361,13 +369,9 @@ Deno.serve(async (req) => {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/targets?order=created_at.desc`, { headers });
       let rows = await res.json();
       if (!Array.isArray(rows)) rows = [];
-      // Strict tenant boundary: only this company's targets are ever processed or returned.
-      // Platform admins are ALSO scoped when acting inside a specific company —
-      // otherwise Niro/task lists would show every tenant's (and demo) targets.
-      if (!auth.admin || auth.companyId) {
-        const scope = await getCompanyScope();
-        rows = rows.filter((tg) => targetInScope(tg, scope));
-      }
+      // Strict tenant boundary: every caller (including admin) is scoped to companyId.
+      const scope = await getCompanyScope();
+      rows = rows.filter((tg) => targetInScope(tg, scope));
       rows = await Promise.all(rows.map((target) => withTaskMetadata(target)));
       // Overdue detection: auto-close targets past their end date
       const now = Date.now();
@@ -479,7 +483,7 @@ Deno.serve(async (req) => {
       if (!isManager) {
         return Response.json({ error: "Forbidden: only managers can create targets" }, { status: 403 });
       }
-      const { managerId, taskTarget, days, title, description, steps, fileUrl, fileUrls, assignmentType, assignmentId, employeeId, stationId, priority, startDate: customStart, endDate: customEnd, section, taskType, completionMode = "onsite", effortWeight } = body;
+      const { managerId, taskTarget, days, title, description, steps, fileUrl, fileUrls, assignmentType, assignmentId, employeeId, stationId, priority, startDate: customStart, endDate: customEnd, section, taskType, completionMode = "onsite", effortWeight, client } = body;
       const weight = Math.min(5, Math.max(1, Number(effortWeight) || 1));
       const targetAmount = Number(taskTarget);
       if (!(title || "").trim() || !Number.isFinite(targetAmount) || targetAmount <= 0) {
@@ -541,7 +545,13 @@ Deno.serve(async (req) => {
         return Response.json({ error: created?.message || "Failed to create target — run: ALTER TABLE targets ADD COLUMN IF NOT EXISTS section text; ALTER TABLE targets ADD COLUMN IF NOT EXISTS task_type text;" }, { status: 400 });
       }
       const createdTarget = Array.isArray(created) ? created[0] : created;
-      await saveTaskMetadata(createdTarget, { completionMode, effortWeight: weight });
+      const clientFields = {
+        clientCompany: String(client?.clientCompany || "").trim().slice(0, 120),
+        clientProject: String(client?.clientProject || "").trim().slice(0, 120),
+        clientContact: String(client?.clientContact || "").trim().slice(0, 120),
+        clientPhone: String(client?.clientPhone || "").trim().slice(0, 80),
+      };
+      await saveTaskMetadata(createdTarget, { completionMode, effortWeight: weight, ...clientFields });
       // Notify the assigned employee (member only)
       if (aType === "member" && employeeId) {
         await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
@@ -554,7 +564,7 @@ Deno.serve(async (req) => {
         });
         // Gmail email alert to the assigned employee (best-effort)
         try {
-          const emps = await base44.asServiceRole.entities.Employee.filter({ employeeId });
+          const emps = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId });
           const email = emps[0]?.email;
           if (email) {
             await sendGmail(
@@ -996,7 +1006,7 @@ Deno.serve(async (req) => {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/task_folders?order=sort_order.asc,path.asc`, { headers });
       const rows = await res.json();
       if (!res.ok) return Response.json({ folders: [] });
-      if (auth?.admin && !auth.companyId) return Response.json({ folders: rows || [] });
+      if (!auth?.companyId) return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
       const sts = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
       let stationIds = sts.map((station) => station.stationId);
       if (auth.role === "pgm") stationIds = stationIds.filter((id) => (auth.managedStations || []).includes(id));

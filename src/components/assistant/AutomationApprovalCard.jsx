@@ -1,5 +1,7 @@
 import React from "react";
 import { CheckCircle2, Loader2, ShieldCheck, X } from "lucide-react";
+import IdentityCard from "@/components/shared/IdentityCard";
+import { BORDER, MUTED, NAVY, ui, CARD } from "@/lib/platformStyles";
 
 const labels = {
   create_task: ["إنشاء مهمة", "Create task"], log_progress: ["تحديث تقدم مهمة", "Update task progress"],
@@ -13,10 +15,36 @@ const labels = {
 export default function AutomationApprovalCard({ actions, loading, ar, onApprove, onReject }) {
   if (!actions?.length) return null;
   return (
-    <section className="rounded-2xl border border-accent/40 bg-accent/5 p-4 shadow-soft" dir={ar ? "rtl" : "ltr"}>
-      <div className="flex items-start gap-3"><span className="rounded-xl bg-accent/15 p-2 text-accent"><ShieldCheck className="h-5 w-5" /></span><div><h3 className="font-heading text-lg font-semibold">{ar ? "بانتظار موافقتك" : "Waiting for your approval"}</h3><p className="text-xs text-muted-foreground">{ar ? "لن ينفذ نيرو أي إجراء قبل موافقتك." : "Niro will not execute anything before you approve."}</p></div></div>
-      <div className="my-4 space-y-2">{actions.map((action, index) => <div key={`${action.type}-${index}`} className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-sm"><CheckCircle2 className="h-4 w-4 text-accent" /><span>{labels[action.type]?.[ar ? 0 : 1] || action.title || action.type}</span>{(action.title || action.station) && <span className="truncate text-xs text-muted-foreground">— {action.title || action.station}</span>}</div>)}</div>
-      <div className="grid grid-cols-2 gap-2"><button onClick={onReject} disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold"><X className="h-4 w-4" />{ar ? "رفض" : "Reject"}</button><button onClick={onApprove} disabled={loading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}{ar ? "موافقة وتنفيذ" : "Approve & execute"}</button></div>
-    </section>
+    <IdentityCard
+      icon={ShieldCheck}
+      kicker={ar ? "موافقة" : "Approval"}
+      title={ar ? "بانتظار موافقتك" : "Waiting for your approval"}
+      subtitle={ar ? "لن ينفذ نيرو أي إجراء قبل موافقتك." : "Niro will not execute anything before you approve."}
+      dir={ar ? "rtl" : "ltr"}
+      bodySurface
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+        {actions.map((action, index) => (
+          <div key={`${action.type}-${index}`} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 12, border: `1px solid ${BORDER}`, background: CARD, fontSize: 13, color: NAVY }}>
+            <CheckCircle2 style={{ width: 16, height: 16, color: "#1E9E63", flexShrink: 0 }} />
+            <span>{labels[action.type]?.[ar ? 0 : 1] || action.title || action.type}</span>
+            {(action.title || action.station) ? <span style={{ color: MUTED, fontSize: 11, overflow: "hidden", textOverflow: "ellipsis" }}>— {action.title || action.station}</span> : null}
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <button type="button" onClick={onReject} disabled={loading} style={ui.btnSecondary}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <X style={{ width: 14, height: 14 }} />{ar ? "رفض" : "Reject"}
+          </span>
+        </button>
+        <button type="button" onClick={onApprove} disabled={loading} style={ui.btnPrimary}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            {loading ? <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> : <ShieldCheck style={{ width: 14, height: 14 }} />}
+            {ar ? "موافقة وتنفيذ" : "Approve & execute"}
+          </span>
+        </button>
+      </div>
+    </IdentityCard>
   );
 }

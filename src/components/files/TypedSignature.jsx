@@ -1,37 +1,66 @@
 import React, { useEffect, useState } from "react";
 import { Check } from "lucide-react";
-import { Image } from "@/components/ui/image";
 import { makeSignatureStamp } from "@/lib/multiSignStamp";
-import { createTypedSignatureWithDate } from "@/lib/typedSignatureImage";
+import { createTypedSignatureImage } from "@/lib/typedSignatureImage";
+import { generateVerificationId } from "@/lib/verificationBadge";
+import { MUTED, field, ui, SURFACE } from "@/lib/platformStyles";
+import StampPreview from "./StampPreview";
 
 export default function TypedSignature({ ar, defaultName = "", verificationId, stampTheme = "heritage", onPreview, onSave, saving }) {
   const [name, setName] = useState(defaultName);
   const [datedSignature, setDatedSignature] = useState("");
   const [stamp, setStamp] = useState("");
+  const [sealId] = useState(() => verificationId || generateVerificationId());
 
   useEffect(() => {
     let active = true;
-    setDatedSignature(""); setStamp(""); onPreview?.("");
+    setDatedSignature("");
+    setStamp("");
+    onPreview?.("");
     if (!name.trim()) return () => { active = false; };
-    const date = new Date().toLocaleDateString("en-GB");
-    const fontFamily = "Arial";
-    createTypedSignatureWithDate(name.trim(), date, fontFamily)
+    createTypedSignatureImage(name.trim(), "Arial")
       .then((rawSignature) => {
         if (!active) return null;
         setDatedSignature(rawSignature);
-        return makeSignatureStamp(rawSignature, name.trim(), verificationId, "typed", stampTheme);
+        return makeSignatureStamp(rawSignature, name.trim(), sealId, "typed", stampTheme);
       })
-      .then((composed) => { if (active && composed) { setStamp(composed); onPreview?.(composed); } });
+      .then((composed) => {
+        if (active && composed) {
+          setStamp(composed);
+          onPreview?.(composed);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setStamp("");
+          onPreview?.("");
+        }
+      });
     return () => { active = false; };
-  }, [name, ar, verificationId, stampTheme, onPreview]);
-
-  const save = () => onSave(datedSignature, name.trim(), "typed", stampTheme);
+  }, [name, ar, sealId, stampTheme, onPreview]);
 
   return (
-    <div className="space-y-5">
-      <div><label className="mb-2 block text-xs font-medium text-muted-foreground">{ar ? "اسم التوقيع" : "Signature name"}</label><input value={name} onChange={(event) => setName(event.target.value)} dir="auto" placeholder={ar ? "اكتب اسمك…" : "Type your name…"} className="w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm font-body outline-none focus:ring-2 focus:ring-ring" /></div>
-      {stamp && <div><p className="mb-2 text-xs font-medium text-muted-foreground">{ar ? "المعاينة النهائية داخل الملف" : "Final in-document preview"}</p><Image src={stamp} alt={ar ? "معاينة الختم" : "Stamp preview"} fittingType="fit" className="mx-auto h-24 w-full max-w-sm" /></div>}
-      <button type="button" disabled={!stamp || saving} onClick={save} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm disabled:opacity-40"><Check className="h-4 w-4" />{saving ? (ar ? "جارٍ الحفظ…" : "Saving…") : ar ? "اعتماد وإرسال التوقيع" : "Approve and submit signature"}</button>
+    <div style={{ display: "grid", gap: 10 }}>
+      <label style={{ display: "grid", gap: 5 }}>
+        <span style={{ fontSize: 11, color: MUTED }}>{ar ? "اسم التوقيع" : "Signature name"}</span>
+        <input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          dir="auto"
+          placeholder={ar ? "اكتب اسمك…" : "Type your name…"}
+          style={{ ...field, height: 38, background: SURFACE }}
+        />
+      </label>
+      <StampPreview src={stamp} sealId={sealId} ar={ar} />
+      <button
+        type="button"
+        disabled={!stamp || saving}
+        onClick={() => onSave(datedSignature, name.trim(), "typed", sealId)}
+        style={{ ...ui.btnPrimary, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, height: 40, opacity: !stamp || saving ? 0.45 : 1 }}
+      >
+        <Check style={{ width: 14, height: 14 }} />
+        {saving ? (ar ? "جارٍ الحفظ…" : "Saving…") : (ar ? "حفظ التوقيع" : "Save signature")}
+      </button>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { getCompanyData, logAudit, updateCompany } from "@/lib/store";
+import { checkHazardCloseGate } from "@/lib/hseDerivations";
 
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
 const stationExists = (data, stationId) => (data?.stations || []).some((station) => station.id === stationId);
@@ -42,22 +43,62 @@ export function updateSafetyRecord(companyId, stationId, updates, actorName = ""
   });
 }
 
-export function closeSafetyHazard(companyId, stationId, hazardIndex, closedBy) {
-  updateCompany(companyId, (data) => {
-    const rec = (data.safety || []).find((item) => item.stationId === stationId);
+export function closeSafetyHazard(companyId, stationId, hazardIndex, closedBy, opts = {}) {
+  const data = getCompanyData(companyId);
+  const recPeek = (data?.safety || []).find((item) => item.stationId === stationId);
+  const rawPeek = recPeek?.hazards?.[hazardIndex];
+  const existingBefore = typeof rawPeek === "object" && rawPeek ? rawPeek.beforePhoto : null;
+  const beforePhoto = opts.beforePhoto || existingBefore || null;
+  const afterPhoto = opts.afterPhoto || null;
+
+  const gate = checkHazardCloseGate({
+    controlId: opts.controlId,
+    likelihood: opts.likelihood ?? 3,
+    severity: opts.severity ?? 3,
+    inherent: opts.inherent,
+    beforePhoto,
+    afterPhoto,
+  });
+  if (!gate.ok) return { ok: false, ...gate };
+
+  let closed = null;
+  updateCompany(companyId, (current) => {
+    const rec = (current.safety || []).find((item) => item.stationId === stationId);
     if (!rec || hazardIndex < 0 || hazardIndex >= (rec.hazards || []).length) return;
-    const [description] = rec.hazards.splice(hazardIndex, 1);
+    const [raw] = rec.hazards.splice(hazardIndex, 1);
+    const description = typeof raw === "string" ? raw : raw?.description || raw?.title || String(raw);
+    const openedAt = typeof raw === "object" ? raw.openedAt || null : null;
+    const closedAt = new Date().toISOString();
+    const openMs = openedAt ? Math.max(0, new Date(closedAt).getTime() - new Date(openedAt).getTime()) : null;
+    closed = {
+      id: typeof raw === "object" && raw?.id ? raw.id : uid("haz"),
+      description,
+      controlId: gate.controlId,
+      inherent: gate.inherent,
+      residual: gate.residual,
+      beforePhoto,
+      afterPhoto,
+      openedAt,
+      openedBy: typeof raw === "object" ? raw.openedBy || "" : "",
+      openDurationMs: openMs,
+      closedBy,
+      closedAt,
+      sealId: `NV-HSE-${uid("seal").slice(-6).toUpperCase()}`,
+    };
     rec.hazardLog = rec.hazardLog || [];
-    rec.hazardLog.unshift({ id: uid("haz"), description, closedBy, closedAt: new Date().toISOString() });
+    rec.hazardLog.unshift(closed);
     rec.lastActionBy = closedBy;
     rec.lastActionAt = new Date().toISOString();
     rec.approvedBy = null;
     rec.approvedAt = null;
   });
+  if (!closed) return { ok: false, error: "HAZARD_NOT_FOUND" };
+  return { ok: true, closed, gate };
 }
 
 export function approveSafetyRecord(companyId, stationId, approvedBy) {
   let approved = false;
+  let blocked = null;
   updateCompany(companyId, (data) => {
     if (!stationExists(data, stationId)) return;
     data.safety = data.safety || [];
@@ -65,6 +106,14 @@ export function approveSafetyRecord(companyId, stationId, approvedBy) {
     if (!rec) {
       rec = { id: uid("safe"), stationId, hazards: [], level: null, riskItems: [], dailyHours: [], ltiEntries: [], checklistResults: {}, permits: [], disabledTabs: [], createdAt: new Date().toISOString() };
       data.safety.push(rec);
+    }
+    if ((rec.hazards || []).length) {
+      blocked = {
+        error: "OPEN_HAZARDS",
+        reason: `لا يمكن الاعتماد — ${rec.hazards.length} مخاطر مفتوحة.`,
+        reasonEn: `Cannot approve — ${rec.hazards.length} open hazards.`,
+      };
+      return;
     }
     const at = new Date().toISOString();
     rec.approvedBy = approvedBy;
@@ -84,7 +133,8 @@ export function approveSafetyRecord(companyId, stationId, approvedBy) {
     };
     approved = true;
   });
-  return approved;
+  if (blocked) return { ok: false, ...blocked };
+  return { ok: approved };
 }
 
 export function revokeSafetyApproval(companyId, stationId, revokedBy) {

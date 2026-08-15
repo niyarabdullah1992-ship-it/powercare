@@ -1,0 +1,102 @@
+{
+  "name": "ClientProof",
+  "type": "object",
+  "properties": {
+    "proofId": {
+      "type": "string",
+      "description": "Public proof reference stamped on the shared link and QR (NV-XXXX-XXXX-XXXX)."
+    },
+    "contentHash": {
+      "type": "string",
+      "description": "SHA-256 hex of the canonical redacted payload \u2014 binds the public report to this exact content."
+    },
+    "companyId": {
+      "type": "string"
+    },
+    "companyName": {
+      "type": "string"
+    },
+    "stationId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Station this proof belongs to \u2014 each station keeps its own proof archive."
+    },
+    "stationName": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "clientName": {
+      "type": "string",
+      "description": "The customer/authority the proof is shared with."
+    },
+    "projectName": {
+      "type": "string"
+    },
+    "periodStart": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "periodEnd": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "issuedById": {
+      "type": "string"
+    },
+    "issuedByName": {
+      "type": "string"
+    },
+    "issuedAt": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Redacted, client-facing snapshot: work items, evidence counts, verified locations and times. Never contains employee identities."
+    },
+    "revoked": {
+      "type": "boolean",
+      "default": false
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "proofId",
+    "contentHash",
+    "companyId",
+    "issuedAt"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -9,7 +9,7 @@ export default function TruePerfComparison({ comparison }) {
           <tr className="bg-primary text-primary-foreground">
             <th className="px-4 py-3 text-[12px] font-semibold">{comparison.headers.criterion}</th>
             <th className="px-4 py-3 text-[12px] font-semibold">{comparison.headers.traditional}</th>
-            <th className="px-4 py-3 text-[12px] font-semibold text-landing-gold-light">{comparison.headers.nirovera}</th>
+            <th className="px-4 py-3 text-[12px] font-semibold text-accent">{comparison.headers.nirovera}</th>
           </tr>
         </thead>
         <tbody>

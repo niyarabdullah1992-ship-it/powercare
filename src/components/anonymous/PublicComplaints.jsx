@@ -1,35 +1,64 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { updateCompany, addNotification } from "@/lib/store";
 import { visibleStations, hasHRPermission, hrScopeStations } from "@/lib/permissions";
+import useStationScope, { matchesStationScope } from "@/hooks/useStationScope";
 import { complaintHandlersForLevel, complaintHasHandlerAtLevel, complaintLevelLabel, complaintEscalationStageCount, isManualComplaintHandler, usesManualComplaintEscalation } from "@/lib/escalation";
 import { formatDateTime } from "@/lib/dateFormat";
-import { Megaphone, Send, Building2, CheckCircle2, ChevronRight, ArrowLeft, X as XIcon, ArrowUpCircle } from "lucide-react";
+import { Megaphone, Send, Building2, CheckCircle2, ArrowLeft, X as XIcon, ArrowUpCircle, Lightbulb } from "lucide-react";
 import CommentFiles, { CommentAttachments } from "@/components/tasks/CommentFiles";
 import VoiceRecorder from "@/components/tasks/VoiceRecorder";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import FlowSwipeAction from "@/components/flow/FlowSwipeAction";
+import VoiceStationList from "@/components/complaints/VoiceStationList";
+import { ACCENT, BORDER, MUTED, NAVY, SURFACE, field, labelMuted, textarea, ui, BAD, OK, NEUTRAL, CARD } from "@/lib/platformStyles";
 
 const TYPES = ["complaint", "suggestion"];
 const PRIORITIES = ["high", "medium", "low"];
 
+const card = {
+  background: CARD,
+  border: `1px solid ${BORDER}`,
+  borderRadius: "14px",
+  padding: "16px 18px",
+};
+
+function ToneBadge({ text, tone = "muted" }) {
+  const style = tone === "destructive" ? BAD : tone === "accent" ? OK : NEUTRAL;
+  return <span style={style}>{text}</span>;
+}
+
 // Identical idea to the anonymous complaints section above, except every report
 // here carries the employee's real identity — same submission form, same
 // station-by-station escalation chain and staff review flow, just not hidden.
-export default function PublicComplaints() {
+export default function PublicComplaints({ lockedType = null, underQueue = false }) {
   const { t, dir, lang } = useI18n();
+  const ar = lang === "ar";
   const { data, currentUser, company } = useAuth();
-  const [type, setType] = useState("complaint");
-  const [priority, setPriority] = useState("medium");
+  const stationScope = useStationScope();
+  const [type, setType] = useState(lockedType === "suggestion" ? "suggestion" : "complaint");
+  const [priority, setPriority] = useState(lockedType === "suggestion" ? "low" : "medium");
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState([]);
   const [replyText, setReplyText] = useState({});
   const [replyFiles, setReplyFiles] = useState({});
   const [selectedStation, setSelectedStation] = useState(null);
 
+  useEffect(() => {
+    setSelectedStation(null);
+  }, [stationScope]);
+
+  useEffect(() => {
+    if (lockedType === "suggestion" || lockedType === "complaint") setType(lockedType);
+  }, [lockedType]);
+
   if (!data || !currentUser) return null;
-  const reportsList = data.publicReports || [];
+  const reportsList = (data.publicReports || []).filter((r) => {
+    if (lockedType === "suggestion") return r.type === "suggestion" || r.kind === "suggestion";
+    if (lockedType === "complaint") return r.type !== "suggestion" && r.kind !== "suggestion";
+    return true;
+  });
   const STAGE_COUNT = complaintEscalationStageCount(data);
   const manualHandler = isManualComplaintHandler(currentUser, data);
   const canAct = manualHandler || hasHRPermission(currentUser, data, "manage_anonymous_reports");
@@ -44,6 +73,7 @@ export default function PublicComplaints() {
   const authorName = (r) => data.employees.find((e) => e.id === r.authorId)?.name || "—";
 
   const visibleReports = reportsList.filter((r) => {
+    if (!matchesStationScope(r.stationId, stationScope)) return false;
     if (currentUser.role === "director" || currentUser.role === "ops_manager" || isOwner) return true;
     if (currentUser.role === "station_manager") {
       const managed = currentUser.managedStations?.length ? currentUser.managedStations : [currentUser.stationId];
@@ -52,6 +82,10 @@ export default function PublicComplaints() {
     if (isHRStaff) return hrStations === null || hrStations.includes(r.stationId);
     return false;
   });
+  const scopedToOne = stationScope !== "all";
+
+  if (isStaff && scopedToOne && visibleReports.length === 0) return null;
+  if (underQueue && isStaff && visibleReports.length === 0) return null;
 
   const currentHandlerLabel = (r) => complaintLevelLabel(r.escalationLevel || 0, data, t, lang);
   const canReplyTo = (r) => {
@@ -77,6 +111,7 @@ export default function PublicComplaints() {
         authorId: currentUser.id,
         stationId: currentUser.stationId || null,
         type, priority, message, files,
+        kind: type === "suggestion" ? "suggestion" : "public",
         status: "open",
         escalationLevel: initialLevel,
         replies: [],
@@ -137,26 +172,39 @@ export default function PublicComplaints() {
   };
 
   const renderTimeline = (r) => (
-    <div className="space-y-2 pt-2 border-t border-border">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("escalationChain")}</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "10px", borderTop: `1px solid ${BORDER}` }}>
+      <p style={{ margin: 0, fontSize: "10px", letterSpacing: "0.06em", color: MUTED, fontWeight: 600 }}>{t("escalationChain")}</p>
       {Array.from({ length: STAGE_COUNT }).map((_, idx) => {
         const replyAtLevel = (r.replies || []).find((rp) => rp.level === idx);
         const isCurrent = (r.escalationLevel || 0) === idx;
         const isPast = (r.escalationLevel || 0) > idx;
         const label = complaintLevelLabel(idx, data, t, lang);
         return (
-          <div key={idx} className={`flex items-start gap-2 text-xs font-body ${isPast ? "opacity-50" : ""}`}>
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${replyAtLevel ? "bg-accent text-accent-foreground" : isCurrent ? "bg-amber-100 text-amber-700 border border-amber-300" : "bg-muted text-muted-foreground"}`}>
-              {replyAtLevel ? <CheckCircle2 className="w-3 h-3" /> : <span className="text-[9px]">{idx + 1}</span>}
+          <div key={idx} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", opacity: isPast ? 0.55 : 1 }}>
+            <div style={{
+              width: "20px",
+              height: "20px",
+              borderRadius: "50%",
+              flexShrink: 0,
+              marginTop: "2px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: replyAtLevel ? ACCENT : isCurrent ? "#FFFBEB" : SURFACE,
+              color: replyAtLevel ? "#fff" : isCurrent ? "#B45309" : MUTED,
+              border: isCurrent && !replyAtLevel ? "1px solid #FDE68A" : `1px solid ${BORDER}`,
+            }}
+            >
+              {replyAtLevel ? <CheckCircle2 style={{ width: 12, height: 12 }} /> : <span style={{ fontSize: "9px" }}>{idx + 1}</span>}
             </div>
-            <div className="flex-1">
-              <p className={`font-medium ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}>
-                {label} {isCurrent && !replyAtLevel && <span className="text-amber-600 font-normal">— {t("waitingReply")}</span>}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontWeight: 600, color: isCurrent ? NAVY : MUTED }}>
+                {label} {isCurrent && !replyAtLevel ? <span style={{ fontWeight: 400, color: "#B45309" }}>— {t("waitingReply")}</span> : null}
               </p>
               {replyAtLevel && (
-                <div className="mt-0.5 p-2 rounded bg-muted/50">
-                  <p className="text-[10px] text-muted-foreground">{replyAtLevel.authorName} · {formatDateTime(replyAtLevel.createdAt, lang)}</p>
-                  <p className="text-foreground mt-0.5">{replyAtLevel.text}</p>
+                <div style={{ marginTop: "4px", padding: "8px 10px", borderRadius: "8px", background: SURFACE }}>
+                  <p style={{ margin: 0, fontSize: "10px", color: MUTED }}>{replyAtLevel.authorName} · {formatDateTime(replyAtLevel.createdAt, lang)}</p>
+                  <p style={{ margin: "4px 0 0", color: NAVY }}>{replyAtLevel.text}</p>
                   <CommentAttachments files={replyAtLevel.files} />
                 </div>
               )}
@@ -170,58 +218,85 @@ export default function PublicComplaints() {
   const hrStationList = isHRStaff ? (hrStations === null ? data.stations : data.stations.filter((s) => hrStations.includes(s.id))) : [];
   const stationMap = new Map();
   [...visibleStations(currentUser, data), ...hrStationList].forEach((s) => stationMap.set(s.id, s));
-  const myStations = Array.from(stationMap.values());
+  const myStations = Array.from(stationMap.values()).filter((s) => matchesStationScope(s.id, stationScope));
+  const activeStation = scopedToOne ? stationScope : selectedStation;
   const stationGroups = myStations.map((s) => ({ key: s.id, name: s.name, count: visibleReports.filter((r) => r.stationId === s.id).length }));
-  const stationReports = selectedStation ? visibleReports.filter((r) => r.stationId === selectedStation) : [];
-  const selectedStationName = selectedStation ? stationName(selectedStation) : "";
+  const stationReports = activeStation ? visibleReports.filter((r) => r.stationId === activeStation) : [];
+  const selectedStationName = activeStation ? stationName(activeStation) : "";
+
+  const isSuggestion = lockedType === "suggestion" || type === "suggestion";
+  const HeadingIcon = isSuggestion ? Lightbulb : Megaphone;
+  const headingLabel = isSuggestion
+    ? (ar ? "الاقتراحات" : t("suggestion"))
+    : (ar ? "الشكاوى" : t("complaint"));
+  const submitLabel = isSuggestion
+    ? (ar ? "إرسال الاقتراح" : "Send suggestion")
+    : t("fileReport");
+  const identityNote = isSuggestion
+    ? (ar ? "يظهر اسمك مع الاقتراح حتى يمكن التواصل معك." : "Your name appears with the suggestion so management can follow up.")
+    : t("identityVisible");
+  const mineTitle = isSuggestion
+    ? (ar ? "اقتراحاتك" : "Your suggestions")
+    : t("yourPublicReports");
+  const emptyMine = isSuggestion
+    ? (ar ? "لا اقتراحات بعد — ابدأ بفكرة واحدة لتحسين العمل." : "No suggestions yet — start with one idea to improve the work.")
+    : t("noPublicReports");
+  const emptyStaff = isSuggestion
+    ? (ar ? "لا اقتراحات في هذا النطاق." : "No suggestions in this scope.")
+    : t("noPublicReports");
+  const placeholder = isSuggestion
+    ? (ar ? "اكتب اقتراحك لتحسين العمل أو الإجراء أو بيئة الفرع..." : "Write your idea to improve the work, process, or station environment…")
+    : t("fileReport");
+
+  const emptyMsg = { margin: 0, fontSize: "13px", color: MUTED, textAlign: "center", padding: "20px 0" };
 
   const reportCard = (r, showAuthor) => (
-    <div key={r.id} className="p-4 rounded-xl border border-border bg-card space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-body font-medium">{showAuthor ? authorName(r) : currentUser.name}</span>
+    <div key={r.id} style={{ ...card, display: "flex", flexDirection: "column", gap: "10px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", fontSize: "12px" }}>
+          <span style={{ fontWeight: 600, color: NAVY }}>{showAuthor ? authorName(r) : currentUser.name}</span>
           {r.stationId && (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-body">
-              <Building2 className="w-3 h-3" /> {stationName(r.stationId)}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", color: MUTED, fontSize: "11px" }}>
+              <Building2 style={{ width: 12, height: 12 }} /> {stationName(r.stationId)}
             </span>
           )}
         </div>
-        <div className="flex gap-2">
-          <Badge text={t(r.type)} />
-          <Badge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
-          <Badge text={currentHandlerLabel(r)} tone="accent" />
-          {showAuthor && <Badge text={t(r.status)} tone={r.status === "closed" ? (r.resolution === "approved" ? "accent" : "destructive") : "muted"} />}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          <ToneBadge text={t(r.type)} />
+          <ToneBadge text={t(r.priority)} tone={r.priority === "high" ? "destructive" : "muted"} />
+          <ToneBadge text={currentHandlerLabel(r)} tone="accent" />
+          {showAuthor && <ToneBadge text={t(r.status)} tone={r.status === "closed" ? (r.resolution === "approved" ? "accent" : "destructive") : "muted"} />}
         </div>
       </div>
-      <p className="text-sm font-body">{r.message}</p>
+      <p style={{ margin: 0, fontSize: "13px", color: NAVY, lineHeight: 1.65 }}>{r.message}</p>
       <CommentAttachments files={r.files} />
       {renderTimeline(r)}
       {!showAuthor && !isAtTop(r) && r.status === "rejected" && (
-        <button onClick={() => escalate(r.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300 text-amber-700 text-xs font-body hover:bg-amber-50">
-          <ArrowUpCircle className="w-3.5 h-3.5" /> {t("notConvinced")}
+        <button type="button" onClick={() => escalate(r.id)} style={{ ...ui.btnGhost, display: "inline-flex", alignItems: "center", gap: "6px", borderColor: "#FDE68A", color: "#B45309", alignSelf: "flex-start" }}>
+          <ArrowUpCircle style={{ width: 14, height: 14 }} /> {t("notConvinced")}
         </button>
       )}
       {!showAuthor && isAtTop(r) && r.status === "rejected" && (
-        <p className="text-xs text-muted-foreground font-body italic">{t("finalLevel")}</p>
+        <p style={{ margin: 0, fontSize: "11px", color: MUTED, fontStyle: "italic" }}>{t("finalLevel")}</p>
       )}
       {showAuthor && canReplyTo(r) && r.status === "open" && (
-        <div className="space-y-2 pt-1 border-t border-border">
-          <div className="flex flex-wrap items-end gap-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "10px", borderTop: `1px solid ${BORDER}` }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "8px" }}>
             <CommentFiles files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
             <VoiceRecorder files={replyFiles[r.id] || []} setFiles={(f) => setReplyFiles({ ...replyFiles, [r.id]: f })} />
           </div>
-          <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} className="w-full px-3 py-1.5 rounded-md border border-input text-sm font-body" />
-          <div className="flex flex-wrap gap-2">
+          <input value={replyText[r.id] || ""} onChange={(e) => setReplyText({ ...replyText, [r.id]: e.target.value })} placeholder={t("reply")} style={field} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
             {(replyText[r.id] || "").trim() && (
-              <div className="w-full">
-                <FlowSwipeAction sensitive label={lang === "ar" ? "اسحب لاعتماد وإغلاق البلاغ" : "Swipe to approve and close"} onAction={() => decide(r.id, "approved")} confirmLabel={t("confirm")} cancelLabel={t("cancel")} />
+              <div style={{ width: "100%" }}>
+                <FlowSwipeAction sensitive label={lang === "ar" ? (isSuggestion ? "اسحب لاعتماد الاقتراح" : "اسحب لاعتماد وإغلاق البلاغ") : (isSuggestion ? "Swipe to adopt the suggestion" : "Swipe to approve and close")} onAction={() => decide(r.id, "approved")} confirmLabel={t("confirm")} cancelLabel={t("cancel")} />
               </div>
             )}
-            <button disabled={!(replyText[r.id] || "").trim()} onClick={() => decide(r.id, "rejected")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground text-xs font-body hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
-              <XIcon className="w-3.5 h-3.5" /> {t("rejectReport")}
+            <button type="button" disabled={!(replyText[r.id] || "").trim()} onClick={() => decide(r.id, "rejected")} style={{ ...ui.btnDanger, display: "inline-flex", alignItems: "center", gap: "6px", opacity: !(replyText[r.id] || "").trim() ? 0.4 : 1 }}>
+              <XIcon style={{ width: 14, height: 14 }} /> {t("rejectReport")}
             </button>
             {!isAtTop(r) && (
-              <div className="w-full">
+              <div style={{ width: "100%" }}>
                 <FlowSwipeAction label={lang === "ar" ? "اسحب للتصعيد للمستوى التالي" : "Swipe to escalate"} onAction={() => escalate(r.id)} onUndo={() => undoEscalate(r.id, r)} undoLabel={lang === "ar" ? "تراجع عن التصعيد" : "Undo escalation"} />
               </div>
             )}
@@ -229,7 +304,7 @@ export default function PublicComplaints() {
         </div>
       )}
       {showAuthor && !canReplyTo(r) && r.status !== "closed" && (
-        <p className="text-xs text-muted-foreground font-body italic">
+        <p style={{ margin: 0, fontSize: "11px", color: MUTED, fontStyle: "italic" }}>
           {isHRStaff && !canAct ? t("auditTrail") : `${t("escalatedTo")} ${currentHandlerLabel(r)}`}
         </p>
       )}
@@ -237,124 +312,86 @@ export default function PublicComplaints() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Megaphone className="w-5 h-5 text-accent" />
-        <h2 className="font-heading text-2xl font-semibold">{t("publicComplaints")}</h2>
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }} dir={dir}>
+      {!isStaff ? (
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: NAVY }}>
+        <HeadingIcon style={{ width: 16, height: 16, color: ACCENT }} />
+        {headingLabel}
       </div>
+      ) : null}
 
       {!isStaff && (
         <>
-          <form onSubmit={submit} className="p-5 rounded-xl border border-border bg-card space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={submit} style={{ ...card, display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: lockedType ? "1fr" : "1fr 1fr", gap: "10px" }}>
+              {!lockedType && (
+                <div>
+                  <label style={labelMuted}>{t("type")}</label>
+                  <MobileSelect value={type} onChange={setType} placeholder={t("type")} className="w-full" options={TYPES.map((ty) => ({ value: ty, label: t(ty) }))} />
+                </div>
+              )}
               <div>
-                <label className="block text-xs text-muted-foreground font-body mb-1">{t("type")}</label>
-                <MobileSelect
-                  value={type}
-                  onChange={setType}
-                  placeholder={t("type")}
-                  className="w-full"
-                  options={TYPES.map((ty) => ({ value: ty, label: t(ty) }))}
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-muted-foreground font-body mb-1">{t("priority")}</label>
-                <MobileSelect
-                  value={priority}
-                  onChange={setPriority}
-                  placeholder={t("priority")}
-                  className="w-full"
-                  options={PRIORITIES.map((p) => ({ value: p, label: t(p) }))}
-                />
+                <label style={labelMuted}>{t("priority")}</label>
+                <MobileSelect value={priority} onChange={setPriority} placeholder={t("priority")} className="w-full" options={PRIORITIES.map((p) => ({ value: p, label: t(p) }))} />
               </div>
             </div>
             {currentUser.stationId && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-body">
-                <Building2 className="w-3.5 h-3.5" /> {t("station")}: {stationName(currentUser.stationId)}
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: MUTED }}>
+                <Building2 style={{ width: 14, height: 14 }} /> {t("station")}: {stationName(currentUser.stationId)}
               </div>
             )}
-            <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder={t("fileReport")} required className="w-full px-3 py-2 rounded-md border border-input text-sm font-body resize-none" />
-            <div className="flex flex-wrap items-end gap-2">
+            <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder={placeholder} required style={{ ...textarea, resize: "none" }} />
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "8px" }}>
               <CommentFiles files={files} setFiles={setFiles} />
               <VoiceRecorder files={files} setFiles={setFiles} />
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground font-body">{t("identityVisible")}</p>
-              <button type="submit" className="flex items-center gap-2 px-4 py-2 rounded-md bg-foreground text-background text-sm font-body hover:bg-accent">
-                <Send className="w-4 h-4" /> {t("fileReport")}
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+              <p style={{ margin: 0, fontSize: "11px", color: MUTED }}>{identityNote}</p>
+              <button type="submit" style={{ ...ui.btnPrimary, display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                <Send style={{ width: 14, height: 14 }} /> {submitLabel}
               </button>
             </div>
           </form>
 
           <div>
-            <h3 className="font-heading font-semibold mb-3">{t("yourPublicReports")}</h3>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY, marginBottom: "10px" }}>{mineTitle}</div>
             {myReports.length === 0 ? (
-              <p className="text-sm text-muted-foreground font-body">{t("noPublicReports")}</p>
+              <p style={emptyMsg}>{emptyMine}</p>
             ) : (
-              <div className="space-y-3">{myReports.map((r) => reportCard(r, false))}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>{myReports.map((r) => reportCard(r, false))}</div>
             )}
           </div>
         </>
       )}
 
-      {isStaff && (
+      {isStaff && !scopedToOne && !underQueue && (
         <>
-          {!selectedStation ? (
-            <div className="space-y-3">
-              <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
-                <Building2 className="w-4 h-4" /> {t("stations")}
-              </h2>
-              {stationGroups.length === 0 ? (
-                <p className="text-sm text-muted-foreground font-body">{t("noPublicReports")}</p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {stationGroups.map((g) => (
-                    <button
-                      key={g.key}
-                      onClick={() => setSelectedStation(g.key)}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-muted transition text-start"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-md bg-foreground/5 flex items-center justify-center">
-                          <Building2 className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium font-body">{g.name}</p>
-                          <p className="text-xs text-muted-foreground font-body">{g.count} {t("publicComplaints")}</p>
-                        </div>
-                      </div>
-                      <ChevronRight className={`w-4 h-4 text-muted-foreground ${dir === "rtl" ? "rotate-180" : ""}`} />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+          {!activeStation ? (
+            <VoiceStationList
+              stations={stationGroups}
+              onPick={setSelectedStation}
+              emptyLabel={emptyStaff}
+            />
           ) : (
-            <div className="space-y-3">
-              <button onClick={() => setSelectedStation(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground font-body hover:text-foreground">
-                <ArrowLeft className={`w-4 h-4 ${dir === "rtl" ? "rotate-180" : ""}`} /> {t("back")}
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <button type="button" onClick={() => setSelectedStation(null)} style={{ ...ui.btnGhost, display: "inline-flex", alignItems: "center", gap: "6px", alignSelf: "flex-start" }}>
+                <ArrowLeft style={{ width: 14, height: 14, transform: dir === "rtl" ? "scaleX(-1)" : "none" }} /> {t("back")}
               </button>
-              <p className="font-heading text-base font-semibold flex items-center gap-1.5">
-                <Building2 className="w-4 h-4" /> {selectedStationName}
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", fontWeight: 600, color: NAVY }}>
+                <Building2 style={{ width: 16, height: 16 }} /> {selectedStationName}
+              </div>
               {stationReports.length === 0 ? (
-                <p className="text-sm text-muted-foreground font-body">{t("noPublicReports")}</p>
+                <p style={emptyMsg}>{emptyStaff}</p>
               ) : (
-                <div className="space-y-3">{stationReports.map((r) => reportCard(r, true))}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>{stationReports.map((r) => reportCard(r, true))}</div>
               )}
             </div>
           )}
         </>
       )}
+      {isStaff && scopedToOne && stationReports.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>{stationReports.map((r) => reportCard(r, true))}</div>
+      )}
     </div>
   );
-}
-
-function Badge({ text, tone = "muted" }) {
-  const tones = {
-    muted: "bg-muted text-muted-foreground",
-    destructive: "bg-destructive/15 text-destructive",
-    accent: "bg-accent/15 text-accent",
-  };
-  return <span className={`px-2 py-0.5 rounded-full text-[10px] font-body whitespace-nowrap ${tones[tone]}`}>{text}</span>;
 }

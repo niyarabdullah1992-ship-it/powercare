@@ -4,7 +4,7 @@ export const PLAN_SECTIONS = [
   { key: "attendance", ar: "الحضور", en: "Attendance" }, { key: "hr", ar: "الموارد البشرية", en: "HR" },
   { key: "performance", ar: "الأداء", en: "Performance" }, { key: "expenses", ar: "المصروفات", en: "Expenses" },
   { key: "payroll", ar: "الرواتب", en: "Payroll" }, { key: "safety", ar: "السلامة", en: "Safety" },
-  { key: "complaints", ar: "الشكاوى", en: "Complaints" }, { key: "files", ar: "الملفات", en: "Files" },
+  { key: "complaints", ar: "صوت الموظف", en: "Employee Voice" }, { key: "files", ar: "الملفات", en: "Files" },
   { key: "signing", ar: "التوقيع", en: "Signing" }, { key: "chat", ar: "المحادثات", en: "Chat" },
 ];
 export const PLAN_FEATURES = [{ key: "exports", ar: "تصدير PDF وExcel", en: "PDF & Excel exports" }, { key: "ai", ar: "الذكاء الاصطناعي", en: "AI tools" }, { key: "signing", ar: "التوقيع الرقمي", en: "Digital signing" }];
@@ -16,7 +16,7 @@ export const DEFAULT_SUBSCRIPTION_PLANS = [
   { slug: "free", nameAr: "المجانية", nameEn: "Free", monthlyPrice: 0, yearlyPrice: 0, currency: "USD", featuresAr: ["الميزات الأساسية", "إدارة فريق صغير", "تقارير أساسية"], featuresEn: ["Core features", "Small team management", "Basic reports"], maxStations: 1, maxEmployees: 5, enabledSections: CORE, enabledFeatures: [], active: true, freeNow: true, sortOrder: 0 },
   { slug: "starter", nameAr: "البداية", nameEn: "Starter", monthlyPrice: 49, yearlyPrice: 490, currency: "USD", featuresAr: ["إدارة الموظفين", "الحضور والمهام", "التقارير التشغيلية"], featuresEn: ["Employee management", "Attendance and tasks", "Operational reports"], maxStations: 5, maxEmployees: 30, enabledSections: STARTER, enabledFeatures: ["exports"], active: true, freeNow: true, sortOrder: 1 },
   { slug: "professional", nameAr: "الاحترافية", nameEn: "Professional", monthlyPrice: 149, yearlyPrice: 1490, currency: "USD", featuresAr: ["جميع ميزات البداية", "الرواتب والمخزون", "التحليلات والتوقيع"], featuresEn: ["All Starter features", "Payroll and inventory", "Analytics and signing"], maxStations: null, maxEmployees: null, enabledSections: ALL, enabledFeatures: ["exports", "ai", "signing"], active: true, freeNow: true, sortOrder: 2 },
-  { slug: "enterprise", nameAr: "المؤسسات", nameEn: "Enterprise", monthlyPrice: 249, yearlyPrice: 2490, currency: "USD", featuresAr: ["جميع ميزات الاحترافية", "تشغيل متعدد المحطات", "دعم مؤسسي متقدم"], featuresEn: ["All Professional features", "Multi-station operations", "Advanced enterprise support"], maxStations: null, maxEmployees: null, enabledSections: ALL, enabledFeatures: ["exports", "ai", "signing"], active: true, freeNow: true, sortOrder: 3 },
+  { slug: "enterprise", nameAr: "المؤسسات", nameEn: "Enterprise", monthlyPrice: 249, yearlyPrice: 2490, currency: "USD", featuresAr: ["جميع ميزات الاحترافية", "تشغيل متعدد الفروع", "دعم مؤسسي متقدم"], featuresEn: ["All Professional features", "Multi-station operations", "Advanced enterprise support"], maxStations: null, maxEmployees: null, enabledSections: ALL, enabledFeatures: ["exports", "ai", "signing"], active: true, freeNow: true, sortOrder: 3 },
 ];
 
 export function normalizePlanConfig(plan) {

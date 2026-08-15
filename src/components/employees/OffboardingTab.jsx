@@ -1,24 +1,15 @@
-import React, { useState } from "react";
-import { CheckCircle2, Loader2, Save, UserMinus } from "lucide-react";
+import React from "react";
 import { useI18n } from "@/lib/i18n";
-import { completeEmployeeOffboarding, saveEmployeeOffboarding } from "@/lib/store";
-import OffboardingAssetsGate from "@/components/employees/OffboardingAssetsGate";
+import OffboardingCustodyBoard from "@/components/employees/OffboardingCustodyBoard";
 
-const STEPS = [
-  ["assets", "تسليم العهد والمعدات", "Assets and equipment returned"],
-  ["access", "مراجعة صلاحيات الوصول", "Access permissions reviewed"],
-  ["payroll", "تسوية المستحقات المالية", "Financial settlement completed"],
-  ["handover", "تسليم الأعمال والمسؤوليات", "Work and responsibilities handed over"],
-  ["documents", "حفظ المستندات وإخلاء الطرف", "Documents and clearance archived"],
-];
-
-export default function OffboardingTab({ employee, companyId, currentUser, canManage }) {
-  const { lang } = useI18n(); const ar = lang === "ar"; const saved = employee.profile?.offboarding || {};
-  const [form, setForm] = useState({ reason: saved.reason || "", lastWorkingDate: saved.lastWorkingDate || "", steps: saved.steps || {}, status: saved.status || "draft", startedAt: saved.startedAt || null });
-  const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); const completed = form.status === "completed";
-  const [heldAssets, setHeldAssets] = useState(0);
-  const persist = () => { const next = { ...form, status: form.status === "draft" ? "in_progress" : form.status, startedAt: form.startedAt || new Date().toISOString() }; saveEmployeeOffboarding(companyId, employee.id, next); setForm(next); setMessage(ar ? "تم حفظ إجراءات إنهاء الخدمة." : "Offboarding progress saved."); };
-  const finish = async () => { if (heldAssets > 0) return setMessage(ar ? "لا يمكن ختم إخلاء الطرف قبل تسليم جميع العهد." : "Clearance cannot be stamped before all assets are handed over."); if (!form.reason || !form.lastWorkingDate || STEPS.some(([key]) => !form.steps[key])) return setMessage(ar ? "أكمل جميع البيانات وخطوات إخلاء الطرف أولًا." : "Complete all details and clearance steps first."); if (!window.confirm(ar ? "سيتم تعطيل دخول الموظف وأرشفة ملفه. هل تريد المتابعة؟" : "Employee access will be disabled and the profile archived. Continue?")) return; setBusy(true); setMessage(""); try { const next = await completeEmployeeOffboarding(companyId, employee.id, { ...form, completedBy: currentUser.name }); setForm(next); setMessage(ar ? "اكتمل إنهاء الخدمة وتم تعطيل الدخول." : "Offboarding completed and access disabled."); } catch { setMessage(ar ? "تعذر إكمال إنهاء الخدمة." : "Could not complete offboarding."); } finally { setBusy(false); } };
-  if (!canManage) return <p className="text-sm text-muted-foreground">{ar ? "إجراءات إنهاء الخدمة متاحة للإدارة والموارد البشرية فقط." : "Offboarding is available to management and HR only."}</p>;
-  return <div className="space-y-5"><div className="flex items-center justify-between gap-3"><div><h3 className="flex items-center gap-2 font-heading text-xl"><UserMinus className="h-5 w-5 text-accent" />{ar ? "إنهاء الخدمة" : "Employee offboarding"}</h3><p className="mt-1 text-sm text-muted-foreground">{ar ? "إخلاء الطرف، التسوية، تعطيل الدخول ثم أرشفة الملف دون حذفه." : "Clearance, settlement, access deactivation, then archival without deletion."}</p></div><span className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs text-accent">{completed ? (ar ? "مكتمل" : "Completed") : form.status === "in_progress" ? (ar ? "قيد الإجراء" : "In progress") : (ar ? "مسودة" : "Draft")}</span></div><div className="grid gap-4 sm:grid-cols-2"><label className="text-xs text-muted-foreground">{ar ? "آخر يوم عمل" : "Last working date"}<input type="date" disabled={completed} value={form.lastWorkingDate} onChange={(e) => setForm({ ...form, lastWorkingDate: e.target.value })} className="mt-1.5 w-full rounded-md border border-input px-3 py-2 text-sm" /></label><label className="text-xs text-muted-foreground">{ar ? "سبب إنهاء الخدمة" : "Reason"}<input disabled={completed} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className="mt-1.5 w-full rounded-md border border-input px-3 py-2 text-sm" /></label></div><div className="space-y-2">{STEPS.map(([key, arLabel, enLabel]) => <label key={key} className="flex items-center gap-3 rounded-lg border border-border bg-background p-3 text-sm"><input type="checkbox" disabled={completed} checked={!!form.steps[key]} onChange={(e) => setForm({ ...form, steps: { ...form.steps, [key]: e.target.checked } })} className="h-4 w-4 accent-primary" /><span className="flex-1">{ar ? arLabel : enLabel}</span>{form.steps[key] && <CheckCircle2 className="h-4 w-4 text-green-600" />}</label>)}</div>{!completed && <OffboardingAssetsGate companyId={companyId} employee={employee} ar={ar} onChange={setHeldAssets} />}{!completed && <div className="flex flex-wrap gap-2"><button onClick={persist} className="flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm"><Save className="h-4 w-4" />{ar ? "حفظ التقدم" : "Save progress"}</button><button onClick={finish} disabled={busy || heldAssets > 0} className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserMinus className="h-4 w-4" />}{ar ? "إكمال وأرشفة" : "Complete and archive"}</button></div>}{message && <p className="text-sm text-muted-foreground">{message}</p>}</div>;
+/** Thin shell — custody / EOS board is server-derived via `offboarding`. */
+export default function OffboardingTab({ employee, canManage }) {
+  const { lang } = useI18n();
+  return (
+    <OffboardingCustodyBoard
+      employee={employee}
+      canManage={!!canManage}
+      lang={lang}
+    />
+  );
 }

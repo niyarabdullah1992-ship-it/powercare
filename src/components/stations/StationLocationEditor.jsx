@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Circle, useMapEvents, useMap } from "react-leaflet";
+import { MapContainer, Marker, Circle, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import GoogleTiles from "@/components/maps/GoogleTiles";
 import LocationSearchBox from "@/components/maps/LocationSearchBox";
@@ -114,7 +114,7 @@ export default function StationLocationEditor({ t, station, onSave, onCancel }) 
       <div onClick={(e) => e.stopPropagation()} className="w-full max-w-lg rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h3 className="font-heading font-semibold text-sm flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-accent" /> {t("setLocation")} — <span dir="auto">{station.name}</span>
+            <MapPin className="w-4 h-4 text-[#14284B]" /> {t("setLocation")} — <span dir="auto">{station.name}</span>
           </h3>
           <button onClick={onCancel} className="p-1 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
         </div>
@@ -123,7 +123,7 @@ export default function StationLocationEditor({ t, station, onSave, onCancel }) 
           <p className="text-[11px] text-muted-foreground font-body">{t("tapMapToSet")}</p>
           <button
             onClick={locating ? stopTracking : useMyLocation}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent/10 text-accent text-xs font-body hover:bg-accent/20 shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[#E2E8F0] bg-[#F7F8FA] text-[#14284B] text-xs font-body hover:bg-white shrink-0"
           >
             {locating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LocateFixed className="w-3.5 h-3.5" />}
             {locating ? `${t("locating")}${accuracy != null ? ` ±${accuracy}${t("metersUnit")}` : ""}` : t("useMyLocation")}
@@ -163,7 +163,7 @@ export default function StationLocationEditor({ t, station, onSave, onCancel }) 
               <Circle center={pos} radius={accuracy} pathOptions={{ color: "#3b82f6", weight: 1, fillOpacity: 0.08 }} />
             )}
             {pos && <Marker position={pos} icon={markerIcon} />}
-            {pos && <Circle center={pos} radius={Number(radius) || 200} pathOptions={{ color: "#b07d3f", fillOpacity: 0.12 }} />}
+            {pos && <Circle center={pos} radius={Number(radius) || 200} pathOptions={{ color: "#1E9E63", fillOpacity: 0.12 }} />}
           </MapContainer>
         </div>
 

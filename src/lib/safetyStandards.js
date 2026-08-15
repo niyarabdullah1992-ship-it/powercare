@@ -55,13 +55,27 @@ export function getMonthlyLti(ltiEntries = [], yearMonth = currentMonthKey()) {
   return ltiEntries.filter((item) => String(item.date || "").startsWith(yearMonth)).length;
 }
 
-export function safetyKpis(rec = {}, yearMonth = currentMonthKey()) {
+export function safetyKpis(rec = {}, yearMonth = currentMonthKey(), headcount = 0) {
   const current = yearMonth === currentMonthKey();
-  const hours = Array.isArray(rec.dailyHours) ? getMonthlyHours(rec.dailyHours, yearMonth) : current ? Number(rec.workHoursMonthly) || 0 : 0;
+  const declaredHours = Array.isArray(rec.dailyHours) ? getMonthlyHours(rec.dailyHours, yearMonth) : current ? Number(rec.workHoursMonthly) || 0 : 0;
+  // Design: exposure hours derive from headcount × 2080 when headcount is known.
+  const hours = headcount > 0 ? headcount * 2080 : declaredHours;
   const lti = Array.isArray(rec.ltiEntries) ? getMonthlyLti(rec.ltiEntries, yearMonth) : current ? Number(rec.ltiCount) || 0 : 0;
   const loggedIncidents = (rec.incidentLog || []).filter((item) => String(item.at || "").slice(0, 7) === yearMonth).length;
   const incidents = Math.max(loggedIncidents, lti);
+  const restrict = (rec.incidentLog || []).filter((item) => String(item.cls || item.kind || "").toLowerCase().includes("restrict") && String(item.at || "").slice(0, 7) === yearMonth).length;
   const last = [...(rec.incidentLog || [])].filter((item) => item.at).sort((a, b) => new Date(b.at) - new Date(a.at))[0]?.at || rec.lastIncidentAt || rec.createdAt;
   const days = last ? Math.max(0, Math.floor((Date.now() - new Date(last).getTime()) / 86400000)) : 0;
-  return { hours, lti, incidents, trir: hours ? (incidents * 200000) / hours : 0, ltifr: hours ? (lti * 1000000) / hours : 0, days };
+  const dart = lti + restrict;
+  return {
+    hours,
+    lti,
+    incidents,
+    dart,
+    trir: hours ? (incidents * 200000) / hours : 0,
+    ltifr: hours ? (lti * 1000000) / hours : 0,
+    dartRate: hours ? (dart * 200000) / hours : 0,
+    days,
+    exposureFromHeadcount: headcount > 0,
+  };
 }

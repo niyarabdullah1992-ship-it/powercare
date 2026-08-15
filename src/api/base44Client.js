@@ -16,7 +16,38 @@ export const base44 = createClient({
 // Security: these backend functions authorize every call server-side using the
 // per-company session token issued at login. Attach it automatically so no page
 // has to (and no page can forge a role — the server derives it from the session).
-const SESSION_SECURED_FUNCTIONS = new Set(['supabaseAttendance', 'supabaseTargets', 'multiSign', 'calendarSync', 'cameraConnectionTest']);
+const SESSION_SECURED_FUNCTIONS = new Set([
+  'supabaseAttendance',
+  'attendance',
+  'compliance',
+  'supabaseTargets',
+  'operations',
+  'workforce',
+  'scores',
+  'workproof',
+  'dailyReport',
+  'hiring',
+  'org',
+  'hcm',
+  'payroll',
+  'signing',
+  'stock',
+  'budget',
+  'offboarding',
+  'complaints',
+  'files',
+  'settings',
+  'reports',
+  'assistant',
+  'chat',
+  'multiSign',
+  'calendarSync',
+  'cameraConnectionTest',
+  // Also auto-attach for legacy module APIs that authorize via CompanySession
+  'inventory',
+  'expenses',
+  'clientProof',
+]);
 const powercareFunctions = base44.functions;
 const rawInvoke = powercareFunctions.invoke.bind(powercareFunctions);
 powercareFunctions.invoke = (name, payload, ...rest) => {

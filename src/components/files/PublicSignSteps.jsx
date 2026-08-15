@@ -1,22 +1,38 @@
 import React from "react";
+import IdentityCard from "@/components/shared/IdentityCard";
+import { ACCENT, BORDER, MUTED, NAVY, SURFACE } from "@/lib/platformStyles";
 
 export default function PublicSignSteps({ ar, current = 2 }) {
   const steps = ar ? ["مراجعة المستند", "تعبئة الحقول والتوقيع", "التحقق والإرسال"] : ["Review document", "Complete fields & sign", "Verify & submit"];
   return (
-    <div className="mb-5 rounded-3xl border border-border bg-card p-4 shadow-elevated sm:p-5">
-      <div className="grid grid-cols-3">
+    <IdentityCard kicker={ar ? "المسار" : "Path"} title={ar ? "خطوات التوقيع" : "Signing steps"} dir={ar ? "rtl" : "ltr"} bodySurface>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
         {steps.map((label, index) => {
           const number = index + 1;
           const reached = number <= current;
           return (
-            <div key={label} className="relative flex flex-col items-center text-center">
-              {index < 2 && <span className={`absolute top-4 h-px w-[calc(100%-2.5rem)] ${ar ? "right-[calc(50%+1.25rem)]" : "left-[calc(50%+1.25rem)]"} ${number < current ? "bg-accent" : "bg-border"}`} />}
-              <span className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${reached ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>{number}</span>
-              <span className={`mt-2 text-[10px] sm:text-xs ${number === current ? "font-semibold text-foreground" : "text-muted-foreground"}`}>{label}</span>
+            <div key={label} style={{ textAlign: "center" }}>
+              <span style={{
+                display: "inline-flex",
+                width: 28,
+                height: 28,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "50%",
+                fontSize: 12,
+                fontWeight: 600,
+                background: reached ? ACCENT : SURFACE,
+                color: reached ? "#fff" : MUTED,
+                border: `1px solid ${reached ? ACCENT : BORDER}`,
+              }}
+              >
+                {number}
+              </span>
+              <p style={{ margin: "8px 0 0", fontSize: 11, fontWeight: number === current ? 600 : 400, color: number === current ? NAVY : MUTED }}>{label}</p>
             </div>
           );
         })}
       </div>
-    </div>
+    </IdentityCard>
   );
 }
