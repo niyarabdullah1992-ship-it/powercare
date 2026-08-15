@@ -1,4 +1,5 @@
 import { updateCompany } from "@/lib/store";
+import { ORG_TO_SMART_SECTION, canonicalSectionId, titleSlug } from "@/lib/orgDerivations";
 
 /**
  * Grantable product sections — aligned with Layout sidebar labels & routes.
@@ -98,16 +99,16 @@ export const SMART_DEPARTMENTS = [
     id: "org",
     ar: "الهيكل التنظيمي",
     en: "Org structure",
-    hintAr: "الشجرة وسلسلة التصعيد",
-    hintEn: "Tree and escalation chain",
+    hintAr: "قائمة ثم تعيين",
+    hintEn: "List, then assign",
     group: "workforce",
   },
   {
     id: "settings",
     ar: "إعدادات الشركة",
     en: "Company settings",
-    hintAr: "الهوية والنطاق والصلاحيات",
-    hintEn: "Identity, geofence, and access",
+    hintAr: "الهوية والنطاق الجغرافي",
+    hintEn: "Identity and geofence",
     group: "admin",
   },
   {
@@ -197,6 +198,9 @@ export const SMART_SECTION_GROUPS = [
   { id: "admin", ar: "المؤسسة", en: "Institution" },
 ];
 
+/** Grantable sections — command stays on /app for everyone and is not a fake grant. */
+export const GRANTABLE_DEPARTMENTS = SMART_DEPARTMENTS.filter((department) => department.id !== "command");
+
 /** department id → routes removed when not granted (after owner composed access). */
 export const SMART_SECTION_ROUTES = {
   command: [],
@@ -230,7 +234,7 @@ export const rankLabel = (rank, ar) => ({
   manager: ar ? "مدير" : "Manager",
   executive: ar ? "مدير تنفيذي" : "Executive Director",
 }[rank]);
-export const scorePermissions = (permissions = {}) => Object.values(permissions).reduce((sum, access) => sum + (access === "manage" ? 2 : access === "view" ? 1 : 0), 0);
+export const scorePermissions = (permissions = {}) => Object.values(permissions).reduce((sum, access) => sum + (access === "manage" ? 2 : access === "view" || access === "station" || access === "own" ? 1 : 0), 0);
 
 export function suggestSmartTitle(permissions = {}, ar = false) {
   const has = (...ids) => ids.every((id) => permissions[id]);
@@ -245,30 +249,112 @@ export function suggestSmartTitle(permissions = {}, ar = false) {
   return first ? `${rankLabel(rankFromScore(score), ar)} ${ar ? first.ar : first.en}` : "";
 }
 
-export function saveSmartPosition(companyId, employeeId, title, permissions, titleManual = false) {
-  const score = scorePermissions(permissions);
-  const hasGrants = Object.values(permissions || {}).some((access) => access && access !== "hidden");
-  updateCompany(companyId, (data) => {
-    data.smartPositions = data.smartPositions || [];
-    const index = data.smartPositions.findIndex((item) => item.employeeId === employeeId);
-    if (!hasGrants) {
-      if (index >= 0) data.smartPositions.splice(index, 1);
-      return;
+export function personJobTitle(employee, position) {
+  return String(
+    position?.title
+    || employee?.profile?.position
+    || employee?.position
+    || employee?.jobTitle
+    || employee?.title
+    || "",
+  ).trim();
+}
+
+export function sectionAccess(permissions = {}, departmentId) {
+  const id = canonicalSectionId(departmentId);
+  let raw = permissions[id] || permissions[departmentId];
+  if (!raw) {
+    for (const [legacy, smart] of Object.entries(ORG_TO_SMART_SECTION)) {
+      if (smart === id && permissions[legacy]) raw = permissions[legacy];
     }
-    const previous = index >= 0 ? data.smartPositions[index] : null;
-    const record = {
-      employeeId,
-      title,
-      titleManual,
-      permissions,
-      score,
-      rank: rankFromScore(score),
-      manualOrder: previous?.manualOrder,
-      updatedAt: new Date().toISOString(),
-    };
-    if (index >= 0) data.smartPositions[index] = record;
-    else data.smartPositions.push(record);
+  }
+  return raw && raw !== "hidden" ? raw : "";
+}
+
+export function hasSmartAccess(user, data, departmentId, min = "view") {
+  if (!user?.id) return false;
+  if (user.id === data?.ownerId) return true;
+  const position = (data?.smartPositions || []).find((item) => item.employeeId === user.id);
+  const access = sectionAccess(position?.permissions, departmentId);
+  if (!access) return false;
+  const rank = { own: 1, station: 2, view: 3, manage: 4 };
+  return (rank[access] || 0) >= (rank[min] || 3);
+}
+
+function employeesMatchingTitle(data, titleLabel) {
+  const want = titleSlug(titleLabel);
+  if (!want) return [];
+  return (data.employees || []).filter((employee) => {
+    if (employee.id === data.ownerId) return false;
+    const position = (data.smartPositions || []).find((item) => item.employeeId === employee.id);
+    return titleSlug(personJobTitle(employee, position)) === want;
   });
+}
+
+export function titleSectionAccess(data, titleLabel, departmentId) {
+  const accesses = employeesMatchingTitle(data, titleLabel).map((employee) => {
+    const position = (data.smartPositions || []).find((item) => item.employeeId === employee.id);
+    return sectionAccess(position?.permissions, departmentId) || "hidden";
+  });
+  if (!accesses.length) return "hidden";
+  const first = accesses[0];
+  return accesses.every((access) => access === first) ? first : "mixed";
+}
+
+function writePositionRecord(data, employeeId, title, permissions) {
+  data.smartPositions = data.smartPositions || [];
+  const index = data.smartPositions.findIndex((item) => item.employeeId === employeeId);
+  const hasGrants = Object.values(permissions || {}).some((access) => access && access !== "hidden");
+  const employee = (data.employees || []).find((item) => item.id === employeeId);
+  if (title && employee) {
+    employee.profile = { ...(employee.profile || {}), position: title };
+    employee.position = title;
+  }
+  const node = (data.orgTree || []).find((item) => item.type === "employee" && item.refId === employeeId);
+  if (title && node) node.title = title;
+  if (!hasGrants) {
+    if (index >= 0) data.smartPositions.splice(index, 1);
+    return;
+  }
+  const previous = index >= 0 ? data.smartPositions[index] : null;
+  const score = scorePermissions(permissions);
+  const record = {
+    employeeId,
+    title,
+    titleManual: Boolean(title),
+    permissions,
+    score,
+    rank: rankFromScore(score),
+    manualOrder: previous?.manualOrder,
+    updatedAt: new Date().toISOString(),
+  };
+  if (index >= 0) data.smartPositions[index] = { ...previous, ...record };
+  else data.smartPositions.push(record);
+}
+
+export function saveSmartPosition(companyId, employeeId, title, permissions, titleManual = false) {
+  updateCompany(companyId, (data) => {
+    writePositionRecord(data, employeeId, title, permissions);
+    const index = (data.smartPositions || []).findIndex((item) => item.employeeId === employeeId);
+    if (index >= 0) data.smartPositions[index].titleManual = titleManual;
+  });
+}
+
+export function applyTitleSectionAccess(companyId, titleLabel, departmentId, access) {
+  const dept = canonicalSectionId(departmentId);
+  let applied = 0;
+  updateCompany(companyId, (data) => {
+    const matches = employeesMatchingTitle(data, titleLabel);
+    applied = matches.length;
+    for (const employee of matches) {
+      const previous = (data.smartPositions || []).find((item) => item.employeeId === employee.id);
+      const permissions = { ...(previous?.permissions || {}) };
+      if (!access || access === "hidden") delete permissions[dept];
+      else permissions[dept] = access;
+      writePositionRecord(data, employee.id, previous?.title || personJobTitle(employee) || titleLabel, permissions);
+    }
+  });
+  return applied;
 }
 
 export function reorderSmartRank(companyId, rank, employeeIds) {

@@ -19,7 +19,6 @@ import {
 } from "@/lib/orgTree";
 import { assignStationManager, setStationManager } from "@/lib/store";
 import {
-  BUILT_IN_TEMPLATES,
   CUSTOM_TEMPLATE_ID,
   INHERIT_TEMPLATE_ID,
   inheritedPermissions,
@@ -42,7 +41,6 @@ import {
 } from "@/lib/orgModalStyles";
 
 const empty = { name: "", email: "", stationId: "", location: "", stationType: "", managerId: "" };
-const HR_TEMPLATE = BUILT_IN_TEMPLATES.find((t) => t.id === "hr_officer");
 
 export default function OrgTreeNodeModal({ initial, data, company, companyId, currentUser, lang, onClose }) {
   const { t } = useI18n();
@@ -83,7 +81,7 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, cu
   });
   const [branchStationId, setBranchStationId] = useState("");
   const [reportsToNodeId, setReportsToNodeId] = useState("");
-  const [hrRole, setHrRole] = useState(false);
+  const [positionId, setPositionId] = useState("");
 
   const nodes = data.orgTree || [];
   const ownerMode = isCompanyOwner(currentUser, data);
@@ -97,6 +95,7 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, cu
   const titleSuggestions = useMemo(
     () => [...new Set(
       (data.jobGrades || []).map((grade) => grade.name)
+        .concat((data.orgPositions || []).map((item) => item.title))
         .concat((data.smartPositions || []).map((item) => item.title)),
     )].filter(Boolean),
     [data.jobGrades, data.smartPositions],
@@ -107,17 +106,14 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, cu
     setTemplateId(nextId);
     if (nextId === CUSTOM_TEMPLATE_ID) {
       setPermissions({});
-      setHrRole(false);
       return;
     }
     if (nextId === INHERIT_TEMPLATE_ID) {
       setPermissions({ ...inherited });
-      setHrRole(false);
       return;
     }
     const tpl = templateById(data, nextId);
     setPermissions({ ...(tpl?.permissions || {}) });
-    setHrRole(nextId === "hr_officer" || tpl?.permissions?.hr === "manage");
   };
 
   useEffect(() => {
@@ -145,15 +141,10 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, cu
     setSuggesting(false);
   };
 
-  const resolveCreateAccess = () => {
-    if (hrRole) {
-      return {
-        permissions: { ...(HR_TEMPLATE?.permissions || { hr: "manage", employees: "manage" }) },
-        templateId: "hr_officer",
-      };
-    }
-    return { permissions, templateId: templateId || CUSTOM_TEMPLATE_ID };
-  };
+  const resolveCreateAccess = () => ({
+    permissions,
+    templateId: positionId || templateId || CUSTOM_TEMPLATE_ID,
+  });
 
   const submit = (event) => {
     event.preventDefault();
@@ -189,10 +180,7 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, cu
       }
 
       const access = type === "employee" ? resolveCreateAccess() : { permissions: {}, templateId: "" };
-      let nextTitle = title.trim();
-      if (type === "employee" && hrRole && !nextTitle) {
-        nextTitle = ar ? (HR_TEMPLATE?.ar || "مسؤول موارد بشرية") : (HR_TEMPLATE?.en || "HR officer");
-      }
+      const nextTitle = title.trim();
 
       const createdStationId = createOrgRecord(
         companyId,
@@ -234,8 +222,8 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, cu
             </h3>
             <p style={subtitleStyle}>
               {createEmployee
-                ? (ar ? "مسمى حر، فرع، مسؤول، وموارد بشرية عند الحاجة." : "Free title, branch, manager, and HR when needed.")
-                : (ar ? "أنشئ فرعًا أو موظفًا وأضفه للشجرة فورًا." : "Create a branch or employee and add it to the tree.")}
+                ? (ar ? "اختر منصباً من الجدول، ثم الفرع والمسؤول." : "Pick a position from the table, then branch and manager.")
+                : (ar ? "أنشئ فرعًا أولاً إن لزم، ثم أضف الموظف تحت ذلك الفرع." : "Create a branch first if needed, then add the employee under it.")}
             </p>
           </div>
           <button type="button" onClick={onClose} style={closeBtn} aria-label={ar ? "إغلاق" : "Close"}>
@@ -297,8 +285,8 @@ export default function OrgTreeNodeModal({ initial, data, company, companyId, cu
             setBranchStationId={setBranchStationId}
             reportsToNodeId={reportsToNodeId}
             setReportsToNodeId={setReportsToNodeId}
-            hrRole={hrRole}
-            setHrRole={setHrRole}
+            positionId={positionId}
+            setPositionId={setPositionId}
           />
         )}
 

@@ -10,8 +10,6 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { ACCENT, MUTED, NAVY, ui, field, CARD, SURFACE } from "@/lib/platformStyles";
 import { ChromeBox } from "@/components/shared/IdentityCard";
-import SettingsPermDelegation from "@/components/hr/SettingsPermDelegation";
-import SettingsPersonAccessCard from "@/components/hr/SettingsPersonAccessCard";
 
 async function settingsApi(payload) {
   const res = await base44.functions.invoke("settings", payload);
@@ -402,11 +400,7 @@ export default function CompanySettingsBoard({ lang = "ar", parts = "all" }) {
       </ChromeBox>
       )}
 
-      {show("access") && (
-      <>
-      <SettingsPersonAccessCard lang={lang} />
-      <SettingsPermDelegation lang={lang} />
-
+      {show("record") && (
       <ChromeBox>
         <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>
           {ar ? "حدود البلاغات المجهولة" : "Anonymous report rate limits"}
@@ -425,7 +419,6 @@ export default function CompanySettingsBoard({ lang = "ar", parts = "all" }) {
           ))}
         </div>
       </ChromeBox>
-      </>
       )}
     </section>
   );

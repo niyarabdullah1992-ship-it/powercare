@@ -274,8 +274,8 @@ export default function HcmFoundationBoard({ lang = "ar" }) {
       <Section
         title={ar ? "كتالوج الوظائف" : "Job catalogue"}
         note={ar
-          ? "الوظيفة تصف العمل، لا الشخص. خطة أهداف الأداء تُربط بالوظيفة — فيرث كل من يشغلها الأوزان نفسها."
-          : "A job describes the work, not the person. The performance goal plan attaches to the job — everyone who fills it inherits the same weights."}
+          ? "كتالوج مسميات لا شجرة ثانية. المسمى هنا يطابق مسمى البطاقة في الهيكل وقوالب الصلاحيات."
+          : "A title catalogue, not a second tree. The name here matches the org-card title and permission templates."}
         action={canWrite ? (
           <button type="button" style={ui.btnPrimary} onClick={() => setOpen(open === "job" ? "" : "job")}>
             {ar ? "+ وظيفة" : "+ Job"}

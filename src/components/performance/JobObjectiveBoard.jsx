@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/PowerCareAuth";
 import { toast } from "@/components/ui/use-toast";
 import useStationScope from "@/hooks/useStationScope";
 import { OBJECTIVE_SOURCE_LABELS } from "@/lib/hcmDerivations";
+import { personJobTitle } from "@/lib/smartPositions";
 import ReviewCyclePanel from "@/components/performance/ReviewCyclePanel";
 import { ACCENT, MUTED, NAVY, bar, cardShell, tableShell, SURFACE } from "@/lib/platformStyles";
 
@@ -94,6 +95,12 @@ export default function JobObjectiveBoard({ lang = "ar" }) {
     } finally {
       setBusy(false);
     }
+  };
+
+  const liveJobTitle = (employeeId, fallback) => {
+    const employee = (data?.employees || []).find((item) => item.id === employeeId);
+    const position = (data?.smartPositions || []).find((item) => item.employeeId === employeeId);
+    return personJobTitle(employee, position) || fallback || "";
   };
 
   const board = state?.board || [];
@@ -202,7 +209,7 @@ export default function JobObjectiveBoard({ lang = "ar" }) {
                     </div>
                   </div>
                   <div style={{ fontSize: "11px", color: MUTED }}>
-                    {r.jobTitle || (ar ? "بلا وظيفة" : "No job")}
+                    {liveJobTitle(r.employeeId, r.jobTitle) || (ar ? "بلا وظيفة" : "No job")}
                     {!r.planCustom ? (
                       <span style={{ display: "block", fontSize: "10px", color: "#B45309" }}>{ar ? "الخطة الافتراضية" : "default plan"}</span>
                     ) : null}

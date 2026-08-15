@@ -174,7 +174,8 @@ export function AuthProvider({ children }) {
                 crossStationChatEnabled: meta.crossStationChatEnabled,
                 settings: meta.settings, reportBranding: meta.reportBranding,
                 permOverrides: meta.permOverrides, knownTitles: meta.knownTitles,
-                removedTitles: meta.removedTitles,
+                removedTitles: meta.removedTitles, orgPositions: meta.orgPositions,
+                orgTracks: meta.orgTracks, jobGrades: meta.jobGrades, hrLevels: meta.hrLevels, hrClusters: meta.hrClusters,
               };
               cacheCloudData(s.companyId, Object.fromEntries(Object.entries(metaUpdates).filter(([, value]) => value !== undefined)));
               setData((prevData) => (prevData ? {
@@ -190,6 +191,11 @@ export function AuthProvider({ children }) {
                 permOverrides: meta.permOverrides ?? prevData.permOverrides,
                 knownTitles: meta.knownTitles ?? prevData.knownTitles,
                 removedTitles: meta.removedTitles ?? prevData.removedTitles,
+                orgPositions: meta.orgPositions ?? prevData.orgPositions,
+                orgTracks: Array.isArray(meta.orgTracks) ? meta.orgTracks : prevData.orgTracks,
+                jobGrades: Array.isArray(meta.jobGrades) ? meta.jobGrades : prevData.jobGrades,
+                hrLevels: Array.isArray(meta.hrLevels) ? meta.hrLevels : prevData.hrLevels,
+                hrClusters: Array.isArray(meta.hrClusters) ? meta.hrClusters : prevData.hrClusters,
                 } : prevData));
             })
           );

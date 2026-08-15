@@ -1,54 +1,104 @@
 ﻿import React from "react";
+import { useSearchParams } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useOrgTerms } from "@/hooks/useOrgTerms";
-import OrgStructureBoard from "@/components/hr/OrgStructureBoard";
-import HcmFoundationBoard from "@/components/hr/HcmFoundationBoard";
 import FlexOrgTree from "@/components/hr/FlexOrgTree";
-import { MUTED, NAVY, cardShell } from "@/lib/platformStyles";
+import OrgListWorkbench from "@/components/hr/OrgListWorkbench";
+import OrgAssignBoard from "@/components/hr/OrgAssignBoard";
 import PlatformStampShell from "@/components/shared/PlatformStampShell";
+import { orderedOrgTracks } from "@/lib/orgTracks";
 
-/** Platform `org` — flexible people tree is primary; branch admin is secondary. */
+const TABS = [
+  { value: "seats", ar: "القائمة", en: "List" },
+  { value: "assign", ar: "تعيين", en: "Assign" },
+  { value: "tree", ar: "الشجرة", en: "Tree" },
+];
+
+const TAB_ALIAS = {
+  board: "seats",
+  lists: "seats",
+  list: "seats",
+  grades: "seats",
+};
+
+/** Platform `org` — seats with a list column, then assign from the seat, then tree placement. */
 export default function OrgStructure() {
   const { lang } = useI18n();
   const ar = lang === "ar";
   const { data, currentUser, company } = useAuth();
   const { terms } = useOrgTerms();
+  const [params, setParams] = useSearchParams();
+  const requested = TAB_ALIAS[params.get("tab")] || params.get("tab");
+  const tool = TABS.some((tab) => tab.value === requested) ? requested : "seats";
+
   if (!data || !currentUser) return null;
+
+  const tracks = orderedOrgTracks(data);
+  const requestedList = params.get("list");
+  const listId = tracks.some((track) => track.id === requestedList) ? requestedList : "";
+
+  const setList = (id, tab = tool) => {
+    const next = { tab };
+    if (id) next.list = id;
+    if (params.get("employee") && tab === "assign") next.employee = params.get("employee");
+    setParams(next, { replace: true });
+  };
+  const openAssign = (id) => {
+    const next = { tab: "assign" };
+    if (id) next.list = id;
+    setParams(next, { replace: true });
+  };
+  const select = (value) => {
+    if (value === "tree") {
+      setParams({ tab: "tree" }, { replace: true });
+      return;
+    }
+    const next = { tab: value === "assign" ? "assign" : "seats" };
+    if (listId) next.list = listId;
+    if (value === "assign" && params.get("employee")) next.employee = params.get("employee");
+    setParams(next, { replace: true });
+  };
+
+  const hint = {
+    seats: ar
+      ? "كل قائمة بطاقتها: درجاتها ومناصبها معاً."
+      : "Each list is one card: its grades and seats together.",
+    assign: ar
+      ? "موظف ثم منصب. الدرجة من قائمة ذلك المنصب."
+      : "Employee, then seat. The grade comes from that seat’s list.",
+    tree: ar
+      ? `ضع الشخص في فرعه تحت مسؤول · ${terms.stations}`
+      : `Place the person in a branch under a manager · ${terms.stations}`,
+  }[tool];
 
   return (
     <PlatformStampShell
       ar={ar}
       title={ar ? "الهيكل التنظيمي" : "Org structure"}
-      hint={ar
-        ? `اسم الفرع وحدة التشغيل، والأشخاص يُسحَبون بين الفروع بحرية · ${terms.stations}`
-        : `Branch name is the operating unit; people move freely between branches · ${terms.stations}`}
+      hint={hint}
       maxWidth={1280}
+      sections={TABS.map((tab) => ({ value: tab.value, label: ar ? tab.ar : tab.en }))}
+      tool={tool}
+      onTool={select}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        <FlexOrgTree data={data} company={company} currentUser={currentUser} lang={lang} />
-
-        <details style={{ ...cardShell, padding: "14px 20px" }}>
-          <summary style={{ cursor: "pointer", fontSize: "13px", fontWeight: 600, color: NAVY, listStyle: "none" }}>
-            {ar ? "إدارة الفروع والمسؤولين" : "Branch & manager admin"}
-          </summary>
-          <p style={{ margin: "8px 0 14px", fontSize: "11px", color: MUTED, lineHeight: 1.65 }}>
-            {ar
-              ? "أنشئ فرعًا باسمه أو غيّر المسؤول — بدون منطقة شرق/غرب مفروضة."
-              : "Create a branch by name or change its manager — no forced East/West region."}
-          </p>
-          <OrgStructureBoard lang={lang} />
-        </details>
-
-        <details style={{ ...cardShell, padding: "14px 20px" }}>
-          <summary style={{ cursor: "pointer", fontSize: "13px", fontWeight: 600, color: NAVY, listStyle: "none" }}>
-            {ar ? "سجل HCM والوحدات — ثانوي" : "HCM register & units — secondary"}
-          </summary>
-          <div style={{ marginTop: "14px" }}>
-            <HcmFoundationBoard lang={lang} />
-          </div>
-        </details>
-      </div>
+      {tool === "seats" ? (
+        <OrgListWorkbench
+          lang={lang}
+          trackId={listId}
+          onTrackId={(id) => setList(id, "seats")}
+          onAssign={openAssign}
+        />
+      ) : null}
+      {tool === "assign" ? (
+        <OrgAssignBoard
+          lang={lang}
+          trackId={listId}
+          onTrackId={(id) => setList(id, "assign")}
+          initialEmployeeId={params.get("employee") || ""}
+        />
+      ) : null}
+      {tool === "tree" ? <FlexOrgTree data={data} company={company} currentUser={currentUser} lang={lang} /> : null}
     </PlatformStampShell>
   );
 }

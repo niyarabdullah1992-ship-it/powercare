@@ -6,14 +6,23 @@ import { Loader2 } from "lucide-react";
 import { MUTED, NAVY, NAVY_FILL, OK, WARN, ACCENT } from "@/lib/platformStyles";
 import { profileCompletionStats } from "@/lib/employeeProfileFields";
 import IdentityCard from "@/components/shared/IdentityCard";
+import { useAuth } from "@/lib/PowerCareAuth";
+import { employeeOrgSeat } from "@/lib/orgPositions";
+import { jobGradeLabel } from "@/lib/jobGrades";
+import { trackLabel } from "@/lib/orgTracks";
 
 /** Platform isEmpFile hero — L2623–2646 (inline styles AS-IS). */
 export default function ProfileHero({ employee, companyId, canEdit, roleLabel, grade, stationName }) {
   const { lang } = useI18n();
   const ar = lang === "ar";
+  const { data } = useAuth();
   const [uploading, setUploading] = useState(false);
   const avatarInput = useRef(null);
   const profile = employee.profile || {};
+  const seat = employeeOrgSeat(employee, data);
+  const title = seat.title || roleLabel;
+  const listName = trackLabel(seat.track, ar);
+  const gradeName = jobGradeLabel(seat.grade || grade);
 
   const { pct: completionPct } = profileCompletionStats(employee);
 
@@ -53,8 +62,7 @@ export default function ProfileHero({ employee, companyId, canEdit, roleLabel, g
     .join("")
     .toUpperCase();
 
-  const dept = profile.department || grade?.label || grade?.name || "";
-  const meta = [roleLabel, dept, stationName].filter(Boolean).join(" · ");
+  const meta = [title, listName, gradeName, stationName].filter(Boolean).join(" · ");
 
   const upload = async (file) => {
     if (!file || !canEdit) return;

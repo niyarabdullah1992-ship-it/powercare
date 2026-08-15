@@ -332,11 +332,11 @@ export default function Layout({ children }) {
     },
     "/app/org": {
       title: lang === "ar" ? "الهيكل التنظيمي" : "Org Structure",
-      sub: lang === "ar" ? "منه تُشتق الصلاحيات وسلسلة التصعيد" : "Permissions and the escalation chain derive from it",
+      sub: lang === "ar" ? "منصب ثم قائمته ودرجته ثم تعيين" : "A seat, its list and grade, then assign",
     },
     "/app/settings": {
       title: lang === "ar" ? "إعدادات الشركة" : "Company Settings",
-      sub: lang === "ar" ? "الحساب والنطاق الجغرافي والصلاحيات" : "Account, geofences and permissions",
+      sub: lang === "ar" ? "الحساب والنطاق الجغرافي والهوية" : "Account, geofences and look",
     },
     "/app/hiring": {
       title: lang === "ar" ? "التوظيف" : "Recruitment",

@@ -264,7 +264,7 @@ export default function HrDirectoryBoard({ lang = "ar", stationScope = "all" }) 
             </div>
           </div>
           <Link
-            to="/app/org"
+            to="/app/org?tab=assign"
             style={{
               padding: "7px 13px",
               borderRadius: "9px",
@@ -278,7 +278,7 @@ export default function HrDirectoryBoard({ lang = "ar", stationScope = "all" }) 
               textDecoration: "none",
             }}
           >
-            {ar ? "الهيكل" : "Org"}
+            {ar ? "عيّن منصباً" : "Assign seat"}
           </Link>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "9px", padding: "12px 18px", borderBottom: "1px solid #E2E8F0", flexWrap: "wrap" }}>

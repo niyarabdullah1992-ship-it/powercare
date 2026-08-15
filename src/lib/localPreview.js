@@ -365,6 +365,8 @@ export function enterLocalPreview() {
       { id: "org_field", type: "employee", refId: employeeId, title: "فني", parentId: "org_st_n", order: 0 },
     ],
     smartPositions: [],
+    orgPositions: [],
+    orgTracks: [],
     complaintEscalationChain: [],
     signatureRequests: [{
       id: "sg_1",

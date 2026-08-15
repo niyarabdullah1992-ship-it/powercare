@@ -60,6 +60,17 @@ export const ORG_SECTIONS = [
 
 export type OrgSectionId = (typeof ORG_SECTIONS)[number];
 
+/** Legacy matrix ids → live grant ids in smartPositions. */
+export const ORG_TO_SMART_SECTION: Record<string, string> = {
+  operations: "tasks",
+  daily: "daily_report",
+  hse: "safety",
+};
+
+export function canonicalSectionId(sectionId: string): string {
+  return ORG_TO_SMART_SECTION[sectionId] || sectionId;
+}
+
 export const ORG_SECTION_LABELS: Record<OrgSectionId, { ar: string; en: string }> = {
   command: { ar: "مركز القيادة", en: "Command Center" },
   operations: { ar: "المهام والعمليات", en: "Operations" },
@@ -201,6 +212,7 @@ export function collectJobTitles(data: {
   orgTree?: Array<{ type?: string; title?: string }>;
   smartPositions?: Array<{ title?: string }>;
   hcmFoundation?: { jobs?: Array<{ title?: string }> };
+  knownTitles?: unknown[];
 } = {}, removed: unknown[] = []): JobTitleCol[] {
   const blocked = new Set((removed || []).map((item) => titleSlug(item)).filter(Boolean));
   const seen = new Map<string, JobTitleCol>();
@@ -221,6 +233,12 @@ export function collectJobTitles(data: {
   }
   for (const position of data.smartPositions || []) add(position.title);
   for (const job of data.hcmFoundation?.jobs || []) add(job.title);
+  for (const label of data.knownTitles || []) {
+    const normalized = normalizeJobTitle(label);
+    const id = titleSlug(normalized);
+    if (!id || BUILTIN_TITLE_ALIASES.has(id) || blocked.has(id) || seen.has(id)) continue;
+    seen.set(id, { id, label: normalized, count: 0 });
+  }
   return [...seen.values()].sort((a, b) => a.label.localeCompare(b.label, "ar"));
 }
 

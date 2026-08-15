@@ -26,12 +26,12 @@ export default function OrgTreeGuide({ ar }) {
       >
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: NAVY }}>
-            {ar ? "من يملأ الملفات؟ وكيف تفعّل الموارد البشرية؟" : "Who fills files? How do you enable HR?"}
+            {ar ? "من يملأ الملفات؟" : "Who fills files?"}
           </div>
           <p style={{ margin: "3px 0 0", fontSize: 11, color: MUTED, lineHeight: 1.55 }}>
             {ar
-              ? "لا يوجد «قسم» منفصل في الشجرة — الموارد البشرية شخص بصلاحية داخل الفرع."
-              : "There is no separate HR department box — HR is a person with access inside a branch."}
+              ? "صلاحية الموارد البشرية تُمنح من جدول المناصب، لا من مربع في الشجرة."
+              : "HR access is granted from the positions table, not a checkbox on the tree."}
           </p>
         </div>
         {open
@@ -42,18 +42,18 @@ export default function OrgTreeGuide({ ar }) {
         <ol style={{ margin: "12px 0 0", paddingInlineStart: 18, display: "grid", gap: 8, color: MUTED, fontSize: 12, lineHeight: 1.65 }}>
           <li>
             {ar
-              ? "يملأ الملف: المالك أو المدير دائمًا، أو مسؤول موارد بشرية لنفس الفرع."
-              : "Who fills a file: owner/director always, or an HR officer for the same branch."}
+              ? "يملأ الملف: المالك أو المدير دائمًا، أو من مُنح الموارد البشرية «تحكم كامل» في منصبه."
+              : "Who fills a file: owner/director always, or anyone whose position grants HR full control."}
           </li>
           <li>
             {ar
-              ? "لتفعيل HR: اضغط «تنظيم» ← فعّل «مسؤول موارد بشرية لهذا الفرع» ← حفظ."
-              : "To enable HR: Organize → turn on “HR officer for this branch” → Save."}
+              ? "لتفعيل ذلك: أنشئ منصباً في قائمته، اضبط صلاحية الموارد البشرية، ثم عيّنه من تبويب التعيين."
+              : "To enable it: create a seat on its list, set HR access, then assign it from the Assign tab."}
           </li>
           <li>
             {ar
-              ? "المسمى والفرع والمسؤول = مكان العمل. مربع الموارد البشرية = صلاحية الملء."
-              : "Title / branch / manager = placement. The HR checkbox = fill access."}
+              ? "المسمى والفرع والمسؤول في الشجرة = مكان العمل. جدول المناصب = الصلاحيات."
+              : "Title / branch / manager on the tree = placement. The positions table = access."}
           </li>
         </ol>
       )}

@@ -9,4 +9,4 @@ Included: src, public, pages, local run files.
 Excluded: builder project folder, secrets, node_modules, old dumps.
 
 Date: 2026-08-15
-Changes in this build: company branding everywhere, grantable permissions matrix, local perm save.
+Changes in this build: org lists with grades and seats, assign from the same list, employee file linkage.

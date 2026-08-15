@@ -8,6 +8,17 @@ export const ORG_SECTIONS = [
   "work_proof", "signing", "reports", "chat", "shifts", "hiring", "performance", "org", "expenses", "inventory", "files", "assistant",
 ];
 
+/** Legacy matrix ids → live grant ids in smartPositions. */
+export const ORG_TO_SMART_SECTION = {
+  operations: "tasks",
+  daily: "daily_report",
+  hse: "safety",
+};
+
+export function canonicalSectionId(sectionId) {
+  return ORG_TO_SMART_SECTION[sectionId] || sectionId;
+}
+
 export const ORG_SECTION_LABELS = {
   command: { ar: "مركز القيادة", en: "Command Center" },
   operations: { ar: "المهام والعمليات", en: "Operations" },
@@ -144,6 +155,12 @@ export function collectJobTitles(data = {}, removed = []) {
   }
   for (const position of data.smartPositions || []) add(position.title);
   for (const job of data.hcmFoundation?.jobs || []) add(job.title);
+  for (const label of data.knownTitles || []) {
+    const normalized = normalizeJobTitle(label);
+    const id = titleSlug(normalized);
+    if (!id || BUILTIN_TITLE_ALIASES.has(id) || blocked.has(id) || seen.has(id)) continue;
+    seen.set(id, { id, label: normalized, count: 0 });
+  }
   return [...seen.values()].sort((a, b) => a.label.localeCompare(b.label, "ar"));
 }
 

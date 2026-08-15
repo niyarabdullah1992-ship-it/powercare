@@ -37,6 +37,7 @@ function uid(prefix: string) {
 
 type OrgPayload = {
   branches: Array<BranchLike & { companyId: string }>;
+  /** Legacy blob field — live UI tree is company `orgTree`, not this list. */
   treeNodes: Array<OrgNodeLike & { companyId?: string; type?: string; refId?: string; title?: string }>;
   permOverrides: Record<string, PermOverride>;
   delegations: Array<DelegationLike & { companyId: string }>;
@@ -261,10 +262,6 @@ Deno.serve(async (req) => {
         seeded: false,
       };
       data.branches = [...data.branches, branch];
-      data.treeNodes = [
-        ...data.treeNodes,
-        { id: `org_station_${stationId}`, parentId: null, companyId: auth.companyId, type: "station", refId: stationId },
-      ];
       await savePayload(data);
       await audit("org.createBranch", `Created branch ${gate.name}`, { newValue: stationId });
       return Response.json({ ok: true, branch, ...enrich(data) });

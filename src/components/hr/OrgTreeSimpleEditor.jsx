@@ -2,17 +2,14 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { assignEmployeeToOrgStation, nodeAccess, saveOrgNode, setEmployeeReportsTo } from "@/lib/orgTree";
-import { BUILT_IN_TEMPLATES } from "@/lib/permissionTemplates";
 import { toast } from "@/components/ui/use-toast";
 import {
   ACCENT,
   SURFACE,
-  MUTED,
   NAVY,
   closeBtn,
   dialogOverlay,
   hintText,
-  inputField,
   labelText,
   saveBtn,
   selectField,
@@ -23,13 +20,6 @@ import {
   ui,
 } from "@/lib/orgModalStyles";
 
-const HR_TEMPLATE = BUILT_IN_TEMPLATES.find((t) => t.id === "hr_officer");
-const FIELD_TEMPLATE = BUILT_IN_TEMPLATES.find((t) => t.id === "field");
-
-function isHrOfficer(permissions = {}, templateId = "") {
-  return templateId === "hr_officer" || permissions.hr === "manage";
-}
-
 export default function OrgTreeSimpleEditor({ node, data, companyId, ar, onClose }) {
   const navigate = useNavigate();
   const employee = (data.employees || []).find((e) => e.id === node.refId);
@@ -38,6 +28,7 @@ export default function OrgTreeSimpleEditor({ node, data, companyId, ar, onClose
   const stationNodes = (data.orgTree || []).filter((n) => n.type === "station");
   const existingPerms = nodeAccess(data, node.refId);
   const existingTemplate = (data.smartPositions || []).find((p) => p.employeeId === node.refId)?.templateId || "";
+  const currentTitle = node.title || employee?.profile?.position || employee?.position || "";
 
   const currentStationId = useMemo(() => {
     let cursor = (data.orgTree || []).find((n) => n.id === node.parentId);
@@ -47,35 +38,16 @@ export default function OrgTreeSimpleEditor({ node, data, companyId, ar, onClose
     return cursor?.refId || employee?.stationId || "";
   }, [data.orgTree, node.parentId, employee?.stationId]);
 
-  const [title, setTitle] = useState(
-    node.title || employee?.profile?.position || employee?.position || "",
-  );
   const [branchId, setBranchId] = useState(currentStationId || "");
   const [reportsToId, setReportsToId] = useState(() => {
     const parent = (data.orgTree || []).find((n) => n.id === node.parentId);
     return parent?.type === "employee" ? parent.id : "";
   });
-  const [hrRole, setHrRole] = useState(isHrOfficer(existingPerms, existingTemplate));
+  const [extraStationIds, setExtraStationIds] = useState(() => {
+    const home = currentStationId || employee?.stationId || "";
+    return (employee?.managedStations || []).filter((id) => String(id) !== String(home));
+  });
   const [busy, setBusy] = useState(false);
-
-  const resolveAccess = () => {
-    if (hrRole) {
-      return {
-        permissions: { ...(HR_TEMPLATE?.permissions || { hr: "manage", employees: "manage" }) },
-        templateId: "hr_officer",
-      };
-    }
-    if (isHrOfficer(existingPerms, existingTemplate)) {
-      return {
-        permissions: { ...(FIELD_TEMPLATE?.permissions || {}) },
-        templateId: "field",
-      };
-    }
-    return {
-      permissions: { ...existingPerms },
-      templateId: existingTemplate || "",
-    };
-  };
 
   const save = ({ openFile } = {}) => {
     if (!employee) return;
@@ -117,31 +89,24 @@ export default function OrgTreeSimpleEditor({ node, data, companyId, ar, onClose
         }
       }
 
-      const { permissions, templateId } = resolveAccess();
-      let nextTitle = title.trim();
-      if (hrRole && !nextTitle) {
-        nextTitle = ar ? (HR_TEMPLATE?.ar || "مسؤول موارد بشرية") : (HR_TEMPLATE?.en || "HR officer");
-      }
-
       saveOrgNode(
         companyId,
         {
           ...node,
-          title: nextTitle,
+          title: currentTitle,
           parentId: reportsToId || stNode.id,
         },
-        permissions,
-        templateId,
+        existingPerms,
+        existingTemplate,
+        {
+          managedStationIds: [...new Set([branchId, ...extraStationIds])],
+        },
       );
 
       toast({
         description: ar
-          ? hrRole
-            ? `حُفظ تنظيم «${employee.name}» — مفعّل كموارد بشرية لهذا الفرع`
-            : `حُفظ تنظيم «${employee.name}»`
-          : hrRole
-            ? `Saved «${employee.name}» — HR for this branch`
-            : `Saved placement for «${employee.name}»`,
+          ? `حُفظ مكان «${employee.name}»`
+          : `Saved placement for «${employee.name}»`,
       });
       onClose();
       if (openFile) {
@@ -163,26 +128,17 @@ export default function OrgTreeSimpleEditor({ node, data, companyId, ar, onClose
       >
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
           <div>
-            <h3 style={titleStyle}>{ar ? "تنظيم الموظف" : "Organize employee"}</h3>
-            <p style={subtitleStyle}>{employee.name}</p>
+            <h3 style={titleStyle}>{ar ? "مكان العمل" : "Workplace"}</h3>
+            <p style={subtitleStyle}>
+              {employee.name}
+              {currentTitle ? ` · ${currentTitle}` : ""}
+              {ar ? " — الفرع والمسؤول فقط. المنصب والدرجة من تبويب التعيين." : " — branch and manager only. Seat and grade are on Assign."}
+            </p>
           </div>
           <button type="button" onClick={onClose} style={closeBtn} aria-label={ar ? "إغلاق" : "Close"}>
             <X style={{ width: 16, height: 16 }} />
           </button>
         </div>
-
-        <label style={{ display: "block" }}>
-          <span style={labelText}>{ar ? "المسمى الوظيفي" : "Job title"}</span>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={ar ? "مثال: مدير فرع" : "e.g. Branch manager"}
-            style={inputField}
-          />
-          <span style={hintText}>
-            {ar ? "يُحفظ في الشجرة وملف الموظف معًا." : "Saved to the tree and the employee file together."}
-          </span>
-        </label>
 
         <label style={{ display: "block" }}>
           <span style={labelText}>{ar ? "الفرع" : "Branch"}</span>
@@ -193,6 +149,37 @@ export default function OrgTreeSimpleEditor({ node, data, companyId, ar, onClose
             ))}
           </select>
         </label>
+
+        {stations.length > 1 ? (
+          <div>
+            <span style={labelText}>{ar ? "فروع إضافية — منصب موزّع" : "Extra branches — distributed seat"}</span>
+            <div style={{ ...softPanel, display: "flex", flexDirection: "column", gap: 8, marginTop: 6 }}>
+              {stations.filter((s) => String(s.id) !== String(branchId)).map((s) => {
+                const on = extraStationIds.includes(s.id);
+                return (
+                  <label key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: NAVY }}>
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={() => {
+                        setExtraStationIds((prev) => (
+                          on ? prev.filter((id) => id !== s.id) : [...prev, s.id]
+                        ));
+                      }}
+                      style={{ width: 15, height: 15, accentColor: ACCENT }}
+                    />
+                    {s.name}
+                  </label>
+                );
+              })}
+              <span style={hintText}>
+                {ar
+                  ? "الفرع أعلاه مقرّه. الفروع هنا يغطيها نفس المنصب دون تكرار البطاقة."
+                  : "The branch above is home. Extra branches share this seat without duplicating the card."}
+              </span>
+            </div>
+          </div>
+        ) : null}
 
         <label style={{ display: "block" }}>
           <span style={labelText}>{ar ? "المسؤول المباشر" : "Direct manager"}</span>
@@ -208,33 +195,6 @@ export default function OrgTreeSimpleEditor({ node, data, companyId, ar, onClose
             })}
           </select>
         </label>
-
-        <div style={softPanel}>
-          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={hrRole}
-              onChange={(e) => {
-                const on = e.target.checked;
-                setHrRole(on);
-                if (on && !title.trim()) {
-                  setTitle(ar ? "مسؤول موارد بشرية" : "HR officer");
-                }
-              }}
-              style={{ marginTop: 3, width: 16, height: 16, accentColor: ACCENT }}
-            />
-            <span>
-              <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: NAVY }}>
-                {ar ? "مسؤول موارد بشرية لهذا الفرع" : "HR officer for this branch"}
-              </span>
-              <span style={{ display: "block", marginTop: 4, fontSize: 11, lineHeight: 1.65, color: MUTED }}>
-                {ar
-                  ? "يفعّل صلاحية ملء ملفات موظفي نفس الفرع. المالك والمدير يملآن دائمًا بدون هذا الخيار."
-                  : "Lets them fill employee files in the same branch. Owner and director can always fill without this."}
-              </span>
-            </span>
-          </label>
-        </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", gap: 8 }}>

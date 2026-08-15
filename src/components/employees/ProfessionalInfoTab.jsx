@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/PowerCareAuth";
 import { updateEmployeeProfile } from "@/lib/store";
 import {
   PROFILE_GROUPS,
@@ -11,6 +13,9 @@ import {
   profileFieldOptions,
   profileFieldValue,
 } from "@/lib/employeeProfileFields";
+import { employeeOrgSeat, POSITION_ACCESS, POSITION_ACCESS_LABEL, countPositionAccess } from "@/lib/orgPositions";
+import { jobGradeLabel } from "@/lib/jobGrades";
+import { trackLabel } from "@/lib/orgTracks";
 import MobileSelect from "@/components/mobile/MobileSelect";
 import { MUTED, NAVY, NAVY_FILL, OK, WARN, BAD, field, cardShell, CARD } from "@/lib/platformStyles";
 
@@ -58,10 +63,12 @@ export default function ProfessionalInfoTab({
 }) {
   const { t, lang } = useI18n();
   const ar = lang === "ar";
+  const { data } = useAuth();
   const canManage = Boolean(canEdit);
   const canFill = canManage;
   const [editing, setEditing] = useState(Boolean(autoEdit && canFill));
   const profile = employee.profile || {};
+  const seat = employeeOrgSeat(employee, data);
 
   useEffect(() => {
     if (autoEdit && canFill) setEditing(true);
@@ -80,7 +87,7 @@ export default function ProfessionalInfoTab({
   }));
 
   const readVal = (key) => {
-    if (key === "position") return profile.position || fallbackPosition || "";
+    if (key === "position") return seat.title || profile.position || fallbackPosition || "";
     return profileFieldValue(profile, key, employee);
   };
 
@@ -186,6 +193,61 @@ export default function ProfessionalInfoTab({
         </div>
       </div>
 
+      <div style={cardShell}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>
+              {ar ? "التعيين من الهيكل" : "Org assignment"}
+            </div>
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: MUTED, lineHeight: 1.7 }}>
+              {ar ? "القائمة والمنصب والدرجة والأقسام من الهيكل التنظيمي." : "List, seat, grade, and sections come from org structure."}
+            </p>
+          </div>
+          {canManage ? (
+            <Link
+              to={`/app/org?tab=assign&employee=${encodeURIComponent(employee.id)}`}
+              style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+            >
+              {ar ? "تعديل التعيين" : "Change assignment"}
+            </Link>
+          ) : null}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginTop: 16 }}>
+          <div>
+            <div style={{ fontSize: 11, color: MUTED }}>{ar ? "القائمة" : "List"}</div>
+            <div style={{ marginTop: 6, fontSize: 13, fontWeight: 600, color: NAVY }}>{trackLabel(seat.track, ar) || "—"}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: MUTED }}>{ar ? "المنصب" : "Position"}</div>
+            <div style={{ marginTop: 6, fontSize: 13, fontWeight: 600, color: NAVY }}>{seat.title || "—"}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: MUTED }}>{ar ? "الدرجة" : "Grade"}</div>
+            <div style={{ marginTop: 6, fontSize: 13, fontWeight: 600, color: NAVY }}>{jobGradeLabel(seat.grade) || "—"}</div>
+          </div>
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 11, color: MUTED, marginBottom: 6 }}>{ar ? "الأقسام" : "Sections"}</div>
+          {(() => {
+            const counts = countPositionAccess(seat.permissions);
+            const bits = POSITION_ACCESS.filter((access) => access !== "hidden" && counts[access] > 0);
+            if (!bits.length) return <span style={{ fontSize: 12, color: MUTED }}>{ar ? "بلا أقسام معيّنة." : "No sections assigned."}</span>;
+            return (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {bits.map((access) => {
+                  const lab = POSITION_ACCESS_LABEL[access];
+                  return (
+                    <span key={access} style={{ padding: "3px 8px", borderRadius: 8, fontSize: 11, fontWeight: 600, background: "#F1F5F9", color: NAVY }}>
+                      {ar ? lab.ar : lab.en} {counts[access]}
+                    </span>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
       {isSelf && !canManage && (
         <p style={{ margin: 0, fontSize: "12px", color: MUTED, lineHeight: 1.7 }}>
           {ar
@@ -195,7 +257,15 @@ export default function ProfessionalInfoTab({
       )}
 
       {(canFill || canEditGrade) && (
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", flexWrap: "wrap" }}>
+          {canManage ? (
+            <Link
+              to={`/app/org?tab=assign&employee=${encodeURIComponent(employee.id)}`}
+              style={{ ...ghostBtn, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+            >
+              {ar ? "عيّن من الهيكل" : "Assign from org"}
+            </Link>
+          ) : null}
           {editing ? (
             <>
               <button type="button" onClick={() => setEditing(false)} style={ghostBtn}>

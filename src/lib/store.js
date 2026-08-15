@@ -365,6 +365,8 @@ function emptyCompanyData(meta) {
     journalEntries: [],
     payrollRuns: [],
     smartPositions: [],
+    orgPositions: [],
+    orgTracks: [],
     complaintEscalationChain: [],
     branchEscalationChains: {},
     workProofs: [],
@@ -377,7 +379,7 @@ const COMPANY_ARRAY_KEYS = [
   "safety", "files", "plans", "notifications", "templates", "targets", "hrLevels",
   "jobGrades", "hrClusters", "schedules", "stationChatGroups", "personalPlaces",
   "personalAttendance", "plannerItems", "journalEntries", "payrollRuns",
-  "smartPositions", "complaintEscalationChain", "workProofs",
+  "smartPositions", "orgPositions", "orgTracks", "complaintEscalationChain", "workProofs",
 ];
 
 function normalizeCompanyData(data) {
@@ -437,22 +439,23 @@ export function cacheCloudData(companyId, updates) {
   if (!current) return;
   const next = reconcileStationReferences({ ...current, ...updates });
   localStorage.setItem(companyKey(companyId), JSON.stringify(next));
+  markBlobsSynced(companyId, next);
 }
 const lastLocalWriteAt = {};
 export function getLastLocalWriteAt(companyId) {
   return lastLocalWriteAt[companyId] || 0;
 }
 const cloudPushTimers = {};
-function scheduleCompanyPush(id, data) {
+function scheduleCompanyPush(id, data, hint) {
   clearTimeout(cloudPushTimers[id]);
   const snapshot = JSON.parse(JSON.stringify(data));
   cloudPushTimers[id] = setTimeout(() => {
     delete cloudPushTimers[id];
-    pushCompanyDataToCloud(id, snapshot);
+    pushCompanyDataToCloud(id, snapshot, hint);
   }, 300);
 }
 
-function persistCompanyData(id, data, sync = "all") {
+function persistCompanyData(id, data, sync = "all", hint = null) {
   reconcileStationReferences(data);
   data.employees = dedupeEmployees(data.employees);
   data.personalAttendance = (data.personalAttendance || []).map((record) => {
@@ -464,10 +467,10 @@ function persistCompanyData(id, data, sync = "all") {
   // Preview has no cloud write ACL — keep the local workspace and skip Base44.
   if (isLocalPreviewWorkspace(id) || sync === "none") return;
   if (typeof sync === "string" && sync !== "all") {
-    syncBlobToEntity(id, sync, data[sync] || []);
+    syncBlobToEntity(id, sync, data[sync] || [], { announce: true });
     return;
   }
-  scheduleCompanyPush(id, data);
+  scheduleCompanyPush(id, data, hint);
 }
 
 function saveCompanyData(id, data) {
@@ -476,12 +479,8 @@ function saveCompanyData(id, data) {
 
 // Pushes the full company snapshot to the persisted cloud database. Called on every
 // local write, and re-called automatically by the retry loop for anything that failed.
-function pushCompanyDataToCloud(id, data) {
-  if (isLocalPreviewWorkspace(id)) return;
-  syncEmployeesToEntity(id, data.employees);
-  syncStationsToEntity(id, data.stations);
-  BLOB_CATEGORIES.forEach((category) => syncBlobToEntity(id, category, data[category]));
-  syncBlobToEntity(id, "companyMeta", [{
+function companyMetaPayload(data) {
+  return [{
     id: "meta",
     name: data.name,
     plan: data.plan,
@@ -494,7 +493,46 @@ function pushCompanyDataToCloud(id, data) {
     permOverrides: data.permOverrides,
     knownTitles: data.knownTitles,
     removedTitles: data.removedTitles,
-  }]);
+    orgPositions: data.orgPositions,
+    orgTracks: data.orgTracks,
+    jobGrades: data.jobGrades,
+    hrLevels: data.hrLevels,
+    hrClusters: data.hrClusters,
+  }];
+}
+
+function snapshotCloudWrite(data) {
+  const blobs = {};
+  BLOB_CATEGORIES.forEach((category) => {
+    blobs[category] = JSON.stringify(data[category] ?? []);
+  });
+  return { blobs, meta: JSON.stringify(companyMetaPayload(data)) };
+}
+
+function diffCloudWrite(before, data) {
+  const after = snapshotCloudWrite(data);
+  return {
+    changed: BLOB_CATEGORIES.filter((category) => before.blobs[category] !== after.blobs[category]),
+    metaChanged: before.meta !== after.meta,
+  };
+}
+
+function pushCompanyDataToCloud(id, data, hint) {
+  if (isLocalPreviewWorkspace(id)) return;
+  syncEmployeesToEntity(id, data.employees);
+  syncStationsToEntity(id, data.stations);
+  const changed = hint?.changed;
+  BLOB_CATEGORIES.forEach((category) => {
+    if (changed && !changed.includes(category)) return;
+    syncBlobToEntity(id, category, data[category], {
+      announce: !changed || changed.includes(category),
+    });
+  });
+  if (!hint || hint.metaChanged) {
+    syncBlobToEntity(id, "companyMeta", companyMetaPayload(data), {
+      announce: !hint || hint.metaChanged,
+    });
+  }
 }
 
 /* ----------------------------- sync retry loop ----------------------------- */
@@ -559,12 +597,26 @@ if (typeof window !== "undefined") {
    is additionally persisted to the CompanyDataBlob entity so it survives beyond this browser. */
 export const BLOB_CATEGORIES = [
   "tasks", "reports", "anonymousReports", "publicReports", "safety", "plans",
-  "schedules", "hrLevels", "jobGrades", "hrClusters", "files", "notifications", "templates", "targets",
+  "schedules", "files", "notifications", "templates", "targets",
   "personalPlaces", "personalAttendance", "plannerItems", "journalEntries", "payrollRuns", "smartPositions",
   "complaintEscalationChain", "branchEscalationChains", "orgTree", "workProofs",
   ];
 const lastSyncedBlobJSON = {};
-async function syncBlobToEntity(companyId, category, payload) {
+const QUIET_BLOB_403 = new Set([
+  "reports", "anonymousReports", "publicReports", "notifications",
+  "personalPlaces", "personalAttendance", "plannerItems", "journalEntries",
+  "payrollRuns", "templates", "targets", "plans",
+]);
+
+function markBlobsSynced(companyId, data) {
+  if (!companyId || !data) return;
+  BLOB_CATEGORIES.forEach((category) => {
+    lastSyncedBlobJSON[`${companyId}_${category}`] = JSON.stringify(data[category] ?? []);
+  });
+  lastSyncedBlobJSON[`${companyId}_companyMeta`] = JSON.stringify(companyMetaPayload(data));
+}
+
+async function syncBlobToEntity(companyId, category, payload, options = {}) {
   if (isLocalPreviewWorkspace(companyId)) return;
   const key = `${companyId}_${category}`;
   const json = JSON.stringify(payload || []);
@@ -575,15 +627,14 @@ async function syncBlobToEntity(companyId, category, payload) {
     markSynced(companyId);
   } catch (error) {
     const status = error?.response?.status || error?.status;
-    // A rejected write (403) is a permission problem, not a network blip: surface it
-    // to the user instead of retrying forever — silent failure is worse than failure.
     if (status === 403) {
-      if (typeof window !== "undefined") {
+      const announce = options.announce === true
+        || (options.announce !== false && !QUIET_BLOB_403.has(category));
+      if (announce && typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("powercare:sync-rejected", { detail: category }));
       }
       return;
     }
-    // failed cloud write — clear the dedupe marker and let the retry loop re-push it
     lastSyncedBlobJSON[key] = undefined;
     scheduleResync(companyId);
   }
@@ -1029,8 +1080,9 @@ export function updateCompany(companyId, updater, options = {}) {
     schedulesJSON: JSON.stringify(data.schedules || []),
     settingsJSON: JSON.stringify(data.settings || {}),
   };
+  const beforeCloud = snapshotCloudWrite(data);
   updater(data);
-  persistCompanyData(companyId, data, options.sync || "all");
+  persistCompanyData(companyId, data, options.sync || "all", diffCloudWrite(beforeCloud, data));
   logCollectionDiffs(companyId, data, before);
   emailNewEvents(companyId, data, before);
   return data;

@@ -4,6 +4,7 @@ import { Image } from "@/components/ui/image";
 import { ChevronDown, ChevronRight, MapPin } from "lucide-react";
 import ComplaintEscalationBadge from "@/components/hr/ComplaintEscalationBadge";
 import { identityIconWrap } from "@/components/shared/IdentityCard";
+import { employeeJobGrade, jobGradeLabel } from "@/lib/jobGrades";
 import { BORDER, MUTED, NAVY, NAVY_FILL, CARD } from "@/lib/platformStyles";
 
 function initials(name) {
@@ -12,12 +13,18 @@ function initials(name) {
   return `${parts[0][0] || ""}${parts[1]?.[0] || ""}`;
 }
 
-function personTitle(node, employee, ar) {
+function personTitle(node, employee, ar, data) {
   const titled = String(node.title || employee?.profile?.position || employee?.position || "").trim();
-  if (titled) return titled;
-  if (employee?.isOwner || employee?.role === "owner") return ar ? "المالك" : "Owner";
-  if (employee?.role === "station_manager") return ar ? "مدير الفرع" : "Branch manager";
-  return "";
+  const grade = jobGradeLabel(employeeJobGrade(employee, data));
+  const extra = Math.max(0, (employee?.managedStations || []).length - 1);
+  const fallback = !titled && (employee?.isOwner || employee?.role === "owner")
+    ? (ar ? "المالك" : "Owner")
+    : !titled && employee?.role === "station_manager"
+      ? (ar ? "مدير الفرع" : "Branch manager")
+      : titled;
+  const bits = [fallback, grade].filter(Boolean);
+  if (extra > 0) bits.push(ar ? `+${extra} فروع` : `+${extra} branches`);
+  return bits.join(" · ");
 }
 
 const cardShadow = "0 8px 24px rgba(20,40,75,.06)";
@@ -26,7 +33,7 @@ const cardShadow = "0 8px 24px rgba(20,40,75,.06)";
 export default function FlexOrgCard({
   node, employee, label, access, canManage, complaintLevel, escalationSharedLabel,
   childrenCount, collapsed, onToggleCollapse, onToggleEscalation,
-  onOrganize, onEditStation, ar,
+  onOrganize, onEditStation, ar, data,
 }) {
   const navigate = useNavigate();
   const station = node.type === "station";
@@ -35,7 +42,7 @@ export default function FlexOrgCard({
     ? (childrenCount > 0
       ? (ar ? `${childrenCount} في هذا الفرع` : `${childrenCount} in this branch`)
       : (ar ? "فرع تشغيلي" : "Operating branch"))
-    : personTitle(node, employee, ar);
+    : personTitle(node, employee, ar, data);
 
   const openNode = () => {
     if (station) onEditStation?.(node);

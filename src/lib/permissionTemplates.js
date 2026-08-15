@@ -87,7 +87,8 @@ export const templateLabel = (template, ar) => (ar ? template.ar : template.en |
 export const grantedCount = (permissions = {}) => Object.values(permissions).filter((access) => access && access !== "hidden").length;
 
 export const samePermissions = (a = {}, b = {}) =>
-  SMART_DEPARTMENTS.every((department) => (a[department.id] || "hidden") === (b[department.id] || "hidden"));
+  SMART_DEPARTMENTS.filter((department) => department.id !== "command")
+    .every((department) => (a[department.id] || "hidden") === (b[department.id] || "hidden"));
 
 const demote = (permissions = {}) =>
   Object.fromEntries(Object.entries(permissions).filter(([, access]) => access === "manage").map(([id]) => [id, "view"]));

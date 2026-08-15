@@ -2,6 +2,12 @@
 // used by the sidebar/mobile nav and the dashboards' quick-access shortcuts.
 
 import { SMART_SECTION_ROUTES } from "@/lib/smartPositions";
+import { canonicalSectionId } from "@/lib/orgDerivations";
+
+function isGranted(smartPerms, department) {
+  const access = smartPerms[department] || smartPerms[canonicalSectionId(department)];
+  return Boolean(access && access !== "hidden");
+}
 
 const BASE = [
   "/app",
@@ -93,10 +99,13 @@ export function allowedNavFor(user, data, company) {
     Object.entries(SMART_SECTION_ROUTES).forEach(([department, routes]) => {
       const list = Array.isArray(routes) ? routes : routes ? [routes] : [];
       if (!list.length) return;
-      if (smartPerms[department]) return;
-      if (department === "hiring" && smartPerms.hr) return;
-      if (department === "hr" && smartPerms.hr) return;
-      list.forEach((route) => allowed.delete(route));
+      if (isGranted(smartPerms, department)) return;
+      if (department === "hiring" && isGranted(smartPerms, "hr")) return;
+      if (department === "hr" && isGranted(smartPerms, "hr")) return;
+      list.forEach((route) => {
+        if (route === "/app") return;
+        allowed.delete(route);
+      });
     });
   }
 

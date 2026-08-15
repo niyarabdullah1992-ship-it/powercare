@@ -16,11 +16,10 @@ const TABS = [
   { value: "company", ar: "المنشأة", en: "Company" },
   { value: "look", ar: "الهوية", en: "Look" },
   { value: "place", ar: "الموقع", en: "Location" },
-  { value: "access", ar: "الصلاحيات", en: "Access" },
   { value: "docs", ar: "الوثائق", en: "Documents" },
 ];
 
-/** Platform `settings` — company record, look, geofence, permissions, attached gov-file alerts. */
+/** Platform `settings` — company record, look, geofence, attached gov-file alerts. */
 export default function CompanySettings() {
   const { lang } = useI18n();
   const ar = lang === "ar";
@@ -40,7 +39,7 @@ export default function CompanySettings() {
     <PlatformStampShell
       ar={ar}
       title={ar ? "إعدادات الشركة" : "Company settings"}
-      hint={ar ? "بيانات المنشأة، الهوية، الموقع، منح الصلاحيات لشخص أو دور، وتنبيه الملفات الحكومية المرفقة." : "Company record, look, location, granting access to a person or role, and attached government-file alerts."}
+      hint={ar ? "بيانات المنشأة، الهوية، الموقع، وتنبيه الملفات الحكومية المرفقة. الصلاحيات تُمنح من الهيكل التنظيمي." : "Company record, look, location, and attached government-file alerts. Access is granted from org structure."}
       sections={TABS.map((tab) => ({
         value: tab.value,
         label: ar ? tab.ar : tab.en,
@@ -67,8 +66,6 @@ export default function CompanySettings() {
         ) : null}
 
         {tool === "place" ? <CompanySettingsBoard lang={lang} parts="geo" /> : null}
-
-        {tool === "access" ? <CompanySettingsBoard lang={lang} parts="access" /> : null}
 
         {tool === "docs" ? (
           <>

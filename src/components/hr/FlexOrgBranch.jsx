@@ -62,6 +62,7 @@ export default function FlexOrgBranch({
         )}
         onOrganize={actions.organize}
         onEditStation={actions.edit}
+        data={data}
       />
       {!collapsed && children.length === 1 && (
         <>

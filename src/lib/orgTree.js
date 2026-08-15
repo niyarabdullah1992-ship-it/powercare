@@ -431,7 +431,7 @@ export function removeCompanyJobTitle(companyId, titleKey) {
   return cleared;
 }
 
-export function saveOrgNode(companyId, node, permissions = {}, templateId = "") {
+export function saveOrgNode(companyId, node, permissions = {}, templateId = "", extras = {}) {
   updateCompany(companyId, (data) => {
     data.orgTree = data.orgTree || [];
     const index = data.orgTree.findIndex((item) => item.id === node.id);
@@ -460,7 +460,15 @@ export function saveOrgNode(companyId, node, permissions = {}, templateId = "") 
       const emp = (data.employees || []).find((e) => e.id === node.refId);
       if (emp) {
         emp.profile = { ...(emp.profile || {}), position: node.title || "" };
+        if (extras.gradeId !== undefined) emp.profile.gradeId = extras.gradeId || null;
         emp.position = node.title || "";
+        if (Array.isArray(extras.managedStationIds)) {
+          const ids = extras.managedStationIds.map(String).filter(Boolean);
+          emp.managedStations = ids;
+          if (emp.stationId && !ids.includes(String(emp.stationId))) {
+            emp.managedStations = [String(emp.stationId), ...ids];
+          }
+        }
       }
     }
     syncEmployeeStationsFromTree(data);
@@ -531,6 +539,46 @@ export function saveOrgStationName(companyId, stationId, name) {
   updateCompany(companyId, (data) => {
     const station = (data.stations || []).find((item) => (item.id === stationId || item.stationId === stationId));
     if (station && name) station.name = name;
+    const node = (data.orgTree || []).find((item) => item.type === "station" && (item.refId === stationId || item.id === `org_station_${stationId}`));
+    if (node && name) node.title = name;
+  });
+}
+
+export function ensureOrgStationNode(companyId, station) {
+  if (!companyId || !station?.id && !station?.stationId) return;
+  const stationId = station.id || station.stationId;
+  updateCompany(companyId, (data) => {
+    data.orgTree = Array.isArray(data.orgTree) ? data.orgTree : [];
+    const exists = data.orgTree.some((item) => item.type === "station" && (item.refId === stationId || item.id === `org_station_${stationId}`));
+    if (exists) return;
+    data.orgTree.push({
+      id: `org_station_${stationId}`,
+      type: "station",
+      refId: stationId,
+      title: station.name || "",
+      parentId: null,
+      order: data.orgTree.filter((item) => !item.parentId).length,
+    });
+  });
+}
+
+export function setOrgStationManager(companyId, stationId, managerId) {
+  if (!companyId || !stationId) return;
+  updateCompany(companyId, (data) => {
+    const station = (data.stations || []).find((item) => item.id === stationId || item.stationId === stationId);
+    if (station) station.managerId = managerId || null;
+    data.orgTree = Array.isArray(data.orgTree) ? data.orgTree : [];
+    const exists = data.orgTree.some((item) => item.type === "station" && (item.refId === stationId || item.id === `org_station_${stationId}`));
+    if (!exists && station) {
+      data.orgTree.push({
+        id: `org_station_${station.id || stationId}`,
+        type: "station",
+        refId: station.id || stationId,
+        title: station.name || "",
+        parentId: null,
+        order: data.orgTree.filter((item) => !item.parentId).length,
+      });
+    }
   });
 }
 

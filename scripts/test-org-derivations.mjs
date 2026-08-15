@@ -3,6 +3,7 @@ import {
   SCOPE,
   ORG_SECTIONS,
   BASELINE_MATRIX,
+  canonicalSectionId,
   nextScopeInCycle,
   checkSetPermGate,
   checkCreateBranchGate,
@@ -14,6 +15,11 @@ import {
   deriveDelegationStatus,
   wouldCreateCycle,
 } from "../src/lib/orgDerivations.js";
+
+assert.equal(canonicalSectionId("operations"), "tasks");
+assert.equal(canonicalSectionId("daily"), "daily_report");
+assert.equal(canonicalSectionId("hse"), "safety");
+assert.equal(canonicalSectionId("hr"), "hr");
 
 assert.equal(ORG_SECTIONS.length, 22);
 assert.equal(BASELINE_MATRIX.length, 22);

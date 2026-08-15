@@ -130,8 +130,8 @@ export default function SettingsPersonAccessCard({ lang = "ar" }) {
       </div>
       <p style={{ margin: "6px 0 0", fontSize: 12, color: MUTED, lineHeight: 1.7, maxWidth: 720 }}>
         {ar
-          ? "اختر موظفًا، ثم ركّب أقسامه بندًا بندًا — عرض أو إدارة. لا تحتاج تغيير دوره في النظام. المصفوفة أدناه تبقى للأدوار والمسميات."
-          : "Pick an employee, then compose their sections one by one — view or manage. You do not need to change their system role. The matrix below stays for roles and job titles."}
+          ? "اختر موظفًا، ثم ركّب أقسامه بندًا بندًا — عرض أو إدارة. القوالب أدناه تطبق نفس المنح على كل من يحمل المسمى."
+          : "Pick an employee, then compose their sections one by one — view or manage. Templates below apply the same grants to everyone who holds that title."}
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginTop: 16 }}>
