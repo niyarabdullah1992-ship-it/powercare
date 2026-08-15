@@ -33,7 +33,6 @@ const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const OwnerPanel = lazy(() => import('./pages/OwnerPanel'));
-const Pricing = lazy(() => import('./pages/Pricing'));
 const PricingSuccess = lazy(() => import('./pages/PricingSuccess'));
 const Mobile = lazy(() => import('./pages/Mobile'));
 const SalesDeck = lazy(() => import('./pages/SalesDeck'));
@@ -122,7 +121,7 @@ function RequireAuth({ children }) {
   // While the workspace is still loading (fresh device / restored account),
   // show a spinner instead of the blank page that pages render without a user.
   if (!data || (session.userId && !currentUser)) return <PageLoader />;
-  if (!canAccessPath(location.pathname, currentUser, data, company)) return <Navigate to={canAccessPlanPath(location.pathname, company) ? "/app" : "/pricing"} replace />;
+  if (!canAccessPath(location.pathname, currentUser, data, company)) return <Navigate to={"/app"} replace />;
   return (
     <TrialExpiryGate company={company}>
       <Layout>
@@ -145,7 +144,6 @@ function AppRoutes() {
       <Route path="/careers" element={<Careers />} />
       <Route path="/workspace" element={<Workspace />} />
       <Route path="/workspace/:slug" element={<Workspace />} />
-      <Route path="/pricing" element={<Pricing />} />
       <Route path="/pricing-success" element={<PricingSuccess />} />
       <Route path="/login" element={<Login />} />
       <Route path="/login/:portal" element={<LoginPortal />} />
