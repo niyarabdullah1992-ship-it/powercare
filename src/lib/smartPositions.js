@@ -2,17 +2,40 @@ import { updateCompany } from "@/lib/store";
 
 /**
  * Grantable product sections — aligned with Layout sidebar labels & routes.
- * `employees` is not a nav item; it unlocks filling files in branch scope.
  */
 export const SMART_DEPARTMENTS = [
   // Proof cycle — matches Layout category "daily"
   {
+    id: "command",
+    ar: "مركز القيادة",
+    en: "Command Center",
+    hintAr: "نظرة القرار اليومية",
+    hintEn: "Daily decision glance",
+    group: "daily",
+  },
+  {
     id: "attendance",
     ar: "الحضور والانصراف",
     en: "Attendance",
-    hintAr: "يشمل الورديات وطلبات الإجازة",
-    hintEn: "Includes shifts and leave",
+    hintAr: "تسجيل الحضور والانصراف",
+    hintEn: "Check-in and check-out",
     group: "daily",
+  },
+  {
+    id: "shifts",
+    ar: "الورديات",
+    en: "Shifts",
+    hintAr: "جداول الدوام والنشر",
+    hintEn: "Rota and publication",
+    group: "workforce",
+  },
+  {
+    id: "leave",
+    ar: "طلبات الإجازة",
+    en: "Leave requests",
+    hintAr: "طلب واعتماد الإجازة",
+    hintEn: "Request and approve leave",
+    group: "workforce",
   },
   {
     id: "tasks",
@@ -67,9 +90,25 @@ export const SMART_DEPARTMENTS = [
     id: "hr",
     ar: "الموارد البشرية",
     en: "Human resources",
-    hintAr: "الدليل والهيكل",
-    hintEn: "Directory and org",
+    hintAr: "الدليل والملف",
+    hintEn: "Directory and file",
     group: "workforce",
+  },
+  {
+    id: "org",
+    ar: "الهيكل التنظيمي",
+    en: "Org structure",
+    hintAr: "الشجرة وسلسلة التصعيد",
+    hintEn: "Tree and escalation chain",
+    group: "workforce",
+  },
+  {
+    id: "settings",
+    ar: "إعدادات الشركة",
+    en: "Company settings",
+    hintAr: "الهوية والنطاق والصلاحيات",
+    hintEn: "Identity, geofence, and access",
+    group: "admin",
   },
   {
     id: "hiring",
@@ -77,14 +116,6 @@ export const SMART_DEPARTMENTS = [
     en: "Recruitment",
     hintAr: "مسارات التعيين",
     hintEn: "Hiring pipelines",
-    group: "workforce",
-  },
-  {
-    id: "employees",
-    ar: "ملفات الموظفين",
-    en: "Employee files",
-    hintAr: "تعبئة ملفات نفس الفرع",
-    hintEn: "Fill files in the same branch",
     group: "workforce",
   },
   // Care & compliance
@@ -168,14 +199,18 @@ export const SMART_SECTION_GROUPS = [
 
 /** department id → routes removed when not granted (after owner composed access). */
 export const SMART_SECTION_ROUTES = {
+  command: [],
   tasks: ["/app/tasks"],
-  attendance: ["/app/attendance", "/app/shifts", "/app/leave"],
+  attendance: ["/app/attendance"],
+  shifts: ["/app/shifts"],
+  leave: ["/app/leave"],
   daily_report: ["/app/daily-report"],
   chat: ["/app/chat"],
   performance: ["/app/performance"],
-  hr: ["/app/hr", "/app/org"],
+  hr: ["/app/hr"],
+  org: ["/app/org"],
+  settings: ["/app/settings"],
   hiring: ["/app/hiring"],
-  employees: [],
   safety: ["/app/safety"],
   work_proof: ["/app/work-proof", "/app/client-proof"],
   signing: ["/app/signing"],
@@ -212,9 +247,14 @@ export function suggestSmartTitle(permissions = {}, ar = false) {
 
 export function saveSmartPosition(companyId, employeeId, title, permissions, titleManual = false) {
   const score = scorePermissions(permissions);
+  const hasGrants = Object.values(permissions || {}).some((access) => access && access !== "hidden");
   updateCompany(companyId, (data) => {
     data.smartPositions = data.smartPositions || [];
     const index = data.smartPositions.findIndex((item) => item.employeeId === employeeId);
+    if (!hasGrants) {
+      if (index >= 0) data.smartPositions.splice(index, 1);
+      return;
+    }
     const previous = index >= 0 ? data.smartPositions[index] : null;
     const record = {
       employeeId,

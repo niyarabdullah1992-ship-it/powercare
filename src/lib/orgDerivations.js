@@ -3,7 +3,35 @@
 export const SCOPE = { NONE: 0, COMPANY: 1, OWN: 2, DELEGATED: 3, STATION: 4, REGION: 5 };
 export const SCOPE_CYCLE = [SCOPE.NONE, SCOPE.OWN, SCOPE.STATION, SCOPE.REGION, SCOPE.COMPANY];
 export const ORG_ROLES = ["ops_director", "station_manager", "supervisor", "safety", "employee"];
-export const ORG_SECTIONS = ["command", "operations", "attendance", "daily", "hse", "complaints", "leave", "hr", "payroll", "settings"];
+export const ORG_SECTIONS = [
+  "command", "operations", "attendance", "daily", "hse", "complaints", "leave", "hr", "payroll", "settings",
+  "work_proof", "signing", "reports", "chat", "shifts", "hiring", "performance", "org", "expenses", "inventory", "files", "assistant",
+];
+
+export const ORG_SECTION_LABELS = {
+  command: { ar: "مركز القيادة", en: "Command Center" },
+  operations: { ar: "المهام والعمليات", en: "Operations" },
+  attendance: { ar: "الحضور والانصراف", en: "Attendance" },
+  daily: { ar: "التقرير اليومي", en: "Daily report" },
+  hse: { ar: "السلامة HSE", en: "Safety HSE" },
+  complaints: { ar: "صوت الموظف", en: "Employee Voice" },
+  leave: { ar: "طلبات الإجازة", en: "Leave requests" },
+  hr: { ar: "الموارد البشرية", en: "Human Resources" },
+  payroll: { ar: "الرواتب", en: "Payroll" },
+  settings: { ar: "إعدادات الشركة", en: "Company settings" },
+  work_proof: { ar: "إثبات العمل", en: "Work proof" },
+  signing: { ar: "التوقيع الرقمي", en: "Digital signing" },
+  reports: { ar: "التقارير والتحليلات", en: "Reports & analytics" },
+  chat: { ar: "المحادثات التشغيلية", en: "Operations chat" },
+  shifts: { ar: "الورديات", en: "Shifts" },
+  hiring: { ar: "التوظيف", en: "Recruitment" },
+  performance: { ar: "الأداء", en: "Performance" },
+  org: { ar: "الهيكل التنظيمي", en: "Org structure" },
+  expenses: { ar: "المصروفات", en: "Expenses" },
+  inventory: { ar: "المخزون والأصول", en: "Inventory & assets" },
+  files: { ar: "الملفات", en: "Files" },
+  assistant: { ar: "المساعد الذكي", en: "AI assistant" },
+};
 
 export const BASELINE_MATRIX = [
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
@@ -13,9 +41,21 @@ export const BASELINE_MATRIX = [
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY],
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
-  [SCOPE.COMPANY, SCOPE.DELEGATED, SCOPE.DELEGATED, SCOPE.DELEGATED, SCOPE.DELEGATED],
-  [SCOPE.COMPANY, SCOPE.DELEGATED, SCOPE.COMPANY, SCOPE.DELEGATED, SCOPE.DELEGATED],
   [SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE],
+  [SCOPE.COMPANY, SCOPE.NONE, SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE],
+  [SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
 ];
 
 export const EMPLOYEE_ROLE_IDX = ORG_ROLES.indexOf("employee");
@@ -127,20 +167,23 @@ export function baselineScope(sectionIdx, roleIdx) {
   return row[roleIdx];
 }
 
+export function grantableScope(scope) {
+  return Number(scope) === SCOPE.DELEGATED ? SCOPE.NONE : Number(scope);
+}
+
 export function effectiveScope(sectionIdx, roleIdx, overrides = {}) {
-  const baseline = baselineScope(sectionIdx, roleIdx);
+  const baseline = grantableScope(baselineScope(sectionIdx, roleIdx));
   const key = permKey(sectionIdx, roleIdx);
   const raw = overrides[key];
   const overrideScope = raw == null ? null : typeof raw === "number" ? raw : raw.scope;
   if (overrideScope != null && overrideScope !== SCOPE.DELEGATED) {
     return { scope: overrideScope, derived: false, overridden: true, baseline };
   }
-  return { scope: baseline, derived: baseline === SCOPE.DELEGATED, overridden: false, baseline };
+  return { scope: baseline, derived: false, overridden: false, baseline };
 }
 
 export function nextScopeInCycle(current) {
-  if (current === SCOPE.DELEGATED) return SCOPE.DELEGATED;
-  const at = SCOPE_CYCLE.indexOf(current);
+  const at = SCOPE_CYCLE.indexOf(grantableScope(current));
   if (at < 0) return SCOPE_CYCLE[0];
   return SCOPE_CYCLE[(at + 1) % SCOPE_CYCLE.length];
 }
@@ -161,14 +204,14 @@ export function checkSetPermGate(nextScope) {
 }
 
 export function effectiveTitleScope(sectionIdx, titleId, overrides = {}) {
-  const baseline = baselineScope(sectionIdx, EMPLOYEE_ROLE_IDX);
+  const baseline = grantableScope(baselineScope(sectionIdx, EMPLOYEE_ROLE_IDX));
   const key = titlePermKey(sectionIdx, titleId);
   const raw = overrides[key];
   const overrideScope = raw == null ? null : typeof raw === "number" ? raw : raw.scope;
   if (overrideScope != null && overrideScope !== SCOPE.DELEGATED) {
     return { scope: overrideScope, derived: false, overridden: true, baseline };
   }
-  return { scope: baseline, derived: baseline === SCOPE.DELEGATED, overridden: false, baseline };
+  return { scope: baseline, derived: false, overridden: false, baseline };
 }
 
 function normalizedTitles(titles = []) {

@@ -437,6 +437,9 @@ export function enterLocalPreview() {
     ],
     settings: { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30 },
     reportBranding: {},
+    permOverrides: {},
+    knownTitles: [],
+    removedTitles: [],
   };
 
   localStorage.setItem(`powercare_company_${companyId}`, JSON.stringify(data));

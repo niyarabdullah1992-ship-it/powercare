@@ -1,13 +1,12 @@
-NiroVera / PowerCare
+NiroVera
 Product version: 2026.08.15
-Build label: latest
-Host: this tree is the live app source (one version only)
+Build: current site only
 
-Not included in the clean pack:
-- .tmp-design-caps (old design dumps and screenshot audits)
-- .tmp-nirovera-pack (older packed copy of the same app)
-- node_modules, dist, .git, .env.local
+This pack is the website designed here.
+It does not include a builder backend folder and is not linked to an external app platform.
 
-This is not a Base44 Builder export and not an older zip remixed into the tree.
+Included: src, public, pages, local run files.
+Excluded: builder project folder, secrets, node_modules, old dumps.
+
 Date: 2026-08-15
-Base44 sync: 2026.08.15 — tasks daily pace + operations board
+Changes in this build: company branding everywhere, grantable permissions matrix, local perm save.

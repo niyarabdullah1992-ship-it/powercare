@@ -166,7 +166,7 @@ export default function OperationsModuleGrid({ metrics, lang, user, data, compan
     boxShadow: view === id ? "0 0 0 1px var(--nv-line, #E2E8F0)" : "none",
   });
 
-  const renderItem = (item) => {
+  const renderItem = (item, isLast) => {
     const urgent = item.tone === "urgent";
     const watch = item.tone === "watch";
     return (
@@ -179,7 +179,7 @@ export default function OperationsModuleGrid({ metrics, lang, user, data, compan
           justifyContent: "space-between",
           gap: 12,
           padding: "11px 0",
-          borderBottom: `1px solid ${BORDER}`,
+          borderBottom: isLast ? "none" : `1px solid ${BORDER}`,
           textDecoration: "none",
           minWidth: 0,
         }}
@@ -218,12 +218,18 @@ export default function OperationsModuleGrid({ metrics, lang, user, data, compan
     );
   };
 
-  const renderColumn = (group, footer) => {
+  const renderEmpty = () => (
+    <p style={{ margin: "10px 0 4px", display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: MUTED }}>
+      <Check style={{ width: 14, height: 14, color: "#94A3B8" }} strokeWidth={1.8} />
+      {ar ? "لا شيء معلق" : "Nothing pending"}
+    </p>
+  );
+
+  const renderColumn = (group) => {
     const visible = view === "attention" ? group.items.filter((item) => item.tone) : group.items;
     const waiting = waitingCount(group.items);
-    if (view === "attention" && visible.length === 0 && !footer) return null;
     return (
-      <section key={group.key} style={{ minWidth: 0, padding: "0 16px" }}>
+      <section key={group.key} style={{ minWidth: 0, height: "100%" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: NAVY }}>
@@ -238,34 +244,12 @@ export default function OperationsModuleGrid({ metrics, lang, user, data, compan
             </span>
           ) : null}
         </div>
-        <div>
-          {visible.map(renderItem)}
-          {view === "attention" && visible.length === 0 && footer}
-          {view === "all" && footer}
-        </div>
+        {visible.length > 0
+          ? visible.map((item, index) => renderItem(item, index === visible.length - 1))
+          : renderEmpty()}
       </section>
     );
   };
-
-  const institutionFooter = institution ? (
-    <div style={{ paddingTop: 16 }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: NAVY, marginBottom: 6 }}>
-        <span style={{ color: MUTED, marginInlineEnd: 6 }}>{institution.eyebrow}</span>
-        {institution.title}
-      </div>
-      {waitingCount(institution.items) === 0 ? (
-        <p style={{ margin: 0, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: MUTED }}>
-          <Check style={{ width: 14, height: 14, color: "#94A3B8" }} strokeWidth={1.8} />
-          {ar ? "لا شيء معلق" : "Nothing pending"}
-        </p>
-      ) : (
-        institution.items.filter((item) => view === "all" || item.tone).map(renderItem)
-      )}
-      {waitingCount(institution.items) === 0 && view === "all" ? (
-        <p style={{ margin: "6px 0 0", fontSize: 11, color: MUTED, lineHeight: 1.5 }}>{institution.description}</p>
-      ) : null}
-    </div>
-  ) : null;
 
   return (
     <section
@@ -274,7 +258,8 @@ export default function OperationsModuleGrid({ metrics, lang, user, data, compan
         borderRadius: 16,
         border: `1px solid ${BORDER}`,
         background: CARD,
-        padding: "18px 8px 12px",
+        padding: "18px 0 0",
+        overflow: "hidden",
       }}
     >
       <div
@@ -284,7 +269,7 @@ export default function OperationsModuleGrid({ metrics, lang, user, data, compan
           alignItems: "flex-start",
           justifyContent: "space-between",
           gap: 12,
-          padding: "0 16px 16px",
+          padding: "0 20px 16px",
         }}
       >
         <div>
@@ -318,21 +303,43 @@ export default function OperationsModuleGrid({ metrics, lang, user, data, compan
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: 0,
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: 1,
+          background: BORDER,
+          borderTop: `1px solid ${BORDER}`,
         }}
       >
-        {columns.map((group, index) => (
-          <div
-            key={group.key}
-            style={{
-              borderInlineStart: index === 0 ? "none" : `1px solid ${BORDER}`,
-            }}
-          >
-            {renderColumn(group, group.key === "daily" ? institutionFooter : null)}
+        {columns.map((group) => (
+          <div key={group.key} style={{ background: CARD, padding: "16px 16px 12px", minWidth: 0 }}>
+            {renderColumn(group)}
           </div>
         ))}
       </div>
+
+      {institution ? (
+        <div style={{ padding: "14px 20px 16px", borderTop: `1px solid ${BORDER}` }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: NAVY, marginBottom: 4 }}>
+            <span style={{ color: MUTED, marginInlineEnd: 6 }}>{institution.eyebrow}</span>
+            {institution.title}
+          </div>
+          <p style={{ margin: "0 0 8px", fontSize: 11, color: MUTED, lineHeight: 1.5 }}>{institution.description}</p>
+          {institution.items.filter((item) => view === "all" || item.tone).length > 0 ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                gap: "0 20px",
+              }}
+            >
+              {institution.items
+                .filter((item) => view === "all" || item.tone)
+                .map((item, index, list) => renderItem(item, index === list.length - 1))}
+            </div>
+          ) : (
+            renderEmpty()
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }

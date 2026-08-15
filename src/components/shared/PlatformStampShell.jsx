@@ -1,5 +1,7 @@
 import React from "react";
 import Logo from "@/components/Logo";
+import { useAuth } from "@/lib/PowerCareAuth";
+import { companyBrandFrom } from "@/lib/companyBrand";
 import { BORDER, CARD, INK, MUTED, NAVY, NAVY_FILL, SURFACE, pageCol } from "@/lib/platformStyles";
 
 /** Shared NiroVera section chrome — title, then a full-width tab bar, then body. */
@@ -17,6 +19,8 @@ export default function PlatformStampShell({
   children,
   maxWidth = 1280,
 }) {
+  const { data, company } = useAuth() || {};
+  const brand = companyBrandFrom(data, company);
   const active = sections.find((section) => section.value === tool) || sections[0];
   const subtitle = hint || active?.hint || "";
 
@@ -61,7 +65,7 @@ export default function PlatformStampShell({
               border: `1px solid ${BORDER}`,
             }}
           >
-            <Logo size={24} wordmark={false} />
+            <Logo size={24} wordmark={false} src={brand.logoUrl} />
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             {kicker ? (

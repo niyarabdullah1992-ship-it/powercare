@@ -356,13 +356,6 @@ Deno.serve(async (req) => {
       const current = titleKey
         ? effectiveTitleScope(sectionIdx, titleSlug(titleKey), overrideMap)
         : effectiveScope(sectionIdx, roleIdx, overrideMap);
-      if (current.derived) {
-        return Response.json({
-          error: "DELEGATED_IS_DERIVED",
-          reason: "«بتفويض» حالة مشتقة من سجل التفويض — لا تُضبط من المصفوفة.",
-          reasonEn: "\"Delegated\" is derived from the delegation register — not set from the matrix.",
-        }, { status: 400 });
-      }
       const next = body.scope != null ? Number(body.scope) : nextScopeInCycle(current.scope);
       const gate = checkSetPermGate(next);
       if (!gate.ok) {

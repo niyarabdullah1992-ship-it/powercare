@@ -29,7 +29,8 @@ import { setStationScope, getStationScope } from "@/lib/stationScopeStore";
 import { visibleStations } from "@/lib/permissions";
 import PageErrorBoundary from "@/components/PageErrorBoundary";
 import { BORDER, CARD, INK, MUTED, NAVY, NAVY_FILL, SURFACE } from "@/lib/platformStyles";
-import { THEME_CHANGE_EVENT, applyPlatformTheme, applyStoredPlatformTheme, persistPlatformTheme } from "@/lib/platformTheme";
+import { companyBrandFrom } from "@/lib/companyBrand";
+import { THEME_CHANGE_EVENT, applyPlatformTheme, applyStoredPlatformTheme, persistPlatformTheme, publishPlatformTheme, readStoredTheme } from "@/lib/platformTheme";
 
 export default function Layout({ children }) {
   const { t, lang, setLang, dir, languages } = useI18n();
@@ -74,8 +75,16 @@ export default function Layout({ children }) {
     base44.functions.invoke("settings", { action: "getColorTheme", companyId: company.id })
       .then((res) => {
         const remote = res?.data?.colorTheme ?? res?.colorTheme;
-        if (cancelled || !remote) return;
-        applyPlatformTheme(persistPlatformTheme(remote, company.id));
+        if (cancelled) return;
+        if (remote) {
+          applyPlatformTheme(persistPlatformTheme(remote, company.id));
+          return;
+        }
+        const brandColor = data?.reportBranding?.color;
+        if (brandColor) {
+          const current = readStoredTheme(company.id);
+          publishPlatformTheme({ id: "custom", navy: brandColor, accent: current.accent }, company.id);
+        }
       })
       .catch(() => {});
     return () => {
@@ -412,6 +421,7 @@ export default function Layout({ children }) {
       sub: lang === "ar" ? "مرجع التشغيل والصلاحيات" : "Operating reference and permissions",
     },
   };
+  const brand = companyBrandFrom(data, company);
   const resolvePageMeta = () => {
     const path = location.pathname;
     if (pageMeta[path]) return pageMeta[path];
@@ -433,7 +443,7 @@ export default function Layout({ children }) {
     const hit = Object.keys(pageMeta).find((key) => key !== "/app" && path.startsWith(key));
     return hit
       ? pageMeta[hit]
-      : { title: lang === "ar" ? "نيروفيرا" : "NiroVera", sub: lang === "ar" ? "منظومة الموارد البشرية" : "HR operating system" };
+      : { title: brand.name || (lang === "ar" ? "نيروفيرا" : "NiroVera"), sub: lang === "ar" ? "منظومة الموارد البشرية" : "HR operating system" };
   };
   const { title: pageTitle, sub: pageSubtitle } = resolvePageMeta();
   // period footer removed from design shell — user chip only (L93–99)
@@ -441,6 +451,8 @@ export default function Layout({ children }) {
     ? terms.ceo
     : (t(currentUser.role) || currentUser.role);
   const roleInitials = currentUser.name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?";
+  const shellTitle = brand.name || (lang === "ar" ? "نيروفيرا" : "NiroVera");
+  document.title = pageTitle && pageTitle !== shellTitle ? `${pageTitle} — ${shellTitle}` : shellTitle;
 
   return (
     <div className="powercare-shell flex min-h-screen" dir={dir}>
@@ -459,11 +471,13 @@ export default function Layout({ children }) {
       >
         <div style={{ padding: sidebarCollapsed ? "18px 8px 14px" : "18px 16px 14px", display: "flex", alignItems: "center", gap: "10px", justifyContent: sidebarCollapsed ? "center" : "flex-start" }}>
           <span style={{ width: 32, height: 32, borderRadius: 8, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
-            <Logo size={22} wordmark={false} />
+            <Logo size={22} wordmark={false} src={brand.logoUrl} />
           </span>
           {!sidebarCollapsed && (
             <div data-nv="wide" style={{ lineHeight: 1.15, minWidth: 0 }}>
-              <div style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em", color: INK }}>NiroVera</div>
+              <div style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em", color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {brand.name || "NiroVera"}
+              </div>
               <div style={{ fontSize: "10px", color: MUTED, letterSpacing: "0.04em" }}>
                 {lang === "ar" ? "حزمة التشغيل" : "Operations Suite"}
               </div>
@@ -647,6 +661,9 @@ export default function Layout({ children }) {
         >
           <div className="flex min-w-0 items-center gap-2 md:hidden" style={{ flex: 1, minWidth: 0 }}>
             <BackButton />
+            <span style={{ width: 28, height: 28, borderRadius: 8, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", border: `1px solid ${BORDER}` }}>
+              <Logo size={18} wordmark={false} src={brand.logoUrl} />
+            </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pageTitle}</div>
               <div style={{ fontSize: "11px", color: MUTED, marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pageSubtitle}</div>

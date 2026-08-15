@@ -43,7 +43,6 @@ export const BUILT_IN_TEMPLATES = [
       chat: "manage",
       performance: "manage",
       safety: "manage",
-      employees: "view",
       inventory: "view",
       expenses: "view",
       work_proof: "view",
@@ -72,7 +71,6 @@ export const BUILT_IN_TEMPLATES = [
     permissions: {
       hr: "manage",
       hiring: "manage",
-      employees: "manage",
       attendance: "view",
       performance: "view",
       expenses: "view",

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   SCOPE,
+  ORG_SECTIONS,
   BASELINE_MATRIX,
   nextScopeInCycle,
   checkSetPermGate,
@@ -14,14 +15,16 @@ import {
   wouldCreateCycle,
 } from "../src/lib/orgDerivations.js";
 
-assert.equal(BASELINE_MATRIX.length, 10);
-assert.equal(BASELINE_MATRIX[7][1], SCOPE.DELEGATED); // HR × station mgr
+assert.equal(ORG_SECTIONS.length, 22);
+assert.equal(BASELINE_MATRIX.length, 22);
+assert.equal(ORG_SECTIONS[10], "work_proof");
+assert.equal(BASELINE_MATRIX[7][1], SCOPE.NONE); // HR × station mgr — grantable
 assert.equal(BASELINE_MATRIX[9][0], SCOPE.COMPANY); // settings × ops director
 assert.equal(BASELINE_MATRIX[9][4], SCOPE.NONE);
 
 assert.equal(nextScopeInCycle(SCOPE.OWN), SCOPE.STATION);
 assert.equal(nextScopeInCycle(SCOPE.COMPANY), SCOPE.NONE);
-assert.equal(nextScopeInCycle(SCOPE.DELEGATED), SCOPE.DELEGATED);
+assert.equal(nextScopeInCycle(SCOPE.DELEGATED), SCOPE.OWN);
 
 assert.equal(checkSetPermGate(SCOPE.DELEGATED).error, "DELEGATED_IS_DERIVED");
 assert.equal(checkSetPermGate(SCOPE.STATION).ok, true);
@@ -49,7 +52,8 @@ assert.equal(checkCreateDelegationGate({ fromId: "a", toId: "a", end: "2026-09-0
 assert.equal(checkCreateDelegationGate({ fromId: "a", toId: "b", end: "2026-09-01", perm: "tasks" }).ok, true);
 
 const matrix = derivePermissionMatrix({});
-assert.equal(matrix[7].cells[1].derived, true);
+assert.equal(matrix[7].cells[1].derived, false);
+assert.equal(matrix[7].cells[1].scope, SCOPE.NONE);
 assert.equal(matrix[0].cells[0].scope, SCOPE.COMPANY);
 
 const dirty = derivePermissionMatrix({ "0:4": SCOPE.STATION });

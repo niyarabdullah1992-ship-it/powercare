@@ -491,6 +491,9 @@ function pushCompanyDataToCloud(id, data) {
     crossStationChatEnabled: data.crossStationChatEnabled,
     settings: data.settings,
     reportBranding: data.reportBranding,
+    permOverrides: data.permOverrides,
+    knownTitles: data.knownTitles,
+    removedTitles: data.removedTitles,
   }]);
 }
 

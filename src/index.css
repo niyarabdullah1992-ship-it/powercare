@@ -1222,3 +1222,53 @@ html:not(.dark) .powercare-shell {
 .powercare-interior-page {
   color: var(--nv-ink);
 }
+
+/* Company record: one vertical sheet — label then field, no split columns. */
+.nv-company-record-sheet {
+  display: flex;
+  flex-direction: column;
+  margin-top: 16px;
+  border: 1px solid var(--nv-line, #E2E8F0);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--nv-card, #fff);
+}
+.nv-company-record-row {
+  display: grid;
+  grid-template-columns: minmax(148px, 220px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--nv-line, #E2E8F0);
+  margin: 0;
+}
+.nv-company-record-row:last-child {
+  border-bottom: none;
+}
+.nv-company-record-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--nv-ink, #14284B);
+  line-height: 1.4;
+}
+.nv-company-record-control {
+  display: block;
+  min-width: 0;
+}
+.nv-company-record-control input {
+  width: 100%;
+}
+.nv-company-record-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--nv-muted, #5A6B85);
+}
+@media (max-width: 700px) {
+  .nv-company-record-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    align-items: stretch;
+  }
+}

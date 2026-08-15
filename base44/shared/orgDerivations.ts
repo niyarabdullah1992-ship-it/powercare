@@ -44,35 +44,73 @@ export const ORG_SECTIONS = [
   "hr",
   "payroll",
   "settings",
+  "work_proof",
+  "signing",
+  "reports",
+  "chat",
+  "shifts",
+  "hiring",
+  "performance",
+  "org",
+  "expenses",
+  "inventory",
+  "files",
+  "assistant",
 ] as const;
 
 export type OrgSectionId = (typeof ORG_SECTIONS)[number];
 
+export const ORG_SECTION_LABELS: Record<OrgSectionId, { ar: string; en: string }> = {
+  command: { ar: "مركز القيادة", en: "Command Center" },
+  operations: { ar: "المهام والعمليات", en: "Operations" },
+  attendance: { ar: "الحضور والانصراف", en: "Attendance" },
+  daily: { ar: "التقرير اليومي", en: "Daily report" },
+  hse: { ar: "السلامة HSE", en: "Safety HSE" },
+  complaints: { ar: "صوت الموظف", en: "Employee Voice" },
+  leave: { ar: "طلبات الإجازة", en: "Leave requests" },
+  hr: { ar: "الموارد البشرية", en: "Human Resources" },
+  payroll: { ar: "الرواتب", en: "Payroll" },
+  settings: { ar: "إعدادات الشركة", en: "Company settings" },
+  work_proof: { ar: "إثبات العمل", en: "Work proof" },
+  signing: { ar: "التوقيع الرقمي", en: "Digital signing" },
+  reports: { ar: "التقارير والتحليلات", en: "Reports & analytics" },
+  chat: { ar: "المحادثات التشغيلية", en: "Operations chat" },
+  shifts: { ar: "الورديات", en: "Shifts" },
+  hiring: { ar: "التوظيف", en: "Recruitment" },
+  performance: { ar: "الأداء", en: "Performance" },
+  org: { ar: "الهيكل التنظيمي", en: "Org structure" },
+  expenses: { ar: "المصروفات", en: "Expenses" },
+  inventory: { ar: "المخزون والأصول", en: "Inventory & assets" },
+  files: { ar: "الملفات", en: "Files" },
+  assistant: { ar: "المساعد الذكي", en: "AI assistant" },
+};
+
 /**
- * Baseline matrix [section][role] — mirrors design PERMS.
- * Values: company / station / own / none / delegated placeholders.
+ * Baseline matrix [section][role]. First 10 rows keep their indexes so saved overrides stay valid.
  */
 export const BASELINE_MATRIX: ScopeCode[][] = [
-  // command
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
-  // operations
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
-  // attendance
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
-  // daily
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
-  // hse
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY],
-  // complaints
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
-  // leave
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
-  // hr
-  [SCOPE.COMPANY, SCOPE.DELEGATED, SCOPE.DELEGATED, SCOPE.DELEGATED, SCOPE.DELEGATED],
-  // payroll
-  [SCOPE.COMPANY, SCOPE.DELEGATED, SCOPE.COMPANY, SCOPE.DELEGATED, SCOPE.DELEGATED],
-  // settings
   [SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE],
+  [SCOPE.COMPANY, SCOPE.NONE, SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE],
+  [SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
 ];
 
 export type PermOverride = {
@@ -206,13 +244,17 @@ export function baselineScope(sectionIdx: number, roleIdx: number): ScopeCode {
   return row[roleIdx];
 }
 
-/** Effective cell: override wins unless baseline is DELEGATED and no override. */
+export function grantableScope(scope: ScopeCode | number): ScopeCode {
+  return Number(scope) === SCOPE.DELEGATED ? SCOPE.NONE : Number(scope) as ScopeCode;
+}
+
+/** Effective cell — every scope is grantable; legacy delegated reads as none. */
 export function effectiveScope(
   sectionIdx: number,
   roleIdx: number,
   overrides: Record<string, ScopeCode | PermOverride> = {},
 ): { scope: ScopeCode; derived: boolean; overridden: boolean; baseline: ScopeCode } {
-  const baseline = baselineScope(sectionIdx, roleIdx);
+  const baseline = grantableScope(baselineScope(sectionIdx, roleIdx));
   const key = permKey(sectionIdx, roleIdx);
   const raw = overrides[key];
   const overrideScope = raw == null
@@ -225,15 +267,14 @@ export function effectiveScope(
   }
   return {
     scope: baseline,
-    derived: baseline === SCOPE.DELEGATED,
+    derived: false,
     overridden: false,
     baseline,
   };
 }
 
 export function nextScopeInCycle(current: ScopeCode): ScopeCode {
-  if (current === SCOPE.DELEGATED) return SCOPE.DELEGATED;
-  const at = SCOPE_CYCLE.indexOf(current);
+  const at = SCOPE_CYCLE.indexOf(grantableScope(current));
   if (at < 0) return SCOPE_CYCLE[0];
   return SCOPE_CYCLE[(at + 1) % SCOPE_CYCLE.length];
 }
@@ -263,7 +304,7 @@ export function effectiveTitleScope(
   titleId: string,
   overrides: Record<string, ScopeCode | PermOverride> = {},
 ): { scope: ScopeCode; derived: boolean; overridden: boolean; baseline: ScopeCode } {
-  const baseline = baselineScope(sectionIdx, EMPLOYEE_ROLE_IDX);
+  const baseline = grantableScope(baselineScope(sectionIdx, EMPLOYEE_ROLE_IDX));
   const key = titlePermKey(sectionIdx, titleId);
   const raw = overrides[key];
   const overrideScope = raw == null
@@ -276,7 +317,7 @@ export function effectiveTitleScope(
   }
   return {
     scope: baseline,
-    derived: baseline === SCOPE.DELEGATED,
+    derived: false,
     overridden: false,
     baseline,
   };

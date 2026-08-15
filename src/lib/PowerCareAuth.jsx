@@ -173,6 +173,8 @@ export function AuthProvider({ children }) {
                 ownerId: meta.ownerId, stationChatGroups: meta.stationChatGroups,
                 crossStationChatEnabled: meta.crossStationChatEnabled,
                 settings: meta.settings, reportBranding: meta.reportBranding,
+                permOverrides: meta.permOverrides, knownTitles: meta.knownTitles,
+                removedTitles: meta.removedTitles,
               };
               cacheCloudData(s.companyId, Object.fromEntries(Object.entries(metaUpdates).filter(([, value]) => value !== undefined)));
               setData((prevData) => (prevData ? {
@@ -185,6 +187,9 @@ export function AuthProvider({ children }) {
                 crossStationChatEnabled: meta.crossStationChatEnabled ?? prevData.crossStationChatEnabled,
                 settings: meta.settings ?? prevData.settings,
                 reportBranding: meta.reportBranding ?? prevData.reportBranding,
+                permOverrides: meta.permOverrides ?? prevData.permOverrides,
+                knownTitles: meta.knownTitles ?? prevData.knownTitles,
+                removedTitles: meta.removedTitles ?? prevData.removedTitles,
                 } : prevData));
             })
           );
