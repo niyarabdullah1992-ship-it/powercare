@@ -20,7 +20,6 @@ const BASE = [
   "/app/complaints",
   "/app/performance",
   "/app/reports",
-  "/app/manual",
 ];
 const MANAGER_EXTRA = ["/app/safety", "/app/hiring"];
 const EXEC_EXTRA = ["/app/hr", "/app/org", "/app/settings", "/app/payroll", "/app/hiring"];

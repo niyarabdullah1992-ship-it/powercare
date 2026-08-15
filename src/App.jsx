@@ -207,7 +207,6 @@ function AppRoutes() {
       <Route path="/app/work-proof" element={<RequireAuth><WorkProof /></RequireAuth>} />
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
       <Route path="/app/help" element={<RequireAuth><Help /></RequireAuth>} />
-      <Route path="/app/manual" element={<RequireAuth><ProjectGuideDoc /></RequireAuth>} />
       <Route path="/api/*" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>

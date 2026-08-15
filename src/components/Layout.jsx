@@ -407,10 +407,6 @@ export default function Layout({ children }) {
       title: lang === "ar" ? "المحادثات التشغيلية" : "Operations Chat",
       sub: lang === "ar" ? "قنوات لكل فرع · الرسائل جزء من سجل التشغيل" : "A channel per station · messages are part of the operations log",
     },
-    "/app/manual": {
-      title: lang === "ar" ? "دليل الاستخدام" : "User guide",
-      sub: lang === "ar" ? "مرجع التشغيل والصلاحيات" : "Operating reference and permissions",
-    },
   };
   const resolvePageMeta = () => {
     const path = location.pathname;
