@@ -691,7 +691,7 @@ export default function Layout({ children }) {
               >
                 <span style={{ color: MUTED, fontSize: "12px" }}>⌕</span>
                 <span style={{ fontSize: "12px", color: MUTED }}>
-                  {lang === "ar" ? "ابحث أو اكتب أمرًا" : "Search or type a command"}
+                  {lang === "ar" ? "ابحث في المنصة..." : "Search the platform..."}
                 </span>
               </button>
               <div

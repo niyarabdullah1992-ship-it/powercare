@@ -2,19 +2,16 @@ import React, { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { visibleStations, visibleEmployees } from "@/lib/permissions";
-import { formatDate } from "@/lib/dateFormat";
 import { base44 } from "@/api/base44Client";
 import { queryClientInstance } from "@/lib/query-client";
-import { getRiskWeights } from "@/lib/riskWeights";
 import { deriveTeamAttendanceToday } from "@/lib/attendance";
 import { listLocalTodayAttendance, mergeAttendanceRows } from "@/lib/localAttendanceFallback";
-import { isOnLeaveToday, leaveTypeLabel } from "@/lib/leaveTypes";
 import useStationScope, { matchesStationScope } from "@/hooks/useStationScope";
 import PlatformStampShell from "@/components/shared/PlatformStampShell";
 import PullToRefresh from "@/components/mobile/PullToRefresh";
 import DashboardPersonaBar from "@/components/dashboard/DashboardPersonaBar";
 import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
-import HandoffCommandBoard from "@/components/dashboard/HandoffCommandBoard";
+import CommandGlanceBoard, { buildCommandGlance } from "@/components/dashboard/CommandGlanceBoard";
 import OperationsModuleGrid from "@/components/dashboard/OperationsModuleGrid";
 import StationManagerDashboard from "@/components/dashboard/StationManagerDashboard";
 
@@ -75,7 +72,6 @@ export default function Dashboard() {
   const { lang } = useI18n();
   const headerScope = useStationScope();
   const { data, currentUser, company, refresh } = useAuth();
-  const [stoppageCount, setStoppageCount] = useState(0);
   const [attendanceRows, setAttendanceRows] = useState([]);
   const [targetRows, setTargetRows] = useState([]);
 
@@ -91,15 +87,7 @@ export default function Dashboard() {
       });
       const list = res?.data?.targets || [];
       setTargetRows(list);
-      let count = 0;
-      for (const tg of list) {
-        for (const c of Array.isArray(tg.comments) ? tg.comments : []) {
-          if (c.is_issue) count++;
-        }
-      }
-      setStoppageCount(count);
     } catch {
-      setStoppageCount(0);
       setTargetRows([]);
     }
   };
@@ -140,7 +128,6 @@ export default function Dashboard() {
 
   const stations = visibleStations(currentUser, data).filter((s) => matchesStationScope(s.id, headerScope));
   const stationIds = new Set(stations.map((s) => s.id));
-  const anonOpenCount = (data.anonymousReports || []).filter((a) => stationIds.has(a.stationId) && a.status === "open").length;
   const isEmployee = currentUser.role === "employee";
   const teamEmployees = visibleEmployees(currentUser, data).filter((employee) =>
     matchesStationScope(employee.stationId, headerScope),
@@ -189,24 +176,9 @@ export default function Dashboard() {
   if (currentUser.role === "station_manager" || currentUser.role === "pgm") {
     return (
       <PullToRefresh onRefresh={handleRefresh}>
-        <PlatformStampShell
-          ar={lang === "ar"}
-          title={lang === "ar" ? "مركز القيادة" : "Command center"}
-          hint={lang === "ar" ? "قرارات اليوم على نطاق فرعك." : "Today's decisions for your station scope."}
-          maxWidth={1280}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <DashboardPersonaBar lang={lang} />
-            <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
-            <OperationsModuleGrid
-              metrics={buildModuleMetrics(data, attendanceExtras)}
-              lang={lang}
-              user={currentUser}
-              data={data}
-              company={company}
-            />
-          </div>
-        </PlatformStampShell>
+        <div style={{ maxWidth: 1280, margin: "0 auto", width: "100%" }}>
+          <StationManagerDashboard user={currentUser} data={data} />
+        </div>
       </PullToRefresh>
     );
   }
@@ -214,148 +186,26 @@ export default function Dashboard() {
   const sourceTasks = targetRows.length ? targetRows : data.tasks;
   const tasks = sourceTasks.filter((task) => stationIds.has(task.stationId || task.station_id || task.assignment_id));
   const reports = (data.reports || []).filter((r) => stationIds.has(r.stationId));
-  const pendingReports = reports.filter((r) => r.status === "pending").length;
-  const completed = tasks.filter((tk) => tk.status === "completed").length;
 
-  const activeMembersCount = todayAtt.presentLike;
-  const presentIds = new Set(
-    mergedAttendanceRows
-      .filter((row) => row.check_in_at || row.checkInAt)
-      .map((row) => String(row.employee_id ?? row.employeeId)),
-  );
-  const now = Date.now();
-  const delayedTasks = tasks.filter((task) => {
-    const deadline = task.dueDate || task.endDate || task.end_date;
-    return task.status !== "completed" && deadline && new Date(deadline).getTime() <= now + 3 * 86400000;
-  }).length;
-  const safetyRecs = (data.safety || []).filter((s) => stationIds.has(s.stationId));
-  const criticalStations = safetyRecs.filter((s) => s.level === "red").length;
-  const openHazards = safetyRecs.reduce((sum, s) => sum + (s.hazards?.length || 0), 0);
-  const recentIncidents = safetyRecs.reduce((sum, s) => sum + (s.incidentLog || []).filter((i) => i.at && now - new Date(i.at).getTime() <= 30 * 86400000).length, 0);
-  const todayStr = new Date().toDateString();
-  const todayIncidents = safetyRecs.reduce((sum, s) => sum + (s.incidentLog || []).filter((i) => i.at && new Date(i.at).toDateString() === todayStr).length, 0);
-  const riskWeights = getRiskWeights(data);
-  const riskScore = Math.min(100, Math.round(
-    (absentCount * riskWeights.absent) + (delayedTasks * riskWeights.delayed) + (stoppageCount * riskWeights.stoppage) +
-    (pendingReports * riskWeights.reports) + (criticalStations * riskWeights.critical) +
-    (recentIncidents * riskWeights.incidents) + (openHazards * riskWeights.hazards)
-  ));
-
-  const pendingLeaveCount = teamEmployees.reduce(
-    (sum, employee) => sum + (employee.leaveRequests || []).filter((request) => request.status === "pending").length,
-    0,
-  );
-  const leaveQueue = teamEmployees.flatMap((employee) =>
-    (employee.leaveRequests || [])
-      .filter((request) => request.status === "pending")
-      .map((request) => ({
-        id: `${employee.id}-${request.id || request.createdAt || request.startDate}`,
-        name: employee.name,
-        type: leaveTypeLabel(request.typeAr || request.type, lang === "ar"),
-        date: formatDate(request.createdAt || request.startDate || new Date(), lang, { day: "numeric", month: "short" }),
-        status: lang === "ar"
-          ? (request.awaiting === "finance" ? "بانتظار المالية" : request.awaiting === "hr" ? "بانتظار HR" : "بانتظار المدير")
-          : (request.awaiting === "finance" ? "Awaiting finance" : request.awaiting === "hr" ? "Awaiting HR" : "Awaiting manager"),
-      })),
-  );
-  const reportQueue = reports
-    .filter((r) => r.status === "pending")
-    .slice(0, 4)
-    .map((r) => ({
-      id: r.id,
-      name: teamEmployees.find((e) => e.id === r.employeeId)?.name || r.authorName || (lang === "ar" ? "موظف" : "Staff"),
-      type: lang === "ar" ? "تقرير يومي" : "Daily report",
-      date: formatDate(r.createdAt || new Date(), lang, { day: "numeric", month: "short" }),
-      status: lang === "ar" ? "بانتظار المدير" : "Awaiting manager",
-    }));
-  const handoffQueue = [...leaveQueue, ...reportQueue].slice(0, 6);
-  const handoffAlerts = [
-    ...(delayedTasks ? [{ text: lang === "ar" ? `${delayedTasks} مهمة تقترب من موعدها أو متأخرة.` : `${delayedTasks} tasks due soon or overdue.`, to: "/app/tasks" }] : []),
-    ...(absentCount ? [{ text: lang === "ar" ? `${absentCount} من المجدولين لم يسجّلوا حضورًا بعد.` : `${absentCount} scheduled staff not checked in yet.`, to: "/app/attendance" }] : []),
-    ...(pendingReports ? [{ text: lang === "ar" ? `${pendingReports} تقرير يومي بانتظار الاعتماد.` : `${pendingReports} daily reports awaiting approval.`, to: "/app/daily-report" }] : []),
-    ...(openHazards ? [{ text: lang === "ar" ? `${openHazards} مخاطر سلامة بانتظار الإغلاق.` : `${openHazards} open safety hazards awaiting closure.`, to: "/app/safety" }] : []),
-    ...(pendingLeaveCount ? [{ text: lang === "ar" ? `${pendingLeaveCount} طلب إجازة بانتظار القرار.` : `${pendingLeaveCount} leave requests awaiting a decision.`, to: "/app/leave" }] : []),
-  ].filter(Boolean).slice(0, 4);
-
-  const monthHired = teamEmployees.filter((e) => {
-    const d = new Date(e.createdAt || e.hiredAt || e.startDate || 0);
-    const hiredNow = new Date();
-    return d.getMonth() === hiredNow.getMonth() && d.getFullYear() === hiredNow.getFullYear();
-  }).length;
-
-  const readinessScore = Math.max(0, Math.min(100, 100 - riskScore));
-  const readinessFactors = [
-    { label: lang === "ar" ? "حضور اليوم" : "Today's attendance", pct: attendanceRate },
-    { label: lang === "ar" ? "مهام" : "Tasks", pct: tasks.length ? Math.round((completed / tasks.length) * 100) : 100 },
-    { label: lang === "ar" ? "سلامة" : "Safety", pct: Math.max(0, 100 - openHazards * 12 - criticalStations * 20) },
-    { label: lang === "ar" ? "اعتمادات" : "Approvals", pct: Math.max(0, 100 - (pendingLeaveCount + pendingReports) * 8) },
-  ];
+  const glance = buildCommandGlance({
+    lang,
+    tasks,
+    employees: teamEmployees,
+    attendanceRows: mergedAttendanceRows,
+    reports: [
+      ...reports,
+      ...(data.anonymousReports || []).filter((row) => stationIds.has(row.stationId)),
+    ],
+    proofs: (data.workProofs || []).filter((proof) => stationIds.has(proof.stationId)),
+    present: checkedInCount,
+    scheduled: todayAtt.scheduled,
+  });
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <PlatformStampShell
-        ar={lang === "ar"}
-        title={lang === "ar" ? "مركز القيادة" : "Command center"}
-        hint={lang === "ar" ? "نظرة قرار على الناس والرعاية والعمليات والثقة." : "A decision glance across people, care, operations, and trust."}
-        maxWidth={1280}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <DashboardPersonaBar lang={lang} />
-          <HandoffCommandBoard
-            lang={lang}
-            readinessScore={readinessScore}
-            factors={readinessFactors}
-            employeesCount={todayAtt.scheduled}
-            employeesDelta={monthHired || null}
-            attendanceRate={attendanceRate}
-            pendingLeave={pendingLeaveCount}
-            pendingReports={pendingReports}
-            leaveQueue={handoffQueue}
-            alerts={handoffAlerts}
-            stations={stations.map((s) => {
-              const crew = teamEmployees.filter((e) => (e.stationId || null) === s.id && presentIds.has(String(e.id))).length;
-              const open = tasks.filter((tk) => (tk.stationId || tk.station_id) === s.id && tk.status !== "completed").length
-                + ((safetyRecs.find((r) => r.stationId === s.id)?.hazards || []).filter((h) => !h.closedAt).length);
-              return {
-                id: s.id,
-                name: s.name,
-                code: s.code || s.shortCode || "",
-                crew,
-                open,
-              };
-            })}
-            openHazards={openHazards}
-            criticalHazards={criticalStations}
-            presentCount={checkedInCount}
-            lateCount={mergedAttendanceRows.filter((row) => row.status === "late").length}
-            leaveCount={teamEmployees.filter((e) => isOnLeaveToday(e)).length}
-            absentCount={absentCount}
-            daysClear={todayIncidents > 0 ? 0 : null}
-          />
-          <OperationsModuleGrid
-            metrics={buildModuleMetrics(data, {
-              tasks: tasks.length,
-              completedTasks: completed,
-              openTasks: Math.max(0, tasks.length - completed),
-              complaints: anonOpenCount,
-              reports: reports.length,
-              pendingReports,
-              attendanceRate,
-              checkedIn: checkedInCount,
-              absentCount,
-              scheduled: todayAtt.scheduled,
-              signing: pendingSigningCount(data),
-              performance: tasks.length ? Math.round((completed / tasks.length) * 100) : 0,
-              employees: teamEmployees.length,
-              activeMembers: activeMembersCount,
-              pendingLeave: pendingLeaveCount,
-              hazards: openHazards,
-              pendingExpenses: pendingExpenseCount(data),
-            })}
-            lang={lang} user={currentUser} data={data} company={company}
-          />
-        </div>
-      </PlatformStampShell>
+      <div style={{ maxWidth: 1280, margin: "0 auto", width: "100%" }}>
+        <CommandGlanceBoard lang={lang} {...glance} />
+      </div>
     </PullToRefresh>
   );
 }
