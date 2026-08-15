@@ -28,6 +28,7 @@ export type AssignMode = "one" | "some" | "all";
 
 export type OpsTaskLike = {
   dueAt?: string | null;
+  planHorizon?: string | null;
   status?: string;
   completedCount?: number;
   targetCount?: number;
@@ -49,6 +50,87 @@ export function dayDiffFromToday(iso: string, today = new Date()) {
   const due = new Date(`${String(iso).slice(0, 10)}T00:00:00`);
   if (Number.isNaN(due.getTime())) return NaN;
   return Math.round((due.getTime() - localDayStart(today).getTime()) / 86400000);
+}
+
+/** YYYY-MM-DD that is `days` local calendar days after today. */
+export function addLocalDays(days: unknown, today = new Date()) {
+  const n = Math.round(Number(days) || 0);
+  const d = localDayStart(today);
+  d.setDate(d.getDate() + n);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export type TaskDailyPace = {
+  total: number;
+  done: number;
+  remaining: number;
+  dueAt: string | null;
+  daysLeft: number | null;
+  daily: number | null;
+  overdue: boolean;
+  met: boolean;
+};
+
+/**
+ * Daily pace is derived: remaining units ÷ remaining days to due.
+ * Example: 30 tasks due in 15 days → 2 per day. Not a separately stored quota.
+ */
+export function deriveTaskDailyPace(task: OpsTaskLike | null | undefined, today = new Date()): TaskDailyPace {
+  const total = Math.max(1, Number(task?.targetCount) || 1);
+  const done = Math.max(0, Number(task?.completedCount) || 0);
+  const remaining = Math.max(0, total - done);
+  const dueAt = task?.dueAt ? String(task.dueAt).slice(0, 10) : "";
+  const met = remaining === 0;
+  const horizonSpan = daysForPlanHorizon(task?.planHorizon);
+  if (!dueAt) {
+    if (horizonSpan) {
+      const daily = met ? 0 : Math.ceil(remaining / horizonSpan);
+      return { total, done, remaining, dueAt: null, daysLeft: horizonSpan, daily, overdue: false, met };
+    }
+    return { total, done, remaining, dueAt: null, daysLeft: null, daily: null, overdue: false, met };
+  }
+  const diff = dayDiffFromToday(dueAt, today);
+  if (Number.isNaN(diff)) {
+    return { total, done, remaining, dueAt, daysLeft: null, daily: null, overdue: false, met };
+  }
+  const overdue = diff < 0 && !met;
+  const daysLeft = overdue ? 0 : Math.max(1, diff);
+  const daily = met ? 0 : (overdue ? remaining : Math.ceil(remaining / daysLeft));
+  return { total, done, remaining, dueAt, daysLeft, daily, overdue, met };
+}
+
+export function taskDailyPaceLabel(pace: TaskDailyPace | null | undefined, ar = true) {
+  if (!pace) return "";
+  if (pace.met) return ar ? "أُغلق العدد المستهدف." : "Target count is met.";
+  if (pace.daily == null) {
+    return ar
+      ? "حدد مدة التسليم أو تاريخه ليُحسب العدد اليومي تلقائياً."
+      : "Set a duration or due date to derive the daily count.";
+  }
+  if (pace.overdue) {
+    return ar
+      ? `انتهى الأجل — المتبقي ${pace.remaining} يُطلب اليوم.`
+      : `Past due — ${pace.remaining} remain today.`;
+  }
+  if (pace.done === 0) {
+    return ar
+      ? `إجمالي ${pace.total} خلال ${pace.daysLeft} يوماً = ${pace.daily} كل يوم.`
+      : `${pace.total} over ${pace.daysLeft} days = ${pace.daily} per day.`;
+  }
+  return ar
+    ? `متبقّي ${pace.remaining} خلال ${pace.daysLeft} يوماً = ${pace.daily} كل يوم.`
+    : `${pace.remaining} left over ${pace.daysLeft} days = ${pace.daily} per day.`;
+}
+
+/** Calendar days used when a plan horizon is pinned (سنوية / شهرية / …). */
+export const HORIZON_DAYS: Record<string, number> = { w: 7, m: 30, q: 92, h: 183, y: 365 };
+
+export function daysForPlanHorizon(horizon: string | null | undefined) {
+  const n = horizon ? HORIZON_DAYS[horizon] : null;
+  return n || null;
 }
 
 /** Plan horizon from due date unless pinned. */

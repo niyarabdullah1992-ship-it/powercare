@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { assignmentHistoryNote, taskPoints } from "@/lib/opsDerivations";
+import { assignmentHistoryNote, deriveTaskDailyPace, taskDailyPaceLabel, taskPoints } from "@/lib/opsDerivations";
 import EscalationSteps from "@/components/escalation/EscalationSteps";
 import { INK, MUTED, NAVY, NAVY_FILL, OK, WARN, BAD, ACCENT, BRAND, field, CARD, SURFACE } from "@/lib/platformStyles";
 
@@ -44,6 +44,7 @@ export default function OpsTaskDetail({
   const comments = Array.isArray(task.comments) ? task.comments : [];
   const doneN = Number(task.completedCount) || 0;
   const targetN = Math.max(1, Number(task.targetCount) || 1);
+  const pace = deriveTaskDailyPace(task);
   const awaiting = task.status === "awaiting_approval" || (doneN >= targetN && !task.approvedAt && task.status !== "completed");
   const approved = task.status === "completed" || !!task.approvedAt;
   const hasProof = !!proofFile || attest.trim().length > 0;
@@ -262,10 +263,18 @@ export default function OpsTaskDetail({
               <span style={{ flex: 1, height: "5px", borderRadius: "4px", background: "#F1F5F9", overflow: "hidden" }}>
                 <span style={{ display: "block", width: `${progPct}%`, height: "100%", background: ACCENT, borderRadius: "4px" }} />
               </span>
-              <span dir="ltr" style={{ fontSize: "11px", color: MUTED, fontFamily: "'IBM Plex Sans',sans-serif", textAlign: "right" }}>
-                {doneN}/{targetN}
+              <span style={{ fontSize: "11px", color: MUTED, textAlign: "right", whiteSpace: "nowrap" }}>
+                <span dir="ltr" style={{ fontFamily: "'IBM Plex Sans',sans-serif" }}>{doneN}/{targetN}</span>
+                {pace.daily != null ? (
+                  <span style={{ marginInlineStart: 6, color: pace.overdue ? "#B45309" : ACCENT, fontWeight: 600 }}>
+                    {ar ? `${pace.daily}/يوم` : `${pace.daily}/day`}
+                  </span>
+                ) : null}
               </span>
             </span>
+          </div>
+          <div style={{ fontSize: "11px", color: MUTED, marginTop: "8px", lineHeight: 1.6 }}>
+            {taskDailyPaceLabel(pace, ar)}
           </div>
         </div>
 

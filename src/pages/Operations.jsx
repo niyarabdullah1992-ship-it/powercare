@@ -7,13 +7,14 @@ import {
   assignmentHistoryNote,
   canReassignOpsTask,
   canReviewOpsTask,
+  deriveTaskDailyPace,
   isAwaitingApproval,
   isEscalated,
   isOverdue,
   latestAssignment,
   taskPoints,
 } from "@/lib/opsDerivations";
-import { canCreateTasks, visibleEmployees } from "@/lib/permissions";
+import { visibleEmployees } from "@/lib/permissions";
 import { buildOpsEscalationSteps, currentOpsLevelLabel } from "@/lib/opsEscalation";
 import {
   approveLocalTask,
@@ -28,7 +29,6 @@ import OpsNewTaskModal from "@/components/tasks/OpsNewTaskModal";
 import OpsReassignModal from "@/components/tasks/OpsReassignModal";
 import OpsTaskDetail from "@/components/tasks/OpsTaskDetail";
 import OpsTasksTable from "@/components/tasks/OpsTasksTable";
-import DailyTaskQuotaCard from "@/components/tasks/DailyTaskQuotaCard";
 import OpsToolbarStrip from "@/components/tasks/OpsToolbarStrip";
 import PlatformStampShell from "@/components/shared/PlatformStampShell";
 import { INK, MUTED, BORDER, SURFACE, tableShell } from "@/lib/platformStyles";
@@ -192,7 +192,6 @@ export default function Operations() {
   const openTask = tasks.find((t) => t.id === openTaskId) || null;
   const canReview = (task) => canReviewOpsTask(task, currentUser, data);
   const canReassign = (task) => canReassignOpsTask(task, currentUser, data);
-  const canEditQuota = canCreateTasks(currentUser, data);
   const reassignCandidates = useMemo(() => {
     const visible = visibleEmployees(currentUser, data);
     const stationId = reassignFor?.stationId || openTask?.stationId;
@@ -772,16 +771,6 @@ export default function Operations() {
         onToggleCreate={() => setShowCreate((v) => !v)}
       />
 
-      <DailyTaskQuotaCard
-        ar={ar}
-        tasks={tasks}
-        data={data}
-        companyId={company?.id}
-        stationId={scope}
-        canEdit={canEditQuota}
-        onSaved={() => refresh?.()}
-      />
-
       <div style={checkedIn ? okBanner : warnBanner}>
         {checkedIn
           ? (ar ? "حضور اليوم مسجَّل — يمكنك تسجيل إنجاز المهام الحضورية." : "Checked in today — you can log on-site task completion.")
@@ -794,20 +783,6 @@ export default function Operations() {
           </Link>
         )}
       </div>
-
-      {showCreate && (
-        <OpsNewTaskModal
-          ar={ar}
-          dir={dir}
-          form={form}
-          setForm={setForm}
-          stations={stations}
-          employees={employees}
-          busy={busy}
-          onClose={() => setShowCreate(false)}
-          onSubmit={createTask}
-        />
-      )}
 
       {localMode && (
         <div style={okBanner}>
@@ -824,6 +799,20 @@ export default function Operations() {
             ? "لم تستجب خدمة العمليات، فلا تُعرض المهام ولا تُقبل الإفادات أو الاعتمادات. القائمة الفارغة أدناه ليست انعدام عمل مسند."
             : "The operations service did not respond, so no tasks are shown and no attestation or approval is accepted. The empty list below does not mean no work is assigned."}
         </div>
+      )}
+
+      {showCreate && (
+        <OpsNewTaskModal
+          ar={ar}
+          dir={dir}
+          form={form}
+          setForm={setForm}
+          stations={stations}
+          employees={employees}
+          busy={busy}
+          onClose={() => setShowCreate(false)}
+          onSubmit={createTask}
+        />
       )}
 
       {viewMode === "plan" ? (
@@ -906,8 +895,16 @@ export default function Operations() {
                       <span style={statusChip(task.status)}>
                         {ar ? STATUS_LABEL[task.status]?.ar : STATUS_LABEL[task.status]?.en || task.status}
                       </span>
-                      <span dir="ltr" style={{ fontSize: "11px", color: MUTED, fontFamily: "'IBM Plex Sans',sans-serif", textAlign: "right" }}>
-                        {task.completedCount}/{task.targetCount}
+                      <span style={{ fontSize: "11px", color: MUTED, fontFamily: "'IBM Plex Sans',sans-serif", textAlign: "right" }}>
+                        <span dir="ltr">{task.completedCount}/{task.targetCount}</span>
+                        {(() => {
+                          const pace = deriveTaskDailyPace(task);
+                          return pace.daily != null ? (
+                            <span style={{ marginInlineStart: 6, color: pace.overdue ? "#B45309" : "#1E9E63", fontWeight: 600 }}>
+                              {ar ? `${pace.daily}/يوم` : `${pace.daily}/day`}
+                            </span>
+                          ) : null;
+                        })()}
                       </span>
                       <div onClick={(e) => e.stopPropagation()}>{renderActions(task)}</div>
                     </div>
