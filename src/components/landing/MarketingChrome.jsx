@@ -22,7 +22,6 @@ const NAV = [
   { href: "/#mhrsd", ar: "الامتثال", en: "Compliance" },
   { href: "/#modules", ar: "الوحدات", en: "Modules" },
   { href: "/#pricing", ar: "الأسعار", en: "Pricing" },
-  { to: "/mobile", ar: "تطبيق الميدان", en: "Field app" },
 ];
 
 const FOOT_PLATFORM = [
@@ -30,7 +29,6 @@ const FOOT_PLATFORM = [
   { href: "/#mhrsd", ar: "الامتثال", en: "Compliance" },
   { href: "/#modules", ar: "الوحدات", en: "Modules" },
   { href: "/#pricing", ar: "الأسعار", en: "Pricing" },
-  { to: "/mobile", ar: "تطبيق الميدان", en: "Field app" },
 ];
 
 const FOOT_COMPANY = [

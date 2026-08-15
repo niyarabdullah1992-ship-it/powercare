@@ -35,7 +35,6 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const OwnerPanel = lazy(() => import('./pages/OwnerPanel'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const PricingSuccess = lazy(() => import('./pages/PricingSuccess'));
-const Mobile = lazy(() => import('./pages/Mobile'));
 const SalesDeck = lazy(() => import('./pages/SalesDeck'));
 const Careers = lazy(() => import('./pages/Careers'));
 const Workspace = lazy(() => import('./pages/Workspace'));
@@ -136,7 +135,6 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/preview" element={<LocalPreviewEntry />} />
       <Route path="/about" element={<About />} />
-      <Route path="/mobile" element={<Mobile />} />
       <Route path="/deck" element={<SalesDeck />} />
       <Route path="/careers" element={<Careers />} />
       <Route path="/workspace" element={<Workspace />} />
