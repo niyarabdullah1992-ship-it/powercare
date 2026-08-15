@@ -36,7 +36,6 @@ const FOOT_PLATFORM = [
 const FOOT_COMPANY = [
   { to: "/careers", ar: "الوظائف", en: "Careers" },
   { to: "/security", ar: "الأمان", en: "Security" },
-  { to: "/deck", ar: "عرض المبيعات", en: "Sales deck" },
   { to: "/workspace", ar: "مساحة الشركة", en: "Company workspace" },
   { to: "/proof", ar: "التحقق العام", en: "Public verify" },
   { href: "mailto:niyar@powercares.pro", ar: "الدعم", en: "Support" },
