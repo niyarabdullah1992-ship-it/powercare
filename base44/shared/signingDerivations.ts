@@ -18,12 +18,16 @@ export type SignerLike = {
   signedAt?: string | null;
   sealId?: string | null;
   fingerprint?: string | null;
+  signerTitle?: string | null;
+  signerCompany?: string | null;
+  intentAt?: string | null;
 };
 
 export type SigningDocLike = {
   id?: string;
   docKey: string;
   title: string;
+  purpose?: string | null;
   source: SigningSource | string;
   sourceRef?: string | null;
   contentHash?: string | null; // invariant input — altering invalidates seals
@@ -31,6 +35,8 @@ export type SigningDocLike = {
   signers: SignerLike[];
   sentAt?: string | null;
   createdAt?: string | null;
+  raisedByName?: string | null;
+  raisedByRole?: string | null;
 };
 
 function fnv1a(str: string) {
@@ -214,6 +220,20 @@ export function checkSignGate(
     };
   }
   return { ok: true as const, headIndex: head, signer: next };
+}
+
+/** نظام التعاملات الإلكترونية: لا توقيع بلا إرادة صريحة من الموقّع نفسه. */
+export function checkSignIntentGate(intent: unknown) {
+  const accepted = intent === true || intent === "accepted" || String(intent).toLowerCase() === "true";
+  if (!accepted) {
+    return {
+      ok: false as const,
+      error: "INTENT_REQUIRED",
+      reason: "لا يُسجَّل التوقيع قبل إقرار الإرادة: اطّلعت على المحتوى وتوقّعه باسمك وبصفتك.",
+      reasonEn: "Signature is not recorded until you confirm intent: you reviewed the content and sign in your own name and capacity.",
+    };
+  }
+  return { ok: true as const };
 }
 
 export function checkVerifySealGate(

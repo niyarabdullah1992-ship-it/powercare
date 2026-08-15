@@ -3,7 +3,7 @@ import { isOnLeaveToday } from "@/lib/leaveTypes";
 import { toRiyadhDateKey } from "@/lib/riyadhDate";
 
 // Thin helpers around the supabaseAttendance backend function, shared by the
-// check-in widget, manager dashboards, and the task-gating check in MyTasks.
+// check-in widget, manager dashboards, and the task-gating check in Operations.
 export async function getTodayAttendance(employeeId) {
   try {
     const res = await base44.functions.invoke("supabaseAttendance", { action: "getTodayStatus", employeeId });
@@ -34,11 +34,44 @@ export function isScheduledToday(employee, data) {
   );
 }
 
+export function hasPublishedScheduleToday(data) {
+  const dateKey = toRiyadhDateKey();
+  return (data?.schedules || []).some((schedule) =>
+    (schedule.shiftTypes || []).some((shift) =>
+      (schedule.assignments?.[dateKey]?.[shift.id] || []).length > 0
+    )
+  );
+}
+
+export function checkedInToday(att) {
+  return !!(att?.check_in_at || att?.checkInAt);
+}
+
 export function getAttendanceStatus(employee, attRow, data) {
-  if (isActiveAttendance(attRow)) return attRow.status === "late" ? "late" : "present";
+  if (checkedInToday(attRow)) return attRow.status === "late" ? "late" : "present";
   if (isOnLeaveToday(employee)) return "on_leave";
-  if (!isScheduledToday(employee, data)) return "not_scheduled";
+  if (hasPublishedScheduleToday(data) && !isScheduledToday(employee, data)) return "not_scheduled";
   return "absent";
+}
+
+/** Same rate the attendance screen shows: present+late ÷ expected today. */
+export function deriveTeamAttendanceToday(employees = [], attendanceRows = [], data) {
+  const byId = Object.fromEntries(
+    (attendanceRows || []).map((row) => [String(row.employee_id ?? row.employeeId), row]),
+  );
+  const counts = { present: 0, late: 0, absent: 0, onLeave: 0, notScheduled: 0 };
+  for (const employee of employees) {
+    const status = getAttendanceStatus(employee, byId[String(employee.id)], data);
+    if (status === "on_leave") counts.onLeave += 1;
+    else if (status === "not_scheduled") counts.notScheduled += 1;
+    else if (status === "absent") counts.absent += 1;
+    else if (status === "late") counts.late += 1;
+    else counts.present += 1;
+  }
+  const scheduled = Math.max(0, employees.length - counts.notScheduled);
+  const presentLike = counts.present + counts.late;
+  const rate = scheduled > 0 ? Math.round((presentLike / scheduled) * 100) : 0;
+  return { ...counts, scheduled, presentLike, rate };
 }
 
 // Looks up the employee's shift for today from the station's existing weekly schedule
@@ -55,4 +88,24 @@ export function getTodaysShift(data, employee) {
     }
   }
   return null;
+}
+
+/** Company policy: employee must punch from the station geofence. */
+export function isLocationRequired(settings) {
+  return settings?.gps_enabled === true && settings?.gps_required === true && !settings?.emergency_active;
+}
+
+const POLICY_PUNCH_ERRORS = new Set([
+  "NOT_SCHEDULED",
+  "GPS_REQUIRED",
+  "STATION_LOCATION_REQUIRED",
+  "OUTSIDE_STATION",
+  "ALREADY_CHECKED_IN",
+  "ALREADY_CHECKED_OUT",
+  "NOT_CHECKED_IN",
+  "Forbidden",
+]);
+
+export function isAttendancePolicyError(code) {
+  return POLICY_PUNCH_ERRORS.has(code);
 }

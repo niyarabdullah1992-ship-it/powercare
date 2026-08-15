@@ -1,18 +1,72 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { GripVertical, UserRound } from "lucide-react";
-import useOrgNodeDrag from "@/hooks/useOrgNodeDrag";
+import { MUTED, NAVY, CARD } from "@/lib/platformStyles";
 
-export default function OrgTreeUnassignedEmployeeCard({ employee, nodeId, canManage, actions, ar }) {
-  const drag = useOrgNodeDrag(nodeId, canManage, actions.start, actions.end, actions.drop);
+function initials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "·";
+  return `${parts[0][0] || ""}${parts[1]?.[0] || ""}`;
+}
+
+export default function OrgTreeUnassignedEmployeeCard({ employee, canManage, actions, ar }) {
   return (
-    <div {...drag.handlers} className={`flex min-w-40 select-none items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 shadow-sm ${canManage ? "cursor-grab active:cursor-grabbing" : ""}`}>
-      {canManage && <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent"><UserRound className="h-3.5 w-3.5" /></span>
-      <span className="min-w-0 flex-1">
-        <Link to={`/app/employees/${encodeURIComponent(employee.id)}`} onPointerDown={(event) => event.stopPropagation()} className="block truncate text-xs font-semibold hover:text-accent">{employee.name}</Link>
-        <span className="block truncate text-[9px] leading-tight text-muted-foreground">{employee.profile?.position || employee.position || (ar ? "بدون مسمى" : "Untitled")}</span>
+    <button
+      type="button"
+      disabled={!canManage}
+      onClick={() => canManage && actions.organizeEmployee?.(employee.id)}
+      style={{
+        display: "flex",
+        minWidth: 176,
+        alignItems: "center",
+        gap: 10,
+        borderRadius: 999,
+        border: "1px solid #E8EDF3",
+        background: CARD,
+        padding: "6px 12px 6px 6px",
+        boxShadow: "0 6px 16px rgba(20,40,75,.05)",
+        cursor: canManage ? "pointer" : "default",
+        fontFamily: "inherit",
+        textAlign: "start",
+      }}
+    >
+      <span
+        style={{
+          width: 34,
+          height: 34,
+          flexShrink: 0,
+          borderRadius: 999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "color-mix(in oklab, #14284B 8%, #fff)",
+          color: NAVY,
+          fontSize: 12,
+          fontWeight: 700,
+        }}
+      >
+        {initials(employee.name)}
       </span>
-    </div>
+      <span style={{ minWidth: 0, flex: 1 }}>
+        <Link
+          to={`/app/employees/${encodeURIComponent(employee.id)}`}
+          onClick={(event) => event.stopPropagation()}
+          style={{
+            display: "block",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            fontSize: 12,
+            fontWeight: 600,
+            color: NAVY,
+            textDecoration: "none",
+          }}
+        >
+          {employee.name}
+        </Link>
+        <span style={{ display: "block", marginTop: 2, fontSize: 10, color: MUTED }}>
+          {ar ? "بانتظار التنظيم" : "Needs placement"}
+        </span>
+      </span>
+    </button>
   );
 }

@@ -8,10 +8,14 @@ import {
   deriveDelegationStatus,
   deriveEscalationFromBranches,
   deriveOrgStats,
+  checkRemoveTitleGate,
   derivePermissionMatrix,
   effectiveScope,
+  effectiveTitleScope,
   nextScopeInCycle,
   permKey,
+  titlePermKey,
+  titleSlug,
   type BranchLike,
   type DelegationLike,
   type OrgNodeLike,
@@ -33,13 +37,22 @@ function uid(prefix: string) {
 
 type OrgPayload = {
   branches: Array<BranchLike & { companyId: string }>;
-  treeNodes: Array<OrgNodeLike & { companyId?: string; type?: string; refId?: string }>;
+  treeNodes: Array<OrgNodeLike & { companyId?: string; type?: string; refId?: string; title?: string }>;
   permOverrides: Record<string, PermOverride>;
   delegations: Array<DelegationLike & { companyId: string }>;
+  knownTitles?: string[];
+  removedTitles?: string[];
 };
 
 function emptyPayload(): OrgPayload {
   return { branches: [], treeNodes: [], permOverrides: {}, delegations: [] };
+}
+
+/** Migrate forced east/west → optional free-text group; branch name stays primary. */
+function normalizeBranchRow(b: BranchLike & { companyId: string; group?: string | null; orgGroup?: string | null }) {
+  const legacy = b.region === "west" || b.region === "east";
+  const group = String(b.group || b.orgGroup || (legacy ? "" : b.region) || "").trim() || null;
+  return { ...b, group, region: group };
 }
 
 Deno.serve(async (req) => {
@@ -79,9 +92,9 @@ Deno.serve(async (req) => {
       const blob = await loadBlob();
       const raw = blob?.payload && typeof blob.payload === "object" ? blob.payload : {};
       const base = emptyPayload();
-      base.branches = (Array.isArray(raw.branches) ? raw.branches : []).filter(
-        (b: BranchLike & { companyId?: string }) => b && b.companyId === auth.companyId && b.id,
-      );
+      base.branches = (Array.isArray(raw.branches) ? raw.branches : [])
+        .filter((b: BranchLike & { companyId?: string }) => b && b.companyId === auth.companyId && b.id)
+        .map((b: BranchLike & { companyId: string }) => normalizeBranchRow(b));
       base.treeNodes = (Array.isArray(raw.treeNodes) ? raw.treeNodes : []).filter(
         (n: OrgNodeLike & { companyId?: string }) => n && (!n.companyId || n.companyId === auth.companyId) && n.id,
       );
@@ -95,6 +108,12 @@ Deno.serve(async (req) => {
       base.delegations = (Array.isArray(raw.delegations) ? raw.delegations : []).filter(
         (d: DelegationLike & { companyId?: string }) => d && d.companyId === auth.companyId && d.id,
       );
+      base.knownTitles = (Array.isArray(raw.knownTitles) ? raw.knownTitles : [])
+        .map((t: unknown) => String(t || "").trim())
+        .filter(Boolean);
+      base.removedTitles = (Array.isArray(raw.removedTitles) ? raw.removedTitles : [])
+        .map((t: unknown) => titleSlug(t))
+        .filter(Boolean);
       return base;
     };
 
@@ -125,23 +144,58 @@ Deno.serve(async (req) => {
     const seedBranchesFromStations = async (data: OrgPayload) => {
       if (data.branches.length) return data;
       const stations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
-      data.branches = (stations || []).map((s: { stationId?: string; id?: string; name?: string; managerId?: string; location?: string }, i: number) => ({
-        companyId: auth.companyId,
-        id: s.stationId || s.id || `st_${i}`,
-        name: s.name || `Station ${i + 1}`,
-        region: i < 3 ? "west" : "east",
-        managerId: s.managerId || null,
-        managerName: null,
-        crew: 0,
-        seeded: true,
-      }));
+      data.branches = (stations || []).map((s: { stationId?: string; id?: string; name?: string; managerId?: string; location?: string }, i: number) => {
+        const loc = String(s.location || "").trim();
+        const fakeRegion = /^(eastern|western)\s+region$/i.test(loc)
+          || loc === "المنطقة الغربية"
+          || loc === "المنطقة الشرقية";
+        return {
+          companyId: auth.companyId,
+          id: s.stationId || s.id || `st_${i}`,
+          name: s.name || `Station ${i + 1}`,
+          // Optional free-text label only — never invent East/West.
+          group: loc && !fakeRegion ? loc : null,
+          region: null,
+          managerId: s.managerId || null,
+          managerName: null,
+          crew: 0,
+          seeded: true,
+        };
+      });
       return data;
+    };
+
+    const mergeTitles = (data: OrgPayload, incoming: unknown) => {
+      const removed = new Set(data.removedTitles || []);
+      const seen = new Set<string>();
+      const out: string[] = [];
+      const add = (raw: unknown, revive = false) => {
+        const label = String(raw || "").trim();
+        const id = titleSlug(label);
+        if (!label || !id || seen.has(id)) return;
+        if (removed.has(id) && !revive) return;
+        if (revive) removed.delete(id);
+        seen.add(id);
+        out.push(label);
+      };
+      for (const title of data.knownTitles || []) add(title);
+      for (const node of data.treeNodes || []) {
+        if (node.type === "employee") add(node.title);
+      }
+      const list = Array.isArray(incoming) ? incoming : [];
+      for (const item of list) {
+        add(typeof item === "string" ? item : (item as { label?: string; id?: string })?.label || (item as { id?: string })?.id, true);
+      }
+      data.removedTitles = [...removed];
+      data.knownTitles = out;
+      return out;
     };
 
     const enrich = (data: OrgPayload, now = new Date()) => {
       const overrideMap: Record<string, ScopeCode> = {};
       for (const [k, v] of Object.entries(data.permOverrides)) overrideMap[k] = v.scope;
-      const matrix = derivePermissionMatrix(overrideMap);
+      const titles = data.knownTitles || [];
+      const matrix = derivePermissionMatrix(overrideMap, titles);
       const dirty = Object.keys(data.permOverrides).length > 0;
       const delegations = data.delegations.map((d) => ({
         ...d,
@@ -152,6 +206,8 @@ Deno.serve(async (req) => {
         branches: data.branches,
         treeNodes: data.treeNodes,
         matrix,
+        titles,
+        removedTitles: data.removedTitles || [],
         permDirty: dirty,
         permOverrides: data.permOverrides,
         escalation: deriveEscalationFromBranches(data.branches),
@@ -163,7 +219,11 @@ Deno.serve(async (req) => {
     if (action === "list") {
       let data = await loadPayload();
       data = await seedBranchesFromStations(data);
-      if (!(await loadBlob()) && data.branches.length) await savePayload(data);
+      const beforeTitles = JSON.stringify(data.knownTitles || []);
+      mergeTitles(data, body.titles);
+      const hadBlob = !!(await loadBlob());
+      if (!hadBlob && (data.branches.length || (data.knownTitles || []).length)) await savePayload(data);
+      else if (hadBlob && JSON.stringify(data.knownTitles || []) !== beforeTitles) await savePayload(data);
       return Response.json(enrich(data));
     }
 
@@ -179,20 +239,22 @@ Deno.serve(async (req) => {
       const data = await seedBranchesFromStations(await loadPayload());
       const id = uid("br");
       const stationId = id;
+      const orgGroup = String(body.group || body.orgGroup || body.region || "").trim() || null;
       await base44.asServiceRole.entities.Station.create({
         companyId: auth.companyId,
         stationId,
         name: gate.name,
-        location: body.region === "east" ? "Eastern region" : "Western region",
+        location: orgGroup || gate.name,
         type: "branch",
         status: "active",
         managerId: body.managerId || null,
       });
-      const branch: BranchLike & { companyId: string } = {
+      const branch: BranchLike & { companyId: string; group?: string | null } = {
         companyId: auth.companyId,
         id: stationId,
         name: gate.name,
-        region: body.region === "east" ? "east" : "west",
+        group: orgGroup,
+        region: orgGroup, // legacy field kept as optional label — not East/West enum
         managerId: body.managerId || null,
         managerName: body.managerName || gate.manager,
         crew: Math.max(1, Number(body.crew) || 12),
@@ -206,6 +268,33 @@ Deno.serve(async (req) => {
       await savePayload(data);
       await audit("org.createBranch", `Created branch ${gate.name}`, { newValue: stationId });
       return Response.json({ ok: true, branch, ...enrich(data) });
+    }
+
+    if (action === "renameBranch") {
+      const branchId = String(body.branchId || "");
+      const name = String(body.name || "").trim();
+      if (!branchId || !name) {
+        return Response.json({
+          error: "NAME_REQUIRED",
+          reason: "اسم الفرع مطلوب.",
+          reasonEn: "Branch name is required.",
+        }, { status: 400 });
+      }
+      const data = await seedBranchesFromStations(await loadPayload());
+      const idx = data.branches.findIndex((b) => b.id === branchId);
+      if (idx < 0) return Response.json({ error: "BRANCH_NOT_FOUND" }, { status: 404 });
+      const prev = data.branches[idx];
+      data.branches[idx] = { ...prev, name };
+      try {
+        const stations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
+        const st = (stations || []).find((s: { stationId?: string; id?: string }) => (s.stationId || s.id) === branchId);
+        if (st?.id) await base44.asServiceRole.entities.Station.update(st.id, { name });
+      } catch {
+        // best-effort Station sync
+      }
+      await savePayload(data);
+      await audit("org.renameBranch", `Branch renamed ${prev.name} → ${name}`, { oldValue: prev.name, newValue: name });
+      return Response.json({ ok: true, ...enrich(data) });
     }
 
     if (action === "setBranchManager") {
@@ -258,11 +347,15 @@ Deno.serve(async (req) => {
 
     if (action === "setPerm") {
       const sectionIdx = Number(body.sectionIdx);
-      const roleIdx = Number(body.roleIdx);
+      const titleKey = String(body.titleKey || "").trim();
+      const roleIdx = titleKey ? -1 : Number(body.roleIdx);
       const data = await loadPayload();
+      mergeTitles(data, body.titles);
       const overrideMap: Record<string, ScopeCode> = {};
       for (const [k, v] of Object.entries(data.permOverrides)) overrideMap[k] = v.scope;
-      const current = effectiveScope(sectionIdx, roleIdx, overrideMap);
+      const current = titleKey
+        ? effectiveTitleScope(sectionIdx, titleSlug(titleKey), overrideMap)
+        : effectiveScope(sectionIdx, roleIdx, overrideMap);
       if (current.derived) {
         return Response.json({
           error: "DELEGATED_IS_DERIVED",
@@ -275,7 +368,7 @@ Deno.serve(async (req) => {
       if (!gate.ok) {
         return Response.json({ error: gate.error, reason: gate.reason, reasonEn: gate.reasonEn }, { status: 400 });
       }
-      const key = permKey(sectionIdx, roleIdx);
+      const key = titleKey ? titlePermKey(sectionIdx, titleKey) : permKey(sectionIdx, roleIdx);
       data.permOverrides[key] = {
         key,
         scope: gate.scope,
@@ -287,6 +380,25 @@ Deno.serve(async (req) => {
         oldValue: String(current.scope),
         newValue: String(gate.scope),
       });
+      return Response.json({ ok: true, ...enrich(data) });
+    }
+
+    if (action === "removeTitle") {
+      const gate = checkRemoveTitleGate(body.titleKey);
+      if (!gate.ok) {
+        return Response.json({ error: gate.error, reason: gate.reason, reasonEn: gate.reasonEn }, { status: 400 });
+      }
+      const data = await loadPayload();
+      data.removedTitles = [...new Set([...(data.removedTitles || []), gate.id])];
+      data.knownTitles = (data.knownTitles || []).filter((title) => titleSlug(title) !== gate.id);
+      data.treeNodes = data.treeNodes.map((node) => (
+        node.type === "employee" && titleSlug(node.title) === gate.id ? { ...node, title: "" } : node
+      ));
+      for (const key of Object.keys(data.permOverrides)) {
+        if (key.includes(`:title:${gate.id}`)) delete data.permOverrides[key];
+      }
+      await savePayload(data);
+      await audit("org.removeTitle", `Removed job title ${gate.id}`);
       return Response.json({ ok: true, ...enrich(data) });
     }
 

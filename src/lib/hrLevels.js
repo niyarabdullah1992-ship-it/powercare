@@ -4,16 +4,16 @@
 
 const NAMES = {
   1: {
-    manager: { en: "Site HR Manager", ar: "مدير الموارد البشرية بالمحطة", de: "Standort-HR-Manager", fr: "Responsable RH de site", es: "Gerente de RH del sitio", pt: "Gerente de RH do site", ru: "HR-менеджер площадки", ja: "拠点HRマネージャー", ko: "현장 HR 매니저" },
-    assistant: { en: "Site HR Assistant", ar: "مساعد الموارد البشرية بالمحطة", de: "Standort-HR-Assistent", fr: "Assistant RH de site", es: "Asistente de RH del sitio", pt: "Assistente de RH do site", ru: "Ассистент HR площадки", ja: "拠点HRアシスタント", ko: "현장 HR 어시스턴트" },
+    manager: { en: "Site HR Manager", ar: "مدير الموارد البشرية بالفرع", de: "Standort-HR-Manager", fr: "Responsable RH de site", es: "Gerente de RH del sitio", pt: "Gerente de RH do site", ru: "HR-менеджер площадки", ja: "拠点HRマネージャー", ko: "현장 HR 매니저" },
+    assistant: { en: "Site HR Assistant", ar: "مساعد الموارد البشرية بالفرع", de: "Standort-HR-Assistent", fr: "Assistant RH de site", es: "Asistente de RH del sitio", pt: "Assistente de RH do site", ru: "Ассистент HR площадки", ja: "拠点HRアシスタント", ko: "현장 HR 어시스턴트" },
   },
   2: {
-    manager: { en: "Cluster HR Manager", ar: "مدير المحطات", de: "Cluster-HR-Manager", fr: "Responsable RH de cluster", es: "Gerente de RH de clúster", pt: "Gerente de RH de cluster", ru: "Менеджер HR кластера", ja: "クラスターHRマネージャー", ko: "클러스터 HR 매니저" },
-    assistant: { en: "Cluster HR Assistant", ar: "مساعد مدير المحطات", de: "Cluster-HR-Assistent", fr: "Assistant RH de cluster", es: "Asistente de RH de clúster", pt: "Assistente de RH de cluster", ru: "Ассистент HR кластера", ja: "クラスターHRアシスタント", ko: "클러스터 HR 어시스턴트" },
+    manager: { en: "Cluster HR Manager", ar: "مدير الفروع", de: "Cluster-HR-Manager", fr: "Responsable RH de cluster", es: "Gerente de RH de clúster", pt: "Gerente de RH de cluster", ru: "Менеджер HR кластера", ja: "クラスターHRマネージャー", ko: "클러스터 HR 매니저" },
+    assistant: { en: "Cluster HR Assistant", ar: "مساعد مدير الفروع", de: "Cluster-HR-Assistent", fr: "Assistant RH de cluster", es: "Asistente de RH de clúster", pt: "Assistente de RH de cluster", ru: "Ассистент HR кластера", ja: "クラスターHRアシスタント", ko: "클러스터 HR 어시스턴트" },
   },
   3: {
-    manager: { en: "Head of HR Operations", ar: "المدير فوق مدير المحطات", de: "Leiter HR-Operations", fr: "Chef des opérations RH", es: "Jefe de Operaciones de RH", pt: "Chefe de Operações de RH", ru: "Руководитель HR-операций", ja: "HRオペレーション責任者", ko: "HR 운영 총괄" },
-    assistant: { en: "HR Operations Assistant", ar: "مساعد المدير فوق مدير المحطات", de: "HR-Operations-Assistent", fr: "Assistant opérations RH", es: "Asistente de Operaciones de RH", pt: "Assistente de Operações de RH", ru: "Ассистент по HR-операциям", ja: "HRオペレーションアシスタント", ko: "HR 운영 어시스턴트" },
+    manager: { en: "Head of HR Operations", ar: "المدير فوق مدير الفروع", de: "Leiter HR-Operations", fr: "Chef des opérations RH", es: "Jefe de Operaciones de RH", pt: "Chefe de Operações de RH", ru: "Руководитель HR-операций", ja: "HRオペレーション責任者", ko: "HR 운영 총괄" },
+    assistant: { en: "HR Operations Assistant", ar: "مساعد المدير فوق مدير الفروع", de: "HR-Operations-Assistent", fr: "Assistant opérations RH", es: "Asistente de Operaciones de RH", pt: "Assistente de Operações de RH", ru: "Ассистент по HR-операциям", ja: "HRオペレーションアシスタント", ko: "HR 운영 어시스턴트" },
   },
   4: {
     manager: { en: "Vice President of HR", ar: "نائب الرئيس", de: "Vizepräsident für HR", fr: "Vice-président RH", es: "Vicepresidente de RH", pt: "Vice-presidente de RH", ru: "Вице-президент по HR", ja: "HR担当副社長", ko: "HR 부사장" },
@@ -28,11 +28,11 @@ const NAMES = {
 const NOTES = {
   1: {
     en: "Handles local station technician attendance, local leave forms, and daily corrective/safety task distribution.",
-    ar: "يتولى متابعة حضور تقنيي المحطة محليًا، ونماذج الإجازات المحلية، وتوزيع المهام التصحيحية والسلامة اليومية.",
+    ar: "يتولى متابعة حضور تقنيي الفرع محليًا، ونماذج الإجازات المحلية، وتوزيع المهام التصحيحية والسلامة اليومية.",
   },
   2: {
     en: "Oversees a group of stations, balances staff shortages, and acts as the first escalation review for open reports.",
-    ar: "يشرف على مجموعة من المحطات، ويعالج نقص الموظفين، ويُعد أول مستوى لمراجعة التصعيد للبلاغات المفتوحة.",
+    ar: "يشرف على مجموعة من الفروع، ويعالج نقص الموظفين، ويُعد أول مستوى لمراجعة التصعيد للبلاغات المفتوحة.",
   },
   3: {
     en: "Controls company-wide payroll, global safety certification audits, and central HQ data access.",

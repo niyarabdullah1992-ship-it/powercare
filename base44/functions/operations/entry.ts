@@ -1,11 +1,19 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
 import { authPowerCareSession } from "../../shared/powerCareSession.ts";
 import {
+  applyOpsReject,
+  applyOpsReassign,
+  canReassignOpsTask,
+  canReviewOpsTask,
   checkAssignGate,
+  checkReassignGate,
+  checkRejectReasonGate,
   clampEffortWeight,
   deriveHorizonGroups,
   deriveOpsCounts,
+  nextOpsEscalation,
   planHorizonFromDue,
+  taskAssigneeId,
   taskPoints,
   type AssignMode,
 } from "../../shared/opsDerivations.ts";
@@ -47,6 +55,7 @@ Deno.serve(async (req) => {
       name: sessionAuth.name || "User",
       role: sessionAuth.role || "employee",
       stationId: sessionAuth.stationId || null,
+      managedStations: Array.isArray(sessionAuth.managedStations) ? sessionAuth.managedStations : [],
       owner: !!sessionAuth.owner || sessionAuth.role === "owner" || sessionAuth.admin,
       admin: !!sessionAuth.admin,
     };
@@ -116,8 +125,9 @@ Deno.serve(async (req) => {
     const listTasksRaw = async () => {
       const blob = await loadBlob(TASKS_CATEGORY);
       const payload = Array.isArray(blob?.payload) ? blob.payload : [];
-      // Strict: drop any row missing companyId or with a foreign tenant.
-      return payload.filter((t) => t && t.companyId === auth.companyId);
+      // Blob is already tenant-scoped. Keep rows for this company; allow legacy
+      // rows that were stored without companyId so managers can still delegate.
+      return payload.filter((t) => t && (!t.companyId || t.companyId === auth.companyId));
     };
 
     const scopeFilter = (tasks: any[], scope: string | null | undefined) => {
@@ -138,10 +148,61 @@ Deno.serve(async (req) => {
         .filter((e) => !stationId || e.stationId === stationId)
         .map((e) => ({
           employeeId: e.employeeId,
+          id: e.employeeId,
           name: e.name,
           stationId: e.stationId || null,
           certificates: [...(Array.isArray(e.certificates) ? e.certificates : []), ...(byEmp[e.employeeId] || [])],
         }));
+    };
+
+    const loadEscalationData = async () => {
+      const [emps, stations, hrBlob, clusterBlob, treeBlob, metaBlob] = await Promise.all([
+        base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId }),
+        base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId }),
+        loadBlob("hrLevels"),
+        loadBlob("hrClusters"),
+        loadBlob("orgTree"),
+        loadBlob("companyMeta"),
+      ]);
+      const hrPayload = hrBlob?.payload;
+      const clusterPayload = clusterBlob?.payload;
+      const treePayload = treeBlob?.payload;
+      const metaPayload = metaBlob?.payload;
+      const meta = Array.isArray(metaPayload) ? (metaPayload[0] || {}) : (metaPayload || {});
+      return {
+        employees: (Array.isArray(emps) ? emps : []).map((e: any) => ({
+          id: e.employeeId || e.id,
+          employeeId: e.employeeId || e.id,
+          role: e.role,
+          stationId: e.stationId || null,
+          managedStations: e.managedStations || [],
+          hrLevelId: e.hrLevelId || null,
+          hrStationId: e.hrStationId || null,
+          hrClusterId: e.hrClusterId || null,
+          isOwner: !!e.isOwner || e.role === "owner",
+          name: e.name,
+        })),
+        stations: (Array.isArray(stations) ? stations : []).map((s: any) => ({
+          id: s.stationId || s.id,
+          stationId: s.stationId || s.id,
+          managerId: s.managerId || null,
+        })),
+        orgTree: Array.isArray(treePayload) ? treePayload : (treePayload?.nodes || []),
+        ownerId: meta.ownerId || null,
+        directorId: meta.directorId || null,
+        hrLevels: Array.isArray(hrPayload) ? hrPayload : (hrPayload?.levels || []),
+        hrClusters: Array.isArray(clusterPayload) ? clusterPayload : (clusterPayload?.clusters || []),
+      };
+    };
+
+    const reviewerUser = {
+      id: auth.userId,
+      employeeId: auth.userId,
+      role: auth.role,
+      stationId: auth.stationId,
+      managedStations: auth.managedStations || [],
+      isOwner: auth.owner,
+      admin: auth.admin,
     };
 
     const audit = async (actionKey: string, details: string, extra: Record<string, unknown> = {}) => {
@@ -315,6 +376,8 @@ Deno.serve(async (req) => {
         mode,
         assignMode,
         ownerId: assignMode === "one" ? ownerId : null,
+        originalOwnerId: assignMode === "one" ? ownerId : null,
+        assignmentHistory: [],
         memberIds: assignMode === "some" ? memberIds : [],
         targetCount,
         completedCount: 0,
@@ -331,6 +394,7 @@ Deno.serve(async (req) => {
         comments: [],
         proofFiles: [],
         attestation: "",
+        escalationLevel: 0,
         pointsAwarded: null,
         approvedAt: null,
         approvedBy: null,
@@ -368,8 +432,12 @@ Deno.serve(async (req) => {
       task.completedCount = next;
       task.proofFiles = [...(task.proofFiles || []), ...proofFiles];
       if (attestation) task.attestation = attestation;
-      if (next >= task.targetCount) task.status = "awaiting_approval";
-      else task.status = "active";
+      if (next >= task.targetCount) {
+        task.status = "awaiting_approval";
+        task.escalationLevel = 0;
+      } else {
+        task.status = "active";
+      }
       tasks[idx] = task;
       await saveTasks(tasks);
       await audit("ops_task_log", `Logged ${next}/${task.targetCount} on ${task.ref}`);
@@ -382,6 +450,13 @@ Deno.serve(async (req) => {
       const idx = tasks.findIndex((t) => t.id === body.taskId);
       if (idx < 0) return Response.json({ error: "Task not found" }, { status: 404 });
       const task = { ...tasks[idx] };
+      const escData = await loadEscalationData();
+      if (!canReviewOpsTask(task, reviewerUser, escData)) {
+        return Response.json({
+          error: "NOT_CURRENT_REVIEWER",
+          reason: "هذا المستوى لمن يليك في سلسلة التصعيد — لا يمكنك اعتماده بعد الرفض.",
+        }, { status: 403 });
+      }
       if (task.status !== "awaiting_approval" && (Number(task.completedCount) || 0) < (Number(task.targetCount) || 1)) {
         return Response.json({ error: "Not ready for approval" }, { status: 400 });
       }
@@ -399,19 +474,44 @@ Deno.serve(async (req) => {
 
     if (action === "reject") {
       if (!isManager) return Response.json({ error: "Forbidden" }, { status: 403 });
+      const reasonGate = checkRejectReasonGate(body.reason, body.lang === "en" ? "en" : "ar");
+      if (!reasonGate.ok) {
+        return Response.json({ error: reasonGate.error, reason: reasonGate.reason }, { status: 400 });
+      }
       const reason = String(body.reason || "").trim();
-      if (!reason) return Response.json({ error: "Rejection reason required" }, { status: 400 });
       const tasks = await listTasksRaw();
       const idx = tasks.findIndex((t) => t.id === body.taskId);
       if (idx < 0) return Response.json({ error: "Task not found" }, { status: 404 });
-      const task = { ...tasks[idx] };
-      task.status = "active";
-      task.completedCount = Math.max(0, (Number(task.targetCount) || 1) - 1);
-      task.rejectReason = reason;
+      const current = { ...tasks[idx] };
+      const escData = await loadEscalationData();
+      if (!canReviewOpsTask(current, reviewerUser, escData)) {
+        return Response.json({
+          error: "NOT_CURRENT_REVIEWER",
+          reason: "هذا المستوى لمن يليك في سلسلة التصعيد — لا يمكنك رفضه بعد تصعيده.",
+        }, { status: 403 });
+      }
+      const next = nextOpsEscalation(current, escData, auth.userId);
+      const task = applyOpsReject(current, {
+        reason,
+        escalate: next.escalate,
+        nextLevel: next.nextLevel,
+        reviewerId: auth.userId,
+        reviewerName: auth.name,
+      });
       tasks[idx] = task;
       await saveTasks(tasks);
-      await audit("ops_task_reject", `Rejected ${task.ref}`, { reason });
-      return Response.json({ task, counts: deriveOpsCounts(scopeFilter(tasks, body.scope || null)) });
+      await audit(
+        next.escalate ? "ops_task_escalate" : "ops_task_reject",
+        next.escalate
+          ? `Rejected ${task.ref} — escalated to L${next.nextLevel}`
+          : `Rejected ${task.ref} — top of chain, returned to executor`,
+        { reason, newValue: next.escalate ? String(next.nextLevel) : "returned" },
+      );
+      return Response.json({
+        task,
+        escalation: next,
+        counts: deriveOpsCounts(scopeFilter(tasks, body.scope || null)),
+      });
     }
 
     if (action === "attendanceStatus") {
@@ -494,6 +594,85 @@ Deno.serve(async (req) => {
         { newValue: entry.id },
       );
       return Response.json({ task, comment: entry });
+    }
+
+    if (action === "reassign") {
+      if (!isManager) return Response.json({ error: "Forbidden: only managers can delegate tasks" }, { status: 403 });
+      const toId = String(body.toId || body.ownerId || "").trim();
+      const reason = String(body.reason || "").trim();
+      const tasks = await listTasksRaw();
+      const idx = tasks.findIndex((t) => t.id === body.taskId);
+      if (idx < 0) return Response.json({ error: "Task not found" }, { status: 404 });
+      const current = { ...tasks[idx] };
+      const escData = await loadEscalationData();
+      const emp = (escData.employees || []).find((e) =>
+        String(e.id || "") === String(auth.userId || "")
+        || String(e.employeeId || "") === String(auth.userId || "")
+      );
+      const reviewer = {
+        ...reviewerUser,
+        role: auth.role || emp?.role,
+        stationId: emp?.stationId ?? reviewerUser.stationId,
+        managedStations: (emp?.managedStations?.length ? emp.managedStations : reviewerUser.managedStations) || [],
+      };
+      if (!canReassignOpsTask(current, reviewer, escData)) {
+        return Response.json({
+          error: "REASSIGN_FORBIDDEN",
+          reason: body.lang === "en"
+            ? "Only a manager can delegate, and a completed or approved task cannot be reassigned."
+            : "التوكيل للمدير فقط — وبعد الإنجاز أو الاعتماد لا يُعاد إسناد المهمة.",
+        }, { status: 403 });
+      }
+
+      const stationPeople = await loadPeople(current.stationId || null);
+      const companyPeople = current.stationId ? stationPeople : await loadPeople(null);
+      const gate = checkReassignGate({
+        task: current,
+        user: reviewer,
+        data: escData,
+        toId,
+        reason,
+        people: companyPeople,
+        lang: body.lang === "en" ? "en" : "ar",
+      });
+      if (!gate.ok) {
+        return Response.json({ error: gate.error, reason: gate.reason }, { status: 400 });
+      }
+
+      const assignGate = checkAssignGate({
+        workKind: current.workKind || "pm",
+        assignMode: "one",
+        ownerId: toId,
+        memberIds: [],
+        stationId: current.stationId || null,
+        people: current.stationId ? stationPeople : await loadPeople(null),
+        lang: body.lang === "en" ? "en" : "ar",
+      });
+      if (!assignGate.ok) {
+        return Response.json({ error: "ASSIGN_GATE", reason: assignGate.reason, cert: assignGate.required }, { status: 403 });
+      }
+
+      const fromId = taskAssigneeId(current);
+      const fromPerson = (escData.employees || []).find((e) => String(e.id || e.employeeId) === String(fromId));
+      const toPerson = (escData.employees || []).find((e) => String(e.id || e.employeeId) === String(toId));
+      const task = applyOpsReassign(current, {
+        fromId,
+        toId,
+        byId: auth.userId,
+        reason,
+        fromName: fromPerson?.name || "",
+        toName: toPerson?.name || "",
+        byName: auth.name,
+        lang: body.lang === "en" ? "en" : "ar",
+      });
+      tasks[idx] = task;
+      await saveTasks(tasks);
+      await audit(
+        "ops_task_reassign",
+        `Reassigned ${task.ref} from ${fromId || "—"} to ${toId}`,
+        { reason, oldValue: fromId || null, newValue: toId },
+      );
+      return Response.json({ task, counts: deriveOpsCounts(scopeFilter(tasks, body.scope || null)) });
     }
 
     if (action === "addAttachment") {

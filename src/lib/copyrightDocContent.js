@@ -14,15 +14,15 @@ export const PROGRAM = {
 export const DESCRIPTION_SECTIONS = [
   {
     title: "فكرة البرنامج",
-    body: "«NiroVera» (NiroVera) منصة رقمية سحابية متكاملة لإدارة الشركات والموارد البشرية، صُممت لتمكين المؤسسات من إدارة موظفيها ومحطات عملها ومهامها اليومية من مكان واحد. يقوم البرنامج على فكرة ربط الحضور الوظيفي بالموقع الجغرافي الفعلي للموظف: فلا يُقبل تسجيل الحضور إلا إذا كان الموظف داخل النطاق الجغرافي المحدد لمقر عمله، مع تحديد نطاق المسافة المسموح لكل محطة عمل على الخريطة. كما تدعم المنصة نمط «المساحة الشخصية» للأفراد، بأدوات إنتاجية شخصية وتجربة توقيع رقمي مستقلة.",
+    body: "«NiroVera» (NiroVera) منصة رقمية سحابية متكاملة لإدارة الشركات والموارد البشرية، صُممت لتمكين المؤسسات من إدارة موظفيها وفروع عملها ومهامها اليومية من مكان واحد. يقوم البرنامج على فكرة ربط الحضور الوظيفي بالموقع الجغرافي الفعلي للموظف: فلا يُقبل تسجيل الحضور إلا إذا كان الموظف داخل النطاق الجغرافي المحدد لمقر عمله، مع تحديد نطاق المسافة المسموح لكل فرع عمل على الخريطة. كما تدعم المنصة نمط «المساحة الشخصية» للأفراد، بأدوات إنتاجية شخصية وتجربة توقيع رقمي مستقلة.",
   },
   {
     title: "أولاً: نظام الحضور والانصراف الجغرافي",
-    body: "حضور وانصراف مرتبط بالموقع الجغرافي (GPS) مع تحقق إلزامي من الموقع قبل القبول، وقياس المسافة عن مقر العمل بدقة الأمتار، وقبول الحضور في أي محطة مصرح بها للموظف (الأقرب أولاً). يشمل النظام: تسجيل حضور سريع بلمسة واحدة مع تهيئة مسبقة للـGPS عند فتح التطبيق، واحتساب التأخير بالدقائق مقارنة بجدول الوردية، وانصراف مبكر موثق، وأعذار معتمدة، وخرائط تفاعلية لمواقع المحطات، وتقارير شهرية وتحليلات، ومسح تلقائي يومي (Workflows) لرصد الغياب والتأخير وإرسال التنبيهات.",
+    body: "حضور وانصراف مرتبط بالموقع الجغرافي (GPS) مع تحقق إلزامي من الموقع قبل القبول، وقياس المسافة عن مقر العمل بدقة الأمتار، وقبول الحضور في أي فرع مصرح بها للموظف (الأقرب أولاً). يشمل النظام: تسجيل حضور سريع بلمسة واحدة مع تهيئة مسبقة للـGPS عند فتح التطبيق، واحتساب التأخير بالدقائق مقارنة بجدول الوردية، وانصراف مبكر موثق، وأعذار معتمدة، وخرائط تفاعلية لمواقع الفروع، وتقارير شهرية وتحليلات، ومسح تلقائي يومي (Workflows) لرصد الغياب والتأخير وإرسال التنبيهات.",
   },
   {
     title: "ثانياً: نظام المهام والأهداف",
-    body: "نظام مهام هرمي بمجلدات وأقسام قابلة للتخصيص لكل محطة، يدعم إسناد المهام لموظف أو لفريق محطة أو لفريق المقر الرئيسي، مع أولويات (عادي/عاجل)، وأهداف عددية بنسبة إنجاز محسوبة، وتصعيد تلقائي للمهام الحرجة عبر سلسلة الصلاحيات، وبلاغات توقف العمل، وأرشيف ذكي يصنف المهام المكتملة حسب مدتها (سنوية/نصفية/ربعية/شهرية)، وتعليقات بمرفقات ملفات وتسجيلات صوتية.",
+    body: "نظام مهام هرمي بمجلدات وأقسام قابلة للتخصيص لكل فرع، يدعم إسناد المهام لموظف أو لفريق فرع أو لفريق المقر الرئيسي، مع أولويات (عادي/عاجل)، وأهداف عددية بنسبة إنجاز محسوبة، وتصعيد تلقائي للمهام الحرجة عبر سلسلة الصلاحيات، وبلاغات توقف العمل، وأرشيف ذكي يصنف المهام المكتملة حسب مدتها (سنوية/نصفية/ربعية/شهرية)، وتعليقات بمرفقات ملفات وتسجيلات صوتية.",
   },
   {
     title: "ثالثاً: الموارد البشرية والرواتب",
@@ -30,7 +30,7 @@ export const DESCRIPTION_SECTIONS = [
   },
   {
     title: "رابعاً: السلامة المهنية (HSE) ومركز القيادة الذكي",
-    body: "وحدة سلامة مهنية ترصد الحوادث والمخاطر المفتوحة وتصنف المحطات الحرجة، وتغذي «مركز القيادة الذكي» في لوحة التحكم: درجة مخاطر مُوزّنة (Weighted Risk Scoring) مستوحاة من مصفوفات المخاطر وفق ISO 45001، تجمع الغياب والتأخير وتوقف العمل والتقارير المعلقة وحوادث السلامة في نسبة استقرار واحدة، مع شفافية كاملة في طريقة الحساب وأوزان قابلة للمعايرة من مالك الشركة حسب طبيعة نشاطها، وتنبؤات مخاطر استباقية وملخصات يومية ذكية.",
+    body: "وحدة سلامة مهنية ترصد الحوادث والمخاطر المفتوحة وتصنف الفروع الحرجة، وتغذي «مركز القيادة الذكي» في لوحة التحكم: درجة مخاطر مُوزّنة (Weighted Risk Scoring) مستوحاة من مصفوفات المخاطر وفق ISO 45001، تجمع الغياب والتأخير وتوقف العمل والتقارير المعلقة وحوادث السلامة في نسبة استقرار واحدة، مع شفافية كاملة في طريقة الحساب وأوزان قابلة للمعايرة من مالك الشركة حسب طبيعة نشاطها، وتنبؤات مخاطر استباقية وملخصات يومية ذكية.",
   },
   {
     title: "خامساً: التوقيع الإلكتروني الموثق",
@@ -38,11 +38,11 @@ export const DESCRIPTION_SECTIONS = [
   },
   {
     title: "سادساً: المساعد الذكي «نيرو» والتواصل الداخلي",
-    body: "مساعد ذكاء اصطناعي «نيرو» يجيب عن أسئلة الإدارة من بيانات الشركة الفعلية، ويولّد ملخصات يومية ذكية وتنبيهات استباقية واقتراحات قرارات، وينشئ ملفات ومستندات حسب الطلب. إضافة إلى نظام دردشة داخلي لكل محطة مع رسائل خاصة ومجموعات مخصصة ومرفقات ومعرض وسائط وبحث، وإشعارات بريدية عبر تكامل Gmail، ومزامنة مواعيد مع تقويم Google.",
+    body: "مساعد ذكاء اصطناعي «نيرو» يجيب عن أسئلة الإدارة من بيانات الشركة الفعلية، ويولّد ملخصات يومية ذكية وتنبيهات استباقية واقتراحات قرارات، وينشئ ملفات ومستندات حسب الطلب. إضافة إلى نظام دردشة داخلي لكل فرع مع رسائل خاصة ومجموعات مخصصة ومرفقات ومعرض وسائط وبحث، وإشعارات بريدية عبر تكامل Gmail، ومزامنة مواعيد مع تقويم Google.",
   },
   {
     title: "سابعاً: التقارير والتعددية اللغوية والاشتراكات",
-    body: "تقارير أداء ومقارنات بين الموظفين والمحطات والمجموعات قابلة للتصدير PDF/Excel بهوية الشركة البصرية (شعار ولون مخصص)، ودعم 9 لغات مع اتجاه كتابة تلقائي (RTL) للعربية، ونظام اشتراكات بخطط أسعار (Starter/Professional/Enterprise) مع بوابة دفع إلكترونية Stripe وفترة تجريبية وتذكيرات تلقائية، ولوحة مالك للمنصة لإدارة المشتركين وإحصاءات الزوار.",
+    body: "تقارير أداء ومقارنات بين الموظفين والفروع والمجموعات قابلة للتصدير PDF/Excel بهوية الشركة البصرية (شعار ولون مخصص)، ودعم 9 لغات مع اتجاه كتابة تلقائي (RTL) للعربية، ونظام اشتراكات بخطط أسعار (Starter/Professional/Enterprise) مع بوابة دفع إلكترونية Stripe وفترة تجريبية وتذكيرات تلقائية، ولوحة مالك للمنصة لإدارة المشتركين وإحصاءات الزوار.",
   },
   {
     title: "البنية التقنية والأمان",
@@ -58,35 +58,35 @@ export const FILE_TREE = [
   },
   {
     group: "الصفحات الرئيسية (Pages)",
-    files: ["src/pages/Landing.jsx", "src/pages/Login.jsx", "src/pages/Register.jsx", "src/pages/ForgotPassword.jsx", "src/pages/ResetPassword.jsx", "src/pages/Dashboard.jsx", "src/pages/ExecutiveDashboard.jsx", "src/pages/MyTasks.jsx", "src/pages/StationChat.jsx", "src/pages/Complaints.jsx", "src/pages/Stations.jsx", "src/pages/Employees.jsx", "src/pages/EmployeeProfile.jsx", "src/pages/HR.jsx", "src/pages/Payroll.jsx", "src/pages/Performance.jsx", "src/pages/Safety.jsx", "src/pages/DailyReport.jsx", "src/pages/Attendance.jsx", "src/pages/Files.jsx", "src/pages/FileSigning.jsx", "src/pages/Assistant.jsx", "src/pages/OwnerPanel.jsx", "src/pages/Pricing.jsx", "src/pages/PricingSuccess.jsx", "src/pages/Verify.jsx", "src/pages/PublicSign.jsx", "src/pages/About.jsx", "src/pages/Help.jsx", "src/pages/Privacy.jsx", "src/pages/Security.jsx", "src/pages/Terms.jsx", "src/pages/NiroVeraPresentation.jsx", "src/pages/CopyrightDoc.jsx", "src/pages/ProjectGuideDoc.jsx"],
+    files: ["src/pages/Landing.jsx", "src/pages/Login.jsx", "src/pages/Register.jsx", "src/pages/ForgotPassword.jsx", "src/pages/ResetPassword.jsx", "src/pages/Dashboard.jsx", "src/pages/Operations.jsx", "src/pages/StationChat.jsx", "src/pages/Complaints.jsx", "src/pages/OrgStructure.jsx", "src/pages/EmployeeProfile.jsx", "src/pages/HRStructureManagement.jsx", "src/pages/Payroll.jsx", "src/pages/Performance.jsx", "src/pages/Safety.jsx", "src/pages/DailyReport.jsx", "src/pages/Attendance.jsx", "src/pages/Files.jsx", "src/pages/FileSigning.jsx", "src/pages/WorkProof.jsx", "src/pages/Assistant.jsx", "src/pages/OwnerPanel.jsx", "src/pages/Pricing.jsx", "src/pages/PricingSuccess.jsx", "src/pages/Verify.jsx", "src/pages/PublicSign.jsx", "src/pages/About.jsx", "src/pages/Help.jsx", "src/pages/Privacy.jsx", "src/pages/Security.jsx", "src/pages/Terms.jsx", "src/pages/PowerCarePresentation.jsx", "src/pages/CopyrightDoc.jsx", "src/pages/ProjectGuideDoc.jsx"],
   },
   {
     group: "المنطق والمكتبات (Libraries)",
-    files: ["src/lib/NiroVeraAuth.jsx", "src/lib/store.js", "src/lib/i18n.jsx", "src/lib/i18nExtra.js", "src/lib/permissions.js", "src/lib/hrPermissions.js", "src/lib/hrLevels.js", "src/lib/roles.js", "src/lib/escalation.js", "src/lib/attendance.js", "src/lib/geo.js", "src/lib/geocodeStations.js", "src/lib/leaveTypes.js", "src/lib/payroll.js", "src/lib/payrollTemplate.js", "src/lib/salaryImport.js", "src/lib/riskWeights.js", "src/lib/rewards.js", "src/lib/signPdf.js", "src/lib/multiSignStamp.js", "src/lib/verificationBadge.js", "src/lib/fileHash.js", "src/lib/detectSignatureSpot.js", "src/lib/signedReport.js", "src/lib/exportReport.js", "src/lib/exportExcelColored.js", "src/lib/printReport.js", "src/lib/printDocument.js", "src/lib/pdfTheme.js", "src/lib/icsExport.js", "src/lib/taskFolders.js", "src/lib/taskTimeScope.js", "src/lib/smartDefaults.js", "src/lib/assistantActions.js", "src/lib/assistantContext.js", "src/lib/auditLog.js", "src/lib/emailAlerts.js", "src/lib/notificationRoute.js", "src/lib/notificationFilters.js", "src/lib/planLimits.js", "src/lib/sectionGuides.js", "src/lib/trackVisit.js", "src/lib/dateFormat.js", "src/lib/mediaAccess.js", "src/lib/navVisibility.js"],
+    files: ["src/lib/PowerCareAuth.jsx", "src/lib/store.js", "src/lib/i18n.jsx", "src/lib/i18nExtra.js", "src/lib/permissions.js", "src/lib/hrLevels.js", "src/lib/roles.js", "src/lib/escalation.js", "src/lib/attendance.js", "src/lib/geo.js", "src/lib/geocodeStations.js", "src/lib/leaveTypes.js", "src/lib/payroll.js", "src/lib/payrollTemplate.js", "src/lib/salaryImport.js", "src/lib/riskWeights.js", "src/lib/signPdf.js", "src/lib/multiSignStamp.js", "src/lib/verificationBadge.js", "src/lib/fileHash.js", "src/lib/signedReport.js", "src/lib/exportExcelColored.js", "src/lib/printReport.js", "src/lib/printDocument.js", "src/lib/pdfTheme.js", "src/lib/assistantActions.js", "src/lib/assistantContext.js", "src/lib/auditLog.js", "src/lib/emailAlerts.js", "src/lib/notificationRoute.js", "src/lib/notificationFilters.js", "src/lib/planLimits.js", "src/lib/trackVisit.js", "src/lib/dateFormat.js", "src/lib/mediaAccess.js", "src/lib/navVisibility.js"],
   },
   {
     group: "مكونات لوحة التحكم ومركز القيادة",
-    files: ["src/components/dashboard/CommandCenterHero.jsx", "src/components/dashboard/StabilityInfoPopover.jsx", "src/components/dashboard/RiskWeightsEditor.jsx", "src/components/dashboard/RiskForecastPanel.jsx", "src/components/dashboard/SmartDailySummary.jsx", "src/components/dashboard/SmartAlertsPanel.jsx", "src/components/dashboard/DecisionQueue.jsx", "src/components/dashboard/DashboardStatCards.jsx", "src/components/dashboard/TeamStatusPanel.jsx", "src/components/dashboard/EmployeeDashboard.jsx", "src/components/dashboard/StationManagerDashboard.jsx", "src/components/dashboard/StationsMapCard.jsx", "src/components/dashboard/AttendanceTrendChart.jsx", "src/components/dashboard/PendingActionsPanel.jsx", "src/components/dashboard/OnboardingChecklist.jsx", "src/components/dashboard/WelcomeHero.jsx"],
+    files: ["src/components/dashboard/EmployeeDashboard.jsx", "src/components/dashboard/StationManagerDashboard.jsx", "src/components/dashboard/HandoffCommandBoard.jsx", "src/components/dashboard/OperationsModuleGrid.jsx", "src/components/dashboard/DashboardPersonaBar.jsx"],
   },
   {
     group: "مكونات الحضور والجدولة",
-    files: ["src/components/attendance/QuickCheckInCard.jsx", "src/components/attendance/CheckInOutCard.jsx", "src/components/attendance/AttendanceDailyDashboard.jsx", "src/components/attendance/AttendanceMonthlyReport.jsx", "src/components/attendance/AttendanceAnalytics.jsx", "src/components/attendance/AttendanceMapDashboard.jsx", "src/components/attendance/AttendanceLocationsPanel.jsx", "src/components/attendance/AttendanceSettingsPanel.jsx", "src/components/attendance/AttendanceLeaveRequests.jsx", "src/components/attendance/LocationMapModal.jsx", "src/components/attendance/ScheduleTab.jsx", "src/components/attendance/TimeFormatToggle.jsx", "src/components/schedules/StationScheduleEditor.jsx", "src/components/schedules/ShiftTypeEditor.jsx", "src/components/schedules/ScheduleCell.jsx", "src/components/schedules/ScheduleStatsBar.jsx", "src/components/schedules/EmployeeAvatar.jsx"],
+    files: ["src/components/attendance/QuickCheckInCard.jsx", "src/components/attendance/CheckInOutCard.jsx", "src/components/attendance/AttendanceDailyDashboard.jsx", "src/components/attendance/AttendanceMonthlyReport.jsx", "src/components/attendance/AttendanceAnalytics.jsx", "src/components/attendance/AttendanceMapDashboard.jsx", "src/components/attendance/AttendanceSettingsBoard.jsx", "src/components/attendance/AttendanceLeaveRequests.jsx", "src/components/attendance/LocationMapModal.jsx", "src/components/attendance/ScheduleTab.jsx", "src/components/attendance/TimeFormatToggle.jsx", "src/components/schedules/StationScheduleEditor.jsx", "src/components/schedules/ScheduleCell.jsx", "src/components/schedules/ScheduleStatsBar.jsx"],
   },
   {
     group: "مكونات المهام والتقارير والأداء",
-    files: ["src/components/tasks/TaskCard.jsx", "src/components/tasks/TaskStats.jsx", "src/components/tasks/FolderTree.jsx", "src/components/tasks/SectionPicker.jsx", "src/components/tasks/SmartArchive.jsx", "src/components/tasks/ArchivePeriodGroup.jsx", "src/components/tasks/CommentFiles.jsx", "src/components/tasks/VoiceRecorder.jsx", "src/components/reports/ReportCard.jsx", "src/components/reports/ExportCenter.jsx", "src/components/reports/EmployeeReportTable.jsx", "src/components/reports/GroupVsGroupComparison.jsx", "src/components/reports/HSESafetyReport.jsx", "src/components/reports/BrandingSettingsCard.jsx", "src/components/performance/PerformanceAnalytics.jsx", "src/components/performance/EmployeeComparisonView.jsx", "src/components/performance/StationComparison.jsx", "src/components/performance/PointsManager.jsx", "src/components/safety/StationSafetyCard.jsx"],
+    files: ["src/components/tasks/OpsTasksTable.jsx", "src/components/tasks/OpsNewTaskModal.jsx", "src/components/tasks/OpsTaskDetail.jsx", "src/components/tasks/OpsToolbarStrip.jsx", "src/components/tasks/CommentFiles.jsx", "src/components/tasks/VoiceRecorder.jsx", "src/components/reports/ReportLibraryBoard.jsx", "src/components/performance/PerfScoreBoard.jsx", "src/components/performance/JobObjectiveBoard.jsx", "src/components/safety/StationSafetyCard.jsx"],
   },
   {
     group: "مكونات الموارد البشرية والموظفين",
-    files: ["src/components/hr/HROrgChart.jsx", "src/components/hr/HRTiersEditor.jsx", "src/components/hr/HRTierCard.jsx", "src/components/hr/HRAssignModal.jsx", "src/components/hr/HRSlotRow.jsx", "src/components/hr/HRPermissionsChecklist.jsx", "src/components/hr/ClusterEditor.jsx", "src/components/employees/ProfileHero.jsx", "src/components/employees/ProfessionalInfoTab.jsx", "src/components/employees/CertificatesTab.jsx", "src/components/employees/SalaryTab.jsx", "src/components/employees/LeaveTab.jsx", "src/components/employees/LeaveBalanceCard.jsx", "src/components/employees/LeaveTotalsEditor.jsx", "src/components/employees/HRCommunicationsTab.jsx", "src/components/employees/PresenceStatusPicker.jsx", "src/components/employees/EmployeePoints.jsx", "src/components/employees/RoleLabelsEditor.jsx", "src/components/payroll/PayrollRow.jsx", "src/components/payroll/PayrollTemplateCard.jsx"],
+    files: ["src/components/hr/FlexOrgTree.jsx", "src/components/hr/HrDirectoryBoard.jsx", "src/components/hr/OrgStructureBoard.jsx", "src/components/hr/ComplianceMhrsdBoard.jsx", "src/components/employees/ProfileHero.jsx", "src/components/employees/ProfessionalInfoTab.jsx", "src/components/employees/CertificatesTab.jsx", "src/components/employees/SalaryTab.jsx", "src/components/employees/LeaveTab.jsx", "src/components/employees/LeaveBalanceCard.jsx", "src/components/employees/LeaveTotalsEditor.jsx", "src/components/employees/HRCommunicationsTab.jsx", "src/components/employees/PresenceStatusPicker.jsx", "src/components/employees/ContractTab.jsx", "src/components/payroll/PayrollRow.jsx", "src/components/payroll/PayrollTemplateCard.jsx"],
   },
   {
     group: "مكونات التوقيع الإلكتروني والملفات",
-    files: ["src/components/files/MySignatureCard.jsx", "src/components/files/SignaturePad.jsx", "src/components/files/TypedSignature.jsx", "src/components/files/SignaturePlacementModal.jsx", "src/components/files/MultiSignPlacementModal.jsx", "src/components/files/MultiSignCard.jsx", "src/components/files/MultiSignInbox.jsx", "src/components/files/SignAndSendCard.jsx", "src/components/files/SignSpotPicker.jsx", "src/components/files/SignedDocActions.jsx", "src/components/files/VerifyDocumentCard.jsx", "src/components/files/SigningSteps.jsx", "src/components/files/FolderCard.jsx", "src/components/files/FileRow.jsx"],
+    files: ["src/components/files/MySignatureCard.jsx", "src/components/files/SignaturePad.jsx", "src/components/files/TypedSignature.jsx", "src/components/files/MultiSignPlacementModal.jsx", "src/components/files/MultiSignCard.jsx", "src/components/files/MultiSignInbox.jsx", "src/components/files/VerifyDocumentCard.jsx", "src/components/files/FolderCard.jsx", "src/components/files/FileRow.jsx"],
   },
   {
     group: "مكونات الدردشة والمساعد الذكي والجوال",
-    files: ["src/components/chat/ChatBubble.jsx", "src/components/chat/ChatContactList.jsx", "src/components/chat/ChatGroupManager.jsx", "src/components/chat/ChatMediaGallery.jsx", "src/components/chat/ChatSearchPanel.jsx", "src/components/chat/CompanyEmailComposer.jsx", "src/components/assistant/AssistantMessage.jsx", "src/components/assistant/VoiceControl.jsx", "src/components/assistant/SuggestedQuestions.jsx", "src/components/mobile/BottomTabBar.jsx", "src/components/mobile/PullToRefresh.jsx", "src/components/mobile/MobileSelect.jsx", "src/components/mobile/BackButton.jsx", "src/components/Layout.jsx", "src/components/Navbar.jsx", "src/components/Logo.jsx"],
+    files: ["src/components/chat/ChatBubble.jsx", "src/components/chat/ChatContactList.jsx", "src/components/chat/ChatGroupManager.jsx", "src/components/chat/ChatMediaGallery.jsx", "src/components/chat/ChatSearchPanel.jsx", "src/components/chat/CompanyEmailComposer.jsx", "src/components/assistant/AssistantMessage.jsx", "src/components/assistant/VoiceControl.jsx", "src/components/assistant/SuggestedQuestions.jsx", "src/components/mobile/BottomTabBar.jsx", "src/components/mobile/PullToRefresh.jsx", "src/components/mobile/MobileSelect.jsx", "src/components/mobile/BackButton.jsx", "src/components/Layout.jsx", "src/components/Logo.jsx"],
   },
   {
     group: "الوظائف الخلفية والأتمتة (Backend & Workflows)",
@@ -111,10 +111,10 @@ import { lazy, Suspense } from 'react';
 import Landing from './pages/Landing';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const MyTasks = lazy(() => import('./pages/MyTasks'));
+const Operations = lazy(() => import('./pages/Operations'));
 const Attendance = lazy(() => import('./pages/Attendance'));
 const FileSigning = lazy(() => import('./pages/FileSigning'));
-const HR = lazy(() => import('./pages/HR'));
+const HRStructureManagement = lazy(() => import('./pages/HRStructureManagement'));
 
 function RequireAuth({ children }) {
   const { session } = useNiroVeraAuth();
@@ -132,10 +132,10 @@ function AppRoutes() {
         <Route path="/sign" element={<PublicSign />} />
         <Route path="/verify" element={<Verify />} />
         <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
-        <Route path="/app/tasks" element={<RequireAuth><MyTasks /></RequireAuth>} />
+        <Route path="/app/tasks" element={<RequireAuth><Operations /></RequireAuth>} />
         <Route path="/app/attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
         <Route path="/app/signing" element={<RequireAuth><FileSigning /></RequireAuth>} />
-        <Route path="/app/hr" element={<RequireAuth><HR /></RequireAuth>} />
+        <Route path="/app/hr" element={<RequireAuth><HRStructureManagement /></RequireAuth>} />
       </Routes>
     </Suspense>
   );
@@ -238,71 +238,6 @@ const saveSignature = async (dataUrl, typedName) => {
     setSaving(false);
   }
 };`,
-  },
-  {
-    name: "src/components/dashboard/TeamStatusPanel.jsx — لوحة حالة الفريق اللحظية",
-    code: `// Manager-facing snapshot of every visible employee's current status: on leave,
-// checked out, live presence (online/away/busy), or not checked in yet.
-function TeamStatusPanel({ employees, t }) {
-  const [rows, setRows] = useState([]);
-
-  useEffect(() => {
-    if (!employees.length) { setRows([]); return; }
-    base44.functions.invoke("supabaseAttendance", {
-      action: "listDaily",
-      employeeIds: employees.map((e) => e.id),
-    })
-      .then((res) => setRows(res?.data?.rows || []))
-      .catch(() => setRows([]));
-  }, [employees.map((e) => e.id).join(",")]);
-
-  const byEmployee = Object.fromEntries(rows.map((r) => [r.employee_id, r]));
-
-  const statusFor = (emp, att) => {
-    if (isOnLeaveToday(emp)) return { labelKey: "onLeaveStatus", dot: "bg-sky-500" };
-    if (!att?.check_in_at) return { labelKey: "attendanceStatusNotYet", dot: "bg-muted-foreground" };
-    if (att.check_out_at) return { labelKey: "checkedOutStatus", dot: "bg-slate-400" };
-    const presence = PRESENCE_OPTIONS.find((o) => o.key === emp.presenceStatus) || PRESENCE_OPTIONS[0];
-    return { labelKey: presence.labelKey, dot: presence.dot };
-  };
-  // ... renders one live status row per employee
-}
-
-export default React.memo(TeamStatusPanel);`,
-  },
-  {
-    name: "src/components/dashboard/StationsMapCard.jsx — خريطة مقرات العمل التلقائية",
-    code: `import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
-import { resolveStationPositions } from "@/lib/geocodeStations";
-
-// Stations without a pinned GPS point are placed automatically from the
-// coordinates or city name written in their "location" field.
-export default function StationsMapCard({ stations, t }) {
-  const [located, setLocated] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    resolveStationPositions(stations).then((rows) => {
-      if (!cancelled) setLocated(rows);
-    });
-    return () => { cancelled = true; };
-  }, [stations.map((s) => s.id).join("|")]);
-
-  const rows = located || [];
-  const center = rows.length ? [rows[0].lat, rows[0].lng] : [24.7136, 46.6753];
-
-  return (
-    <MapContainer center={center} zoom={rows.length > 1 ? 5 : 11}>
-      <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
-      {rows.map((s) => (
-        <CircleMarker key={s.id} center={[s.lat, s.lng]} radius={8}
-          pathOptions={{ color: "#a9782f", fillColor: "#c99b4f", fillOpacity: 0.9 }}>
-          <Tooltip>{s.name}</Tooltip>
-        </CircleMarker>
-      ))}
-    </MapContainer>
-  );
-}`,
   },
   {
     name: "src/components/mobile/PullToRefresh.jsx — إيماءة السحب للتحديث (تجربة تطبيق أصلي)",

@@ -1,9 +1,72 @@
 import { updateCompany } from "@/lib/store";
 import { sortComplaintChainByTree } from "@/lib/escalation";
+import {
+  branchEscalationMap,
+  deriveAutoBranchEscalationChain,
+  deriveBranchEscalationChain,
+  escalationStationsForEmployee,
+  serializeBranchEscalationMap,
+  stripJobTitleFromData,
+} from "@/lib/orgDerivations";
 import { rankFromScore, scorePermissions } from "@/lib/smartPositions";
 
 export const orgTreeNodes = (data) => Array.isArray(data?.orgTree) ? data.orgTree : [];
 export const nodeAccess = (data, refId) => data?.smartPositions?.find((item) => item.employeeId === refId)?.permissions || {};
+
+function resolvedChainIds(stationId, data) {
+  const existing = branchEscalationMap(data)[String(stationId)];
+  if (Array.isArray(existing)) return existing.map(String);
+  return deriveAutoBranchEscalationChain(stationId, data).map((step) => String(step.employeeId));
+}
+
+function placeOnChain(ids, employeeId, level) {
+  const next = ids.filter((id) => id !== employeeId);
+  const idx = Number(level) > 0 ? Math.min(Math.max(0, Number(level) - 1), next.length) : next.length;
+  return [...next.slice(0, idx), employeeId, ...next.slice(idx)];
+}
+
+/** Add or remove a person on one branch's escalation ladder. Other branches stay unchanged. */
+export function toggleBranchEscalationMember(companyId, stationId, employeeId) {
+  if (!companyId || !stationId || !employeeId) return;
+  updateCompany(companyId, (data) => {
+    const sid = String(stationId);
+    const eid = String(employeeId);
+    const chains = { ...branchEscalationMap(data) };
+    const base = resolvedChainIds(sid, data);
+    chains[sid] = base.includes(eid) ? base.filter((id) => id !== eid) : [...base, eid];
+    data.branchEscalationChains = serializeBranchEscalationMap(chains);
+  });
+}
+
+/**
+ * Set which branches this person holds, and optionally their rank number on those branches.
+ * Example: escalation #2 covering two stations.
+ */
+export function setEmployeeEscalationCoverage(companyId, employeeId, stationIds, level) {
+  if (!companyId || !employeeId) return;
+  updateCompany(companyId, (data) => {
+    const eid = String(employeeId);
+    const wanted = new Set((stationIds || []).map(String).filter(Boolean));
+    const previous = new Set(escalationStationsForEmployee(eid, data));
+    const touch = new Set([...previous, ...wanted]);
+    const chains = { ...branchEscalationMap(data) };
+    for (const sid of touch) {
+      const base = resolvedChainIds(sid, data);
+      chains[sid] = wanted.has(sid) ? placeOnChain(base, eid, level) : base.filter((id) => id !== eid);
+    }
+    data.branchEscalationChains = serializeBranchEscalationMap(chains);
+    if (wanted.size > 0) {
+      const position = (data.smartPositions || []).find((item) => item.employeeId === eid);
+      if (position) position.permissions = { ...(position.permissions || {}), complaints: "manage" };
+    }
+  });
+}
+
+export function escalationLevelOnStation(employeeId, stationId, data) {
+  const idx = deriveBranchEscalationChain(stationId, data)
+    .findIndex((step) => String(step.employeeId) === String(employeeId));
+  return idx >= 0 ? idx + 1 : 0;
+}
 
 export function toggleComplaintEscalationMember(companyId, employeeId) {
   updateCompany(companyId, (data) => {
@@ -45,31 +108,211 @@ export function treeCommunicationTargets(data, employeeId) {
     const permissions = positions.find((item) => item.employeeId === node.refId)?.permissions || {};
     if (permissions.hr === "manage" || permissions.employees === "manage") {
       const person = employees.find((item) => item.id === node.refId);
-      if (person) targets.push({ id: person.id, name: person.name, title: node.title || "" });
+      if (person) targets.push({ id: person.id, name: person.name, title: node.title || "", kind: "tree" });
     }
   }
   return targets;
 }
 
-export function assignEmployeeToOrgStation(companyId, employeeId, stationNodeId) {
-  updateCompany(companyId, (data) => {
-    const nodes = data.orgTree || [];
-    const station = nodes.find((node) => node.id === stationNodeId && node.type === "station");
-    const employee = (data.employees || []).find((item) => item.id === employeeId);
-    if (!station || !employee) return;
-    let node = nodes.find((item) => item.type === "employee" && item.refId === employeeId);
-    const oldParent = node?.parentId || null;
-    if (!node) {
-      const position = (data.smartPositions || []).find((item) => item.employeeId === employeeId);
-      node = { id: `org_${employeeId}`, type: "employee", refId: employeeId, title: position?.title || employee.profile?.position || employee.position || "", parentId: station.id, order: 0 };
-      nodes.push(node);
+/** Always-available company channel + optional tree managers. Tree alone must never block send. */
+export function adminCommunicationTargets(data, employeeId, { ar = true } = {}) {
+  const company = {
+    id: "channel:company_hr",
+    name: ar ? "موارد بشرية الشركة" : "Company HR",
+    title: ar ? "مسار رسمي مضمون" : "Guaranteed official channel",
+    kind: "company",
+    always: true,
+  };
+  const tree = treeCommunicationTargets(data, employeeId);
+  return [company, ...tree];
+}
+
+/** Resolve who should be notified for an admin communication target. */
+export function resolveAdminCommunicationRecipients(data, targetId, employeeId) {
+  const employees = data?.employees || [];
+  const positions = data?.smartPositions || [];
+  if (!targetId || String(targetId).startsWith("channel:")) {
+    const ids = new Set();
+    if (data?.ownerId) ids.add(String(data.ownerId));
+    for (const e of employees) {
+      if (["director", "ops_manager", "pgm"].includes(e.role)) ids.add(String(e.id));
+      const perms = positions.find((p) => p.employeeId === e.id)?.permissions || {};
+      if (perms.hr === "manage" || perms.employees === "manage") ids.add(String(e.id));
     }
-    node.parentId = station.id;
-    node.order = nodes.filter((item) => item.id !== node.id && item.parentId === station.id).length;
+    const emp = employees.find((e) => e.id === employeeId);
+    if (emp?.stationId) {
+      for (const e of employees) {
+        if (String(e.stationId) !== String(emp.stationId)) continue;
+        if (["station_manager"].includes(e.role)) ids.add(String(e.id));
+      }
+    }
+    ids.delete(String(employeeId));
+    return [...ids];
+  }
+  return [String(targetId)];
+}
+
+function findStationNode(nodes, stationNodeIdOrRef) {
+  const key = String(stationNodeIdOrRef || "");
+  return (nodes || []).find((node) =>
+    node.type === "station" && (node.id === key || String(node.refId) === key),
+  ) || null;
+}
+
+/**
+ * Place employee A under person B (reporting line), or under a branch node.
+ * Tree parent = manager / responsible person. Cycle-safe.
+ */
+export function setEmployeeReportsTo(companyId, employeeId, managerNodeId) {
+  const result = { ok: false, error: "UNKNOWN", reason: "تعذّر ضبط التبعية.", reasonEn: "Could not set reporting line." };
+  updateCompany(companyId, (data) => {
+    if (!Array.isArray(data.orgTree)) data.orgTree = [];
+    const nodes = data.orgTree;
+    const employee = (data.employees || []).find((e) => e.id === employeeId);
+    if (!employee) {
+      result.error = "EMPLOYEE_NOT_FOUND";
+      result.reason = "الموظف غير موجود.";
+      result.reasonEn = "Employee not found.";
+      return;
+    }
+    let moving = nodes.find((n) => n.type === "employee" && n.refId === employeeId);
+    if (!moving) {
+      moving = {
+        id: `org_${employeeId}`,
+        type: "employee",
+        refId: employeeId,
+        title: employee.profile?.position || employee.position || "",
+        parentId: null,
+        order: nodes.filter((n) => !n.parentId).length,
+      };
+      nodes.push(moving);
+    }
+    const target = nodes.find((n) => n.id === managerNodeId);
+    if (!target) {
+      result.error = "TARGET_NOT_FOUND";
+      result.reason = "الشخص أو الفرع الهدف غير موجود.";
+      result.reasonEn = "Target person or branch not found.";
+      return;
+    }
+    if (target.id === moving.id) {
+      result.error = "SELF";
+      result.reason = "لا يمكن جعل الشخص تحت نفسه.";
+      result.reasonEn = "A person cannot report to themselves.";
+      return;
+    }
+    // Prevent cycles: target must not be under moving.
+    let cursor = target;
+    while (cursor?.parentId) {
+      if (cursor.parentId === moving.id) {
+        result.error = "CYCLE";
+        result.reason = "هذا يجعل حلقة تبعية — اختر شخصًا أعلى أو فرعًا.";
+        result.reasonEn = "That would create a reporting loop — pick a higher person or a branch.";
+        return;
+      }
+      cursor = nodes.find((n) => n.id === cursor.parentId);
+    }
+    if (moving.parentId === target.id) {
+      result.ok = true;
+      result.error = "SAME_PARENT";
+      result.reason = "التبعية مضبوطة كذلك بالفعل.";
+      result.reasonEn = "Already reports to that node.";
+      return;
+    }
+    const oldParent = moving.parentId || null;
+    moving.parentId = target.id;
+    moving.order = nodes.filter((n) => n.id !== moving.id && n.parentId === target.id).length;
     renumber(nodes, oldParent);
-    renumber(nodes, station.id);
+    renumber(nodes, target.id);
     syncEmployeeStationsFromTree(data);
+    const managerEmp = target.type === "employee"
+      ? (data.employees || []).find((e) => e.id === target.refId)
+      : null;
+    const station = target.type === "station"
+      ? (data.stations || []).find((s) => s.id === target.refId)
+      : null;
+    result.ok = true;
+    result.parentType = target.type;
+    result.parentName = managerEmp?.name || station?.name || target.title || null;
   });
+  return result;
+}
+
+/**
+ * Move an employee under a branch (station node). Returns { ok, ... } — never silent.
+ */
+export function assignEmployeeToOrgStation(companyId, employeeId, stationNodeId) {
+  const result = { ok: false, error: "UNKNOWN", reason: "تعذّر النقل.", reasonEn: "Transfer failed." };
+  updateCompany(companyId, (data) => {
+    if (!Array.isArray(data.orgTree)) data.orgTree = [];
+    const nodes = data.orgTree;
+    let station = findStationNode(nodes, stationNodeId);
+    const employee = (data.employees || []).find((item) => item.id === employeeId);
+    if (!employee) {
+      result.error = "EMPLOYEE_NOT_FOUND";
+      result.reason = "الموظف غير موجود.";
+      result.reasonEn = "Employee not found.";
+      return;
+    }
+    if (!station) {
+      const st = (data.stations || []).find((s) =>
+        String(s.id) === String(stationNodeId) || String(s.stationId) === String(stationNodeId),
+      );
+      if (!st) {
+        result.error = "STATION_NOT_FOUND";
+        result.reason = "الفرع غير موجود في الشجرة.";
+        result.reasonEn = "Branch not found in the tree.";
+        return;
+      }
+      station = {
+        id: `org_station_${st.id}`,
+        type: "station",
+        refId: st.id,
+        title: st.name || "",
+        parentId: null,
+        order: nodes.filter((n) => !n.parentId).length,
+      };
+      nodes.push(station);
+    }
+    assignInside(data, employee, station, result);
+  });
+  return result;
+}
+
+function assignInside(data, employee, station, result) {
+  const nodes = data.orgTree || [];
+  let node = nodes.find((item) => item.type === "employee" && item.refId === employee.id);
+  const oldParent = node?.parentId || null;
+  if (!node) {
+    const position = (data.smartPositions || []).find((item) => item.employeeId === employee.id);
+    node = {
+      id: `org_${employee.id}`,
+      type: "employee",
+      refId: employee.id,
+      title: position?.title || employee.profile?.position || employee.position || "",
+      parentId: station.id,
+      order: 0,
+    };
+    nodes.push(node);
+  }
+  if (node.parentId === station.id) {
+    result.ok = true;
+    result.error = "SAME_STATION";
+    result.reason = "الموظف على هذا الفرع بالفعل.";
+    result.reasonEn = "Employee is already on this branch.";
+    result.stationId = station.refId;
+    result.stationName = (data.stations || []).find((s) => s.id === station.refId)?.name || null;
+    return;
+  }
+  node.parentId = station.id;
+  node.order = nodes.filter((item) => item.id !== node.id && item.parentId === station.id).length;
+  renumber(nodes, oldParent);
+  renumber(nodes, station.id);
+  employee.stationId = station.refId;
+  syncEmployeeStationsFromTree(data);
+  result.ok = true;
+  result.stationId = station.refId;
+  result.stationName = (data.stations || []).find((s) => s.id === station.refId)?.name || null;
+  result.employeeId = employee.id;
 }
 
 export function unassignEmployeeFromOrgTree(companyId, nodeId) {
@@ -150,13 +393,42 @@ export function initializeOrgTree(companyId, data) {
   const stationMismatch = existing.filter((node) => node.type === "employee").some((node) => {
     const stationId = treeStationForNode(existing, node);
     const employee = (data.employees || []).find((item) => item.id === node.refId);
-    return stationId && employee?.stationId !== stationId;
+    return stationId && employee?.stationId && String(employee.stationId) !== String(stationId);
   });
-  if (Array.isArray(data?.orgTree) && !missingStations.length && !stationMismatch) return;
-  updateCompany(companyId, (draft) => {
-    draft.orgTree = [...existing, ...missingStations.map((station, index) => ({ id: `org_station_${station.id}`, type: "station", refId: station.id, title: station.location || "", parentId: null, order: existing.length + index }))];
-    syncEmployeeStationsFromTree(draft);
+
+  // Only add missing station nodes — never rewrite the tree after a transfer.
+  if (missingStations.length) {
+    updateCompany(companyId, (draft) => {
+      const base = Array.isArray(draft.orgTree) ? draft.orgTree : existing;
+      draft.orgTree = [
+        ...base,
+        ...missingStations.map((station, index) => ({
+          id: `org_station_${station.id}`,
+          type: "station",
+          refId: station.id,
+          title: station.name || station.location || "",
+          parentId: null,
+          order: base.length + index,
+        })),
+      ];
+    });
+    return;
+  }
+
+  // Tree wins: repair employee.stationId from hierarchy without moving nodes.
+  if (stationMismatch) {
+    updateCompany(companyId, (draft) => {
+      syncEmployeeStationsFromTree(draft);
+    });
+  }
+}
+
+export function removeCompanyJobTitle(companyId, titleKey) {
+  let cleared = 0;
+  updateCompany(companyId, (data) => {
+    cleared = stripJobTitleFromData(data, titleKey);
   });
+  return cleared;
 }
 
 export function saveOrgNode(companyId, node, permissions = {}, templateId = "") {
@@ -184,6 +456,12 @@ export function saveOrgNode(companyId, node, permissions = {}, templateId = "") 
       const score = scorePermissions(permissions);
       const record = { employeeId: node.refId, title: node.title, titleManual: true, permissions, templateId, score, rank: rankFromScore(score), updatedAt: new Date().toISOString() };
       if (savedIndex >= 0) data.smartPositions[savedIndex] = { ...data.smartPositions[savedIndex], ...record }; else data.smartPositions.push(record);
+      // Keep employee file in sync — title in tree = position on the profile.
+      const emp = (data.employees || []).find((e) => e.id === node.refId);
+      if (emp) {
+        emp.profile = { ...(emp.profile || {}), position: node.title || "" };
+        emp.position = node.title || "";
+      }
     }
     syncEmployeeStationsFromTree(data);
   });
@@ -198,16 +476,52 @@ export function createOrgRecord(companyId, record, permissions = {}) {
     if (record.type === "station") {
       const id = `st_${Math.random().toString(36).slice(2, 9)}`;
       createdStationId = id;
-      data.stations.push({ id, name: record.name.trim(), location: record.location.trim(), type: record.stationType.trim(), status: "active", managerId: null, lat: record.lat ?? null, lng: record.lng ?? null, radiusMeters: record.radiusMeters ?? 200, createdAt: new Date().toISOString() });
-      data.orgTree.push({ id: `org_station_${id}`, type: "station", refId: id, title: record.stationType.trim() || record.location.trim(), parentId, order });
+      const name = String(record.name || "").trim();
+      const location = String(record.location || "").trim();
+      const stationType = String(record.stationType || "").trim();
+      data.stations.push({
+        id,
+        name,
+        location: location || name,
+        type: stationType || "branch",
+        status: "active",
+        managerId: record.managerId || null,
+        lat: record.lat ?? null,
+        lng: record.lng ?? null,
+        radiusMeters: record.radiusMeters ?? 200,
+        createdAt: new Date().toISOString(),
+      });
+      data.orgTree.push({ id: `org_station_${id}`, type: "station", refId: id, title: name, parentId, order });
       return;
     }
     const id = `emp_${Math.random().toString(36).slice(2, 9)}`;
-    data.employees.push({ id, name: record.name.trim(), email: record.email, role: "employee", stationId: record.stationId || null, phone: "", anonymousId: `ANON-${Math.floor(Math.random() * 1e8).toString(16).toUpperCase().padStart(8, "0")}`, managedStations: [], profile: {}, createdAt: new Date().toISOString() });
-    data.orgTree.push({ id: `org_${id}`, type: "employee", refId: id, title: record.title, parentId, order });
+    const jobTitle = String(record.title || "").trim();
+    data.employees.push({
+      id,
+      name: record.name.trim(),
+      email: record.email,
+      role: "employee",
+      stationId: record.stationId || null,
+      phone: "",
+      anonymousId: `ANON-${Math.floor(Math.random() * 1e8).toString(16).toUpperCase().padStart(8, "0")}`,
+      managedStations: [],
+      position: jobTitle,
+      profile: jobTitle ? { position: jobTitle } : {},
+      createdAt: new Date().toISOString(),
+    });
+    data.orgTree.push({ id: `org_${id}`, type: "employee", refId: id, title: jobTitle, parentId, order });
     const score = scorePermissions(permissions);
     data.smartPositions = data.smartPositions || [];
-    data.smartPositions.push({ employeeId: id, title: record.title, titleManual: true, permissions, templateId: record.templateId || "", score, rank: rankFromScore(score), updatedAt: new Date().toISOString() });
+    data.smartPositions.push({
+      employeeId: id,
+      title: jobTitle,
+      titleManual: true,
+      permissions,
+      templateId: record.templateId || "",
+      score,
+      rank: rankFromScore(score),
+      updatedAt: new Date().toISOString(),
+    });
     syncEmployeeStationsFromTree(data);
   });
   return createdStationId;
@@ -215,7 +529,7 @@ export function createOrgRecord(companyId, record, permissions = {}) {
 
 export function saveOrgStationName(companyId, stationId, name) {
   updateCompany(companyId, (data) => {
-    const station = (data.stations || []).find((item) => item.id === stationId);
+    const station = (data.stations || []).find((item) => (item.id === stationId || item.stationId === stationId));
     if (station && name) station.name = name;
   });
 }

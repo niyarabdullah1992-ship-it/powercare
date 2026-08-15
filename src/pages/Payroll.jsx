@@ -1,34 +1,81 @@
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { FileSpreadsheet, ListChecks, RefreshCw, ShieldCheck, Wallet } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { Users, CheckCircle2, Wallet, RefreshCw, FileText } from "lucide-react";
-import { ensurePayrollRun, getRun, isPayrollEmployee, monthKey, netOf, payrollItemIssues, setOwnerPayrollEnabled, updatePayrollItem, setItemPaid, syncPayrollFromProfiles } from "@/lib/payroll";
+import {
+  ensurePayrollRun,
+  getRun,
+  isPayrollEmployee,
+  monthKey,
+  netOf,
+  payrollItemIssues,
+  setOwnerPayrollEnabled,
+  updatePayrollItem,
+  setItemPaid,
+  syncPayrollFromProfiles,
+} from "@/lib/payroll";
 import { printReport } from "@/lib/printReport";
 import PayrollTableRows from "@/components/payroll/PayrollTableRows";
-import PayrollReportExport from "@/components/payroll/PayrollReportExport";
-import StationMultiSelect from "@/components/payroll/StationMultiSelect";
 import PayrollSalaryNotice from "@/components/payroll/PayrollSalaryNotice";
 import OwnerPayrollToggle from "@/components/payroll/OwnerPayrollToggle";
 import PayrollSyncDialog from "@/components/payroll/PayrollSyncDialog";
+import PayrollTemplateCard from "@/components/payroll/PayrollTemplateCard";
 import { canAdjustPayroll, hrScopeStations } from "@/lib/permissions";
 import { toast } from "@/components/ui/use-toast";
 import { stationIdForTreeEmployee } from "@/lib/orgTree";
 import DeductionLinesDialog from "@/components/payroll/DeductionLinesDialog";
 import PayrollRunBoard from "@/components/payroll/PayrollRunBoard";
-import { addDeductionLine, removeDeductionLine, resolveDeductionDispute, backfillLegacyDeduction, disputeDeductionLine, deductionLines } from "@/lib/payrollDeductions";
+import PayrollWpsBoard from "@/components/payroll/PayrollWpsBoard";
+import PayrollCycleStrip from "@/components/payroll/PayrollCycleStrip";
+import {
+  addDeductionLine,
+  removeDeductionLine,
+  resolveDeductionDispute,
+  backfillLegacyDeduction,
+  disputeDeductionLine,
+  deductionLines,
+} from "@/lib/payrollDeductions";
 import { addNotification } from "@/lib/store";
+import useStationScope from "@/hooks/useStationScope";
+import IdentityCard from "@/components/shared/IdentityCard";
+import PlatformStampShell from "@/components/shared/PlatformStampShell";
+import { article90MaxDeduction, isWpsLate } from "@/lib/payrollDerivations";
+import { MUTED, NEUTRAL, WARN, OK, field, ui, SURFACE } from "@/lib/platformStyles";
+import { brandReportColor } from "@/lib/pdfTheme";
 
 const UNASSIGNED_STATION_ID = "__unassigned__";
+const LAYERS = new Set(["run", "lines", "wps", "files"]);
+
+const monthInputStyle = {
+  ...field,
+  width: "auto",
+  height: "34px",
+  background: SURFACE,
+  colorScheme: "light",
+  fontWeight: 500,
+};
 
 export default function Payroll() {
   const { lang, dir } = useI18n();
   const ar = lang === "ar";
   const { company, data, currentUser } = useAuth();
   const [month, setMonth] = useState(monthKey());
-  const [stationFilter, setStationFilter] = useState([]);
-  const [showReport, setShowReport] = useState(false);
+  const headerScope = useStationScope();
+  const [stationFilter, setStationFilter] = useState(() => (headerScope === "all" ? [] : [headerScope]));
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
   const [deductionItemId, setDeductionItemId] = useState(null);
+  const [serverMeta, setServerMeta] = useState({ status: "", wps: null, heads: 0 });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requested = searchParams.get("tab");
+  const tab = LAYERS.has(requested) ? requested : "run";
+
+  const setTab = (value) => {
+    const next = new URLSearchParams(searchParams);
+    if (value === "run") next.delete("tab");
+    else next.set("tab", value);
+    setSearchParams(next, { replace: true });
+  };
 
   const canView = canAdjustPayroll(currentUser, data);
   const includeOwner = data?.settings?.includeOwnerInPayroll === true;
@@ -37,8 +84,24 @@ export default function Payroll() {
     if (canView && company) ensurePayrollRun(company.id, month);
   }, [company?.id, month, canView, includeOwner]);
 
+  useEffect(() => {
+    setStationFilter(headerScope === "all" ? [] : [headerScope]);
+  }, [headerScope]);
+
   if (!canView) {
-    return <p className="text-sm text-muted-foreground font-body py-10 text-center">{ar ? "هذا القسم متاح للإدارة العليا فقط." : "This section is available to executive management only."}</p>;
+    return (
+      <p style={{
+        margin: "40px auto",
+        maxWidth: "420px",
+        textAlign: "center",
+        fontSize: "13px",
+        color: MUTED,
+        lineHeight: 1.7,
+      }}
+      >
+        {ar ? "هذا القسم متاح للإدارة العليا فقط." : "This section is available to executive management only."}
+      </p>
+    );
   }
 
   const run = getRun(data, month);
@@ -66,17 +129,32 @@ export default function Payroll() {
   const selectedStationIds = stationFilter.filter((id) => allowedStationIds.has(id));
   const scopedItems = items.filter((item) => !ownerIds.has(item.employeeId) && (payrollEmployees.some((employee) => employee.id === item.employeeId) || (item.employeeName && (payrollScope === null || payrollScope.includes(itemStationId(item))))));
   const visible = selectedStationIds.length === 0 ? scopedItems : scopedItems.filter((item) => selectedStationIds.includes(itemStationId(item) || UNASSIGNED_STATION_ID));
-  const selectedStationNames = filterStations.filter((station) => selectedStationIds.includes(station.id)).map((station) => station.name);
-  const stationLabel = selectedStationNames.length ? selectedStationNames.join(", ") : (ar ? "جميع المحطات" : "All stations");
-  const currency = visible[0]?.currency || "SAR";
-  const totalNet = visible.reduce((s, i) => s + netOf(i), 0);
   const paidCount = visible.filter((i) => i.paid).length;
+  const issueCount = visible.filter((i) => payrollItemIssues(i).length).length;
   const branding = data.reportBranding || {};
   const monthLabel = new Date(`${month}-01T00:00:00`).toLocaleDateString(ar ? "ar-SA" : "en-GB", { month: "long", year: "numeric" });
+  const scopedStationName = headerScope !== "all"
+    ? (data.stations || []).find((s) => String(s.id) === String(headerScope))?.name
+    : null;
 
   const headers = ar
-    ? ["الموظف", "الأساسي", "البدلات", "مكافآت", "خصومات", "الصافي", "الحالة"]
-    : ["Employee", "Base", "Allowances", "Bonus", "Deductions", "Net", "Status"];
+    ? ["الموظف", "الأساسي", "البدلات", "مكافآت", "خصومات", "سقف م.90", "الصافي", "الحالة"]
+    : ["Employee", "Base", "Allowances", "Bonus", "Deductions", "Art. 90 cap", "Net", "Status"];
+
+  const hints = {
+    run: ar
+      ? "تجهيز واعتماد المسير: الحضور يُقفل هنا. راجع الإجمالي ثم اعتمد قبل ملف مدى."
+      : "Prepare and approve the run: attendance closes here. Review the total, then approve before the Mudad file.",
+    lines: ar
+      ? "حضور معتمد يظهر كبند خصم هنا، ثم الصافي يدخل صف مدى. المادة 90 تمنع تجاوز نصف الأجر."
+      : "Approved attendance appears here as a deduction line, then net enters the Mudad row. Article 90 blocks anything over half the wage.",
+    wps: ar
+      ? "حماية الأجور: هوية · آيبان · تطابق قوى · صافٍ موجب — ثم ملف مدى قبل اليوم الثالث."
+      : "Wage protection: ID · IBAN · Qiwa match · positive net — then the Mudad file before day 3.",
+    files: ar
+      ? "قالب المبالغ من ملف الموظف. الصفوف المدفوعة لا تُمس."
+      : "Amount template from the employee file. Paid rows are left untouched.",
+  };
 
   const syncFromProfiles = () => {
     const count = syncPayrollFromProfiles(company.id, month);
@@ -90,147 +168,186 @@ export default function Payroll() {
     const e = employeeForItem(item);
     printReport({
       title: ar ? "قسيمة راتب" : "Payslip",
-      companyName: company.name, periodLabel: `${e?.name || ""} — ${monthLabel}`, dir,
-      logoUrl: branding.logoUrl || "", color: branding.color || "#b07d3f",
-      stats: [{ value: `${netOf(item).toLocaleString()} ${item.currency}`, label: ar ? "صافي الراتب" : "Net salary" }],
+      companyName: company.name,
+      periodLabel: `${e?.name || ""} — ${monthLabel}`,
+      dir,
+      logoUrl: branding.logoUrl || "",
+      color: brandReportColor(branding.color),
+      stats: [{ value: `${netOf(item).toLocaleString("en-US")} ${item.currency}`, label: ar ? "صافي الراتب" : "Net salary" }],
       sections: [{
         heading: ar ? "تفاصيل الراتب" : "Salary breakdown",
         headers: ar ? ["البند", "المبلغ"] : ["Item", "Amount"],
         rows: [
-          [ar ? "الراتب الأساسي" : "Base salary", `${Number(item.base).toLocaleString()} ${item.currency}`],
-          [ar ? "البدلات" : "Allowances", `${Number(item.allowances).toLocaleString()} ${item.currency}`],
-          [ar ? "المكافآت" : "Bonus", `${Number(item.bonus).toLocaleString()} ${item.currency}`],
-          [ar ? "الخصومات" : "Deductions", `- ${Number(item.deductions).toLocaleString()} ${item.currency}`],
-          [ar ? "الصافي" : "Net", `${netOf(item).toLocaleString()} ${item.currency}`],
+          [ar ? "الراتب الأساسي" : "Base salary", `${Number(item.base).toLocaleString("en-US")} ${item.currency}`],
+          [ar ? "البدلات" : "Allowances", `${Number(item.allowances).toLocaleString("en-US")} ${item.currency}`],
+          [ar ? "المكافآت" : "Bonus", `${Number(item.bonus).toLocaleString("en-US")} ${item.currency}`],
+          [ar ? "الخصومات" : "Deductions", `- ${Number(item.deductions).toLocaleString("en-US")} ${item.currency}`],
+          [ar ? "سقف الخصم (المادة 90)" : "Deduction cap (Art. 90)", `${article90MaxDeduction(item).toLocaleString("en-US")} ${item.currency}`],
+          [ar ? "الصافي" : "Net", `${netOf(item).toLocaleString("en-US")} ${item.currency}`],
           [ar ? "حالة الدفع" : "Payment status", item.paid ? (ar ? "مدفوع" : "Paid") : (ar ? "غير مدفوع" : "Unpaid")],
         ],
       }],
     });
   };
 
+  const deductionItem = visible.find((entry) => entry.id === deductionItemId) || null;
+
   return (
-    <div className="mx-auto max-w-[1320px] space-y-5">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="m-0 font-heading text-[22px] font-semibold text-[#14284B]">{ar ? "الرواتب" : "Payroll"}</h1>
-          <p className="m-0 mt-1 text-[13px] text-[#5A6B85]">
-            {ar ? `مسير ${monthLabel} · بانتظار الاعتماد` : `${monthLabel} run · awaiting approval`}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <input type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 text-sm font-medium text-[#14284B] [color-scheme:light]" dir="ltr" />
-          <StationMultiSelect stations={filterStations} value={selectedStationIds} onChange={setStationFilter} ar={ar} />
-          <button onClick={() => setShowSyncConfirm(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] bg-white px-3.5 py-2 text-[12.5px] font-semibold text-[#14284B] hover:border-[#0E7A4B]">
-            <RefreshCw className="w-4 h-4" strokeWidth={1.75} /> {ar ? "تحديث من الملفات" : "Refresh from profiles"}
+    <PlatformStampShell
+      ar={ar}
+      title={scopedStationName || (ar ? "مسير الأجور" : "Wage run")}
+      hint={hints[tab]}
+      maxWidth={1280}
+      sections={[
+        { value: "run", label: ar ? "المسير" : "Run", icon: Wallet },
+        { value: "lines", label: ar ? "البنود" : "Lines", icon: ListChecks },
+        { value: "wps", label: ar ? "حماية الأجور" : "Wage protection", icon: ShieldCheck },
+        { value: "files", label: ar ? "القالب" : "Template", icon: FileSpreadsheet },
+      ]}
+      tool={tab}
+      onTool={setTab}
+      meta={(
+        <>
+          <input
+            type="month"
+            value={month}
+            onChange={(e) => e.target.value && setMonth(e.target.value)}
+            dir="ltr"
+            aria-label={ar ? "شهر المسير" : "Payroll month"}
+            style={monthInputStyle}
+          />
+          <span style={{ ...NEUTRAL, borderRadius: 8 }}>{visible.length} {ar ? "موظفًا" : "employees"}</span>
+          <span style={{ ...(paidCount === visible.length && visible.length ? OK : NEUTRAL), borderRadius: 8 }}>
+            {paidCount}/{visible.length} {ar ? "مدفوع" : "paid"}
+          </span>
+          {issueCount > 0 && (
+            <span style={{ ...WARN, borderRadius: 8 }}>{issueCount} {ar ? "بندًا يحتاج تصحيحًا" : "lines need a fix"}</span>
+          )}
+          <button type="button" onClick={() => setShowSyncConfirm(true)} style={{ ...ui.btnSecondary, height: 34, display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <RefreshCw style={{ width: 13, height: 13 }} />
+            {ar ? "تحديث من الملفات" : "Refresh from profiles"}
           </button>
+        </>
+      )}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <PayrollCycleStrip
+        ar={ar}
+        hasRun={visible.length > 0 || serverMeta.heads > 0}
+        heads={visible.length || serverMeta.heads}
+        issueCount={issueCount}
+        status={serverMeta.status}
+        wpsLate={!!serverMeta.wps?.late || isWpsLate(month)}
+        activeTab={tab}
+        onOpenTab={setTab}
+      />
+
+      {tab === "run" && (
+        <PayrollRunBoard
+          month={month}
+          lang={lang}
+          stationScope={headerScope}
+          onEditLines={() => setTab("lines")}
+          onOpenWps={() => setTab("wps")}
+          onMeta={setServerMeta}
+        />
+      )}
+
+      {tab === "lines" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <PayrollSalaryNotice ar={ar} />
+          <IdentityCard
+            icon={ListChecks}
+            kicker={ar ? "البنود" : "Lines"}
+            title={ar ? "مراجعة الأجر التعاقدي" : "Contractual wage review"}
+            subtitle={ar ? "حضور معتمد → بند خصم → صافٍ → ملف مدى. المادة 90 تمنع تجاوز نصف الأجر." : "Approved attendance → deduction line → net → Mudad file. Article 90 blocks anything over half the wage."}
+            meta={issueCount > 0 ? <span style={{ ...WARN, borderRadius: 8 }}>{issueCount} {ar ? "بندًا يحتاج تصحيحًا" : "lines need a fix"}</span> : null}
+            bodyStyle={{ padding: 0, overflowX: "auto" }}
+          >
+            {visible.length === 0 ? (
+              <p style={{ margin: "24px 18px", textAlign: "center", fontSize: 13, color: MUTED }}>
+                {ar ? "لا موظفين في هذا النطاق — وسّع نطاق الهيدر أو حدّث من الملفات." : "No employees in this scope — widen header scope or refresh from profiles."}
+              </p>
+            ) : (
+              <table style={{ width: "100%", minWidth: 1100, borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    {[...headers, ar ? "قسيمة" : "Payslip"].map((h) => (
+                      <th key={h} style={{ padding: "11px 12px", textAlign: "center", fontSize: 10, letterSpacing: "0.06em", color: MUTED, fontWeight: 600, borderBottom: "1px solid #E2E8F0", background: SURFACE }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <PayrollTableRows
+                    items={visible}
+                    stations={allowedStations}
+                    getStationId={itemStationId}
+                    employeeForItem={employeeForItem}
+                    ar={ar}
+                    onChange={(itemId, field, value) => updatePayrollItem(company.id, month, itemId, { [field]: value })}
+                    onTogglePaid={(item, paid) => {
+                      if (paid && payrollItemIssues(item).length) {
+                        const issues = payrollItemIssues(item);
+                        const msg = issues.includes("ARTICLE_90_EXCEEDED")
+                          ? (ar ? "لا يمكن الدفع — مجموع الخصومات يتجاوز نصف الأجر (المادة 90)." : "Payment blocked — deductions exceed half the wage (Art. 90).")
+                          : (ar ? "لا يمكن اعتماد الدفع قبل إدخال راتب أساسي ومبالغ صحيحة وصافي موجب وعملة صالحة." : "Payment cannot be approved until base salary, valid amounts, a positive net, and a valid currency are set.");
+                        alert(msg);
+                        return;
+                      }
+                      setItemPaid(company.id, month, item.id, paid);
+                    }}
+                    onPayslip={exportPayslip}
+                    onDeductions={(item) => { backfillLegacyDeduction(company.id, month, item); setDeductionItemId(item.id); }}
+                  />
+                </tbody>
+              </table>
+            )}
+          </IdentityCard>
         </div>
-      </header>
-      <PayrollRunBoard month={month} lang={lang} />
+      )}
+
+      {tab === "wps" && (
+        <PayrollWpsBoard
+          month={month}
+          lang={lang}
+          items={visible}
+          employeeForItem={employeeForItem}
+          onBackToRun={() => setTab("run")}
+          onMeta={setServerMeta}
+        />
+      )}
+
+      {tab === "files" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <PayrollTemplateCard company={company} data={data} employees={payrollEmployees} month={month} ar={ar} />
+          <OwnerPayrollToggle checked={includeOwner} onChange={(checked) => setOwnerPayrollEnabled(company.id, checked)} ar={ar} />
+        </div>
+      )}
 
       <PayrollSyncDialog open={showSyncConfirm} onOpenChange={setShowSyncConfirm} onConfirm={syncFromProfiles} ar={ar} />
 
-      <OwnerPayrollToggle checked={includeOwner} onChange={(checked) => setOwnerPayrollEnabled(company.id, checked)} ar={ar} />
-
-      <PayrollSalaryNotice ar={ar} />
-
-      <div className="space-y-3">
-        <button type="button" onClick={() => setShowReport((value) => !value)} className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-body ${showReport ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-muted"}`}>
-          <FileText className="h-4 w-4" /> {ar ? "تقرير الرواتب (PDF / Excel)" : "Payroll report (PDF / Excel)"}
-        </button>
-        {showReport && <PayrollReportExport runs={data.payrollRuns || []} employees={payrollEmployees} excludedEmployeeIds={ownerIds} stations={allowedStations} companyName={company.name} branding={branding} lang={lang} dir={dir} />}
+      <DeductionLinesDialog
+        open={Boolean(deductionItem)}
+        onOpenChange={(open) => !open && setDeductionItemId(null)}
+        item={deductionItem}
+        employeeName={deductionItem ? employeeForItem(deductionItem)?.name || "" : ""}
+        ar={ar}
+        canEdit
+        onAdd={(line) => addDeductionLine(company.id, month, deductionItem, line, currentUser)}
+        onRemove={(lineId) => removeDeductionLine(company.id, month, deductionItem, lineId, currentUser)}
+        onResolve={(lineId, status) => resolveDeductionDispute(company.id, month, deductionItem, lineId, status, currentUser)}
+        currentUserId={currentUser?.id}
+        onDispute={(lineId, note) => {
+          disputeDeductionLine(company.id, month, deductionItem, lineId, note, currentUser);
+          const line = deductionLines(deductionItem).find((entry) => entry.id === lineId);
+          if (line?.createdBy && !["system", "unknown"].includes(line.createdBy)) {
+            addNotification(company.id, line.createdBy, ar
+              ? `اعتراض جديد على بند خصم — ${employeeForItem(deductionItem)?.name || ""}: ${note}`
+              : `New deduction dispute — ${employeeForItem(deductionItem)?.name || ""}: ${note}`);
+          }
+        }}
+      />
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[
-          [Users, visible.length, ar ? "الموظفون" : "Employees"],
-          [Wallet, `${totalNet.toLocaleString()} ${currency}`, ar ? "إجمالي الصافي" : "Total net"],
-          [CheckCircle2, `${paidCount}/${visible.length}`, ar ? "تم الدفع" : "Paid"],
-        ].map(([Icon, value, label]) => (
-          <div key={label} className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-lg bg-accent/10 text-accent flex items-center justify-center shrink-0">
-              <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
-            </span>
-            <div className="min-w-0">
-              <p className="font-heading text-lg font-semibold truncate" dir="ltr">{value}</p>
-              <p className="text-[11px] text-muted-foreground font-body">{label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="rounded-xl border border-border bg-card p-4 md:p-5 overflow-x-auto">
-        {visible.length === 0 ? (
-          <p className="text-sm text-muted-foreground font-body py-8 text-center">
-            {ar ? "لا يوجد موظفون بعد — أضف موظفين وحدّد رواتبهم من ملفاتهم الشخصية (تبويب الراتب)." : "No employees yet — add employees and set their salaries from their profiles (Salary tab)."}
-          </p>
-        ) : (
-          <table className="w-full min-w-[830px] table-fixed mobile-cards">
-            <colgroup>
-              <col className="w-[120px]" />
-              <col className="w-[130px]" />
-              <col className="w-[100px]" />
-              <col className="w-[100px]" />
-              <col className="w-[100px]" />
-              <col className="w-[100px]" />
-              <col className="w-[110px]" />
-              <col className="w-[70px]" />
-            </colgroup>
-            <thead>
-              <tr>
-                {[...headers, ar ? "قسيمة" : "Payslip"].map((h) => (
-                  <th key={h} className="px-2 pb-3 text-center text-[11px] font-body font-semibold text-muted-foreground">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <PayrollTableRows
-                items={visible}
-                stations={allowedStations}
-                getStationId={itemStationId}
-                employeeForItem={employeeForItem}
-                ar={ar}
-                onChange={(itemId, field, value) => updatePayrollItem(company.id, month, itemId, { [field]: value })}
-                onTogglePaid={(item, paid) => {
-                  if (paid && payrollItemIssues(item).length) {
-                    alert(ar ? "لا يمكن اعتماد الدفع قبل إدخال راتب أساسي ومبالغ صحيحة وصافي موجب وعملة صالحة." : "Payment cannot be approved until base salary, valid amounts, a positive net, and a valid currency are set.");
-                    return;
-                  }
-                  setItemPaid(company.id, month, item.id, paid);
-                }}
-                onPayslip={exportPayslip}
-                onDeductions={(item) => { backfillLegacyDeduction(company.id, month, item); setDeductionItemId(item.id); }}
-              />
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {(() => {
-        const item = visible.find((entry) => entry.id === deductionItemId) || null;
-        return (
-          <DeductionLinesDialog
-            open={Boolean(item)}
-            onOpenChange={(open) => !open && setDeductionItemId(null)}
-            item={item}
-            employeeName={item ? employeeForItem(item)?.name || "" : ""}
-            ar={ar}
-            canEdit
-            onAdd={(line) => addDeductionLine(company.id, month, item, line, currentUser)}
-            onRemove={(lineId) => removeDeductionLine(company.id, month, item, lineId, currentUser)}
-            onResolve={(lineId, status) => resolveDeductionDispute(company.id, month, item, lineId, status, currentUser)}
-            currentUserId={currentUser?.id}
-            onDispute={(lineId, note) => {
-              disputeDeductionLine(company.id, month, item, lineId, note, currentUser);
-              const line = deductionLines(item).find((entry) => entry.id === lineId);
-              if (line?.createdBy && !["system", "unknown"].includes(line.createdBy)) {
-                addNotification(company.id, line.createdBy, ar
-                  ? `اعتراض جديد على بند خصم — ${employeeForItem(item)?.name || ""}: ${note}`
-                  : `New deduction dispute — ${employeeForItem(item)?.name || ""}: ${note}`);
-              }
-            }}
-          />
-        );
-      })()}
-    </div>
+    </PlatformStampShell>
   );
 }

@@ -6,9 +6,10 @@ import { useI18n } from "@/lib/i18n";
 import { isBase44BackendConfigured } from "@/lib/localPreview";
 
 function resolveKind(fixedKind, search) {
-  if (fixedKind === "gov" || fixedKind === "company" || fixedKind === "individual") return fixedKind;
+  if (fixedKind === "individual" || fixedKind === "company") return fixedKind;
+  if (fixedKind === "gov") return "company";
   const type = new URLSearchParams(search).get("type");
-  if (type === "gov" || type === "individual" || type === "company") return type;
+  if (type === "individual") return "individual";
   return "company";
 }
 
@@ -60,16 +61,12 @@ export default function usePowerCareLogin(returnPath = "/login", fixedKind = nul
   }, []);
 
   const wrongKindMessage = lang === "ar"
-    ? (kind === "gov"
-      ? "هذا الحساب لشركة وليس لجهة حكومية — استخدم بوابة الشركات."
-      : kind === "company"
-        ? "هذا الحساب لجهة حكومية وليس لشركة — استخدم بوابة الجهات الحكومية."
-        : "هذا الحساب لا ينتمي إلى بوابة الأفراد.")
-    : (kind === "gov"
-      ? "This is a company account — use the company portal."
-      : kind === "company"
-        ? "This is a government account — use the government portal."
-        : "This account does not belong to the individual portal.");
+    ? (kind === "company"
+      ? "هذا الحساب لا ينتمي إلى بوابة الشركات — استخدم بوابة الأفراد."
+      : "هذا الحساب لا ينتمي إلى بوابة الأفراد — استخدم بوابة الشركات.")
+    : (kind === "company"
+      ? "This account does not belong to the company portal — use the individual portal."
+      : "This account does not belong to the individual portal — use the company portal.");
 
   const submit = async (event) => {
     event.preventDefault();

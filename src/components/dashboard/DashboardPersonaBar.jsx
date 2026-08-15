@@ -1,16 +1,16 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useOrgTerms } from "@/hooks/useOrgTerms";
+import { INK, MUTED } from "@/lib/platformStyles";
 
 /**
- * Display-only persona + facility kind. Org type is locked at signup / login portal —
- * not a switch between company and government.
+ * States whose view the command center is showing — plain meta, not toggles.
+ * Persona derives from role/position; facility type is locked at signup.
  */
 export default function DashboardPersonaBar({ lang = "ar" }) {
   const ar = lang === "ar";
   const { currentUser, data } = useAuth();
-  const { orgType, terms, isGov } = useOrgTerms();
+  const { terms } = useOrgTerms();
 
   const role = currentUser?.role || "employee";
   const persona = (() => {
@@ -21,50 +21,27 @@ export default function DashboardPersonaBar({ lang = "ar" }) {
     return "hr";
   })();
 
-  const roles = [
-    { id: "employee", ar: "موظف", en: "Employee" },
-    { id: "manager", ar: "مدير مباشر", en: "Line manager" },
-    { id: "hr", ar: "موارد بشرية", en: "HR" },
-    { id: "executive", ar: "تنفيذي", en: "Executive" },
-  ];
-
-  const portalPath = isGov ? "/login/gov" : "/login/company";
+  const PERSONA_LABEL = {
+    employee: { ar: "موظف", en: "Employee" },
+    manager: { ar: "مدير مباشر", en: "Line manager" },
+    hr: { ar: "موارد بشرية", en: "HR" },
+    executive: { ar: "تنفيذي", en: "Executive" },
+  };
+  const label = PERSONA_LABEL[persona];
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {roles.map((r) => {
-        const active = persona === r.id;
-        return (
-          <span
-            key={r.id}
-            className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium ${
-              active
-                ? "bg-[#0B1A3F] text-white"
-                : "border border-[#E4E7EC] bg-white text-[#98A2B3]"
-            }`}
-          >
-            {ar ? r.ar : r.en}
-          </span>
-        );
-      })}
-
-      <span className="mx-0.5 hidden h-4 w-px bg-[#E4E7EC] sm:inline" aria-hidden />
-
-      <span
-        className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium ${
-          isGov ? "bg-[#0E7A4B] text-white" : "bg-[#0B1A3F] text-white"
-        }`}
-        title={ar ? "نوع الجهة ثابت من بوابة التسجيل/الدخول" : "Facility type is fixed at signup/login"}
-      >
-        {isGov ? (ar ? "جهة حكومية" : "Government") : (ar ? "شركة" : terms.orgKindShort)}
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "6px 10px", fontSize: "12px", color: MUTED, lineHeight: 1.55 }}>
+      <span>
+        {ar ? "العرض بصلاحية" : "Viewing as"}{" "}
+        <strong style={{ color: INK, fontWeight: 600 }}>{ar ? label.ar : label.en}</strong>
+        {" · "}
+        {ar ? "شركة" : terms.orgKindShort}
       </span>
-
-      <Link
-        to={portalPath}
-        className="rounded-full border border-[#E4E7EC] bg-white px-3 py-1.5 text-[11.5px] text-[#667085] hover:border-[#0E7A4B] hover:text-[#0E7A4B]"
-      >
-        {ar ? "بوابة الدخول المخصصة" : "Dedicated login portal"}
-      </Link>
+      <span style={{ fontSize: "11px", color: MUTED }}>
+        {ar
+          ? "مشتقّة من الدور والهيكل — لا تُبدَّل من هنا."
+          : "Derived from role and structure — not switched here."}
+      </span>
     </div>
   );
 }

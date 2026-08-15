@@ -1,1 +1,5 @@
-export const POWERCARE_LOGO_URL = 'https://media.base44.com/images/public/6a4f617bd7360a0ae9581d2a/1914d20bd_.png';
+/** Official NiroVera N mark (exact artwork) for email and PDF headers. */
+export const POWERCARE_MARK_URL = '/nirovera-mark.png';
+
+/** Full lockup — N + NiroVera (green V). */
+export const POWERCARE_LOGO_URL = '/nirovera-lockup.svg';

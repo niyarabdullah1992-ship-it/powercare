@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { createMimeMessage } from 'npm:mimetext@3.0.24';
 import { fetchWithRetry } from '../../shared/fetchRetry.ts';
-import { POWERCARE_LOGO_URL } from '../../shared/brand.ts';
+import { POWERCARE_MARK_URL } from '../../shared/brand.ts';
 
 // Sends an email from the company's connected Gmail account.
 // Authorized for the platform builder or any valid PowerCare company session.
@@ -50,9 +50,9 @@ function emailHtml(title, text, details, cta) {
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f7f4ed;font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f4ed;padding:32px 12px;"><tr><td align="center">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #d9cfbb;">
-      <tr><td style="background:linear-gradient(180deg,#d6c28f,#9e7c47);padding:26px;text-align:center;">
-        <img src="${POWERCARE_LOGO_URL}" width="72" height="72" alt="PowerCare" style="display:block;margin:0 auto 8px;" />
-        <div style="font-size:20px;font-weight:700;color:#ffffff;font-family:Georgia,serif;letter-spacing:1px;">PowerCare</div>
+      <tr><td style="background:#14284B;padding:26px;text-align:center;">
+        <img src="${POWERCARE_MARK_URL}" width="72" height="72" alt="NiroVera" style="display:block;margin:0 auto 8px;background:#fff;border-radius:8px;" />
+        <div style="font-size:20px;font-weight:700;color:#ffffff;font-family:Arial,Helvetica,sans-serif;letter-spacing:1px;">NiroVera</div>
       </td></tr>
       <tr><td style="padding:30px 30px 10px;">
         <h1 style="margin:0 0 16px;font-size:18px;color:#13283d;font-family:Georgia,serif;" dir="auto">${escapeHtml(title)}</h1>
@@ -61,7 +61,7 @@ function emailHtml(title, text, details, cta) {
         ${ctaBtn}
       </td></tr>
       <tr><td style="padding:18px 30px 26px;border-top:1px solid #e6dece;">
-        <p style="margin:0;font-size:12px;color:#77818b;text-align:center;" dir="auto">PowerCare — إدارة ذكية لفريقك ومهامك · Smart workforce management</p>
+        <p style="margin:0;font-size:12px;color:#77818b;text-align:center;" dir="auto">NiroVera — إدارة ذكية لفريقك ومهامك · Smart workforce management</p>
       </td></tr>
     </table>
   </td></tr></table></body></html>`;

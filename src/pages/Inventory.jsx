@@ -1,125 +1,550 @@
-import React, { useEffect, useState } from "react";
-import { FileText } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import React, { useEffect, useMemo, useState } from "react";
+import { Boxes, ClipboardList, Package, ShoppingCart, Truck } from "lucide-react";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { useI18n } from "@/lib/i18n";
-import { inventoryCall } from "@/lib/inventoryApi";
-import InventoryStats from "@/components/inventory/InventoryStats";
-import ItemForm from "@/components/inventory/ItemForm";
-import MaterialRequestForm from "@/components/inventory/MaterialRequestForm";
-import RequestsList from "@/components/inventory/RequestsList";
-import ItemList from "@/components/inventory/ItemList";
-import ItemDetails from "@/components/inventory/ItemDetails";
-import GlobalInventorySearch from "@/components/inventory/GlobalInventorySearch";
-import InventoryItemScanner from "@/components/inventory/InventoryItemScanner";
-import MovementList from "@/components/inventory/MovementList";
-import PurchasesTab from "@/components/inventory/PurchasesTab";
-import WorkIssueTab from "@/components/inventory/WorkIssueTab";
-import InventoryTabs from "@/components/inventory/InventoryTabs";
-import InventoryWorkflow from "@/components/inventory/InventoryWorkflow";
-import InventoryPeriodReport from "@/components/inventory/InventoryPeriodReport";
-import InventoryHeader from "@/components/inventory/InventoryHeader";
-import StockAlertBoard from "@/components/inventory/StockAlertBoard";
+import { localInventoryCall } from "@/lib/localInventoryFallback";
 import { toast } from "@/components/ui/use-toast";
+import PlatformStampShell from "@/components/shared/PlatformStampShell";
+import useStationScope, { matchesStationScope } from "@/hooks/useStationScope";
+import { MUTED, NAVY, cardShell, field, labelMuted, num, tableShell, ui, SURFACE } from "@/lib/platformStyles";
 
-const emptyData = { items: [], requestItems: [], historyItems: [], movements: [], purchases: [], requests: [], stations: [], locations: [], transferStations: [], employees: [], procurementRequests: [], purchaseOrders: [], canManage: false, canPurchase: false, canCreateItem: false, canIssueToWork: false, canIssueFromAnyStation: false, canRequest: false, canReviewRequests: false, canReviewAllRequests: false, canDelete: false, canApproveProcurement: false, canReceiveProcurement: false, canViewAllPurchases: false, canWarehouseManage: false, canTransfer: false, canSetCentralWarehouse: false, canReverse: false, centralWarehouseId: null };
+const TABS = [
+  ["items", "الأصناف", "Items", Package],
+  ["purchases", "المشتريات", "Purchases", ShoppingCart],
+  ["requests", "الطلبات", "Requests", ClipboardList],
+  ["issue", "الصرف للعمل", "Issue to work", Boxes],
+  ["movements", "الحركات", "Movements", Truck],
+];
+
+function asList(value) {
+  return Array.isArray(value) ? value.filter((row) => row && typeof row === "object") : [];
+}
+
+function stationIdOf(station) {
+  return station?.stationId || station?.id || "";
+}
+
+function emptyBoard(stations = [], employees = []) {
+  return {
+    items: [],
+    movements: [],
+    purchases: [],
+    requests: [],
+    stations,
+    locations: stations,
+    employees,
+    canPurchase: true,
+    canRequest: true,
+    canIssueToWork: true,
+    canReviewRequests: true,
+    canReverse: true,
+  };
+}
+
+function readBoard(session, stations) {
+  try {
+    const next = localInventoryCall(session, "list", { stations });
+    return {
+      ...emptyBoard(stations),
+      ...next,
+      items: asList(next.items),
+      movements: asList(next.movements),
+      purchases: asList(next.purchases),
+      requests: asList(next.requests),
+      stations: asList(next.stations || next.locations || stations),
+      locations: asList(next.locations || next.stations || stations),
+      employees: asList(next.employees),
+    };
+  } catch (error) {
+    console.error("NiroVera inventory board:", error);
+    return emptyBoard(stations);
+  }
+}
 
 export default function Inventory() {
   const { session, currentUser, data } = useAuth();
   const { lang } = useI18n();
   const ar = lang === "ar";
-  const [active, setActive] = useState("overview");
-  const [showReport, setShowReport] = useState(false);
-  const [state, setState] = useState(emptyData);
-  const [loading, setLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [selectedStation, setSelectedStation] = useState("");
-  const [selectedInventoryStations, setSelectedInventoryStations] = useState([]);
-  const stationVersion = (data?.stations || []).map((station) => station.id).sort().join("|");
+  const scope = useStationScope();
+  const scopedToOne = scope !== "all";
+  const [tab, setTab] = useState("items");
+  const [board, setBoard] = useState(() => emptyBoard());
+  const [busy, setBusy] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    try { setState(await inventoryCall(session, "list", { stations: data?.stations || [] })); }
-    catch (error) { toast({ description: error?.response?.data?.error || error.message, variant: "destructive" }); }
-    finally { setLoading(false); }
+  const stations = asList(board.locations.length ? board.locations : data?.stations);
+  const employees = asList(board.employees.length ? board.employees : data?.employees);
+  const scopedStations = stations.filter((station) => matchesStationScope(stationIdOf(station), scope));
+  const lockedStationId = scopedToOne ? scope : "";
+
+  const reload = () => {
+    if (!session?.companyId) return;
+    setBoard(readBoard(session, asList(data?.stations)));
   };
-  useEffect(() => { load(); }, [session?.companyId, stationVersion]);
 
-  const run = async (action, payload) => {
+  useEffect(() => { reload(); }, [session?.companyId, (data?.stations || []).length]);
+
+  const run = (action, payload) => {
+    setBusy(true);
     try {
-      const imageUrls = payload.imageUrls || [];
-      await inventoryCall(session, action, payload);
-      let next = await inventoryCall(session, "list");
-      if (imageUrls.length && action === "createItem") {
-        const item = next.items.find((entry) => entry.itemCode === payload.itemCode);
-        const purchase = next.movements.find((entry) => entry.movementType === "purchase" && entry.itemId === item?.id);
-        await Promise.all([
-          item && base44.entities.InventoryItem.update(item.id, { imageUrls: [...(item.imageUrls || []), ...imageUrls].slice(-10) }),
-          purchase && base44.entities.StockMovement.update(purchase.id, { imageUrls }),
-        ].filter(Boolean));
-        next = await inventoryCall(session, "list");
-      }
-      setState(next);
-      toast({ description: ar ? "تم حفظ العملية بنجاح." : "Operation saved." });
+      localInventoryCall(session, action, payload);
+      reload();
+      toast({ description: ar ? "تم حفظ العملية." : "Saved." });
       return true;
     } catch (error) {
-      const code = error?.response?.data?.code;
-      const reversalErrors = {
-        INSUFFICIENT_REVERSAL_STOCK: ar ? "لا يمكن التراجع لأن الرصيد الحالي لا يكفي؛ ربما تم استهلاك الكمية أو نقلها." : "Cannot reverse because current stock is insufficient; the quantity may have been consumed or moved.",
-        REVERSAL_HAS_DEPENDENCIES: ar ? "انتقلت هذه الكمية أو صُرفت لاحقًا. تراجع عن الحركات الأحدث أولًا." : "This quantity was transferred or issued later. Reverse the newer movements first.",
-        MOVEMENT_ALREADY_REVERSED: ar ? "تم التراجع عن هذه الحركة مسبقاً." : "This movement has already been reversed.",
-        REVERSAL_REASON_REQUIRED: ar ? "سبب التراجع مطلوب." : "A reversal reason is required.",
-      };
-      toast({ description: reversalErrors[code] || error?.response?.data?.error || error.message, variant: "destructive" }); return false;
+      toast({
+        description: error?.response?.data?.error || error.message || (ar ? "تعذّر الحفظ." : "Could not save."),
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setBusy(false);
     }
   };
 
-  const updateImages = async (itemId, imageUrls) => {
-    try { await base44.entities.InventoryItem.update(itemId, { imageUrls }); await load(); toast({ description: ar ? "تم تحديث الصور." : "Images updated." }); }
-    catch (error) { toast({ description: error.message, variant: "destructive" }); }
+  if (!currentUser) return null;
+
+  const items = asList(board.items).filter((item) => matchesStationScope(item.currentLocationId, scope));
+  const purchases = asList(board.purchases).filter((row) => matchesStationScope(row.toLocationId, scope));
+  const requests = asList(board.requests).filter((row) =>
+    matchesStationScope(row.stationId, scope) || matchesStationScope(row.sourceStationId, scope),
+  );
+  const movements = asList(board.movements).filter((row) =>
+    matchesStationScope(row.fromLocationId, scope) || matchesStationScope(row.toLocationId, scope),
+  );
+  const low = items.filter((item) => Number(item.quantity) <= Number(item.minimumStock || 0)).length;
+  const pending = requests.filter((request) => request.status === "pending").length;
+  const stationName = (id) => stations.find((station) => stationIdOf(station) === id)?.name || "—";
+  const itemName = (id) => asList(board.items).find((item) => item.id === id)?.name || "—";
+  const personName = (id) => employees.find((row) => row.id === id || row.employeeId === id)?.name || "—";
+  const scopedEmployees = employees.filter((row) => !scopedToOne || matchesStationScope(row.stationId, scope));
+
+  const sections = TABS.map(([key, arLabel, enLabel, icon]) => ({
+    value: key,
+    label: ar ? arLabel : enLabel,
+    icon,
+    count: key === "requests" ? pending : key === "items" ? low : 0,
+  }));
+
+  const stats = [
+    { label: ar ? "الأصناف" : "Items", value: items.length },
+    { label: ar ? "تحت الحد" : "Low stock", value: low, danger: low > 0 },
+    { label: ar ? "طلبات معلقة" : "Pending", value: pending },
+    { label: ar ? "الحركات" : "Movements", value: movements.length },
+  ];
+
+  return (
+    <PlatformStampShell
+      ar={ar}
+      title={ar ? "المخزون والأصول" : "Inventory & assets"}
+      hint={ar ? "شراء للصنف · رصيد الفرع · صرف للعمل. الفرع من الشريط العلوي." : "Purchase the item · station balance · issue to work. Station comes from the header."}
+      sections={sections}
+      tool={tab}
+      onTool={setTab}
+      maxWidth={1600}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {tab === "items" && (
+          <>
+            <KpiStrip stats={stats} />
+            <InventoryTable
+              headers={ar ? ["الصنف", "الكود", "الكمية", "الفرع", "الحالة"] : ["Item", "Code", "Qty", "Station", "Status"]}
+              empty={ar ? "لا أصناف في هذا النطاق. أضف شراءً من تبويب المشتريات." : "No items in this scope. Add a purchase first."}
+              rows={items.map((item) => [
+                item.name,
+                item.itemCode,
+                item.quantity,
+                stationName(item.currentLocationId),
+                Number(item.quantity) <= Number(item.minimumStock || 0) ? (ar ? "منخفض" : "Low") : (ar ? "متوفر" : "In stock"),
+              ])}
+            />
+          </>
+        )}
+
+        {tab === "purchases" && (
+          <>
+            <PurchaseForm
+              ar={ar}
+              busy={busy}
+              stations={scopedToOne ? scopedStations : stations}
+              lockedStationId={lockedStationId}
+              onSubmit={(payload) => run("createItem", payload)}
+            />
+            <InventoryTable
+              headers={ar ? ["الصنف", "المورد", "الكمية", "الفرع", "التكلفة"] : ["Item", "Supplier", "Qty", "Station", "Cost"]}
+              empty={ar ? "لا مشتريات في هذا النطاق." : "No purchases in this scope."}
+              rows={purchases.map((row) => [
+                itemName(row.itemId),
+                row.supplierName || "—",
+                row.quantity,
+                stationName(row.toLocationId),
+                row.totalCost != null ? `${row.totalCost} SAR` : "—",
+              ])}
+            />
+          </>
+        )}
+
+        {tab === "requests" && (
+          <>
+            <RequestForm
+              ar={ar}
+              busy={busy}
+              items={asList(board.items)}
+              stations={stations}
+              lockedStationId={lockedStationId}
+              onSubmit={(payload) => run("request", payload)}
+            />
+            <InventoryTable
+              headers={ar ? ["الصنف", "الكمية", "من", "إلى", "الحالة"] : ["Item", "Qty", "From", "To", "Status"]}
+              empty={ar ? "لا طلبات في هذا النطاق." : "No requests in this scope."}
+              rows={requests.map((row) => [
+                itemName(row.itemId),
+                row.quantity,
+                stationName(row.sourceStationId),
+                stationName(row.stationId),
+                row.status,
+              ])}
+            />
+          </>
+        )}
+
+        {tab === "issue" && (
+          <>
+            <IssueForm
+              ar={ar}
+              busy={busy}
+              items={asList(board.items)}
+              stations={scopedToOne ? scopedStations : stations}
+              employees={scopedEmployees.length ? scopedEmployees : employees}
+              lockedStationId={lockedStationId}
+              onSubmit={(payload) => run("issueToWork", payload)}
+            />
+            <InventoryTable
+              headers={ar ? ["الصنف", "الكمية", "الفرع", "المستلم", "مرجع العمل"] : ["Item", "Qty", "Station", "Recipient", "Work ref"]}
+              empty={ar ? "لا صرف مسجّل في هذا النطاق." : "No issues in this scope."}
+              rows={movements.filter((row) => row.movementType === "issue").map((row) => [
+                itemName(row.itemId),
+                row.quantity,
+                stationName(row.fromLocationId),
+                personName(row.employeeId),
+                row.workReference || "—",
+              ])}
+            />
+          </>
+        )}
+
+        {tab === "movements" && (
+          <InventoryTable
+            headers={ar ? ["الحركة", "النوع", "الصنف", "الكمية", "الفرع"] : ["Movement", "Type", "Item", "Qty", "Station"]}
+            empty={ar ? "لا حركات في هذا النطاق." : "No movements in this scope."}
+            rows={movements.map((row) => [
+              row.movementNumber || row.id,
+              row.movementType,
+              itemName(row.itemId),
+              row.quantity,
+              stationName(row.fromLocationId || row.toLocationId),
+            ])}
+          />
+        )}
+      </div>
+    </PlatformStampShell>
+  );
+}
+
+function KpiStrip({ stats }) {
+  return (
+    <div style={tableShell}>
+      <div className="nv-kpi-strip">
+        {stats.map((s) => (
+          <div key={s.label} style={{ padding: "12px 16px", minWidth: 0 }}>
+            <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.label}</div>
+            <div style={{ marginTop: 6 }}>
+              <span dir="ltr" style={num(s.danger ? "#DC2626" : NAVY)}>{s.value}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function InventoryTable({ headers, rows, empty }) {
+  const cols = `repeat(${headers.length}, minmax(88px, 1fr))`;
+  if (!rows.length) {
+    return (
+      <div style={{ ...tableShell, padding: "18px 16px", textAlign: "center", fontSize: 13, color: MUTED }}>
+        {empty}
+      </div>
+    );
+  }
+  return (
+    <div style={{ ...tableShell, overflowX: "auto" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: cols,
+          gap: 8,
+          padding: "10px 16px",
+          background: SURFACE,
+          borderBottom: "1px solid #E2E8F0",
+          fontSize: 10,
+          fontWeight: 600,
+          color: MUTED,
+        }}
+      >
+        {headers.map((h) => <span key={h}>{h}</span>)}
+      </div>
+      {rows.map((colsRow, index) => (
+        <div
+          key={index}
+          style={{
+            display: "grid",
+            gridTemplateColumns: cols,
+            gap: 8,
+            minHeight: 44,
+            alignItems: "center",
+            padding: "0 16px",
+            borderBottom: index === rows.length - 1 ? "none" : "1px solid #F1F5F9",
+            fontSize: 13,
+            color: NAVY,
+          }}
+        >
+          {colsRow.map((col, colIndex) => <span key={colIndex} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{col ?? "—"}</span>)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StationField({ ar, stations, value, onChange, lockedStationId, label }) {
+  const name = stations.find((station) => stationIdOf(station) === (lockedStationId || value))?.name;
+  if (lockedStationId) {
+    return (
+      <div>
+        <label style={labelMuted}>{label || (ar ? "الفرع" : "Station")}</label>
+        <div style={{ ...field, display: "flex", alignItems: "center", background: SURFACE, color: MUTED }}>
+          {name || lockedStationId}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div>
+      <label style={labelMuted}>{label || (ar ? "الفرع" : "Station")}</label>
+      <select value={value} onChange={(event) => onChange(event.target.value)} required style={field}>
+        <option value="">{ar ? "اختر الفرع" : "Choose station"}</option>
+        {stations.map((station) => (
+          <option key={stationIdOf(station)} value={stationIdOf(station)}>{station.name}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+const formGrid = {
+  ...cardShell,
+  display: "grid",
+  gap: 10,
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  padding: 16,
+};
+
+function PurchaseForm({ ar, busy, stations, lockedStationId, onSubmit }) {
+  const [locationId, setLocationId] = useState(lockedStationId || stationIdOf(stations[0]));
+  const [quantity, setQuantity] = useState("");
+  const [unitPrice, setUnitPrice] = useState("");
+  const total = quantity !== "" && unitPrice !== "" ? (Number(quantity) * Number(unitPrice)).toFixed(2) : "";
+  const effectiveLocation = lockedStationId || locationId;
+
+  useEffect(() => {
+    if (lockedStationId) setLocationId(lockedStationId);
+    else if (!locationId && stations[0]) setLocationId(stationIdOf(stations[0]));
+  }, [stations, locationId, lockedStationId]);
+
+  const submit = (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const saved = onSubmit({
+      name: String(form.get("name") || "").trim(),
+      itemCode: String(form.get("itemCode") || "").trim(),
+      supplierName: String(form.get("supplierName") || "").trim(),
+      locationId: effectiveLocation,
+      quantity: Number(form.get("quantity")),
+      unitPrice: Number(form.get("unitPrice")),
+      totalCost: Number(form.get("totalCost")),
+      minimumStock: Number(form.get("minimumStock") || 0),
+      purchaseDate: String(form.get("purchaseDate") || new Date().toISOString().slice(0, 10)),
+    });
+    if (saved) {
+      event.currentTarget.reset();
+      setQuantity("");
+      setUnitPrice("");
+    }
   };
 
-  if (!currentUser) return null;
-  const tabFromWorkflow = { purchase: "purchases", items: "items", requests: "requests", consumption: "consumption" };
-  const stationIds = state.locations.map((station) => station.stationId || station.id);
-  const inventoryViewStationIds = state.stations.map((station) => station.stationId || station.id);
-  const allStationsSelected = selectedStation === "all" && state.locations.length > 1;
-  const activeStation = allStationsSelected ? "all" : stationIds.includes(selectedStation) ? selectedStation : (state.locations[0]?.stationId || state.locations[0]?.id || currentUser.stationId || "");
-  const visibleInventoryStations = selectedInventoryStations.length ? selectedInventoryStations : inventoryViewStationIds;
-  const stationItems = state.items.flatMap((item) => {
-    const balances = (item.locationBalances || []).filter((balance) => visibleInventoryStations.includes(balance.locationId));
-    if (balances.length) return balances.map((balance) => ({ ...item, displayKey: `${item.id}-${balance.locationId}`, quantity: Number(balance.quantity) || 0, currentLocationId: balance.locationId }));
-    if (!(item.locationBalances || []).length && visibleInventoryStations.includes(item.currentLocationId)) return [{ ...item, displayKey: `${item.id}-${item.currentLocationId}` }];
-    return [];
-  });
+  return (
+    <form onSubmit={submit} className="nv-inv-form" style={formGrid}>
+      <div style={{ gridColumn: "1 / -1", fontSize: 13, fontWeight: 600, color: NAVY }}>
+        {ar ? "تسجيل شراء" : "Record purchase"}
+      </div>
+      <div>
+        <label style={labelMuted}>{ar ? "اسم الصنف" : "Item name"}</label>
+        <input name="name" required placeholder={ar ? "اسم الصنف" : "Item name"} style={field} />
+      </div>
+      <div>
+        <label style={labelMuted}>{ar ? "كود الصنف" : "Item code"}</label>
+        <input name="itemCode" required placeholder={ar ? "كود الصنف" : "Item code"} style={field} />
+      </div>
+      <StationField ar={ar} stations={stations} value={locationId} onChange={setLocationId} lockedStationId={lockedStationId} />
+      <div>
+        <label style={labelMuted}>{ar ? "الكمية" : "Quantity"}</label>
+        <input name="quantity" type="number" min="1" required value={quantity} onChange={(event) => setQuantity(event.target.value)} style={field} />
+      </div>
+      <div>
+        <label style={labelMuted}>{ar ? "الحد الأدنى" : "Minimum"}</label>
+        <input name="minimumStock" type="number" min="0" defaultValue="0" style={field} />
+      </div>
+      <div>
+        <label style={labelMuted}>{ar ? "سعر القطعة" : "Unit price"}</label>
+        <input name="unitPrice" type="number" min="0" step="0.01" required value={unitPrice} onChange={(event) => setUnitPrice(event.target.value)} style={field} />
+      </div>
+      <div>
+        <label style={labelMuted}>{ar ? "الإجمالي" : "Total"}</label>
+        <input name="totalCost" readOnly value={total} style={{ ...field, background: SURFACE, fontWeight: 600 }} />
+      </div>
+      <div>
+        <label style={labelMuted}>{ar ? "المورد" : "Supplier"}</label>
+        <input name="supplierName" required placeholder={ar ? "اسم المورد" : "Supplier"} style={field} />
+      </div>
+      <div>
+        <label style={labelMuted}>{ar ? "تاريخ الشراء" : "Purchase date"}</label>
+        <input name="purchaseDate" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} style={field} />
+      </div>
+      <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end" }}>
+        <button type="submit" disabled={busy || !effectiveLocation} style={{ ...ui.btnPrimary, height: 36, opacity: busy || !effectiveLocation ? 0.45 : 1 }}>
+          {busy ? (ar ? "جارٍ الحفظ..." : "Saving...") : (ar ? "حفظ الشراء" : "Save purchase")}
+        </button>
+      </div>
+    </form>
+  );
+}
 
-  return <div className="inventory-hub space-y-6">
-    <InventoryHeader ar={ar} />
-    <StockAlertBoard lang={lang} />
-    {loading ? <div className="h-40 animate-pulse rounded-xl border border-accent/20 bg-muted" /> : <>
-      <InventoryWorkflow ar={ar} onNavigate={(key) => setActive(tabFromWorkflow[key])} />
-      <InventoryItemScanner items={state.items} stationIds={selectedInventoryStations} onOpen={setSelectedItem} ar={ar} />
-      <GlobalInventorySearch items={state.items} stations={state.stations} stationIds={selectedInventoryStations} onStationIdsChange={setSelectedInventoryStations} onOpen={(item, stationId) => setSelectedItem({ ...item, quantity: Number(item.locationBalances?.find((balance) => balance.locationId === stationId)?.quantity || 0), currentLocationId: stationId })} ar={ar} />
-      <InventoryTabs
-        active={active}
-        onChange={setActive}
-        actions={[{ key: "report", icon: FileText, label: ar ? "تقرير المخزون (PDF / Excel)" : "Inventory report (PDF / Excel)", active: showReport, onClick: () => setShowReport(!showReport) }]}
-        ar={ar}
-      />
-      {showReport && <InventoryPeriodReport reportData={{ items: state.items, purchases: state.purchases, movements: state.movements, stations: state.stations }} ar={ar} />}
-      {active === "overview" && <InventoryStats items={stationItems} requests={state.requests} movements={state.movements} ar={ar} />}
-      {active === "purchases" && <div className="space-y-4">
-        {state.canPurchase && <ItemForm stations={state.locations} defaultStationId={allStationsSelected ? "" : activeStation} onSubmit={(payload) => run("createItem", payload)} ar={ar} />}
-        <PurchasesTab purchases={state.purchases} items={state.historyItems} stations={state.transferStations} activeStation={activeStation} canViewAll={state.canViewAllPurchases} ar={ar} />
-      </div>}
-      {active === "items" && <ItemList items={stationItems} stations={state.stations} onSelect={setSelectedItem} ar={ar} />}
-      {active === "requests" && <div className="space-y-4">
-        {state.canRequest && <MaterialRequestForm items={state.requestItems} purchases={state.purchases} stations={state.transferStations} stationId={state.canReviewAllRequests ? "" : activeStation} onSubmit={(payload) => run("request", payload)} ar={ar} />}
-        <RequestsList requests={state.requests} items={state.historyItems} employees={state.employees} stations={state.transferStations} canReview={state.canReviewRequests} canReviewAll={state.canReviewAllRequests} reviewerStationId={activeStation} onReview={(requestId, decision) => run("reviewRequest", { requestId, decision })} ar={ar} />
-      </div>}
-      {active === "consumption" && <WorkIssueTab items={stationItems} historyItems={state.historyItems} movements={state.movements} employees={state.employees} stations={state.locations} historyStations={state.transferStations} stationId={activeStation} canIssue={state.canIssueToWork} canChooseStation={state.canIssueFromAnyStation} onSubmit={(payload) => run("issueToWork", payload)} ar={ar} />}
-      {active === "movements" && <MovementList movements={state.movements} items={state.historyItems} employees={state.employees} stations={state.transferStations} canReverse={state.canReverse} onReverse={(movementId, reversalReason) => run("reverseMovement", { movementId, reversalReason })} ar={ar} />}
-    </>}
-    <ItemDetails item={selectedItem} stations={state.stations} canDelete={state.canDelete} onDelete={async (itemId) => { if (await run("deleteItem", { itemId })) setSelectedItem(null); }} onImagesChange={updateImages} onClose={() => setSelectedItem(null)} ar={ar} />
-  </div>;
+function RequestForm({ ar, busy, items, stations, lockedStationId, onSubmit }) {
+  const [sourceStationId, setSourceStationId] = useState(lockedStationId || stationIdOf(stations[0]));
+  const [stationId, setStationId] = useState(stationIdOf(stations[1]) || "");
+  const available = useMemo(
+    () => items.filter((item) => Number((item.locationBalances || []).find((row) => row.locationId === sourceStationId)?.quantity || 0) > 0),
+    [items, sourceStationId],
+  );
+
+  useEffect(() => {
+    if (lockedStationId) setSourceStationId(lockedStationId);
+  }, [lockedStationId]);
+
+  const submit = (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    onSubmit({
+      itemId: String(form.get("itemId") || ""),
+      sourceStationId,
+      stationId,
+      quantity: Number(form.get("quantity")),
+      notes: String(form.get("notes") || "").trim(),
+    });
+  };
+
+  return (
+    <form onSubmit={submit} className="nv-inv-form" style={formGrid}>
+      <StationField ar={ar} stations={stations} value={sourceStationId} onChange={setSourceStationId} lockedStationId={lockedStationId} label={ar ? "من فرع" : "From station"} />
+      <div>
+        <label style={labelMuted}>{ar ? "إلى فرع" : "To station"}</label>
+        <select value={stationId} onChange={(event) => setStationId(event.target.value)} style={field}>
+          <option value="">{ar ? "إلى فرع" : "To station"}</option>
+          {stations.filter((station) => stationIdOf(station) !== sourceStationId).map((station) => (
+            <option key={stationIdOf(station)} value={stationIdOf(station)}>{station.name}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label style={labelMuted}>{ar ? "الصنف" : "Item"}</label>
+        <select name="itemId" required style={field}>
+          <option value="">{ar ? "الصنف" : "Item"}</option>
+          {available.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select>
+      </div>
+      <div>
+        <label style={labelMuted}>{ar ? "الكمية" : "Quantity"}</label>
+        <input name="quantity" type="number" min="1" required defaultValue="1" style={field} />
+      </div>
+      <div style={{ gridColumn: "1 / -1" }}>
+        <label style={labelMuted}>{ar ? "سبب الطلب" : "Reason"}</label>
+        <input name="notes" required placeholder={ar ? "سبب الطلب" : "Reason"} style={field} />
+      </div>
+      <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end" }}>
+        <button type="submit" disabled={busy} style={{ ...ui.btnPrimary, height: 36 }}>{ar ? "إرسال الطلب" : "Send request"}</button>
+      </div>
+    </form>
+  );
+}
+
+function IssueForm({ ar, busy, items, stations, employees, lockedStationId, onSubmit }) {
+  const [fromLocationId, setFromLocationId] = useState(lockedStationId || stationIdOf(stations[0]));
+  const fromId = lockedStationId || fromLocationId;
+  const available = items.filter((item) => Number((item.locationBalances || []).find((row) => row.locationId === fromId)?.quantity || item.quantity || 0) > 0);
+
+  useEffect(() => {
+    if (lockedStationId) setFromLocationId(lockedStationId);
+  }, [lockedStationId]);
+
+  const submit = (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    onSubmit({
+      itemId: String(form.get("itemId") || ""),
+      fromLocationId: fromId,
+      employeeId: String(form.get("employeeId") || ""),
+      quantity: Number(form.get("quantity")),
+      workReference: String(form.get("workReference") || "").trim(),
+      workDate: String(form.get("workDate") || new Date().toISOString().slice(0, 10)),
+      notes: String(form.get("notes") || ""),
+    });
+  };
+
+  return (
+    <form onSubmit={submit} className="nv-inv-form" style={formGrid}>
+      <StationField ar={ar} stations={stations} value={fromLocationId} onChange={setFromLocationId} lockedStationId={lockedStationId} />
+      <div>
+        <label style={labelMuted}>{ar ? "الصنف" : "Item"}</label>
+        <select name="itemId" required style={field}>
+          <option value="">{ar ? "الصنف" : "Item"}</option>
+          {available.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.quantity}</option>)}
+        </select>
+      </div>
+      <div>
+        <label style={labelMuted}>{ar ? "المستلم" : "Recipient"}</label>
+        <select name="employeeId" required style={field}>
+          <option value="">{ar ? "المستلم" : "Recipient"}</option>
+          {employees.map((row) => <option key={row.id || row.employeeId} value={row.id || row.employeeId}>{row.name}</option>)}
+        </select>
+      </div>
+      <div>
+        <label style={labelMuted}>{ar ? "الكمية" : "Quantity"}</label>
+        <input name="quantity" type="number" min="1" required defaultValue="1" style={field} />
+      </div>
+      <div>
+        <label style={labelMuted}>{ar ? "مرجع العمل" : "Work reference"}</label>
+        <input name="workReference" required placeholder={ar ? "مرجع العمل" : "Work reference"} style={field} />
+      </div>
+      <div>
+        <label style={labelMuted}>{ar ? "تاريخ العمل" : "Work date"}</label>
+        <input name="workDate" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} style={field} />
+      </div>
+      <div style={{ gridColumn: "1 / -1" }}>
+        <label style={labelMuted}>{ar ? "ملاحظة" : "Notes"}</label>
+        <input name="notes" placeholder={ar ? "ملاحظة" : "Notes"} style={field} />
+      </div>
+      <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end" }}>
+        <button type="submit" disabled={busy} style={{ ...ui.btnPrimary, height: 36 }}>{ar ? "صرف" : "Issue"}</button>
+      </div>
+    </form>
+  );
 }

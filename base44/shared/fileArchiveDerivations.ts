@@ -229,7 +229,7 @@ export function checkAccessGate(
     return {
       ok: false as const,
       error: "ACCESS_DENIED_BY_SCOPE",
-      reason: "الوصول مرفوض — المستند مربوط بمحطة خارج نطاقك.",
+      reason: "الوصول مرفوض — المستند مربوط بفرع خارج نطاقك.",
       reasonEn: "Access denied — document is bound to a station outside your scope.",
       access,
     };
@@ -249,7 +249,7 @@ export function checkStationBindingGate(input: {
     return {
       ok: false as const,
       error: "MISSING_STATION_BINDING",
-      reason: "يلزم ربط المستند بمحطة — أو تعليمه على مستوى الشركة.",
+      reason: "يلزم ربط المستند بفرع — أو تعليمه على مستوى الشركة.",
       reasonEn: "Document must be bound to a station — or marked company-wide.",
     };
   }

@@ -2,33 +2,44 @@ import React from "react";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { CommentAttachments } from "@/components/tasks/CommentFiles";
 import { formatDateTime } from "@/lib/dateFormat";
+import { ACCENT, BORDER, MUTED, NAVY, SURFACE, BAD } from "@/lib/platformStyles";
 
-// Shared visual escalation ladder — used identically by Anonymous/Public Complaints
-// and by task-rejection disputes, so the same chain "looks" the same everywhere.
-// steps: [{ idx, label, hasHandler, state: 'done'|'current'|'pending', reply? }]
 export default function EscalationSteps({ steps, t, lang }) {
   return (
-    <div className="space-y-2 pt-2 border-t border-border">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("escalationChain")}</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "10px", borderTop: `1px solid ${BORDER}` }}>
+      <p style={{ margin: 0, fontSize: "10px", letterSpacing: "0.06em", color: MUTED, fontWeight: 600 }}>{t("escalationChain")}</p>
       {steps.map((s) => (
-        <div key={s.idx} className={`flex items-start gap-2 text-xs font-body ${s.state === "done" ? "opacity-50" : ""}`}>
-          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${s.reply ? "bg-accent text-accent-foreground" : s.state === "current" ? "bg-amber-100 text-amber-700 border border-amber-300" : "bg-muted text-muted-foreground"}`}>
-            {s.reply ? <CheckCircle2 className="w-3 h-3" /> : <span className="text-[9px]">{s.idx + 1}</span>}
+        <div key={s.idx} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", opacity: s.state === "done" ? 0.55 : 1 }}>
+          <div style={{
+            width: "20px",
+            height: "20px",
+            borderRadius: "50%",
+            flexShrink: 0,
+            marginTop: "2px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: s.reply ? ACCENT : s.state === "current" ? "#FFFBEB" : SURFACE,
+            color: s.reply ? "#fff" : s.state === "current" ? "#B45309" : MUTED,
+            border: s.state === "current" && !s.reply ? "1px solid #FDE68A" : `1px solid ${BORDER}`,
+          }}
+          >
+            {s.reply ? <CheckCircle2 style={{ width: 12, height: 12 }} /> : <span style={{ fontSize: "9px" }}>{s.idx + 1}</span>}
           </div>
-          <div className="flex-1">
-            <p className={`font-medium flex items-center gap-1.5 ${s.state === "current" ? "text-foreground" : "text-muted-foreground"}`}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontWeight: 600, color: s.state === "current" ? NAVY : MUTED, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
               {s.label}
-              {s.state === "current" && !s.reply && <span className="text-amber-600 font-normal">— {t("waitingReply")}</span>}
-              {!s.hasHandler && s.state !== "done" && (
-                <span title={t("noHandlerAssigned")} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-red-100 text-red-700 border border-red-300">
-                  <AlertTriangle className="w-2.5 h-2.5" /> {t("noHandlerAssigned")}
+              {s.state === "current" && !s.reply ? <span style={{ fontWeight: 400, color: "#B45309" }}>— {t("waitingReply")}</span> : null}
+              {!s.hasHandler && s.state !== "done" ? (
+                <span title={t("noHandlerAssigned")} style={{ ...BAD, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  <AlertTriangle style={{ width: 10, height: 10 }} /> {t("noHandlerAssigned")}
                 </span>
-              )}
+              ) : null}
             </p>
             {s.reply && (
-              <div className="mt-0.5 p-2 rounded bg-muted/50">
-                <p className="text-[10px] text-muted-foreground">{s.reply.authorName} · {formatDateTime(s.reply.createdAt, lang)}</p>
-                <p className="text-foreground mt-0.5">{s.reply.text}</p>
+              <div style={{ marginTop: "4px", padding: "8px 10px", borderRadius: "8px", background: SURFACE }}>
+                <p style={{ margin: 0, fontSize: "10px", color: MUTED }}>{s.reply.authorName} · {formatDateTime(s.reply.createdAt, lang)}</p>
+                <p style={{ margin: "4px 0 0", color: NAVY }}>{s.reply.text}</p>
                 <CommentAttachments files={s.reply.files} />
               </div>
             )}

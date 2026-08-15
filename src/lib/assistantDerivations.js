@@ -13,7 +13,7 @@ const CROSS_TENANT_RE =
 export const PROMPT_CATALOG = [
   {
     id: "compare_stations",
-    textAr: "قارن أداء المحطات هذا الشهر",
+    textAr: "قارن أداء الفروع هذا الشهر",
     textEn: "Compare station performance this month",
     roles: [
       "owner", "director", "ops_manager", "admin", "pgm", "station_manager", "hr_manager", "hr",
@@ -49,7 +49,7 @@ export const PROMPT_CATALOG = [
 
 export const SPOTLIGHT_PROMPT = {
   id: "task_drop_spotlight",
-  textAr: "لماذا انخفض إنجاز المهام في محطة الجبيل 2 هذا الأسبوع؟",
+  textAr: "لماذا انخفض إنجاز المهام في فرع الجبيل 2 هذا الأسبوع؟",
   textEn: "Why did task completion drop at Jubail 2 this week?",
   roles: [
     "owner", "director", "ops_manager", "admin", "pgm", "station_manager",
@@ -286,7 +286,7 @@ export function derivePromptAnswer(
       ],
       primaryActionAr: `أعد جدولة المهام الـ ${blockedN}`,
       primaryActionEn: `Reschedule the ${blockedN} tasks`,
-      secondaryActionAr: "أرسل الملخص لمدير المحطة",
+      secondaryActionAr: "أرسل الملخص لمدير الفرع",
       secondaryActionEn: "Send summary to station manager",
       goOps: "/app/tasks",
     };
@@ -303,11 +303,11 @@ export function derivePromptAnswer(
     const safetyBot = bottom?.safetyClosurePct ?? 0;
     return {
       promptId,
-      questionAr: "قارن أداء المحطات هذا الشهر",
+      questionAr: "قارن أداء الفروع هذا الشهر",
       questionEn: "Compare station performance this month",
       answerAr: top && bottom
         ? `${stationName(top, "ar")} في المقدمة (${top.readiness})، و${stationName(bottom, "ar")} في المؤخرة عند ${bottom.readiness} — والفارق الأكبر في إغلاق بنود السلامة: ${safetyTop}% مقابل ${safetyBot}%. الحضور متقارب، فالفجوة تشغيلية لا في القوى العاملة.`
-        : "لا محطات في النطاق لعمل المقارنة.",
+        : "لا فروع في النطاق لعمل المقارنة.",
       answerEn: top && bottom
         ? `${stationName(top, "en")} leads (${top.readiness}); ${stationName(bottom, "en")} trails at ${bottom.readiness} — the widest gap is safety closure: ${safetyTop}% against ${safetyBot}%. Attendance is comparable, so the gap is operational, not staffing.`
         : "No stations in scope to compare.",
@@ -345,7 +345,7 @@ export function derivePromptAnswer(
       evidence: [
         { sourceAr: "الحضور", sourceEn: "ATTENDANCE", value: `${companyOt}h`, labelAr: "المجموع", labelEn: "Total" },
         { sourceAr: "الحضور", sourceEn: "ATTENDANCE", value: `${hotH}h`, labelAr: hot ? stationName(hot, "ar") : "—", labelEn: hot ? stationName(hot, "en") : "—" },
-        { sourceAr: "الحضور", sourceEn: "ATTENDANCE", value: String(scopedStations.filter((s) => (s.overtimeHoursWeek || 0) > 0).length), labelAr: "محطات نشطة", labelEn: "Active stations" },
+        { sourceAr: "الحضور", sourceEn: "ATTENDANCE", value: String(scopedStations.filter((s) => (s.overtimeHoursWeek || 0) > 0).length), labelAr: "فروع نشطة", labelEn: "Active stations" },
       ],
       primaryActionAr: "افتح تحليل الحضور والإضافي",
       primaryActionEn: "Open attendance & OT analysis",

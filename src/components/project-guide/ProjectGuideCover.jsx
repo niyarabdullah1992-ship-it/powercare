@@ -7,7 +7,7 @@ export default function ProjectGuideCover({ program, author, dateAr, dateEn, ima
     <Image src={image} alt="NiroVera industrial operations" fittingType="fill" focalPointY={0.45} className="absolute inset-0 h-full w-full" />
     <div className="absolute inset-0 bg-primary/65" />
     <div className="relative flex h-full min-h-[1123px] flex-col items-center justify-center px-16 text-center print:min-h-[277mm]">
-      <div className="mb-10 flex h-24 w-24 items-center justify-center rounded-full border border-accent/60 bg-primary/80"><Logo size={62} /></div>
+      <div className="mb-10 flex h-24 w-24 items-center justify-center rounded-full border border-accent/60 bg-white"><Logo size={62} wordmark={false} /></div>
       <p className="mb-7 font-mono text-[10px] tracking-[.34em] text-accent">THE COMPLETE PLATFORM GUIDE • 2026</p>
       <h1 className="max-w-2xl font-heading text-6xl font-bold leading-tight text-primary-foreground">{program.nameAr}</h1>
       <p className="mt-5 max-w-xl text-xl leading-9 text-primary-foreground/85">{program.taglineAr}</p>

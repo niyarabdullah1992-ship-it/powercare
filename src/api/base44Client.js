@@ -28,6 +28,7 @@ const SESSION_SECURED_FUNCTIONS = new Set([
   'dailyReport',
   'hiring',
   'org',
+  'hcm',
   'payroll',
   'signing',
   'stock',

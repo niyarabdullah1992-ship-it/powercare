@@ -1,8 +1,9 @@
 // Inspired by react-hot-toast library
 import { useState, useEffect } from "react";
 
-const TOAST_LIMIT = 20;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_LIMIT = 3;
+const TOAST_REMOVE_DELAY = 320;
+const TOAST_DEFAULT_DURATION = 4200;
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -19,6 +20,11 @@ function genId() {
 }
 
 const toastTimeouts = new Map();
+const dismissTimers = new Map();
+
+function toastKey(toast) {
+  return `${toast.variant || "default"}::${String(toast.title || "")}::${String(toast.description || "")}`;
+}
 
 const addToRemoveQueue = (toastId) => {
   if (toastTimeouts.has(toastId)) {
@@ -34,14 +40,6 @@ const addToRemoveQueue = (toastId) => {
   }, TOAST_REMOVE_DELAY);
 
   toastTimeouts.set(toastId, timeout);
-};
-
-const _clearFromRemoveQueue = (toastId) => {
-  const timeout = toastTimeouts.get(toastId);
-  if (timeout) {
-    clearTimeout(timeout);
-    toastTimeouts.delete(toastId);
-  }
 };
 
 export const reducer = (state, action) => {
@@ -63,13 +61,11 @@ export const reducer = (state, action) => {
     case actionTypes.DISMISS_TOAST: {
       const { toastId } = action;
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId);
       } else {
-        state.toasts.forEach((toast) => {
-          addToRemoveQueue(toast.id);
+        state.toasts.forEach((t) => {
+          addToRemoveQueue(t.id);
         });
       }
 
@@ -110,29 +106,64 @@ function dispatch(action) {
   });
 }
 
-function toast({ ...props }) {
-  const id = genId();
+function clearDismissTimer(id) {
+  const timer = dismissTimers.get(id);
+  if (timer) {
+    clearTimeout(timer);
+    dismissTimers.delete(id);
+  }
+}
 
-  const update = (props) =>
+function toast({ duration = TOAST_DEFAULT_DURATION, ...props }) {
+  const key = toastKey(props);
+  const existing = memoryState.toasts.find((t) => t.open !== false && toastKey(t) === key);
+  const id = existing?.id || genId();
+
+  const update = (next) =>
     dispatch({
       type: actionTypes.UPDATE_TOAST,
-      toast: { ...props, id },
+      toast: { ...next, id },
     });
 
-  const dismiss = () =>
+  const dismiss = () => {
+    clearDismissTimer(id);
     dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id });
+  };
 
-  dispatch({
-    type: actionTypes.ADD_TOAST,
-    toast: {
-      ...props,
-      id,
-      open: true,
-      onOpenChange: (open) => {
-        if (!open) dismiss();
+  if (existing) {
+    dispatch({
+      type: actionTypes.UPDATE_TOAST,
+      toast: {
+        ...props,
+        id,
+        open: true,
+        onOpenChange: (open) => {
+          if (!open) dismiss();
+        },
       },
-    },
-  });
+    });
+  } else {
+    dispatch({
+      type: actionTypes.ADD_TOAST,
+      toast: {
+        ...props,
+        id,
+        open: true,
+        onOpenChange: (open) => {
+          if (!open) dismiss();
+        },
+      },
+    });
+  }
+
+  clearDismissTimer(id);
+  if (duration !== Infinity && duration > 0) {
+    const timer = setTimeout(() => {
+      dismissTimers.delete(id);
+      dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id });
+    }, duration);
+    dismissTimers.set(id, timer);
+  }
 
   return {
     id,
@@ -161,4 +192,4 @@ function useToast() {
   };
 }
 
-export { useToast, toast }; 
+export { useToast, toast };

@@ -1,28 +1,20 @@
 import React from "react";
-import { Link, useParams } from "react-router-dom";
-import { Building2, Landmark, Users, Sparkles } from "lucide-react";
+import { Link, Navigate, useParams } from "react-router-dom";
+import { Building2, Users } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
+import Logo from "@/components/Logo";
 import PowerCareLoginPanel from "@/components/auth/PowerCareLoginPanel";
 import { useI18n } from "@/lib/i18n";
 import { isBase44BackendConfigured } from "@/lib/localPreview";
+import { BORDER, INK, MUTED, NAVY, SURFACE } from "@/lib/publicChrome";
 
 const META = {
-  gov: {
-    Icon: Landmark,
-    arTitle: "دخول الجهات الحكومية",
-    enTitle: "Government login",
-    arSub: "حساب الجهة الحكومية فقط — لا يفتح حسابات الشركات من هنا.",
-    enSub: "Government accounts only — company workspaces cannot sign in here.",
-    register: "/pricing?org=gov",
-    registerAr: "إنشاء حساب جهة حكومية",
-    registerEn: "Create government account",
-  },
   company: {
     Icon: Building2,
     arTitle: "دخول الشركات",
     enTitle: "Company login",
-    arSub: "حساب الشركة فقط — لا يفتح حسابات الجهات الحكومية من هنا.",
-    enSub: "Company accounts only — government workspaces cannot sign in here.",
+    arSub: "حساب الشركة فقط.",
+    enSub: "Company accounts only.",
     register: "/pricing?org=company",
     registerAr: "إنشاء حساب شركة",
     registerEn: "Create company account",
@@ -43,7 +35,8 @@ export default function LoginPortal() {
   const { portal } = useParams();
   const { lang } = useI18n();
   const ar = lang === "ar";
-  const kind = portal === "gov" || portal === "individual" ? portal : "company";
+  if (portal === "gov") return <Navigate to="/login/company" replace />;
+  const kind = portal === "individual" ? "individual" : "company";
   const meta = META[kind];
   const cloudReady = isBase44BackendConfigured();
   const returnPath = `/login/${kind}`;
@@ -55,37 +48,60 @@ export default function LoginPortal() {
       subtitle={ar ? meta.arSub : meta.enSub}
       footer={
         <span className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
-          <Link to={meta.register} className="font-medium text-accent hover:underline">
+          <Link to={meta.register} style={{ fontWeight: 500, color: INK, textDecoration: "underline", textUnderlineOffset: 4 }}>
             {ar ? meta.registerAr : meta.registerEn}
           </Link>
-          <Link to="/login" className="font-medium text-accent hover:underline">
+          <Link to="/login" style={{ fontWeight: 500, color: INK, textDecoration: "underline", textUnderlineOffset: 4 }}>
             {ar ? "تغيير بوابة الدخول" : "Change portal"}
           </Link>
-          <Link to="/" className="font-medium text-accent hover:underline">
+          <Link to="/" style={{ fontWeight: 500, color: INK, textDecoration: "underline", textUnderlineOffset: 4 }}>
             {ar ? "الرئيسية" : "Home"}
           </Link>
         </span>
       }
     >
-      <div className="space-y-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div
-          className={`rounded-lg px-3 py-2 text-center text-[12px] font-medium ${
-            kind === "gov" ? "bg-[#E8F3ED] text-[#0E7A4B]" : "bg-[#EEF2F8] text-[#0B1A3F]"
-          }`}
+          style={{
+            borderRadius: 9,
+            background: SURFACE,
+            border: `1px solid ${BORDER}`,
+            padding: "8px 12px",
+            textAlign: "center",
+            fontSize: 12,
+            fontWeight: 500,
+            color: NAVY,
+          }}
         >
           {ar
-            ? (kind === "gov" ? "بوابة حكومية · حسابات مفصولة عن الشركات" : kind === "individual" ? "بوابة أفراد" : "بوابة شركات · حسابات مفصولة عن الجهات الحكومية")
-            : (kind === "gov" ? "Government portal · separated from companies" : kind === "individual" ? "Individual portal" : "Company portal · separated from government")}
+            ? (kind === "individual" ? "بوابة أفراد" : "بوابة شركات")
+            : (kind === "individual" ? "Individual portal" : "Company portal")}
         </div>
         <a
           href="/preview"
-          className="flex w-full items-center justify-center gap-2 rounded-md border border-accent/40 bg-accent/10 py-2.5 text-xs font-semibold text-accent hover:bg-accent/15"
+          style={{
+            display: "flex",
+            width: "100%",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            borderRadius: 9,
+            border: `1px solid ${BORDER}`,
+            background: SURFACE,
+            padding: "10px 0",
+            fontSize: 12,
+            fontWeight: 600,
+            color: INK,
+            textDecoration: "none",
+          }}
         >
-          <Sparkles className="h-4 w-4" />
+          <span style={{ display: "inline-flex", height: 20, width: 20, alignItems: "center", justifyContent: "center" }}>
+            <Logo size={16} wordmark={false} />
+          </span>
           {ar ? "معاينة الصفحات الداخلية الآن" : "Preview internal pages now"}
         </a>
         {!cloudReady && (
-          <p className="text-center text-[11px] leading-5 text-muted-foreground">
+          <p style={{ textAlign: "center", fontSize: 11, lineHeight: 1.6, color: MUTED }}>
             {ar
               ? "خادم Base44 غير موصول محليًا — استخدم المعاينة لتصفح اللوحة."
               : "Base44 backend is not connected locally — use preview to browse the dashboard."}

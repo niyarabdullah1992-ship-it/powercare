@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
 import { DEDUCTION_SOURCES, sourceLabel } from "@/lib/payrollDeductions";
+import { article90MaxDeduction } from "@/lib/payrollDerivations";
+import { MUTED, BORDER, SURFACE, DANGER, field, textarea, ui } from "@/lib/platformStyles";
 
 // Adding a deduction is only possible with a source, and a written reason when manual.
-export default function DeductionLineForm({ ar, onAdd }) {
+export default function DeductionLineForm({ ar, item, onAdd }) {
   const [source, setSource] = useState("attendance");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
@@ -15,6 +17,9 @@ export default function DeductionLineForm({ ar, onAdd }) {
     SOURCE_REQUIRED: ar ? "حدّد مصدر الخصم." : "Select the deduction source.",
     REASON_REQUIRED: ar ? "الخصم اليدوي يتطلب سبباً مكتوباً واضحاً." : "A manual deduction requires a written reason.",
     REFERENCE_REQUIRED: ar ? "أدخل معرّف السجل المرجعي (سجل الغياب أو السلفة)." : "Enter the reference record id (absence or advance).",
+    ARTICLE_90_EXCEEDED: ar
+      ? `يتجاوز حد المادة 90 — الحد الأقصى ${article90MaxDeduction(item || {}).toLocaleString()} ${item?.currency || "SAR"} (نصف الأجر الأساسي + البدلات).`
+      : `Exceeds Art. 90 cap — maximum ${article90MaxDeduction(item || {}).toLocaleString()} ${item?.currency || "SAR"} (half of base + allowances).`,
   };
 
   const submit = () => {
@@ -24,36 +29,59 @@ export default function DeductionLineForm({ ar, onAdd }) {
   };
 
   return (
-    <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3">
-      <p className="text-[11px] font-body font-semibold uppercase tracking-wider text-muted-foreground">
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px", borderRadius: "11px", border: `1px solid ${BORDER}`, background: SURFACE, padding: "12px 13px" }}>
+      <p style={{ margin: 0, fontSize: "11px", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: MUTED }}>
         {ar ? "إضافة بند خصم موثّق" : "Add a documented deduction line"}
       </p>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <select value={source} onChange={(e) => setSource(e.target.value)} className="h-9 rounded-md border border-input bg-card px-2 text-sm font-body">
+      <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
+        <select value={source} onChange={(e) => setSource(e.target.value)} style={field}>
           {DEDUCTION_SOURCES.map((key) => <option key={key} value={key}>{sourceLabel(key, ar)}</option>)}
         </select>
-        <input type="text" inputMode="decimal" dir="ltr" value={amount} onChange={(e) => setAmount(e.target.value)}
-          placeholder={ar ? "المبلغ" : "Amount"} aria-label={ar ? "المبلغ" : "Amount"}
-          className="h-9 rounded-md border border-input bg-card px-2 text-sm font-body" />
+        <input
+          type="text"
+          inputMode="decimal"
+          dir="ltr"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder={ar ? "المبلغ" : "Amount"}
+          aria-label={ar ? "المبلغ" : "Amount"}
+          style={field}
+        />
       </div>
       {source === "manual" ? (
-        <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2}
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          rows={2}
           placeholder={ar ? "السبب المكتوب (إلزامي) — يُقيَّد في سجل التدقيق" : "Written reason (required) — recorded in the audit log"}
           aria-label={ar ? "سبب الخصم" : "Deduction reason"}
-          className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm font-body" />
+          style={textarea}
+        />
       ) : (
-        <input type="text" value={sourceRefId} onChange={(e) => setSourceRefId(e.target.value)}
+        <input
+          type="text"
+          value={sourceRefId}
+          onChange={(e) => setSourceRefId(e.target.value)}
           placeholder={source === "attendance" ? (ar ? "معرّف سجل الغياب المعتمد" : "Approved absence record id") : (ar ? "معرّف السلفة" : "Advance record id")}
           aria-label={ar ? "المرجع" : "Reference"}
-          className="w-full rounded-md border border-input bg-card px-2 py-1.5 text-sm font-body" dir="ltr" />
+          style={field}
+          dir="ltr"
+        />
       )}
-      {error && <p className="text-xs font-body text-destructive">{error}</p>}
-      <button type="button" onClick={submit} className="inline-flex items-center gap-1.5 rounded-md border border-accent/45 bg-accent px-3 py-1.5 text-xs font-body font-semibold text-accent-foreground hover:bg-accent/90">
-        <Plus className="h-3.5 w-3.5" /> {ar ? "إضافة البند" : "Add line"}
+      {error && <p style={{ margin: 0, fontSize: "12px", color: DANGER }}>{error}</p>}
+      <button type="button" onClick={submit} style={{ ...ui.btnPrimary, display: "inline-flex", alignItems: "center", gap: "6px", alignSelf: "flex-start" }}>
+        <Plus style={{ width: 14, height: 14 }} /> {ar ? "إضافة البند" : "Add line"}
       </button>
       {source === "attendance" && (
-        <p className="text-[11px] font-body text-muted-foreground">
+        <p style={{ margin: 0, fontSize: "11px", color: MUTED, lineHeight: 1.6 }}>
           {ar ? "لا يُقبل سجل غياب قيد المراجعة — الغياب المعتمد فقط." : "Absences still pending review are not accepted — approved records only."}
+        </p>
+      )}
+      {item && (
+        <p style={{ margin: 0, fontSize: "11px", color: MUTED, lineHeight: 1.6 }}>
+          {ar
+            ? `حد المادة 90: ${article90MaxDeduction(item).toLocaleString()} ${item.currency} (50% من الأساسي + البدلات).`
+            : `Art. 90 cap: ${article90MaxDeduction(item).toLocaleString()} ${item.currency} (50% of base + allowances).`}
         </p>
       )}
     </div>

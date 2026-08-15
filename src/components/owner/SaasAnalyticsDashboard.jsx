@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import SubscriberAnalytics from "@/components/owner/SubscriberAnalytics";
@@ -29,14 +29,14 @@ export default function SaasAnalyticsDashboard({ lang }) {
   ] : [];
 
   return <div className="space-y-5">
-    <div className="rounded-2xl bg-gradient-to-br from-[#3a2f22] to-[#654b2d] p-6 text-white shadow-xl">
-      <p className="text-xs font-semibold uppercase tracking-widest text-landing-gold-light">NiroVera SaaS</p>
+    <div className="rounded-2xl bg-[#14284B] p-6 text-white shadow-xl">
+      <p className="text-xs font-semibold uppercase tracking-widest text-[#6EE7B7]">NiroVera SaaS</p>
       <h2 className="mt-2 font-heading text-3xl font-semibold">{ar ? "مركز أداء المنصة" : "Platform performance center"}</h2>
       <p className="mt-2 text-sm text-white/60">{ar ? "متابعة النمو والاشتراكات والإيرادات وزوار الموقع." : "Track growth, subscriptions, revenue, and website visitors."}</p>
     </div>
-    {!data && !error && <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-landing-gold" /></div>}
+    {!data && !error && <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-[#1E9E63]" /></div>}
     {error && <p className="text-sm text-red-500">{ar ? "تعذر تحميل تحليلات المنصة." : "Couldn't load platform analytics."}</p>}
-    {summary && <><OwnerExportButtons filename="powercare_owner_analytics" title={ar ? "ملخص أداء المنصة" : "Platform performance summary"} headers={[ar ? "المؤشر" : "Metric", ar ? "القيمة" : "Value"]} rows={metrics} ar={ar} /><div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{metrics.map(([label, value]) => <div key={label} className="rounded-2xl bg-white p-5 text-center shadow-sm"><p className="hero-title text-3xl text-[#3a2f22]">{value}</p><p className="mt-1 text-xs text-[#3a2f22]/50">{label}</p></div>)}</div><SubscriberAnalytics data={data} ar={ar} />{data.latestFeedback?.length > 0 && <section className="rounded-2xl bg-white p-5 shadow-sm"><h3 className="font-heading text-lg font-semibold text-[#3a2f22]">{ar ? "آخر التقييمات" : "Latest feedback"}</h3><div className="mt-3 grid gap-2 md:grid-cols-2">{data.latestFeedback.map((item) => <div key={item.id} className="rounded-xl bg-landing-bg p-3 text-sm"><p className="font-semibold text-landing-gold">{item.rating}/5</p><p className="mt-1 line-clamp-2 text-[#3a2f22]/70">{item.message || "—"}</p></div>)}</div></section>}</>}
+    {summary && <><OwnerExportButtons filename="powercare_owner_analytics" title={ar ? "ملخص أداء المنصة" : "Platform performance summary"} headers={[ar ? "المؤشر" : "Metric", ar ? "القيمة" : "Value"]} rows={metrics} ar={ar} /><div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{metrics.map(([label, value]) => <div key={label} className="rounded-2xl bg-white p-5 text-center shadow-sm"><p className="hero-title text-3xl text-[#14284B]">{value}</p><p className="mt-1 text-xs text-[#14284B]/50">{label}</p></div>)}</div><SubscriberAnalytics data={data} ar={ar} />{data.latestFeedback?.length > 0 && <section className="rounded-2xl bg-white p-5 shadow-sm"><h3 className="font-heading text-lg font-semibold text-[#14284B]">{ar ? "آخر التقييمات" : "Latest feedback"}</h3><div className="mt-3 grid gap-2 md:grid-cols-2">{data.latestFeedback.map((item) => <div key={item.id} className="rounded-xl bg-[#F7F8FA] p-3 text-sm"><p className="font-semibold text-[#1E9E63]">{item.rating}/5</p><p className="mt-1 line-clamp-2 text-[#14284B]/70">{item.message || "—"}</p></div>)}</div></section>}</>}
     <VisitorStatsCard lang={lang} />
   </div>;
 }

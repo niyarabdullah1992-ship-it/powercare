@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
         return Response.json({
           ...packBoard(facts),
           empty: true,
-          hintAr: "لا قنوات بعد — شغّل seedDemo أو اربط محطات الشركة.",
+          hintAr: "لا قنوات بعد — شغّل seedDemo أو اربط فروع الشركة.",
           hintEn: "No channels yet — run seedDemo or wire company stations.",
         });
       }
@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
         header: {
           titleAr: channel.nameAr,
           titleEn: channel.nameEn,
-          membersAr: `${channel.memberCount || 0} أعضاء · مرتبطة بالمحطة`,
+          membersAr: `${channel.memberCount || 0} أعضاء · مرتبطة بالفرع`,
           membersEn: `${channel.memberCount || 0} members · bound to the station`,
           tagAr: "مؤرشفة في سجل التشغيل",
           tagEn: "Archived in the operations log",

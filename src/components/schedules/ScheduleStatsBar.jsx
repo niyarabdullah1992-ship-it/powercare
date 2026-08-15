@@ -1,6 +1,6 @@
 import React from "react";
-import { Users, Clock, ShieldCheck, AlertCircle } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { MUTED, NAVY, num, SURFACE } from "@/lib/platformStyles";
 
 function minutesBetween(start, end) {
   const [sh, sm] = start.split(":").map(Number);
@@ -10,42 +10,93 @@ function minutesBetween(start, end) {
   return mins;
 }
 
+/** Platform.dc.html L1991–1998 / L6662–6670 — schedule summary cards. */
 export default function ScheduleStatsBar({ employees, shiftTypes, assignments, monthDates }) {
-  const { t } = useI18n();
+  const { lang } = useI18n();
+  const ar = lang === "ar";
   const days = monthDates || [];
   let scheduledMinutes = 0;
   let filledCells = 0;
-  const totalCells = days.length * shiftTypes.length;
+  let staffable = 0;
+  let restAssigned = 0;
 
   days.forEach((d) => {
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const restDay = d.getDay() === 5;
     shiftTypes.forEach((st) => {
       const ids = assignments?.[key]?.[st.id] || [];
-      if (ids.length > 0) filledCells++;
+      if (restDay) {
+        if (ids.length) restAssigned++;
+      } else {
+        staffable++;
+        if (ids.length) filledCells++;
+      }
       scheduledMinutes += ids.length * minutesBetween(st.start, st.end);
     });
   });
-  const coverage = totalCells > 0 ? Math.round((filledCells / totalCells) * 100) : 0;
-  const openShifts = totalCells - filledCells;
+
+  const coverage = staffable > 0 ? Math.round((filledCells / staffable) * 100) : 0;
+  const openCells = Math.max(0, staffable - filledCells);
+  const empCount = employees.length;
 
   const stats = [
-    { icon: Users, value: employees.length, sub: t("activeEmployees") },
-    { icon: Clock, value: `${Math.round(scheduledMinutes / 60)}h`, sub: t("thisMonth") },
-    { icon: ShieldCheck, value: `${coverage}%`, sub: coverage >= 90 ? t("excellent") : t("coverageRate") },
-    { icon: AlertCircle, value: openShifts, sub: t("needCoverage") },
+    {
+      value: `${empCount}`,
+      sub: ar
+        ? (empCount === 1 ? "موظف في الجدول" : empCount === 2 ? "موظفان في الجدول" : empCount <= 10 ? "موظفين في الجدول" : "موظفًا في الجدول")
+        : `employee${empCount === 1 ? "" : "s"} on the schedule`,
+    },
+    {
+      value: `${Math.round(scheduledMinutes / 60)}h`,
+      sub: ar ? "ساعات مجدولة هذا الشهر" : "scheduled hours this month",
+    },
+    {
+      value: `${coverage}%`,
+      sub: coverage >= 90 ? (ar ? "تغطية ممتازة" : "Excellent coverage") : (ar ? "نسبة التغطية" : "Coverage rate"),
+    },
+    {
+      value: `${openCells}`,
+      sub: ar
+        ? (openCells === 1 ? "خلية بلا إسناد" : openCells === 2 ? "خليتان بلا إسناد" : "خلايا بلا إسناد")
+        : `cell${openCells === 1 ? "" : "s"} with no assignment`,
+    },
   ];
 
+  if (restAssigned) {
+    stats.push({
+      value: `${restAssigned}`,
+      sub: ar ? "إسناد في يوم راحة" : `assignment${restAssigned === 1 ? "" : "s"} on a rest day`,
+      warn: true,
+    });
+  }
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {stats.map((s, i) => (
-        <div key={i} className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card">
-          <span className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center text-accent shrink-0">
-            <s.icon className="w-4 h-4" />
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+      {stats.map((s) => (
+        <div
+          key={s.sub}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "5px 10px",
+            borderRadius: 8,
+            border: `1px solid ${s.warn ? "#FDE68A" : "#E2E8F0"}`,
+            background: s.warn ? "#FFFBEB" : SURFACE,
+          }}
+        >
+          <span
+            dir="ltr"
+            style={{
+              ...num(s.warn ? "#B45309" : NAVY),
+              fontSize: 13,
+              lineHeight: 1,
+              flexShrink: 0,
+            }}
+          >
+            {s.value}
           </span>
-          <div className="min-w-0">
-            <p className="font-heading text-xl font-semibold leading-tight">{s.value}</p>
-            <p className="text-xs text-muted-foreground font-body truncate">{s.sub}</p>
-          </div>
+          <span style={{ fontSize: 11, color: MUTED, lineHeight: 1.3 }}>{s.sub}</span>
         </div>
       ))}
     </div>

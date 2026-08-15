@@ -1,76 +1,104 @@
 import React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Trash2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Trash2, ShieldCheck, AlertTriangle, X } from "lucide-react";
 import DeductionLineForm from "@/components/payroll/DeductionLineForm";
 import DeductionDisputeForm from "@/components/payroll/DeductionDisputeForm";
 import { deductionLines, deductionsTotal, sourceLabel } from "@/lib/payrollDeductions";
+import { article90MaxDeduction, checkArticle90Gate } from "@/lib/payrollDerivations";
+import { ACCENT, MUTED, NAVY, BORDER, SURFACE, BRAND_SOFT, BRAND_BORDER, DANGER, dialogOverlay, dialogCard, ui, CARD } from "@/lib/platformStyles";
 
 // The deduction breakdown: every line carries its source, reason, author and dispute state.
 export default function DeductionLinesDialog({ open, onOpenChange, item, employeeName, ar, canEdit, onAdd, onRemove, onResolve, currentUserId, onDispute }) {
-  if (!item) return null;
+  if (!item || !open) return null;
   const lines = deductionLines(item);
   const total = deductionsTotal(item);
+  const a90 = checkArticle90Gate({ ...item, deductions: total });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="font-heading text-lg">
+    <div
+      style={dialogOverlay}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onOpenChange?.(false);
+      }}
+    >
+      <div style={{ ...dialogCard, maxWidth: "540px" }} dir={ar ? "rtl" : "ltr"} role="dialog" aria-modal="true">
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", marginBottom: "14px" }}>
+          <h2 style={{ margin: 0, fontSize: "16px", fontWeight: 600, color: NAVY }}>
             {ar ? "بنود الخصم" : "Deduction lines"} — {employeeName}
-          </DialogTitle>
-        </DialogHeader>
+          </h2>
+          <button
+            type="button"
+            onClick={() => onOpenChange?.(false)}
+            aria-label={ar ? "إغلاق" : "Close"}
+            style={{ ...ui.btnGhost, padding: "6px", color: MUTED }}
+          >
+            <X style={{ width: 16, height: 16 }} />
+          </button>
+        </div>
 
-        <div className="flex items-center gap-2 rounded-lg border border-accent/35 bg-accent/10 p-3">
-          <ShieldCheck className="h-4 w-4 shrink-0 text-accent" />
-          <p className="text-xs font-body text-foreground">
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          borderRadius: "10px",
+          border: `1px solid ${BRAND_BORDER}`,
+          background: BRAND_SOFT,
+          padding: "11px 13px",
+          marginBottom: "14px",
+        }}>
+          <ShieldCheck style={{ width: 16, height: 16, color: ACCENT, flexShrink: 0 }} />
+          <p style={{ margin: 0, fontSize: "12px", color: NAVY, lineHeight: 1.6 }}>
             {ar ? "لا يُخصم مبلغ بلا بند موثّق — الإجمالي محسوب من البنود أدناه." : "No amount is deducted without a documented line — the total is computed from the lines below."}
           </p>
         </div>
 
-        <div className="max-h-72 space-y-2 overflow-y-auto">
+        <div style={{ maxHeight: "280px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px", marginBottom: "14px" }}>
           {lines.length === 0 ? (
-            <p className="py-6 text-center text-sm font-body text-muted-foreground">
+            <p style={{ margin: 0, padding: "28px 0", textAlign: "center", fontSize: "13px", color: MUTED }}>
               {ar ? "لا توجد بنود خصم لهذا الشهر." : "No deduction lines this month."}
             </p>
           ) : lines.map((line) => (
-            <div key={line.id} className="rounded-lg border border-border bg-card p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-body font-semibold">
+            <div key={line.id} style={{ borderRadius: "11px", border: `1px solid ${BORDER}`, background: CARD, padding: "12px 13px" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: NAVY }}>
                     <span dir="ltr">{Number(line.amount).toLocaleString()} {item.currency}</span>
-                    <span className="ms-2 text-[11px] font-normal text-accent-text">{sourceLabel(line.source, ar)}</span>
+                    <span style={{ marginInlineStart: "8px", fontSize: "11px", fontWeight: 500, color: ACCENT }}>{sourceLabel(line.source, ar)}</span>
                   </p>
-                  {line.reason && <p className="mt-1 text-xs font-body text-muted-foreground">{line.reason}</p>}
-                  {line.sourceRefId && <p className="text-[11px] font-body text-muted-foreground" dir="ltr">ref: {line.sourceRefId}</p>}
-                  <p className="mt-1 text-[11px] font-body text-muted-foreground">
+                  {line.reason && <p style={{ margin: "6px 0 0", fontSize: "12px", color: MUTED }}>{line.reason}</p>}
+                  {line.sourceRefId && <p style={{ margin: "2px 0 0", fontSize: "11px", color: MUTED }} dir="ltr">ref: {line.sourceRefId}</p>}
+                  <p style={{ margin: "6px 0 0", fontSize: "11px", color: MUTED }}>
                     {line.createdByName || line.createdBy} · {new Date(line.createdAt).toLocaleDateString()}
                   </p>
                   {line.disputeStatus === "open" && (
-                    <p className="mt-1 flex items-center gap-1 text-[11px] font-body text-destructive">
-                      <AlertTriangle className="h-3 w-3" /> {ar ? "اعتراض مفتوح" : "Dispute open"}
-                      {line.disputeNote && <span className="text-muted-foreground">— {line.disputeNote}</span>}
+                    <p style={{ margin: "6px 0 0", display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: DANGER }}>
+                      <AlertTriangle style={{ width: 12, height: 12 }} /> {ar ? "اعتراض مفتوح" : "Dispute open"}
+                      {line.disputeNote && <span style={{ color: MUTED }}>— {line.disputeNote}</span>}
                     </p>
                   )}
                   {line.disputeStatus === "accepted" && (
-                    <p className="mt-1 text-[11px] font-body text-emerald-600">{ar ? "اعتراض مقبول — أُلغي الخصم" : "Dispute accepted — deduction cancelled"}</p>
+                    <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#15803D" }}>{ar ? "اعتراض مقبول — أُلغي الخصم" : "Dispute accepted — deduction cancelled"}</p>
                   )}
                   {line.disputeStatus === "rejected" && (
-                    <p className="mt-1 text-[11px] font-body text-muted-foreground">{ar ? "اعتراض مرفوض" : "Dispute rejected"}</p>
+                    <p style={{ margin: "6px 0 0", fontSize: "11px", color: MUTED }}>{ar ? "اعتراض مرفوض" : "Dispute rejected"}</p>
                   )}
                 </div>
                 {canEdit && (
-                  <button type="button" onClick={() => onRemove(line.id)} title={ar ? "حذف البند" : "Remove line"}
-                    className="rounded-md border border-border p-2 text-muted-foreground hover:bg-muted hover:text-destructive">
-                    <Trash2 className="h-3.5 w-3.5" />
+                  <button
+                    type="button"
+                    onClick={() => onRemove(line.id)}
+                    title={ar ? "حذف البند" : "Remove line"}
+                    style={{ ...ui.btnGhost, padding: "8px", color: MUTED }}
+                  >
+                    <Trash2 style={{ width: 14, height: 14 }} />
                   </button>
                 )}
               </div>
               {canEdit && line.disputeStatus === "open" && (
-                <div className="mt-2 flex gap-2">
-                  <button type="button" onClick={() => onResolve(line.id, "accepted")} className="rounded-md border border-border px-2.5 py-1 text-xs font-body hover:bg-muted">
+                <div style={{ marginTop: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  <button type="button" onClick={() => onResolve(line.id, "accepted")} style={ui.btnSecondary}>
                     {ar ? "قبول الاعتراض وإلغاء الخصم" : "Accept & cancel deduction"}
                   </button>
-                  <button type="button" onClick={() => onResolve(line.id, "rejected")} className="rounded-md border border-border px-2.5 py-1 text-xs font-body hover:bg-muted">
+                  <button type="button" onClick={() => onResolve(line.id, "rejected")} style={ui.btnGhost}>
                     {ar ? "رفض الاعتراض" : "Reject dispute"}
                   </button>
                 </div>
@@ -82,17 +110,23 @@ export default function DeductionLinesDialog({ open, onOpenChange, item, employe
           ))}
         </div>
 
-        <p className="text-sm font-body font-semibold">
+        <p style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: 600, color: NAVY }}>
           {ar ? "إجمالي الخصم" : "Total deduction"}: <span dir="ltr">{total.toLocaleString()} {item.currency}</span>
+          <span style={{ display: "block", marginTop: "4px", fontSize: "11px", fontWeight: 500, color: a90.ok ? MUTED : DANGER }}>
+            {ar
+              ? `حد المادة 90: ${article90MaxDeduction(item).toLocaleString()} ${item.currency}`
+              : `Art. 90 cap: ${article90MaxDeduction(item).toLocaleString()} ${item.currency}`}
+            {!a90.ok && (ar ? " — تجاوز الحد، يُمنع الدفع والاعتماد." : " — over cap; payment and approval blocked.")}
+          </span>
         </p>
 
-        {canEdit && !item.paid && <DeductionLineForm ar={ar} onAdd={onAdd} />}
+        {canEdit && !item.paid && <DeductionLineForm ar={ar} item={item} onAdd={onAdd} />}
         {item.paid && (
-          <p className="text-xs font-body text-muted-foreground">
+          <p style={{ margin: "8px 0 0", fontSize: "12px", color: MUTED, background: SURFACE, borderRadius: "9px", padding: "10px 12px", border: `1px solid ${BORDER}` }}>
             {ar ? "الراتب مدفوع — البنود مغلقة للتعديل." : "Salary is paid — lines are locked."}
           </p>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

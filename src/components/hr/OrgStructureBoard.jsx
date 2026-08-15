@@ -1,72 +1,54 @@
-import React, { useEffect, useState } from "react";
-import { Loader2, Network, RotateCcw } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
-import {
-  ORG_ROLES,
-  ORG_SECTIONS,
-  SCOPE,
-  checkSetPermGate,
-  nextScopeInCycle,
-} from "@/lib/orgDerivations";
 import { toast } from "@/components/ui/use-toast";
+import { saveOrgStationName } from "@/lib/orgTree";
+import { deriveBranchEscalationChain, escalationStationsForEmployee, sharedEscalationLabel } from "@/lib/orgDerivations";
+import EscalationCoverageDialog from "@/components/hr/EscalationCoverageDialog";
+import { updateCompany } from "@/lib/store";
+import { MUTED, NAVY, pageCol, field, CARD, SURFACE } from "@/lib/platformStyles";
+import { ChromeBox } from "@/components/shared/IdentityCard";
+import useStationScope from "@/hooks/useStationScope";
 
 async function orgApi(payload) {
   const res = await base44.functions.invoke("org", payload);
   return res?.data ?? res;
 }
 
-const SECTION_LABEL = {
-  command: { ar: "مركز القيادة", en: "Command Center" },
-  operations: { ar: "المهام والعمليات", en: "Operations" },
-  attendance: { ar: "الحضور", en: "Attendance" },
-  daily: { ar: "التقرير اليومي", en: "Daily report" },
-  hse: { ar: "السلامة HSE", en: "Safety HSE" },
-  complaints: { ar: "الشكاوى المجهولة", en: "Anonymous reports" },
-  leave: { ar: "طلبات الإجازة", en: "Leave requests" },
-  hr: { ar: "الموارد البشرية", en: "Human Resources" },
-  payroll: { ar: "الرواتب", en: "Payroll" },
-  settings: { ar: "إعدادات الشركة", en: "Company settings" },
+const fieldInput = { ...field };
+
+const selStyle = {
+  ...field,
+  width: "auto",
+  height: "36px",
+  padding: "0 10px",
+  fontSize: "11px",
+  maxWidth: "190px",
 };
 
-const ROLE_LABEL = {
-  ops_director: { ar: "مدير عمليات", en: "Ops Director" },
-  station_manager: { ar: "مدير محطة", en: "Station Mgr" },
-  supervisor: { ar: "مشرف", en: "Supervisor" },
-  safety: { ar: "سلامة", en: "Safety" },
-  employee: { ar: "موظف", en: "Employee" },
+const branchRowStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
+  padding: "12px 0",
+  borderTop: "1px solid #F1F5F9",
+  flexWrap: "wrap",
 };
 
-const SCOPE_LABEL = {
-  [SCOPE.NONE]: { ar: "—", en: "—", fullAr: "لا صلاحية", fullEn: "No access" },
-  [SCOPE.OWN]: { ar: "خاصته", en: "Own", fullAr: "سجلاته هو فقط", fullEn: "Own records only" },
-  [SCOPE.STATION]: { ar: "محطته", en: "Station", fullAr: "كل من في محطته", fullEn: "Everyone at their station" },
-  [SCOPE.REGION]: { ar: "منطقته", en: "Region", fullAr: "كل محطات منطقته", fullEn: "Every station in their region" },
-  [SCOPE.COMPANY]: { ar: "كامل", en: "Company", fullAr: "الشركة كاملة", fullEn: "The whole company" },
-  [SCOPE.DELEGATED]: { ar: "بتفويض", en: "Delegated", fullAr: "مشتقة من سجل التفويض", fullEn: "Derived from the delegation register" },
-};
-
-function scopeChipClass(scope) {
-  if (scope === SCOPE.COMPANY) return "border-emerald-200 bg-emerald-50 text-emerald-800";
-  if (scope === SCOPE.STATION) return "border-blue-200 bg-blue-50 text-blue-800";
-  if (scope === SCOPE.REGION) return "border-violet-200 bg-violet-50 text-violet-800";
-  if (scope === SCOPE.DELEGATED) return "border-amber-200 bg-amber-50 text-amber-900";
-  if (scope === SCOPE.OWN) return "border-border bg-muted text-foreground";
-  return "border-transparent text-muted-foreground";
-}
-
+/** Branch admin only — people hierarchy lives in FlexOrgTree (primary). */
 export default function OrgStructureBoard({ lang = "ar" }) {
   const ar = lang === "ar";
   const { company, data, currentUser } = useAuth();
   const [branches, setBranches] = useState([]);
-  const [matrix, setMatrix] = useState([]);
-  const [delegations, setDelegations] = useState([]);
-  const [escalation, setEscalation] = useState([]);
   const [stats, setStats] = useState(null);
-  const [permDirty, setPermDirty] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [branchForm, setBranchForm] = useState({ name: "", managerId: "", region: "west", crew: 12 });
-  const [dgForm, setDgForm] = useState({ fromId: "", toId: "", perm: ar ? "اعتماد المهام" : "Task approval", end: "", reason: "" });
+  const [brOpen, setBrOpen] = useState(false);
+  const [branchForm, setBranchForm] = useState({ name: "", managerId: "", crew: 12 });
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [escalationEdit, setEscalationEdit] = useState(null);
 
   const isSenior = currentUser && (
     ["owner", "director", "ops_manager", "pgm", "admin"].includes(currentUser.role)
@@ -74,16 +56,43 @@ export default function OrgStructureBoard({ lang = "ar" }) {
   );
 
   const employees = data?.employees || [];
+  const headerScope = useStationScope();
+  const scopedStationId = headerScope && headerScope !== "all" ? String(headerScope) : null;
+  const visibleBranches = useMemo(
+    () => (scopedStationId ? branches.filter((b) => String(b.id) === scopedStationId) : branches),
+    [branches, scopedStationId],
+  );
   const empName = (id) => employees.find((e) => e.id === id)?.name || id || "—";
+  const branchChains = useMemo(() => {
+    const list = (visibleBranches.length ? visibleBranches : (data?.stations || []).map((s) => ({
+      id: s.id || s.stationId,
+      name: s.name,
+    }))).filter((b) => !scopedStationId || String(b.id) === scopedStationId);
+    return list.map((b) => ({
+      branchId: b.id,
+      branchName: b.name,
+      steps: deriveBranchEscalationChain(b.id, data),
+    })).filter((row) => row.steps.length > 0);
+  }, [visibleBranches, data, scopedStationId]);
+
+  const fromStations = () => {
+    const stations = data?.stations || [];
+    return stations.map((s, i) => {
+      const id = s.stationId || s.id || `st_${i}`;
+      return {
+        id,
+        name: s.name || `Station ${i + 1}`,
+        managerId: s.managerId || null,
+        managerName: employees.find((e) => e.id === s.managerId)?.name || null,
+        crew: (data?.employees || []).filter((e) => e.stationId === id).length || 0,
+      };
+    });
+  };
 
   const applyRemote = (remote) => {
     if (!remote) return;
     setBranches(remote.branches || []);
-    setMatrix(remote.matrix || []);
-    setDelegations(remote.delegations || []);
-    setEscalation(remote.escalation || []);
     setStats(remote.stats || null);
-    setPermDirty(!!remote.permDirty);
   };
 
   const load = async () => {
@@ -92,11 +101,11 @@ export default function OrgStructureBoard({ lang = "ar" }) {
       const remote = await orgApi({ action: "list", companyId: company.id });
       applyRemote(remote);
     } catch {
-      setBranches([]);
+      setBranches(fromStations());
     }
   };
 
-  useEffect(() => { load(); }, [company?.id]);
+  useEffect(() => { load(); }, [company?.id, data?.stations]);
 
   const run = async (payload, okMsg) => {
     if (!company?.id) return;
@@ -113,251 +122,413 @@ export default function OrgStructureBoard({ lang = "ar" }) {
         applyRemote(remote);
       }
     } catch (err) {
-      toast({ description: String(err?.message || err), variant: "destructive" });
+      // Local preview fallback for rename / manager
+      if (payload.action === "renameBranch" && payload.branchId && payload.name) {
+        saveOrgStationName(company.id, payload.branchId, payload.name);
+        updateCompany(company.id, (d) => {
+          const st = (d.stations || []).find((s) => (s.stationId || s.id) === payload.branchId);
+          if (st) st.name = payload.name;
+        });
+        setBranches((prev) => prev.map((b) => (b.id === payload.branchId ? { ...b, name: payload.name } : b)));
+        if (okMsg) toast({ description: okMsg });
+      } else if (payload.action === "setBranchManager" && payload.branchId) {
+        updateCompany(company.id, (d) => {
+          const st = (d.stations || []).find((s) => (s.stationId || s.id) === payload.branchId);
+          if (st) st.managerId = payload.managerId;
+        });
+        setBranches((prev) => prev.map((b) => (
+          b.id === payload.branchId
+            ? { ...b, managerId: payload.managerId, managerName: payload.managerName }
+            : b
+        )));
+        if (okMsg) toast({ description: okMsg });
+      } else if (payload.action === "createBranch" && payload.name) {
+        const id = `br_${Date.now().toString(36)}`;
+        updateCompany(company.id, (d) => {
+          d.stations = [...(d.stations || []), {
+            id,
+            stationId: id,
+            name: payload.name,
+            managerId: payload.managerId || null,
+            type: "branch",
+            status: "active",
+          }];
+        });
+        setBranches((prev) => [...prev, {
+          id,
+          name: payload.name,
+          managerId: payload.managerId || null,
+          managerName: payload.managerName || null,
+          crew: Number(payload.crew) || 12,
+        }]);
+        if (okMsg) toast({ description: okMsg });
+      } else {
+        toast({ description: String(err?.message || err), variant: "destructive" });
+      }
     } finally {
       setBusy(false);
     }
   };
 
-  const cycleCell = (si, cell, ri) => {
-    if (cell.derived) {
-      toast({
-        description: ar
-          ? "«بتفويض» حالة مشتقة من سجل التفويض — لا تُضبط من المصفوفة."
-          : "\"Delegated\" is derived — manage it in the temporary delegation register.",
-        variant: "destructive",
-      });
+  const brReady = String(branchForm.name || "").trim() && branchForm.managerId;
+  const brCreateStyle = brReady
+    ? {
+      height: "36px",
+      padding: "0 16px",
+      borderRadius: "9px",
+      border: "none",
+      background: "#1E9E63",
+      color: "#fff",
+      fontSize: "12px",
+      fontWeight: 600,
+      cursor: busy ? "wait" : "pointer",
+      fontFamily: "inherit",
+      opacity: busy ? 0.6 : 1,
+    }
+    : {
+      height: "36px",
+      padding: "0 16px",
+      borderRadius: "9px",
+      border: "none",
+      background: "#E2E8F0",
+      color: MUTED,
+      fontSize: "12px",
+      fontWeight: 600,
+      cursor: "not-allowed",
+      fontFamily: "inherit",
+    };
+
+  const commitRename = (branch) => {
+    const name = String(renameValue || "").trim();
+    if (!name || name === branch.name) {
+      setRenamingId(null);
       return;
     }
-    const next = nextScopeInCycle(cell.scope);
-    const gate = checkSetPermGate(next);
-    if (!gate.ok) {
-      toast({ description: ar ? gate.reason : gate.reasonEn, variant: "destructive" });
-      return;
-    }
-    run({ action: "setPerm", sectionIdx: si, roleIdx: ri, scope: next });
+    run(
+      { action: "renameBranch", branchId: branch.id, name },
+      ar ? `أُعيد تسمية الفرع إلى «${name}»` : `Branch renamed to «${name}»`,
+    );
+    setRenamingId(null);
   };
 
   return (
-    <section className="space-y-5 rounded-xl border bg-card p-4" dir={ar ? "rtl" : "ltr"}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <span className="rounded-lg bg-accent/15 p-2"><Network className="h-5 w-5 text-accent" /></span>
-          <div>
-            <h2 className="font-heading text-lg font-semibold">{ar ? "الهيكل والصلاحيات" : "Structure & permissions"}</h2>
-            <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-              {ar
-                ? "الصلاحيات وسلسلة التصعيد تُشتقان من الهيكل — تغيير المسؤول ينقلهما فورًا. «بتفويض» مشتقة من سجل التفويض ولا تُضبط من المصفوفة."
-                : "Permissions and escalation derive from the structure — changing a manager moves both immediately. \"Delegated\" comes from the delegation register, not the matrix."}
-            </p>
-          </div>
-        </div>
-        {stats && (
-          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-            <span>{stats.branches} {ar ? "فروع" : "branches"}</span>
-            <span>{stats.activeDelegations} {ar ? "تفويضات سارية" : "active delegations"}</span>
-            {stats.unassignedManagers > 0 && (
-              <span className="text-amber-700">{stats.unassignedManagers} {ar ? "بلا مسؤول" : "without manager"}</span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {isSenior && (
-        <form
-          className="flex flex-wrap items-end gap-2 rounded-lg border bg-muted/40 p-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const mgr = employees.find((x) => x.id === branchForm.managerId);
-            run(
-              {
-                action: "createBranch",
-                name: branchForm.name,
-                managerId: branchForm.managerId,
-                managerName: mgr?.name,
-                region: branchForm.region,
-                crew: branchForm.crew,
-              },
-              ar ? `أُنشئ فرع «${branchForm.name}»` : `Branch «${branchForm.name}» created`,
-            );
-            setBranchForm((f) => ({ ...f, name: "" }));
-          }}
-        >
-          <label className="grid gap-1 text-[11px]">
-            <span>{ar ? "اسم الفرع" : "Branch name"}</span>
-            <input required className="h-8 rounded-md border bg-background px-2 text-sm" value={branchForm.name} onChange={(e) => setBranchForm((f) => ({ ...f, name: e.target.value }))} />
-          </label>
-          <label className="grid gap-1 text-[11px]">
-            <span>{ar ? "مسؤول الفرع" : "Manager"}</span>
-            <select required className="h-8 rounded-md border bg-background px-2 text-sm" value={branchForm.managerId} onChange={(e) => setBranchForm((f) => ({ ...f, managerId: e.target.value }))}>
-              <option value="">{ar ? "اختر…" : "Select…"}</option>
-              {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-            </select>
-          </label>
-          <label className="grid gap-1 text-[11px]">
-            <span>{ar ? "المنطقة" : "Region"}</span>
-            <select className="h-8 rounded-md border bg-background px-2 text-sm" value={branchForm.region} onChange={(e) => setBranchForm((f) => ({ ...f, region: e.target.value }))}>
-              <option value="west">{ar ? "غربية" : "West"}</option>
-              <option value="east">{ar ? "شرقية" : "East"}</option>
-            </select>
-          </label>
-          <button type="submit" disabled={busy} className="inline-flex h-8 items-center gap-1 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50">
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-            {ar ? "أنشئ الفرع" : "Create branch"}
-          </button>
-        </form>
-      )}
-
-      <div className="space-y-1">
-        <h3 className="text-sm font-semibold">{ar ? "إدارة الفروع والمناصب" : "Branches and postings"}</h3>
-        {branches.map((b) => (
-          <div key={b.id} className="flex flex-wrap items-center gap-2 border-t py-2 text-xs">
-            <div className="min-w-[10rem] flex-1">
-              <div className="font-medium">{b.name}</div>
-              <div className="text-muted-foreground">
-                {b.crew ? `${b.crew} ${ar ? "موظفًا" : "crew"} · ` : ""}
-                {ar ? "المسؤول" : "Manager"}: {b.managerName || empName(b.managerId) || "—"}
-              </div>
+    <section style={{ ...pageCol, margin: 0, maxWidth: "none" }} dir={ar ? "rtl" : "ltr"}>
+      <ChromeBox>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 260px" }}>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>
+              {ar ? "الفروع بالمسمى" : "Branches by name"}
             </div>
-            {isSenior && (
-              <select
-                className="h-8 max-w-[12rem] rounded-md border bg-background px-2"
-                defaultValue=""
-                onChange={(e) => {
-                  const id = e.target.value;
-                  if (!id) return;
-                  const mgr = employees.find((x) => x.id === id);
-                  run(
-                    { action: "setBranchManager", branchId: b.id, managerId: id, managerName: mgr?.name },
-                    ar ? `أُسند ${b.name} — انتقلت الصلاحيات والتصعيد فورًا` : `${b.name} reassigned — permissions and escalation moved immediately`,
-                  );
-                  e.target.value = "";
-                }}
-              >
-                <option value="">{ar ? "غيّر المسؤول" : "Change manager"}</option>
-                {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-              </select>
-            )}
+            <div style={{ fontSize: "11px", color: MUTED, marginTop: "4px", lineHeight: 1.7, maxWidth: "820px" }}>
+              {ar
+                ? "اسم الفرع فقط — بدون منطقة مفروضة. أعد التسمية أو غيّر المسؤول في أي وقت."
+                : "Branch name only — no forced region. Rename or change the manager anytime."}
+            </div>
           </div>
-        ))}
-      </div>
-
-      {escalation.length > 0 && (
-        <div className="rounded-lg border border-border/80 bg-muted/30 p-3">
-          <h3 className="text-xs font-semibold">{ar ? "سلسلة التصعيد المشتقة" : "Derived escalation chain"}</h3>
-          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-            {escalation.map((h) => (
-              <li key={h.branchId}>{h.branchName} → {h.managerName || empName(h.managerId)}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h3 className="text-sm font-semibold">{ar ? "مصفوفة الصلاحيات" : "Permission matrix"}</h3>
-            <p className="text-[11px] text-muted-foreground">
-              {ar ? "اضغط خانة لترفع النطاق أو تخفضه. كل استثناء مقيَّد باسمك." : "Click a cell to raise or lower scope. Every exception is recorded with your name."}
-            </p>
-          </div>
-          {permDirty && isSenior && (
+          {stats && (
+            <span style={{ fontSize: "11px", color: MUTED }}>
+              {stats.branches} {ar ? "فروع" : "branches"}
+              {stats.unassignedManagers > 0 ? (
+                <span style={{ color: "#B45309" }}>
+                  {` · ${stats.unassignedManagers} ${ar ? "بلا مسؤول" : "without manager"}`}
+                </span>
+              ) : null}
+            </span>
+          )}
+          {isSenior && (
             <button
               type="button"
-              disabled={busy}
-              onClick={() => run({ action: "resetPerms" }, ar ? "أُعيدت المصفوفة إلى المشتقّة من الهيكل." : "Matrix reset to structure-derived baseline.")}
-              className="inline-flex h-8 items-center gap-1 rounded-md border px-2 text-xs"
+              onClick={() => setBrOpen((v) => !v)}
+              style={{
+                padding: "8px 15px",
+                borderRadius: "9px",
+                border: "none",
+                background: "#1E9E63",
+                color: "#fff",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                whiteSpace: "nowrap",
+              }}
             >
-              <RotateCcw className="h-3.5 w-3.5" />
-              {ar ? "أعِد للمشتق" : "Reset to derived"}
+              {ar ? "+ أنشئ فرعًا جديدًا" : "+ Create a branch"}
             </button>
           )}
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-xs">
-            <thead>
-              <tr>
-                <th className="border-b p-2 text-start font-medium text-muted-foreground">{ar ? "القسم" : "Section"}</th>
-                {ORG_ROLES.map((r) => (
-                  <th key={r} className="border-b p-2 text-start font-medium">{ar ? ROLE_LABEL[r].ar : ROLE_LABEL[r].en}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {(matrix.length ? matrix : ORG_SECTIONS.map((sectionId) => ({ sectionId, cells: [] }))).map((row, si) => (
-                <tr key={row.sectionId}>
-                  <td className="border-b p-2 font-medium">{ar ? SECTION_LABEL[row.sectionId]?.ar : SECTION_LABEL[row.sectionId]?.en}</td>
-                  {(row.cells.length ? row.cells : ORG_ROLES.map((roleId) => ({ roleId, scope: SCOPE.NONE, derived: false }))).map((cell, ri) => {
-                    const lab = SCOPE_LABEL[cell.scope] || SCOPE_LABEL[SCOPE.NONE];
-                    return (
-                      <td key={cell.roleId} className="border-b p-1.5">
-                        <button
-                          type="button"
-                          disabled={!isSenior || busy}
-                          title={ar ? lab.fullAr : lab.fullEn}
-                          onClick={() => cycleCell(si, cell, ri)}
-                          className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold disabled:cursor-not-allowed ${scopeChipClass(cell.scope)} ${cell.derived ? "cursor-not-allowed opacity-80" : ""}`}
-                        >
-                          {ar ? lab.ar : lab.en}
-                        </button>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold">{ar ? "التفويض المؤقت" : "Temporary delegation"}</h3>
-        <p className="text-[11px] text-muted-foreground">
-          {ar
-            ? "الصلاحية المفوَّضة تنتهي بنفسها في تاريخها — المفوِّض يبقى مسؤولًا."
-            : "A delegated permission expires on its own date — the delegator stays accountable."}
-        </p>
-        {isSenior && (
-          <form
-            className="flex flex-wrap items-end gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              run({ action: "createDelegation", ...dgForm }, ar ? "فُوّضت صلاحية مؤقتة." : "Temporary delegation created.");
-            }}
-          >
-            <select required className="h-8 rounded-md border bg-background px-2 text-xs" value={dgForm.fromId} onChange={(e) => setDgForm((f) => ({ ...f, fromId: e.target.value }))}>
-              <option value="">{ar ? "من" : "From"}</option>
-              {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-            </select>
-            <select required className="h-8 rounded-md border bg-background px-2 text-xs" value={dgForm.toId} onChange={(e) => setDgForm((f) => ({ ...f, toId: e.target.value }))}>
-              <option value="">{ar ? "إلى" : "To"}</option>
-              {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-            </select>
-            <input required type="date" className="h-8 rounded-md border bg-background px-2 text-xs" value={dgForm.end} onChange={(e) => setDgForm((f) => ({ ...f, end: e.target.value }))} />
-            <input className="h-8 w-36 rounded-md border bg-background px-2 text-xs" value={dgForm.perm} onChange={(e) => setDgForm((f) => ({ ...f, perm: e.target.value }))} />
-            <button type="submit" disabled={busy} className="h-8 rounded-md border px-3 text-xs font-medium">{ar ? "+ فوّض" : "+ Delegate"}</button>
-          </form>
-        )}
-        {delegations.filter((d) => !d.revoked).length === 0 && (
-          <p className="text-xs text-muted-foreground">{ar ? "لا تفويضات سارية." : "No active delegations."}</p>
-        )}
-        {delegations.filter((d) => !d.revoked).map((d) => (
-          <div key={d.id} className={`flex flex-wrap items-center gap-2 border-t py-2 text-xs ${d.expired ? "opacity-60" : ""}`}>
-            <span className="font-medium">{d.perm}</span>
-            <span className="text-muted-foreground">{empName(d.fromId)} → {empName(d.toId)} · {d.end}</span>
-            <span className={`rounded-full border px-2 py-0.5 ${d.expired ? "" : d.daysLeft <= 2 ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>
-              {d.expired
-                ? (ar ? "انتهت — سُحبت تلقائيًا" : "Expired — withdrawn automatically")
-                : (ar ? `تبقّى ${d.daysLeft} يومًا` : `${d.daysLeft} days left`)}
-            </span>
-            {isSenior && !d.expired && (
-              <button type="button" disabled={busy} className="rounded border px-2 py-0.5" onClick={() => run({ action: "revokeDelegation", id: d.id })}>
-                {ar ? "اسحب الآن" : "Revoke now"}
+        {isSenior && brOpen && (
+          <div style={{ marginTop: "14px", padding: "15px 16px", borderRadius: "12px", background: SURFACE, border: "1px solid #E2E8F0" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: "11px" }}>
+              <label style={{ display: "block" }}>
+                <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: MUTED, marginBottom: "5px" }}>
+                  {ar ? "اسم الفرع" : "Branch name"}
+                </span>
+                <input
+                  required
+                  placeholder={ar ? "مثال: فرع الخفجي · منصة رابغ · أي اسم حر" : "e.g. Khafji Branch · Rabigh Platform · any free name"}
+                  value={branchForm.name}
+                  onChange={(e) => setBranchForm((f) => ({ ...f, name: e.target.value }))}
+                  style={fieldInput}
+                />
+              </label>
+              <label style={{ display: "block" }}>
+                <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: MUTED, marginBottom: "5px" }}>
+                  {ar ? "مسؤول الفرع" : "Branch manager"}
+                </span>
+                <select
+                  required
+                  value={branchForm.managerId}
+                  onChange={(e) => setBranchForm((f) => ({ ...f, managerId: e.target.value }))}
+                  style={fieldInput}
+                >
+                  <option value="">{ar ? "اختر المسؤول" : "Select a manager"}</option>
+                  {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </select>
+              </label>
+              <label style={{ display: "block" }}>
+                <span style={{ display: "block", fontSize: "11px", fontWeight: 600, color: MUTED, marginBottom: "5px" }}>
+                  {ar ? "عدد الطاقم" : "Crew size"}
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={branchForm.crew}
+                  onChange={(e) => setBranchForm((f) => ({ ...f, crew: e.target.value }))}
+                  style={fieldInput}
+                />
+              </label>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "13px", flexWrap: "wrap" }}>
+              <span style={{ flex: "1 1 240px", fontSize: "11px", color: MUTED, lineHeight: 1.7 }}>
+                {ar
+                  ? "يظهر الفرع فورًا في الشجرة والصلاحيات والورديات — مشتق من اسمه لا من منطقة ثابتة."
+                  : "The branch appears at once in the tree, permissions and rotas — derived from its name, not a fixed region."}
+              </span>
+              <button
+                type="button"
+                onClick={() => { setBrOpen(false); setBranchForm({ name: "", managerId: "", crew: 12 }); }}
+                style={{
+                  height: "36px",
+                  padding: "0 14px",
+                  borderRadius: "9px",
+                  border: "1px solid #E2E8F0",
+                  background: CARD,
+                  color: MUTED,
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {ar ? "إلغاء" : "Cancel"}
               </button>
-            )}
+              <button
+                type="button"
+                disabled={!brReady || busy}
+                style={brCreateStyle}
+                onClick={() => {
+                  if (!brReady) return;
+                  const mgr = employees.find((x) => x.id === branchForm.managerId);
+                  run(
+                    {
+                      action: "createBranch",
+                      name: branchForm.name.trim(),
+                      managerId: branchForm.managerId,
+                      managerName: mgr?.name,
+                      crew: branchForm.crew,
+                    },
+                    ar ? `أُنشئ فرع «${branchForm.name.trim()}»` : `Branch «${branchForm.name.trim()}» created`,
+                  );
+                  setBranchForm({ name: "", managerId: "", crew: 12 });
+                  setBrOpen(false);
+                }}
+              >
+                {busy ? <Loader2 style={{ width: 14, height: 14, display: "inline", verticalAlign: "middle" }} className="animate-spin" /> : null}
+                {" "}{ar ? "أنشئ الفرع" : "Create the branch"}
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
+        )}
+
+        <div style={{ marginTop: "6px" }}>
+          {visibleBranches.map((b) => (
+            <div key={b.id} style={branchRowStyle}>
+              <span style={{ flex: "1 1 180px", minWidth: 0 }}>
+                {renamingId === b.id ? (
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onBlur={() => commitRename(b)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); commitRename(b); }
+                      if (e.key === "Escape") setRenamingId(null);
+                    }}
+                    style={{ ...fieldInput, maxWidth: 280 }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isSenior) return;
+                      setRenamingId(b.id);
+                      setRenameValue(b.name);
+                    }}
+                    style={{
+                      display: "block",
+                      padding: 0,
+                      border: "none",
+                      background: "transparent",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: NAVY,
+                      cursor: isSenior ? "text" : "default",
+                      fontFamily: "inherit",
+                      textAlign: "inherit",
+                    }}
+                    title={isSenior ? (ar ? "اضغط لإعادة التسمية" : "Click to rename") : undefined}
+                  >
+                    {b.name}
+                  </button>
+                )}
+                <span style={{ display: "block", fontSize: "11px", color: MUTED, marginTop: "2px" }}>
+                  {ar ? `${b.crew || 0} موظفًا` : `${b.crew || 0} employees`}
+                  {" · "}
+                  {ar ? "المسؤول" : "Manager"}
+                  {": "}
+                  {b.managerName || empName(b.managerId) || "—"}
+                </span>
+              </span>
+              {isSenior && (
+                <select
+                  defaultValue=""
+                  style={selStyle}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    if (!id) return;
+                    const mgr = employees.find((x) => x.id === id);
+                    run(
+                      { action: "setBranchManager", branchId: b.id, managerId: id, managerName: mgr?.name },
+                      ar
+                        ? `أُسند ${b.name} — انتقلت الصلاحيات والتصعيد فورًا`
+                        : `${b.name} reassigned — permissions and escalation moved immediately`,
+                    );
+                    e.target.value = "";
+                  }}
+                >
+                  <option value="">{ar ? "غيّر المسؤول" : "Change manager"}</option>
+                  {employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </select>
+              )}
+            </div>
+          ))}
+          {branches.length === 0 && (
+            <div style={{ padding: "22px 0 6px", textAlign: "center", fontSize: "13px", color: MUTED }}>
+              {ar ? "لا فروع بعد." : "No branches yet."}
+            </div>
+          )}
+        </div>
+
+        {branchChains.length > 0 && (
+          <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px dashed #E2E8F0" }}>
+            <div style={{ fontSize: "11px", fontWeight: 600, color: MUTED, marginBottom: "8px" }}>
+              {ar ? "تصعيد كل فرع — اضغط الاسم لتحديد كم فرعًا يمسك رقمه" : "Each branch path — tap a name to set how many branches that rank holds"}
+            </div>
+            {branchChains.map((row) => (
+              <div key={row.branchId} style={{ fontSize: "11px", color: MUTED, padding: "6px 0", lineHeight: 1.65 }}>
+                <span style={{ fontWeight: 600, color: NAVY }}>{row.branchName}</span>
+                {" · "}
+                {row.steps.map((s, idx) => {
+                  const name = s.name || s.title;
+                  if (!name) return null;
+                  const shared = sharedEscalationLabel(escalationStationsForEmployee(s.employeeId, data).length, ar, idx + 1);
+                  const label = shared || (ar ? `تصعيد ${idx + 1}` : `Escalation ${idx + 1}`);
+                  return (
+                    <span key={`${row.branchId}-${s.employeeId}-${idx}`}>
+                      {idx > 0 ? (ar ? " ثم " : " → ") : null}
+                      <button
+                        type="button"
+                        disabled={!isSenior}
+                        onClick={() => setEscalationEdit({
+                          employeeId: s.employeeId,
+                          stationId: row.branchId,
+                          level: idx + 1,
+                        })}
+                        style={{
+                          padding: 0,
+                          border: "none",
+                          background: "transparent",
+                          color: NAVY,
+                          fontWeight: 600,
+                          fontSize: "11px",
+                          cursor: isSenior ? "pointer" : "default",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        {name}
+                      </button>
+                      {` (${label})`}
+                    </span>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        )}
+      </ChromeBox>
+
+      <ChromeBox
+        style={{
+          marginTop: "12px",
+        }}
+        bodyStyle={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ flex: "1 1 240px", minWidth: 0 }}>
+          <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>
+            {ar ? "الصلاحيات والتفويض" : "Permissions & delegation"}
+          </div>
+          <div style={{ fontSize: "11px", color: MUTED, marginTop: "3px", lineHeight: 1.6 }}>
+            {ar
+              ? "تُدار من إعدادات الشركة — مشتقة من هذا الهيكل."
+              : "Managed in company settings — derived from this structure."}
+          </div>
+        </div>
+        <Link
+          to="/app/settings"
+          style={{
+            padding: "7px 14px",
+            borderRadius: "9px",
+            border: "1px solid #1E9E63",
+            background: CARD,
+            color: "#14683F",
+            fontSize: "12px",
+            fontWeight: 600,
+            textDecoration: "none",
+            whiteSpace: "nowrap",
+            fontFamily: "inherit",
+          }}
+        >
+          {ar ? "افتح في الإعدادات" : "Open in settings"}
+        </Link>
+      </ChromeBox>
+
+      {escalationEdit && (
+        <EscalationCoverageDialog
+          employeeId={escalationEdit.employeeId}
+          stationId={escalationEdit.stationId}
+          level={escalationEdit.level}
+          data={data}
+          companyId={company.id}
+          ar={ar}
+          onClose={() => setEscalationEdit(null)}
+        />
+      )}
     </section>
   );
 }

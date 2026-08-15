@@ -291,7 +291,7 @@ Deno.serve(async (req) => {
       const title = String(body.title || "").trim();
       const stationId = String(body.stationId || "").trim();
       if (!title || !stationId) {
-        return Response.json({ error: "TITLE_STATION_REQUIRED", reason: "المسمى والمحطة مطلوبان." }, { status: 400 });
+        return Response.json({ error: "TITLE_STATION_REQUIRED", reason: "المسمى والفرع مطلوبان." }, { status: 400 });
       }
       const data = await loadPayload();
       const key = String(body.key || uid("rq")).replace(/\s+/g, "");

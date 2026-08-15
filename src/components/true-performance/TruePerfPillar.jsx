@@ -8,7 +8,7 @@ export default function TruePerfPillar({ pillar }) {
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary text-landing-gold-light">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary text-accent">
           <Icon className="h-5 w-5" strokeWidth={1.6} />
         </span>
         <div>

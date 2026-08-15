@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Copy, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { isBase44BackendConfigured } from "@/lib/localPreview";
 import {
   checkWorkspaceSearchGate,
   filterWorkspacePreview,
 } from "@/lib/workspaceDerivations";
+import { ACCENT, BORDER, CARD, INK, MUTED, SURFACE } from "@/lib/publicChrome";
 
 function initials(name) {
   const s = String(name || "").trim();
@@ -28,9 +29,94 @@ function metaLine(card, ar) {
     : `${cr} · ${sites} · ${staff} · since ${card.since}`;
 }
 
+/** Design L216 */
+const MARK = {
+  width: "42px",
+  height: "42px",
+  borderRadius: "11px",
+  flexShrink: 0,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: SURFACE,
+  border: `1px solid ${BORDER}`,
+  fontSize: "14px",
+  fontWeight: 600,
+  color: ACCENT,
+};
+
+function stateStyle(trial) {
+  return trial
+    ? {
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "3px 10px",
+        borderRadius: "20px",
+        fontSize: "11px",
+        fontWeight: 600,
+        background: "rgba(245,158,11,.16)",
+        color: "#FCD34D",
+        border: "1px solid rgba(245,158,11,.3)",
+        whiteSpace: "nowrap",
+      }
+    : {
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "3px 10px",
+        borderRadius: "20px",
+        fontSize: "11px",
+        fontWeight: 600,
+        background: "var(--nv-accent-soft)",
+        color: "var(--nv-accent-deep)",
+        border: "1px solid var(--nv-accent-border)",
+        whiteSpace: "nowrap",
+      };
+}
+
+/** Design L217–219 */
+const STAFF = {
+  display: "inline-flex",
+  alignItems: "center",
+  height: "36px",
+  padding: "0 15px",
+  borderRadius: "9px",
+  background: ACCENT,
+  color: "#fff",
+  fontSize: "12px",
+  fontWeight: 600,
+  cursor: "pointer",
+  textDecoration: "none",
+};
+const JOBS = {
+  display: "inline-flex",
+  alignItems: "center",
+  height: "36px",
+  padding: "0 15px",
+  borderRadius: "9px",
+  border: `1px solid ${BORDER}`,
+  color: INK,
+  fontSize: "12px",
+  cursor: "pointer",
+  textDecoration: "none",
+  background: CARD,
+};
+const COPY = {
+  height: "36px",
+  padding: "0 15px",
+  borderRadius: "9px",
+  border: `1px solid ${BORDER}`,
+  background: CARD,
+  color: MUTED,
+  fontSize: "12px",
+  cursor: "pointer",
+  fontFamily: "inherit",
+};
+
 /**
  * Public tenant finder — company name / CR → staff login or careers.
+ * Design: NiroVera Workspace.dc.html L42–96 (field, results, empty).
  * Server: companyDirectory.publicWorkspaceSearch. Offline: design preview seeds.
+ * Demo OTP panel from design is intentionally not rebuilt (HANDOFF: no fixed demo OTP).
  */
 export default function WorkspaceFinder({ lang = "ar", initialQuery = "" }) {
   const ar = lang === "ar";
@@ -120,16 +206,24 @@ export default function WorkspaceFinder({ lang = "ar", initialQuery = "" }) {
     const url = `${window.location.origin}${card.urlPath || `/workspace/${card.slug}`}`;
     try {
       await navigator.clipboard.writeText(url);
-      say(ar ? `نُسخ رابط ${card.name}` : `Copied ${card.name}'s address`);
+      say(ar ? `نُسخ رابط ${card.name} — nirovera.sa/${card.slug}` : `Copied ${card.name}'s address — nirovera.sa/${card.slug}`);
     } catch {
       say(url);
     }
   };
 
   return (
-    <div className="workspace-finder">
-      <label className="block">
-        <span className="mb-2 block text-[11px] font-semibold text-[#C7D0E0]">
+    <div>
+      <label style={{ display: "block" }}>
+        <span
+          style={{
+            display: "block",
+            fontSize: "11px",
+            fontWeight: 600,
+            color: MUTED,
+            marginBottom: "7px",
+          }}
+        >
           {ar ? "اسم الشركة أو رقم السجل التجاري" : "Company name or commercial registration number"}
         </span>
         <input
@@ -141,98 +235,144 @@ export default function WorkspaceFinder({ lang = "ar", initialQuery = "" }) {
             }
           }}
           placeholder={ar ? "مثال: شركة الخليج للطاقة أو 1010234567" : "e.g. Gulf Power Co. or 1010234567"}
-          className="h-12 w-full rounded-[11px] border border-white/20 bg-white/[0.06] px-3.5 text-[15px] text-[#F4F6FA] outline-none placeholder:text-[#5A6B85] focus:border-[#6EE7B7]/50"
           autoComplete="organization"
+          style={{
+            width: "100%",
+            height: "48px",
+            border: `1px solid ${BORDER}`,
+            borderRadius: "9px",
+            background: CARD,
+            padding: "0 14px",
+            fontSize: "15px",
+            color: INK,
+            outline: "none",
+            fontFamily: "inherit",
+            boxSizing: "border-box",
+          }}
         />
       </label>
-      <p className="mt-2 text-[11px] leading-relaxed text-[#A8B4C8]">
+      <div
+        style={{
+          fontSize: "11px",
+          color: MUTED,
+          marginTop: "8px",
+          lineHeight: 1.7,
+          textWrap: "pretty",
+        }}
+      >
         {ar
           ? "البحث يتجاهل الهمزات والتاء المربوطة، فيجد الاسم كما كتبته تقريبًا."
           : "The search ignores hamza and taa-marbuta variants, so an approximate spelling still finds the company."}
-      </p>
+      </div>
       {preview && hasQ && (
-        <p className="mt-2 text-[11px] text-[#FCD34D]/90">
+        <div style={{ fontSize: "11px", color: "#FCD34D", marginTop: "8px" }}>
           {ar ? "معاينة محلية — السجل الحي يتطلّب خادم Base44." : "Local preview — live registry needs the Base44 backend."}
-        </p>
+        </div>
       )}
 
       {hasQ && (
-        <div className="mt-3.5">
+        <div style={{ marginTop: "14px" }}>
           {loading && (
-            <div className="flex items-center gap-2 text-[12px] text-[#A8B4C8]">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: MUTED }}>
+              <Loader2 style={{ width: "14px", height: "14px" }} className="animate-spin" />
               {ar ? "جارٍ البحث في سجل الشركات…" : "Searching the company registry…"}
             </div>
           )}
 
           {!loading && results.length > 0 && (
-            <div className="flex flex-col gap-2.5">
+            <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
               {results.map((card) => (
-                <article
-                  key={card.companyId}
-                  className="workspace-result rounded-[13px] border border-white/15 bg-white/[0.04] p-3.5 sm:p-4"
+                <div
+                  key={card.companyId || card.slug}
+                  style={{
+                    border: `1px solid ${BORDER}`,
+                    borderRadius: "13px",
+                    padding: "14px 16px",
+                    background: SURFACE,
+                  }}
                 >
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[11px] border border-white/15 bg-white/[0.08] text-sm font-semibold text-[#6EE7B7]">
-                      {initials(card.name)}
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                    <span style={MARK}>{initials(card.name)}</span>
+                    <span style={{ flex: "1 1 180px", minWidth: 0 }}>
+                      <span style={{ display: "block", fontSize: "15px", fontWeight: 600 }}>{card.name}</span>
+                      <span style={{ display: "block", fontSize: "11px", color: MUTED, marginTop: "3px" }}>
+                        {metaLine(card, ar)}
+                      </span>
                     </span>
-                    <span className="min-w-0 flex-1 basis-[180px]">
-                      <span className="block text-[15px] font-semibold text-[#F4F6FA]">{card.name}</span>
-                      <span className="mt-0.5 block text-[11px] text-[#A8B4C8]">{metaLine(card, ar)}</span>
-                    </span>
-                    <span
-                      className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
-                        card.trial
-                          ? "border-amber-400/30 bg-amber-500/15 text-amber-200"
-                          : "border-emerald-300/30 bg-emerald-400/10 text-[#6EE7B7]"
-                      }`}
-                    >
+                    <span style={stateStyle(!!card.trial)}>
                       {card.trial ? (ar ? "فترة تجريبية" : "Trial") : card.plan}
                     </span>
                   </div>
-                  <div dir="ltr" className={`mt-2.5 font-mono text-xs text-[#6EE7B7] ${ar ? "text-right" : "text-left"}`}>
+                  <div
+                    dir="ltr"
+                    style={{
+                      marginTop: "11px",
+                      fontSize: "12px",
+                      color: ACCENT,
+                      fontFamily: "'IBM Plex Mono',monospace",
+                      textAlign: ar ? "right" : "left",
+                    }}
+                  >
                     nirovera.sa/{card.slug}
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Link
-                      to={card.staffLoginPath}
-                      className="inline-flex h-9 items-center rounded-[9px] bg-[#1E9E63] px-3.5 text-xs font-semibold text-white hover:bg-[#188554]"
-                    >
+                  <div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
+                    <Link to={card.staffLoginPath} style={STAFF}>
                       {ar ? "دخول الموظفين" : "Staff sign-in"}
                     </Link>
-                    <Link
-                      to={card.careersPath}
-                      className="inline-flex h-9 items-center rounded-[9px] border border-white/20 px-3.5 text-xs text-[#F4F6FA] hover:border-[#6EE7B7]/40"
-                    >
+                    <Link to={card.careersPath} style={JOBS}>
                       {ar ? "صفحة الوظائف" : "Careers page"}
                     </Link>
-                    <button
-                      type="button"
-                      onClick={() => copyLink(card)}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-[9px] border border-white/15 px-3.5 text-xs text-[#C7D0E0] hover:border-white/30"
-                    >
-                      <Copy className="h-3 w-3" strokeWidth={1.75} />
+                    <button type="button" onClick={() => copyLink(card)} style={COPY}>
                       {ar ? "انسخ الرابط" : "Copy link"}
                     </button>
                   </div>
-                </article>
+                </div>
               ))}
             </div>
           )}
 
           {empty && (
-            <div className="rounded-[13px] border border-dashed border-white/20 p-4 text-center">
-              <div className="text-[13px] font-semibold text-[#F4F6FA]">
+            <div
+              style={{
+                border: `1px dashed ${BORDER}`,
+                borderRadius: "13px",
+                padding: "16px",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: "13px", fontWeight: 600 }}>
                 {error || (ar ? "لا شركة بهذا الاسم في السجل" : "No company by that name in the registry")}
               </div>
-              <p className="mt-1.5 text-xs leading-relaxed text-[#C7D0E0]">
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: MUTED,
+                  marginTop: "6px",
+                  lineHeight: 1.75,
+                  textWrap: "pretty",
+                }}
+              >
                 {ar
                   ? "تأكد من الاسم كما هو في السجل التجاري، أو سجّل شركتك — يُنشئ التسجيل مساحة فارغة برابطها ومالك حساب واحد."
                   : "Check the name as it appears on the commercial registration, or register your company — signing up creates an empty workspace with its own address and a single account owner."}
-              </p>
+              </div>
               <Link
                 to="/pricing?org=company"
-                className="mt-3 inline-flex h-9 items-center rounded-[9px] bg-[#1E9E63] px-4 text-xs font-semibold text-white hover:bg-[#188554]"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  marginTop: "12px",
+                  height: "38px",
+                  padding: "0 16px",
+                  borderRadius: "9px",
+                  border: "none",
+                  background: ACCENT,
+                  color: "#fff",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  textDecoration: "none",
+                }}
               >
                 {ar ? "سجّل شركة جديدة" : "Register a company"}
               </Link>
@@ -242,14 +382,39 @@ export default function WorkspaceFinder({ lang = "ar", initialQuery = "" }) {
       )}
 
       {toast && (
-        <button
-          type="button"
+        <div
+          role="status"
           onClick={() => setToast("")}
-          className="fixed bottom-6 start-1/2 z-[60] flex max-w-[calc(100vw-3rem)] -translate-x-1/2 items-center gap-2.5 rounded-[11px] bg-[#F4F6FA] px-4 py-3 text-[13px] text-[#14284B] shadow-[0_14px_34px_rgba(0,0,0,.35)]"
+          style={{
+            position: "fixed",
+            insetInlineStart: "50%",
+            bottom: "26px",
+            transform: "translateX(-50%)",
+            zIndex: 60,
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            padding: "12px 18px",
+            borderRadius: "11px",
+            background: CARD,
+            color: INK,
+            boxShadow: "0 14px 34px rgba(0,0,0,.35)",
+            fontSize: "13px",
+            cursor: "pointer",
+            maxWidth: "calc(100vw - 48px)",
+          }}
         >
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#1E9E63]" />
-          <span>{toast}</span>
-        </button>
+          <span
+            style={{
+              width: "7px",
+              height: "7px",
+              borderRadius: "50%",
+              background: ACCENT,
+              flexShrink: 0,
+            }}
+          />
+          <span style={{ textWrap: "pretty" }}>{toast}</span>
+        </div>
       )}
     </div>
   );

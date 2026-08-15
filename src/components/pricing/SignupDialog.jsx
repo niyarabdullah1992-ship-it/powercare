@@ -34,27 +34,27 @@ export default function SignupDialog({ plan, isFree, onClose, onSubmit, onGoogle
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-2xl p-6 shadow-xl max-w-sm w-full relative">
-        <button onClick={onClose} className="absolute top-4 end-4 text-[#3a2f22]/40 hover:text-[#3a2f22]">
+    <div className="fixed inset-0 bg-[rgba(20,40,75,.38)] flex items-center justify-center z-50 px-4">
+      <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-[0_24px_60px_rgba(20,40,75,.22)] max-w-sm w-full relative">
+        <button onClick={onClose} className="absolute top-4 end-4 text-[#5A6B85] hover:text-[#14284B]">
           <X className="w-4 h-4" />
         </button>
-        <h3 className="font-heading text-xl text-[#3a2f22] mb-1">{lang === "ar" ? plan.nameAr : plan.nameEn}</h3>
-        <p className="text-sm text-[#3a2f22]/55 font-body mb-5">
+        <h3 className="text-xl font-semibold text-[#14284B] mb-1">{lang === "ar" ? plan.nameAr : plan.nameEn}</h3>
+        <p className="text-sm text-[#5A6B85] font-body mb-5">
           {isTrial ? (lang === "ar" ? "فعّل الباقة المختارة مجانًا الآن دون دفع أو تاريخ انتهاء." : "Activate the selected plan free now, with no payment or expiry date.") : (lang === "ar" ? "أكمل بيانات الشركة للانتقال إلى صفحة الدفع الآمنة عبر Tap Payments." : "Complete your company details to continue to secure payment with Tap Payments.")}
         </p>
         {!googleEmail && (
           <>
-            <button type="button" onClick={onGoogle} className="mb-2 flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-2.5 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg">
+            <button type="button" onClick={onGoogle} className="mb-2 flex w-full items-center justify-center gap-2 rounded-[9px] border border-[#E2E8F0] py-2.5 text-sm font-semibold text-[#14284B] hover:bg-[#F7F8FA]">
               <GoogleIcon className="h-5 w-5" /> {lang === "ar" ? "المتابعة باستخدام Google" : "Continue with Google"}
             </button>
-            <button type="button" onClick={onMicrosoft} className="mb-2 flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-2.5 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg">
+            <button type="button" onClick={onMicrosoft} className="mb-2 flex w-full items-center justify-center gap-2 rounded-[9px] border border-[#E2E8F0] py-2.5 text-sm font-semibold text-[#14284B] hover:bg-[#F7F8FA]">
               <MicrosoftIcon className="h-5 w-5" /> {lang === "ar" ? "المتابعة باستخدام Microsoft" : "Continue with Microsoft"}
             </button>
-            <button type="button" onClick={onApple} className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border border-landing-gold/25 py-2.5 text-sm font-semibold text-[#3a2f22] hover:bg-landing-bg">
+            <button type="button" onClick={onApple} className="mb-3 flex w-full items-center justify-center gap-2 rounded-[9px] border border-[#E2E8F0] py-2.5 text-sm font-semibold text-[#14284B] hover:bg-[#F7F8FA]">
               <AppleIcon className="h-5 w-5" /> {lang === "ar" ? "المتابعة باستخدام Apple" : "Continue with Apple"}
             </button>
-            <div className="mb-3 flex items-center gap-3 text-xs text-[#3a2f22]/40"><span className="h-px flex-1 bg-landing-gold/20" />{lang === "ar" ? "أو" : "or"}<span className="h-px flex-1 bg-landing-gold/20" /></div>
+            <div className="mb-3 flex items-center gap-3 text-xs text-[#5A6B85]"><span className="h-px flex-1 bg-[#E2E8F0]" />{lang === "ar" ? "أو" : "or"}<span className="h-px flex-1 bg-[#E2E8F0]" /></div>
           </>
         )}
         {pendingId ? <SignupOtpStep email={ownerEmail} code={otpCode} setCode={setOtpCode} loading={submitting} error={error} onVerify={handleSubmit} onResend={resendOtp} ar={lang === "ar"} /> : <form onSubmit={handleSubmit} className="space-y-3">
@@ -63,7 +63,7 @@ export default function SignupDialog({ plan, isFree, onClose, onSubmit, onGoogle
             onChange={(e) => setCompanyName(e.target.value)}
             placeholder={t("companyNamePlaceholder")}
             required
-            className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
+            className="w-full px-3 py-2.5 rounded-[9px] border border-[#E2E8F0] bg-white text-[#14284B] text-sm font-body focus:outline-none focus:ring-2 focus:ring-[#14284B]"
           />
           <input
             type="email"
@@ -72,7 +72,7 @@ export default function SignupDialog({ plan, isFree, onClose, onSubmit, onGoogle
             disabled={!!googleEmail}
             placeholder={t("emailPlaceholder")}
             required
-            className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
+            className="w-full px-3 py-2.5 rounded-[9px] border border-[#E2E8F0] bg-white text-[#14284B] text-sm font-body focus:outline-none focus:ring-2 focus:ring-[#14284B]"
           />
           {isTrial && !googleEmail && (
             <input
@@ -82,14 +82,14 @@ export default function SignupDialog({ plan, isFree, onClose, onSubmit, onGoogle
               placeholder={t("passwordPlaceholder")}
               minLength={6}
               required
-              className="w-full px-3 py-2.5 rounded-lg bg-landing-bg text-[#3a2f22] text-sm font-body focus:outline-none focus:ring-2 focus:ring-landing-gold"
+              className="w-full px-3 py-2.5 rounded-[9px] border border-[#E2E8F0] bg-white text-[#14284B] text-sm font-body focus:outline-none focus:ring-2 focus:ring-[#14284B]"
             />
           )}
           {error && <p className="text-xs text-red-500 font-body">{error}</p>}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-2.5 rounded-lg bg-gradient-to-b from-landing-gold-light to-landing-gold text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="w-full py-2.5 rounded-[9px] bg-[#1E9E63] text-white text-sm font-semibold disabled:opacity-50"
           >
             {submitting ? t("pleaseWaitBtn") : isTrial ? (lang === "ar" ? "تفعيل الباقة مجانًا" : "Activate plan free") : (lang === "ar" ? "المتابعة إلى Tap Payments" : "Continue to Tap Payments")}
           </button>
@@ -97,10 +97,10 @@ export default function SignupDialog({ plan, isFree, onClose, onSubmit, onGoogle
         {!pendingId && <button
           type="button"
           onClick={() => navigate("/")}
-          className="mt-4 w-full text-center text-sm font-body text-[#3a2f22]/60 hover:text-[#3a2f22]"
+          className="mt-4 w-full text-center text-sm font-body text-[#5A6B85] hover:text-[#14284B]"
         >
           {lang === "ar" ? "لديك حساب بالفعل؟ " : "Already have an account? "}
-          <span className="font-semibold text-landing-gold underline underline-offset-4">
+          <span className="font-semibold text-[#14284B] underline underline-offset-4">
             {lang === "ar" ? "تسجيل الدخول" : "Sign in"}
           </span>
         </button>}

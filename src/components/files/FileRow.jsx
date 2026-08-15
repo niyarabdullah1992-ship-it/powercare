@@ -3,6 +3,8 @@ import { FileText, Image as ImageIcon, FileSpreadsheet, File as FileIcon, Downlo
 import { useI18n } from "@/lib/i18n";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
 import RenameDialog from "@/components/files/RenameDialog";
+import { BORDER, MUTED, NAVY, NEUTRAL, CARD } from "@/lib/platformStyles";
+import { identityIconWrap } from "@/components/shared/IdentityCard";
 
 function fileIcon(mimeType = "", name = "") {
   const n = name.toLowerCase();
@@ -19,54 +21,77 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const iconBtn = {
+  width: 28,
+  height: 28,
+  border: "none",
+  background: "transparent",
+  color: MUTED,
+  borderRadius: 8,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+  flexShrink: 0,
+};
+
 export default function FileRow({ file, onDelete, onRename, stationName }) {
   const { t, lang } = useI18n();
   const [renameOpen, setRenameOpen] = useState(false);
   const Icon = fileIcon(file.mimeType, file.name);
+  const meta = [
+    formatSize(file.size),
+    file.createdAt ? new Date(file.createdAt).toLocaleDateString(lang) : "",
+    file.uploadedBy ? `${t("uploadedBy")} ${file.uploadedBy}` : "",
+  ].filter(Boolean).join(" · ");
+
   return (
-    <div className="flex items-center gap-3 bg-card border border-border rounded-lg px-4 py-3 hover:border-accent/60 transition-colors">
-      <Icon className="w-5 h-5 text-accent shrink-0" strokeWidth={1.5} />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-body font-medium truncate" dir="auto">{file.name}</p>
-        <p className="text-[11px] text-muted-foreground">
-          {formatSize(file.size)}{file.size ? " · " : ""}{new Date(file.createdAt).toLocaleDateString(lang)}
-          {file.uploadedBy ? <> · {t("uploadedBy")} <span dir="auto">{file.uploadedBy}</span></> : null}
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "8px 10px",
+        background: CARD,
+        border: `1px solid ${BORDER}`,
+        borderRadius: 12,
+      }}
+    >
+      <span style={{ ...identityIconWrap, width: 32, height: 32, borderRadius: 9 }}>
+        <Icon style={{ width: 15, height: 15 }} strokeWidth={1.75} />
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: NAVY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} dir="auto">
+          {file.name}
         </p>
+        {meta ? (
+          <p style={{ margin: "2px 0 0", fontSize: 11, color: MUTED, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {meta}
+          </p>
+        ) : null}
       </div>
-      {stationName && (
-        <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full bg-accent/10 border border-accent/30 text-accent text-[11px] font-body shrink-0" dir="auto">
-          {stationName}
-        </span>
-      )}
-      {onRename && (
-        <button
-          onClick={() => setRenameOpen(true)}
-          className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-          aria-label={lang === "ar" ? "تعديل" : "Edit"}
-        >
-          <Pencil className="w-4 h-4" />
+      {stationName ? <span style={NEUTRAL}>{stationName}</span> : null}
+      {onRename ? (
+        <button type="button" onClick={() => setRenameOpen(true)} style={iconBtn} aria-label={lang === "ar" ? "تعديل" : "Edit"}>
+          <Pencil style={{ width: 14, height: 14 }} />
         </button>
-      )}
-      <a
-        href={file.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-        aria-label={t("downloadFile")}
-      >
-        <Download className="w-4 h-4" />
+      ) : null}
+      <a href={file.url} target="_blank" rel="noopener noreferrer" style={iconBtn} aria-label={t("downloadFile")}>
+        <Download style={{ width: 14, height: 14 }} />
       </a>
-      {onDelete && <ConfirmDeleteDialog
-        onConfirm={onDelete}
-        trigger={
-          <button className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-muted" aria-label={t("delete")}>
-            <Trash2 className="w-4 h-4" />
-          </button>
-        }
-      />}
-      {onRename && (
+      {onDelete ? (
+        <ConfirmDeleteDialog
+          onConfirm={onDelete}
+          trigger={
+            <button type="button" style={iconBtn} aria-label={t("delete")}>
+              <Trash2 style={{ width: 14, height: 14 }} />
+            </button>
+          }
+        />
+      ) : null}
+      {onRename ? (
         <RenameDialog open={renameOpen} onOpenChange={setRenameOpen} initialName={file.name} onRename={onRename} />
-      )}
+      ) : null}
     </div>
   );
 }

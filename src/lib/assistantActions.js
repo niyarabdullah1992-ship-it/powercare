@@ -130,7 +130,7 @@ export async function executeAssistantAction(action, { data, company, currentUse
         dir: document.documentElement.dir,
         sections: [{ heading: action.reportTitle || dataset, headers, rows: tableRows }],
         logoUrl: data.reportBranding?.logoUrl || "",
-        color: data.reportBranding?.color || "#b07d3f",
+        color: data.reportBranding?.color || "#14284B",
       });
       return { ok: true, message: t("aiPdfDone") };
     }
@@ -139,7 +139,7 @@ export async function executeAssistantAction(action, { data, company, currentUse
       title: action.reportTitle || dataset,
       headers,
       rows: tableRows,
-      color: data.reportBranding?.color || "#b07d3f",
+      color: data.reportBranding?.color || "#14284B",
       dir: document.documentElement.dir,
     });
     return { ok: true, message: t("aiExportDone") };
@@ -158,7 +158,7 @@ export async function executeAssistantAction(action, { data, company, currentUse
       dir: document.documentElement.dir,
       companyName: data.name || "",
       authorName: currentUser?.name || "",
-      color: data.reportBranding?.color || "#b07d3f",
+      color: data.reportBranding?.color || "#14284B",
       logoUrl: data.reportBranding?.logoUrl || "",
     });
     // Save a copy into the Files section so the document is always findable.

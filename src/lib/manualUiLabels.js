@@ -1,4 +1,0 @@
-export const MANUAL_UI_LABELS = {
-  ar: { eyebrow:"دليل مستخدم باوركير", toc:"فهرس الفصول", appearance:"وصف القسم وهدفه", contains:"ماذا تحتوي الشاشة؟", controls:"الأزرار وماذا تفعل", states:"الحالات والرسائل الظاهرة", roles:"من يستخدم القسم؟", steps:"طريقة الاستخدام خطوة بخطوة", rules:"تحذيرات وضوابط مهمة", tips:"نصائح للنجاح", screenshot:"لقطة حقيقية من القسم", download:"تصدير PDF", footer:"الدليل التشغيلي الشامل", updated:"آخر تحديث" },
-  en: { eyebrow:"POWERCARE USER MANUAL", toc:"Table of contents", appearance:"Section interface", contains:"What is on this screen?", controls:"Controls and actions", states:"Visible states and messages", roles:"Who uses this section?", steps:"Step-by-step instructions", rules:"Rules and constraints", tips:"Practical tips", screenshot:"Live section screenshot", download:"Export PDF", footer:"Comprehensive operations manual", updated:"Last updated" },
-};

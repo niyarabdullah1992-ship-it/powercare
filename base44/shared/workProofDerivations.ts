@@ -8,6 +8,7 @@ export type WorkProofLike = {
   id?: string;
   ref: string;
   title?: string;
+  entityName?: string;
   client?: string;
   stationId?: string;
   techId?: string | null;
@@ -22,6 +23,9 @@ export type WorkProofLike = {
   approvedAt?: string | null;
   acceptedAt?: string | null;
   sealId?: string | null;
+  createdAt?: string | null;
+  endedAt?: string | null;
+  endedById?: string | null;
 };
 
 function fnv1a(str: string) {
@@ -77,7 +81,91 @@ export function deriveProofCounts(proofs: WorkProofLike[]) {
   return counts;
 }
 
-/** Supervisor approve → seal. Named gates only. */
+export function isSameProofBranch(actorStationId?: string | null, proofStationId?: string | null) {
+  return !!(actorStationId && proofStationId && String(actorStationId) === String(proofStationId));
+}
+
+export function checkEndWorkProofGate(input: {
+  proof: WorkProofLike | null | undefined;
+  actorUserId?: string | null;
+  sameBranch?: boolean;
+  isManager?: boolean;
+}) {
+  const proof = input.proof;
+  if (!proof) {
+    return { ok: false as const, error: "PROOF_NOT_FOUND", reason: "الإثبات غير موجود.", reasonEn: "Proof not found." };
+  }
+  if (deriveProofStage(proof) !== "await") {
+    return { ok: false as const, error: "NOT_IN_PROGRESS", reason: "هذا الإثبات ليس بانتظار الإنهاء.", reasonEn: "This proof is not waiting to be ended." };
+  }
+  const isRaiser = input.actorUserId && proof.raiserId && String(input.actorUserId) === String(proof.raiserId);
+  if (!isRaiser && !input.sameBranch && !input.isManager) {
+    return {
+      ok: false as const,
+      error: "BRANCH_REQUIRED",
+      reason: "إنهاء العمل لمن رفعه أو لموظف في نفس الفرع.",
+      reasonEn: "Only the raiser or another employee at the same branch can end the work.",
+    };
+  }
+  return { ok: true as const, autoApprove: true };
+}
+
+/** Ending with an after photo is the approval act — always seal. */
+export function shouldSealOnEnd() {
+  return true;
+}
+
+export const WORK_PROOF_EDIT_MS = 24 * 60 * 60 * 1000;
+
+export function proofEditDeadline(proof: WorkProofLike | null | undefined) {
+  const created = new Date(proof?.createdAt || 0).getTime();
+  if (!Number.isFinite(created) || created <= 0) return null;
+  return created + WORK_PROOF_EDIT_MS;
+}
+
+export function checkEditWorkProofGate(input: {
+  proof: WorkProofLike | null | undefined;
+  actorUserId?: string | null;
+  sameBranch?: boolean;
+  isManager?: boolean;
+  now?: number;
+}) {
+  const proof = input.proof;
+  if (!proof) {
+    return { ok: false as const, error: "PROOF_NOT_FOUND", reason: "الإثبات غير موجود.", reasonEn: "Proof not found." };
+  }
+  const stage = deriveProofStage(proof);
+  if (stage === "sealed" || stage === "accepted" || stage === "rejected") {
+    return {
+      ok: false as const,
+      error: "LOCKED_AFTER_SEAL",
+      reason: "بعد الختم أو الرفض لا يُعدَّل الإثبات.",
+      reasonEn: "A sealed, accepted, or rejected proof cannot be edited.",
+    };
+  }
+  const now = input.now ?? Date.now();
+  const deadline = proofEditDeadline(proof);
+  if (!deadline || now > deadline) {
+    return {
+      ok: false as const,
+      error: "EDIT_WINDOW_CLOSED",
+      reason: "انتهت مهلة التعديل — يوم واحد من الرفع.",
+      reasonEn: "The one-day edit window from raise time has closed.",
+    };
+  }
+  const isRaiser = input.actorUserId && proof.raiserId && String(input.actorUserId) === String(proof.raiserId);
+  if (!isRaiser && !input.sameBranch && !input.isManager) {
+    return {
+      ok: false as const,
+      error: "BRANCH_REQUIRED",
+      reason: "التعديل لمن رفعه أو لموظف في نفس الفرع.",
+      reasonEn: "Only the raiser or another employee at the same branch can edit.",
+    };
+  }
+  return { ok: true as const, until: new Date(deadline).toISOString() };
+}
+
+/** Approve the ending → seal. Named gates only. The raiser cannot approve. */
 export function checkApproveWorkProofGate(input: {
   proof: WorkProofLike | null | undefined;
   actorUserId?: string | null;
@@ -95,16 +183,17 @@ export function checkApproveWorkProofGate(input: {
     return {
       ok: false as const,
       error: stage === "await" ? "AFTER_PHOTO_REQUIRED" : "NOT_AWAITING_APPROVAL",
-      reason: stage === "await" ? "لا اعتماد قبل صورة البعد المختومة." : "الإثبات ليس بانتظار اعتماد المشرف.",
-      reasonEn: stage === "await" ? "Cannot approve before the stamped after photo." : "Proof is not awaiting supervisor approval.",
+      reason: stage === "await" ? "لا اعتماد قبل إنهاء العمل وصورة البعد." : "الإثبات ليس بانتظار اعتماد الإنهاء.",
+      reasonEn: stage === "await" ? "Cannot approve before the work is ended with an after photo." : "Proof is not awaiting end approval.",
     };
   }
-  if (input.actorUserId && proof.raiserId && String(input.actorUserId) === String(proof.raiserId)) {
+  const alreadyEnded = hasAfterCapture(proof) && (proof.endedAt || proof.endedById);
+  if (input.actorUserId && proof.raiserId && String(input.actorUserId) === String(proof.raiserId) && !alreadyEnded) {
     return {
       ok: false as const,
       error: "SELF_APPROVE_FORBIDDEN",
-      reason: "من رفع الإثبات لا يعتمده — الالتقاط والاعتماد فعلان منفصلان.",
-      reasonEn: "The raiser cannot approve their own proof — capture and approval are separate acts.",
+      reason: "من رفع الإثبات لا يعتمده قبل إنهائه بصورة البعد.",
+      reasonEn: "The raiser cannot approve before ending the work with an after photo.",
     };
   }
   if (isOutsideGeofence(proof) && !proof.geoCleared) {

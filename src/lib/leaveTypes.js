@@ -1,20 +1,40 @@
 // Shared leave category config used across leave components.
 
 export const LEAVE_TYPES = [
-  { key: "annual", defaultTotal: 21 },
-  { key: "sick", defaultTotal: 30, requiresFile: true },
-  { key: "exam", defaultTotal: null, requiresFile: true },
-  { key: "marriage", defaultTotal: 3 },
-  { key: "bereavement", defaultTotal: 5 },
-  { key: "maternity", defaultTotal: 70 },
-  { key: "paternity", defaultTotal: 3 },
-  { key: "hajj", defaultTotal: 10 },
-  { key: "emergency", defaultTotal: 5 },
-  { key: "unpaid", defaultTotal: null },
+  { key: "annual", defaultTotal: 21, ar: "سنوية", en: "Annual" },
+  { key: "sick", defaultTotal: 30, requiresFile: true, ar: "مرضية", en: "Sick" },
+  { key: "exam", defaultTotal: null, requiresFile: true, ar: "امتحان", en: "Exam" },
+  { key: "marriage", defaultTotal: 3, ar: "زواج", en: "Marriage" },
+  { key: "bereavement", defaultTotal: 5, ar: "وفاة", en: "Bereavement" },
+  { key: "maternity", defaultTotal: 70, gender: "female", ar: "أمومة", en: "Maternity" },
+  { key: "paternity", defaultTotal: 3, gender: "male", ar: "أبوة", en: "Paternity" },
+  { key: "hajj", defaultTotal: 10, ar: "حج", en: "Hajj" },
+  { key: "emergency", defaultTotal: 5, ar: "اضطرارية", en: "Emergency" },
+  { key: "unpaid", defaultTotal: null, ar: "بدون راتب", en: "Unpaid" },
 ];
+
+export function leaveTypeLabel(type, ar = true) {
+  const key = String(type || "").trim();
+  const found = LEAVE_TYPES.find((item) => item.key === key.toLowerCase());
+  if (found) return ar ? found.ar : found.en;
+  if (!key) return ar ? "إجازة" : "Leave";
+  if (/[\u0600-\u06FF]/.test(key)) return key;
+  return key;
+}
 
 // Requests longer than this many days require a mandatory justification + supporting file.
 export const LEAVE_THRESHOLD_DAYS = 5;
+
+export function leaveTypesForProfile(profile) {
+  const g = String(profile?.gender || "").toLowerCase();
+  const female = g === "female" || g.includes("أنثى");
+  const male = g === "male" || g.includes("ذكر");
+  return LEAVE_TYPES.filter((ty) => {
+    if (ty.gender === "female" && male) return false;
+    if (ty.gender === "male" && female) return false;
+    return true;
+  });
+}
 
 export function getLeaveTotal(profile, key) {
   const custom = profile?.leaveTotals?.[key];

@@ -28,9 +28,9 @@ export const CAREERS_STEPS = [
 export const CAREERS_SAMPLE_ROLES = [
   {
     key: "demo-ops",
-    titleAr: "مهندس تشغيل — محطة ميدانية",
+    titleAr: "مهندس تشغيل — فرع ميدانية",
     titleEn: "Operations Engineer — field station",
-    stationAr: "محطة تشغيل",
+    stationAr: "فرع تشغيل",
     stationEn: "Operating station",
     grade: "G9",
     expAr: "5+ سنوات",
@@ -42,7 +42,7 @@ export const CAREERS_SAMPLE_ROLES = [
     key: "demo-elec",
     titleAr: "فني كهرباء",
     titleEn: "Electrical Technician",
-    stationAr: "محطة تشغيل",
+    stationAr: "فرع تشغيل",
     stationEn: "Operating station",
     grade: "G6",
     expAr: "3+ سنوات",
@@ -54,7 +54,7 @@ export const CAREERS_SAMPLE_ROLES = [
     key: "demo-hse",
     titleAr: "مشرف سلامة",
     titleEn: "Safety Supervisor",
-    stationAr: "محطة تشغيل",
+    stationAr: "فرع تشغيل",
     stationEn: "Operating station",
     grade: "G8",
     expAr: "6+ سنوات",
@@ -69,7 +69,7 @@ export const CAREERS_ROLE_SECTIONS = [
     titleAr: "ماذا ستعمل",
     titleEn: "What you will do",
     itemsAr: [
-      "تشغيل ومتابعة معدات المحطة وفق إجراءات التشغيل المعتمدة.",
+      "تشغيل ومتابعة معدات الفرع وفق إجراءات التشغيل المعتمدة.",
       "إغلاق أوامر العمل بإثبات مصوّر مختوم بالموقع والوقت.",
       "التبليغ عن المخاطر فور ملاحظتها — التبليغ مكافأ لا مؤاخذ عليه.",
       "المشاركة في الورديات المنشورة مسبقًا بجدول معلوم قبل بدايتها.",

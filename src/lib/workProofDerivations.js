@@ -42,6 +42,72 @@ export function deriveProofCounts(proofs = []) {
   return counts;
 }
 
+export function isSameProofBranch(actorStationId, proofStationId) {
+  return !!(actorStationId && proofStationId && String(actorStationId) === String(proofStationId));
+}
+
+export function checkEndWorkProofGate({ proof, actorUserId, sameBranch, isManager }) {
+  if (!proof) return { ok: false, error: "PROOF_NOT_FOUND", reason: "الإثبات غير موجود.", reasonEn: "Proof not found." };
+  if (deriveProofStage(proof) !== "await") {
+    return { ok: false, error: "NOT_IN_PROGRESS", reason: "هذا الإثبات ليس بانتظار الإنهاء.", reasonEn: "This proof is not waiting to be ended." };
+  }
+  const isRaiser = actorUserId && proof.raiserId && String(actorUserId) === String(proof.raiserId);
+  if (!isRaiser && !sameBranch && !isManager) {
+    return {
+      ok: false,
+      error: "BRANCH_REQUIRED",
+      reason: "إنهاء العمل لمن رفعه أو لموظف في نفس الفرع.",
+      reasonEn: "Only the raiser or another employee at the same branch can end the work.",
+    };
+  }
+  return { ok: true, autoApprove: true };
+}
+
+/** Ending with an after photo is the approval act — always seal. */
+export function shouldSealOnEnd() {
+  return true;
+}
+
+export const WORK_PROOF_EDIT_MS = 24 * 60 * 60 * 1000;
+
+export function proofEditDeadline(proof) {
+  const created = new Date(proof?.createdAt || 0).getTime();
+  if (!Number.isFinite(created) || created <= 0) return null;
+  return created + WORK_PROOF_EDIT_MS;
+}
+
+export function checkEditWorkProofGate({ proof, actorUserId, sameBranch, isManager, now = Date.now() }) {
+  if (!proof) return { ok: false, error: "PROOF_NOT_FOUND", reason: "الإثبات غير موجود.", reasonEn: "Proof not found." };
+  const stage = deriveProofStage(proof);
+  if (stage === "sealed" || stage === "accepted" || stage === "rejected") {
+    return {
+      ok: false,
+      error: "LOCKED_AFTER_SEAL",
+      reason: "بعد الختم أو الرفض لا يُعدَّل الإثبات.",
+      reasonEn: "A sealed, accepted, or rejected proof cannot be edited.",
+    };
+  }
+  const deadline = proofEditDeadline(proof);
+  if (!deadline || now > deadline) {
+    return {
+      ok: false,
+      error: "EDIT_WINDOW_CLOSED",
+      reason: "انتهت مهلة التعديل — يوم واحد من الرفع.",
+      reasonEn: "The one-day edit window from raise time has closed.",
+    };
+  }
+  const isRaiser = actorUserId && proof.raiserId && String(actorUserId) === String(proof.raiserId);
+  if (!isRaiser && !sameBranch && !isManager) {
+    return {
+      ok: false,
+      error: "BRANCH_REQUIRED",
+      reason: "التعديل لمن رفعه أو لموظف في نفس الفرع.",
+      reasonEn: "Only the raiser or another employee at the same branch can edit.",
+    };
+  }
+  return { ok: true, until: new Date(deadline).toISOString() };
+}
+
 export function checkApproveWorkProofGate({ proof, actorUserId, geoClearReason }) {
   if (!proof) return { ok: false, error: "PROOF_NOT_FOUND", reason: "الإثبات غير موجود في نطاق الشركة." };
   const stage = deriveProofStage(proof);
@@ -50,14 +116,15 @@ export function checkApproveWorkProofGate({ proof, actorUserId, geoClearReason }
     return {
       ok: false,
       error: stage === "await" ? "AFTER_PHOTO_REQUIRED" : "NOT_AWAITING_APPROVAL",
-      reason: stage === "await" ? "لا اعتماد قبل صورة البعد المختومة." : "الإثبات ليس بانتظار اعتماد المشرف.",
+      reason: stage === "await" ? "لا اعتماد قبل إنهاء العمل وصورة البعد." : "الإثبات ليس بانتظار اعتماد الإنهاء.",
     };
   }
-  if (actorUserId && proof.raiserId && String(actorUserId) === String(proof.raiserId)) {
+  const alreadyEnded = hasAfterCapture(proof) && (proof.endedAt || proof.endedById);
+  if (actorUserId && proof.raiserId && String(actorUserId) === String(proof.raiserId) && !alreadyEnded) {
     return {
       ok: false,
       error: "SELF_APPROVE_FORBIDDEN",
-      reason: "من رفع الإثبات لا يعتمده — الالتقاط والاعتماد فعلان منفصلان.",
+      reason: "من رفع الإثبات لا يعتمده قبل إنهائه بصورة البعد.",
     };
   }
   if (isOutsideGeofence(proof) && !proof.geoCleared && !String(geoClearReason || "").trim()) {

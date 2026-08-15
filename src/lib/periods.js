@@ -8,7 +8,7 @@ export const PERIODS = [
   { id: "custom" },
 ];
 
-// Opt-in only — enabled through a PeriodPicker prop, never by default.
+// Opt-in only — never enabled by default on report period rails.
 export const SHORT_PERIODS = [
   { id: "daily", days: 1 },
   { id: "weekly", days: 7 },

@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { Check, ChevronDown, Globe } from "lucide-react";
-import Logo from "@/components/Logo";
 import WorkspaceFinder from "@/components/landing/WorkspaceFinder";
-import IpCertificateBadge from "@/components/landing/IpCertificateBadge";
+import MarketingChrome from "@/components/landing/MarketingChrome";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/PowerCareAuth";
 import { trackVisit } from "@/lib/trackVisit";
+import { ACCENT, BORDER, CARD, INK, MUTED, SURFACE } from "@/lib/publicChrome";
 
 const MODEL = [
   {
@@ -46,153 +46,201 @@ const MODEL = [
   },
 ];
 
+/** Design L201 numStyle */
+const NUM_STYLE = {
+  width: "24px",
+  height: "24px",
+  borderRadius: "50%",
+  background: "var(--nv-accent-soft)",
+  color: "var(--nv-accent-deep)",
+  fontSize: "11px",
+  fontWeight: 600,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+  fontFamily: "'IBM Plex Sans',sans-serif",
+};
+
 /**
  * Public company workspace finder (tenant entry).
- * Design: NiroVera Workspace.dc.html — recreate intent; no HTML/support.js paste.
+ * Design: NiroVera Workspace.dc.html L24–118 — shell + canvas composition literal.
  * Staff auth stays on /login/:portal (OTP). Careers stays one-way public intake.
  */
 export default function Workspace() {
-  const { t, lang, setLang, languages } = useI18n();
+  const { lang, setLang } = useI18n();
+  const { session, currentUser } = useAuth();
+  const loggedIn = Boolean(session?.userId && currentUser);
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
-  const [langOpen, setLangOpen] = useState(false);
   const ar = lang === "ar";
-  const currentLang = languages.find((l) => l.code === lang);
   const initialQuery = String(slug || searchParams.get("q") || searchParams.get("company") || "").trim();
 
   useEffect(() => {
     trackVisit("/workspace");
   }, []);
 
-  useEffect(() => {
-    const close = () => setLangOpen(false);
-    if (langOpen) {
-      document.addEventListener("click", close);
-      return () => document.removeEventListener("click", close);
-    }
-  }, [langOpen]);
+  const toggleLang = () => setLang(ar ? "en" : "ar");
 
   return (
+    <MarketingChrome ar={ar} lang={lang} loggedIn={loggedIn} onToggleLang={toggleLang} ctaHref="/login">
     <div
-      className="powercare-public workspace-page min-h-screen font-body text-[#F4F6FA]"
-      dir={ar ? "rtl" : "ltr"}
       style={{
-        background: "radial-gradient(1200px 600px at 50% -10%, #172A4D 0%, #0E1B33 60%)",
+        background: SURFACE,
+        color: INK,
       }}
     >
-      <header className="flex items-center gap-3 px-5 py-4 sm:px-6">
-        <Link to="/" className="flex shrink-0 items-center gap-2.5">
-          <Logo size={26} />
-          <span className="font-heading text-base font-semibold tracking-tight">NiroVera</span>
-        </Link>
-        <nav className="ms-2 hidden items-center gap-4 md:flex">
-          <Link to="/" className="text-[12.5px] text-[#A8B4C8] transition-colors hover:text-white">
-            {ar ? "الرئيسية" : "Home"}
-          </Link>
-          <Link to="/careers" className="text-[12.5px] text-[#A8B4C8] transition-colors hover:text-white">
-            {ar ? "الوظائف" : "Careers"}
-          </Link>
-          <Link to="/login" className="text-[12.5px] text-[#A8B4C8] transition-colors hover:text-white">
-            {ar ? "بوابات الدخول" : "Login portals"}
-          </Link>
-        </nav>
-        <div className="ms-auto flex items-center gap-2">
-          <div className="relative">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setLangOpen((v) => !v);
+
+      {/* L33–34 — canvas */}
+      <main
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "center",
+          padding: "24px 22px 60px",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: "640px" }}>
+          {/* L36–39 — hero (canvas composition) */}
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "11px", letterSpacing: "0.14em", color: ACCENT, fontWeight: 600 }}>
+              {ar ? "مساحة عمل الشركة" : "COMPANY WORKSPACE"}
+            </div>
+            <h1
+              style={{
+                margin: "12px 0 0",
+                fontSize: "30px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                lineHeight: 1.3,
+                textWrap: "pretty",
               }}
-              className="flex h-[30px] items-center gap-1.5 rounded-lg border border-white/15 bg-transparent px-3 text-xs font-semibold text-[#C7D0E0] hover:bg-white/5"
             >
-              <Globe className="h-3.5 w-3.5" strokeWidth={1.75} />
-              <span>{ar ? "EN" : "ع"}</span>
-              <ChevronDown className={`h-3 w-3 transition-transform ${langOpen ? "rotate-180" : ""}`} />
-            </button>
-            {langOpen && (
-              <div className="absolute end-0 z-50 mt-2 max-h-72 w-48 overflow-y-auto rounded-lg border border-white/15 bg-[#14284B] py-1 shadow-xl">
-                {languages.map((l) => (
-                  <button
-                    key={l.code}
-                    type="button"
-                    onClick={() => {
-                      setLang(l.code);
-                      setLangOpen(false);
-                    }}
-                    className={`flex w-full items-center justify-between px-3 py-2 text-sm ${
-                      lang === l.code ? "bg-white/10 text-[#6EE7B7]" : "text-[#C7D0E0] hover:bg-white/5"
-                    }`}
-                  >
-                    <span>
-                      {l.flag} {l.label}
+              {ar ? "اكتب اسم شركتك للدخول إلى مساحتها" : "Type your company's name to reach its workspace"}
+            </h1>
+            <div
+              style={{
+                fontSize: "13px",
+                color: MUTED,
+                marginTop: "10px",
+                lineHeight: 1.8,
+                textWrap: "pretty",
+              }}
+            >
+              {ar
+                ? "كل شركة مسجَّلة لها مساحتها المستقلة برابطها الخاص: بيانات موظفيها وفروعها وتقاريرها لا تُخالط شركة أخرى، ولوحة التوظيف العامة تحمل اسمها."
+                : "Every registered company has its own workspace on its own address: its employees, stations and records never mix with another tenant's, and its public careers page carries its name."}
+            </div>
+          </div>
+
+          {/* L42 — search board shell (finder internals = next slice) */}
+          <div
+            style={{
+              marginTop: "22px",
+              background: CARD,
+              border: `1px solid ${BORDER}`,
+              borderRadius: "16px",
+              padding: "18px 20px",
+            }}
+          >
+            <WorkspaceFinder lang={lang} initialQuery={initialQuery} />
+          </div>
+
+          {/* L99–112 — model board */}
+          <div
+            style={{
+              marginTop: "16px",
+              background: CARD,
+              border: `1px solid ${BORDER}`,
+              borderRadius: "16px",
+              padding: "18px 20px",
+            }}
+          >
+            <div style={{ fontSize: "13px", fontWeight: 600 }}>
+              {ar ? "لماذا مساحة لكل شركة" : "Why a workspace per company"}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", marginTop: "8px" }}>
+              {MODEL.map((m, i) => (
+                <div
+                  key={m.n}
+                  style={{
+                    display: "flex",
+                    gap: "12px",
+                    padding: "11px 0",
+                    borderTop: `1px solid ${BORDER}`,
+                  }}
+                >
+                  <span style={NUM_STYLE}>{m.n}</span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: "block", fontSize: "12px", fontWeight: 600 }}>
+                      {ar ? m.arTitle : m.enTitle}
                     </span>
-                    {lang === l.code ? <Check className="h-3.5 w-3.5" /> : null}
-                  </button>
-                ))}
-              </div>
-            )}
+                    <span
+                      style={{
+                        display: "block",
+                        fontSize: "12px",
+                        color: MUTED,
+                        lineHeight: 1.75,
+                        marginTop: "3px",
+                        textWrap: "pretty",
+                      }}
+                    >
+                      {ar ? m.arBody : m.enBody}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* L114–116 */}
+          <div style={{ textAlign: "center", marginTop: "18px" }}>
+            <span style={{ fontSize: "11px", color: MUTED }}>
+              {ar ? "NiroVera — منصة إدارة العمليات والقوى العاملة" : "NiroVera — operations and workforce platform"}
+            </span>
           </div>
         </div>
-      </header>
-
-      <main className="mx-auto flex w-full max-w-[640px] flex-col px-5 pb-16 pt-6 sm:px-6">
-        <div className="workspace-hero text-center">
-          <div className="text-[11px] font-semibold tracking-[0.14em] text-[#6EE7B7]">
-            {ar ? "مساحة عمل الشركة" : "COMPANY WORKSPACE"}
-          </div>
-          <h1 className="mt-3 font-heading text-[28px] font-semibold leading-snug tracking-tight text-[#F4F6FA] sm:text-[30px]">
-            {ar ? "اكتب اسم شركتك للدخول إلى مساحتها" : "Type your company's name to reach its workspace"}
-          </h1>
-          <p className="mx-auto mt-2.5 max-w-[34rem] text-[13px] leading-relaxed text-[#C7D0E0]">
-            {ar
-              ? "كل شركة مسجَّلة لها مساحتها المستقلة برابطها الخاص: بيانات موظفيها ومحطاتها وتقاريرها لا تُخالط شركة أخرى، ولوحة التوظيف العامة تحمل اسمها."
-              : "Every registered company has its own workspace on its own address: its employees, stations and records never mix with another tenant's, and its public careers page carries its name."}
-          </p>
-        </div>
-
-        <div className="workspace-panel mt-5 rounded-2xl border border-white/15 bg-white/[0.05] p-4 sm:p-5">
-          <WorkspaceFinder lang={lang} initialQuery={initialQuery} />
-        </div>
-
-        <div className="workspace-panel mt-4 rounded-2xl border border-white/15 bg-white/[0.05] p-4 sm:p-5">
-          <h2 className="text-[13px] font-semibold text-[#F4F6FA]">
-            {ar ? "لماذا مساحة لكل شركة" : "Why a workspace per company"}
-          </h2>
-          <div className="mt-2 flex flex-col">
-            {MODEL.map((m) => (
-              <div key={m.n} className="flex gap-3 border-t border-white/10 py-2.5 first:border-t-0">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#6EE7B7]/15 text-[11px] font-semibold text-[#6EE7B7]">
-                  {m.n}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-xs font-semibold text-[#F4F6FA]">{ar ? m.arTitle : m.enTitle}</span>
-                  <span className="mt-1 block text-xs leading-relaxed text-[#C7D0E0]">{ar ? m.arBody : m.enBody}</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <p className="mt-4 text-center text-[11px] text-[#5A6B85]">
-          {ar ? "NiroVera — منصة إدارة العمليات والقوى العاملة" : "NiroVera — operations and workforce platform"}
-          {currentLang ? ` · ${currentLang.label}` : ""}
-        </p>
       </main>
 
-      <footer className="border-t border-white/10 px-5 py-6 sm:px-6">
-        <div className="mx-auto flex max-w-[640px] flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[12px] text-[#A8B4C8]">
-          <Link to="/login" className="hover:text-[#6EE7B7]">{ar ? "بوابات الدخول" : "Login portals"}</Link>
-          <Link to="/careers" className="hover:text-[#6EE7B7]">{t("footerCareers")}</Link>
-          <Link to="/pricing?org=company" className="hover:text-[#6EE7B7]">
-            {ar ? "تسجيل شركة" : "Register company"}
-          </Link>
-          <Link to="/" className="hover:text-[#6EE7B7]">{ar ? "الرئيسية" : "Home"}</Link>
+      {/* App-only links / IP badge — absent from Workspace.dc.html primary */}
+      <details
+        style={{
+          margin: "0 22px 24px",
+          padding: "12px 14px",
+          borderRadius: "11px",
+          border: `1px solid ${BORDER}`,
+          background: CARD,
+        }}
+      >
+        <summary
+          style={{
+            cursor: "pointer",
+            fontSize: "12px",
+            fontWeight: 600,
+            color: MUTED,
+            listStyle: "none",
+          }}
+        >
+          {ar ? "روابط إضافية (تطبيق)" : "Extra links (app)"}
+        </summary>
+        <div
+          style={{
+            marginTop: "12px",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "12px 16px",
+            fontSize: "12px",
+            color: MUTED,
+          }}
+        >
+          <Link to="/login" style={{ color: MUTED }}>{ar ? "بوابات الدخول" : "Login portals"}</Link>
+          <Link to="/careers" style={{ color: MUTED }}>{ar ? "الوظائف" : "Careers"}</Link>
+          <Link to="/pricing?org=company" style={{ color: MUTED }}>{ar ? "تسجيل شركة" : "Register company"}</Link>
+          <Link to="/" style={{ color: MUTED }}>{ar ? "الرئيسية" : "Home"}</Link>
         </div>
-        <div className="mx-auto max-w-[640px]">
-          <IpCertificateBadge lang={lang} />
-        </div>
-      </footer>
+      </details>
     </div>
+    </MarketingChrome>
   );
 }

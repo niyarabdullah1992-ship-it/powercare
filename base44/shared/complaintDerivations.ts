@@ -80,7 +80,7 @@ export type RateUsage = {
 };
 
 const TIER_LABELS: Record<string, { ar: string; en: string }> = {
-  station_manager: { ar: "مدير المحطة", en: "Station Manager" },
+  station_manager: { ar: "مدير الفرع", en: "Station Manager" },
   hr_supervisor: { ar: "مشرف الموارد البشرية", en: "HR Supervisor" },
   region_manager: { ar: "مدير المنطقة", en: "Region Manager" },
   ops_director: { ar: "مدير العمليات", en: "Ops Director" },
@@ -103,7 +103,7 @@ export function defaultEscalationChain(stationManagerName?: string | null): Esca
     if (id === "station_manager" && stationManagerName) {
       return {
         id,
-        labelAr: `مدير المحطة — ${stationManagerName}`,
+        labelAr: `مدير الفرع — ${stationManagerName}`,
         labelEn: `Station Manager — ${stationManagerName}`,
         handlerIds: [],
       };
@@ -194,6 +194,22 @@ export function buildEscalationSteps(
     hasHandler: (tier.handlerIds || []).length > 0 || idx === 0,
     state: idx < lvl ? "done" : idx === lvl ? "current" : "pending",
   }));
+}
+
+export function voiceKind(report: ComplaintLike | null | undefined): ComplaintKind | string {
+  if (!report) return "public";
+  if (report.anonymous === true || report.kind === "anonymous" || report.anonymousId) return "anonymous";
+  if (report.kind === "suggestion" || report.type === "suggestion") return "suggestion";
+  return report.kind === "public" || report.type === "complaint" ? "public" : (report.kind || "public");
+}
+
+export function matchesVoiceChannel(report: ComplaintLike | null | undefined, voice?: string | null) {
+  if (!voice || voice === "all") return true;
+  const kind = voiceKind(report);
+  if (voice === "suggestion") return kind === "suggestion";
+  if (voice === "anonymous") return kind === "anonymous";
+  if (voice === "complaint") return kind === "public" || kind === "safety" || kind === "facilities";
+  return kind === voice;
 }
 
 export function enrichComplaint(

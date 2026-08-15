@@ -44,32 +44,45 @@ export function updateSafetyRecord(companyId, stationId, updates, actorName = ""
 }
 
 export function closeSafetyHazard(companyId, stationId, hazardIndex, closedBy, opts = {}) {
+  const data = getCompanyData(companyId);
+  const recPeek = (data?.safety || []).find((item) => item.stationId === stationId);
+  const rawPeek = recPeek?.hazards?.[hazardIndex];
+  const existingBefore = typeof rawPeek === "object" && rawPeek ? rawPeek.beforePhoto : null;
+  const beforePhoto = opts.beforePhoto || existingBefore || null;
+  const afterPhoto = opts.afterPhoto || null;
+
   const gate = checkHazardCloseGate({
     controlId: opts.controlId,
     likelihood: opts.likelihood ?? 3,
     severity: opts.severity ?? 3,
     inherent: opts.inherent,
-    beforePhoto: opts.beforePhoto,
-    afterPhoto: opts.afterPhoto,
+    beforePhoto,
+    afterPhoto,
   });
   if (!gate.ok) return { ok: false, ...gate };
 
   let closed = null;
-  updateCompany(companyId, (data) => {
-    const rec = (data.safety || []).find((item) => item.stationId === stationId);
+  updateCompany(companyId, (current) => {
+    const rec = (current.safety || []).find((item) => item.stationId === stationId);
     if (!rec || hazardIndex < 0 || hazardIndex >= (rec.hazards || []).length) return;
     const [raw] = rec.hazards.splice(hazardIndex, 1);
     const description = typeof raw === "string" ? raw : raw?.description || raw?.title || String(raw);
+    const openedAt = typeof raw === "object" ? raw.openedAt || null : null;
+    const closedAt = new Date().toISOString();
+    const openMs = openedAt ? Math.max(0, new Date(closedAt).getTime() - new Date(openedAt).getTime()) : null;
     closed = {
-      id: uid("haz"),
+      id: typeof raw === "object" && raw?.id ? raw.id : uid("haz"),
       description,
       controlId: gate.controlId,
       inherent: gate.inherent,
       residual: gate.residual,
-      beforePhoto: opts.beforePhoto || true,
-      afterPhoto: opts.afterPhoto || true,
+      beforePhoto,
+      afterPhoto,
+      openedAt,
+      openedBy: typeof raw === "object" ? raw.openedBy || "" : "",
+      openDurationMs: openMs,
       closedBy,
-      closedAt: new Date().toISOString(),
+      closedAt,
       sealId: `NV-HSE-${uid("seal").slice(-6).toUpperCase()}`,
     };
     rec.hazardLog = rec.hazardLog || [];

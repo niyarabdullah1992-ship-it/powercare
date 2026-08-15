@@ -1,18 +1,86 @@
 import React from "react";
 import { PenLine, Type } from "lucide-react";
+import { BORDER, MUTED, NAVY, CARD } from "@/lib/platformStyles";
+
+const chip = (active) => ({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 6,
+  minHeight: 36,
+  padding: "0 12px",
+  borderRadius: 8,
+  border: `1px solid ${active ? "#BBF7D0" : BORDER}`,
+  background: active ? "#ECFDF3" : CARD,
+  color: active ? "#15803D" : NAVY,
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: "pointer",
+  fontFamily: "inherit",
+});
 
 export default function PlacementToolbar({ ar, fieldType, setFieldType, signers, spots, active, setActive, colors }) {
   return (
-    <div className="space-y-4 border-b border-accent/20 bg-gradient-to-l from-secondary/80 to-card px-5 py-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <button onClick={() => setFieldType("signature")} className={`flex min-h-[52px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-bold ${fieldType === "signature" ? "border-accent bg-accent text-accent-foreground shadow-md" : "border-border bg-card text-foreground"}`}><PenLine className="h-5 w-5" />{ar ? "حقل توقيع" : "Signature field"}</button>
-        <button onClick={() => setFieldType("text")} className={`flex min-h-[52px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-bold ${fieldType === "text" ? "border-primary bg-primary text-primary-foreground shadow-md" : "border-border bg-card text-foreground"}`}><Type className="h-5 w-5" />{ar ? "حقل نص" : "Text field"}</button>
+    <div style={{ display: "grid", gap: 10, padding: "10px 14px 12px", borderBottom: `1px solid ${BORDER}` }}>
+      <div style={{ fontSize: 9, letterSpacing: "0.16em", fontWeight: 600, color: "#1E9E63" }}>NIROVERA</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <button type="button" onClick={() => setFieldType("signature")} style={chip(fieldType === "signature")}>
+          <PenLine style={{ width: 14, height: 14 }} />
+          {ar ? "حقل توقيع" : "Signature field"}
+        </button>
+        <button type="button" onClick={() => setFieldType("text")} style={chip(fieldType === "text")}>
+          <Type style={{ width: 14, height: 14 }} />
+          {ar ? "حقل نص" : "Text field"}
+        </button>
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+      <div style={{ display: "flex", gap: 8, overflowX: "auto" }}>
         {signers.map((signer, index) => {
           const signatures = (spots[index] || []).filter((field) => field.type === "signature").length;
-          const texts = (spots[index] || []).filter((field) => field.type === "text").length;
-          return <button key={signer.email || index} onClick={() => setActive(index)} className={`flex min-w-[170px] items-center gap-3 rounded-xl border p-3 text-start ${active === index ? "border-accent bg-card shadow-md" : "border-border bg-card/70"}`}><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white" style={{ backgroundColor: colors[index % colors.length] }}>{index + 1}</span><span className="min-w-0"><span className="block truncate text-xs font-bold">{signer.name}</span><span className="mt-0.5 block text-[10px] text-muted-foreground">{signatures} {ar ? "توقيع" : "signatures"} · {texts} {ar ? "نص" : "text"}</span></span></button>;
+          const selected = active === index;
+          const color = colors[index % colors.length];
+          return (
+            <button
+              key={signer.email || index}
+              type="button"
+              onClick={() => setActive(index)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                minWidth: 148,
+                padding: "8px 10px",
+                borderRadius: 10,
+                border: `1px solid ${selected ? "#BBF7D0" : BORDER}`,
+                background: selected ? "#F7F8FA" : CARD,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                textAlign: "start",
+              }}
+            >
+              <span style={{
+                width: 22,
+                height: 22,
+                borderRadius: 20,
+                background: color,
+                color: "#fff",
+                fontSize: 11,
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+              >
+                {index + 1}
+              </span>
+              <span style={{ minWidth: 0 }}>
+                <span style={{ display: "block", fontSize: 12, fontWeight: 600, color: NAVY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{signer.name}</span>
+                <span style={{ display: "block", marginTop: 2, fontSize: 10, color: MUTED }}>
+                  {signatures} {ar ? "توقيع" : "signatures"}
+                </span>
+              </span>
+            </button>
+          );
         })}
       </div>
     </div>

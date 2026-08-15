@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { taskPoints } from "@/lib/opsDerivations";
+import { assignmentHistoryNote, taskPoints } from "@/lib/opsDerivations";
+import EscalationSteps from "@/components/escalation/EscalationSteps";
+import { INK, MUTED, NAVY, NAVY_FILL, OK, WARN, BAD, ACCENT, BRAND, field, CARD, SURFACE } from "@/lib/platformStyles";
 
 /**
- * Operations task card — steps, attachments, comments, completion log,
- * supervisor approval bar. Points shown as worth; granted only after approve.
+ * Platform isTaskDetail — L3369–3528 (inline styles AS-IS).
+ * Keeps app log / approve / comment behaviour.
  */
 export default function OpsTaskDetail({
   task,
@@ -12,12 +14,18 @@ export default function OpsTaskDetail({
   canManage,
   checkedIn,
   attendanceGate,
+  escalationSteps = [],
+  currentLevelLabel = "",
+  t,
+  lang,
   onClose,
   onLog,
   onApprove,
   onReject,
   onAddComment,
   onAddAttachment,
+  canReassign = false,
+  onOpenReassign,
 }) {
   const [logAmount, setLogAmount] = useState(1);
   const [attest, setAttest] = useState("");
@@ -51,231 +59,381 @@ export default function OpsTaskDetail({
         : "On-site logging is blocked until today's check-in."))
       : "";
 
+  const weightLabel = ar ? "وزن" : "weight";
+  const modeLabel = task.mode === "remote"
+    ? (ar ? "عن بُعد" : "Remote")
+    : (ar ? "ميداني" : "On-site");
+  const statusLabel = awaiting
+    ? (ar ? "بانتظار الاعتماد" : "Awaiting approval")
+    : approved
+      ? (ar ? "مكتملة" : "Completed")
+      : (ar ? "نشطة" : "Active");
+  const statusStyle = awaiting ? WARN : approved ? OK : NEUTRAL_PILL;
+  const progPct = Math.min(100, Math.round((doneN / targetN) * 100));
+
+  const inputStyle = { ...field };
+
+  const fileChip = {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "8px 12px",
+    borderRadius: "10px",
+    border: "1px solid #E2E8F0",
+    background: SURFACE,
+  };
+
+  const pdfKind = {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "3px 9px",
+    borderRadius: "20px",
+    fontSize: "10px",
+    fontWeight: 600,
+    background: "#FEF2F2",
+    color: "#DC2626",
+    border: "1px solid #FECACA",
+    flexShrink: 0,
+  };
+
+  const logStyle = canLog
+    ? {
+      padding: "9px 16px",
+      borderRadius: "9px",
+      background: BRAND,
+      color: "#fff",
+      border: "none",
+      fontSize: "12px",
+      fontWeight: 600,
+      cursor: busy ? "wait" : "pointer",
+      fontFamily: "inherit",
+      opacity: busy ? 0.6 : 1,
+    }
+    : {
+      padding: "9px 16px",
+      borderRadius: "9px",
+      background: "#E2E8F0",
+      color: MUTED,
+      border: "none",
+      fontSize: "12px",
+      fontWeight: 600,
+      cursor: "not-allowed",
+      fontFamily: "inherit",
+    };
+
+  const issueBtnStyle = cIssue
+    ? {
+      height: "38px",
+      padding: "0 13px",
+      borderRadius: "9px",
+      border: "1px solid #FECACA",
+      background: "#FEF2F2",
+      color: "#DC2626",
+      fontSize: "12px",
+      fontWeight: 600,
+      cursor: "pointer",
+      fontFamily: "inherit",
+    }
+    : {
+      height: "38px",
+      padding: "0 13px",
+      borderRadius: "9px",
+      border: "1px solid #E2E8F0",
+      background: CARD,
+      color: MUTED,
+      fontSize: "12px",
+      cursor: "pointer",
+      fontFamily: "inherit",
+    };
+
+  const cSendStyle = cDraft.trim()
+    ? {
+      height: "38px",
+      padding: "0 16px",
+      borderRadius: "9px",
+      background: BRAND,
+      color: "#fff",
+      border: "none",
+      fontSize: "12px",
+      fontWeight: 600,
+      cursor: busy ? "wait" : "pointer",
+      fontFamily: "inherit",
+    }
+    : {
+      height: "38px",
+      padding: "0 16px",
+      borderRadius: "9px",
+      background: "#E2E8F0",
+      color: MUTED,
+      border: "none",
+      fontSize: "12px",
+      fontWeight: 600,
+      cursor: "not-allowed",
+      fontFamily: "inherit",
+    };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" onClick={onClose}>
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 110,
+        background: "rgba(20,40,75,.42)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+      }}
+      onClick={onClose}
+      dir={ar ? "rtl" : "ltr"}
+    >
       <div
-        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:rounded-2xl"
+        style={{
+          width: "100%",
+          maxWidth: "620px",
+          maxHeight: "calc(100vh - 48px)",
+          background: CARD,
+          borderRadius: "18px",
+          boxShadow: "0 24px 60px rgba(20,40,75,.25)",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-[#E2E8F0] bg-white px-5 py-4">
-          <div className="min-w-0">
-            <div className="font-mono text-[11px] text-[#5A6B85]" dir="ltr">{task.ref}</div>
-            <h2 className="mt-0.5 text-[16px] font-semibold text-[#14284B]">{task.title}</h2>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-xs text-[#5A6B85]">
-            {ar ? "إغلاق" : "Close"}
-          </button>
-        </div>
-
-        <div className="space-y-5 px-5 py-4">
-          <div className="flex flex-wrap items-stretch gap-3 rounded-[14px] bg-[#14284B] px-4 py-3.5 text-white">
-            <div>
-              <div className="text-[10px] font-semibold tracking-[0.1em] text-[#6EE7B7]">
-                {ar ? "قيمة المهمة بالنقاط" : "Task worth in points"}
+        <div style={{ flexShrink: 0, padding: "18px 20px 14px", borderBottom: "1px solid #E2E8F0" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: "15px", fontWeight: 600, textWrap: "pretty", color: NAVY }}>{task.title}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "7px", marginTop: "7px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "11px", color: MUTED, fontFamily: "'IBM Plex Mono',monospace" }} dir="ltr">{task.ref}</span>
+                <span style={tagSoft}>×{task.effortWeight || 1} {weightLabel}</span>
+                <span style={tagSoft}>{modeLabel}</span>
+                <span style={statusStyle}>{statusLabel}</span>
               </div>
-              <div className="mt-1 font-mono text-[30px] font-semibold leading-none" dir="ltr">{points}</div>
             </div>
-            <div className="flex-1 text-[12px] leading-relaxed text-[#A8B4C8]">
-              {approved
-                ? (ar
-                  ? `اعتُمد الإنجاز ومُنحت ${points} نقطة — دخلت في نسبة الأداء وسجل التدقيق.`
-                  : `Completion approved and ${points} points granted — in the performance score and audit trail.`)
-                : (ar
-                  ? `النقاط = قيمة الأولوية × وزن الجهد — تُمنح بعد اعتماد المشرف للإثبات، لا عند تسجيل الإنجاز.`
-                  : `Points = priority × effort — granted after supervisor approves the proof, not when completion is logged.`)}
-            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                width: "30px",
+                height: "30px",
+                borderRadius: "8px",
+                border: "1px solid #E2E8F0",
+                background: CARD,
+                color: MUTED,
+                fontSize: "14px",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                flexShrink: 0,
+              }}
+            >
+              ×
+            </button>
           </div>
-
-          <section>
-            <h3 className="text-[13px] font-semibold text-[#14284B]">{ar ? "خطوات التنفيذ" : "Execution steps"}</h3>
-            {steps.length === 0 ? (
-              <p className="mt-2 text-[12px] text-[#5A6B85]">
-                {ar ? "لم تُحدَّد خطوات لهذه المهمة." : "No steps were defined for this task."}
-              </p>
-            ) : (
-              <ol className="mt-2 space-y-1.5">
-                {steps.map((s, i) => (
-                  <li key={`${task.id}-step-${i}`} className="flex gap-2 text-[13px] text-[#14284B]">
-                    <span className="font-mono text-[11px] text-[#5A6B85]" dir="ltr">{i + 1}.</span>
-                    <span>{s}</span>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </section>
-
-          <section>
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-[13px] font-semibold text-[#14284B]">{ar ? "المرفقات" : "Attachments"}</h3>
-              <label className="cursor-pointer rounded-lg border border-[#E2E8F0] px-2.5 py-1 text-[11px] text-[#5A6B85]">
-                {ar ? "أرفق" : "Attach"}
-                <input
-                  type="file"
-                  className="hidden"
-                  onChange={(e) => setAttachFile(e.target.files?.[0] || null)}
-                />
-              </label>
-            </div>
-            {attachFile && (
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "12px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "12px", color: MUTED }}>
+              {task.stationName || task.stationId || "—"} · {task.ownerName || task.assigneeName || "—"}
+            </span>
+            {canReassign && (
               <button
                 type="button"
                 disabled={busy}
-                onClick={async () => {
-                  await onAddAttachment?.(attachFile);
-                  setAttachFile(null);
+                onClick={() => onOpenReassign?.()}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: "8px",
+                  border: "1px solid #E2E8F0",
+                  background: CARD,
+                  color: NAVY,
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  cursor: busy ? "wait" : "pointer",
+                  fontFamily: "inherit",
                 }}
-                className="mt-2 rounded-lg bg-[#1E9E63] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
               >
-                {ar ? `رفع ${attachFile.name}` : `Upload ${attachFile.name}`}
+                {ar ? "توكيل" : "Delegate"}
               </button>
             )}
-            {attachments.length === 0 ? (
-              <p className="mt-2 text-[12px] text-[#5A6B85]">
-                {ar ? "لا مرفقات بعد — أرفق مواصفة أو إجراءً يحتاجه المنفّذ." : "No attachments yet — attach a spec or procedure the executor needs."}
-              </p>
-            ) : (
-              <ul className="mt-2 flex flex-wrap gap-2">
-                {attachments.map((f, i) => (
-                  <li key={`${task.id}-att-${i}`} className="rounded-lg border border-[#E2E8F0] bg-[#F7F8FA] px-2.5 py-1.5 text-[12px]">
-                    <a href={f.url} target="_blank" rel="noreferrer" className="text-[#14284B] underline-offset-2 hover:underline">
-                      {f.name || "file"}
-                    </a>
-                    {f.addedBy && (
-                      <span className="ms-2 text-[10px] text-[#5A6B85]">{f.addedBy}</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+            <span style={{ fontSize: "12px", color: MUTED }}>
+              {task.dueAt ? String(task.dueAt).slice(0, 10) : "—"}
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: "7px", flex: 1, minWidth: "120px" }}>
+              <span style={{ flex: 1, height: "5px", borderRadius: "4px", background: "#F1F5F9", overflow: "hidden" }}>
+                <span style={{ display: "block", width: `${progPct}%`, height: "100%", background: ACCENT, borderRadius: "4px" }} />
+              </span>
+              <span dir="ltr" style={{ fontSize: "11px", color: MUTED, fontFamily: "'IBM Plex Sans',sans-serif", textAlign: "right" }}>
+                {doneN}/{targetN}
+              </span>
+            </span>
+          </div>
+        </div>
 
-          <section>
-            <h3 className="text-[13px] font-semibold text-[#14284B]">{ar ? "المحادثة" : "Discussion"}</h3>
-            <div className="mt-2 space-y-2">
-              {comments.length === 0 && (
-                <p className="text-[12px] text-[#5A6B85]">{ar ? "لا تعليقات بعد." : "No comments yet."}</p>
-              )}
-              {comments.map((c) => (
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "18px 20px", display: "flex", flexDirection: "column", gap: "18px" }}>
+          {Array.isArray(task.assignmentHistory) && task.assignmentHistory.length > 0 && (
+            <div style={{
+              border: "1px solid #E2E8F0",
+              background: SURFACE,
+              borderRadius: "12px",
+              padding: "12px 14px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+            }}
+            >
+              {task.assignmentHistory.map((entry, i) => (
                 <div
-                  key={c.id}
-                  className={`rounded-[10px] border px-3 py-2 text-[12px] ${
-                    c.isIssue ? "border-[#FECACA] bg-[#FEF2F2]" : "border-[#E2E8F0] bg-[#F7F8FA]"
-                  }`}
+                  key={`${entry.at || i}-${entry.toId || i}`}
+                  style={{ fontSize: "12px", color: NAVY, lineHeight: 1.65, textWrap: "pretty" }}
                 >
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#5A6B85]">
-                    <span className="font-medium text-[#14284B]">{c.authorName}</span>
-                    {c.isIssue && (
-                      <span className="rounded-full border border-[#FECACA] bg-white px-1.5 py-0.5 text-[#B91C1C]">
-                        {ar ? "عائق" : "Blocker"}
-                      </span>
-                    )}
-                    <span className="font-mono" dir="ltr">{c.at ? String(c.at).slice(0, 16).replace("T", " ") : ""}</span>
-                  </div>
-                  <p className="mt-1 whitespace-pre-wrap text-[#14284B]">{c.text}</p>
+                  {assignmentHistoryNote(entry, ar ? "ar" : "en")}
                 </div>
               ))}
             </div>
-            <div className="mt-3 space-y-2">
-              <textarea
-                rows={2}
-                value={cDraft}
-                onChange={(e) => setCDraft(e.target.value)}
-                placeholder={ar ? "اكتب تحديثًا، أو سجّل عائقًا يمنع الإنجاز…" : "Write an update, or log a blocker…"}
-                className="w-full rounded-[10px] border border-[#E2E8F0] px-3 py-2 text-[13px]"
-              />
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCIssue((v) => !v)}
-                  className={`rounded-lg border px-3 py-1.5 text-[12px] ${
-                    cIssue ? "border-[#FECACA] bg-[#FEF2F2] font-semibold text-[#DC2626]" : "border-[#E2E8F0] text-[#5A6B85]"
-                  }`}
-                >
-                  {ar ? "علّمه عائقًا" : "Flag as blocker"}
-                </button>
-                <button
-                  type="button"
-                  disabled={busy || !cDraft.trim()}
-                  onClick={async () => {
-                    await onAddComment?.(cDraft.trim(), cIssue);
-                    setCDraft("");
-                    setCIssue(false);
-                  }}
-                  className="rounded-lg bg-[#1E9E63] px-3 py-1.5 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#E2E8F0] disabled:text-[#5A6B85]"
-                >
-                  {ar ? "أرسل" : "Send"}
-                </button>
-                {!cDraft.trim() && (
-                  <span className="text-[11px] text-[#5A6B85]">{ar ? "اكتب نصًا قبل الإرسال." : "Write text before sending."}</span>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {!approved && !awaiting && (
-            <section className="rounded-[14px] border border-[#E2E8F0] p-4">
-              <h3 className="text-[13px] font-semibold text-[#14284B]">{ar ? "تسجيل الإنجاز" : "Log completion"}</h3>
-              <p className="mt-1 text-[11px] leading-relaxed text-[#5A6B85]">
-                {ar
-                  ? "لا نقطة بلا أثر — أرفق صورة الإنجاز، أو اكتب أثرًا غير مصوَّر."
-                  : "No point without a trace — attach a completion photo, or write a non-photographed attestation."}
-              </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-[100px_1fr]">
-                <label className="text-[11px] text-[#5A6B85]">
-                  {ar ? "العدد المنجز" : "Quantity"}
-                  <input
-                    type="number"
-                    min={1}
-                    max={Math.max(1, targetN - doneN)}
-                    value={logAmount}
-                    onChange={(e) => setLogAmount(Number(e.target.value) || 1)}
-                    className="mt-1 h-9 w-full rounded-lg border border-[#E2E8F0] px-2 text-sm"
-                  />
-                </label>
-                <label className="text-[11px] text-[#5A6B85]">
-                  {ar ? "إثبات / ملف" : "Proof file"}
-                  <input type="file" className="mt-1 block w-full text-xs" onChange={(e) => setProofFile(e.target.files?.[0] || null)} />
-                </label>
-              </div>
-              <textarea
-                rows={2}
-                value={attest}
-                onChange={(e) => setAttest(e.target.value)}
-                placeholder={ar ? "أثر غير مصوَّر: من يشهد، وماذا أُنجز بالضبط…" : "Non-photographed evidence: who attests, and exactly what was done…"}
-                className="mt-2 w-full rounded-[10px] border border-[#E2E8F0] px-3 py-2 text-[13px]"
-              />
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  disabled={busy || !canLog}
-                  onClick={() => onLog?.({ amount: logAmount, proofFile, attestation: attest.trim() })}
-                  className="rounded-lg bg-[#1E9E63] px-4 py-2 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#E2E8F0] disabled:text-[#5A6B85]"
-                >
-                  {ar ? "سجّل الإنجاز" : "Log completion"}
-                </button>
-                <span className="font-mono text-[11px] text-[#5A6B85]" dir="ltr">{doneN}/{targetN}</span>
-              </div>
-              {!canLog && logBlockReason && (
-                <p className="mt-2 text-[11px] leading-relaxed text-[#B91C1C]">{logBlockReason}</p>
-              )}
-            </section>
           )}
+          <div>
+            <div style={{ fontSize: "12px", fontWeight: 600, color: MUTED }}>
+              {ar ? "خطوات التنفيذ" : "Execution steps"}
+            </div>
+            {steps.length === 0 ? (
+              <div style={{ fontSize: "12px", color: MUTED, marginTop: "8px" }}>
+                {ar ? "لم تُحدَّد خطوات لهذه المهمة." : "No steps were defined for this task."}
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "9px", marginTop: "10px" }}>
+                {steps.map((s, i) => (
+                  <div key={`${task.id}-step-${i}`} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                    <span
+                      dir="ltr"
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: "#F1F5F9",
+                        color: MUTED,
+                        fontSize: "10px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        fontFamily: "'IBM Plex Sans',sans-serif",
+                        marginTop: "1px",
+                      }}
+                    >
+                      {i + 1}
+                    </span>
+                    <span style={{ fontSize: "13px", color: NAVY, lineHeight: 1.6, textWrap: "pretty" }}>{s}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div style={{ fontSize: "12px", fontWeight: 600, color: MUTED }}>
+              {ar ? "المرفقات" : "Attachments"}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "10px", alignItems: "center" }}>
+              {attachments.map((f, i) => (
+                <a
+                  key={`${task.id}-att-${i}`}
+                  href={f.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ ...fileChip, textDecoration: "none", cursor: "pointer" }}
+                >
+                  <span style={pdfKind}>{(f.name || "").toLowerCase().endsWith(".pdf") ? "PDF" : "FILE"}</span>
+                  <span style={{ fontSize: "12px", color: NAVY }}>{f.name || "file"}</span>
+                </a>
+              ))}
+              <label style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "7px",
+                padding: "8px 13px",
+                borderRadius: "10px",
+                border: "1px dashed #CBD5E1",
+                background: CARD,
+                fontSize: "12px",
+                color: MUTED,
+                cursor: "pointer",
+              }}
+              >
+                <span>{ar ? "أرفق ملفًا" : "Attach file"}</span>
+                <input
+                  type="file"
+                  style={{ display: "none" }}
+                  onChange={(e) => setAttachFile(e.target.files?.[0] || null)}
+                />
+              </label>
+              {attachFile && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={async () => {
+                    await onAddAttachment?.(attachFile);
+                    setAttachFile(null);
+                  }}
+                  style={{
+                    padding: "8px 13px",
+                    borderRadius: "9px",
+                    background: BRAND,
+                    color: "#fff",
+                    border: "none",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    opacity: busy ? 0.5 : 1,
+                  }}
+                >
+                  {ar ? `رفع ${attachFile.name}` : `Upload ${attachFile.name}`}
+                </button>
+              )}
+            </div>
+            {attachments.length === 0 && !attachFile && (
+              <div style={{ fontSize: "12px", color: MUTED, marginTop: "8px" }}>
+                {ar ? "لا مرفقات بعد — أرفق مواصفة أو إجراءً يحتاجه المنفّذ." : "No attachments yet — attach a spec or procedure the executor needs."}
+              </div>
+            )}
+          </div>
 
           {awaiting && !approved && (
-            <section className="rounded-[14px] border border-[#FDE68A] bg-[#FFFBEB] p-4">
-              <div className="text-[12px] font-semibold text-[#B45309]">{ar ? "بانتظار اعتمادك" : "Awaiting your approval"}</div>
-              <p className="mt-1 text-[12px] leading-relaxed text-[#92400E]">
+            <div style={{ border: "1px solid #FDE68A", background: "#FFFBEB", borderRadius: "12px", padding: "14px 16px" }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, color: "#B45309" }}>
+                {canManage
+                  ? (ar ? "بانتظار اعتمادك" : "Awaiting your approval")
+                  : (ar ? "بانتظار اعتماد المستوى الحالي" : "Awaiting the current level")}
+              </div>
+              <div style={{ fontSize: "12px", color: "#92400E", marginTop: "5px", lineHeight: 1.65, textWrap: "pretty" }}>
                 {ar
-                  ? `اكتمل العدد ${targetN}/${targetN} وأُرفق الإثبات. اعتمادك يمنح ${points} نقطة ويُقفل أمر العمل.`
-                  : `${targetN}/${targetN} logged with proof attached. Approving grants ${points} points and closes the work order.`}
-              </p>
+                  ? `اكتمل العدد ${targetN}/${targetN} وأُرفق الإثبات. اعتماد المدير يمنح ${points} نقطة ويُقفل أمر العمل. الرفض يُصعَّد للأعلى.`
+                  : `${targetN}/${targetN} logged with proof. Manager approval grants ${points} points and closes the work order. A reject escalates upward.`}
+                {currentLevelLabel ? (ar ? ` المستوى الحالي: ${currentLevelLabel}.` : ` Current level: ${currentLevelLabel}.`) : ""}
+              </div>
+              {Array.isArray(escalationSteps) && escalationSteps.length > 0 && t && (
+                <div style={{ marginTop: "10px" }}>
+                  <EscalationSteps steps={escalationSteps} t={t} lang={lang || (ar ? "ar" : "en")} />
+                </div>
+              )}
               {canManage ? (
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
                   <button
                     type="button"
                     disabled={busy}
                     onClick={() => onApprove?.()}
-                    className="rounded-lg bg-[#1E9E63] px-4 py-2 text-[12px] font-semibold text-white disabled:opacity-50"
+                    style={{
+                      padding: "9px 16px",
+                      borderRadius: "9px",
+                      background: "#1E9E63",
+                      color: "#fff",
+                      border: "none",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      opacity: busy ? 0.5 : 1,
+                    }}
                   >
                     {ar ? "اعتمد الإنجاز" : "Approve completion"}
                   </button>
@@ -283,61 +441,315 @@ export default function OpsTaskDetail({
                     type="button"
                     disabled={busy}
                     onClick={() => setRejectOpen(true)}
-                    className="rounded-lg border border-[#FECACA] bg-white px-4 py-2 text-[12px] text-[#B91C1C]"
+                    style={{
+                      padding: "9px 16px",
+                      borderRadius: "9px",
+                      background: CARD,
+                      color: "#B45309",
+                      border: "1px solid #FDE68A",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
                   >
-                    {ar ? "أعِده لطلب إثبات" : "Return for more proof"}
+                    {ar ? "رفض — يُصعَّد" : "Reject — escalate"}
                   </button>
                 </div>
               ) : (
-                <p className="mt-2 text-[11px] text-[#B45309]">
+                <div style={{ fontSize: "11px", color: "#B45309", marginTop: "8px" }}>
                   {ar ? "بانتظار اعتماد المشرف — لا تُمنح النقاط قبل الاعتماد." : "Waiting for supervisor approval — points are not granted before approval."}
-                </p>
+                </div>
               )}
               {rejectOpen && (
-                <div className="mt-3 space-y-2">
+                <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
                   <textarea
                     rows={2}
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
-                    placeholder={ar ? "سبب الإرجاع (مطلوب)" : "Return reason (required)"}
-                    className="w-full rounded-[10px] border border-[#FECACA] px-3 py-2 text-[13px]"
+                    placeholder={ar ? "سبب الرفض (مطلوب) — يُصعَّد للمستوى التالي" : "Rejection reason (required) — escalates to the next level"}
+                    style={{
+                      width: "100%",
+                      border: "1px solid #FECACA",
+                      borderRadius: "9px",
+                      background: CARD,
+                      padding: "9px 12px",
+                      fontSize: "12px",
+                      color: NAVY,
+                      fontFamily: "inherit",
+                      resize: "vertical",
+                      boxSizing: "border-box",
+                    }}
                   />
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => setRejectOpen(false)} className="rounded-lg border px-3 py-1.5 text-[11px]">
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setRejectOpen(false)}
+                      style={{
+                        padding: "7px 13px",
+                        borderRadius: "9px",
+                        border: "1px solid #E2E8F0",
+                        background: CARD,
+                        color: MUTED,
+                        fontSize: "11px",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                      }}
+                    >
                       {ar ? "إلغاء" : "Cancel"}
                     </button>
                     <button
                       type="button"
                       disabled={busy || !rejectReason.trim()}
                       onClick={() => onReject?.(rejectReason.trim())}
-                      className="rounded-lg bg-[#14284B] px-3 py-1.5 text-[11px] text-white disabled:opacity-50"
+                      style={{
+                        padding: "7px 13px",
+                        borderRadius: "9px",
+                        border: "none",
+                        background: NAVY_FILL,
+                        color: "#fff",
+                        fontSize: "11px",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        opacity: busy || !rejectReason.trim() ? 0.5 : 1,
+                      }}
                     >
-                      {ar ? "تأكيد الإرجاع" : "Confirm return"}
+                      {ar ? "رفض وتصعيد" : "Reject & escalate"}
                     </button>
                   </div>
-                  {!rejectReason.trim() && (
-                    <p className="text-[11px] text-[#B91C1C]">{ar ? "سبب الإرجاع مطلوب — لا رفض صامت." : "A return reason is required — no silent rejection."}</p>
-                  )}
                 </div>
               )}
-            </section>
+            </div>
           )}
 
           {approved && (
-            <div className="rounded-[14px] border border-[#BBF7D0] bg-[#ECFDF3] px-4 py-3 text-[12px] text-[#15803D]">
-              {ar
-                ? `اعتُمد الإنجاز ومُنحت ${task.pointsAwarded ?? points} نقطة — دخلت في نسبة الأداء وسجل التدقيق.`
-                : `Completion approved and ${task.pointsAwarded ?? points} points granted — in the performance score and audit trail.`}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              border: "1px solid #BBF7D0",
+              background: "#ECFDF3",
+              borderRadius: "12px",
+              padding: "13px 16px",
+            }}
+            >
+              <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#1E9E63", flexShrink: 0 }} />
+              <span style={{ fontSize: "12px", color: "#15803D", lineHeight: 1.65, textWrap: "pretty" }}>
+                {ar
+                  ? `اعتُمد الإنجاز ومُنحت ${task.pointsAwarded ?? points} نقطة — دخلت في نسبة الأداء وسجل التدقيق.`
+                  : `Completion approved and ${task.pointsAwarded ?? points} points granted — in the performance score and audit trail.`}
+              </span>
             </div>
           )}
 
-          {task.rejectReason && !approved && (
-            <div className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[12px] text-[#B91C1C]">
-              {ar ? "سبب الإرجاع السابق:" : "Previous return reason:"} {task.rejectReason}
+          {!approved && !awaiting && (
+            <div style={{ border: "1px solid #E2E8F0", borderRadius: "12px", padding: "14px 16px" }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, color: MUTED }}>
+                {ar ? "تسجيل الإنجاز" : "Log completion"}
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: "10px", marginTop: "10px", flexWrap: "wrap" }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <span style={{ fontSize: "11px", color: MUTED }}>{ar ? "العدد المنجز" : "Quantity"}</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={Math.max(1, targetN - doneN)}
+                    value={logAmount}
+                    onChange={(e) => setLogAmount(Number(e.target.value) || 1)}
+                    style={{ ...inputStyle, width: "88px" }}
+                  />
+                </label>
+                <label style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  height: "38px",
+                  padding: "0 13px",
+                  borderRadius: "9px",
+                  border: "1px dashed #CBD5E1",
+                  background: CARD,
+                  fontSize: "12px",
+                  color: MUTED,
+                  cursor: "pointer",
+                }}
+                >
+                  <span>{ar ? "أرفق ملفًا" : "Attach file"}</span>
+                  <input type="file" style={{ display: "none" }} onChange={(e) => setProofFile(e.target.files?.[0] || null)} />
+                </label>
+                <button
+                  type="button"
+                  disabled={busy || !canLog}
+                  onClick={() => onLog?.({ amount: logAmount, proofFile, attestation: attest.trim() })}
+                  style={logStyle}
+                >
+                  {ar ? "سجّل الإنجاز" : "Log completion"}
+                </button>
+              </div>
+              {proofFile && (
+                <div style={{ marginTop: "10px", fontSize: "12px", color: NAVY }}>{proofFile.name}</div>
+              )}
+              <textarea
+                value={attest}
+                onChange={(e) => setAttest(e.target.value)}
+                rows={2}
+                placeholder={ar ? "أثر غير مصوَّر: من يشهد، وماذا أُنجز بالضبط…" : "Non-photographed evidence: who attests, and exactly what was done…"}
+                style={{
+                  width: "100%",
+                  marginTop: "10px",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: "9px",
+                  background: SURFACE,
+                  padding: "9px 12px",
+                  fontSize: "12px",
+                  color: NAVY,
+                  fontFamily: "inherit",
+                  outline: "none",
+                  resize: "vertical",
+                  boxSizing: "border-box",
+                }}
+              />
+              <div style={{ fontSize: "11px", color: MUTED, marginTop: "8px", lineHeight: 1.65, textWrap: "pretty" }}>
+                {ar
+                  ? "لا نقطة بلا أثر — أرفق صورة الإنجاز، أو اكتب أثرًا غير مصوَّر."
+                  : "No point without a trace — attach a completion photo, or write a non-photographed attestation."}
+              </div>
+              {!canLog && logBlockReason && (
+                <div style={{ fontSize: "11px", color: "#B91C1C", marginTop: "8px", lineHeight: 1.65 }}>{logBlockReason}</div>
+              )}
             </div>
           )}
+
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "14px",
+            padding: "14px 16px",
+            borderRadius: "12px",
+            background: NAVY_FILL,
+            color: "#fff",
+            flexWrap: "wrap",
+          }}
+          >
+            <div>
+              <div style={{ fontSize: "10px", color: "#6EE7B7", letterSpacing: "0.1em", fontWeight: 600 }}>
+                {ar ? "قيمة المهمة بالنقاط" : "TASK WORTH"}
+              </div>
+              <div dir="ltr" style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "30px", fontWeight: 600, lineHeight: 1, marginTop: "6px", textAlign: "right" }}>
+                {points}
+              </div>
+            </div>
+            <div style={{ flex: "1 1 220px", fontSize: "12px", color: "#A8B4C8", lineHeight: 1.65, textWrap: "pretty" }}>
+              {approved
+                ? (ar
+                  ? `اعتُمد الإنجاز ومُنحت ${task.pointsAwarded ?? points} نقطة — دخلت في نسبة الأداء وسجل التدقيق.`
+                  : `Completion approved and ${task.pointsAwarded ?? points} points granted — in the performance score and audit trail.`)
+                : (ar
+                  ? "النقاط = قيمة الأولوية × وزن الجهد — تُمنح بعد اعتماد المشرف للإثبات، لا عند تسجيل الإنجاز."
+                  : "Points = priority × effort — granted after supervisor approves the proof, not when completion is logged.")}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "10px" }}>
+              <div style={{ fontSize: "12px", fontWeight: 600, color: "#A8B4C8" }}>
+                {ar ? "المحادثة" : "Discussion"}
+              </div>
+              <div style={{ fontSize: "11px", color: "#A8B4C8" }}>{comments.length}</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "9px", marginTop: "10px" }}>
+              {comments.length === 0 && (
+                <div style={{ fontSize: "12px", color: MUTED }}>{ar ? "لا تعليقات بعد." : "No comments yet."}</div>
+              )}
+              {comments.map((c) => (
+                <div
+                  key={c.id}
+                  style={{
+                    borderRadius: "10px",
+                    border: c.isIssue ? "1px solid #FECACA" : "1px solid #E2E8F0",
+                    background: c.isIssue ? "#FEF2F2" : "#F7F8FA",
+                    padding: "10px 12px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "12px", fontWeight: 600, color: NAVY }}>{c.authorName}</span>
+                    {c.isIssue && <span style={BAD}>{ar ? "عائق" : "Blocker"}</span>}
+                    <span style={{ flex: 1 }} />
+                    <span dir="ltr" style={{ fontSize: "10px", color: MUTED, fontFamily: "'IBM Plex Sans',sans-serif", textAlign: "right" }}>
+                      {c.at ? String(c.at).slice(0, 16).replace("T", " ") : ""}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: INK, lineHeight: 1.65, marginTop: "5px", textWrap: "pretty" }}>
+                    {c.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {task.rejectReason && !approved && (
+            <div style={{ borderRadius: "10px", border: "1px solid #FECACA", background: "#FEF2F2", padding: "10px 12px", fontSize: "12px", color: "#B91C1C" }}>
+              {ar ? "سبب الرفض:" : "Rejection reason:"} {task.rejectReason}
+            </div>
+          )}
+        </div>
+
+        <div style={{
+          flexShrink: 0,
+          padding: "14px 20px 18px",
+          borderTop: "1px solid #E2E8F0",
+          display: "flex",
+          gap: "8px",
+          alignItems: "center",
+          flexWrap: "wrap",
+          background: CARD,
+        }}
+        >
+          <input
+            value={cDraft}
+            onChange={(e) => setCDraft(e.target.value)}
+            placeholder={ar ? "اكتب تحديثًا، أو سجّل عائقًا يمنع الإنجاز…" : "Write an update, or log a blocker…"}
+            style={{ ...inputStyle, flex: "1 1 200px" }}
+          />
+          <button type="button" onClick={() => setCIssue((v) => !v)} style={issueBtnStyle}>
+            {ar ? "علّمه عائقًا" : "Flag as blocker"}
+          </button>
+          <button
+            type="button"
+            disabled={busy || !cDraft.trim()}
+            onClick={async () => {
+              await onAddComment?.(cDraft.trim(), cIssue);
+              setCDraft("");
+              setCIssue(false);
+            }}
+            style={cSendStyle}
+          >
+            {ar ? "أرسل" : "Send"}
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
+const NEUTRAL_PILL = {
+  display: "inline-block",
+  padding: "3px 9px",
+  borderRadius: "20px",
+  fontSize: "11px",
+  fontWeight: 500,
+  background: SURFACE,
+  color: MUTED,
+  border: "1px solid #E2E8F0",
+  whiteSpace: "nowrap",
+};
+
+const tagSoft = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "2px 8px",
+  borderRadius: "8px",
+  fontSize: "11px",
+  background: SURFACE,
+  color: MUTED,
+  border: "1px solid #E2E8F0",
+};

@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
       const { companyId } = body;
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(companyId)}`, { headers });
       const rows = await res.json();
-      const defaults = { company_id: companyId, work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: true, gps_required: true };
+      const defaults = { company_id: companyId, work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: false, gps_required: false };
       const emergency = await getEmergencyWindow(companyId);
       const policy = await getAttendancePolicy(companyId);
       const settings = (!res.ok || !Array.isArray(rows) || rows.length === 0) ? defaults : rows[0];
@@ -416,10 +416,11 @@ Deno.serve(async (req) => {
       }
       const setRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(companyId)}`, { headers });
       const setRows = await setRes.json();
-      const settings = (Array.isArray(setRows) && setRows[0]) || { work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: true, gps_required: true };
+      const settings = (Array.isArray(setRows) && setRows[0]) || { work_start_time: "08:00", late_threshold_minutes: 15, gps_enabled: false, gps_required: false };
       const emergency = await getEmergencyWindow(companyId);
-      const locationRequired = settings.gps_enabled !== false && !emergency?.active;
-      if (locationRequired && (lat == null || lng == null)) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
+      const hasCoords = lat != null && lng != null;
+      const locationRequired = settings.gps_enabled === true && settings.gps_required === true && !emergency?.active;
+      if (locationRequired && !hasCoords) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       const scheduledStationId = scheduledShift.stationId || auth?.stationId || stationId;
       let workplace = null;
       let recordedWorkplace = null;
@@ -431,6 +432,7 @@ Deno.serve(async (req) => {
         workplace = match.best;
         recordedWorkplace = match.best || match.nearest;
         nearestDist = match.nearestDist;
+        if (!workplace) return Response.json({ error: "OUTSIDE_STATION", distanceMeters: nearestDist }, { status: 400 });
       }
       const inZone = !locationRequired || !!workplace;
       const now = new Date();
@@ -443,7 +445,7 @@ Deno.serve(async (req) => {
       const inconclusiveAccuracy = Number(accuracy) > 100;
       const status = inZone && !inconclusiveAccuracy ? timelyStatus : "pending_review";
       const distMeters = recordedWorkplace?.dist ?? nearestDist;
-      const locationStatus = emergency?.active ? "emergency" : (!locationRequired ? "disabled" : (inconclusiveAccuracy ? "inconclusive" : (inZone ? "inside" : "outside")));
+      const locationStatus = emergency?.active ? "emergency" : (!locationRequired ? "manual" : (inconclusiveAccuracy ? "inconclusive" : (inZone ? "inside" : "outside")));
       const payload = {
         company_id: companyId,
         employee_id: employeeId,
@@ -513,9 +515,10 @@ Deno.serve(async (req) => {
       const emergency = await getEmergencyWindow(auth.companyId);
       const settingsRes = await fetch(`${SUPABASE_URL}/rest/v1/attendance_settings?company_id=eq.${encodeURIComponent(auth.companyId)}`, { headers });
       const settingsRows = await settingsRes.json();
-      const settings = (Array.isArray(settingsRows) && settingsRows[0]) || { gps_enabled: true };
-      const locationRequired = settings.gps_enabled !== false && !emergency?.active;
-      if (locationRequired && (lat == null || lng == null)) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
+      const settings = (Array.isArray(settingsRows) && settingsRows[0]) || { gps_enabled: false, gps_required: false };
+      const hasCoords = lat != null && lng != null;
+      const locationRequired = settings.gps_enabled === true && settings.gps_required === true && !emergency?.active;
+      if (locationRequired && !hasCoords) return Response.json({ error: "GPS_REQUIRED" }, { status: 400 });
       const date = toRiyadhDateKey();
       const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?company_id=eq.${encodeURIComponent(auth.companyId)}&employee_id=eq.${encodeURIComponent(employeeId)}&date=eq.${date}`, { headers });
       const rows = await res.json();

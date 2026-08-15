@@ -2,77 +2,167 @@ import React, { useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { base44 } from "@/api/base44Client";
 import { updateEmployeeProfile } from "@/lib/store";
-import { Mail, Building2, Loader2, X, Images } from "lucide-react";
-import BannerGallery from "@/components/employees/BannerGallery";
-import PresenceDot from "@/components/employees/PresenceDot";
-import GradeBadge from "@/components/employees/GradeBadge";
+import { Loader2 } from "lucide-react";
+import { MUTED, NAVY, NAVY_FILL, OK, WARN, ACCENT } from "@/lib/platformStyles";
+import { profileCompletionStats } from "@/lib/employeeProfileFields";
+import IdentityCard from "@/components/shared/IdentityCard";
 
+/** Platform isEmpFile hero — L2623–2646 (inline styles AS-IS). */
 export default function ProfileHero({ employee, companyId, canEdit, roleLabel, grade, stationName }) {
-  const { t, lang } = useI18n();
-  const [uploading, setUploading] = useState(null);
-  const [galleryOpen, setGalleryOpen] = useState(false);
+  const { lang } = useI18n();
+  const ar = lang === "ar";
+  const [uploading, setUploading] = useState(false);
   const avatarInput = useRef(null);
-  const bannerInput = useRef(null);
   const profile = employee.profile || {};
 
-  const upload = async (file, field) => {
-    if (!file) return;
-    setUploading(field);
+  const { pct: completionPct } = profileCompletionStats(employee);
+
+  const hireIso = profile.hireDate || employee.hireDate || employee.startDate || "";
+  const hireDate = hireIso ? new Date(`${String(hireIso).slice(0, 10)}T00:00:00`) : null;
+  const preStart = hireDate && hireDate > new Date();
+  const svcYears = hireDate && !preStart
+    ? Math.max(0, Math.floor((Date.now() - hireDate.getTime()) / 31557600000))
+    : 0;
+  const yrWord = (n) => {
+    if (ar) {
+      if (n === 0) return "أقل من سنة";
+      if (n === 1) return "سنة واحدة";
+      if (n === 2) return "سنتان";
+      if (n <= 10) return `${n} سنوات`;
+      return `${n} سنة`;
+    }
+    return `${n} year${n === 1 ? "" : "s"} of service`;
+  };
+  const niceHire = hireDate
+    ? hireDate.toLocaleDateString(ar ? "ar-SA-u-ca-gregory-nu-latn" : "en-GB", { year: "numeric", month: "short", day: "numeric" })
+    : "—";
+  const tenure = preStart
+    ? (ar ? `يباشر في ${niceHire} — لم يباشر بعد` : `Starts ${niceHire} — not yet commenced`)
+    : (ar ? `${yrWord(svcYears)} في الخدمة` : yrWord(svcYears));
+
+  const statusLabel = preStart
+    ? (ar ? "قيد المباشرة" : "Pending start")
+    : (employee.active === false ? (ar ? "غير نشط" : "Inactive") : (ar ? "نشط" : "Active"));
+  const statusStyle = preStart ? WARN : OK;
+
+  const initials = (employee.name || "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+
+  const dept = profile.department || grade?.label || grade?.name || "";
+  const meta = [roleLabel, dept, stationName].filter(Boolean).join(" · ");
+
+  const upload = async (file) => {
+    if (!file || !canEdit) return;
+    setUploading(true);
     try {
       const up = await base44.integrations.Core.UploadFile({ file });
-      updateEmployeeProfile(companyId, employee.id, { [field]: up.file_url });
+      updateEmployeeProfile(companyId, employee.id, { avatarUrl: up.file_url });
     } finally {
-      setUploading(null);
+      setUploading(false);
     }
   };
 
-  const remove = (field) => {
-    updateEmployeeProfile(companyId, employee.id, { [field]: null });
-  };
-
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-      <div
-        className={`relative h-28 bg-secondary bg-cover bg-center ${canEdit ? "cursor-pointer" : ""}`}
-        style={profile.bannerUrl ? { backgroundImage: `url(${profile.bannerUrl})` } : undefined}
-        onClick={() => canEdit && uploading !== "bannerUrl" && bannerInput.current?.click()}
-        role={canEdit ? "button" : undefined}
-        tabIndex={canEdit ? 0 : undefined}
-        onKeyDown={(e) => { if (canEdit && (e.key === "Enter" || e.key === " ")) bannerInput.current?.click(); }}
-        aria-label={canEdit ? t("uploadBanner") : undefined}
+    <IdentityCard dir={ar ? "rtl" : "ltr"} bodyStyle={{ padding: 0 }}>
+    <div style={{
+      padding: "20px 22px",
+      display: "flex",
+      gap: "18px",
+      flexWrap: "wrap",
+      alignItems: "center",
+    }}
+    >
+      <button
+        type="button"
+        onClick={() => canEdit && avatarInput.current?.click()}
+        disabled={!canEdit || uploading}
+        title={canEdit ? (ar ? "تحديث الصورة" : "Update photo") : undefined}
+        style={{
+          width: "56px",
+          height: "56px",
+          borderRadius: "50%",
+          background: NAVY_FILL,
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "18px",
+          fontWeight: 600,
+          fontFamily: "'IBM Plex Sans',sans-serif",
+          flexShrink: 0,
+          border: "none",
+          padding: 0,
+          cursor: canEdit ? "pointer" : "default",
+          overflow: "hidden",
+          position: "relative",
+        }}
       >
-        {uploading === "bannerUrl" && <span className="absolute inset-0 flex items-center justify-center bg-background/40"><Loader2 className="h-5 w-5 animate-spin" /></span>}
-        {canEdit && profile.bannerUrl && <button type="button" onClick={(e) => { e.stopPropagation(); remove("bannerUrl"); }} className="absolute end-3 top-3 rounded-full border border-border bg-background/70 p-1.5 text-foreground backdrop-blur-xl" title={t("removeFile")}><X className="h-3.5 w-3.5" /></button>}
-        {canEdit && <button type="button" onClick={(e) => { e.stopPropagation(); setGalleryOpen(true); }} className="absolute start-3 top-3 flex items-center gap-1.5 rounded-full border border-border bg-background/70 px-2.5 py-1.5 text-xs font-medium text-foreground backdrop-blur-xl" title={lang === "ar" ? "اختيار غلاف جاهز" : "Choose banner"}><Images className="h-3.5 w-3.5" /> {lang === "ar" ? "أغلفة جاهزة" : "Gallery"}</button>}
-        <input ref={bannerInput} type="file" accept="image/*" className="hidden" onChange={(e) => upload(e.target.files?.[0], "bannerUrl")} />
+        {profile.avatarUrl
+          ? <img src={profile.avatarUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          : initials}
+        {uploading && (
+          <span style={{
+            position: "absolute", inset: 0, background: "rgba(0,0,0,.4)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+          >
+            <Loader2 style={{ width: 16, height: 16 }} className="animate-spin" />
+          </span>
+        )}
+      </button>
+      <input
+        ref={avatarInput}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={(e) => upload(e.target.files?.[0])}
+      />
+
+      <div style={{ flex: "1 1 240px", minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <span style={{ fontSize: "19px", fontWeight: 600, color: NAVY }}>{employee.name}</span>
+          <span style={statusStyle}>{statusLabel}</span>
+        </div>
+        <div style={{ fontSize: "13px", color: "#A8B4C8", marginTop: "4px" }}>{meta || "—"}</div>
+        <div style={{ fontSize: "11px", color: "#A8B4C8", marginTop: "4px", fontFamily: "'IBM Plex Mono',monospace" }} dir="ltr">
+          {employee.id}
+        </div>
       </div>
 
-      <div className="-mt-12 flex flex-col items-center px-5 pb-7 text-center">
-        <div className="relative h-24 w-24 shrink-0">
-          <button type="button" onClick={() => canEdit && avatarInput.current?.click()} disabled={!canEdit || uploading === "avatarUrl"} className={`flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-foreground font-heading text-3xl font-medium text-background shadow-xl ring-4 ring-card ${canEdit ? "cursor-pointer transition hover:opacity-90" : "cursor-default"}`} title={canEdit ? t("uploadPhoto") : undefined} aria-label={canEdit ? t("uploadPhoto") : undefined}>
-            {profile.avatarUrl ? <img src={profile.avatarUrl} alt={employee.name} className="h-full w-full object-cover" /> : employee.name.charAt(0)}
-            {uploading === "avatarUrl" && <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40"><Loader2 className="h-5 w-5 animate-spin text-white" /></span>}
-          </button>
-          {canEdit && profile.avatarUrl && <button type="button" onClick={() => remove("avatarUrl")} className="absolute -top-1 -end-1 rounded-full bg-destructive p-1 text-destructive-foreground shadow-md" title={t("removeFile")}><X className="h-3 w-3" /></button>}
-          <PresenceDot employee={employee} className="absolute bottom-1 end-1 h-4 w-4 ring-2 ring-card" />
-          <input ref={avatarInput} type="file" accept="image/*" className="hidden" onChange={(e) => upload(e.target.files?.[0], "avatarUrl")} />
+      <div style={{ flex: "0 0 auto", display: "flex", gap: "22px", flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontSize: "10px", color: MUTED, letterSpacing: "0.06em" }}>
+            {ar ? "اكتمال الملف" : "COMPLETION"}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "7px" }}>
+            <span style={{ width: "92px", height: "6px", borderRadius: "5px", background: "#F1F5F9", overflow: "hidden" }}>
+              <span style={{
+                display: "block",
+                width: `${completionPct}%`,
+                height: "100%",
+                background: completionPct === 100 ? "#15803D" : ACCENT,
+                borderRadius: "5px",
+              }}
+              />
+            </span>
+            <span dir="ltr" style={{ fontSize: "13px", fontWeight: 600, fontFamily: "'IBM Plex Sans',sans-serif", textAlign: "right", color: NAVY }}>
+              {completionPct}%
+            </span>
+          </div>
         </div>
-
-        <h1 className="mt-4 max-w-full truncate font-heading text-2xl font-semibold">{employee.name}</h1>
-        <p className="mt-1 text-sm font-medium text-accent">{roleLabel}</p>
-        <GradeBadge grade={grade} className="mt-2" />
-        <div className="mt-5 w-full space-y-3 border-t border-border pt-5 text-start text-xs text-muted-foreground">
-          {employee.email && <span className="flex items-center gap-2 break-all"><Mail className="h-3.5 w-3.5 shrink-0 text-accent" /> {employee.email}</span>}
-          {stationName && <span className="flex items-center gap-2"><Building2 className="h-3.5 w-3.5 shrink-0 text-accent" /> {stationName} · {lang === "ar" ? "حد المحطات" : "Station limit"}: {profile.maxStations || "∞"}</span>}
+        <div>
+          <div style={{ fontSize: "10px", color: MUTED, letterSpacing: "0.06em" }}>
+            {ar ? "تاريخ التعيين" : "HIRE DATE"}
+          </div>
+          <div style={{ fontSize: "13px", fontWeight: 500, marginTop: "7px", color: NAVY }}>{tenure}</div>
         </div>
       </div>
-      {galleryOpen && (
-        <BannerGallery
-          onSelect={(url) => updateEmployeeProfile(companyId, employee.id, { bannerUrl: url })}
-          onUpload={() => bannerInput.current?.click()}
-          onClose={() => setGalleryOpen(false)}
-        />
-      )}
     </div>
+    </IdentityCard>
   );
 }

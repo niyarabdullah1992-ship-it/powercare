@@ -1,6 +1,8 @@
 // Single source of truth for which sections each role can see —
 // used by the sidebar/mobile nav and the dashboards' quick-access shortcuts.
 
+import { SMART_SECTION_ROUTES } from "@/lib/smartPositions";
+
 const BASE = [
   "/app",
   "/app/daily-report",
@@ -14,7 +16,6 @@ const BASE = [
   "/app/expenses",
   "/app/signing",
   "/app/work-proof",
-  "/app/client-proof",
   "/app/assistant",
   "/app/complaints",
   "/app/performance",
@@ -23,24 +24,32 @@ const BASE = [
 ];
 const MANAGER_EXTRA = ["/app/safety", "/app/hiring"];
 const EXEC_EXTRA = ["/app/hr", "/app/org", "/app/settings", "/app/payroll", "/app/hiring"];
-const SMART_SECTION_ROUTES = {
-  complaints: "/app/complaints", safety: "/app/safety", payroll: "/app/payroll",
-  performance: "/app/performance", attendance: "/app/attendance",
-  hr: "/app/hr", inventory: "/app/inventory", hiring: "/app/hiring",
-};
+
 const PLAN_ROUTE_SECTIONS = {
-  "/app/assistant": "assistant", "/app/daily-report": "reports", "/app/reports": "reports",
+  "/app/assistant": "assistant",
+  "/app/daily-report": "reports",
+  "/app/reports": "reports",
   "/app/tasks": "tasks",
-  "/app/inventory": "inventory", "/app/attendance": "attendance",
-  "/app/shifts": "attendance", "/app/leave": "attendance",
-  "/app/hr": "hr", "/app/org": "hr", "/app/settings": "hr",
+  "/app/inventory": "inventory",
+  "/app/attendance": "attendance",
+  "/app/shifts": "attendance",
+  "/app/leave": "attendance",
+  "/app/hr": "hr",
+  "/app/org": "hr",
+  "/app/settings": "hr",
   "/app/hiring": "hr",
-  "/app/performance": "performance", "/app/expenses": "expenses", "/app/payroll": "payroll",
-  "/app/safety": "safety", "/app/complaints": "complaints", "/app/files": "files",
-  "/app/signing": "signing", "/app/chat": "chat",
+  "/app/performance": "performance",
+  "/app/expenses": "expenses",
+  "/app/payroll": "payroll",
+  "/app/safety": "safety",
+  "/app/complaints": "complaints",
+  "/app/files": "files",
+  "/app/signing": "signing",
+  "/app/chat": "chat",
+  "/app/work-proof": "signing",
 };
 
-const routeSection = (pathname) => Object.entries(PLAN_ROUTE_SECTIONS).find(([route]) => pathname === route || pathname.startsWith(route + "/"))?.[1];
+const routeSection = (pathname) => Object.entries(PLAN_ROUTE_SECTIONS).find(([route]) => pathname === route || pathname.startsWith(`${route}/`))?.[1];
 export function canUsePlanFeature(company, feature) { return (company?.planConfig?.enabledFeatures || []).includes(feature); }
 export function canAccessPlanPath(pathname, company) {
   const section = routeSection(pathname);
@@ -65,7 +74,6 @@ export function allowedNavFor(user, data, company) {
     EXEC_EXTRA.forEach((p) => allowed.add(p));
   }
   if (role === "pgm") allowed.add("/app/payroll");
-  // Employees holding an HR position access workforce management through HR.
   if (user.hrLevelId) {
     allowed.add("/app/hr");
     allowed.add("/app/org");
@@ -77,12 +85,21 @@ export function allowedNavFor(user, data, company) {
   if (user.id === data?.ownerId) {
     EXEC_EXTRA.forEach((p) => allowed.add(p));
   }
+
   const smartPosition = (data?.smartPositions || []).find((position) => position.employeeId === user.id);
-  if (smartPosition && user.id !== data?.ownerId) {
-    Object.entries(SMART_SECTION_ROUTES).forEach(([department, route]) => {
-      if (!smartPosition.permissions?.[department]) allowed.delete(route);
+  const smartPerms = smartPosition?.permissions || {};
+  const hasSmartGrants = Object.values(smartPerms).some((access) => access && access !== "hidden");
+  if (smartPosition && user.id !== data?.ownerId && hasSmartGrants) {
+    Object.entries(SMART_SECTION_ROUTES).forEach(([department, routes]) => {
+      const list = Array.isArray(routes) ? routes : routes ? [routes] : [];
+      if (!list.length) return;
+      if (smartPerms[department]) return;
+      if (department === "hiring" && smartPerms.hr) return;
+      if (department === "hr" && smartPerms.hr) return;
+      list.forEach((route) => allowed.delete(route));
     });
   }
+
   [...allowed].forEach((route) => { if (!canAccessPlanPath(route, company)) allowed.delete(route); });
   return allowed;
 }
@@ -90,10 +107,12 @@ export function allowedNavFor(user, data, company) {
 export function canAccessPath(pathname, user, data, company) {
   if (!canAccessPlanPath(pathname, company)) return false;
   const allowed = allowedNavFor(user, data, company);
-  const smartRoute = Object.values(SMART_SECTION_ROUTES).find((item) => pathname === item || pathname.startsWith(item + "/"));
+  const smartRoute = Object.values(SMART_SECTION_ROUTES)
+    .flatMap((routes) => (Array.isArray(routes) ? routes : routes ? [routes] : []))
+    .find((item) => pathname === item || pathname.startsWith(`${item}/`));
   if (smartRoute && !allowed.has(smartRoute)) return false;
   const gated = ["/app/hr", "/app/org", "/app/settings", "/app/payroll", "/app/hiring", "/app/safety"];
-  const hit = gated.find((g) => pathname === g || pathname.startsWith(g + "/"));
+  const hit = gated.find((g) => pathname === g || pathname.startsWith(`${g}/`));
   if (hit) return allowed.has(hit);
   return true;
 }

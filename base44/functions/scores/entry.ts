@@ -7,7 +7,7 @@ import {
   reportingPointsFor,
   HIERARCHY_OF_CONTROLS,
 } from "../../shared/hseDerivations.ts";
-import { PERF_WEIGHTS, scoreBoard } from "../../shared/perfDerivations.ts";
+import { PERF_WEIGHTS, countPersonalHseDuty, scoreBoard } from "../../shared/perfDerivations.ts";
 import { taskPoints } from "../../shared/opsDerivations.ts";
 
 const SAFETY_CATEGORY = "safety";
@@ -92,14 +92,14 @@ Deno.serve(async (req) => {
       const scope = body.stationId ? String(body.stationId) : null;
       const stations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
       const emps = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId });
-      const scopedStations = scope ? stations.filter((s: { id?: string }) => s.id === scope) : stations;
+      const scopedStations = scope ? stations.filter((s: { id?: string }) => String(s.id) === scope) : stations;
       const scopedEmps = scope
-        ? emps.filter((e: { stationId?: string }) => e.stationId === scope)
+        ? emps.filter((e: { stationId?: string }) => String(e.stationId) === scope)
         : emps.filter((e: { companyId?: string }) => e.companyId === auth.companyId);
       const headcount = Math.max(scopedEmps.length, scopedStations.reduce((n: number, s: { crew?: number }) => n + (Number(s.crew) || 0), 0), scopedEmps.length || 1);
 
       const safety = await loadSafety();
-      const scopedSafety = scope ? safety.filter((r: { stationId?: string }) => r.stationId === scope) : safety;
+      const scopedSafety = scope ? safety.filter((r: { stationId?: string }) => String(r.stationId) === scope) : safety;
 
       let lti = 0;
       let restrict = 0;
@@ -287,6 +287,7 @@ Deno.serve(async (req) => {
             return String(t.approvedAt).slice(0, 10) <= String(t.dueAt).slice(0, 10);
           }).length / approved.length) * 100)
           : 0;
+        const duty = countPersonalHseDuty(safety, eid, e.name);
         return {
           employeeId: eid,
           name: e.name,
@@ -295,6 +296,10 @@ Deno.serve(async (req) => {
           closure: closureByStation[e.stationId] || 0,
           reportPts: reportByEmp[eid] || 0,
           coverPts: Number(e.coverPoints) || 0,
+          assignedOpen: duty.assignedOpen,
+          assignedClosed: duty.assignedClosed,
+          assignedTotal: duty.assignedTotal,
+          personalNotes: duty.personalNotes,
         };
       });
 

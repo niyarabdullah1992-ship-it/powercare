@@ -30,6 +30,7 @@ export async function authPowerCareSession(base44, companyId, sessionToken) {
           email: String(employee.email || '').toLowerCase(),
           role: employee.role,
           stationId: employee.stationId || null,
+          managedStations: Array.isArray(employee.managedStations) ? employee.managedStations : [],
           hrLevelId: employee.hrLevelId || null,
         }
       : null;

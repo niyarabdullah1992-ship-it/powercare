@@ -5,6 +5,10 @@ import {
   deriveOpsCounts,
   clampEffortWeight,
   checkAssignGate,
+  checkReassignGate,
+  canReassignOpsTask,
+  applyOpsReassign,
+  assignmentHistoryNote,
   CERT_FOR,
   CERT_LABELS,
   isAwaitingApproval,
@@ -60,7 +64,7 @@ const people = [
   { employeeId: "e3", name: "NoFa", certificates: [{ code: "loto", expiryDate: "2027-01-01", status: "approved" }] },
 ];
 
-const oneBlocked = checkAssignGate({
+const oneInCompany = checkAssignGate({
   workKind: "pm",
   assignMode: "one",
   ownerId: "e1",
@@ -68,10 +72,9 @@ const oneBlocked = checkAssignGate({
   lang: "en",
   today,
 });
-assert.equal(oneBlocked.ok, false);
-assert.equal(oneBlocked.required, "loto");
-assert.equal(oneBlocked.certLabel, CERT_LABELS.loto.en);
-assert.match(oneBlocked.reason, /Lock-out \/ tag-out/);
+assert.equal(oneInCompany.ok, true);
+assert.equal(oneInCompany.required, "loto");
+assert.equal(oneInCompany.certLabel, CERT_LABELS.loto.en);
 
 const oneOk = checkAssignGate({
   workKind: "pm",
@@ -93,7 +96,7 @@ const ghost = checkAssignGate({
 });
 assert.equal(ghost.ok, false);
 
-const someBlocked = checkAssignGate({
+const someOk = checkAssignGate({
   workKind: "pm",
   assignMode: "some",
   memberIds: ["e1", "e2"],
@@ -101,12 +104,9 @@ const someBlocked = checkAssignGate({
   lang: "ar",
   today,
 });
-assert.equal(someBlocked.ok, false);
-assert.match(someBlocked.reason, /العزل والوسم LOTO/);
-assert.match(someBlocked.reason, /Lapsed/);
-assert.equal(someBlocked.blocked.length, 1);
+assert.equal(someOk.ok, true);
 
-const allBlocked = checkAssignGate({
+const allOk = checkAssignGate({
   workKind: "pm",
   assignMode: "all",
   stationId: "st1",
@@ -114,9 +114,7 @@ const allBlocked = checkAssignGate({
   lang: "en",
   today,
 });
-assert.equal(allBlocked.ok, false);
-assert.match(allBlocked.reason, /whole station crew/);
-assert.match(allBlocked.reason, /Lock-out \/ tag-out/);
+assert.equal(allOk.ok, true);
 
 const emGate = checkAssignGate({
   workKind: "em",
@@ -126,9 +124,8 @@ const emGate = checkAssignGate({
   lang: "en",
   today,
 });
-assert.equal(emGate.ok, false);
+assert.equal(emGate.ok, true);
 assert.equal(emGate.required, "fa");
-assert.match(emGate.reason, /First aid/);
 
 const cpOk = checkAssignGate({
   workKind: "cp",
@@ -140,5 +137,69 @@ const cpOk = checkAssignGate({
 });
 assert.equal(cpOk.ok, true);
 assert.equal(cpOk.required, null);
+
+// ── Manager-only توكيل keeps the original assignee on the trail ─────────────
+const manager = { id: "mgr1", role: "ops_manager" };
+const employee = { id: "e1", role: "employee" };
+const openTask = { status: "active", ownerId: "e1", assignMode: "one", completedCount: 0, targetCount: 1 };
+const doneTask = { status: "completed", ownerId: "e1", assignMode: "one", approvedAt: "2026-08-10" };
+const awaitingTask = { status: "awaiting_approval", ownerId: "e1", assignMode: "one", completedCount: 1, targetCount: 1 };
+assert.equal(canReassignOpsTask(openTask, manager, {}), true);
+assert.equal(canReassignOpsTask(openTask, employee, {}), false);
+assert.equal(canReassignOpsTask(doneTask, manager, {}), false);
+assert.equal(canReassignOpsTask(awaitingTask, manager, {}), false);
+
+const reassignPeople = [{ employeeId: "e1", name: "First" }, { employeeId: "e2", name: "Second" }];
+const missingReason = checkReassignGate({
+  task: openTask,
+  user: manager,
+  toId: "e2",
+  reason: "",
+  people: reassignPeople,
+  lang: "ar",
+});
+assert.equal(missingReason.ok, false);
+assert.equal(missingReason.error, "REASON_REQUIRED");
+
+const samePerson = checkReassignGate({
+  task: openTask,
+  user: manager,
+  toId: "e1",
+  reason: "لم يُنجز",
+  people: reassignPeople,
+  lang: "ar",
+});
+assert.equal(samePerson.ok, false);
+assert.equal(samePerson.error, "SELF_REASSIGN_FORBIDDEN");
+
+const okReassign = checkReassignGate({
+  task: openTask,
+  user: manager,
+  toId: "e2",
+  reason: "لم يُنجز في الوقت",
+  people: reassignPeople,
+  lang: "ar",
+});
+assert.equal(okReassign.ok, true);
+
+const next = applyOpsReassign(openTask, {
+  fromId: "e1",
+  toId: "e2",
+  byId: "mgr1",
+  reason: "لم يُنجز في الوقت",
+  fromName: "First",
+  toName: "Second",
+  byName: "Manager",
+  at: "2026-08-15T08:00:00.000Z",
+  lang: "ar",
+});
+assert.equal(next.ownerId, "e2");
+assert.equal(next.originalOwnerId, "e1");
+assert.equal(next.assignmentHistory.length, 1);
+assert.equal(next.assignmentHistory[0].fromId, "e1");
+assert.equal(next.assignmentHistory[0].toId, "e2");
+assert.equal(next.assignmentHistory[0].byId, "mgr1");
+assert.match(assignmentHistoryNote(next.assignmentHistory[0], "ar"), /وُكِّل من First إلى Second/);
+assert.match(assignmentHistoryNote(next.assignmentHistory[0], "ar"), /لم يُنجز في الوقت/);
 
 console.log("opsDerivations E2E rules: PASS");

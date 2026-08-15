@@ -17,8 +17,9 @@ import AppErrorBoundary from '@/components/AppErrorBoundary';
 import { canAccessPath, canAccessPlanPath } from '@/lib/navVisibility';
 import { isBase44BackendConfigured } from '@/lib/localPreview';
 
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { applyStoredPlatformTheme } from '@/lib/platformTheme';
 
 // Landing stays eager so the first paint is instant; every other page is
 // lazy-loaded on demand — the initial bundle shrinks dramatically.
@@ -39,7 +40,6 @@ const SalesDeck = lazy(() => import('./pages/SalesDeck'));
 const Careers = lazy(() => import('./pages/Careers'));
 const Workspace = lazy(() => import('./pages/Workspace'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const MyTasks = lazy(() => import('./pages/MyTasks'));
 const Operations = lazy(() => import('./pages/Operations'));
 const StationChat = lazy(() => import('./pages/StationChat'));
 const Complaints = lazy(() => import('./pages/Complaints'));
@@ -76,37 +76,39 @@ const TruePerformanceDoc = lazy(() => import('./pages/TruePerformanceDoc'));
 const Inventory = lazy(() => import('./pages/Inventory'));
 const Expenses = lazy(() => import('./pages/Expenses'));
 const StationExpenses = lazy(() => import('./pages/StationExpenses'));
-const ClientProof = lazy(() => import('./pages/ClientProof'));
 const WorkProof = lazy(() => import('./pages/WorkProof'));
 const Recruitment = lazy(() => import('./pages/Recruitment'));
 const ProofVerify = lazy(() => import('./pages/ProofVerify'));
 
-// After the first page is interactive, quietly download the most-used pages in
-// the background so navigating to them later is instant.
-if (typeof window !== "undefined") {
-  window.addEventListener("load", () => {
-    if (!localStorage.getItem("powercare_session")) return;
-    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 5000));
-    idle(() => {
-      import('./pages/Dashboard');
-      import('./pages/Operations');
-      import('./pages/MyTasks');
-      import('./pages/Attendance');
-      import('./pages/FileSigning');
-    });
-  }, { once: true });
+// Start the workspace chunk immediately when a session already exists so /app
+// does not wait for window load — that delay was a blank spinner then a jump.
+if (typeof window !== "undefined" && localStorage.getItem("powercare_session")) {
+  import('./pages/Dashboard');
+  import('./pages/Operations');
+  import('./pages/Attendance');
+  import('./pages/FileSigning');
 }
+
+const LOADER_STYLE = { background: "#F7F8FA", color: "#14284B" };
 
 function PageLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Loader2 className="w-6 h-6 animate-spin text-accent" />
+    <div className="min-h-screen flex items-center justify-center" style={LOADER_STYLE}>
+      <Loader2 className="w-6 h-6 animate-spin" style={{ color: "#14284B" }} />
+    </div>
+  );
+}
+
+function InteriorLoader() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center">
+      <Loader2 className="w-6 h-6 animate-spin" style={{ color: "#14284B" }} />
     </div>
   );
 }
 
 function RequireAuth({ children }) {
-  const { session, company, data, currentUser, planLoading } = usePowerCareAuth();
+  const { session, company, data, currentUser } = usePowerCareAuth();
   const location = useLocation();
   if (!session) {
     return (
@@ -119,12 +121,19 @@ function RequireAuth({ children }) {
   }
   // While the workspace is still loading (fresh device / restored account),
   // show a spinner instead of the blank page that pages render without a user.
-  if (!data || planLoading || (session.userId && !currentUser)) return <PageLoader />;
+  if (!data || (session.userId && !currentUser)) return <PageLoader />;
   if (!canAccessPath(location.pathname, currentUser, data, company)) return <Navigate to={canAccessPlanPath(location.pathname, company) ? "/app" : "/pricing"} replace />;
-  return <TrialExpiryGate company={company}><Layout>{children}</Layout></TrialExpiryGate>;
+  return (
+    <TrialExpiryGate company={company}>
+      <Layout>
+        <Suspense fallback={<InteriorLoader />}>{children}</Suspense>
+      </Layout>
+    </TrialExpiryGate>
+  );
 }
 
 function AppRoutes() {
+  const isPlatform = useLocation().pathname.startsWith("/app");
   return (
     <Suspense fallback={<PageLoader />}>
     <Routes>
@@ -153,7 +162,7 @@ function AppRoutes() {
       <Route path="/powercare-presentation" element={<PowerCarePresentation />} />
       <Route path="/powercare-profile" element={<PowerCareProfile />} />
       <Route path="/powercare-sap-comparison" element={<PowerCareSapComparisonV2 />} />
-      <Route path="/powercare-sap-comparison-v2" element={<PowerCareSapComparisonV2 />} />
+      <Route path="/powercare-sap-comparison-v2" element={<Navigate to="/powercare-sap-comparison" replace />} />
       <Route path="/acwa-powercare-proposal" element={<AcwaComprehensiveProposal />} />
       <Route path="/acwa-executive-brief" element={<Navigate to="/acwa-powercare-proposal" replace />} />
       <Route path="/acwa-pilot-proposal" element={<Navigate to="/acwa-powercare-proposal" replace />} />
@@ -170,7 +179,9 @@ function AppRoutes() {
       <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/app/executive" element={<Navigate to="/app" replace />} />
       <Route path="/app/tasks" element={<RequireAuth><Operations /></RequireAuth>} />
-      <Route path="/app/tasks-classic" element={<RequireAuth><MyTasks /></RequireAuth>} />
+      <Route path="/app/tasks-classic" element={<Navigate to="/app/tasks" replace />} />
+      <Route path="/app/my-tasks" element={<Navigate to="/app/tasks" replace />} />
+      <Route path="/MyTasks" element={<Navigate to="/app/tasks" replace />} />
       <Route path="/app/chat" element={<RequireAuth><StationChat /></RequireAuth>} />
 
       <Route path="/app/complaints" element={<RequireAuth><Complaints /></RequireAuth>} />
@@ -185,6 +196,8 @@ function AppRoutes() {
       <Route path="/app/daily-report" element={<RequireAuth><DailyReport /></RequireAuth>} />
       <Route path="/app/reports" element={<RequireAuth><Reports /></RequireAuth>} />
       <Route path="/app/attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
+      <Route path="/app/attendance/shifts" element={<RequireAuth><Attendance /></RequireAuth>} />
+      <Route path="/app/attendance/leave" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/shifts" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/leave" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/files" element={<RequireAuth><Files /></RequireAuth>} />
@@ -192,7 +205,7 @@ function AppRoutes() {
       <Route path="/app/expenses" element={<RequireAuth><Expenses /></RequireAuth>} />
       <Route path="/app/stations/:stationId/expenses" element={<RequireAuth><StationExpenses /></RequireAuth>} />
       <Route path="/app/signing" element={<RequireAuth><FileSigning /></RequireAuth>} />
-      <Route path="/app/client-proof" element={<RequireAuth><ClientProof /></RequireAuth>} />
+      <Route path="/app/client-proof" element={<Navigate to="/app/work-proof" replace />} />
       <Route path="/app/work-proof" element={<RequireAuth><WorkProof /></RequireAuth>} />
       <Route path="/app/assistant" element={<RequireAuth><Assistant /></RequireAuth>} />
       <Route path="/app/help" element={<RequireAuth><Help /></RequireAuth>} />
@@ -200,9 +213,16 @@ function AppRoutes() {
       <Route path="/api/*" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
-    <PlatformMusicButton />
+    <PlatformMusicButton inPlatform={isPlatform} />
     </Suspense>
   );
+}
+
+function PublicThemeBoot() {
+  useEffect(() => {
+    applyStoredPlatformTheme();
+  }, []);
+  return null;
 }
 
 function App() {
@@ -210,6 +230,7 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
+          <PublicThemeBoot />
           <ScrollToTop />
           <I18nProvider>
             <PowerCareAuthProvider>

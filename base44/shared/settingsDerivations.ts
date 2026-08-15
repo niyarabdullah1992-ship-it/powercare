@@ -136,9 +136,9 @@ export function deriveVerificationMode(geofenceVerificationRequired: boolean): {
       geofenceVerificationRequired: true,
       verificationMode: "geofence_proof",
       checkInIsProof: true,
-      wordingAr: "التحقق عبر الموقع الجغرافي للمحطة",
+      wordingAr: "التحقق عبر الموقع الجغرافي للفرع",
       wordingEn: "Verified against the station geofence",
-      statusAr: "مفعّل — لا يُقبل تسجيل خارج نطاق المحطة إلا بمراجعة",
+      statusAr: "مفعّل — لا يُقبل تسجيل خارج نطاق الفرع إلا بمراجعة",
       statusEn: "On — a check-in outside the station radius needs review",
       noteAr:
         "قرار لمالك الحساب وحده. إيقافه يجعل التسجيل إقرارًا من الموظف لا إثباتًا.",
@@ -209,7 +209,7 @@ export function checkGeofenceConfigGate(input: {
     return {
       ok: false,
       error: "INVALID_COORDS",
-      reason: "إحداثيات المحطة غير صالحة أو ناقصة.",
+      reason: "إحداثيات الفرع غير صالحة أو ناقصة.",
       reasonEn: "Station coordinates are missing or invalid.",
     };
   }
@@ -297,7 +297,7 @@ export function checkLocationAgainstGeofence(input: {
     return {
       ok: false,
       error: "GEOFENCE_NOT_CONFIGURED",
-      reason: "نطاق المحطة الجغرافي غير مضبوط بعد.",
+      reason: "نطاق الفرع الجغرافي غير مضبوط بعد.",
       reasonEn: "Station geofence is not configured yet.",
       verificationMode: mode.verificationMode,
     };
@@ -309,7 +309,7 @@ export function checkLocationAgainstGeofence(input: {
     return {
       ok: false,
       error: "OUTSIDE_GEOFENCE",
-      reason: "التسجيل خارج نطاق المحطة — يلزم قبول بمبرر أو رفض.",
+      reason: "التسجيل خارج نطاق الفرع — يلزم قبول بمبرر أو رفض.",
       reasonEn: "Outside the station geofence — accept with a reason or reject.",
       verificationMode: mode.verificationMode,
       verdict: "outside" as GeoVerdict,

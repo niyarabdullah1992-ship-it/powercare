@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ListTodo, ClipboardCheck, Warehouse, ReceiptText, FileText, Megaphone, ShieldQuestion, UserCog } from "lucide-react";
+import { LayoutDashboard, ListTodo, ClipboardCheck, Warehouse, ReceiptText, FileText, MessageCircle, ShieldQuestion, UserCog, Camera } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { allowedNavFor } from "@/lib/navVisibility";
@@ -9,12 +9,13 @@ import { mobilePathsFor } from "@/lib/quickNavigation";
 const TABS = [
   { to: "/app", icon: LayoutDashboard, key: "dashboard", end: true },
   { to: "/app/tasks", icon: ListTodo, key: "myTasks" },
+  { to: "/app/work-proof", icon: Camera, key: "workProof" },
   { to: "/app/attendance", icon: ClipboardCheck, key: "attendanceScheduling" },
   { to: "/app/inventory", icon: Warehouse, key: "inventory" },
   { to: "/app/expenses", icon: ReceiptText, key: "expenses" },
   { to: "/app/hr", icon: UserCog, key: "hr" },
   { to: "/app/daily-report", icon: FileText, key: "reports" },
-  { to: "/app/complaints", icon: Megaphone, key: "allComplaints" },
+  { to: "/app/complaints", icon: MessageCircle, key: "allComplaints" },
   { to: "/app/safety", icon: ShieldQuestion, key: "safety" },
 ];
 
@@ -78,9 +79,10 @@ export default function BottomTabBar() {
               key={tab.to}
               onClick={() => openTab(tab)}
               className={`relative flex min-h-[52px] min-w-[44px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-2 text-[10px] font-body transition-colors ${
-                active ? "bg-accent/10 text-accent" : "text-muted-foreground hover:bg-muted"
+                active ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted"
               }`}
             >
+              {active ? <span aria-hidden className="absolute inset-x-3 top-0 h-[3px] rounded-b bg-foreground" /> : null}
               <tab.icon className="w-5 h-5" strokeWidth={active ? 2.25 : 1.75} />
               <span className={`truncate max-w-[72px] ${active ? "font-semibold" : ""}`}>{t(tab.key) || tab.key}</span>
             </button>

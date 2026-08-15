@@ -66,8 +66,30 @@ export function checkHazardCloseGate({ controlId, likelihood = 3, severity = 3, 
   if (residual >= 10) {
     return { ok: false, error: "RESIDUAL_HIGH", reason: "الخطورة المتبقية ما زالت عالية — ارفع مستوى الضابط قبل الإغلاق.", inherent: inn, residual };
   }
-  if (!beforePhoto || !afterPhoto) {
-    return { ok: false, error: "PHOTOS_REQUIRED", reason: "يلزم إثبات مصوّر قبل وبعد قبل الإغلاق.", inherent: inn, residual };
+  const hasPhoto = (p) => {
+    if (!p) return false;
+    if (typeof p === "string") return p.trim().length > 0;
+    return Boolean(p.url || p.file_url);
+  };
+  if (!hasPhoto(beforePhoto)) {
+    return {
+      ok: false,
+      error: "BEFORE_PHOTO_REQUIRED",
+      reason: "لا صورة قبل لهذا الخطر — ارفع صورة قبل عند الفتح أو عند الإغلاق.",
+      reasonEn: "No before photo on this hazard — upload one at open or at close.",
+      inherent: inn,
+      residual,
+    };
+  }
+  if (!hasPhoto(afterPhoto)) {
+    return {
+      ok: false,
+      error: "AFTER_PHOTO_REQUIRED",
+      reason: "يلزم رفع صورة بعد قبل الإغلاق.",
+      reasonEn: "Upload an after photo before closing.",
+      inherent: inn,
+      residual,
+    };
   }
   return { ok: true, inherent: inn, residual, controlId };
 }

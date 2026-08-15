@@ -4,6 +4,9 @@ import {
   deriveProofStage,
   deriveProofCounts,
   checkApproveWorkProofGate,
+  checkEndWorkProofGate,
+  checkEditWorkProofGate,
+  shouldSealOnEnd,
   checkAcceptGate,
 } from "../src/lib/workProofDerivations.js";
 
@@ -47,6 +50,24 @@ assert.equal(geoOk.ok, true);
 const sealed = { ...base, status: "sealed", sealId: sealIdFor(base) };
 assert.equal(checkAcceptGate(sealed).ok, true);
 assert.equal(checkAcceptGate({ ...sealed, afterStamp: "changed" }).error, "SEAL_INVALID");
+
+const inProgress = { ...base, afterStamp: null, status: "await" };
+const endOk = checkEndWorkProofGate({ proof: inProgress, actorUserId: "tech2", sameBranch: true });
+assert.equal(endOk.ok, true);
+const endBlock = checkEndWorkProofGate({ proof: inProgress, actorUserId: "tech2", sameBranch: false, isManager: false });
+assert.equal(endBlock.error, "BRANCH_REQUIRED");
+const endRaiser = checkEndWorkProofGate({ proof: inProgress, actorUserId: "tech1" });
+assert.equal(endRaiser.ok, true);
+assert.equal(endRaiser.autoApprove, true);
+assert.equal(shouldSealOnEnd(), true);
+const endedByRaiser = { ...base, endedAt: new Date().toISOString(), endedById: "tech1" };
+assert.equal(checkApproveWorkProofGate({ proof: endedByRaiser, actorUserId: "tech1" }).ok, true);
+
+const fresh = { ...inProgress, createdAt: new Date().toISOString() };
+assert.equal(checkEditWorkProofGate({ proof: fresh, actorUserId: "tech1" }).ok, true);
+const stale = { ...inProgress, createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString() };
+assert.equal(checkEditWorkProofGate({ proof: stale, actorUserId: "tech1" }).error, "EDIT_WINDOW_CLOSED");
+assert.equal(checkEditWorkProofGate({ proof: { ...fresh, status: "sealed", sealId: sealIdFor(base) }, actorUserId: "tech1" }).error, "LOCKED_AFTER_SEAL");
 
 const counts = deriveProofCounts([base, { ...base, ref: "WP-2", afterStamp: null }, sealed]);
 assert.equal(counts.ready, 1);

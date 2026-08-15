@@ -1,9 +1,9 @@
+
 import React, { useState } from "react";
 import { Link2, Plus, X, Trash2 } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/ConfirmDeleteDialog";
+import { ACCENT, CARD, MUTED, NAVY, SURFACE, field, ui } from "@/lib/chatUiStyles";
 
-// Owner-only control panel: link two or more stations (or HQ) into their own shared
-// chat room, and create as many independent groups as needed.
 export default function ChatGroupManager({ t, stations, groups, onAdd, onDelete }) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
@@ -26,35 +26,108 @@ export default function ChatGroupManager({ t, stations, groups, onAdd, onDelete 
   };
 
   return (
-    <div className="p-3 rounded-lg border border-border space-y-3">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <Link2 className="w-4 h-4 text-accent shrink-0" />
+    <div
+      style={{
+        borderRadius: 12,
+        border: "1px solid #E2E8F0",
+        background: SURFACE,
+        padding: "12px 14px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0 }}>
+          <span
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 9,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "#ECFDF3",
+              color: ACCENT,
+              flexShrink: 0,
+            }}
+          >
+            <Link2 style={{ width: 15, height: 15 }} strokeWidth={1.75} />
+          </span>
           <div>
-            <p className="text-sm font-medium font-body">{t("chatGroups")}</p>
-            <p className="text-xs text-muted-foreground font-body">{t("chatGroupsNote")}</p>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: NAVY }}>{t("chatGroups")}</p>
+            <p style={{ margin: "3px 0 0", fontSize: 11, lineHeight: 1.55, color: MUTED }}>{t("chatGroupsNote")}</p>
           </div>
         </div>
         <button
+          type="button"
           onClick={() => setShowForm((s) => !s)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body border border-border hover:bg-muted shrink-0"
+          style={{
+            ...ui.btnGhost,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            height: 32,
+            padding: "0 11px",
+          }}
         >
-          <Plus className="w-3.5 h-3.5" /> {t("addChatGroup")}
+          <Plus style={{ width: 14, height: 14 }} /> {t("addChatGroup")}
         </button>
       </div>
 
       {groups.length > 0 && (
-        <div className="space-y-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {groups.map((g) => (
-            <div key={g.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-background border border-border">
-              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                <span className="text-xs font-medium font-body">{g.name}</span>
+            <div
+              key={g.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+                padding: "9px 11px",
+                borderRadius: 10,
+                background: CARD,
+                border: "1px solid #E2E8F0",
+              }}
+            >
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, minWidth: 0 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: NAVY }}>{g.name}</span>
                 {(g.stationIds || []).map((id) => (
-                  <span key={id} className="px-2 py-0.5 rounded-full text-[10px] bg-muted text-muted-foreground font-body">{stationLabel(id)}</span>
+                  <span
+                    key={id}
+                    style={{
+                      padding: "2px 8px",
+                      borderRadius: 8,
+                      fontSize: 10,
+                      fontWeight: 500,
+                      background: SURFACE,
+                      color: MUTED,
+                      border: "1px solid #E2E8F0",
+                    }}
+                  >
+                    {stationLabel(id)}
+                  </span>
                 ))}
               </div>
               <ConfirmDeleteDialog
-                trigger={<button className="p-1.5 rounded-md hover:bg-muted text-muted-foreground shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>}
+                trigger={(
+                  <button
+                    type="button"
+                    style={{
+                      ...ui.btnGhost,
+                      width: 32,
+                      height: 32,
+                      padding: 0,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: MUTED,
+                    }}
+                  >
+                    <Trash2 style={{ width: 14, height: 14 }} />
+                  </button>
+                )}
                 onConfirm={() => onDelete(g.id)}
               />
             </div>
@@ -63,41 +136,110 @@ export default function ChatGroupManager({ t, stations, groups, onAdd, onDelete 
       )}
 
       {groups.length === 0 && !showForm && (
-        <p className="text-xs text-muted-foreground font-body">{t("noChatGroups")}</p>
+        <p style={{ margin: 0, fontSize: 11, color: MUTED }}>{t("noChatGroups")}</p>
       )}
 
       {showForm && (
-        <div className="p-3 rounded-md border border-border bg-background space-y-2.5">
-          <div className="flex items-center gap-2">
+        <div
+          style={{
+            padding: 12,
+            borderRadius: 10,
+            border: "1px solid #E2E8F0",
+            background: CARD,
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("groupName")}
-              className="flex-1 px-3 py-1.5 rounded-md border border-input text-xs font-body"
+              style={{ ...field, flex: 1, height: 34, background: SURFACE }}
             />
-            <button type="button" onClick={() => setShowForm(false)} className="p-1.5 rounded-md hover:bg-muted"><X className="w-3.5 h-3.5" /></button>
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              style={{
+                ...ui.btnGhost,
+                width: 34,
+                height: 34,
+                padding: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <X style={{ width: 14, height: 14 }} />
+            </button>
           </div>
-          <p className="text-[11px] text-muted-foreground font-body">{t("selectStationsForGroup")}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-48 overflow-y-auto rounded-md border border-border p-1.5">
-            {options.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => toggleStation(o.id)}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-body text-start transition ${selected.includes(o.id) ? "bg-foreground text-background" : "hover:bg-muted"}`}
-              >
-                <span className={`w-3.5 h-3.5 rounded-sm border shrink-0 flex items-center justify-center ${selected.includes(o.id) ? "bg-background border-background" : "border-current"}`}>
-                  {selected.includes(o.id) && <span className="w-2 h-2 rounded-[1px] bg-foreground" />}
-                </span>
-                <span className="truncate">{o.name}</span>
-              </button>
-            ))}
+          <p style={{ margin: 0, fontSize: 11, color: MUTED }}>{t("selectStationsForGroup")}</p>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+              gap: 4,
+              maxHeight: 180,
+              overflowY: "auto",
+              borderRadius: 10,
+              border: "1px solid #E2E8F0",
+              padding: 6,
+            }}
+          >
+            {options.map((o) => {
+              const on = selected.includes(o.id);
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => toggleStation(o.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 10px",
+                    borderRadius: 8,
+                    border: on ? `1px solid color-mix(in oklab, ${ACCENT} 40%, #fff)` : "1px solid transparent",
+                    background: on ? "color-mix(in oklab, #1E9E63 10%, #fff)" : "transparent",
+                    color: NAVY,
+                    fontSize: 12,
+                    fontWeight: on ? 600 : 500,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    textAlign: "start",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: 4,
+                      border: on ? `1px solid ${ACCENT}` : "1px solid #CBD5E1",
+                      background: on ? ACCENT : CARD,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {on && <span style={{ width: 6, height: 6, borderRadius: 1, background: CARD }} />}
+                  </span>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.name}</span>
+                </button>
+              );
+            })}
           </div>
           <button
             type="button"
             onClick={submit}
             disabled={!name.trim() || selected.length < 2}
-            className="px-3 py-1.5 rounded-md bg-foreground text-background text-xs font-body disabled:opacity-40"
+            style={{
+              ...ui.btnPrimary,
+              opacity: !name.trim() || selected.length < 2 ? 0.4 : 1,
+              cursor: !name.trim() || selected.length < 2 ? "not-allowed" : "pointer",
+              alignSelf: "flex-start",
+            }}
           >
             {t("save")}
           </button>

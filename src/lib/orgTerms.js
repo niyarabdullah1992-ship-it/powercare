@@ -1,15 +1,11 @@
 /**
- * Organization terminology — single source for company vs government wording.
- * Read orgType from company settings; never hardcode محطة/دائرة in pages.
- *
- * settings.orgType: "company" | "gov"
+ * Organization terminology — company wording only.
  */
 
 export const ORG_TYPES = Object.freeze({ COMPANY: "company", GOV: "gov" });
 
-export function getOrgType(dataOrSettings) {
-  const settings = dataOrSettings?.settings ?? dataOrSettings ?? {};
-  return settings.orgType === ORG_TYPES.GOV ? ORG_TYPES.GOV : ORG_TYPES.COMPANY;
+export function getOrgType(_dataOrSettings) {
+  return ORG_TYPES.COMPANY;
 }
 
 export function isGovOrg(dataOrSettings) {
@@ -28,15 +24,15 @@ export function buildOrgTerms(orgType, lang = "ar") {
     return {
       orgType: gov ? ORG_TYPES.GOV : ORG_TYPES.COMPANY,
       isGov: gov,
-      station: gov ? "دائرة" : "محطة",
-      stations: gov ? "الدوائر" : "المحطات",
-      theStation: gov ? "الدائرة" : "المحطة",
-      aStation: gov ? "دائرة" : "محطة",
-      stationManager: gov ? "مدير الدائرة" : "مدير المحطة",
-      allStations: gov ? "جميع الدوائر" : "جميع المحطات",
-      addStation: gov ? "إضافة دائرة" : "إضافة محطة",
-      selectStation: gov ? "اختر الدائرة" : "اختر المحطة",
-      stationTeam: gov ? "فريق الدائرة" : "فريق المحطة",
+      station: gov ? "دائرة" : "فرع",
+      stations: gov ? "الدوائر" : "الفروع",
+      theStation: gov ? "الدائرة" : "الفرع",
+      aStation: gov ? "دائرة" : "فرع",
+      stationManager: gov ? "مدير الدائرة" : "مدير الفرع",
+      allStations: gov ? "جميع الدوائر" : "جميع الفروع",
+      addStation: gov ? "إضافة دائرة" : "إضافة فرع",
+      selectStation: gov ? "اختر الدائرة" : "اختر الفرع",
+      stationTeam: gov ? "فريق الدائرة" : "فريق الفرع",
       branch: gov ? "المقر" : "الفرع",
       branches: gov ? "المقار" : "الفروع",
       theBranch: gov ? "المقر" : "الفرع",
@@ -59,15 +55,15 @@ export function buildOrgTerms(orgType, lang = "ar") {
   return {
     orgType: gov ? ORG_TYPES.GOV : ORG_TYPES.COMPANY,
     isGov: gov,
-    station: gov ? "Department" : "Station",
-    stations: gov ? "Departments" : "Stations",
-    theStation: gov ? "the department" : "the station",
-    aStation: gov ? "a department" : "a station",
-    stationManager: gov ? "Department manager" : "Station manager",
-    allStations: gov ? "All departments" : "All stations",
-    addStation: gov ? "Add department" : "Add station",
-    selectStation: gov ? "Select department" : "Select station",
-    stationTeam: gov ? "Department team" : "Station team",
+    station: gov ? "Department" : "Branch",
+    stations: gov ? "Departments" : "Branches",
+    theStation: gov ? "the department" : "the branch",
+    aStation: gov ? "a department" : "a branch",
+    stationManager: gov ? "Department manager" : "Branch manager",
+    allStations: gov ? "All departments" : "All branches",
+    addStation: gov ? "Add department" : "Add branch",
+    selectStation: gov ? "Select department" : "Select branch",
+    stationTeam: gov ? "Department team" : "Branch team",
     branch: gov ? "Headquarters" : "Branch",
     branches: gov ? "Sites" : "Branches",
     theBranch: gov ? "headquarters" : "the branch",

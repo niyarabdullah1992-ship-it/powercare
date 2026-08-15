@@ -3,11 +3,11 @@
 // حتى لا ينزّل موظف عادي بيانات زملائه (إشعاراتهم، مذكراتهم، بلاغاتهم).
 
 // self     = سجلات المستدعي فقط
-// scope    = محطات المستدعي (أو المسند إليه)
+// scope    = فروع المستدعي (أو المسند إليه)
 // handlers = سلسلة معالجة البلاغات فقط (senior / manage_complaints)، ويرى المُبلِّغ بلاغاته
 // payroll  = senior أو manage_payroll
 // senior   = الإدارة العليا فقط
-// shared   = بيانات تشغيلية مشتركة (محطات، إعدادات، هيكل) — مرئية للجميع
+// shared   = بيانات تشغيلية مشتركة (فروع، إعدادات، هيكل) — مرئية للجميع
 export const BLOB_VISIBILITY = {
   notifications: "self",
   journalEntries: "self",
@@ -62,7 +62,7 @@ export function filterBlobPayload(category, payload, context) {
     if (context.permissions.has("manage_complaints") || context.isComplaintHandler) return rows;
     return rows.filter((item) => context.ownReportIds.has(item.id));
   }
-  // scope: محطات المستدعي، أو ما أُسند إليه شخصياً، أو ما أنشأه
+  // scope: فروع المستدعي، أو ما أُسند إليه شخصياً، أو ما أنشأه
   const stations = context.scope === null ? null : new Set(context.scope || []);
   return rows.filter((item) => {
     if (recordOwner(item) === context.userId) return true;

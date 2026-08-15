@@ -1,5 +1,5 @@
 export function quickPathsFor(role) {
-  if (role === "employee") return ["/app/attendance", "/app/tasks", "/app/daily-report", "/app/complaints"];
+  if (role === "employee") return ["/app/attendance", "/app/tasks", "/app/work-proof", "/app/daily-report"];
   if (["director", "ops_manager", "pgm"].includes(role)) return ["/app", "/app/hr", "/app/daily-report", "/app/tasks"];
   if (role === "station_manager") return ["/app/tasks", "/app/attendance", "/app", "/app/daily-report"];
   if (role === "inventory_keeper") return ["/app/inventory", "/app/tasks", "/app/attendance", "/app/daily-report"];
@@ -8,7 +8,7 @@ export function quickPathsFor(role) {
 }
 
 export function mobilePathsFor(role) {
-  if (role === "employee") return ["/app/attendance", "/app/tasks", "/app/complaints", "/app"];
+  if (role === "employee") return ["/app/attendance", "/app/tasks", "/app/work-proof", "/app"];
   if (["director", "ops_manager", "pgm"].includes(role)) return ["/app", "/app/hr", "/app/daily-report", "/app/tasks"];
   if (role === "station_manager") return ["/app", "/app/attendance", "/app/daily-report", "/app/tasks"];
   if (role === "inventory_keeper") return ["/app/inventory", "/app/attendance", "/app/tasks", "/app"];

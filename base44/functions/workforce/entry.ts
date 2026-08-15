@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
       const schedules = await loadSchedules();
       const schedule = schedules.find((s: { stationId?: string }) => s.stationId === stationId);
       if (!schedule) {
-        return { error: "SCHEDULE_NOT_FOUND", reason: "لا يوجد جدول لهذه المحطة." };
+        return { error: "SCHEDULE_NOT_FOUND", reason: "لا يوجد جدول لهذا الفرع." };
       }
       const emps = await loadEmployees();
       const stationCrew = emps.filter((e: { stationId?: string | null }) => (e.stationId || null) === stationId || !stationId);

@@ -32,7 +32,7 @@ function demoAssets(employeeId: string) {
   return [
     { id: `a1_${prefix}`, name: "جهاز لاسلكي Motorola DP4400", serial: "RAD-2291", status: "outstanding" as const },
     { id: `a2_${prefix}`, name: "حاسب محمول Dell Latitude", serial: "LAP-0847", status: "outstanding" as const },
-    { id: `a3_${prefix}`, name: "بطاقة دخول المحطة", serial: "BDG-1042", status: "outstanding" as const },
+    { id: `a3_${prefix}`, name: "بطاقة دخول الفرع", serial: "BDG-1042", status: "outstanding" as const },
     { id: `a4_${prefix}`, name: "معدات وقاية شخصية — طقم كامل", serial: "PPE-3310", status: "outstanding" as const },
   ];
 }

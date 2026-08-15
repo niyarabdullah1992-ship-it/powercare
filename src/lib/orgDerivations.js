@@ -18,6 +18,95 @@ export const BASELINE_MATRIX = [
   [SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE],
 ];
 
+export const EMPLOYEE_ROLE_IDX = ORG_ROLES.indexOf("employee");
+
+const BUILTIN_TITLE_ALIASES = new Set([
+  "ops_director", "station_manager", "supervisor", "safety", "employee",
+  "مدير عمليات", "مدير فرع", "مشرف", "سلامة", "موظف",
+  "ops director", "station mgr", "branch manager",
+].map((s) => s.toLocaleLowerCase("ar")));
+
+export function normalizeJobTitle(title) {
+  return String(title || "").trim().replace(/\s+/g, " ");
+}
+
+export function titleSlug(title) {
+  return normalizeJobTitle(title).toLocaleLowerCase("ar");
+}
+
+export function titlePermKey(sectionIdx, titleId) {
+  return `${sectionIdx}:title:${titleSlug(titleId)}`;
+}
+
+export function checkRemoveTitleGate(titleKey) {
+  const id = titleSlug(titleKey);
+  if (!id) {
+    return { ok: false, error: "TITLE_REQUIRED", reason: "المسمى مطلوب.", reasonEn: "A job title is required." };
+  }
+  if (BUILTIN_TITLE_ALIASES.has(id) || ORG_ROLES.includes(id)) {
+    return {
+      ok: false,
+      error: "SYSTEM_TITLE",
+      reason: "لا يُحذف المسمى النظامي من المصفوفة.",
+      reasonEn: "A system role cannot be removed from the matrix.",
+    };
+  }
+  return { ok: true, id };
+}
+
+export function stripJobTitleFromData(data = {}, titleKey) {
+  const gate = checkRemoveTitleGate(titleKey);
+  if (!gate.ok) return 0;
+  const id = gate.id;
+  let cleared = 0;
+  const matches = (raw) => titleSlug(raw) === id;
+  for (const employee of data.employees || []) {
+    if (employee.profile && matches(employee.profile.position)) {
+      employee.profile.position = "";
+      cleared += 1;
+    }
+    if (matches(employee.position)) employee.position = "";
+    if (matches(employee.jobTitle)) employee.jobTitle = "";
+    if (matches(employee.title)) employee.title = "";
+  }
+  for (const node of data.orgTree || []) {
+    if (node.type === "employee" && matches(node.title)) {
+      node.title = "";
+      cleared += 1;
+    }
+  }
+  for (const position of data.smartPositions || []) {
+    if (matches(position.title)) {
+      position.title = "";
+      cleared += 1;
+    }
+  }
+  return cleared;
+}
+
+export function collectJobTitles(data = {}, removed = []) {
+  const blocked = new Set((removed || []).map((item) => titleSlug(item)).filter(Boolean));
+  const seen = new Map();
+  const add = (raw) => {
+    const label = normalizeJobTitle(raw);
+    if (!label) return;
+    const id = titleSlug(label);
+    if (!id || BUILTIN_TITLE_ALIASES.has(id) || blocked.has(id)) return;
+    const prev = seen.get(id);
+    if (prev) prev.count += 1;
+    else seen.set(id, { id, label, count: 1 });
+  };
+  for (const employee of data.employees || []) {
+    add(employee.profile?.position || employee.position || employee.jobTitle || employee.title);
+  }
+  for (const node of data.orgTree || []) {
+    if (node.type === "employee") add(node.title);
+  }
+  for (const position of data.smartPositions || []) add(position.title);
+  for (const job of data.hcmFoundation?.jobs || []) add(job.title);
+  return [...seen.values()].sort((a, b) => a.label.localeCompare(b.label, "ar"));
+}
+
 export function permKey(sectionIdx, roleIdx) {
   return `${sectionIdx}:${roleIdx}`;
 }
@@ -71,10 +160,42 @@ export function checkSetPermGate(nextScope) {
   return { ok: true, scope: Number(nextScope) };
 }
 
-export function derivePermissionMatrix(overrides = {}) {
+export function effectiveTitleScope(sectionIdx, titleId, overrides = {}) {
+  const baseline = baselineScope(sectionIdx, EMPLOYEE_ROLE_IDX);
+  const key = titlePermKey(sectionIdx, titleId);
+  const raw = overrides[key];
+  const overrideScope = raw == null ? null : typeof raw === "number" ? raw : raw.scope;
+  if (overrideScope != null && overrideScope !== SCOPE.DELEGATED) {
+    return { scope: overrideScope, derived: false, overridden: true, baseline };
+  }
+  return { scope: baseline, derived: baseline === SCOPE.DELEGATED, overridden: false, baseline };
+}
+
+function normalizedTitles(titles = []) {
+  const seen = new Set();
+  const out = [];
+  for (const item of titles) {
+    const label = normalizeJobTitle(typeof item === "string" ? item : item?.label || item?.id);
+    const id = titleSlug(typeof item === "string" ? item : item?.id || label);
+    if (!id || seen.has(id) || BUILTIN_TITLE_ALIASES.has(id)) continue;
+    seen.add(id);
+    out.push({ id, label: label || id, count: Number(item?.count) || 0 });
+  }
+  return out;
+}
+
+export function derivePermissionMatrix(overrides = {}, titles = []) {
+  const extra = normalizedTitles(titles);
   return ORG_SECTIONS.map((sectionId, si) => ({
     sectionId,
-    cells: ORG_ROLES.map((roleId, ri) => ({ roleId, ...effectiveScope(si, ri, overrides) })),
+    cells: [
+      ...ORG_ROLES.map((roleId, ri) => ({ roleId, ...effectiveScope(si, ri, overrides) })),
+      ...extra.map((title) => ({
+        roleId: `title:${title.id}`,
+        titleKey: title.label,
+        ...effectiveTitleScope(si, title.id, overrides),
+      })),
+    ],
   }));
 }
 
@@ -157,13 +278,175 @@ export function checkCreateDelegationGate({ fromId, toId, end, perm } = {}) {
 export function deriveEscalationFromBranches(branches = []) {
   return branches
     .filter((b) => b.managerId || b.managerName)
-    .map((b) => ({
-      branchId: b.id,
-      branchName: b.name,
-      managerId: b.managerId || null,
-      managerName: b.managerName || null,
-      region: b.region || null,
-    }));
+    .map((b) => {
+      const legacy = b.region === "west" || b.region === "east";
+      const group = String(b.group || b.orgGroup || (legacy ? "" : b.region) || "").trim() || null;
+      return {
+        branchId: b.id,
+        branchName: b.name,
+        managerId: b.managerId || null,
+        managerName: b.managerName || null,
+        group,
+        region: group,
+      };
+    });
+}
+
+function employeeIndex(employees = []) {
+  const empById = new Map();
+  for (const e of employees) {
+    const id = e.id || e.employeeId;
+    if (id) empById.set(String(id), e);
+  }
+  return empById;
+}
+
+function stepFromEmp(emp, title) {
+  return {
+    employeeId: String(emp.id || emp.employeeId || ""),
+    name: emp.name || "",
+    title: title || emp.profile?.position || emp.position || "",
+    role: emp.role || "",
+  };
+}
+
+/** Manual ladders keyed by station id. Accepts object or persisted array. */
+export function branchEscalationMap(data) {
+  const raw = data?.branchEscalationChains;
+  if (!raw) return {};
+  if (Array.isArray(raw)) {
+    const out = {};
+    for (const row of raw) {
+      const sid = String(row?.stationId || row?.id || "");
+      const ids = row?.employeeIds || row?.ids;
+      if (sid && Array.isArray(ids)) out[sid] = ids.map(String);
+    }
+    return out;
+  }
+  return Object.fromEntries(
+    Object.entries(raw).map(([sid, ids]) => [String(sid), Array.isArray(ids) ? ids.map(String) : []]),
+  );
+}
+
+export function serializeBranchEscalationMap(map) {
+  return Object.entries(map || {}).map(([stationId, employeeIds]) => ({
+    id: stationId,
+    stationId,
+    employeeIds: Array.isArray(employeeIds) ? employeeIds.map(String) : [],
+  }));
+}
+
+/** Manual list for a branch, if the user has customized that branch's ladder. */
+export function manualBranchEscalationIds(stationId, data) {
+  const sid = stationId ? String(stationId) : "";
+  if (!sid) return null;
+  const map = branchEscalationMap(data);
+  return Object.prototype.hasOwnProperty.call(map, sid) ? map[sid] : null;
+}
+
+/** Resolved employee ids for a branch ladder (manual or auto). */
+export function branchEscalationIds(stationId, data) {
+  return deriveBranchEscalationChain(stationId, data).map((step) => String(step.employeeId));
+}
+
+/**
+ * Auto ladder from the org tree only — no manual overrides.
+ */
+export function deriveAutoBranchEscalationChain(stationId, data) {
+  const employees = Array.isArray(data?.employees) ? data.employees : [];
+  const nodes = Array.isArray(data?.orgTree) ? data.orgTree : [];
+  const stations = Array.isArray(data?.stations) ? data.stations : [];
+  const empById = employeeIndex(employees);
+  const byNodeId = new Map(nodes.map((n) => [n.id, n]));
+  const chain = [];
+  const seen = new Set();
+
+  const pushEmp = (emp, title) => {
+    if (!emp) return;
+    const id = String(emp.id || emp.employeeId || "");
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+    chain.push(stepFromEmp(emp, title));
+  };
+
+  const sid = stationId ? String(stationId) : "";
+  if (!sid) return chain;
+
+  const station = stations.find((s) => String(s.id || s.stationId) === sid) || null;
+  const stationNode = nodes.find((n) => n.type === "station" && String(n.refId) === sid) || null;
+
+  // Only this branch's own manager — never a manager of another branch
+  // who happens to list this station in managedStations.
+  if (station?.managerId) {
+    pushEmp(empById.get(String(station.managerId)), "مدير الفرع");
+  } else {
+    const localMgr = employees.find((e) => e.role === "station_manager" && String(e.stationId) === sid);
+    pushEmp(localMgr, "مدير الفرع");
+  }
+
+  const walkUp = (start) => {
+    let cursor = start;
+    const visited = new Set();
+    while (cursor) {
+      if (visited.has(cursor.id)) break;
+      visited.add(cursor.id);
+      if (cursor.type === "station" && String(cursor.refId) !== sid) break;
+      if (cursor.type === "employee") {
+        pushEmp(empById.get(String(cursor.refId)), cursor.title || "");
+      }
+      cursor = cursor.parentId ? byNodeId.get(cursor.parentId) : null;
+    }
+  };
+
+  if (stationNode) {
+    walkUp(stationNode.parentId ? byNodeId.get(stationNode.parentId) : null);
+  } else if (station?.managerId) {
+    const mgrNode = nodes.find((n) => n.type === "employee" && String(n.refId) === String(station.managerId));
+    walkUp(mgrNode?.parentId ? byNodeId.get(mgrNode.parentId) : null);
+  }
+
+  // Apex is the company owner only. A "director" seated under another
+  // branch is that branch's path, not this one's extra step.
+  const owner = employees.find((e) => e.isOwner || e.role === "owner" || String(e.id) === String(data?.ownerId));
+  if (owner) pushEmp(owner, "المالك");
+
+  return chain;
+}
+
+/**
+ * Per-branch escalation: custom order if edited, otherwise the tree path.
+ */
+export function deriveBranchEscalationChain(stationId, data) {
+  const sid = stationId ? String(stationId) : "";
+  const manual = manualBranchEscalationIds(sid, data);
+  if (!manual) return deriveAutoBranchEscalationChain(sid, data);
+  const empById = employeeIndex(data?.employees);
+  const chain = [];
+  const seen = new Set();
+  for (const id of manual) {
+    const emp = empById.get(id);
+    if (!emp || seen.has(id)) continue;
+    seen.add(id);
+    chain.push(stepFromEmp(emp));
+  }
+  return chain;
+}
+
+/** Station ids whose escalation ladder includes this employee. */
+export function escalationStationsForEmployee(employeeId, data) {
+  const eid = String(employeeId || "");
+  if (!eid) return [];
+  return (data?.stations || [])
+    .map((s) => String(s.id || s.stationId || ""))
+    .filter(Boolean)
+    .filter((sid) => deriveBranchEscalationChain(sid, data).some((step) => String(step.employeeId) === eid));
+}
+
+export function sharedEscalationLabel(stationCount, ar, level) {
+  const n = Number(level) || 0;
+  if (!n || stationCount < 2) return "";
+  if (stationCount >= 3) return ar ? `تصعيد ${n} · كل الفروع` : `Escalation ${n} · all branches`;
+  return ar ? `تصعيد ${n} · فرعين` : `Escalation ${n} · 2 branches`;
 }
 
 export function deriveOrgStats(branches = [], delegations = [], now = new Date()) {

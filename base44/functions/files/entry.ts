@@ -272,7 +272,7 @@ Deno.serve(async (req) => {
         name: gate.name,
         parentId,
         stationId: gate.companyWide ? "all" : gate.stationId,
-        stationName: body.stationName || (gate.companyWide ? "كل المحطات" : null),
+        stationName: body.stationName || (gate.companyWide ? "كل الفروع" : null),
         companyWide: gate.companyWide,
         kind: inferKind(gate.name, body.kind),
         sizeBytes: body.sizeBytes != null ? Number(body.sizeBytes) : null,
@@ -329,7 +329,7 @@ Deno.serve(async (req) => {
           companyId: auth.companyId, id: uid("file"), type: "file",
           name: "عقد الصيانة السنوي — الخليج للخدمات الفنية.pdf",
           parentId: fContracts, kind: "PDF", sizeBytes: 2_400_000,
-          companyWide: true, stationId: "all", stationName: "كل المحطات",
+          companyWide: true, stationId: "all", stationName: "كل الفروع",
           uploadedBy: "منى العتيبي", createdAt: iso(4), updatedAt: iso(2),
         },
         {

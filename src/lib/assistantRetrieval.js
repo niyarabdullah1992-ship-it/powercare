@@ -4,7 +4,7 @@ const SECTION_HINTS = {
   expenses: ["expense", "cost", "مصروف", "تكلفة"], payroll: ["payroll", "salary", "راتب", "رواتب"],
   safety: ["safety", "incident", "risk", "سلامة", "حادث", "خطر"], dailyReports: ["report", "تقرير"],
   complaints: ["complaint", "شكوى", "بلاغ"], schedules: ["schedule", "shift", "جدول", "وردية"],
-  files: ["file", "document", "ملف", "مستند"], employees: ["employee", "staff", "موظف"], stations: ["station", "محطة"],
+  files: ["file", "document", "ملف", "مستند"], employees: ["employee", "staff", "موظف"], stations: ["station", "فرع"],
 };
 
 export function selectAssistantContext(context, question) {

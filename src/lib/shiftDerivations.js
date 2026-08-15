@@ -192,3 +192,52 @@ export function checkPublishGates({
   const failed = checks.find((c) => !c.ok) || null;
   return { checks, blocked: !!failed, failed, openCells, weeklyMaxHours, coveragePct };
 }
+
+export const STANDARD_SHIFT_WINDOWS = [
+  { key: "morning", ar: "صباحي", en: "Morning", start: "07:00", end: "15:00" },
+  { key: "evening", ar: "مسائي", en: "Evening", start: "15:00", end: "23:00" },
+  { key: "night", ar: "ليلي", en: "Night", start: "23:00", end: "07:00" },
+];
+
+export function shiftWindowKey(start, end) {
+  return `${String(start || "").slice(0, 5)}-${String(end || "").slice(0, 5)}`;
+}
+
+export function nextDistinctShift(shiftTypes = [], ar = true) {
+  const used = new Set((shiftTypes || []).map((s) => shiftWindowKey(s.start, s.end)));
+  const unused = STANDARD_SHIFT_WINDOWS.find((slot) => !used.has(shiftWindowKey(slot.start, slot.end)));
+  if (!unused) return null;
+  return { label: ar ? unused.ar : unused.en, start: unused.start, end: unused.end };
+}
+
+export function duplicateShiftGroups(shiftTypes = []) {
+  const map = new Map();
+  for (const shift of shiftTypes || []) {
+    const key = shiftWindowKey(shift.start, shift.end);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(shift);
+  }
+  return [...map.values()].filter((group) => group.length > 1);
+}
+
+function keepScore(shift) {
+  const label = String(shift?.label || "").trim();
+  if (/^(صباحي|مسائي|ليلي|Morning|Evening|Night)$/i.test(label)) return 3;
+  if (/^(وردية|Shift)\s*\d+$/i.test(label)) return 0;
+  return 1;
+}
+
+/** Keep one row per time window; extras are merged into the kept id. */
+export function planDuplicateShiftMerge(shiftTypes = []) {
+  const dropIds = [];
+  const keepByDrop = {};
+  for (const group of duplicateShiftGroups(shiftTypes)) {
+    const sorted = [...group].sort((a, b) => keepScore(b) - keepScore(a));
+    const keep = sorted[0];
+    for (const extra of sorted.slice(1)) {
+      dropIds.push(extra.id);
+      keepByDrop[extra.id] = keep.id;
+    }
+  }
+  return { dropIds, keepByDrop };
+}

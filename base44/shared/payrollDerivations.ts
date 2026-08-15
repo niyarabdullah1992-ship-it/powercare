@@ -6,6 +6,8 @@ export const SHIFT_HOURS_PER_DAY = 8;
 export const DAYS_PER_MONTH = 30;
 export const OT_RATE = 1.5; // Article 107 — 150% of hourly wage
 export const WPS_DEADLINE_DAY = 3; // before end of day 3 of the following month
+/** Article 90 — deductions may not exceed half the contractual monthly wage. */
+export const ARTICLE_90_CAP = 0.5;
 
 export type PayrollLineLike = {
   id?: string;
@@ -73,6 +75,36 @@ export function lineNet(line: PayrollLineLike) {
   return lineGross(line) - (Number(line.deductions) || 0);
 }
 
+/** Contractual monthly wage (base + allowances) — Qiwa / Art. 90 denominator. */
+export function contractWage(line: PayrollLineLike) {
+  return (Number(line.base) || 0) + (Number(line.allowances) || 0);
+}
+
+/** Maximum deductible amount under Article 90 (50% of contractual wage). */
+export function article90MaxDeduction(line: PayrollLineLike) {
+  return Math.round(contractWage(line) * ARTICLE_90_CAP * 100) / 100;
+}
+
+/** Gate: block when documented deductions exceed half the contractual wage. */
+export function checkArticle90Gate(line: PayrollLineLike) {
+  const wage = contractWage(line);
+  const deductions = Number(line.deductions) || 0;
+  if (wage <= 0) return { ok: true as const, wage, deductions, max: 0 };
+  const max = article90MaxDeduction(line);
+  if (deductions <= max) {
+    return { ok: true as const, wage, deductions, max };
+  }
+  return {
+    ok: false as const,
+    error: "ARTICLE_90_EXCEEDED" as const,
+    reason: `مجموع الخصومات (${deductions.toLocaleString()} ر.س) يتجاوز نصف الأجر (${max.toLocaleString()} ر.س) — المادة 90 من نظام العمل.`,
+    reasonEn: `Total deductions (${deductions} SAR) exceed half the contractual wage (${max} SAR) — Labour Law Art. 90.`,
+    wage,
+    deductions,
+    max,
+  };
+}
+
 export function lineIssues(line: PayrollLineLike) {
   const issues: string[] = [];
   if (!Number.isFinite(Number(line?.base)) || Number(line.base) < 0) issues.push("BASE_REQUIRED");
@@ -82,6 +114,7 @@ export function lineIssues(line: PayrollLineLike) {
     if (v != null && (!Number.isFinite(Number(v)) || Number(v) < 0)) issues.push("INVALID_AMOUNTS");
   }
   if (lineNet(line) <= 0) issues.push("NET_REQUIRED");
+  if (!checkArticle90Gate(line).ok) issues.push("ARTICLE_90_EXCEEDED");
   const currency = String(line?.currency || "SAR").toUpperCase();
   if (!/^[A-Z]{3}$/.test(currency)) issues.push("CURRENCY_REQUIRED");
   return [...new Set(issues)];
@@ -105,6 +138,8 @@ export function enrichLine(line: PayrollLineLike) {
     gross: lineGross({ ...line, overtimePay: otPay }),
     net: lineNet({ ...line, overtimePay: otPay }),
     qiwaMatched: qiwaMatches(line),
+    contractWage: contractWage(line),
+    article90Max: article90MaxDeduction(line),
     issues,
   };
 }
@@ -163,6 +198,7 @@ export function deriveRunTotals(items: PayrollLineLike[] = []) {
     qiwaTotal: enriched.length,
     issueCount,
     otRule: "ARTICLE_107_150",
+    deductionCapRule: "ARTICLE_90_50",
   };
 }
 

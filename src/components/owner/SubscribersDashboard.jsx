@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { RefreshCw, Loader2, Search } from "lucide-react";
 import SubscriberRow from "@/components/owner/SubscriberRow";
@@ -132,7 +132,7 @@ export default function SubscribersDashboard({ ar }) {
                   <SubscriberRow key={r.id || r.accountId || i} row={r} ar={ar} onChanged={load} />
                 ))}
               </tbody>
-              <tfoot><tr className="border-t-2 border-landing-gold/40 bg-secondary"><td colSpan={8} className="px-4 py-4"><div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-xs"><span>{ar ? "قبل الضريبة" : "Before VAT"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.subtotal, "USD", ar)}</strong></span><span>{ar ? "الضريبة 15%" : "VAT 15%"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.vat, "USD", ar)}</strong></span><span className="text-sm text-accent-foreground">{ar ? "الإجمالي شامل الضريبة" : "Total including VAT"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.total, "USD", ar)}</strong></span></div></td></tr></tfoot>
+              <tfoot><tr className="border-t-2 border-[#E2E8F0]/40 bg-secondary"><td colSpan={8} className="px-4 py-4"><div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-2 text-xs"><span>{ar ? "قبل الضريبة" : "Before VAT"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.subtotal, "USD", ar)}</strong></span><span>{ar ? "الضريبة 15%" : "VAT 15%"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.vat, "USD", ar)}</strong></span><span className="text-sm text-accent-foreground">{ar ? "الإجمالي شامل الضريبة" : "Total including VAT"}: <strong dir="ltr">{formatSubscriptionMoney(tableTotals.total, "USD", ar)}</strong></span></div></td></tr></tfoot>
               </table>
           </div>
         </>

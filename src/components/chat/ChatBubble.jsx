@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Trash2 } from "lucide-react";
 import { CommentAttachments } from "@/components/tasks/CommentFiles";
+import { ACCENT, MUTED, NAVY, NAVY_FILL } from "@/lib/platformStyles";
 
-const DELETE_WINDOW_MS = 2 * 60 * 1000; // messages can be deleted within 2 minutes of sending
+const DELETE_WINDOW_MS = 2 * 60 * 1000;
 
+/** Platform.dc.html chat bubbles — navy / surface, green author accent. */
 export default function ChatBubble({ msg, isMine, lang, onDelete }) {
   const time = new Date(msg.created_at).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" });
   const [now, setNow] = useState(Date.now());
   const deletable = isMine && onDelete && now - new Date(msg.created_at).getTime() <= DELETE_WINDOW_MS;
 
-  // Re-check every 10s so the delete button disappears once the 2-minute window closes.
   useEffect(() => {
     if (!deletable) return;
     const interval = setInterval(() => setNow(Date.now()), 10000);
@@ -17,25 +18,77 @@ export default function ChatBubble({ msg, isMine, lang, onDelete }) {
   }, [deletable]);
 
   return (
-    <div className={`flex ${isMine ? "justify-end" : "justify-start"} group`}>
-      <div className={`max-w-[75%] flex flex-col gap-1 ${isMine ? "items-end" : "items-start"}`}>
-        {!isMine && <p className="text-[11px] text-muted-foreground font-body px-1">{msg.user_name}</p>}
-        <div className="flex items-center gap-1.5">
-          {deletable && (
-            <button
-              onClick={() => onDelete(msg)}
-              className="opacity-0 group-hover:opacity-100 transition p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive"
-              aria-label="delete"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          )}
-          <div className={`px-3.5 py-2.5 rounded-2xl text-sm font-body ${isMine ? "bg-foreground text-background" : "bg-muted text-foreground"}`}>
-            {msg.text && <p className="whitespace-pre-wrap break-words">{msg.text}</p>}
-            <CommentAttachments files={msg.files} />
-          </div>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: isMine ? "flex-end" : "flex-start",
+        alignItems: "flex-end",
+        gap: 8,
+      }}
+    >
+      {deletable && (
+        <button
+          type="button"
+          onClick={() => onDelete(msg)}
+          aria-label="delete"
+          style={{
+            border: "1px solid #E2E8F0",
+            background: "#fff",
+            color: MUTED,
+            cursor: "pointer",
+            padding: 6,
+            borderRadius: 8,
+            fontFamily: "inherit",
+            display: "inline-flex",
+          }}
+        >
+          <Trash2 style={{ width: 14, height: 14 }} />
+        </button>
+      )}
+      <div
+        style={isMine
+          ? {
+              maxWidth: "74%",
+              background: NAVY_FILL,
+              color: "#fff",
+              borderRadius: "14px 14px 4px 14px",
+              padding: "11px 14px",
+              boxShadow: "0 1px 0 rgba(20,40,75,.12)",
+            }
+          : {
+              maxWidth: "74%",
+              background: "#fff",
+              border: "1px solid #E2E8F0",
+              borderRadius: "14px 14px 14px 4px",
+              padding: "11px 14px",
+              boxShadow: "0 1px 0 #E2E8F0",
+            }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: isMine ? "#6EE7B7" : ACCENT,
+            marginBottom: 5,
+          }}
+        >
+          {isMine ? (lang === "ar" ? "أنت" : "You") : msg.user_name}
         </div>
-        <p className="text-[10px] text-muted-foreground font-body px-1">{time}</p>
+        {msg.text && (
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.65,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              color: isMine ? "#fff" : NAVY,
+            }}
+          >
+            {msg.text}
+          </div>
+        )}
+        <CommentAttachments files={msg.files} />
+        <div style={{ fontSize: 10, color: isMine ? "#A8B4C8" : MUTED, marginTop: 6 }}>{time}</div>
       </div>
     </div>
   );

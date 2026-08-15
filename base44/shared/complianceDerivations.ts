@@ -18,6 +18,19 @@ export const EXPIRY_WARN_DAYS = 60;
 export const NITAQAT_BANDS = ["red", "low_green", "mid_green", "high_green", "platinum"] as const;
 export type NitaqatBand = (typeof NITAQAT_BANDS)[number];
 
+export const NITAQAT_BAND_LABELS: Record<NitaqatBand, { ar: string; en: string }> = {
+  red: { ar: "أحمر", en: "Red" },
+  low_green: { ar: "أخضر منخفض", en: "Low green" },
+  mid_green: { ar: "أخضر متوسط", en: "Mid green" },
+  high_green: { ar: "أخضر مرتفع", en: "High green" },
+  platinum: { ar: "بلاتيني", en: "Platinum" },
+};
+
+export function nitaqatBandLabel(band: string | null | undefined, ar: boolean) {
+  const row = (band && NITAQAT_BAND_LABELS[band as NitaqatBand]) || NITAQAT_BAND_LABELS.red;
+  return ar ? row.ar : row.en;
+}
+
 /** Illustrative GOSI contribution rates (employee / employer) — derived totals only. */
 export const GOSI_EMPLOYEE_RATE = 0.0975;
 export const GOSI_EMPLOYER_RATE = 0.1175;
@@ -204,8 +217,8 @@ export function checkNitaqatHireGate(input: {
         ok: false as const,
         error: "NITAQAT_EFFECT_REQUIRED",
         band,
-        reason: `نطاق ${band} — يلزم بيان أثر التوظيف على السعودة قبل النشر/التعيين.`,
-        reasonEn: `Band ${band} — state the Saudization effect before posting/hiring.`,
+        reason: `نطاق ${nitaqatBandLabel(band, true)} — يلزم بيان أثر التوظيف على السعودة قبل النشر/التعيين.`,
+        reasonEn: `${nitaqatBandLabel(band, false)} band — state the Saudization effect before posting/hiring.`,
       };
     }
   }

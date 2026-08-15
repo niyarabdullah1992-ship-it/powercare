@@ -3,27 +3,189 @@ import { Search, Users, Radio, CornerDownLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SearchResults from "@/components/navigation/SearchResults";
 import { visibleEmployees, visibleStations } from "@/lib/permissions";
+import { BORDER, MUTED, NAVY, NAVY_FILL, dialogOverlay, CARD } from "@/lib/platformStyles";
+import { identityFrame } from "@/components/shared/IdentityCard";
+
+const GROUPS = {
+  daily: { ar: "دورة الإثبات", en: "Proof cycle" },
+  workforce: { ar: "القوى العاملة", en: "Workforce" },
+  compliance: { ar: "الالتزام والرعاية", en: "Care & compliance" },
+  money: { ar: "المال والأصول", en: "Money & assets" },
+  admin: { ar: "المؤسسة", en: "Institution" },
+};
+
+function groupLabel(category, ar) {
+  const row = GROUPS[category];
+  return row ? (ar ? row.ar : row.en) : (ar ? "قسم" : "Section");
+}
 
 export default function GlobalSearch({ open, onClose, items, data, currentUser, lang }) {
   const [query, setQuery] = useState("");
+  const [active, setActive] = useState(0);
   const navigate = useNavigate();
-  useEffect(() => { if (open) setQuery(""); }, [open]);
+  const ar = lang === "ar";
+
+  useEffect(() => {
+    if (open) {
+      setQuery("");
+      setActive(0);
+    }
+  }, [open]);
+
   const results = useMemo(() => {
     const text = query.trim().toLocaleLowerCase();
-    if (!text) return items.map((item) => ({ id: item.to, type: "page", label: item.label, subtitle: lang === "ar" ? "قسم" : "Section", icon: item.icon, to: item.to })).slice(0, 8);
-    const pages = items.filter((item) => item.label.toLocaleLowerCase().includes(text)).map((item) => ({ id: item.to, type: "page", label: item.label, subtitle: lang === "ar" ? "قسم" : "Section", icon: item.icon, to: item.to }));
-    const employeeScope = items.some((item) => item.to === "/app/employees") ? visibleEmployees(currentUser, data) : [currentUser];
-    const employees = employeeScope.filter((employee) => employee.name?.toLocaleLowerCase().includes(text)).map((employee) => ({ id: employee.id, type: "employee", label: employee.name, subtitle: lang === "ar" ? "موظف" : "Employee", icon: Users, to: `/app/employees/${employee.id}` }));
-    const stations = visibleStations(currentUser, data).filter((station) => station.name?.toLocaleLowerCase().includes(text)).map((station) => ({ id: station.id, type: "station", label: station.name, subtitle: lang === "ar" ? "محطة" : "Station", icon: Radio, to: `/app/stations?station=${station.id}` }));
-    return [...pages, ...employees, ...stations].slice(0, 12);
-  }, [query, items, data, lang, currentUser.id]);
+    if (!text) return [];
+
+    const pages = items
+      .filter((item) => {
+        const group = groupLabel(item.category, ar).toLocaleLowerCase();
+        return item.label.toLocaleLowerCase().includes(text) || group.includes(text);
+      })
+      .map((item) => ({
+        id: item.to,
+        type: "page",
+        label: item.label,
+        subtitle: groupLabel(item.category, ar),
+        icon: item.icon,
+        to: item.to,
+      }));
+
+    const canPeople = items.some((item) => item.to === "/app/hr" || item.to === "/app/org");
+    const employeeScope = canPeople ? visibleEmployees(currentUser, data) : [currentUser].filter(Boolean);
+    const employees = employeeScope
+      .filter((employee) => employee.name?.toLocaleLowerCase().includes(text))
+      .map((employee) => ({
+        id: employee.id,
+        type: "employee",
+        label: employee.name,
+        subtitle: ar ? "موظف" : "Employee",
+        icon: Users,
+        to: `/app/employees/${employee.id}`,
+      }));
+
+    const canStations = items.some((item) => item.to === "/app/org");
+    const stations = canStations
+      ? visibleStations(currentUser, data)
+          .filter((station) => station.name?.toLocaleLowerCase().includes(text))
+          .map((station) => ({
+            id: station.id,
+            type: "station",
+            label: station.name,
+            subtitle: ar ? "فرع" : "Station",
+            icon: Radio,
+            to: "/app/org",
+          }))
+      : [];
+
+    return [...pages, ...employees, ...stations].slice(0, 8);
+  }, [query, items, data, lang, currentUser, ar]);
+
+  useEffect(() => {
+    setActive(0);
+  }, [query]);
+
   if (!open) return null;
-  const select = (result) => { navigate(result.to); onClose(); };
-  return <div className="fixed inset-0 z-[80] flex items-start justify-center bg-foreground/35 px-4 pt-[12vh] backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card shadow-elevated">
-      <div className="flex items-center gap-3 border-b border-border px-4"><Search className="h-5 w-5 text-accent" /><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={lang === "ar" ? "ابحث عن قسم أو موظف أو محطة..." : "Search sections, employees or stations..."} className="h-14 flex-1 border-0 bg-transparent text-sm outline-none ring-0 focus-visible:ring-0" /><kbd className="rounded border border-border bg-muted px-2 py-1 text-[10px] text-muted-foreground">Esc</kbd></div>
-      <SearchResults results={results} onSelect={select} lang={lang} />
-      <div className="flex items-center gap-2 border-t border-border px-4 py-2 text-[10px] text-muted-foreground"><CornerDownLeft className="h-3 w-3" />{lang === "ar" ? "اختر نتيجة للانتقال" : "Select a result to open"}</div>
+
+  const select = (result) => {
+    if (!result) return;
+    navigate(result.to);
+    onClose();
+  };
+
+  const onKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onClose();
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActive((i) => Math.min(Math.max(results.length - 1, 0), i + 1));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActive((i) => Math.max(0, i - 1));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      select(results[active]);
+    }
+  };
+
+  const typed = query.trim().length > 0;
+
+  return (
+    <div
+      style={{ ...dialogOverlay, alignItems: "flex-start", paddingTop: "18vh" }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        style={{
+          ...identityFrame,
+          width: 380,
+          maxWidth: "calc(100vw - 32px)",
+          minWidth: 0,
+          alignSelf: "center",
+          boxShadow: "0 24px 60px rgba(20,40,75,.22)",
+        }}
+        dir={ar ? "rtl" : "ltr"}
+      >
+        <div aria-hidden style={{ height: 3, background: NAVY_FILL }} />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "6px 10px",
+            borderBottom: `1px solid ${BORDER}`,
+            background: CARD,
+          }}
+        >
+          <Search style={{ width: 16, height: 16, color: MUTED, flexShrink: 0 }} />
+          <input
+            autoFocus
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder={ar ? "ابحث عن قسم أو موظف أو فرع…" : "Search sections, employees or stations…"}
+            style={{
+              flex: 1,
+              height: 32,
+              minHeight: 32,
+              border: "none",
+              background: "transparent",
+              color: NAVY,
+              fontSize: 13,
+              fontFamily: "inherit",
+              outline: "none",
+              minWidth: 0,
+            }}
+          />
+        </div>
+        <SearchResults
+          results={results}
+          active={active}
+          onSelect={select}
+          onHover={setActive}
+          lang={lang}
+          idle={!typed}
+        />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "6px 12px",
+            borderTop: `1px solid ${BORDER}`,
+            fontSize: 10,
+            color: MUTED,
+            background: CARD,
+          }}
+        >
+          <CornerDownLeft style={{ width: 11, height: 11 }} />
+          {typed
+            ? (ar ? "Enter للانتقال" : "Enter to open")
+            : (ar ? "اكتب للبحث" : "Type to search")}
+        </div>
+      </div>
     </div>
-  </div>;
+  );
 }

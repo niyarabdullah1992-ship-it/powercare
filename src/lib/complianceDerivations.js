@@ -133,16 +133,31 @@ export function deriveNitaqat(employees) {
   return { total, saudi, nonSaudi: total - saudi, rate, band, bandId: band };
 }
 
+export const NITAQAT_BAND_LABELS = {
+  red: { ar: "أحمر", en: "Red" },
+  low_green: { ar: "أخضر منخفض", en: "Low green" },
+  mid_green: { ar: "أخضر متوسط", en: "Mid green" },
+  high_green: { ar: "أخضر مرتفع", en: "High green" },
+  platinum: { ar: "بلاتيني", en: "Platinum" },
+};
+
+export function nitaqatBandLabel(band, ar) {
+  const row = NITAQAT_BAND_LABELS[band] || NITAQAT_BAND_LABELS.red;
+  return ar ? row.ar : row.en;
+}
+
 export function checkNitaqatHireGate(input) {
   const band = input.nitaqat.band;
   if (band === "red" || band === "low_green") {
     if (!input.candidateSaudi && !input.nitaqatEffectStated) {
+      const label = nitaqatBandLabel(band, true);
+      const labelEn = nitaqatBandLabel(band, false);
       return {
         ok: false,
         error: "NITAQAT_EFFECT_REQUIRED",
         band,
-        reason: `نطاق ${band} — يلزم بيان أثر التوظيف على السعودة قبل النشر/التعيين.`,
-        reasonEn: `Band ${band} — state the Saudization effect before posting/hiring.`,
+        reason: `نطاق ${label} — يلزم بيان أثر التوظيف على السعودة قبل النشر/التعيين.`,
+        reasonEn: `${labelEn} band — state the Saudization effect before posting/hiring.`,
       };
     }
   }
@@ -219,6 +234,15 @@ export function buildWpsFileRows(lines) {
   });
 }
 
+/** Named blockers for one Mudad file row — file-ready, not live send. */
+export function wpsRowBlockers(row, ar) {
+  const reasons = [];
+  if (!/^\d{10}$/.test(row?.nationalId || "")) reasons.push(ar ? "هوية غير مكتملة (10 أرقام)" : "ID incomplete (10 digits)");
+  if (!/^SA\d{22}$/.test(row?.iban || "")) reasons.push(ar ? "آيبان غير مكتمل (SA + 22)" : "IBAN incomplete (SA + 22)");
+  if (!row?.qiwaMatch) reasons.push(ar ? "أجر قوى غير مطابق" : "Qiwa wage mismatch");
+  return reasons;
+}
+
 export function checkWpsFileGate(rows) {
   const list = rows || [];
   if (!list.length) {
@@ -248,8 +272,8 @@ export function checkWpsFileGate(rows) {
         ok: false,
         error: "QIWA_MISMATCH",
         employeeId: row.employeeId,
-        reason: `عدم تطابق أجر قوى لـ ${row.employeeName || row.employeeId} — لا إرسال WPS/مدى.`,
-        reasonEn: `Qiwa wage mismatch for ${row.employeeName || row.employeeId} — cannot send WPS/Mudad.`,
+        reason: `عدم تطابق أجر قوى لـ ${row.employeeName || row.employeeId} — الملف غير جاهز.`,
+        reasonEn: `Qiwa wage mismatch for ${row.employeeName || row.employeeId} — file not ready.`,
       };
     }
   }

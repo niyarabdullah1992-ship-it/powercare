@@ -1,16 +1,18 @@
 import { PDFDocument } from "pdf-lib";
 import { base44 } from "@/api/base44Client";
-import { loadBadgeQr, makeVerificationBadgeCanvas } from "@/lib/verificationBadge";
+import { loadBadgeQr, makeVerificationBadgeCanvas, generateVerificationId } from "@/lib/verificationBadge";
 import { STAMP_FALLBACK_SPOT, STAMP_WIDTH_PERCENT, clampStampScale } from "@/lib/signatureStampGeometry";
 import { drawTextField } from "@/lib/signPdf";
-import loadExportableImage from "@/lib/loadExportableImage";
-import { getSignatureThemeIcon } from "@/lib/signatureStampThemes";
 
 // Builds the one canonical stamp image used by the web preview and the PDF.
-export async function makeSignatureStamp(sigDataUrl, name, verificationId = "", variant = "unique", theme = "heritage") {
-  const qr = verificationId ? await loadBadgeQr(verificationId) : null;
-  const [signatureImage, themeIcon] = await Promise.all([loadExportableImage(sigDataUrl), loadExportableImage(getSignatureThemeIcon(theme))]);
-  return makeVerificationBadgeCanvas(verificationId, name, qr, signatureImage, variant, theme, themeIcon).toDataURL("image/png");
+export async function makeSignatureStamp(_sigDataUrl, name, verificationId = "") {
+  const id = String(verificationId || "").trim() || generateVerificationId();
+  try {
+    const qr = await loadBadgeQr(id);
+    return makeVerificationBadgeCanvas(id, name, qr).toDataURL("image/png");
+  } catch {
+    return makeVerificationBadgeCanvas(id, name, null).toDataURL("image/png");
+  }
 }
 
 // Stamps the signer's composed stamp only in the creator-assigned fields.
