@@ -44,7 +44,7 @@ function Sheet({ children, header, footer }) {
 }
 
 // Comprehensive, verifiable employee file — mirrors the official HR document layout.
-export default function EmployeeFileDocument({ employee, company, stationName, gradeLabel, listLabel, sectionsLabel, managerName, docNumber, fingerprint, signerName, signatureStampUrl, verificationId, ar }) {
+export default function EmployeeFileDocument({ employee, company, stationName, gradeLabel, managerName, docNumber, fingerprint, signerName, signatureStampUrl, verificationId, ar }) {
   const p = employee.profile || {};
   const certs = employee.certificates || [];
   const leaves = employee.leaveRequests || [];
@@ -83,7 +83,7 @@ export default function EmployeeFileDocument({ employee, company, stationName, g
         <div className="flex items-start justify-between gap-6 border-b border-[#dfe4ea] pb-5">
           <div>
             <h1 className="text-[20px] font-bold">{employee.name}</h1>
-            <p className="mt-1 text-[11px] text-[#5b6b78]">{[p.position || employee.position, listLabel, gradeLabel, stationName].filter(Boolean).join(" · ") || "—"}</p>
+            <p className="mt-1 text-[11px] text-[#5b6b78]">{p.position || employee.position || "—"} · {gradeLabel || "—"} · {stationName || "—"}</p>
             <p className="mt-2 text-[11px]">{ar ? "الرقم الوظيفي" : "Employee no."}: <b>{employee.employeeId || employee.id?.slice(0, 8)}</b> · {ar ? "تاريخ التعيين" : "Hire date"}: <b>{fmt(p.hireDate, ar)}</b></p>
           </div>
           <span className="flex h-16 w-16 items-center justify-center rounded-lg bg-[#eef4f0] text-xl font-bold text-[#1f6f52]">{employee.name.charAt(0)}</span>
@@ -91,10 +91,6 @@ export default function EmployeeFileDocument({ employee, company, stationName, g
 
         <Section title={ar ? "البيانات الشخصية والوظيفية" : "Personal & employment data"}>
           <Rows items={[
-            [ar ? "القائمة" : "List", listLabel || "—"],
-            [ar ? "المنصب" : "Position", p.position || employee.position || "—"],
-            [ar ? "الدرجة" : "Grade", gradeLabel || "—"],
-            [ar ? "الأقسام" : "Sections", sectionsLabel || "—"],
             [ar ? "الهوية / الإقامة" : "National ID / Iqama", mask(p.nationalId)],
             [ar ? "تاريخ الميلاد" : "Birth date", fmt(p.birthDate, ar)],
             [ar ? "الجنسية" : "Nationality", p.nationality || "—"],

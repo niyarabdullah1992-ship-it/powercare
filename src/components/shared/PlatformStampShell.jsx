@@ -1,7 +1,5 @@
 import React from "react";
 import Logo from "@/components/Logo";
-import { useAuth } from "@/lib/PowerCareAuth";
-import { companyBrandFrom } from "@/lib/companyBrand";
 import { BORDER, CARD, INK, MUTED, NAVY, NAVY_FILL, SURFACE, pageCol } from "@/lib/platformStyles";
 
 /** Shared NiroVera section chrome — title, then a full-width tab bar, then body. */
@@ -18,11 +16,10 @@ export default function PlatformStampShell({
   legal,
   children,
   maxWidth = 1280,
+  flushBody = false,
 }) {
-  const { data, company } = useAuth() || {};
-  const brand = companyBrandFrom(data, company);
   const active = sections.find((section) => section.value === tool) || sections[0];
-  const subtitle = hint || active?.hint || "";
+  const subtitle = (sections.length ? (active?.hint || hint) : hint) || "";
 
   return (
     <div style={{ ...pageCol, maxWidth, margin: "0 auto", width: "100%" }} dir={ar ? "rtl" : "ltr"}>
@@ -65,7 +62,7 @@ export default function PlatformStampShell({
               border: `1px solid ${BORDER}`,
             }}
           >
-            <Logo size={24} wordmark={false} src={brand.logoUrl} />
+            <Logo size={24} wordmark={false} />
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             {kicker ? (
@@ -98,7 +95,7 @@ export default function PlatformStampShell({
               borderBottom: `1px solid ${BORDER}`,
             }}
           >
-            {sections.map(({ value, label, icon: Icon, count }) => {
+            {sections.map(({ value, label, icon: Icon, count, step }) => {
               const selected = tool === value;
               return (
                 <button
@@ -124,7 +121,26 @@ export default function PlatformStampShell({
                     textAlign: "center",
                   }}
                 >
-                  {Icon ? (
+                  {step ? (
+                    <span
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: 99,
+                        flexShrink: 0,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        background: selected ? NAVY_FILL : "transparent",
+                        color: selected ? "#fff" : MUTED,
+                        border: selected ? "none" : `1px solid ${BORDER}`,
+                      }}
+                    >
+                      {step}
+                    </span>
+                  ) : Icon ? (
                     <Icon style={{ width: 14, height: 14, color: selected ? INK : MUTED, flexShrink: 0 }} />
                   ) : null}
                   <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -171,7 +187,7 @@ export default function PlatformStampShell({
           </div>
         ) : null}
 
-        <div style={{ padding: 16, background: SURFACE }}>{children}</div>
+        <div style={{ padding: flushBody ? 0 : 16, background: SURFACE }}>{children}</div>
 
         {legal ? (
           <footer

@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { toast } from "@/components/ui/use-toast";
-import { ensureOrgStationNode, saveOrgStationName, setOrgStationManager } from "@/lib/orgTree";
+import { saveOrgStationName } from "@/lib/orgTree";
 import { deriveBranchEscalationChain, escalationStationsForEmployee, sharedEscalationLabel } from "@/lib/orgDerivations";
 import EscalationCoverageDialog from "@/components/hr/EscalationCoverageDialog";
 import { updateCompany } from "@/lib/store";
@@ -119,14 +119,6 @@ export default function OrgStructureBoard({ lang = "ar" }) {
         });
       } else {
         if (okMsg) toast({ description: okMsg });
-        if (payload.action === "renameBranch" && payload.branchId && payload.name) {
-          saveOrgStationName(company.id, payload.branchId, payload.name);
-        } else if (payload.action === "setBranchManager" && payload.branchId) {
-          setOrgStationManager(company.id, payload.branchId, payload.managerId);
-        } else if (payload.action === "createBranch") {
-          const created = remote?.branch;
-          if (created?.id) ensureOrgStationNode(company.id, created);
-        }
         applyRemote(remote);
       }
     } catch (err) {
@@ -140,7 +132,10 @@ export default function OrgStructureBoard({ lang = "ar" }) {
         setBranches((prev) => prev.map((b) => (b.id === payload.branchId ? { ...b, name: payload.name } : b)));
         if (okMsg) toast({ description: okMsg });
       } else if (payload.action === "setBranchManager" && payload.branchId) {
-        setOrgStationManager(company.id, payload.branchId, payload.managerId);
+        updateCompany(company.id, (d) => {
+          const st = (d.stations || []).find((s) => (s.stationId || s.id) === payload.branchId);
+          if (st) st.managerId = payload.managerId;
+        });
         setBranches((prev) => prev.map((b) => (
           b.id === payload.branchId
             ? { ...b, managerId: payload.managerId, managerName: payload.managerName }
@@ -159,7 +154,6 @@ export default function OrgStructureBoard({ lang = "ar" }) {
             status: "active",
           }];
         });
-        ensureOrgStationNode(company.id, { id, name: payload.name });
         setBranches((prev) => [...prev, {
           id,
           name: payload.name,

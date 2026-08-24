@@ -1,14 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { expiringDocs, isOnDuty, isProbation } from "@/lib/employeeStatus";
-import { useAuth } from "@/lib/PowerCareAuth";
-import { employeeOrgSeat } from "@/lib/orgPositions";
-import { jobGradeLabel } from "@/lib/jobGrades";
-import { trackLabel } from "@/lib/orgTracks";
 
 export default function EmployeeDirectoryTable({ employees, stationName, managerName, gradeLabel, ar }) {
   const navigate = useNavigate();
-  const { data } = useAuth();
 
   if (!employees.length) {
     return <p className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground font-body">{ar ? "لا يوجد موظفون مطابقون." : "No matching employees."}</p>;
@@ -26,8 +21,8 @@ export default function EmployeeDirectoryTable({ employees, stationName, manager
         </thead>
         <tbody>
           {employees.map((employee) => {
-            const org = employeeOrgSeat(employee, data);
-            const seat = [org.title, trackLabel(org.track, ar), jobGradeLabel(org.grade) || gradeLabel?.(employee)].filter(Boolean).join(" · ");
+            const seat = employee.profile?.position || employee.position;
+            const grade = gradeLabel(employee);
             const docs = expiringDocs(employee);
             const dept = employee.profile?.department;
             return (
@@ -52,7 +47,7 @@ export default function EmployeeDirectoryTable({ employees, stationName, manager
                 </td>
                 <td data-label={headers[1]} className="px-3 py-2">
                   {seat ? (
-                    <span className="text-foreground">{seat}</span>
+                    <span className="text-foreground">{[seat, grade].filter(Boolean).join(" · ")}</span>
                   ) : (
                     <span className="font-medium text-destructive">{ar ? "بلا مقعد — تعيين" : "No seat — assign"}</span>
                   )}

@@ -73,7 +73,7 @@ export default function PublicComplaints({ lockedType = null, underQueue = false
   const authorName = (r) => data.employees.find((e) => e.id === r.authorId)?.name || "—";
 
   const visibleReports = reportsList.filter((r) => {
-    if (!matchesStationScope(r.stationId, stationScope)) return false;
+    if (!matchesStationScope(r.stationId, stationScope, data.stations)) return false;
     if (currentUser.role === "director" || currentUser.role === "ops_manager" || isOwner) return true;
     if (currentUser.role === "station_manager") {
       const managed = currentUser.managedStations?.length ? currentUser.managedStations : [currentUser.stationId];
@@ -218,7 +218,7 @@ export default function PublicComplaints({ lockedType = null, underQueue = false
   const hrStationList = isHRStaff ? (hrStations === null ? data.stations : data.stations.filter((s) => hrStations.includes(s.id))) : [];
   const stationMap = new Map();
   [...visibleStations(currentUser, data), ...hrStationList].forEach((s) => stationMap.set(s.id, s));
-  const myStations = Array.from(stationMap.values()).filter((s) => matchesStationScope(s.id, stationScope));
+  const myStations = Array.from(stationMap.values()).filter((s) => matchesStationScope(s.id, stationScope, data.stations));
   const activeStation = scopedToOne ? stationScope : selectedStation;
   const stationGroups = myStations.map((s) => ({ key: s.id, name: s.name, count: visibleReports.filter((r) => r.stationId === s.id).length }));
   const stationReports = activeStation ? visibleReports.filter((r) => r.stationId === activeStation) : [];

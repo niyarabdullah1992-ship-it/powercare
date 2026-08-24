@@ -28,6 +28,26 @@
         "null"
       ]
     },
+    "parentStationId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Parent workplace in the company tree. Null for the company root."
+    },
+    "isCompanyRoot": {
+      "type": "boolean",
+      "default": false,
+      "description": "Marks the single company-apex station."
+    },
+    "unitKind": {
+      "type": "string",
+      "description": "branch = hire workplace; manager = admin/region seat (not a hire place)."
+    },
+    "demo": {
+      "type": "boolean",
+      "default": false
+    },
     "lat": {
       "type": [
         "number",

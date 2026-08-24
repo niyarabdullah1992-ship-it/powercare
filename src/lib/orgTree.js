@@ -9,6 +9,7 @@ import {
   stripJobTitleFromData,
 } from "@/lib/orgDerivations";
 import { rankFromScore, scorePermissions } from "@/lib/smartPositions";
+import { isManagerUnit, normalizeUnitKind } from "@/lib/stationTree";
 
 export const orgTreeNodes = (data) => Array.isArray(data?.orgTree) ? data.orgTree : [];
 export const nodeAccess = (data, refId) => data?.smartPositions?.find((item) => item.employeeId === refId)?.permissions || {};
@@ -273,6 +274,14 @@ export function assignEmployeeToOrgStation(companyId, employeeId, stationNodeId)
       };
       nodes.push(station);
     }
+    const entity = (data.stations || []).find((item) => String(item.id) === String(station.refId));
+    const alreadyHome = String(employee.stationId) === String(station.refId);
+    if (isManagerUnit(entity) && !alreadyHome) {
+      result.error = "ADMIN_NO_HIRE";
+      result.reason = "المدير ليس مكان توظيف. حوّله إلى فرع ثم وظّف عليه.";
+      result.reasonEn = "A manager is not a hire workplace. Convert it to a branch, then hire there.";
+      return;
+    }
     assignInside(data, employee, station, result);
   });
   return result;
@@ -431,7 +440,7 @@ export function removeCompanyJobTitle(companyId, titleKey) {
   return cleared;
 }
 
-export function saveOrgNode(companyId, node, permissions = {}, templateId = "", extras = {}) {
+export function saveOrgNode(companyId, node, permissions = {}, templateId = "") {
   updateCompany(companyId, (data) => {
     data.orgTree = data.orgTree || [];
     const index = data.orgTree.findIndex((item) => item.id === node.id);
@@ -460,15 +469,7 @@ export function saveOrgNode(companyId, node, permissions = {}, templateId = "", 
       const emp = (data.employees || []).find((e) => e.id === node.refId);
       if (emp) {
         emp.profile = { ...(emp.profile || {}), position: node.title || "" };
-        if (extras.gradeId !== undefined) emp.profile.gradeId = extras.gradeId || null;
         emp.position = node.title || "";
-        if (Array.isArray(extras.managedStationIds)) {
-          const ids = extras.managedStationIds.map(String).filter(Boolean);
-          emp.managedStations = ids;
-          if (emp.stationId && !ids.includes(String(emp.stationId))) {
-            emp.managedStations = [String(emp.stationId), ...ids];
-          }
-        }
       }
     }
     syncEmployeeStationsFromTree(data);
@@ -478,6 +479,10 @@ export function saveOrgNode(companyId, node, permissions = {}, templateId = "", 
 export function createOrgRecord(companyId, record, permissions = {}) {
   let createdStationId = null;
   updateCompany(companyId, (data) => {
+    if (record.type !== "station" && record.stationId) {
+      const home = (data.stations || []).find((item) => String(item.id) === String(record.stationId));
+      if (isManagerUnit(home)) return;
+    }
     data.orgTree = data.orgTree || [];
     const parentId = record.parentId || null;
     const order = data.orgTree.filter((node) => (node.parentId || null) === parentId).length;
@@ -492,14 +497,22 @@ export function createOrgRecord(companyId, record, permissions = {}) {
         name,
         location: location || name,
         type: stationType || "branch",
+        unitKind: normalizeUnitKind(record.unitKind),
         status: "active",
         managerId: record.managerId || null,
+        parentStationId: record.parentStationId || null,
+        isCompanyRoot: Boolean(record.isCompanyRoot),
         lat: record.lat ?? null,
         lng: record.lng ?? null,
         radiusMeters: record.radiusMeters ?? 200,
         createdAt: new Date().toISOString(),
       });
-      data.orgTree.push({ id: `org_station_${id}`, type: "station", refId: id, title: name, parentId, order });
+      const parentStation = record.parentStationId
+        ? data.orgTree.find((item) => item.type === "station" && String(item.refId) === String(record.parentStationId))
+        : null;
+      const treeParent = parentStation?.id || parentId;
+      const treeOrder = data.orgTree.filter((node) => (node.parentId || null) === (treeParent || null)).length;
+      data.orgTree.push({ id: `org_station_${id}`, type: "station", refId: id, title: name, parentId: treeParent, order: treeOrder });
       return;
     }
     const id = `emp_${Math.random().toString(36).slice(2, 9)}`;
@@ -538,46 +551,10 @@ export function createOrgRecord(companyId, record, permissions = {}) {
 export function saveOrgStationName(companyId, stationId, name) {
   updateCompany(companyId, (data) => {
     const station = (data.stations || []).find((item) => (item.id === stationId || item.stationId === stationId));
-    if (station && name) station.name = name;
-    const node = (data.orgTree || []).find((item) => item.type === "station" && (item.refId === stationId || item.id === `org_station_${stationId}`));
-    if (node && name) node.title = name;
-  });
-}
-
-export function ensureOrgStationNode(companyId, station) {
-  if (!companyId || !station?.id && !station?.stationId) return;
-  const stationId = station.id || station.stationId;
-  updateCompany(companyId, (data) => {
-    data.orgTree = Array.isArray(data.orgTree) ? data.orgTree : [];
-    const exists = data.orgTree.some((item) => item.type === "station" && (item.refId === stationId || item.id === `org_station_${stationId}`));
-    if (exists) return;
-    data.orgTree.push({
-      id: `org_station_${stationId}`,
-      type: "station",
-      refId: stationId,
-      title: station.name || "",
-      parentId: null,
-      order: data.orgTree.filter((item) => !item.parentId).length,
-    });
-  });
-}
-
-export function setOrgStationManager(companyId, stationId, managerId) {
-  if (!companyId || !stationId) return;
-  updateCompany(companyId, (data) => {
-    const station = (data.stations || []).find((item) => item.id === stationId || item.stationId === stationId);
-    if (station) station.managerId = managerId || null;
-    data.orgTree = Array.isArray(data.orgTree) ? data.orgTree : [];
-    const exists = data.orgTree.some((item) => item.type === "station" && (item.refId === stationId || item.id === `org_station_${stationId}`));
-    if (!exists && station) {
-      data.orgTree.push({
-        id: `org_station_${station.id || stationId}`,
-        type: "station",
-        refId: station.id || stationId,
-        title: station.name || "",
-        parentId: null,
-        order: data.orgTree.filter((item) => !item.parentId).length,
-      });
+    if (station && name) {
+      station.name = name;
+      const node = (data.orgTree || []).find((item) => item.type === "station" && String(item.refId) === String(station.id || station.stationId));
+      if (node) node.title = name;
     }
   });
 }

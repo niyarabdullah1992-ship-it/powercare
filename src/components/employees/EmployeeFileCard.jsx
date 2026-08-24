@@ -3,9 +3,6 @@ import { FileDown, Loader2 } from "lucide-react";
 import { downloadElementPdf } from "@/lib/downloadElementPdf";
 import { buildClientStamp } from "@/lib/clientDigitalStamp";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { employeeOrgSeat, summarizePositionAccess } from "@/lib/orgPositions";
-import { trackLabel } from "@/lib/orgTracks";
-import { jobGradeLabel } from "@/lib/jobGrades";
 import EmployeeFileDocument from "@/components/employees/EmployeeFileDocument";
 
 const randomHex = (n) => Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join("");
@@ -23,10 +20,7 @@ export default function EmployeeFileCard({ employee, company, data, stationName,
     fingerprint: Array.from({ length: 8 }, () => randomHex(4)).join("·"),
   }));
 
-  const manager = (data.employees || []).find((item) => item.id === employee.managerId);
-  const seat = employeeOrgSeat(employee, data);
-  const listLabel = trackLabel(seat.track, ar);
-  const sectionsLabel = summarizePositionAccess(seat.permissions, ar);
+  const manager = data.employees.find((e) => e.id === employee.managerId);
   const signerName = currentUser?.name || employee.name;
 
   const download = async () => {
@@ -56,9 +50,7 @@ export default function EmployeeFileCard({ employee, company, data, stationName,
             employee={employee}
             company={company}
             stationName={stationName}
-            gradeLabel={gradeLabel || jobGradeLabel(seat.grade)}
-            listLabel={listLabel}
-            sectionsLabel={sectionsLabel}
+            gradeLabel={gradeLabel}
             managerName={manager?.name}
             signerName={signerName}
             signatureStampUrl={stamp?.dataUrl}

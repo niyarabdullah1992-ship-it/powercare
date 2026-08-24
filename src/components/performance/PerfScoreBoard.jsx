@@ -89,14 +89,17 @@ export default function PerfScoreBoard({ lang, overallPct }) {
   const MAX_PICK = 6;
 
   const stationsInView = useMemo(
-    () => (currentUser && data ? visibleStations(currentUser, data) : data?.stations || []),
-    [currentUser, data],
+    () => {
+      const list = currentUser && data ? visibleStations(currentUser, data) : data?.stations || [];
+      return list.filter((s) => matchesStationScope(s.id, scope, data?.stations));
+    },
+    [currentUser, data, scope],
   );
 
   useEffect(() => {
     if (!data?.employees) return;
     const allowed = new Set(stationsInView.map((s) => s.id));
-    const inPermission = (stationId) => (allowed.size ? allowed.has(stationId) : matchesStationScope(stationId, scope));
+    const inPermission = (stationId) => (allowed.size ? allowed.has(stationId) : matchesStationScope(stationId, scope, data?.stations));
     const localRows = data.employees.filter((e) => inPermission(e.stationId)).map((e) => ({
       employeeId: e.id,
       name: e.name,
@@ -124,8 +127,8 @@ export default function PerfScoreBoard({ lang, overallPct }) {
   const stationName = (id) => data?.stations?.find((s) => s.id === id)?.name || "—";
 
   const peopleRows = useMemo(
-    () => board.filter((r) => matchesStationScope(r.stationId, scope)).map((row, i) => ({ ...row, rank: i + 1 })),
-    [board, scope],
+    () => board.filter((r) => matchesStationScope(r.stationId, scope, data?.stations)).map((row, i) => ({ ...row, rank: i + 1 })),
+    [board, scope, data?.stations],
   );
   const stationRows = useMemo(
     () => aggregateStationBoard(board, stationsInView),

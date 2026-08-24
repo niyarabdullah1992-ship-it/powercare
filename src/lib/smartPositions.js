@@ -1,42 +1,18 @@
 import { updateCompany } from "@/lib/store";
-import { ORG_TO_SMART_SECTION, canonicalSectionId, titleSlug } from "@/lib/orgDerivations";
 
 /**
  * Grantable product sections — aligned with Layout sidebar labels & routes.
+ * `employees` is not a nav item; it unlocks filling files in branch scope.
  */
 export const SMART_DEPARTMENTS = [
   // Proof cycle — matches Layout category "daily"
   {
-    id: "command",
-    ar: "مركز القيادة",
-    en: "Command Center",
-    hintAr: "نظرة القرار اليومية",
-    hintEn: "Daily decision glance",
-    group: "daily",
-  },
-  {
     id: "attendance",
     ar: "الحضور والانصراف",
     en: "Attendance",
-    hintAr: "تسجيل الحضور والانصراف",
-    hintEn: "Check-in and check-out",
+    hintAr: "يشمل الورديات وطلبات الإجازة",
+    hintEn: "Includes shifts and leave",
     group: "daily",
-  },
-  {
-    id: "shifts",
-    ar: "الورديات",
-    en: "Shifts",
-    hintAr: "جداول الدوام والنشر",
-    hintEn: "Rota and publication",
-    group: "workforce",
-  },
-  {
-    id: "leave",
-    ar: "طلبات الإجازة",
-    en: "Leave requests",
-    hintAr: "طلب واعتماد الإجازة",
-    hintEn: "Request and approve leave",
-    group: "workforce",
   },
   {
     id: "tasks",
@@ -91,25 +67,9 @@ export const SMART_DEPARTMENTS = [
     id: "hr",
     ar: "الموارد البشرية",
     en: "Human resources",
-    hintAr: "الدليل والملف",
-    hintEn: "Directory and file",
+    hintAr: "الدليل والهيكل",
+    hintEn: "Directory and org",
     group: "workforce",
-  },
-  {
-    id: "org",
-    ar: "الهيكل التنظيمي",
-    en: "Org structure",
-    hintAr: "قائمة ثم تعيين",
-    hintEn: "List, then assign",
-    group: "workforce",
-  },
-  {
-    id: "settings",
-    ar: "إعدادات الشركة",
-    en: "Company settings",
-    hintAr: "الهوية والنطاق الجغرافي",
-    hintEn: "Identity and geofence",
-    group: "admin",
   },
   {
     id: "hiring",
@@ -117,6 +77,14 @@ export const SMART_DEPARTMENTS = [
     en: "Recruitment",
     hintAr: "مسارات التعيين",
     hintEn: "Hiring pipelines",
+    group: "workforce",
+  },
+  {
+    id: "employees",
+    ar: "ملفات الموظفين",
+    en: "Employee files",
+    hintAr: "تعبئة ملفات نفس الفرع",
+    hintEn: "Fill files in the same branch",
     group: "workforce",
   },
   // Care & compliance
@@ -147,9 +115,26 @@ export const SMART_DEPARTMENTS = [
     group: "money",
   },
   {
+    id: "accounting",
+    ar: "المحاسبة",
+    en: "Accounting",
+    hintAr: "ملخص الفترة المعتمدة — للمالك أو المالية",
+    hintEn: "Posted period summary — owner or finance",
+    group: "money",
+    ownerOnly: true,
+  },
+  {
+    id: "assets",
+    ar: "الأصول والعهد",
+    en: "Assets & custody",
+    hintAr: "سجل الأصول وتسليم العهدة",
+    hintEn: "Asset register and custody handover",
+    group: "money",
+  },
+  {
     id: "inventory",
-    ar: "المخزون والأصول",
-    en: "Inventory & assets",
+    ar: "المخزون",
+    en: "Inventory",
     hintAr: "صرف وطلبات الفرع",
     hintEn: "Branch stock and requests",
     group: "money",
@@ -198,31 +183,26 @@ export const SMART_SECTION_GROUPS = [
   { id: "admin", ar: "المؤسسة", en: "Institution" },
 ];
 
-/** Grantable sections — command stays on /app for everyone and is not a fake grant. */
-export const GRANTABLE_DEPARTMENTS = SMART_DEPARTMENTS.filter((department) => department.id !== "command");
-
 /** department id → routes removed when not granted (after owner composed access). */
 export const SMART_SECTION_ROUTES = {
-  command: [],
   tasks: ["/app/tasks"],
-  attendance: ["/app/attendance"],
-  shifts: ["/app/shifts"],
-  leave: ["/app/leave"],
+  attendance: ["/app/attendance", "/app/shifts", "/app/leave"],
   daily_report: ["/app/daily-report"],
   chat: ["/app/chat"],
   performance: ["/app/performance"],
-  hr: ["/app/hr"],
-  org: ["/app/org"],
-  settings: ["/app/settings"],
+  hr: ["/app/hr", "/app/org"],
   hiring: ["/app/hiring"],
+  employees: [],
   safety: ["/app/safety"],
   work_proof: ["/app/work-proof", "/app/client-proof"],
   signing: ["/app/signing"],
   complaints: ["/app/complaints"],
   expenses: ["/app/expenses"],
+  accounting: ["/app/accounting"],
+  assets: ["/app/assets"],
   inventory: ["/app/inventory"],
   payroll: ["/app/payroll"],
-  reports: ["/app/reports"],
+  reports: ["/app/daily-report"],
   files: ["/app/files"],
   assistant: ["/app/assistant"],
 };
@@ -234,7 +214,7 @@ export const rankLabel = (rank, ar) => ({
   manager: ar ? "مدير" : "Manager",
   executive: ar ? "مدير تنفيذي" : "Executive Director",
 }[rank]);
-export const scorePermissions = (permissions = {}) => Object.values(permissions).reduce((sum, access) => sum + (access === "manage" ? 2 : access === "view" || access === "station" || access === "own" ? 1 : 0), 0);
+export const scorePermissions = (permissions = {}) => Object.values(permissions).reduce((sum, access) => sum + (access === "manage" ? 2 : access === "view" ? 1 : 0), 0);
 
 export function suggestSmartTitle(permissions = {}, ar = false) {
   const has = (...ids) => ids.every((id) => permissions[id]);
@@ -249,112 +229,25 @@ export function suggestSmartTitle(permissions = {}, ar = false) {
   return first ? `${rankLabel(rankFromScore(score), ar)} ${ar ? first.ar : first.en}` : "";
 }
 
-export function personJobTitle(employee, position) {
-  return String(
-    position?.title
-    || employee?.profile?.position
-    || employee?.position
-    || employee?.jobTitle
-    || employee?.title
-    || "",
-  ).trim();
-}
-
-export function sectionAccess(permissions = {}, departmentId) {
-  const id = canonicalSectionId(departmentId);
-  let raw = permissions[id] || permissions[departmentId];
-  if (!raw) {
-    for (const [legacy, smart] of Object.entries(ORG_TO_SMART_SECTION)) {
-      if (smart === id && permissions[legacy]) raw = permissions[legacy];
-    }
-  }
-  return raw && raw !== "hidden" ? raw : "";
-}
-
-export function hasSmartAccess(user, data, departmentId, min = "view") {
-  if (!user?.id) return false;
-  if (user.id === data?.ownerId) return true;
-  const position = (data?.smartPositions || []).find((item) => item.employeeId === user.id);
-  const access = sectionAccess(position?.permissions, departmentId);
-  if (!access) return false;
-  const rank = { own: 1, station: 2, view: 3, manage: 4 };
-  return (rank[access] || 0) >= (rank[min] || 3);
-}
-
-function employeesMatchingTitle(data, titleLabel) {
-  const want = titleSlug(titleLabel);
-  if (!want) return [];
-  return (data.employees || []).filter((employee) => {
-    if (employee.id === data.ownerId) return false;
-    const position = (data.smartPositions || []).find((item) => item.employeeId === employee.id);
-    return titleSlug(personJobTitle(employee, position)) === want;
-  });
-}
-
-export function titleSectionAccess(data, titleLabel, departmentId) {
-  const accesses = employeesMatchingTitle(data, titleLabel).map((employee) => {
-    const position = (data.smartPositions || []).find((item) => item.employeeId === employee.id);
-    return sectionAccess(position?.permissions, departmentId) || "hidden";
-  });
-  if (!accesses.length) return "hidden";
-  const first = accesses[0];
-  return accesses.every((access) => access === first) ? first : "mixed";
-}
-
-function writePositionRecord(data, employeeId, title, permissions) {
-  data.smartPositions = data.smartPositions || [];
-  const index = data.smartPositions.findIndex((item) => item.employeeId === employeeId);
-  const hasGrants = Object.values(permissions || {}).some((access) => access && access !== "hidden");
-  const employee = (data.employees || []).find((item) => item.id === employeeId);
-  if (title && employee) {
-    employee.profile = { ...(employee.profile || {}), position: title };
-    employee.position = title;
-  }
-  const node = (data.orgTree || []).find((item) => item.type === "employee" && item.refId === employeeId);
-  if (title && node) node.title = title;
-  if (!hasGrants) {
-    if (index >= 0) data.smartPositions.splice(index, 1);
-    return;
-  }
-  const previous = index >= 0 ? data.smartPositions[index] : null;
-  const score = scorePermissions(permissions);
-  const record = {
-    employeeId,
-    title,
-    titleManual: Boolean(title),
-    permissions,
-    score,
-    rank: rankFromScore(score),
-    manualOrder: previous?.manualOrder,
-    updatedAt: new Date().toISOString(),
-  };
-  if (index >= 0) data.smartPositions[index] = { ...previous, ...record };
-  else data.smartPositions.push(record);
-}
-
 export function saveSmartPosition(companyId, employeeId, title, permissions, titleManual = false) {
+  const score = scorePermissions(permissions);
   updateCompany(companyId, (data) => {
-    writePositionRecord(data, employeeId, title, permissions);
-    const index = (data.smartPositions || []).findIndex((item) => item.employeeId === employeeId);
-    if (index >= 0) data.smartPositions[index].titleManual = titleManual;
+    data.smartPositions = data.smartPositions || [];
+    const index = data.smartPositions.findIndex((item) => item.employeeId === employeeId);
+    const previous = index >= 0 ? data.smartPositions[index] : null;
+    const record = {
+      employeeId,
+      title,
+      titleManual,
+      permissions,
+      score,
+      rank: rankFromScore(score),
+      manualOrder: previous?.manualOrder,
+      updatedAt: new Date().toISOString(),
+    };
+    if (index >= 0) data.smartPositions[index] = record;
+    else data.smartPositions.push(record);
   });
-}
-
-export function applyTitleSectionAccess(companyId, titleLabel, departmentId, access) {
-  const dept = canonicalSectionId(departmentId);
-  let applied = 0;
-  updateCompany(companyId, (data) => {
-    const matches = employeesMatchingTitle(data, titleLabel);
-    applied = matches.length;
-    for (const employee of matches) {
-      const previous = (data.smartPositions || []).find((item) => item.employeeId === employee.id);
-      const permissions = { ...(previous?.permissions || {}) };
-      if (!access || access === "hidden") delete permissions[dept];
-      else permissions[dept] = access;
-      writePositionRecord(data, employee.id, previous?.title || personJobTitle(employee) || titleLabel, permissions);
-    }
-  });
-  return applied;
 }
 
 export function reorderSmartRank(companyId, rank, employeeIds) {

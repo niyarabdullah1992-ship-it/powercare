@@ -75,8 +75,8 @@ export default function HseRatesPanel({ lang, stationScope }) {
   const [daysClear, setDaysClear] = useState(null);
 
   useEffect(() => {
-    const scopedEmployees = (data?.employees || []).filter((e) => matchesStationScope(e.stationId, scope));
-    const scopedSafety = (data?.safety || []).filter((s) => matchesStationScope(s.stationId, scope));
+    const scopedEmployees = (data?.employees || []).filter((e) => matchesStationScope(e.stationId, scope, data?.stations));
+    const scopedSafety = (data?.safety || []).filter((s) => matchesStationScope(s.stationId, scope, data?.stations));
     const headcount = scopedEmployees.length || 1;
     const local = deriveHseRates(headcount, { lti: 0, restrict: 0, medical: 0, nearMiss: 0 });
     setRates(local);

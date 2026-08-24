@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Download } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
@@ -7,11 +8,13 @@ import {
   assignmentHistoryNote,
   canReassignOpsTask,
   canReviewOpsTask,
-  deriveTaskDailyPace,
   isAwaitingApproval,
   isEscalated,
   isOverdue,
   latestAssignment,
+  deriveBoardDailyPace,
+  deriveHorizonGroups,
+  taskPlanHorizon,
   taskPoints,
 } from "@/lib/opsDerivations";
 import { visibleEmployees } from "@/lib/permissions";
@@ -30,6 +33,7 @@ import OpsReassignModal from "@/components/tasks/OpsReassignModal";
 import OpsTaskDetail from "@/components/tasks/OpsTaskDetail";
 import OpsTasksTable from "@/components/tasks/OpsTasksTable";
 import OpsToolbarStrip from "@/components/tasks/OpsToolbarStrip";
+import DailyPaceStrip from "@/components/tasks/DailyPaceStrip";
 import PlatformStampShell from "@/components/shared/PlatformStampShell";
 import { INK, MUTED, BORDER, SURFACE, tableShell } from "@/lib/platformStyles";
 import { toast } from "@/components/ui/use-toast";
@@ -78,7 +82,6 @@ export default function Operations() {
   const { currentUser, company, data, refresh } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [counts, setCounts] = useState(null);
-  const [horizons, setHorizons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [serviceDown, setServiceDown] = useState(false);
   const [localMode, setLocalMode] = useState(false);
@@ -123,10 +126,10 @@ export default function Operations() {
     const board = buildLocalOpsBoard({
       tasks: data?.tasks || [],
       scope: scopeOverride ?? scope,
+      stations: data?.stations || [],
     });
     setTasks(board.tasks);
     setCounts(board.counts);
-    setHorizons(board.horizons);
     setLocalMode(true);
     setServiceDown(false);
     // Local preview has no live attendance service — do not block the board behind a dead gate.
@@ -159,7 +162,6 @@ export default function Operations() {
       }
       setTasks(remoteTasks);
       setCounts(body?.counts || null);
-      setHorizons(Array.isArray(body?.horizons) ? body.horizons : []);
       const attBody = attRes?.data || attRes || {};
       setCheckedIn(!!attBody.checkedIn);
       setAttendanceGate(attBody.gate || null);
@@ -173,7 +175,6 @@ export default function Operations() {
         setLocalMode(false);
         setTasks([]);
         setCounts(null);
-        setHorizons([]);
       }
     } finally {
       setLoading(false);
@@ -247,9 +248,8 @@ export default function Operations() {
 
       if (localMode || isLocalPreviewActive()) {
         const board = createLocalOpsTask(company.id, payload, { employees: data?.employees || [] });
-        setTasks(buildLocalOpsBoard({ tasks: board.tasks, scope }).tasks);
+        setTasks(buildLocalOpsBoard({ tasks: board.tasks, scope, stations: data?.stations || [] }).tasks);
         setCounts(board.counts);
-        setHorizons(board.horizons);
         finishCreateUi(board.tasks?.[0]?.ref);
         await refresh?.();
         return;
@@ -272,9 +272,8 @@ export default function Operations() {
       if (company?.id && (isLocalPreviewActive() || localMode || Array.isArray(data?.tasks))) {
         try {
           const board = createLocalOpsTask(company.id, payload, { employees: data?.employees || [] });
-          setTasks(buildLocalOpsBoard({ tasks: board.tasks, scope }).tasks);
+          setTasks(buildLocalOpsBoard({ tasks: board.tasks, scope, stations: data?.stations || [] }).tasks);
           setCounts(board.counts);
-          setHorizons(board.horizons);
           setLocalMode(true);
           finishCreateUi(board.tasks?.[0]?.ref);
           await refresh?.();
@@ -321,9 +320,8 @@ export default function Operations() {
       const amount = Math.max(1, Number(opts.amount) || 1);
       if (localMode || isLocalPreviewActive()) {
         const board = logLocalCompletion(company.id, task.id, { amount, attestation, proofFiles });
-        setTasks(buildLocalOpsBoard({ tasks: board.tasks, scope }).tasks);
+        setTasks(buildLocalOpsBoard({ tasks: board.tasks, scope, stations: data?.stations || [] }).tasks);
         setCounts(board.counts);
-        setHorizons(board.horizons);
         await refresh?.();
         return;
       }
@@ -351,9 +349,8 @@ export default function Operations() {
             attestation,
             proofFiles: [],
           });
-          setTasks(buildLocalOpsBoard({ tasks: board.tasks, scope }).tasks);
+          setTasks(buildLocalOpsBoard({ tasks: board.tasks, scope, stations: data?.stations || [] }).tasks);
           setCounts(board.counts);
-          setHorizons(board.horizons);
           await refresh?.();
           return;
         } catch {
@@ -430,9 +427,8 @@ export default function Operations() {
     try {
       if (localMode || isLocalPreviewActive()) {
         const body = approveLocalTask(company.id, task.id);
-        setTasks(buildLocalOpsBoard({ tasks: body.tasks, scope }).tasks);
+        setTasks(buildLocalOpsBoard({ tasks: body.tasks, scope, stations: data?.stations || [] }).tasks);
         setCounts(body.counts);
-        setHorizons(body.horizons);
         await refresh?.();
         toast({
           title: ar ? "اعتُمد الإنجاز" : "Approved",
@@ -459,9 +455,8 @@ export default function Operations() {
       if (company?.id && (isLocalPreviewActive() || localMode)) {
         try {
           const body = approveLocalTask(company.id, task.id);
-          setTasks(buildLocalOpsBoard({ tasks: body.tasks, scope }).tasks);
+          setTasks(buildLocalOpsBoard({ tasks: body.tasks, scope, stations: data?.stations || [] }).tasks);
           setCounts(body.counts);
-          setHorizons(body.horizons);
           await refresh?.();
           toast({
             title: ar ? "اعتُمد الإنجاز" : "Approved",
@@ -506,9 +501,8 @@ export default function Operations() {
     try {
       if (localMode || isLocalPreviewActive()) {
         const body = rejectLocalTask(company.id, target.id, reason, { reviewer: currentUser, data });
-        setTasks(buildLocalOpsBoard({ tasks: body.tasks, scope }).tasks);
+        setTasks(buildLocalOpsBoard({ tasks: body.tasks, scope, stations: data?.stations || [] }).tasks);
         setCounts(body.counts);
-        setHorizons(body.horizons);
         toastRejectOutcome(body.escalation);
         setRejectFor(null);
         setRejectReason("");
@@ -527,9 +521,8 @@ export default function Operations() {
       if (company?.id && (isLocalPreviewActive() || localMode || Array.isArray(data?.tasks))) {
         try {
           const body = rejectLocalTask(company.id, target.id, reason, { reviewer: currentUser, data });
-          setTasks(buildLocalOpsBoard({ tasks: body.tasks, scope }).tasks);
+          setTasks(buildLocalOpsBoard({ tasks: body.tasks, scope, stations: data?.stations || [] }).tasks);
           setCounts(body.counts);
-          setHorizons(body.horizons);
           setLocalMode(true);
           toastRejectOutcome(body.escalation);
           setRejectFor(null);
@@ -556,9 +549,8 @@ export default function Operations() {
       lang: ar ? "ar" : "en",
       task,
     });
-    setTasks(buildLocalOpsBoard({ tasks: board.tasks, scope }).tasks);
+    setTasks(buildLocalOpsBoard({ tasks: board.tasks, scope, stations: data?.stations || [] }).tasks);
     setCounts(board.counts);
-    setHorizons(board.horizons);
     setReassignFor(null);
     return board;
   };
@@ -627,6 +619,7 @@ export default function Operations() {
     if (filter === "done") return t.status === "completed" || !!t.approvedAt;
     return true;
   });
+  const boardPace = deriveBoardDailyPace(tasks);
 
   const c = counts;
   const chips = c ? [
@@ -637,6 +630,14 @@ export default function Operations() {
     { id: "escalated", label: ar ? `صُعّدت · ${c.escalated || 0}` : `Escalated · ${c.escalated || 0}` },
     { id: "done", label: ar ? `مكتملة · ${c.done}` : `Done · ${c.done}` },
   ] : [];
+
+  const stationName = (id) => stations.find((s) => s.id === id)?.name || "—";
+  const ownerName = (task) => {
+    const id = task.ownerId || task.employee_id;
+    const emp = (data?.employees || []).find((e) => e.id === id || e.employeeId === id);
+    return emp?.name || task.ownerName || "—";
+  };
+  const ownerInitials = (name) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?";
 
   const KIND_LABEL = {
     pm: { ar: "وقائية", en: "PM" },
@@ -652,13 +653,6 @@ export default function Operations() {
     pending_review: { ar: "مراجعة", en: "Review" },
   };
   const priColor = (p) => (p === "high" || p === "urgent" ? "#DC2626" : p === "low" ? "#94A3B8" : "#F59E0B");
-  const stationName = (id) => stations.find((s) => s.id === id)?.name || "—";
-  const ownerName = (task) => {
-    const id = task.ownerId || task.employee_id;
-    const emp = (data?.employees || []).find((e) => e.id === id || e.employeeId === id);
-    return emp?.name || task.ownerName || "—";
-  };
-  const ownerInitials = (name) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?";
   const statusChip = (status) => {
     if (status === "completed") {
       return { display: "inline-block", padding: "3px 9px", borderRadius: "20px", fontSize: "11px", fontWeight: 500, background: "#ECFDF3", color: "#15803D", border: "1px solid #BBF7D0", whiteSpace: "nowrap" };
@@ -680,11 +674,10 @@ export default function Operations() {
     border: "1px solid #E2E8F0",
   };
 
-  const planGroups = (horizons.length ? horizons : ["y", "h", "q", "m", "w"].map((id) => ({ id, count: 0, pct: 0, unitsDone: 0, unitsTarget: 0 })))
-    .map((h) => ({
-      ...h,
-      rows: visible.filter((t) => (t.planHorizon || "w") === h.id),
-    }));
+  const planGroups = deriveHorizonGroups(visible).map((h) => ({
+    ...h,
+    rows: visible.filter((t) => taskPlanHorizon(t) === h.id),
+  }));
 
   const renderActions = (task) => {
     const logBlocked = task.mode !== "remote" && checkedIn === false;
@@ -744,6 +737,27 @@ export default function Operations() {
     );
   };
 
+  const downloadDesign = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}design/ops-tasks.html`);
+      if (!res.ok) throw new Error("missing");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = ar ? "تصميم-المهام-والعمليات.html" : "tasks-operations-design.html";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({
+        description: ar ? "تعذّر تحميل ملف التصميم." : "Could not download the design file.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <PlatformStampShell
       ar={ar}
@@ -756,6 +770,31 @@ export default function Operations() {
           : (ar ? "تُحمَّل العدّادات من الخادم…" : "Loading counters from server…")
       }
       maxWidth={1280}
+      meta={(
+        <button
+          type="button"
+          onClick={downloadDesign}
+          style={{
+            all: "unset",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            height: 32,
+            padding: "0 12px",
+            borderRadius: 8,
+            border: `1px solid ${BORDER}`,
+            background: "#fff",
+            color: MUTED,
+            fontSize: 12,
+            fontWeight: 600,
+            fontFamily: "inherit",
+          }}
+        >
+          <Download style={{ width: 14, height: 14 }} />
+          {ar ? "تحميل التصميم" : "Download design"}
+        </button>
+      )}
     >
       <div className="space-y-3.5">
 
@@ -771,6 +810,8 @@ export default function Operations() {
         onToggleCreate={() => setShowCreate((v) => !v)}
       />
 
+      {boardPace.active > 0 ? <DailyPaceStrip ar={ar} board={boardPace} /> : null}
+
       <div style={checkedIn ? okBanner : warnBanner}>
         {checkedIn
           ? (ar ? "حضور اليوم مسجَّل — يمكنك تسجيل إنجاز المهام الحضورية." : "Checked in today — you can log on-site task completion.")
@@ -783,23 +824,6 @@ export default function Operations() {
           </Link>
         )}
       </div>
-
-      {localMode && (
-        <div style={okBanner}>
-          <span className="font-semibold">{ar ? "وضع محلي · " : "Local mode · "}</span>
-          {ar
-            ? "خدمة العمليات السحابية غير متاحة — تُعرض المهام من سجل الشركة المحلي مع نفس قواعد الوزن والنقاط. التغييرات تُحفظ محليًا حتى يعود الربط."
-            : "Cloud operations is unavailable — tasks are shown from the local company register with the same weight→points rules. Changes stay local until the service reconnects."}
-        </div>
-      )}
-      {serviceDown && !localMode && (
-        <div style={warnBanner}>
-          <span className="font-semibold">{ar ? "لوحة المهام غير متصلة · " : "Task board offline · "}</span>
-          {ar
-            ? "لم تستجب خدمة العمليات، فلا تُعرض المهام ولا تُقبل الإفادات أو الاعتمادات. القائمة الفارغة أدناه ليست انعدام عمل مسند."
-            : "The operations service did not respond, so no tasks are shown and no attestation or approval is accepted. The empty list below does not mean no work is assigned."}
-        </div>
-      )}
 
       {showCreate && (
         <OpsNewTaskModal
@@ -815,12 +839,21 @@ export default function Operations() {
         />
       )}
 
+      {serviceDown && !localMode && (
+        <div style={warnBanner}>
+          <span className="font-semibold">{ar ? "لوحة المهام غير متصلة · " : "Task board offline · "}</span>
+          {ar
+            ? "لم تستجب خدمة العمليات، فلا تُعرض المهام ولا تُقبل الإفادات أو الاعتمادات. القائمة الفارغة أدناه ليست انعدام عمل مسند."
+            : "The operations service did not respond, so no tasks are shown and no attestation or approval is accepted. The empty list below does not mean no work is assigned."}
+        </div>
+      )}
+
       {viewMode === "plan" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <div style={{ fontSize: "11px", color: MUTED, lineHeight: 1.65, textWrap: "pretty" }}>
             {ar
-              ? "الخطة أفق زمني مشتق من الاستحقاق — المهمة تظهر في قائمتها وفي مجموعتها دون نسخ سجلين."
-              : "Plan is a horizon derived from due date — each task appears in its list and group without duplicate records."}
+              ? "الخطة تُحسب من الأيام المتبقية حتى الاستحقاق: أقل من أسبوع أسبوعية، أقل من شهر شهرية، وهكذا — والمهمة تنتقل تلقائيًا كلما اقترب الموعد."
+              : "The plan is remaining days until due: under a week is weekly, under a month is monthly, and so on — a task moves automatically as the date approaches."}
           </div>
           {planGroups.map((g) => (
             <div key={g.id} style={tableShell}>
@@ -895,16 +928,8 @@ export default function Operations() {
                       <span style={statusChip(task.status)}>
                         {ar ? STATUS_LABEL[task.status]?.ar : STATUS_LABEL[task.status]?.en || task.status}
                       </span>
-                      <span style={{ fontSize: "11px", color: MUTED, fontFamily: "'IBM Plex Sans',sans-serif", textAlign: "right" }}>
-                        <span dir="ltr">{task.completedCount}/{task.targetCount}</span>
-                        {(() => {
-                          const pace = deriveTaskDailyPace(task);
-                          return pace.daily != null ? (
-                            <span style={{ marginInlineStart: 6, color: pace.overdue ? "#B45309" : "#1E9E63", fontWeight: 600 }}>
-                              {ar ? `${pace.daily}/يوم` : `${pace.daily}/day`}
-                            </span>
-                          ) : null;
-                        })()}
+                      <span dir="ltr" style={{ fontSize: "11px", color: MUTED, fontFamily: "'IBM Plex Sans',sans-serif", textAlign: "right" }}>
+                        {task.completedCount}/{task.targetCount}
                       </span>
                       <div onClick={(e) => e.stopPropagation()}>{renderActions(task)}</div>
                     </div>

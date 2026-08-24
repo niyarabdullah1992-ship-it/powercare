@@ -1,48 +1,11 @@
 /** Client mirror of base44/shared/orgDerivations.ts */
 
+import { workplaceEscalationManagers } from "./orgStructureLog.js";
+
 export const SCOPE = { NONE: 0, COMPANY: 1, OWN: 2, DELEGATED: 3, STATION: 4, REGION: 5 };
 export const SCOPE_CYCLE = [SCOPE.NONE, SCOPE.OWN, SCOPE.STATION, SCOPE.REGION, SCOPE.COMPANY];
 export const ORG_ROLES = ["ops_director", "station_manager", "supervisor", "safety", "employee"];
-export const ORG_SECTIONS = [
-  "command", "operations", "attendance", "daily", "hse", "complaints", "leave", "hr", "payroll", "settings",
-  "work_proof", "signing", "reports", "chat", "shifts", "hiring", "performance", "org", "expenses", "inventory", "files", "assistant",
-];
-
-/** Legacy matrix ids → live grant ids in smartPositions. */
-export const ORG_TO_SMART_SECTION = {
-  operations: "tasks",
-  daily: "daily_report",
-  hse: "safety",
-};
-
-export function canonicalSectionId(sectionId) {
-  return ORG_TO_SMART_SECTION[sectionId] || sectionId;
-}
-
-export const ORG_SECTION_LABELS = {
-  command: { ar: "مركز القيادة", en: "Command Center" },
-  operations: { ar: "المهام والعمليات", en: "Operations" },
-  attendance: { ar: "الحضور والانصراف", en: "Attendance" },
-  daily: { ar: "التقرير اليومي", en: "Daily report" },
-  hse: { ar: "السلامة HSE", en: "Safety HSE" },
-  complaints: { ar: "صوت الموظف", en: "Employee Voice" },
-  leave: { ar: "طلبات الإجازة", en: "Leave requests" },
-  hr: { ar: "الموارد البشرية", en: "Human Resources" },
-  payroll: { ar: "الرواتب", en: "Payroll" },
-  settings: { ar: "إعدادات الشركة", en: "Company settings" },
-  work_proof: { ar: "إثبات العمل", en: "Work proof" },
-  signing: { ar: "التوقيع الرقمي", en: "Digital signing" },
-  reports: { ar: "التقارير والتحليلات", en: "Reports & analytics" },
-  chat: { ar: "المحادثات التشغيلية", en: "Operations chat" },
-  shifts: { ar: "الورديات", en: "Shifts" },
-  hiring: { ar: "التوظيف", en: "Recruitment" },
-  performance: { ar: "الأداء", en: "Performance" },
-  org: { ar: "الهيكل التنظيمي", en: "Org structure" },
-  expenses: { ar: "المصروفات", en: "Expenses" },
-  inventory: { ar: "المخزون والأصول", en: "Inventory & assets" },
-  files: { ar: "الملفات", en: "Files" },
-  assistant: { ar: "المساعد الذكي", en: "AI assistant" },
-};
+export const ORG_SECTIONS = ["command", "operations", "attendance", "daily", "hse", "complaints", "leave", "hr", "payroll", "settings"];
 
 export const BASELINE_MATRIX = [
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
@@ -52,21 +15,9 @@ export const BASELINE_MATRIX = [
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY],
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
   [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
+  [SCOPE.COMPANY, SCOPE.DELEGATED, SCOPE.DELEGATED, SCOPE.DELEGATED, SCOPE.DELEGATED],
+  [SCOPE.COMPANY, SCOPE.DELEGATED, SCOPE.COMPANY, SCOPE.DELEGATED, SCOPE.DELEGATED],
   [SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE],
-  [SCOPE.COMPANY, SCOPE.NONE, SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE],
-  [SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE],
-  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
-  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
-  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
-  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
-  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
-  [SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE],
-  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
-  [SCOPE.COMPANY, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE, SCOPE.NONE],
-  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
-  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.NONE, SCOPE.OWN],
-  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
-  [SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.COMPANY, SCOPE.OWN],
 ];
 
 export const EMPLOYEE_ROLE_IDX = ORG_ROLES.indexOf("employee");
@@ -155,12 +106,6 @@ export function collectJobTitles(data = {}, removed = []) {
   }
   for (const position of data.smartPositions || []) add(position.title);
   for (const job of data.hcmFoundation?.jobs || []) add(job.title);
-  for (const label of data.knownTitles || []) {
-    const normalized = normalizeJobTitle(label);
-    const id = titleSlug(normalized);
-    if (!id || BUILTIN_TITLE_ALIASES.has(id) || blocked.has(id) || seen.has(id)) continue;
-    seen.set(id, { id, label: normalized, count: 0 });
-  }
   return [...seen.values()].sort((a, b) => a.label.localeCompare(b.label, "ar"));
 }
 
@@ -184,23 +129,20 @@ export function baselineScope(sectionIdx, roleIdx) {
   return row[roleIdx];
 }
 
-export function grantableScope(scope) {
-  return Number(scope) === SCOPE.DELEGATED ? SCOPE.NONE : Number(scope);
-}
-
 export function effectiveScope(sectionIdx, roleIdx, overrides = {}) {
-  const baseline = grantableScope(baselineScope(sectionIdx, roleIdx));
+  const baseline = baselineScope(sectionIdx, roleIdx);
   const key = permKey(sectionIdx, roleIdx);
   const raw = overrides[key];
   const overrideScope = raw == null ? null : typeof raw === "number" ? raw : raw.scope;
   if (overrideScope != null && overrideScope !== SCOPE.DELEGATED) {
     return { scope: overrideScope, derived: false, overridden: true, baseline };
   }
-  return { scope: baseline, derived: false, overridden: false, baseline };
+  return { scope: baseline, derived: baseline === SCOPE.DELEGATED, overridden: false, baseline };
 }
 
 export function nextScopeInCycle(current) {
-  const at = SCOPE_CYCLE.indexOf(grantableScope(current));
+  if (current === SCOPE.DELEGATED) return SCOPE.DELEGATED;
+  const at = SCOPE_CYCLE.indexOf(current);
   if (at < 0) return SCOPE_CYCLE[0];
   return SCOPE_CYCLE[(at + 1) % SCOPE_CYCLE.length];
 }
@@ -221,14 +163,14 @@ export function checkSetPermGate(nextScope) {
 }
 
 export function effectiveTitleScope(sectionIdx, titleId, overrides = {}) {
-  const baseline = grantableScope(baselineScope(sectionIdx, EMPLOYEE_ROLE_IDX));
+  const baseline = baselineScope(sectionIdx, EMPLOYEE_ROLE_IDX);
   const key = titlePermKey(sectionIdx, titleId);
   const raw = overrides[key];
   const overrideScope = raw == null ? null : typeof raw === "number" ? raw : raw.scope;
   if (overrideScope != null && overrideScope !== SCOPE.DELEGATED) {
     return { scope: overrideScope, derived: false, overridden: true, baseline };
   }
-  return { scope: baseline, derived: false, overridden: false, baseline };
+  return { scope: baseline, derived: baseline === SCOPE.DELEGATED, overridden: false, baseline };
 }
 
 function normalizedTitles(titles = []) {
@@ -306,13 +248,22 @@ export function isDelegationExpired(end, now = new Date()) {
   return due.getTime() < today.getTime();
 }
 
+export function isDelegationStarted(start, now = new Date()) {
+  if (!start) return true;
+  const due = parseDay(start);
+  if (!due) return true;
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return due.getTime() <= today.getTime();
+}
+
 export function isDelegationActive(d, now = new Date()) {
-  return !d.revoked && !isDelegationExpired(d.end, now);
+  return !d.revoked && isDelegationStarted(d.start, now) && !isDelegationExpired(d.end, now);
 }
 
 export function deriveDelegationStatus(d, now = new Date()) {
   if (d.revoked) return { active: false, expired: false, status: "revoked" };
   if (isDelegationExpired(d.end, now)) return { active: false, expired: true, status: "expired" };
+  if (!isDelegationStarted(d.start, now)) return { active: false, expired: false, status: "scheduled" };
   const due = parseDay(d.end);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const daysLeft = Math.round((due.getTime() - today.getTime()) / 86400000);
@@ -410,14 +361,12 @@ export function branchEscalationIds(stationId, data) {
 }
 
 /**
- * Auto ladder from the org tree only — no manual overrides.
+ * Auto ladder from the workplace tree: parentStationId + station.managerId
+ * (acting if the seat is vacant). Manual branchEscalationChains still override.
  */
 export function deriveAutoBranchEscalationChain(stationId, data) {
   const employees = Array.isArray(data?.employees) ? data.employees : [];
-  const nodes = Array.isArray(data?.orgTree) ? data.orgTree : [];
-  const stations = Array.isArray(data?.stations) ? data.stations : [];
   const empById = employeeIndex(employees);
-  const byNodeId = new Map(nodes.map((n) => [n.id, n]));
   const chain = [];
   const seen = new Set();
 
@@ -432,41 +381,10 @@ export function deriveAutoBranchEscalationChain(stationId, data) {
   const sid = stationId ? String(stationId) : "";
   if (!sid) return chain;
 
-  const station = stations.find((s) => String(s.id || s.stationId) === sid) || null;
-  const stationNode = nodes.find((n) => n.type === "station" && String(n.refId) === sid) || null;
-
-  // Only this branch's own manager — never a manager of another branch
-  // who happens to list this station in managedStations.
-  if (station?.managerId) {
-    pushEmp(empById.get(String(station.managerId)), "مدير الفرع");
-  } else {
-    const localMgr = employees.find((e) => e.role === "station_manager" && String(e.stationId) === sid);
-    pushEmp(localMgr, "مدير الفرع");
+  for (const step of workplaceEscalationManagers(data, sid)) {
+    pushEmp(empById.get(String(step.employeeId)), step.title);
   }
 
-  const walkUp = (start) => {
-    let cursor = start;
-    const visited = new Set();
-    while (cursor) {
-      if (visited.has(cursor.id)) break;
-      visited.add(cursor.id);
-      if (cursor.type === "station" && String(cursor.refId) !== sid) break;
-      if (cursor.type === "employee") {
-        pushEmp(empById.get(String(cursor.refId)), cursor.title || "");
-      }
-      cursor = cursor.parentId ? byNodeId.get(cursor.parentId) : null;
-    }
-  };
-
-  if (stationNode) {
-    walkUp(stationNode.parentId ? byNodeId.get(stationNode.parentId) : null);
-  } else if (station?.managerId) {
-    const mgrNode = nodes.find((n) => n.type === "employee" && String(n.refId) === String(station.managerId));
-    walkUp(mgrNode?.parentId ? byNodeId.get(mgrNode.parentId) : null);
-  }
-
-  // Apex is the company owner only. A "director" seated under another
-  // branch is that branch's path, not this one's extra step.
   const owner = employees.find((e) => e.isOwner || e.role === "owner" || String(e.id) === String(data?.ownerId));
   if (owner) pushEmp(owner, "المالك");
 

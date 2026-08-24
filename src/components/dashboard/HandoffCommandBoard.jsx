@@ -330,7 +330,7 @@ export default function HandoffCommandBoard({
         <div style={{ display: "flex", alignItems: "baseline", gap: "10px", marginBottom: "10px" }}>
           <div style={{ fontSize: "13px", fontWeight: 600 }}>{ar ? "الفروع" : "Stations"}</div>
           <div style={{ fontSize: "11px", color: MUTED }}>
-            {ar ? "حالة اللحظة · اضغط فرع لتضييق اللوحة عليها" : "Live status · pick a station to scope this board"}
+            {ar ? "اضغط فرعًا لتضييق اللوحة" : "Pick a branch to narrow the board"}
           </div>
           {scope !== "all" && (
             <button

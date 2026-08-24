@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تصميم ملف الموظف</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #12304a;
+      --green: #1f6f52;
+      --muted: #5b6b78;
+      --line: #dfe4ea;
+      --wash: #f7f9fa;
+      --mint: #eef4f0;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #e8edf2; color: var(--navy); font-family: "IBM Plex Sans Arabic", sans-serif; }
+    .toolbar {
+      position: sticky; top: 0; z-index: 2;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--line);
+    }
+    .toolbar b { font-size: 14px; }
+    .toolbar span { font-size: 12px; color: var(--muted); }
+    .toolbar button {
+      height: 36px; padding: 0 14px; border: 0; border-radius: 8px;
+      background: var(--green); color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .page {
+      width: 210mm; min-height: 297mm; margin: 18px auto; background: #fff;
+      box-shadow: 0 12px 34px rgba(18, 48, 74, .08); overflow: hidden;
+    }
+    header.bar {
+      display: flex; justify-content: space-between; align-items: stretch; background: var(--navy); color: #fff;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; padding: 16px 28px; }
+    .mark { width: 36px; height: 36px; border-radius: 8px; background: var(--green); display: grid; place-items: center; font-weight: 700; }
+    .brand p { margin: 0; }
+    .brand .sub { font-size: 11px; color: rgba(255,255,255,.7); }
+    .doc { background: var(--mint); color: var(--navy); padding: 16px 28px; text-align: start; }
+    .doc strong { display: block; font-size: 13px; }
+    .doc small { color: var(--muted); font-size: 11px; }
+    .body { padding: 22px 32px 28px; }
+    h1 { margin: 0; font-size: 22px; }
+    .meta { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+    .hero { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+    .avatar { width: 64px; height: 64px; border-radius: 10px; background: var(--mint); color: var(--green); display: grid; place-items: center; font-size: 22px; font-weight: 700; flex: none; }
+    h2 { margin: 22px 0 8px; padding-inline-start: 8px; border-inline-start: 4px solid var(--green); font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; vertical-align: top; }
+    th { width: 28%; background: var(--wash); color: var(--muted); font-weight: 500; text-align: start; }
+    td { font-weight: 500; min-height: 32px; }
+    td[contenteditable="true"] { outline: none; }
+    td[contenteditable="true"]:focus { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--green) 35%, white); }
+    footer.bar {
+      display: flex; justify-content: space-between; border-top: 1px solid var(--line);
+      padding: 10px 32px; font-size: 9px; color: var(--muted);
+    }
+    .note { margin: 10px 0 0; font-size: 10px; color: var(--muted); line-height: 1.6; }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none; }
+      .page { margin: 0; box-shadow: none; page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div>
+      <b>تصميم ملف الموظف</b>
+      <span> — املأ الخانات ثم اطبع أو احفظ PDF</span>
+    </div>
+    <button type="button" onclick="window.print()">طباعة / PDF</button>
+  </div>
+
+  <article class="page">
+    <header class="bar">
+      <div class="brand">
+        <span class="mark">ن</span>
+        <div>
+          <p>المنشأة</p>
+          <p class="sub">إدارة الموارد البشرية</p>
+        </div>
+      </div>
+      <div class="doc">
+        <strong>ملف الموظف الشامل</strong>
+        <small>نموذج تصميم — سري: داخلي</small>
+      </div>
+    </header>
+    <div class="body">
+      <div class="hero">
+        <div>
+          <h1 contenteditable="true">اسم الموظف</h1>
+          <p class="meta"><span contenteditable="true">المنصب</span> · <span contenteditable="true">الدرجة</span> · <span contenteditable="true">الفرع</span></p>
+          <p class="meta">الرقم الوظيفي: <b contenteditable="true">—</b> · تاريخ التعيين: <b contenteditable="true">YYYY-MM-DD</b></p>
+        </div>
+        <span class="avatar">م</span>
+      </div>
+
+      <h2>التعيين في الشجرة</h2>
+      <table>
+        <tr><th>القائمة</th><td contenteditable="true"></td><th>المنصب</th><td contenteditable="true"></td></tr>
+        <tr><th>الدرجة</th><td contenteditable="true"></td><th>فرع العمل</th><td contenteditable="true"></td></tr>
+        <tr><th>فروع إضافية</th><td contenteditable="true" colspan="3"></td></tr>
+        <tr><th>البريد</th><td contenteditable="true"></td><th>الجوال</th><td contenteditable="true"></td></tr>
+      </table>
+
+      <h2>الهوية والجنسية</h2>
+      <table>
+        <tr><th>الجنسية</th><td contenteditable="true"></td><th>نوع الهوية</th><td contenteditable="true">هوية وطنية / إقامة</td></tr>
+        <tr><th>رقم الهوية / الإقامة</th><td contenteditable="true"></td><th>انتهاء الهوية / الإقامة</th><td contenteditable="true"></td></tr>
+        <tr><th>تاريخ الميلاد</th><td contenteditable="true"></td><th>الجنس</th><td contenteditable="true">ذكر / أنثى</td></tr>
+        <tr><th>الحالة الاجتماعية</th><td contenteditable="true"></td><th>رقم الجواز</th><td contenteditable="true"></td></tr>
+        <tr><th>انتهاء الجواز</th><td contenteditable="true" colspan="3"></td></tr>
+      </table>
+
+      <h2>التأمينات والضمان الصحي</h2>
+      <table>
+        <tr><th>رقم التأمينات (GOSI)</th><td contenteditable="true"></td><th>رقم التأمين الطبي</th><td contenteditable="true"></td></tr>
+        <tr><th>انتهاء التأمين الطبي</th><td contenteditable="true"></td><th>الفحص الطبي</th><td contenteditable="true"></td></tr>
+      </table>
+    </div>
+    <footer class="bar"><span>NiroVera · ملف الموظف</span><span>الصفحة 1</span></footer>
+  </article>
+
+  <article class="page">
+    <header class="bar">
+      <div class="brand">
+        <span class="mark">ن</span>
+        <div>
+          <p>المنشأة</p>
+          <p class="sub">إدارة الموارد البشرية</p>
+        </div>
+      </div>
+      <div class="doc">
+        <strong>ملف الموظف الشامل</strong>
+        <small>قوى · اتصال · أجر</small>
+      </div>
+    </header>
+    <div class="body">
+      <h2>التوظيف ومنصة قوى</h2>
+      <table>
+        <tr><th>المسمى في منصة قوى</th><td contenteditable="true"></td><th>نوع العقد</th><td contenteditable="true">غير محدد المدة / محدد المدة</td></tr>
+        <tr><th>رقم رخصة العمل</th><td contenteditable="true"></td><th>انتهاء رخصة العمل</th><td contenteditable="true"></td></tr>
+      </table>
+
+      <h2>المؤهل وبيانات الاتصال</h2>
+      <table>
+        <tr><th>المؤهل العلمي</th><td contenteditable="true" colspan="3"></td></tr>
+        <tr><th>جهة اتصال الطوارئ</th><td contenteditable="true"></td><th>هاتف الطوارئ</th><td contenteditable="true"></td></tr>
+        <tr><th>العنوان</th><td contenteditable="true" colspan="3"></td></tr>
+        <tr><th>ملاحظات</th><td contenteditable="true" colspan="3"></td></tr>
+      </table>
+
+      <h2>حماية الأجور — الحساب البنكي</h2>
+      <table>
+        <tr><th>الحساب البنكي (IBAN)</th><td contenteditable="true" colspan="3">SA</td></tr>
+        <tr><th>الراتب الأساسي</th><td contenteditable="true"></td><th>البدلات</th><td contenteditable="true"></td></tr>
+      </table>
+      <p class="note">تُصرف الرواتب عبر نظام حماية الأجور (WPS) إلى الحساب البنكي المسجّل. الآيبان السعودي: SA ثم 22 رقمًا.</p>
+
+      <h2>التوقيع</h2>
+      <table>
+        <tr><th>مسؤول الموارد البشرية</th><td contenteditable="true"></td><th>التاريخ</th><td contenteditable="true"></td></tr>
+      </table>
+      <p class="note">هذا تصميم ملف الموظف فقط — ليس حزمة المنصة كاملة. املأ الخانات ثم اطبع أو احفظ PDF من المتصفح.</p>
+    </div>
+    <footer class="bar"><span>NiroVera · ملف الموظف</span><span>الصفحة 2</span></footer>
+  </article>
+</body>
+</html>

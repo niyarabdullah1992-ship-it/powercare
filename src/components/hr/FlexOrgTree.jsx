@@ -7,6 +7,7 @@ import {
   initializeOrgTree,
   stationIdForTreeEmployee,
 } from "@/lib/orgTree";
+import { vacantSeats } from "@/lib/orgHire";
 import { toast } from "@/components/ui/use-toast";
 import HierarchyZoomControls from "@/components/hr/HierarchyZoomControls";
 import FlexOrgBranch from "@/components/hr/FlexOrgBranch";
@@ -18,9 +19,9 @@ import OrgTreeUnassignedEmployees from "@/components/hr/OrgTreeUnassignedEmploye
 import EscalationCoverageDialog from "@/components/hr/EscalationCoverageDialog";
 import useOrgTreeViewport from "@/hooks/useOrgTreeViewport";
 import useStationScope from "@/hooks/useStationScope";
-import { INK, NAVY, CARD } from "@/lib/platformStyles";
+import { INK, NAVY, CARD, MUTED, BORDER } from "@/lib/platformStyles";
 
-export default function FlexOrgTree({ data, company, currentUser, lang }) {
+export default function FlexOrgTree({ data, company, currentUser, lang, onHire }) {
   const ar = lang === "ar";
   const [editing, setEditing] = useState(undefined);
   const [organizing, setOrganizing] = useState(null);
@@ -60,6 +61,10 @@ export default function FlexOrgTree({ data, company, currentUser, lang }) {
   const canManage = isCompanyOwner(currentUser, data)
     || canManageEmployees(currentUser)
     || hasHRPermission(currentUser, data, "manage_employees");
+  const openSeats = useMemo(
+    () => vacantSeats(data, scopedStationId || undefined),
+    [data, scopedStationId],
+  );
 
   const setSafeZoom = (value) => setZoom(Math.max(0.1, Math.min(1.5, value)));
   const panTree = (x, y) => setOffset((current) => ({ x: current.x + x, y: current.y + y }));
@@ -164,6 +169,7 @@ export default function FlexOrgTree({ data, company, currentUser, lang }) {
     end: () => {},
     drop: () => {},
     hit: () => {},
+    hire: (detail) => onHire?.(detail),
   };
 
   const tree = (
@@ -233,33 +239,96 @@ export default function FlexOrgTree({ data, company, currentUser, lang }) {
             ar={ar}
           />
           {canManage && (
-            <button
-              type="button"
-              onClick={() => setEditing(null)}
-              title={ar ? "إضافة" : "Add"}
-              aria-label={ar ? "إضافة" : "Add"}
-              style={{
-                width: 34,
-                height: 34,
-                padding: 0,
-                borderRadius: 9,
-                border: "1px solid #1E9E63",
-                background: "#1E9E63",
-                color: "#fff",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              <Plus style={{ width: 16, height: 16 }} strokeWidth={2} />
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                title={ar ? "إضافة فرع" : "Add branch"}
+                style={{
+                  height: 34,
+                  padding: "0 10px",
+                  borderRadius: 9,
+                  border: "1px solid #E2E8F0",
+                  background: CARD,
+                  color: INK,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                {ar ? "فرع" : "Branch"}
+              </button>
+              <button
+                type="button"
+                onClick={() => onHire?.({})}
+                title={ar ? "أضف موظف" : "Add employee"}
+                aria-label={ar ? "أضف موظف" : "Add employee"}
+                style={{
+                  width: 34,
+                  height: 34,
+                  padding: 0,
+                  borderRadius: 9,
+                  border: "1px solid #1E9E63",
+                  background: "#1E9E63",
+                  color: "#fff",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                <Plus style={{ width: 16, height: 16 }} strokeWidth={2} />
+              </button>
+            </>
           )}
         </div>
       </header>
 
       {!fullscreen && <OrgTreeGuide ar={ar} />}
+
+      {!fullscreen && canManage && openSeats.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 14px",
+            borderBottom: `1px solid ${BORDER}`,
+            background: CARD,
+          }}
+        >
+          <span style={{ fontSize: 11, color: MUTED, fontWeight: 600 }}>
+            {ar ? "شواغر هذه الوحدة" : "Vacancies in this unit"}
+          </span>
+          {openSeats.slice(0, 8).map((seat) => (
+            <button
+              key={seat.id}
+              type="button"
+              onClick={() => onHire?.({ stationId: seat.stationId, seatId: seat.id })}
+              style={{
+                height: 28,
+                padding: "0 10px",
+                borderRadius: 20,
+                border: `1px solid ${BORDER}`,
+                background: CARD,
+                color: NAVY,
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              {seat.title} · {ar ? "عيّن" : "Assign"}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!fullscreen && unassignedEmployees.length > 0 && (
         <OrgTreeUnassignedEmployees

@@ -1,3 +1,5 @@
+import { applyExtraCoverageStrip } from "@/lib/stationTree";
+
 export function reconcileStationReferences(data) {
   if (!data) return data;
   const seen = new Set();
@@ -9,10 +11,15 @@ export function reconcileStationReferences(data) {
   const valid = new Set(data.stations.map((station) => station.id));
   if (valid.size === 0) return data;
   (data.employees || []).forEach((employee) => {
+    if (!employee || typeof employee !== "object") return;
     if (employee.stationId && !valid.has(employee.stationId)) employee.stationId = null;
     if (employee.hrStationId && !valid.has(employee.hrStationId)) employee.hrStationId = null;
-    employee.managedStations = (employee.managedStations || []).filter((id) => valid.has(id));
+    const managed = Array.isArray(employee.managedStations)
+      ? employee.managedStations
+      : String(employee.managedStations || "").split(/[،,]/).map((id) => id.trim()).filter(Boolean);
+    employee.managedStations = managed.filter((id) => valid.has(id));
   });
+  applyExtraCoverageStrip(data);
 
   data.schedules = (data.schedules || []).filter((schedule) => !schedule.stationId || valid.has(schedule.stationId));
   ["hrClusters", "stationChatGroups"].forEach((key) => {

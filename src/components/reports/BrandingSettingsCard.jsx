@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { ChromeBox } from "@/components/shared/IdentityCard";
 import { ACCENT, BORDER, MUTED, NAVY, SURFACE, field, ui } from "@/lib/platformStyles";
 import { brandReportColor, PDF_THEME } from "@/lib/pdfTheme";
-import { canEditPlatformTheme, publishPlatformTheme, readStoredTheme } from "@/lib/platformTheme";
+import { canEditPlatformTheme } from "@/lib/platformTheme";
 
 export default function BrandingSettingsCard({ lang = "ar" }) {
   const ar = lang === "ar";
@@ -40,31 +40,18 @@ export default function BrandingSettingsCard({ lang = "ar" }) {
     try {
       updateCompany(company.id, (d) => {
         d.reportBranding = next;
-      });
-      const current = readStoredTheme(company.id);
-      publishPlatformTheme({
-        id: "custom",
-        navy: next.color || current.navy,
-        accent: current.accent,
-      }, company.id);
+      }, { sync: "none" });
       try {
         await base44.functions.invoke("settings", {
           action: "setReportBranding",
           companyId: company.id,
           reportBranding: next,
         });
-        await base44.functions.invoke("settings", {
-          action: "setColorTheme",
-          companyId: company.id,
-          colorTheme: { id: "custom", navy: next.color || current.navy, accent: current.accent },
-        });
       } catch {
-        /* local persist already wrote the letterhead for this session */
+        /* local persist is enough in preview */
       }
       refresh?.();
-      setHint(ar
-        ? "حُفظت. الشعار واللون يظهران الآن في الشريط وكل الشاشات والتقارير الجديدة."
-        : "Saved. The mark and color now appear in the sidebar, every screen, and new reports.");
+      setHint(ar ? "حُفظ شعار الشركة لتقارير Excel وPDF." : "Company mark saved for Excel and PDF reports.");
     } finally {
       setBusy(false);
     }
@@ -85,15 +72,15 @@ export default function BrandingSettingsCard({ lang = "ar" }) {
   return (
     <ChromeBox>
       <div style={{ fontSize: 11, letterSpacing: "0.1em", color: ACCENT, fontWeight: 600 }}>
-        {ar ? "هوية الشركة" : "Company identity"}
+        {ar ? "هوية التقارير" : "Report letterhead"}
       </div>
       <div style={{ marginTop: 6, fontSize: 13, fontWeight: 600, color: NAVY }}>
-        {ar ? "شعار الشركة وتصميمها في كل مكان" : "Company mark and design everywhere"}
+        {ar ? "شعار الشركة على الورقة" : "Company mark on the page"}
       </div>
       <p style={{ margin: "6px 0 0", fontSize: 12, color: MUTED, lineHeight: 1.7, maxWidth: 640 }}>
         {ar
-          ? "يُحفظ فورًا ويظهر في القائمة الجانبية ورؤوس الصفحات والتقارير الجديدة. الموقع التسويقي يبقى بهوية نيروفيرا."
-          : "It saves immediately and appears in the sidebar, page headers, and new reports. The marketing site keeps the NiroVera mark."}
+          ? "يتصدّر شعار شركتك ملف Excel وPDF. NiroVera تبقى صغيرة في التذييل."
+          : "Your company mark leads Excel and PDF files. NiroVera stays small in the footer."}
       </p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 16, alignItems: "center" }}>
         <div
@@ -120,7 +107,7 @@ export default function BrandingSettingsCard({ lang = "ar" }) {
             <input type="file" accept="image/*" disabled={!canEdit || busy} onChange={onFile} style={{ display: "block", marginTop: 6 }} />
           </label>
           <label style={{ ...ui, fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
-            {ar ? "لون الأساس" : "Base color"}
+            {ar ? "لون الأعمدة" : "Column color"}
             <input
               type="color"
               value={color}

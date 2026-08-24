@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import {
   taskPoints,
   planHorizonFromDue,
+  taskPlanHorizon,
+  deriveHorizonGroups,
   deriveOpsCounts,
   clampEffortWeight,
   checkAssignGate,
@@ -12,6 +14,9 @@ import {
   CERT_FOR,
   CERT_LABELS,
   isAwaitingApproval,
+  deriveDailyTaskPace,
+  deriveBoardDailyPace,
+  dailyPaceLabel,
 } from "../src/lib/opsDerivations.js";
 
 // ── Points formula (High 3 · Medium 2 · Low 1) × effort (1–5) ───────────────
@@ -40,6 +45,22 @@ assert.equal(planHorizonFromDue("2027-01-01", today), "h");
 assert.equal(planHorizonFromDue("2027-08-01", today), "y");
 assert.equal(planHorizonFromDue(null, today), "w");
 
+// Live remaining days — stored horizon is ignored unless pinned
+assert.equal(taskPlanHorizon({ dueAt: "2026-08-15", planHorizon: "q" }, today), "w");
+assert.equal(taskPlanHorizon({ dueAt: "2026-09-01", planHorizon: "y" }, today), "m");
+assert.equal(taskPlanHorizon({ dueAt: "2026-08-15", planHorizon: "y", planPinned: true }, today), "y");
+assert.equal(taskPlanHorizon({ dueAt: null, planHorizon: "q" }, today), "w");
+
+const liveGroups = deriveHorizonGroups([
+  { dueAt: "2026-08-15", planHorizon: "q", completedCount: 0, targetCount: 1 },
+  { dueAt: "2026-09-01", planHorizon: "y", completedCount: 0, targetCount: 1 },
+  { dueAt: "2026-08-14", planHorizon: "y", planPinned: true, completedCount: 0, targetCount: 1 },
+], today);
+assert.equal(liveGroups.find((g) => g.id === "w").count, 1);
+assert.equal(liveGroups.find((g) => g.id === "m").count, 1);
+assert.equal(liveGroups.find((g) => g.id === "y").count, 1);
+assert.equal(liveGroups.find((g) => g.id === "q").count, 0);
+
 // ── Derived counters (never stored literals) ─────────────────────────────────
 const counts = deriveOpsCounts([
   { status: "active", dueAt: "2026-08-01", completedCount: 0, targetCount: 1 },
@@ -56,6 +77,54 @@ assert.equal(counts.badge, 2);
 
 assert.equal(isAwaitingApproval({ status: "active", completedCount: 2, targetCount: 2 }), true);
 assert.equal(isAwaitingApproval({ status: "completed", completedCount: 2, targetCount: 2, approvedAt: "2026-08-10" }), false);
+
+// ── Daily pace: 30 tasks by the 25th from the 17th → 9 days, 4 today ────────
+const paceDay = new Date("2026-08-17T12:00:00");
+const pace = deriveDailyTaskPace({
+  targetCount: 30,
+  dueAt: "2026-08-25",
+  startAt: "2026-08-17",
+  today: paceDay,
+});
+assert.equal(pace.active, true);
+assert.equal(pace.days, 9);
+assert.equal(pace.even, 3);
+assert.equal(pace.extra, 3);
+assert.equal(pace.todayExpected, 4);
+
+const lastDay = deriveDailyTaskPace({
+  targetCount: 30,
+  dueAt: "2026-08-25",
+  startAt: "2026-08-17",
+  today: new Date("2026-08-25T12:00:00"),
+});
+assert.equal(lastDay.todayExpected, 3);
+
+const sameDay = deriveDailyTaskPace({
+  targetCount: 30,
+  dueAt: "2026-08-17",
+  startAt: "2026-08-17",
+  today: paceDay,
+});
+assert.equal(sameDay.days, 1);
+assert.equal(sameDay.todayExpected, 30);
+
+assert.equal(deriveDailyTaskPace({ targetCount: 1, dueAt: "2026-08-25", today: paceDay }).active, false);
+assert.equal(deriveDailyTaskPace({
+  targetCount: 30,
+  completedCount: 30,
+  dueAt: "2026-08-25",
+  startAt: "2026-08-17",
+  today: paceDay,
+}).todayExpected, 0);
+
+const board = deriveBoardDailyPace([
+  { targetCount: 30, completedCount: 0, dueAt: "2026-08-25", createdAt: "2026-08-17", status: "active" },
+  { targetCount: 1, dueAt: "2026-08-25", status: "active" },
+], paceDay);
+assert.equal(board.active, 1);
+assert.equal(board.todayExpected, 4);
+assert.ok(dailyPaceLabel(pace, true).includes("4"));
 
 // ── Certification gate — names the missing certificate in all assign modes ───
 const people = [
@@ -148,6 +217,18 @@ assert.equal(canReassignOpsTask(openTask, manager, {}), true);
 assert.equal(canReassignOpsTask(openTask, employee, {}), false);
 assert.equal(canReassignOpsTask(doneTask, manager, {}), false);
 assert.equal(canReassignOpsTask(awaitingTask, manager, {}), false);
+
+const eastManager = { id: "e0", role: "station_manager", stationId: "east", managedStations: [] };
+const childTask = { ...openTask, stationId: "khf" };
+const eastTree = {
+  stations: [
+    { id: "east", parentStationId: "co", managerId: "e0" },
+    { id: "khf", parentStationId: "east" },
+    { id: "co", isCompanyRoot: true },
+  ],
+};
+assert.equal(canReassignOpsTask(childTask, eastManager, eastTree), true);
+assert.equal(canReassignOpsTask({ ...openTask, stationId: "west" }, eastManager, eastTree), false);
 
 const reassignPeople = [{ employeeId: "e1", name: "First" }, { employeeId: "e2", name: "Second" }];
 const missingReason = checkReassignGate({

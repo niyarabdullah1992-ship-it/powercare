@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تصميم المهام والعمليات — NiroVera</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;family=IBM+Plex+Sans:wght@500;600&amp;display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #14284B;
+      --ink: #14284B;
+      --muted: #5A6B85;
+      --green: #1E9E63;
+      --green-soft: color-mix(in srgb, #1E9E63 10%, white);
+      --green-deep: color-mix(in srgb, #1E9E63 84%, black);
+      --green-line: color-mix(in srgb, #1E9E63 28%, white);
+      --line: #E2E8F0;
+      --wash: #F7F8FA;
+      --card: #FFFFFF;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #E8EDF2; color: var(--ink); font-family: "IBM Plex Sans Arabic", sans-serif; }
+    .num { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", sans-serif; font-variant-numeric: tabular-nums; }
+    .toolbar {
+      position: sticky; top: 0; z-index: 4;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--line);
+    }
+    .toolbar b { font-size: 14px; }
+    .toolbar span { font-size: 12px; color: var(--muted); }
+    .toolbar .actions { display: flex; gap: 8px; }
+    .toolbar button {
+      height: 36px; padding: 0 14px; border: 0; border-radius: 8px;
+      background: var(--green); color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .toolbar button.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+    .wrap { max-width: 1280px; margin: 18px auto; padding: 0 16px 40px; }
+    .shell {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+      box-shadow: 0 8px 24px rgba(20,40,75,.06);
+    }
+    .rail { height: 3px; background: var(--navy); }
+    .head { display: flex; align-items: center; gap: 16px; padding: 14px 18px; }
+    .mark { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); display: grid; place-items: center; font-weight: 700; color: var(--green); background: #fff; flex: none; }
+    h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    .hint { margin: 5px 0 0; font-size: 12px; line-height: 1.6; color: var(--muted); max-width: 720px; }
+    .tabs {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px;
+      background: var(--wash); padding: 8px 12px; border-bottom: 1px solid var(--line);
+    }
+    .tabs button {
+      min-height: 38px; border: 1px solid transparent; border-radius: 9px; background: transparent;
+      color: var(--muted); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .tabs button.on { background: #fff; color: var(--ink); border-color: var(--line); box-shadow: 0 1px 2px rgba(20,40,75,.06); }
+    .body { padding: 16px; background: var(--wash); }
+    .panel { display: none; }
+    .panel.on { display: block; }
+    .stack { display: flex; flex-direction: column; gap: 12px; }
+    .tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .rail-tabs { display: inline-flex; height: 34px; padding: 3px; border-radius: 9px; border: 1px solid var(--line); background: var(--wash); }
+    .rail-tabs span {
+      display: inline-flex; align-items: center; padding: 0 12px; border-radius: 7px;
+      font-size: 12px; font-weight: 600; color: var(--muted);
+    }
+    .rail-tabs span.on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(20,40,75,.06); }
+    .chip {
+      padding: 7px 14px; border-radius: 9px; border: 1px solid var(--line);
+      background: #fff; color: var(--muted); font-size: 12px;
+    }
+    .chip.on { border-color: var(--green); background: var(--green-soft); color: var(--green-deep); font-weight: 600; }
+    .grow { flex: 1; }
+    .btn { height: 32px; padding: 0 14px; border: 0; border-radius: 9px; background: var(--green); color: #fff; font: inherit; font-size: 12px; font-weight: 600; }
+    .pace {
+      border: 1px solid var(--line); background: var(--wash); border-radius: 9px; padding: 7px 12px;
+    }
+    .pace-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .pace-k { font-size: 10px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+    .pace-m { display: flex; align-items: baseline; gap: 6px; padding-inline: 12px; border-inline-start: 1px solid var(--line); }
+    .pace-m:first-child { padding-inline-start: 0; border: 0; }
+    .pace-m small { font-size: 10px; color: var(--muted); }
+    .pace-m b { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }
+    .pace p { margin: 4px 0 0; font-size: 10px; color: var(--muted); line-height: 1.4; }
+    .ok {
+      border-radius: 16px; border: 1px solid #BBF7D0; background: #ECFDF3;
+      padding: 12px 14px; font-size: 13px; color: #15803D; line-height: 1.7;
+    }
+    .table {
+      background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+    }
+    .thead, .trow {
+      display: grid; grid-template-columns: minmax(260px,2.4fr) 118px 138px 108px 116px 100px;
+      gap: 12px; padding: 13px 18px; align-items: center;
+    }
+    .thead { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--muted); background: var(--wash); border-bottom: 1px solid var(--line); }
+    .trow { border-bottom: 1px solid #F1F5F9; font-size: 13px; }
+    .trow:last-child { border-bottom: 0; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #DC2626; flex: none; }
+    .dot.med { background: #F59E0B; }
+    .dot.ok { background: var(--green); }
+    .title { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; font-size: 11px; color: var(--muted); }
+    .tag { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 600; border: 1px solid var(--green-line); background: var(--green-soft); color: var(--green-deep); }
+    .tag.mute { background: var(--wash); color: var(--muted); border-color: var(--line); }
+    .tag.warn { background: #FFF7ED; color: #C2410C; border-color: #FDBA74; }
+    .av { width: 22px; height: 22px; border-radius: 50%; background: #F1F5F9; border: 1px solid var(--line); display: grid; place-items: center; font-size: 9px; color: var(--muted); }
+    .pill { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; background: #ECFDF3; color: #15803D; border: 1px solid #BBF7D0; }
+    .pill.wait { background: #FFFBEB; color: #B45309; border-color: #FDE68A; }
+    .pill.late { background: #FEF2F2; color: #DC2626; border-color: #FECACA; }
+    .bar { height: 5px; border-radius: 4px; background: #F1F5F9; overflow: hidden; }
+    .bar i { display: block; height: 100%; background: var(--green); border-radius: 4px; }
+    .split { display: grid; grid-template-columns: 1.4fr .9fr; gap: 12px; }
+    .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    .card-h { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+    .card-h b { display: block; font-size: 14px; }
+    .card-h small { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); }
+    .card-b { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field span { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .field input, .field textarea, .fake {
+      height: 36px; border: 1px solid var(--line); border-radius: 9px; background: var(--wash);
+      padding: 0 12px; font: inherit; font-size: 13px; color: var(--ink);
+    }
+    .field textarea { height: auto; padding: 9px 12px; resize: none; }
+    .pair { display: flex; gap: 12px; }
+    .pair .field { flex: 1; }
+    .seg { display: flex; gap: 8px; }
+    .seg i {
+      flex: 1; height: 36px; display: grid; place-items: center; border-radius: 9px;
+      border: 1px solid var(--line); background: #fff; font-style: normal; font-size: 12px; color: var(--muted);
+    }
+    .seg i.on { border-color: var(--green); background: var(--green-soft); color: var(--green-deep); font-weight: 600; }
+    .detail-h { padding: 16px 18px 12px; border-bottom: 1px solid var(--line); }
+    .detail-h .ref { font-size: 11px; color: var(--muted); font-family: "IBM Plex Sans", monospace; }
+    .prog { display: flex; align-items: center; gap: 7px; margin-top: 10px; }
+    .prog .bar { flex: 1; }
+    .rules { margin-top: 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .rule { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+    .rule b { display: block; font-size: 12px; margin-bottom: 4px; }
+    .rule p { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.65; }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none; }
+      .wrap { max-width: none; margin: 0; padding: 0; }
+      .panel { display: block !important; break-after: page; }
+      .shell { box-shadow: none; border: 0; }
+    }
+    @media (max-width: 900px) {
+      .tabs, .rules, .split { grid-template-columns: 1fr; }
+      .thead, .trow { min-width: 880px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div>
+      <b>تصميم المهام والعمليات</b>
+      <span> — اللوحة · مهمة جديدة · بطاقة الأمر. اطبع PDF أو حمّل الملف.</span>
+    </div>
+    <div class="actions">
+      <button type="button" class="ghost" onclick="window.print()">طباعة / PDF</button>
+      <button type="button" onclick="downloadSelf()">تحميل HTML</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <article class="shell">
+      <div class="rail"></div>
+      <header class="head">
+        <span class="mark">ن</span>
+        <div>
+          <h1>المهام والعمليات</h1>
+          <p class="hint" id="hint">3 نشطة · 2 تحتاج متابعة · نقاط معتمدة 18 — الحضور يفتح المهمة، والاعتماد يمنح النقاط.</p>
+        </div>
+      </header>
+      <nav class="tabs" aria-label="المهام والعمليات">
+        <button type="button" class="on" data-tab="board" onclick="showTab('board')">لوحة المهام</button>
+        <button type="button" data-tab="create" onclick="showTab('create')">مهمة جديدة</button>
+        <button type="button" data-tab="detail" onclick="showTab('detail')">بطاقة الأمر</button>
+      </nav>
+
+      <div class="body">
+        <section class="panel on" id="board">
+          <div class="stack">
+            <div class="tools">
+              <div class="rail-tabs"><span class="on">قائمة</span><span>الخطة</span></div>
+              <span class="chip on">الكل · 6</span>
+              <span class="chip">متأخرة · 1</span>
+              <span class="chip">اليوم · 2</span>
+              <span class="chip">بانتظار الاعتماد · 1</span>
+              <span class="chip">صُعّدت · 0</span>
+              <span class="chip">مكتملة · 2</span>
+              <span class="grow"></span>
+              <button type="button" class="btn">مهمة جديدة</button>
+            </div>
+
+            <div class="pace">
+              <div class="pace-row">
+                <div class="pace-k">التوزيع على الأيام</div>
+                <div class="pace-m" style="padding-inline-start:0;border:0"><small>اليوم</small><b class="num">4</b></div>
+                <div class="pace-m"><small>الأوامر</small><b class="num">2</b></div>
+              </div>
+              <p>مجموع إيقاع اليوم للأوامر المؤرخة</p>
+            </div>
+
+            <div class="ok">حضور اليوم مسجَّل — يمكنك تسجيل إنجاز المهام الحضورية.</div>
+
+            <div class="table">
+              <div class="thead">
+                <div>المهمة</div><div>الفرع</div><div>المسؤول</div><div>الاستحقاق</div><div>الحالة</div><div style="text-align:end">الإنجاز</div>
+              </div>
+              <div class="trow">
+                <div>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span class="dot"></span>
+                    <div style="min-width:0">
+                      <div class="title">فحص مضخات التبريد</div>
+                      <div class="meta"><span class="num">WO-1042</span><span class="tag">وقائية</span><span class="tag">×3 تشغيلي</span><span class="tag">حضوري</span><span class="num">12/30</span><span class="tag mute">4 اليوم</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div style="font-size:12px;color:var(--muted)">ميناء الدمام</div>
+                <div style="display:flex;align-items:center;gap:7px"><span class="av">سح</span><span style="font-size:12px">سلطان الحربي</span></div>
+                <div style="font-size:12px;color:var(--muted)">25 أغسطس</div>
+                <div><span class="pill">نشطة</span></div>
+                <div><div class="bar"><i style="width:40%"></i></div></div>
+              </div>
+              <div class="trow">
+                <div>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span class="dot med"></span>
+                    <div style="min-width:0">
+                      <div class="title">تقرير وردية الميناء</div>
+                      <div class="meta"><span class="num">WO-1048</span><span class="tag">امتثال</span><span class="tag mute">عن بُعد</span><span class="num">1/1</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div style="font-size:12px;color:var(--muted)">ميناء الدمام</div>
+                <div style="display:flex;align-items:center;gap:7px"><span class="av">نق</span><span style="font-size:12px">نورة القحطاني</span></div>
+                <div style="font-size:12px;color:var(--muted)">اليوم</div>
+                <div><span class="pill wait">بانتظار الاعتماد</span></div>
+                <div><div class="bar"><i style="width:100%"></i></div></div>
+              </div>
+              <div class="trow">
+                <div>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span class="dot"></span>
+                    <div style="min-width:0">
+                      <div class="title">صيانة لوحة الجهد</div>
+                      <div class="meta"><span class="num">WO-1031</span><span class="tag">تصحيحية</span><span class="tag warn">صُعّد · م2</span><span class="num">0/1</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div style="font-size:12px;color:var(--muted)">فرع الخفجي</div>
+                <div style="display:flex;align-items:center;gap:7px"><span class="av">تر</span><span style="font-size:12px">تركي الغامدي</span></div>
+                <div style="font-size:12px;color:#DC2626">متأخرة يومان</div>
+                <div><span class="pill late">متأخرة</span></div>
+                <div><div class="bar"><i style="width:2%;background:#CBD5E1"></i></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="rules">
+            <div class="rule"><b>دورة الإثبات</b><p>حضور اليوم يفتح الإنجاز الميداني. الإفادة أو الصورة شرط التسجيل. الاعتماد بسبب مكتوب يمنح النقاط ويقفل الأمر.</p></div>
+            <div class="rule"><b>التوزيع على الأيام</b><p>العدد المستهدف مع تاريخ الاستحقاق يُقسَّم تلقائيًا. مثال: 30 حتى 25 على 9 أيام → 4 اليوم.</p></div>
+            <div class="rule"><b>لا نقطة بلا أثر</b><p>النقاط = الأولوية × وزن الجهد، وتُمنح بعد الاعتماد فقط. الرفض يُصعَّد للأعلى.</p></div>
+          </div>
+        </section>
+
+        <section class="panel" id="create">
+          <div class="split">
+            <div class="card">
+              <div class="card-h">
+                <b>مهمة جديدة</b>
+                <small>تُسند فورًا وتصل إشعارًا للمسؤول</small>
+              </div>
+              <div class="card-b">
+                <div class="field"><span>عنوان المهمة</span><div class="fake">فحص مضخات التبريد</div></div>
+                <div class="field"><span>نمط الإنجاز</span><div class="seg"><i class="on">حضوري</i><i>عن بُعد</i></div></div>
+                <div class="pair">
+                  <div class="field"><span>العدد المستهدف</span><div class="fake num">30</div></div>
+                  <div class="field"><span>تاريخ الاستحقاق</span><div class="fake num">2026-08-25</div></div>
+                </div>
+                <div class="pace">
+                  <div class="pace-row">
+                    <div class="pace-k">التوزيع على الأيام</div>
+                    <div class="pace-m" style="padding-inline-start:0;border:0"><small>اليوم</small><b class="num">4</b></div>
+                    <div class="pace-m"><small>المستهدف</small><b class="num">30</b></div>
+                    <div class="pace-m"><small>الأيام</small><b class="num">9</b></div>
+                  </div>
+                  <p>يُقسَّم العدد بالتساوي حتى تاريخ الاستحقاق</p>
+                </div>
+                <div class="field"><span>خطوات التنفيذ</span><textarea rows="3" readonly>عزل المضخة
+فحص الختم
+تشغيل تجريبي</textarea></div>
+                <div style="display:flex;gap:10px;justify-content:flex-end">
+                  <button type="button" class="ghost" style="height:36px;padding:0 18px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--muted);font:inherit;font-size:13px">إلغاء</button>
+                  <button type="button" class="btn" style="height:36px">أنشئ المهمة</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="rules" style="margin:0;grid-template-columns:1fr">
+                <div class="rule"><b>العدد والتاريخ معًا</b><p>إن وُضع عدد أكبر من 1 وتاريخ استحقاق، يظهر شريط التوزيع فورًا. لا حصة يومية تُدخل يدويًا.</p></div>
+                <div class="rule"><b>وزن الجهد</b><p>يُقترح من مسمى المسؤول ويُثبَّت قبل بدء العمل. النقاط = الأولوية × الوزن بعد الاعتماد.</p></div>
+                <div class="rule"><b>الشهادة</b><p>يُفضَّل شهادة سارية حسب نوع العمل. الإسناد يبقى ممكنًا إن انتهت، ويُحدَّث التجديد من السلامة.</p></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="detail">
+          <div class="split">
+            <div class="card">
+              <div class="detail-h">
+                <div style="font-size:15px;font-weight:600">فحص مضخات التبريد</div>
+                <div class="meta" style="margin-top:7px">
+                  <span class="ref">WO-1042</span>
+                  <span class="tag mute">×3 وزن</span>
+                  <span class="tag mute">ميداني</span>
+                  <span class="pill">نشطة</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)">
+                  <span>ميناء الدمام · سلطان الحربي</span>
+                  <span>2026-08-25</span>
+                  <span class="prog" style="flex:1;min-width:120px"><span class="bar"><i style="width:40%"></i></span><span class="num" style="font-size:11px">12/30</span></span>
+                </div>
+                <div class="pace" style="margin-top:12px">
+                  <div class="pace-row">
+                    <div class="pace-k">التوزيع على الأيام</div>
+                    <div class="pace-m" style="padding-inline-start:0;border:0"><small>اليوم</small><b class="num">4</b></div>
+                    <div class="pace-m"><small>المستهدف</small><b class="num">30</b></div>
+                    <div class="pace-m"><small>الأيام</small><b class="num">9</b></div>
+                  </div>
+                  <p>يُقسَّم العدد بالتساوي حتى تاريخ الاستحقاق</p>
+                </div>
+              </div>
+              <div class="card-b">
+                <div class="field"><span>خطوات التنفيذ</span>
+                  <div style="font-size:13px;line-height:1.8;color:var(--ink)">1. عزل المضخة<br />2. فحص الختم<br />3. تشغيل تجريبي</div>
+                </div>
+                <div class="ok" style="border-radius:12px">لا نقطة بلا أثر — أرفق صورة أو اكتب إفادة أولًا، ثم سجّل العدد المنجز.</div>
+                <div class="pair">
+                  <div class="field"><span>العدد المنجز</span><div class="fake num">4</div></div>
+                  <div class="field"><span>الإفادة</span><div class="fake">أُنجز فحص المضختين 3 و4</div></div>
+                </div>
+                <button type="button" class="btn" style="align-self:flex-start">سجّل الإنجاز</button>
+              </div>
+            </div>
+            <div class="rules" style="margin:0;grid-template-columns:1fr">
+              <div class="rule"><b>بوابة الحضور</b><p>المهمة الحضورية لا تُسجَّل حتى بصمة اليوم. عن بُعد يتجاوز البوابة. الرابط يفتح شاشة الحضور.</p></div>
+              <div class="rule"><b>الاعتماد</b><p>عند بلوغ العدد مع إثبات، ينتظر الأمر اعتماد المدير. الرفض بسبب مكتوب يُصعَّد.</p></div>
+              <div class="rule"><b>التوكيل</b><p>يُنقل المسؤول مع أثر في السجل. السلسلة التصعيدية تبقى على فرع المهمة.</p></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </article>
+  </div>
+
+  <script>
+    const hints = {
+      board: "3 نشطة · 2 تحتاج متابعة · نقاط معتمدة 18 — الحضور يفتح المهمة، والاعتماد يمنح النقاط.",
+      create: "العدد المستهدف مع تاريخ الاستحقاق يُوزَّع تلقائيًا على الأيام. لا حصة يومية تُدخل يدويًا.",
+      detail: "الإفادة أو المرفق شرط التسجيل. الاعتماد يمنح النقاط ويقفل أمر العمل.",
+    };
+    function showTab(id) {
+      document.querySelectorAll(".panel").forEach((el) => el.classList.toggle("on", el.id === id));
+      document.querySelectorAll(".tabs button").forEach((el) => el.classList.toggle("on", el.dataset.tab === id));
+      document.getElementById("hint").textContent = hints[id] || hints.board;
+    }
+    function downloadSelf() {
+      const blob = new Blob([document.documentElement.outerHTML], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "تصميم-المهام-والعمليات.html";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

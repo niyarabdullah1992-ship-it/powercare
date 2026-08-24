@@ -13,10 +13,8 @@ export const LEAVE_TYPES = [
   { key: "bereavement", total: 5, article: "113", ar: "وفاة", en: "Bereavement" },
   { key: "hajj", total: 10, article: "114", ar: "حج", en: "Hajj" },
   { key: "exam", total: null, article: "115", ar: "امتحان", en: "Exam", requiresFile: true },
-  { key: "holiday", total: 8, article: null, ar: "أعياد", en: "Eid / public holidays" },
   { key: "emergency", total: 5, article: null, ar: "اضطرارية", en: "Emergency" },
   { key: "unpaid", total: null, article: null, ar: "بدون راتب", en: "Unpaid" },
-  { key: "other", total: null, article: null, ar: "أخرى", en: "Other" },
 ] as const;
 
 export type LeaveRequestLike = {

@@ -69,7 +69,7 @@ export default function ComplianceMhrsdBoard() {
   const readinessRows = useMemo(() => {
     if (!register || !currentUser) return [];
     return visibleStations(currentUser, register)
-      .filter((station) => matchesStationScope(station.id, scope))
+      .filter((station) => matchesStationScope(station.id, scope, register?.stations))
       .map((station) => ({ station, readiness: deriveStationReadiness(register, station) }))
       .sort((a, b) => a.readiness.score - b.readiness.score);
   }, [register, currentUser, scope]);

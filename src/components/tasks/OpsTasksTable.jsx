@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { assignmentHistoryNote, dayDiffFromToday, deriveTaskDailyPace, latestAssignment } from "@/lib/opsDerivations";
+import { assignmentHistoryNote, dayDiffFromToday, deriveDailyTaskPace, latestAssignment } from "@/lib/opsDerivations";
+import DailyPaceStrip from "@/components/tasks/DailyPaceStrip";
 import { ACCENT, BRAND_BORDER, BRAND_DEEP, BRAND_SOFT, INK, MUTED, emptyState, tableHeadRow, tableShell } from "@/lib/platformStyles";
 
 /**
@@ -86,7 +87,6 @@ function tagStyle(bg, fg, bd) {
 }
 
 function kindStyle(color) {
-  // L4547
   return {
     display: "inline-flex",
     alignItems: "center",
@@ -194,7 +194,13 @@ function TaskRow({ task, ar, stationName, ownerName, ownerInitials, onOpen }) {
   const status = statusVisual(task, ar);
   const due = dueVisual(task, ar);
   const prog = progVisual(task);
-  const pace = deriveTaskDailyPace(task);
+  const count = `${task.completedCount || 0}/${task.targetCount || 1}`;
+  const pace = deriveDailyTaskPace({
+    targetCount: task.targetCount,
+    completedCount: task.completedCount,
+    dueAt: task.dueAt,
+    startAt: task.createdAt || task.startAt,
+  });
   const owner = ownerName(task);
 
   return (
@@ -269,14 +275,13 @@ function TaskRow({ task, ar, stationName, ownerName, ownerInitials, onOpen }) {
             </span>
             <span
               style={{ fontSize: "11px", color: MUTED, fontFamily: "'IBM Plex Sans',sans-serif" }}
+              dir="ltr"
             >
-              <span dir="ltr">{task.completedCount || 0}/{task.targetCount || 1}</span>
-              {pace.daily != null ? (
-                <span style={{ marginInlineStart: 6, color: pace.overdue ? "#B45309" : ACCENT, fontWeight: 600 }}>
-                  {ar ? `${pace.daily}/يوم` : `${pace.daily}/day`}
-                </span>
-              ) : null}
+              {count}
             </span>
+            {pace.active && pace.todayExpected > 0 ? (
+              <DailyPaceStrip ar={ar} pace={pace} compact />
+            ) : null}
           </div>
         </div>
       </div>
@@ -419,7 +424,7 @@ export default function OpsTasksTable({
             <div>{ar ? "المسؤول" : "OWNER"}</div>
             <div>{ar ? "الاستحقاق" : "DUE"}</div>
             <div>{ar ? "الحالة" : "STATUS"}</div>
-            <div style={{ textAlign: "end" }}>{ar ? "اليومي" : "DAILY"}</div>
+            <div style={{ textAlign: "end" }}>{ar ? "الإنجاز" : "PROGRESS"}</div>
           </div>
 
           {tasks.map((task) => (

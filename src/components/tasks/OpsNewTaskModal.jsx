@@ -1,15 +1,7 @@
 import React, { useState } from "react";
-import { ACCENT, BRAND, BRAND_SOFT, BRAND_DEEP, MUTED, NAVY, dot, field, CARD, SURFACE } from "@/lib/platformStyles";
-import {
-  CERT_FOR,
-  CERT_LABELS,
-  addLocalDays,
-  dayDiffFromToday,
-  daysForPlanHorizon,
-  deriveTaskDailyPace,
-  planHorizonFromDue,
-  taskDailyPaceLabel,
-} from "@/lib/opsDerivations";
+import { BRAND, BRAND_SOFT, BRAND_DEEP, MUTED, NAVY, dot, field, CARD, SURFACE } from "@/lib/platformStyles";
+import { CERT_FOR, CERT_LABELS, deriveDailyTaskPace, planHorizonFromDue } from "@/lib/opsDerivations";
+import DailyPaceStrip from "@/components/tasks/DailyPaceStrip";
 
 /** Platform.dc.html L3533–3708 — new-task modal (inline styles AS-IS). */
 
@@ -221,25 +213,6 @@ export default function OpsNewTaskModal({
   onSubmit,
 }) {
   const [files, setFiles] = useState([]);
-  const applyHorizon = (id) => {
-    const days = daysForPlanHorizon(id);
-    setForm((f) => ({
-      ...f,
-      planPinned: true,
-      planHorizon: id,
-      dueAt: days ? addLocalDays(days) : f.dueAt,
-    }));
-  };
-
-  const pace = deriveTaskDailyPace({
-    targetCount: form.targetCount,
-    completedCount: 0,
-    dueAt: form.dueAt || null,
-    planHorizon: form.planHorizon || derived,
-  });
-  const windowDays = form.dueAt && !Number.isNaN(dayDiffFromToday(form.dueAt))
-    ? Math.max(0, dayDiffFromToday(form.dueAt))
-    : "";
   const derived = planHorizonFromDue(form.dueAt || null) || "w";
   const derivedShort = (PLANS.find((p) => p.id === derived) || PLANS[4]);
   const planAuto = form.planPinned !== true;
@@ -503,7 +476,7 @@ export default function OpsNewTaskModal({
                 <button type="button" onClick={() => setForm({ ...form, planPinned: false })} style={planModeStyle(planAuto)}>
                   {ar ? "تلقائي من تاريخ الاستحقاق" : "Auto from due date"}
                 </button>
-                <button type="button" onClick={() => applyHorizon(form.planHorizon || derived)} style={planModeStyle(!planAuto)}>
+                <button type="button" onClick={() => setForm({ ...form, planPinned: true, planHorizon: form.planHorizon || derived })} style={planModeStyle(!planAuto)}>
                   {ar ? "ثبّته يدويًا" : "Pin manually"}
                 </button>
               </div>
@@ -524,8 +497,8 @@ export default function OpsNewTaskModal({
             >
               {form.dueAt
                 ? (ar
-                  ? `يُحتسب ضمن: ${derivedShort.ar} — مشتق من تاريخ الاستحقاق`
-                  : `Counted under: ${derivedShort.en} — derived from the due date`)
+                  ? `يُحتسب ضمن: ${derivedShort.ar} — حسب الأيام المتبقية حتى التاريخ، وينتقل تلقائيًا كلما اقترب الموعد.`
+                  : `Counted under: ${derivedShort.en} — from remaining days until due, and it moves as the date approaches.`)
                 : (ar ? "بلا تاريخ استحقاق يُحتسب ضمن أعمال هذا الأسبوع." : "With no due date it counts under this week's work.")}
             </div>
           )}
@@ -535,7 +508,7 @@ export default function OpsNewTaskModal({
               <span style={LABEL_SPAN}>{ar ? "الأفق الزمني" : "Plan horizon"}</span>
               <select
                 value={form.planHorizon || derived}
-                onChange={(e) => applyHorizon(e.target.value)}
+                onChange={(e) => setForm({ ...form, planHorizon: e.target.value })}
                 style={SELECT}
               >
                 {PLANS.map((p) => (
@@ -605,74 +578,55 @@ export default function OpsNewTaskModal({
             </span>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
-            <span style={LABEL_SPAN}>{ar ? "نمط الإنجاز" : "Completion mode"}</span>
-            <div style={{ display: "flex", gap: "8px" }}>
-              {[
-                { id: "onsite", label: ar ? "حضوري" : "On-site" },
-                { id: "remote", label: ar ? "عن بُعد" : "Remote" },
-              ].map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setForm({ ...form, mode: m.id })}
-                  style={modeBtnStyle(form.mode === m.id)}
-                >
-                  {m.label}
-                </button>
-              ))}
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 180px", display: "flex", flexDirection: "column", gap: "7px" }}>
+              <span style={LABEL_SPAN}>{ar ? "نمط الإنجاز" : "Completion mode"}</span>
+              <div style={{ display: "flex", gap: "8px" }}>
+                {[
+                  { id: "onsite", label: ar ? "حضوري" : "On-site" },
+                  { id: "remote", label: ar ? "عن بُعد" : "Remote" },
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setForm({ ...form, mode: m.id })}
+                    style={modeBtnStyle(form.mode === m.id)}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <label style={{ flex: "1 1 140px", display: "flex", flexDirection: "column", gap: "7px" }}>
-              <span style={LABEL_SPAN}>{ar ? "إجمالي المهام" : "Total tasks"}</span>
+              <span style={LABEL_SPAN}>{ar ? "العدد المستهدف" : "Target count"}</span>
               <input
                 type="number"
                 min={1}
-                max={9999}
                 value={form.targetCount}
                 onChange={(e) => setForm({ ...form, targetCount: Number(e.target.value) || 1 })}
                 style={{ ...FIELD, height: "36px" }}
               />
             </label>
-            <label style={{ flex: "1 1 120px", display: "flex", flexDirection: "column", gap: "7px" }}>
-              <span style={LABEL_SPAN}>{ar ? "خلال أيام" : "Within days"}</span>
-              <input
-                type="number"
-                min={1}
-                max={3650}
-                value={windowDays}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  if (raw === "") {
-                    setForm({ ...form, dueAt: "" });
-                    return;
-                  }
-                  const n = Math.max(1, Math.round(Number(raw) || 1));
-                  setForm({ ...form, dueAt: addLocalDays(n) });
-                }}
-                style={{ ...FIELD, height: "36px" }}
-              />
-            </label>
             <label style={{ flex: "1 1 160px", display: "flex", flexDirection: "column", gap: "7px" }}>
-              <span style={LABEL_SPAN}>{ar ? "تاريخ التسليم" : "Due date"}</span>
+              <span style={LABEL_SPAN}>{ar ? "تاريخ الاستحقاق" : "Due date"}</span>
               <input
                 type="date"
-                value={form.dueAt || ""}
+                value={form.dueAt}
                 onChange={(e) => setForm({ ...form, dueAt: e.target.value })}
-                style={{ ...FIELD, height: "36px" }}
+                style={FIELD}
               />
             </label>
           </div>
-          <div style={{ fontSize: "12px", color: MUTED, lineHeight: 1.65 }}>
-            {ar ? "العدد اليومي المحسوب: " : "Derived daily count: "}
-            <strong style={{ color: pace.daily != null ? ACCENT : MUTED }}>
-              {pace.daily != null ? (ar ? `${pace.daily} كل يوم` : `${pace.daily} / day`) : "—"}
-            </strong>
-            {" — "}
-            {taskDailyPaceLabel(pace, ar)}
-          </div>
+          <DailyPaceStrip
+            ar={ar}
+            pace={deriveDailyTaskPace({
+              targetCount: form.targetCount,
+              dueAt: form.dueAt,
+            })}
+          />
 
           <label style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
             <span style={LABEL_SPAN}>{ar ? "خطوات التنفيذ" : "Execution steps"}</span>
@@ -763,7 +717,6 @@ export default function OpsNewTaskModal({
               </label>
             </div>
           </div>
-
         </div>
 
         <div

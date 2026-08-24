@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-const clamp = (value) => Math.max(0.1, Math.min(1.5, value));
+const clamp = (value) => Math.max(0.15, Math.min(2.5, value));
 const distance = (points) => Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
 
 export default function useOrgTreeViewport(viewportRef, zoom, setZoom, offset, setOffset) {
@@ -12,7 +12,7 @@ export default function useOrgTreeViewport(viewportRef, zoom, setZoom, offset, s
     if (points.length === 2) gesture.current = { type: "pinch", distance: distance(points), zoom };
   };
   const onPointerDown = (event) => {
-    if (event.target.closest("button, input, textarea, select, [data-org-hit], a")) return;
+    if (event.target.closest("button, input, textarea, select, [data-org-hit], a, [draggable=\"true\"]")) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     begin();

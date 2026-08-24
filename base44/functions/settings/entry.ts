@@ -437,8 +437,8 @@ Deno.serve(async (req) => {
       if (!canBrand) {
         return Response.json({
           error: "FORBIDDEN",
-          reason: "هوية الشركة لمالك الشركة أو المدير أو العمليات.",
-          reasonEn: "Company identity can be changed by the owner, director, or operations.",
+          reason: "شعار التقارير لمالك الشركة أو المدير أو العمليات.",
+          reasonEn: "Report branding can be changed by the owner, director, or operations.",
         }, { status: 403 });
       }
       const next = normalizeReportBranding(body.reportBranding);
@@ -452,7 +452,7 @@ Deno.serve(async (req) => {
       const settings = await loadPayload();
       settings.reportBranding = next;
       await savePayload(settings);
-      await audit("settings.setReportBranding", "Updated company identity", {
+      await audit("settings.setReportBranding", "Updated report letterhead", {
         newValue: next.color,
       });
       return Response.json({ ok: true, reportBranding: next });

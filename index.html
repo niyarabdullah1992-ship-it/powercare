@@ -36,6 +36,16 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      window.addEventListener("error", function (event) {
+        var root = document.getElementById("root");
+        if (!root || root.childElementCount) return;
+        var err = event.error || event;
+        var msg = String((err && err.message) || event.message || err || "Unknown error");
+        var file = event.filename ? (event.filename + ":" + (event.lineno || 0)) : "";
+        root.innerHTML = '<div dir="rtl" style="padding:24px;font-family:sans-serif;color:#14284B;max-width:720px;margin:40px auto"><h1 style="font-size:20px">تعذر تشغيل نيروفيرا</h1><p style="font-size:13px;color:#5A6B85">انسخ النص ثم أعد التحميل بـ Ctrl+F5.</p><pre dir="ltr" style="white-space:pre-wrap;background:#F1F5F9;padding:12px;border-radius:8px;font-size:12px">' + (file ? file + "\\n" : "") + msg + '</pre><button type="button" onclick="location.reload()" style="margin-top:12px;height:40px;padding:0 16px;border:0;border-radius:8px;background:#1E9E63;color:#fff">إعادة التحميل</button></div>';
+      });
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

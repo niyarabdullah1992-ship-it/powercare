@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Search, Users, Radio, CornerDownLeft } from "lucide-react";
+import { Search, Users, Radio, CornerDownLeft, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SearchResults from "@/components/navigation/SearchResults";
 import { visibleEmployees, visibleStations } from "@/lib/permissions";
 import { BORDER, MUTED, NAVY, NAVY_FILL, dialogOverlay, CARD } from "@/lib/platformStyles";
 import { identityFrame } from "@/components/shared/IdentityCard";
+import { openHireDrawer } from "@/lib/orgHire";
 
 const GROUPS = {
   daily: { ar: "دورة الإثبات", en: "Proof cycle" },
@@ -34,7 +35,26 @@ export default function GlobalSearch({ open, onClose, items, data, currentUser, 
 
   const results = useMemo(() => {
     const text = query.trim().toLocaleLowerCase();
-    if (!text) return [];
+    const canPeople = items.some((item) => item.to === "/app/hr" || item.to === "/app/org");
+    const hireAction = canPeople
+      ? [{
+          id: "hire-employee",
+          type: "action",
+          action: "hire",
+          label: ar ? "أضف موظف" : "Add employee",
+          subtitle: ar ? "من المنصب — خطوتان" : "From the seat — two steps",
+          icon: UserPlus,
+          to: "/app/org?hire=1",
+        }]
+      : [];
+    const hireHit = !text
+      || "أضف موظف".includes(text)
+      || "اضف موظف".includes(text)
+      || "add employee".includes(text)
+      || "hire".includes(text)
+      || (ar ? text.includes("موظف") || text.includes("أضف") : text.includes("add") || text.includes("employee"));
+
+    if (!text) return hireAction;
 
     const pages = items
       .filter((item) => {
@@ -50,7 +70,6 @@ export default function GlobalSearch({ open, onClose, items, data, currentUser, 
         to: item.to,
       }));
 
-    const canPeople = items.some((item) => item.to === "/app/hr" || item.to === "/app/org");
     const employeeScope = canPeople ? visibleEmployees(currentUser, data) : [currentUser].filter(Boolean);
     const employees = employeeScope
       .filter((employee) => employee.name?.toLocaleLowerCase().includes(text))
@@ -77,7 +96,7 @@ export default function GlobalSearch({ open, onClose, items, data, currentUser, 
           }))
       : [];
 
-    return [...pages, ...employees, ...stations].slice(0, 8);
+    return [...(hireHit ? hireAction : []), ...pages, ...employees, ...stations].slice(0, 8);
   }, [query, items, data, lang, currentUser, ar]);
 
   useEffect(() => {
@@ -88,6 +107,12 @@ export default function GlobalSearch({ open, onClose, items, data, currentUser, 
 
   const select = (result) => {
     if (!result) return;
+    if (result.action === "hire") {
+      navigate("/app/org?hire=1");
+      openHireDrawer({});
+      onClose();
+      return;
+    }
     navigate(result.to);
     onClose();
   };
@@ -183,7 +208,7 @@ export default function GlobalSearch({ open, onClose, items, data, currentUser, 
           <CornerDownLeft style={{ width: 11, height: 11 }} />
           {typed
             ? (ar ? "Enter للانتقال" : "Enter to open")
-            : (ar ? "اكتب للبحث" : "Type to search")}
+            : (ar ? "⌘K · أضف موظف أو ابحث" : "⌘K · add an employee or search")}
         </div>
       </div>
     </div>

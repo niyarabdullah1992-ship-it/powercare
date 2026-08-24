@@ -79,20 +79,6 @@ const STATUTORY_LEAVE_TYPES = [
     ruleAr: "أيام الامتحان الفعلية بأجر كامل للمنتسب لجهة تعليمية (م.115)",
     ruleEn: "The actual examination days on full pay for an enrolled employee (art. 115)",
   },
-  {
-    key: "holiday",
-    ar: "أعياد",
-    en: "Eid / public holidays",
-    ruleAr: "أيام العيدين بأجر كامل — الفطر والأضحى وفق الإعلان الرسمي (عادة أربعة أيام لكل عيد).",
-    ruleEn: "Eid holidays on full pay — Fitr and Adha per the official announcement (typically four days each).",
-  },
-  {
-    key: "other",
-    ar: "أخرى",
-    en: "Other",
-    ruleAr: "إجازة غير مصنّفة أعلاه — تُذكر سببها عند الطلب، ولا تُخصم من الرصيد السنوي إلا إذا قررت الإدارة ذلك.",
-    ruleEn: "Leave not listed above — the reason is written on the request and is not taken from annual balance unless management decides so.",
-  },
 ];
 
 const typeRowStyle = {

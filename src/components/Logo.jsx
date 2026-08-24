@@ -3,7 +3,7 @@ import { POWERCARE_MARK_URL } from "@/lib/brand";
 
 const LOCKUP_RATIO = 4.5;
 
-function BrandMark({ size, className, src }) {
+function NiroVeraMark({ size, className }) {
   return (
     <span
       className={className}
@@ -19,7 +19,7 @@ function BrandMark({ size, className, src }) {
       }}
     >
       <img
-        src={src || POWERCARE_MARK_URL}
+        src={POWERCARE_MARK_URL}
         alt=""
         width={size}
         height={size}
@@ -42,15 +42,13 @@ function BrandMark({ size, className, src }) {
  * @param {string} [props.className]
  * @param {boolean} [props.wordmark] — false hides the “NiroVera” word (icon only).
  * @param {boolean} [props.iconOnly] — alias of wordmark={false} for compact chrome.
- * @param {string} [props.src] — company mark; omit to keep the NiroVera N.
  */
-export default function Logo({ size = 48, className = "", wordmark = true, iconOnly = false, onDark = false, src = "" }) {
+export default function Logo({ size = 48, className = "", wordmark = true, iconOnly = false, onDark = false }) {
   const markOnly = iconOnly || wordmark === false;
-  const markSrc = src || POWERCARE_MARK_URL;
   const ink = onDark ? "#FFFFFF" : "var(--nv-ink, #14284B)";
   const accent = "var(--nv-accent, #1E9E63)";
   if (markOnly) {
-    return <BrandMark size={size} className={className} src={markSrc} />;
+    return <NiroVeraMark size={size} className={className} />;
   }
   return (
     <span
@@ -63,7 +61,7 @@ export default function Logo({ size = 48, className = "", wordmark = true, iconO
         width: size * LOCKUP_RATIO,
       }}
     >
-      <BrandMark size={size} src={markSrc} />
+      <NiroVeraMark size={size} />
       <span
         aria-hidden
         style={{ width: 1, height: size * 0.56, background: onDark ? "rgba(255,255,255,.28)" : "var(--nv-line, #E2E8F0)", flexShrink: 0 }}

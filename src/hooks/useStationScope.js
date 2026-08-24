@@ -4,6 +4,7 @@ import {
   normalizeStationScope,
   subscribeStationScope,
 } from "@/lib/stationScopeStore";
+import { stationInHeaderScope } from "@/lib/stationTree";
 
 /**
  * Header station scope from Layout (`powercare:scope-change` + store).
@@ -40,5 +41,5 @@ export default function useStationScope() {
 export function matchesStationScope(rowStationId, scopeId) {
   const scope = normalizeStationScope(scopeId);
   if (scope === "all") return true;
-  return String(rowStationId ?? "") === scope;
+  return stationInHeaderScope(rowStationId, scope);
 }

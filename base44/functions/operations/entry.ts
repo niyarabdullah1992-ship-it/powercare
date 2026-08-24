@@ -132,7 +132,8 @@ Deno.serve(async (req) => {
 
     const scopeFilter = (tasks: any[], scope: string | null | undefined) => {
       if (!scope || scope === "all") return tasks;
-      return tasks.filter((t) => t.stationId === scope);
+      const id = String(scope);
+      return tasks.filter((t) => !t.stationId || String(t.stationId) === id);
     };
 
     const loadPeople = async (stationId?: string | null) => {
@@ -145,7 +146,10 @@ Deno.serve(async (req) => {
         (byEmp[row.employeeId] ||= []).push(row);
       }
       return emps
-        .filter((e) => !stationId || e.stationId === stationId)
+        .filter((e) => {
+          if (!stationId) return true;
+          return String(e.stationId || "") === String(stationId);
+        })
         .map((e) => ({
           employeeId: e.employeeId,
           id: e.employeeId,

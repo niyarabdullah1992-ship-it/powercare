@@ -27,8 +27,13 @@ export function AuthProvider({ children }) {
     return s?.companyId ? getCompanyMeta(s.companyId) : null;
   });
   const [data, setData] = useState(() => {
-    const s = getSession();
-    return s?.companyId ? getCompanyData(s.companyId) : null;
+    try {
+      const s = getSession();
+      return s?.companyId ? getCompanyData(s.companyId) : null;
+    } catch (error) {
+      console.error("NiroVera company data:", error);
+      return null;
+    }
   });
   const [tick, setTick] = useState(0); // force refresh on store changes
   const [isSyncing, setIsSyncing] = useState(false); // true while pulling the latest data from the cloud
@@ -81,9 +86,16 @@ export function AuthProvider({ children }) {
   }, [company?.plan, company?.id]);
 
   const refresh = useCallback(() => {
-    const s = getSession();
+    let s;
+    try {
+      s = getSession();
+    } catch (error) {
+      console.error("NiroVera session refresh:", error);
+      return;
+    }
     setSession(s);
     if (s && s.companyId) {
+      try {
       // A saved session with no local workspace (partially cleared storage)
       // previously rendered a blank app — rebuild it so cloud sync refills it.
       if (!getCompanyData(s.companyId)) ensureLocalCompany(s.companyId);
@@ -137,20 +149,15 @@ export function AuthProvider({ children }) {
             hydrateEmployeesFromEntity(s.companyId).then((employees) => {
               if (!employees) return;
               cacheCloudData(s.companyId, { employees });
-              setData((prevData) => {
-                if (!prevData) return prevData;
-                return { ...prevData, employees };
-              });
+              setData(getCompanyData(s.companyId));
             })
           );
           if (changed("stations")) hydrationTasks.push(
             hydrateStationsFromEntity(s.companyId).then((stations) => {
               if (!stations) return;
               cacheCloudData(s.companyId, { stations });
-              setData((prevData) => {
-                if (!prevData) return prevData;
-                return { ...prevData, stations };
-              });
+              // Always read the merged workspace — raw hydrate used to wipe local managerId edits.
+              setData(getCompanyData(s.companyId));
             })
           );
           BLOB_CATEGORIES.forEach((category) => {
@@ -173,9 +180,7 @@ export function AuthProvider({ children }) {
                 ownerId: meta.ownerId, stationChatGroups: meta.stationChatGroups,
                 crossStationChatEnabled: meta.crossStationChatEnabled,
                 settings: meta.settings, reportBranding: meta.reportBranding,
-                permOverrides: meta.permOverrides, knownTitles: meta.knownTitles,
-                removedTitles: meta.removedTitles, orgPositions: meta.orgPositions,
-                orgTracks: meta.orgTracks, jobGrades: meta.jobGrades, hrLevels: meta.hrLevels, hrClusters: meta.hrClusters,
+                orgStructureLog: Array.isArray(meta.orgStructureLog) ? meta.orgStructureLog : undefined,
               };
               cacheCloudData(s.companyId, Object.fromEntries(Object.entries(metaUpdates).filter(([, value]) => value !== undefined)));
               setData((prevData) => (prevData ? {
@@ -188,14 +193,7 @@ export function AuthProvider({ children }) {
                 crossStationChatEnabled: meta.crossStationChatEnabled ?? prevData.crossStationChatEnabled,
                 settings: meta.settings ?? prevData.settings,
                 reportBranding: meta.reportBranding ?? prevData.reportBranding,
-                permOverrides: meta.permOverrides ?? prevData.permOverrides,
-                knownTitles: meta.knownTitles ?? prevData.knownTitles,
-                removedTitles: meta.removedTitles ?? prevData.removedTitles,
-                orgPositions: meta.orgPositions ?? prevData.orgPositions,
-                orgTracks: Array.isArray(meta.orgTracks) ? meta.orgTracks : prevData.orgTracks,
-                jobGrades: Array.isArray(meta.jobGrades) ? meta.jobGrades : prevData.jobGrades,
-                hrLevels: Array.isArray(meta.hrLevels) ? meta.hrLevels : prevData.hrLevels,
-                hrClusters: Array.isArray(meta.hrClusters) ? meta.hrClusters : prevData.hrClusters,
+                orgStructureLog: Array.isArray(meta.orgStructureLog) ? meta.orgStructureLog : prevData.orgStructureLog,
                 } : prevData));
             })
           );
@@ -205,6 +203,9 @@ export function AuthProvider({ children }) {
             setIsSyncing(false);
           });
         });
+      }
+      } catch (error) {
+        console.error("NiroVera session refresh:", error);
       }
     } else {
       setCompany(null);
@@ -310,7 +311,7 @@ export function AuthProvider({ children }) {
   };
 
   const currentUser = data && session?.userId
-    ? data.employees.find((e) => e.id === session.userId)
+    ? (data.employees || []).find((e) => e.id === session.userId)
     : null;
   const companyWithPlan = useMemo(() => company ? { ...company, planConfig } : company, [company, planConfig]);
 

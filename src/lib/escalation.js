@@ -3,6 +3,7 @@
 // Falls back to company HR tiers when the tree has no path for that branch.
 import { groupLevelsByOrder, levelName } from "./hrLevels";
 import { deriveBranchEscalationChain } from "./orgDerivations";
+import { userCoversStation } from "./stationTree";
 
 const escalationGroups = (data) => groupLevelsByOrder(data?.hrLevels || []).filter((group) => group.manager?.active !== false);
 
@@ -42,7 +43,7 @@ export function handlersForLevel(levelIdx, r, data) {
     if (!step) return [];
     return (data.employees || []).filter((e) => String(e.id) === String(step.employeeId));
   }
-  if (levelIdx === 0) return data.employees.filter((e) => e.role === "station_manager" && (e.stationId === r.stationId || (e.managedStations || []).includes(r.stationId)));
+  if (levelIdx === 0) return data.employees.filter((e) => e.role === "station_manager" && userCoversStation(e, data, r.stationId));
   const group = escalationGroups(data)[levelIdx - 1];
   if (!group?.manager) return [];
   return data.employees.filter((e) => {

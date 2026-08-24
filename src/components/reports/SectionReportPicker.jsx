@@ -9,7 +9,6 @@ import { printReport } from "@/lib/printReport";
 import { brandReportColor, PDF_THEME } from "@/lib/pdfTheme";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
-import { companyBrandFrom } from "@/lib/companyBrand";
 import {
   ACCENT, BORDER, CARD, MUTED, NAVY, SURFACE,
   dialogCard, dialogOverlay, field, labelMuted, ui,
@@ -46,7 +45,6 @@ const FORMAT_BTN = (active) => ({
 export default function SectionReportPicker({ lang = "ar" }) {
   const ar = lang === "ar";
   const { company, currentUser, data, session } = useAuth();
-  const brand = companyBrandFrom(data, company);
   const stationScope = useStationScope();
   const options = visibleSectionReports(currentUser, data, company);
   const [open, setOpen] = useState(false);
@@ -215,7 +213,7 @@ export default function SectionReportPicker({ lang = "ar" }) {
                       flexShrink: 0,
                     }}
                   >
-                    <Logo size={22} wordmark={false} src={brand.logoUrl} />
+                    <Logo size={22} wordmark={false} />
                   </span>
                   <div>
                     <h2 id="nv-report-issue-title" style={{ margin: 0, fontSize: 16, fontWeight: 600, color: NAVY }}>

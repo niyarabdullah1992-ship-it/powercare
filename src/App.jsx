@@ -47,7 +47,6 @@ const EmployeeProfile = lazy(() => import('./pages/EmployeeProfile'));
 const HRStructureManagement = lazy(() => import('./pages/HRStructureManagement'));
 const OrgStructure = lazy(() => import('./pages/OrgStructure'));
 const CompanySettings = lazy(() => import('./pages/CompanySettings'));
-const Reports = lazy(() => import('./pages/Reports'));
 const Payroll = lazy(() => import('./pages/Payroll'));
 const Performance = lazy(() => import('./pages/Performance'));
 const Safety = lazy(() => import('./pages/Safety'));
@@ -74,6 +73,8 @@ const ProjectGuideDoc = lazy(() => import('./pages/ProjectGuideDoc'));
 const TiktokAd = lazy(() => import('./pages/TiktokAd'));
 const TruePerformanceDoc = lazy(() => import('./pages/TruePerformanceDoc'));
 const Inventory = lazy(() => import('./pages/Inventory'));
+const Assets = lazy(() => import('./pages/Assets'));
+const Accounting = lazy(() => import('./pages/Accounting'));
 const Expenses = lazy(() => import('./pages/Expenses'));
 const StationExpenses = lazy(() => import('./pages/StationExpenses'));
 const WorkProof = lazy(() => import('./pages/WorkProof'));
@@ -194,7 +195,7 @@ function AppRoutes() {
       <Route path="/app/performance" element={<RequireAuth><Performance /></RequireAuth>} />
       <Route path="/app/safety" element={<RequireAuth><Safety /></RequireAuth>} />
       <Route path="/app/daily-report" element={<RequireAuth><DailyReport /></RequireAuth>} />
-      <Route path="/app/reports" element={<RequireAuth><Reports /></RequireAuth>} />
+      <Route path="/app/reports" element={<Navigate to="/app" replace />} />
       <Route path="/app/attendance" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/attendance/shifts" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/attendance/leave" element={<RequireAuth><Attendance /></RequireAuth>} />
@@ -202,6 +203,8 @@ function AppRoutes() {
       <Route path="/app/leave" element={<RequireAuth><Attendance /></RequireAuth>} />
       <Route path="/app/files" element={<RequireAuth><Files /></RequireAuth>} />
       <Route path="/app/inventory" element={<RequireAuth><Inventory /></RequireAuth>} />
+      <Route path="/app/assets" element={<RequireAuth><Assets /></RequireAuth>} />
+      <Route path="/app/accounting" element={<RequireAuth><Accounting /></RequireAuth>} />
       <Route path="/app/expenses" element={<RequireAuth><Expenses /></RequireAuth>} />
       <Route path="/app/stations/:stationId/expenses" element={<RequireAuth><StationExpenses /></RequireAuth>} />
       <Route path="/app/signing" element={<RequireAuth><FileSigning /></RequireAuth>} />
@@ -233,12 +236,14 @@ function App() {
           <PublicThemeBoot />
           <ScrollToTop />
           <I18nProvider>
-            <PowerCareAuthProvider>
-              <SyncFailureAlerts />
-              <PeriodProvider>
-                <AppErrorBoundary><AppRoutes /></AppErrorBoundary>
-              </PeriodProvider>
-            </PowerCareAuthProvider>
+            <AppErrorBoundary>
+              <PowerCareAuthProvider>
+                <SyncFailureAlerts />
+                <PeriodProvider>
+                  <AppRoutes />
+                </PeriodProvider>
+              </PowerCareAuthProvider>
+            </AppErrorBoundary>
           </I18nProvider>
         </Router>
         <Toaster />

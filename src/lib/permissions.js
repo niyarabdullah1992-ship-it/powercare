@@ -1,30 +1,8 @@
+import { expandStationScope, scopedStationIdsForUser, isWorkplaceStation } from "@/lib/stationTree";
+
 // Role-based permission helpers for PowerCare.
 // Roles: director | ops_manager | pgm | station_manager | safety_officer | financial_officer | inventory_keeper | employee
-import { hasSmartAccess } from "@/lib/smartPositions";
-
 const employeeStationId = (employee, data) => employee?.stationId || data?.stations?.[0]?.id || null;
-
-/** If the assigned position is branch-scoped only, return those station ids. Null = use role. */
-export function grantedStationIds(user, data) {
-  if (!user?.id || user.id === data?.ownerId) return null;
-  const position = (data?.smartPositions || []).find((item) => item.employeeId === user.id);
-  const levels = Object.values(position?.permissions || {}).filter((access) => access && access !== "hidden");
-  if (!levels.length) return null;
-  if (levels.some((access) => access === "view" || access === "manage")) return null;
-  return [...new Set([
-    employeeStationId(user, data),
-    ...(user.managedStations || []),
-  ].filter(Boolean).map(String))];
-}
-
-const HR_KEY_TO_GRANT = {
-  view_employees: { dept: "hr", min: "view" },
-  manage_employees: { dept: "hr", min: "manage" },
-  manage_payroll: { dept: "payroll", min: "manage" },
-  manage_schedules: { dept: "shifts", min: "manage" },
-  manage_leave: { dept: "leave", min: "manage" },
-  view_safety: { dept: "safety", min: "view" },
-};
 const stationsInOrder = (stations) => [...(stations || [])];
 
 export const ROLE_RANK = {
@@ -45,21 +23,17 @@ export function canSeeAllStations(user) {
 
 // Stations visible to a user given the company data
 export function visibleStations(user, data) {
-  const stations = stationsInOrder(data?.stations);
+  const stations = stationsInOrder(data?.stations).filter((station) => isWorkplaceStation(station));
   if (!user) return [];
-  const granted = grantedStationIds(user, data);
-  if (granted) return stations.filter((station) => granted.includes(String(station.id)));
-  if (canSeeAllStations(user) || user?.id === data?.ownerId || user.role === "safety_officer") return stations;
-  if (user.role === "pgm") {
-    const managed = user.managedStations || [];
-    return stations.filter((s) => managed.includes(s.id));
+  try {
+    if (canSeeAllStations(user) || user?.id === data?.ownerId || user.role === "safety_officer") return stations;
+    const scoped = new Set(scopedStationIdsForUser(user, data));
+    if (user.role === "pgm" && !(user.managedStations || []).length) return [];
+    return stations.filter((station) => scoped.has(String(station.id)));
+  } catch (error) {
+    console.error("NiroVera visible stations:", error);
+    return stations;
   }
-  if (user.role === "station_manager") {
-    const managed = user.managedStations?.length ? user.managedStations : [employeeStationId(user, data)].filter(Boolean);
-    return stations.filter((station) => managed.includes(station.id));
-  }
-  if (["financial_officer", "inventory_keeper", "employee"].includes(user.role)) return stations.filter((station) => station.id === employeeStationId(user, data));
-  return [];
 }
 
 // Can the user manage stations (add/edit)?
@@ -68,12 +42,11 @@ export function canManageStations(user, data) {
 }
 
 // Can the user manage employees (add/remove)?
-export function canManageEmployees(user, data) {
-  if (hasSmartAccess(user, data, "hr", "manage")) return true;
-  if (user?.role === "director") return true;
-  if (user?.role === "ops_manager") return true;
-  if (user?.role === "pgm") return !!user.canManageTeam;
-  if (user?.role === "station_manager") return true;
+export function canManageEmployees(user) {
+  if (user.role === "director") return true;
+  if (user.role === "ops_manager") return true;
+  if (user.role === "pgm") return !!user.canManageTeam;
+  if (user.role === "station_manager") return true;
   return false;
 }
 
@@ -92,7 +65,6 @@ export function canCreateTasks(user, data) {
   if (!user) return false;
   // The company owner can always create tasks in any station branch, whatever role label they hold.
   if (user.role === "owner" || user.isOwner || (data?.ownerId && user.id === data.ownerId)) return true;
-  if (hasSmartAccess(user, data, "tasks", "manage")) return true;
   return ["director", "ops_manager", "pgm", "station_manager"].includes(user.role);
 }
 
@@ -141,8 +113,6 @@ export function isHR(employee) {
 
 // Does this employee's HR level grant a specific permission?
 export function hasHRPermission(user, data, permKey) {
-  const mapped = HR_KEY_TO_GRANT[permKey];
-  if (mapped && hasSmartAccess(user, data, mapped.dept, mapped.min)) return true;
   if (!user?.hrLevelId) return false;
   const level = (data?.hrLevels || []).find((l) => l.id === user.hrLevelId && l.active !== false);
   return !!level?.permissions?.includes(permKey);
@@ -154,19 +124,12 @@ export function canAdjustPayroll(user, data) {
   if (!user) return false;
   return user.id === data?.ownerId
     || (ROLE_RANK[user.role] || 0) > ROLE_RANK.station_manager
-    || hasHRPermission(user, data, "manage_payroll")
-    || hasSmartAccess(user, data, "payroll", "manage");
+    || hasHRPermission(user, data, "manage_payroll");
 }
 
 // Stations an HR member can act on: [] none, [stationId, ...] scoped, or null for company-wide reach.
 export function hrScopeStations(user, data) {
-  if (!user?.hrLevelId) {
-    if (hasSmartAccess(user, data, "hr", "manage")) return null;
-    if (hasSmartAccess(user, data, "hr", "view") || hasSmartAccess(user, data, "hr", "station")) {
-      return visibleStations(user, data).map((station) => station.id);
-    }
-    return [];
-  }
+  if (!user?.hrLevelId) return [];
   const level = (data?.hrLevels || []).find((l) => l.id === user.hrLevelId);
   if (!level) return [];
   if (level.stationIds && level.stationIds.length > 0) return level.stationIds; // explicit station restriction, any scope
@@ -188,7 +151,7 @@ export function isHRManager(user, data) {
   return getHRLevel(user, data)?.role === "manager";
 }
 
-function hasTreeEmployeeAccess(user, employee, data, allowedAccess, departments = ["hr"]) {
+function hasTreeEmployeeAccess(user, employee, data, allowedAccess, departments = ["employees"]) {
   if (!user?.id || !employee?.id) return false;
   const permissions = (data?.smartPositions || []).find((item) => item.employeeId === user.id)?.permissions || {};
   if (!departments.some((department) => allowedAccess.includes(permissions[department]))) return false;
@@ -235,11 +198,9 @@ export function canManageSchedule(user, data, stationId) {
   if (user.role === "owner" || user.isOwner || (data?.ownerId && user.id === data.ownerId)) return true;
   if (user.role === "director") return true;
   if (user.role === "station_manager" && employeeStationId(user, data) === stationId) return true;
-  if (hasHRPermission(user, data, "manage_schedules") || hasSmartAccess(user, data, "shifts", "manage") || hasSmartAccess(user, data, "attendance", "manage")) {
+  if (hasHRPermission(user, data, "manage_schedules")) {
     const scope = hrScopeStations(user, data);
-    if (scope === null) return true;
-    if (scope.length) return scope.includes(stationId);
-    return employeeStationId(user, data) === stationId;
+    return scope === null || scope.includes(stationId);
   }
   return false;
 }
@@ -253,11 +214,12 @@ export function canViewEmployeeProfile(viewer, employee, data) {
   if (viewer.id === employee.id) return true;
   if (["director", "ops_manager"].includes(viewer.role) || viewer.id === data?.ownerId) return true;
   if (viewer.role === "pgm") {
-    return (viewer.managedStations || []).includes(employeeStationId(employee, data));
+    const scoped = new Set(expandStationScope(data?.stations || [], viewer.managedStations || []));
+    return scoped.has(String(employeeStationId(employee, data) || ""));
   }
   if (viewer.role === "station_manager") {
-    const managed = viewer.managedStations?.length ? viewer.managedStations : [employeeStationId(viewer, data)].filter(Boolean);
-    return managed.includes(employeeStationId(employee, data));
+    const scoped = new Set(scopedStationIdsForUser(viewer, data));
+    return scoped.has(String(employeeStationId(employee, data) || ""));
   }
   if (hasTreeEmployeeAccess(viewer, employee, data, ["view", "manage"], ["hr"])) return true;
   if (viewer.hrLevelId) {
@@ -273,8 +235,8 @@ export function visibleEmployees(user, data) {
   if (!user) return [];
   if (canSeeAllStations(user) || user?.id === data?.ownerId) return employees;
   if (user?.role === "station_manager") {
-    const stationIds = new Set([employeeStationId(user, data), ...(user.managedStations || [])].filter(Boolean));
-    return employees.filter((employee) => stationIds.has(employeeStationId(employee, data)));
+    const stationIds = new Set(scopedStationIdsForUser(user, data));
+    return employees.filter((employee) => stationIds.has(String(employeeStationId(employee, data) || "")));
   }
   if (hasHRPermission(user, data, "view_employees") || hasHRPermission(user, data, "manage_employees")) {
     const scope = hrScopeStations(user, data);

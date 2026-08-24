@@ -8,15 +8,17 @@ import {
   deriveVerificationMode,
 } from "@/lib/settingsDerivations";
 import { toast } from "@/components/ui/use-toast";
-import { ACCENT, MUTED, NAVY, ui, field, CARD, SURFACE } from "@/lib/platformStyles";
+import { renameCompany } from "@/lib/companySettings";
+import { ACCENT, MUTED, NAVY, pageCol, ui, field, CARD, SURFACE } from "@/lib/platformStyles";
 import { ChromeBox } from "@/components/shared/IdentityCard";
+import SettingsPermDelegation from "@/components/hr/SettingsPermDelegation";
 
 async function settingsApi(payload) {
   const res = await base44.functions.invoke("settings", payload);
   return res?.data ?? res;
 }
 
-export default function CompanySettingsBoard({ lang = "ar", parts = "all" }) {
+export default function CompanySettingsBoard({ lang = "ar" }) {
   const ar = lang === "ar";
   const { company, data, currentUser } = useAuth();
   const [record, setRecord] = useState({
@@ -111,6 +113,7 @@ export default function CompanySettingsBoard({ lang = "ar", parts = "all" }) {
       }
       applyRemote(remote);
       setGateHint(null);
+      if (record.name?.trim()) await renameCompany(company.id, record.name);
       toast({ description: ar ? "حُفظت بيانات المنشأة" : "Company record saved" });
     } catch (err) {
       toast({ description: String(err?.message || err), variant: "destructive" });
@@ -192,7 +195,6 @@ export default function CompanySettingsBoard({ lang = "ar", parts = "all" }) {
 
   if (!currentUser) return null;
 
-  const show = (id) => parts === "all" || parts === id || (Array.isArray(parts) && parts.includes(id));
   const fieldInput = { ...field };
   const geoOn = !!verification.geofenceVerificationRequired;
   const geoSwitchStyle = {
@@ -218,22 +220,22 @@ export default function CompanySettingsBoard({ lang = "ar", parts = "all" }) {
   };
 
   return (
-    <section style={{ display: "flex", flexDirection: "column", gap: 16 }} dir={ar ? "rtl" : "ltr"}>
-      {gateHint && show("record") && (
+    <section style={{ ...pageCol, margin: "0 auto" }} dir={ar ? "rtl" : "ltr"}>
+      {gateHint && (
         <div style={{ borderRadius: "11px", border: "1px solid #FECACA", background: "#FEF2F2", padding: "12px 14px", fontSize: "11px", color: "#B91C1C" }}>
           {gateHint}
         </div>
       )}
 
-      {show("record") && (
-      <ChromeBox style={{ overflow: "visible" }}>
+      {/* L2107–2117 company record */}
+      <ChromeBox>
         <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY, display: "flex", alignItems: "center", gap: "10px" }}>
           <span style={{ flex: 1 }}>{ar ? "بيانات المنشأة" : "Company record"}</span>
           {busy && <Loader2 style={{ width: 14, height: 14, color: MUTED }} className="animate-spin" />}
         </div>
         {canManage ? (
           <>
-            <div className="nv-company-record-sheet">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: "16px", marginTop: "16px" }}>
               {[
                 { key: "name", label: ar ? "اسم المنشأة" : "Company name", dir: "auto" },
                 { key: "commercialRegistration", label: ar ? "السجل التجاري" : "Commercial registration", dir: "ltr" },
@@ -241,21 +243,19 @@ export default function CompanySettingsBoard({ lang = "ar", parts = "all" }) {
                 { key: "qiwaEstablishment", label: ar ? "رقم المنشأة في قوى" : "Qiwa establishment", dir: "ltr" },
                 { key: "allowedEmailDomain", label: ar ? "النطاق البريدي المسموح" : "Allowed email domain", dir: "ltr" },
               ].map((f) => (
-                <label key={f.key} className="nv-company-record-row">
-                  <span className="nv-company-record-label">{f.label}</span>
-                  <span className="nv-company-record-control">
-                    <input
-                      dir={f.dir}
-                      value={record[f.key] || ""}
-                      onChange={(e) => setRecord({ ...record, [f.key]: e.target.value })}
-                      style={fieldInput}
-                    />
-                    {f.key === "qiwaEstablishment" ? (
-                      <span className="nv-company-record-hint">
-                        {ar ? "ملف جاهز — الإرسال الحي عند الاعتماد." : "File ready — live send when credentials are approved."}
-                      </span>
-                    ) : null}
-                  </span>
+                <label key={f.key} style={{ display: "block" }}>
+                  <span style={{ display: "block", fontSize: "11px", color: MUTED, marginBottom: "5px" }}>{f.label}</span>
+                  <input
+                    dir={f.dir}
+                    value={record[f.key] || ""}
+                    onChange={(e) => setRecord({ ...record, [f.key]: e.target.value })}
+                    style={fieldInput}
+                  />
+                  {f.key === "qiwaEstablishment" && (
+                    <span style={{ display: "block", fontSize: 10, color: MUTED, marginTop: 4, lineHeight: 1.5 }}>
+                      {ar ? "ملف جاهز — الإرسال الحي عند الاعتماد." : "File ready — live send when credentials are approved."}
+                    </span>
+                  )}
                 </label>
               ))}
             </div>
@@ -264,26 +264,23 @@ export default function CompanySettingsBoard({ lang = "ar", parts = "all" }) {
             </button>
           </>
         ) : (
-          <div className="nv-company-record-sheet">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: "16px", marginTop: "16px" }}>
             {companyRows.map((r) => (
-              <div key={r.key} className="nv-company-record-row">
-                <span className="nv-company-record-label">{ar ? r.labelAr : r.labelEn}</span>
-                <span className="nv-company-record-control">
-                  <span dir={r.dir} style={{ display: "block", fontSize: "13px", color: NAVY, overflowWrap: "anywhere" }}>{r.value}</span>
-                  {(r.key === "qiwaEstablishment" || /قوى|Qiwa/i.test(`${r.labelAr || ""} ${r.labelEn || ""}`)) ? (
-                    <span className="nv-company-record-hint">
-                      {ar ? "ملف جاهز — الإرسال الحي عند الاعتماد." : "File ready — live send when credentials are approved."}
-                    </span>
-                  ) : null}
-                </span>
+              <div key={r.key}>
+                <div style={{ fontSize: "11px", color: MUTED }}>{ar ? r.labelAr : r.labelEn}</div>
+                <div dir={r.dir} style={{ fontSize: "13px", color: NAVY, marginTop: "6px", textAlign: ar ? "right" : "left" }}>{r.value}</div>
+                {(r.key === "qiwaEstablishment" || /قوى|Qiwa/i.test(`${r.labelAr || ""} ${r.labelEn || ""}`)) && (
+                  <div style={{ fontSize: 10, color: MUTED, marginTop: 4, lineHeight: 1.5 }}>
+                    {ar ? "ملف جاهز — الإرسال الحي عند الاعتماد." : "File ready — live send when credentials are approved."}
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
       </ChromeBox>
-      )}
 
-      {show("geo") && (
+      {/* L2119–2159 geofences */}
       <ChromeBox padded={false}>
         <div style={{ padding: "16px 20px 12px" }}>
           <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>{ar ? "النطاق الجغرافي للفروع" : "Station geofences"}</div>
@@ -398,9 +395,10 @@ export default function CompanySettingsBoard({ lang = "ar", parts = "all" }) {
           </div>
         )}
       </ChromeBox>
-      )}
 
-      {show("record") && (
+      {/* L2162–2231 — design owns these on settings */}
+      <SettingsPermDelegation lang={lang} />
+
       <ChromeBox>
         <div style={{ fontSize: "13px", fontWeight: 600, color: NAVY }}>
           {ar ? "حدود البلاغات المجهولة" : "Anonymous report rate limits"}
@@ -419,7 +417,6 @@ export default function CompanySettingsBoard({ lang = "ar", parts = "all" }) {
           ))}
         </div>
       </ChromeBox>
-      )}
     </section>
   );
 }

@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { updateCompany } from "@/lib/store";
 import { ChromeBox } from "@/components/shared/IdentityCard";
 import { ACCENT, BORDER, CARD, INK, MUTED, NAVY, SURFACE, field, ui } from "@/lib/platformStyles";
 import {
@@ -24,7 +23,7 @@ async function themeApi(payload) {
 
 export default function PlatformColorThemeCard({ lang = "ar" }) {
   const ar = lang === "ar";
-  const { company, data, currentUser, refresh } = useAuth();
+  const { company, data, currentUser } = useAuth();
   const canEdit = canEditPlatformTheme(currentUser, data);
   const [theme, setTheme] = useState(() => readStoredTheme(company?.id));
   const [hint, setHint] = useState("");
@@ -50,10 +49,6 @@ export default function PlatformColorThemeCard({ lang = "ar" }) {
     const next = publishPlatformTheme(nextInput, company?.id);
     setTheme(next);
     if (!canEdit || !company?.id) return;
-    const branding = { ...(data?.reportBranding || {}), color: next.navy };
-    updateCompany(company.id, (d) => {
-      d.reportBranding = branding;
-    });
     if (remoteTimer.current) window.clearTimeout(remoteTimer.current);
     remoteTimer.current = window.setTimeout(async () => {
       try {
@@ -67,13 +62,7 @@ export default function PlatformColorThemeCard({ lang = "ar" }) {
           applyStoredPlatformTheme(company.id);
           setTheme(saved);
         }
-        await themeApi({
-          action: "setReportBranding",
-          companyId: company.id,
-          reportBranding: branding,
-        });
-        refresh?.();
-        setHint(ar ? "حُفظت ألوان الشركة في الشاشات والتقارير." : "Company colors saved on screens and reports.");
+        setHint(ar ? "حُفظت ألوان المنصة لهذه الشركة." : "Platform colors saved for this company.");
       } catch {
         setHint(ar
           ? "طُبّقت الألوان على هذا الجهاز. تعذّر المزامنة مع الشركة الآن."
@@ -99,8 +88,8 @@ export default function PlatformColorThemeCard({ lang = "ar" }) {
       </div>
       <p style={{ margin: "6px 0 0", fontSize: "12px", color: MUTED, lineHeight: 1.7, maxWidth: 640 }}>
         {ar
-          ? "لوحة الشركة: أساس ولون تمييز. تظهر في الشريط والشاشات والتقارير الجديدة. الوضع الليلي يبقى من أيقونة القمر، والحضور/الغياب يبقيان أخضر وأحمر."
-          : "The company palette: a base and one accent. It appears in the sidebar, screens, and new reports. Dark mode stays on the header moon icon, and present/absent stay green and red."}
+          ? "لوحة رسمية واحدة: أساس كحلي ولون تمييز واحد. الوضع الليلي يبقى من أيقونة القمر في الشريط العلوي، والحضور/الغياب يبقيان أخضر وأحمر."
+          : "One official palette: a navy base and a single accent. Dark mode stays on the header moon icon, and present/absent stay green and red."}
       </p>
 
       <div

@@ -7,6 +7,9 @@ import { toRiyadhDateKey } from "./riyadhDate";
 import { reconcileStationReferences } from "./stationConsistency";
 import { clearStationScope } from "./stationScopeStore";
 import { planDuplicateShiftMerge, shiftWindowKey } from "./shiftDerivations";
+import { applyWorkplaceManagerRule } from "./peopleTreeGraph";
+import { isWorkplaceStation } from "./stationTree";
+import { appendOrgStructureEvent } from "./orgStructureLog";
 
 const REGISTRY_KEY = "powercare_registry";
 const COMPANY_PREFIX = "powercare_company_";
@@ -106,8 +109,22 @@ export function logAudit(companyId, action, details) {
 function getStationHRManager(data, employeeId) {
   const emp = data.employees.find((e) => e.id === employeeId);
   if (!emp) return null;
-  const nodes = data.orgTree || [];
   const positions = data.smartPositions || [];
+  const hasHr = (id) => positions.find((item) => item.employeeId === id)?.permissions?.hr === "manage";
+  const stations = data.stations || [];
+  const byId = new Map(stations.map((station) => [String(station.id || station.stationId), station]));
+  let sid = String(emp.stationId || "");
+  const seenStations = new Set();
+  while (sid && !seenStations.has(sid)) {
+    seenStations.add(sid);
+    const station = byId.get(sid);
+    const managerId = String(station?.managerId || "").trim();
+    if (managerId && managerId !== String(employeeId) && hasHr(managerId)) {
+      return data.employees.find((employee) => employee.id === managerId) || null;
+    }
+    sid = String(station?.parentStationId || station?.parentBranchId || "").trim();
+  }
+  const nodes = data.orgTree || [];
   let node = nodes.find((item) => item.type === "employee" && item.refId === employeeId);
   while (node?.parentId) {
     node = nodes.find((item) => item.id === node.parentId);
@@ -365,8 +382,9 @@ function emptyCompanyData(meta) {
     journalEntries: [],
     payrollRuns: [],
     smartPositions: [],
-    orgPositions: [],
-    orgTracks: [],
+    permissionTemplates: [],
+    orgSeats: [],
+    orgStructureLog: [],
     complaintEscalationChain: [],
     branchEscalationChains: {},
     workProofs: [],
@@ -379,7 +397,7 @@ const COMPANY_ARRAY_KEYS = [
   "safety", "files", "plans", "notifications", "templates", "targets", "hrLevels",
   "jobGrades", "hrClusters", "schedules", "stationChatGroups", "personalPlaces",
   "personalAttendance", "plannerItems", "journalEntries", "payrollRuns",
-  "smartPositions", "orgPositions", "orgTracks", "complaintEscalationChain", "workProofs",
+  "smartPositions", "permissionTemplates", "orgSeats", "orgStructureLog", "complaintEscalationChain", "workProofs",
 ];
 
 function normalizeCompanyData(data) {
@@ -396,14 +414,39 @@ function normalizeCompanyData(data) {
   return data;
 }
 
+const PRESET_GRADE_TITLES = new Set(["مبتدئ", "متوسط", "أول", "مشرف", "مدير"]);
+
+function purgePresetLadders(data) {
+  const removed = new Set();
+  const next = (data.jobGrades || []).filter((grade) => {
+    const presetCode = PRESET_GRADE_TITLES.has(String(grade?.title || "").trim())
+      && /^(TC|EN|HR|HS|FN|BM|LD|GR)\d+$/i.test(String(grade?.gradeNumber || "").trim());
+    const legacy = /^grade_tc[1-5]$/i.test(String(grade?.id || ""));
+    if (!presetCode && !legacy) return true;
+    removed.add(grade.id);
+    return false;
+  });
+  if (!removed.size) return false;
+  data.jobGrades = next;
+  (data.orgSeats || []).forEach((seat) => {
+    if (removed.has(seat.gradeId)) seat.gradeId = "";
+  });
+  (data.employees || []).forEach((employee) => {
+    if (employee?.profile && removed.has(employee.profile.gradeId)) employee.profile.gradeId = null;
+  });
+  return true;
+}
+
 /* ----------------------------- company data ----------------------------- */
 export function getCompanyData(id) {
   const data = normalizeCompanyData(read(companyKey(id), null));
   if (!data) return data;
+  let persist = false;
   if (Object.prototype.hasOwnProperty.call(data, "cameras")) {
     delete data.cameras;
-    localStorage.setItem(companyKey(id), JSON.stringify(data));
+    persist = true;
   }
+  if (purgePresetLadders(data)) persist = true;
   // Local preview used to seed compass names (شمال/شرق) — those were labels only,
   // not a forced region layer. Rewrite once so the org tree shows free branch names.
   if (id === LOCAL_PREVIEW_COMPANY && Array.isArray(data.stations)) {
@@ -426,37 +469,93 @@ export function getCompanyData(id) {
         }
         return title === t.title ? t : { ...t, title };
       });
-      localStorage.setItem(companyKey(id), JSON.stringify(data));
+      persist = true;
     }
   }
+  if (persist) localStorage.setItem(companyKey(id), JSON.stringify(data));
   return data;
 }
 
 // Persists authoritative cloud reads into the local cache without re-uploading
 // them or emitting a write event, preventing stale local data from resurfacing.
+function mergeLocalDemoRecords(current, incoming, kind, companyId = "") {
+  if (!Array.isArray(incoming) || !Array.isArray(current)) return incoming;
+  const ids = new Set(incoming.map((item) => item?.id).filter(Boolean));
+  const extra = current.filter((item) => {
+    if (!item?.id || ids.has(item.id)) return false;
+    if (kind === "employees") {
+      return Boolean(item.profile?.demo) || String(item.email || "").toLowerCase().endsWith("@demo.nirovera.local");
+    }
+    return item.demo === true;
+  });
+  if (kind === "stations") {
+    const localById = new Map(current.map((station) => [String(station.id), station]));
+    const recentLocal = companyId && (Date.now() - (lastLocalWriteAt[companyId] || 0) < 12000);
+    incoming = incoming.map((station) => {
+      const local = localById.get(String(station.id));
+      if (!local) return station;
+      const remoteKind = station.unitKind === "manager" || station.unitKind === "branch" ? station.unitKind : null;
+      const localKind = local.unitKind === "manager" || local.unitKind === "branch" ? local.unitKind : null;
+      const remoteMgr = station.managerId;
+      const localMgr = local.managerId;
+      const preferLocalManager = recentLocal
+        && String(localMgr || "") !== String(remoteMgr ?? "");
+      return {
+        ...station,
+        parentStationId: station.parentStationId || local.parentStationId || null,
+        isCompanyRoot: Boolean(station.isCompanyRoot || local.isCompanyRoot),
+        unitKind: remoteKind || localKind || "branch",
+        managerId: preferLocalManager
+          ? (localMgr ?? null)
+          : (remoteMgr !== undefined && remoteMgr !== null && remoteMgr !== ""
+            ? remoteMgr
+            : (localMgr ?? null)),
+        demo: station.demo || local.demo,
+      };
+    });
+  }
+  return extra.length ? [...incoming, ...extra] : incoming;
+}
+
 export function cacheCloudData(companyId, updates) {
   const current = getCompanyData(companyId);
-  if (!current) return;
-  const next = reconcileStationReferences({ ...current, ...updates });
-  localStorage.setItem(companyKey(companyId), JSON.stringify(next));
-  markBlobsSynced(companyId, next);
+  if (!current) return null;
+  const nextUpdates = { ...updates };
+  if (nextUpdates.employees) nextUpdates.employees = mergeLocalDemoRecords(current.employees, nextUpdates.employees, "employees", companyId);
+  if (nextUpdates.stations) nextUpdates.stations = mergeLocalDemoRecords(current.stations, nextUpdates.stations, "stations", companyId);
+  let next = { ...current, ...nextUpdates };
+  try {
+    next = reconcileStationReferences(next);
+  } catch (error) {
+    console.error("NiroVera station reconcile:", error);
+  }
+  try {
+    localStorage.setItem(companyKey(companyId), JSON.stringify(next));
+  } catch (error) {
+    console.error("NiroVera cacheCloudData:", error);
+  }
+  return next;
 }
 const lastLocalWriteAt = {};
 export function getLastLocalWriteAt(companyId) {
   return lastLocalWriteAt[companyId] || 0;
 }
 const cloudPushTimers = {};
-function scheduleCompanyPush(id, data, hint) {
+function scheduleCompanyPush(id, data) {
   clearTimeout(cloudPushTimers[id]);
   const snapshot = JSON.parse(JSON.stringify(data));
   cloudPushTimers[id] = setTimeout(() => {
     delete cloudPushTimers[id];
-    pushCompanyDataToCloud(id, snapshot, hint);
+    pushCompanyDataToCloud(id, snapshot);
   }, 300);
 }
 
-function persistCompanyData(id, data, sync = "all", hint = null) {
-  reconcileStationReferences(data);
+function persistCompanyData(id, data, sync = "all") {
+  try {
+    reconcileStationReferences(data);
+  } catch (error) {
+    console.error("NiroVera station reconcile:", error);
+  }
   data.employees = dedupeEmployees(data.employees);
   data.personalAttendance = (data.personalAttendance || []).map((record) => {
     const { dayIndex: _legacyDayIndex, ...clean } = record;
@@ -467,10 +566,10 @@ function persistCompanyData(id, data, sync = "all", hint = null) {
   // Preview has no cloud write ACL — keep the local workspace and skip Base44.
   if (isLocalPreviewWorkspace(id) || sync === "none") return;
   if (typeof sync === "string" && sync !== "all") {
-    syncBlobToEntity(id, sync, data[sync] || [], { announce: true });
+    syncBlobToEntity(id, sync, data[sync] || []);
     return;
   }
-  scheduleCompanyPush(id, data, hint);
+  scheduleCompanyPush(id, data);
 }
 
 function saveCompanyData(id, data) {
@@ -479,8 +578,12 @@ function saveCompanyData(id, data) {
 
 // Pushes the full company snapshot to the persisted cloud database. Called on every
 // local write, and re-called automatically by the retry loop for anything that failed.
-function companyMetaPayload(data) {
-  return [{
+function pushCompanyDataToCloud(id, data) {
+  if (isLocalPreviewWorkspace(id)) return;
+  syncEmployeesToEntity(id, data.employees);
+  syncStationsToEntity(id, data.stations);
+  BLOB_CATEGORIES.forEach((category) => syncBlobToEntity(id, category, data[category]));
+  syncBlobToEntity(id, "companyMeta", [{
     id: "meta",
     name: data.name,
     plan: data.plan,
@@ -490,49 +593,8 @@ function companyMetaPayload(data) {
     crossStationChatEnabled: data.crossStationChatEnabled,
     settings: data.settings,
     reportBranding: data.reportBranding,
-    permOverrides: data.permOverrides,
-    knownTitles: data.knownTitles,
-    removedTitles: data.removedTitles,
-    orgPositions: data.orgPositions,
-    orgTracks: data.orgTracks,
-    jobGrades: data.jobGrades,
-    hrLevels: data.hrLevels,
-    hrClusters: data.hrClusters,
-  }];
-}
-
-function snapshotCloudWrite(data) {
-  const blobs = {};
-  BLOB_CATEGORIES.forEach((category) => {
-    blobs[category] = JSON.stringify(data[category] ?? []);
-  });
-  return { blobs, meta: JSON.stringify(companyMetaPayload(data)) };
-}
-
-function diffCloudWrite(before, data) {
-  const after = snapshotCloudWrite(data);
-  return {
-    changed: BLOB_CATEGORIES.filter((category) => before.blobs[category] !== after.blobs[category]),
-    metaChanged: before.meta !== after.meta,
-  };
-}
-
-function pushCompanyDataToCloud(id, data, hint) {
-  if (isLocalPreviewWorkspace(id)) return;
-  syncEmployeesToEntity(id, data.employees);
-  syncStationsToEntity(id, data.stations);
-  const changed = hint?.changed;
-  BLOB_CATEGORIES.forEach((category) => {
-    if (changed && !changed.includes(category)) return;
-    syncBlobToEntity(id, category, data[category], {
-      announce: !changed || changed.includes(category),
-    });
-  });
-  if (!hint || hint.metaChanged) {
-    syncBlobToEntity(id, "companyMeta", companyMetaPayload(data), {
-      announce: !hint || hint.metaChanged,
-    });
-  }
+    orgStructureLog: data.orgStructureLog || [],
+  }]);
 }
 
 /* ----------------------------- sync retry loop ----------------------------- */
@@ -597,26 +659,12 @@ if (typeof window !== "undefined") {
    is additionally persisted to the CompanyDataBlob entity so it survives beyond this browser. */
 export const BLOB_CATEGORIES = [
   "tasks", "reports", "anonymousReports", "publicReports", "safety", "plans",
-  "schedules", "files", "notifications", "templates", "targets",
+  "schedules", "hrLevels", "jobGrades", "hrClusters", "files", "notifications", "templates", "targets",
   "personalPlaces", "personalAttendance", "plannerItems", "journalEntries", "payrollRuns", "smartPositions",
-  "complaintEscalationChain", "branchEscalationChains", "orgTree", "workProofs",
+  "complaintEscalationChain", "branchEscalationChains", "orgTree", "orgSeats", "workProofs",
   ];
 const lastSyncedBlobJSON = {};
-const QUIET_BLOB_403 = new Set([
-  "reports", "anonymousReports", "publicReports", "notifications",
-  "personalPlaces", "personalAttendance", "plannerItems", "journalEntries",
-  "payrollRuns", "templates", "targets", "plans",
-]);
-
-function markBlobsSynced(companyId, data) {
-  if (!companyId || !data) return;
-  BLOB_CATEGORIES.forEach((category) => {
-    lastSyncedBlobJSON[`${companyId}_${category}`] = JSON.stringify(data[category] ?? []);
-  });
-  lastSyncedBlobJSON[`${companyId}_companyMeta`] = JSON.stringify(companyMetaPayload(data));
-}
-
-async function syncBlobToEntity(companyId, category, payload, options = {}) {
+async function syncBlobToEntity(companyId, category, payload) {
   if (isLocalPreviewWorkspace(companyId)) return;
   const key = `${companyId}_${category}`;
   const json = JSON.stringify(payload || []);
@@ -627,14 +675,15 @@ async function syncBlobToEntity(companyId, category, payload, options = {}) {
     markSynced(companyId);
   } catch (error) {
     const status = error?.response?.status || error?.status;
+    // A rejected write (403) is a permission problem, not a network blip: surface it
+    // to the user instead of retrying forever — silent failure is worse than failure.
     if (status === 403) {
-      const announce = options.announce === true
-        || (options.announce !== false && !QUIET_BLOB_403.has(category));
-      if (announce && typeof window !== "undefined") {
+      if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("powercare:sync-rejected", { detail: category }));
       }
       return;
     }
+    // failed cloud write — clear the dedupe marker and let the retry loop re-push it
     lastSyncedBlobJSON[key] = undefined;
     scheduleResync(companyId);
   }
@@ -724,6 +773,11 @@ export async function hydrateStationsFromEntity(companyId) {
       type: r.type,
       status: r.status,
       managerId: r.managerId,
+      parentStationId: r.parentStationId || r.parent_station_id || null,
+      isCompanyRoot: Boolean(r.isCompanyRoot),
+      // Keep null when the entity never stored unitKind so merge can preserve local manager seats.
+      unitKind: r.unitKind === "manager" ? "manager" : r.unitKind === "branch" ? "branch" : null,
+      demo: Boolean(r.demo),
       lat: r.lat,
       lng: r.lng,
       radiusMeters: r.radiusMeters,
@@ -997,6 +1051,18 @@ export async function deleteEmployeeAccount(companyId, employeeId) {
   const res = await invokeDirectory({ action: "deleteEmployeeAccount", companyId, employeeId });
   if (!res?.data?.ok) return false;
   updateCompany(companyId, (data) => {
+    (data.orgSeats || []).forEach((seat) => {
+      if (String(seat.employeeId) !== String(employeeId)) return;
+      seat.employeeId = null;
+      seat.filledAt = null;
+      seat.vacatedAt = new Date().toISOString();
+      seat.hireOpen = true;
+    });
+    (data.stations || []).forEach((station) => {
+      if (String(station.managerId) === String(employeeId)) station.managerId = null;
+    });
+    data.smartPositions = (data.smartPositions || []).filter((item) => String(item.employeeId) !== String(employeeId));
+    data.orgTree = (data.orgTree || []).filter((node) => String(node.refId) !== String(employeeId) && String(node.id) !== `org_${employeeId}`);
     data.employees = data.employees.filter((employee) => employee.id !== employeeId);
   });
   return true;
@@ -1013,28 +1079,57 @@ export function switchUser(userId) {
 // and sets station.managerId on every selected station so the escalation chain (level 0,
 // see src/lib/escalation.js) and org chart both recognize them everywhere they manage.
 export function setStationManager(companyId, stationId, employeeId) {
+  const sid = String(stationId || "").trim();
+  const mid = String(employeeId || "").trim() || null;
+  if (!companyId || !sid) return { ok: false, error: "MISSING" };
   const current = getCompanyData(companyId);
-  const stationName = current?.stations.find((station) => station.id === stationId)?.name || "";
-  const managerName = current?.employees.find((employee) => employee.id === employeeId)?.name || "No manager";
-  audit(companyId, "station_manager_changed", `${stationName}: ${managerName}.`);
+  if (!current) return { ok: false, error: "MISSING" };
+  const stationName = current.stations.find((station) => String(station.id) === sid)?.name || "";
+  const managerName = mid
+    ? (current.employees.find((employee) => String(employee.id) === mid)?.name || "No manager")
+    : "No manager";
+  let changed = false;
   updateCompany(companyId, (data) => {
-    const station = data.stations.find((item) => item.id === stationId);
-    if (!station || station.managerId === (employeeId || null)) return;
-    const previous = data.employees.find((employee) => employee.id === station.managerId);
+    const station = (data.stations || []).find((item) => String(item.id) === sid);
+    if (!station) return;
+    if (String(station.managerId || "") === String(mid || "")) return;
+    changed = true;
+    const previous = (data.employees || []).find((employee) => String(employee.id) === String(station.managerId || ""));
     if (previous) {
-      previous.managedStations = (previous.managedStations || []).filter((id) => id !== stationId);
+      previous.managedStations = (previous.managedStations || []).filter((id) => String(id) !== sid);
       if (!previous.managedStations.length && previous.role === "station_manager") {
         previous.role = "employee";
-        previous.stationId = null;
       }
     }
-    station.managerId = employeeId || null;
-    const next = data.employees.find((employee) => employee.id === employeeId);
-    if (!next) return;
+    station.managerId = mid;
+    const next = mid ? (data.employees || []).find((employee) => String(employee.id) === mid) : null;
+    appendOrgStructureEvent(data, {
+      type: "manager",
+      stationId: sid,
+      stationName: station.name || stationName,
+      from: previous?.id || "",
+      fromName: previous?.name || "",
+      to: mid || "",
+      toName: next?.name || "",
+      employeeId: mid || "",
+      employeeName: next?.name || managerName,
+    });
+    if (!next) {
+      applyWorkplaceManagerRule(data);
+      return;
+    }
     next.role = "station_manager";
-    next.managedStations = [...new Set([...(next.managedStations || []), stationId])];
-    next.stationId = next.managedStations.length === 1 ? stationId : null;
+    next.managedStations = [...new Set([...(next.managedStations || []).map(String), sid])];
+    if (!next.stationId) next.stationId = sid;
+    applyWorkplaceManagerRule(data);
   });
+  if (!changed) {
+    const station = current.stations.find((item) => String(item.id) === sid);
+    if (!station) return { ok: false, error: "MISSING" };
+    return { ok: true, changed: false };
+  }
+  audit(companyId, "station_manager_changed", `${stationName}: ${managerName}.`);
+  return { ok: true, changed: true };
 }
 
 export function assignStationManager(companyId, employeeId, stationIds) {
@@ -1056,6 +1151,7 @@ export function assignStationManager(companyId, employeeId, stationIds) {
       const s = d.stations.find((x) => x.id === sid);
       if (s) s.managerId = emp.id;
     });
+    applyWorkplaceManagerRule(d);
   });
 }
 
@@ -1080,9 +1176,8 @@ export function updateCompany(companyId, updater, options = {}) {
     schedulesJSON: JSON.stringify(data.schedules || []),
     settingsJSON: JSON.stringify(data.settings || {}),
   };
-  const beforeCloud = snapshotCloudWrite(data);
   updater(data);
-  persistCompanyData(companyId, data, options.sync || "all", diffCloudWrite(beforeCloud, data));
+  persistCompanyData(companyId, data, options.sync || "all");
   logCollectionDiffs(companyId, data, before);
   emailNewEvents(companyId, data, before);
   return data;
@@ -1197,8 +1292,22 @@ export async function completeEmployeeOffboarding(companyId, employeeId, offboar
     const emp = d.employees.find((e) => e.id === employeeId);
     if (!emp) return;
     emp.profile = { ...(emp.profile || {}), employmentStatus: "terminated", offboarding: next };
-    emp.stationId = null; emp.managedStations = []; emp.hrLevelId = null; emp.hrStationId = null; emp.hrClusterId = null;
+    emp.stationId = null; emp.managedStations = []; emp.actingAssignments = []; emp.hrLevelId = null; emp.hrStationId = null; emp.hrClusterId = null;
+    (d.orgSeats || []).forEach((seat) => {
+      if (String(seat.employeeId) !== String(employeeId)) return;
+      seat.employeeId = null;
+      seat.filledAt = null;
+      seat.vacatedAt = new Date().toISOString();
+      seat.hireOpen = true;
+    });
+    d.orgTree = (d.orgTree || []).filter((node) => !(node.type === "employee" && String(node.refId) === String(employeeId)));
     d.stations.forEach((station) => { if (station.managerId === employeeId) station.managerId = null; });
+    (d.orgSeats || []).forEach((seat) => {
+      const title = String(seat.title || "");
+      if (!(title.includes("مدير الفرع") || /branch manager/i.test(title))) return;
+      const station = (d.stations || []).find((item) => String(item.id) === String(seat.stationId));
+      if (station) station.managerId = seat.employeeId || null;
+    });
     (d.schedules || []).forEach((schedule) => Object.values(schedule.assignments || {}).forEach((day) => Object.keys(day).forEach((shift) => { day[shift] = (day[shift] || []).filter((id) => id !== employeeId); })));
   });
   return next;
@@ -1583,8 +1692,14 @@ export function deleteFileNode(companyId, nodeId) {
    as many independent groups as needed (e.g. Station A+B together, Station C+D together). */
 export function addStationChatGroup(companyId, { name, stationIds }) {
   updateCompany(companyId, (d) => {
+    const ids = (stationIds || []).filter((id) => {
+      if (id === "hq") return true;
+      const station = (d.stations || []).find((item) => String(item.id) === String(id));
+      return Boolean(station && isWorkplaceStation(station));
+    });
+    if (ids.length < 2) return;
     d.stationChatGroups = d.stationChatGroups || [];
-    d.stationChatGroups.push({ id: uid("chgrp"), name, stationIds: stationIds || [] });
+    d.stationChatGroups.push({ id: uid("chgrp"), name, stationIds: ids });
   });
 }
 

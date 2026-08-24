@@ -1,211 +1,338 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { sendGmail } from '../../shared/gmailSend.ts';
+import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
+import { authPowerCareSession } from "../../shared/powerCareSession.ts";
+import {
+  checkAcceptGate,
+  checkApproveWorkProofGate,
+  checkEditWorkProofGate,
+  checkEndWorkProofGate,
+  deriveProofCounts,
+  deriveProofStage,
+  isSameProofBranch,
+  sealIdFor,
+  shouldSealOnEnd,
+  type WorkProofLike,
+} from "../../shared/workProofDerivations.ts";
 
-// Public view of a proof — only what the client needs to sign, never internal ids.
-const publicView = (proof) => ({
-  proofNumber: proof.proofNumber,
-  workTitle: proof.workTitle,
-  workDescription: proof.workDescription,
-  workDate: proof.workDate,
-  actualDays: proof.actualDays,
-  plannedDays: proof.plannedDays,
-  performedByName: proof.performedByName,
-  employeeSignatureUrl: proof.employeeSignatureUrl || null,
-  employeeSignedAt: proof.employeeSignedAt || null,
-  beforeImageUrls: proof.beforeImageUrls || [],
-  afterImageUrls: proof.afterImageUrls || [],
-  workers: (proof.workers || []).map((w) => ({ name: w.name })),
-  vehicles: (proof.vehicles || []).map((v) => ({ plate: v.plate, type: v.type, make: v.make, model: v.model, year: v.year })),
-  status: proof.status,
-  clientName: proof.clientName,
-  clientTitle: proof.clientTitle || null,
-  clientSignatureUrl: proof.clientSignatureUrl || null,
-  signedAt: proof.signedAt,
-});
+const PROOFS_CATEGORY = "workProofs";
 
-const managerRoles = ["director", "ops_manager", "pgm", "station_manager"];
-const seniorRoles = ["owner", "director", "ops_manager"];
+function requireCompanyId(companyId: unknown) {
+  const id = typeof companyId === "string" ? companyId.trim() : "";
+  if (!id) return null;
+  return id;
+}
 
-export default async function(req) {
+function uid(prefix: string) {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-
-    // ---- Public (client-facing) actions: authenticated only by the emailed sign token.
-    if (body.action === "publicGet" || body.action === "publicSign") {
-      const token = String(body.token || "").trim();
-      if (token.length < 20) return Response.json({ error: "Invalid link" }, { status: 400 });
-      const found = await base44.asServiceRole.entities.WorkProof.filter({ signToken: token });
-      const proof = found[0];
-      if (!proof) return Response.json({ error: "Link not found or expired" }, { status: 404 });
-      if (body.action === "publicGet") return Response.json({ proof: publicView(proof) });
-      // The client never types their name — it is taken from the record prepared when the link was sent.
-      const signatureUrl = String(body.signatureUrl || "").trim();
-      if (proof.status !== "pending_signature") return Response.json({ error: "This proof is no longer awaiting signature" }, { status: 400 });
-      if (!proof.clientName || !signatureUrl.startsWith("http")) return Response.json({ error: "Signature is required" }, { status: 400 });
-      const signedAt = new Date().toISOString();
-      await base44.asServiceRole.entities.WorkProof.update(proof.id, {
-        clientSignatureUrl: signatureUrl, signedAt, status: "signed", signToken: null,
-      });
-      return Response.json({ ok: true, proof: publicView({ ...proof, clientSignatureUrl: signatureUrl, signedAt, status: "signed" }) });
+    const action = String(body.action || "");
+    const companyId = requireCompanyId(body.companyId);
+    if (!companyId) {
+      return Response.json({ error: "Missing companyId — record without tenant is rejected" }, { status: 400 });
     }
 
-    const platformUser = await base44.auth.me().catch(() => null);
-    let auth = null;
-    if (platformUser?.role === "admin" && body.companyId) auth = { companyId: body.companyId, userId: body.userId || null, role: "owner", name: platformUser.full_name || "Admin", stationId: null, managedStations: [] };
-    if (!auth && body.sessionToken && body.companyId) {
-      const sessions = await base44.asServiceRole.entities.CompanySession.filter({ token: body.sessionToken, companyId: body.companyId });
-      const session = sessions[0];
-      if (session && new Date(session.expiresAt).getTime() > Date.now()) {
-        if (session.role === "owner") auth = { companyId: body.companyId, userId: session.userId || null, role: "owner", name: "Owner", stationId: null, managedStations: [] };
-        else {
-          const employees = await base44.asServiceRole.entities.Employee.filter({ companyId: body.companyId, employeeId: session.userId });
-          const employee = employees[0];
-          if (employee) auth = { companyId: body.companyId, userId: employee.employeeId, role: employee.role, name: employee.name, stationId: employee.stationId || null, managedStations: employee.managedStations || [] };
+    const sessionAuth = await authPowerCareSession(base44, companyId, body.sessionToken);
+    if (!sessionAuth) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+    const auth = {
+      companyId,
+      userId: sessionAuth.userId || null,
+      name: sessionAuth.name || "User",
+      role: sessionAuth.role || "employee",
+      stationId: sessionAuth.stationId || null,
+      owner: !!sessionAuth.owner || sessionAuth.role === "owner" || sessionAuth.admin,
+      admin: !!sessionAuth.admin,
+    };
+
+    const managerRoles = ["owner", "director", "ops_manager", "station_manager", "pgm", "admin"];
+    const isManager = auth.owner || auth.admin || managerRoles.includes(auth.role);
+
+    const loadBlob = async () => {
+      const rows = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId: auth.companyId, category: PROOFS_CATEGORY });
+      return rows[0] || null;
+    };
+    const listProofs = async (): Promise<WorkProofLike[]> => {
+      const blob = await loadBlob();
+      const payload = Array.isArray(blob?.payload) ? blob.payload : [];
+      return payload.filter((p: WorkProofLike & { companyId?: string }) => p && p.companyId === auth.companyId && p.ref);
+    };
+    const saveProofs = async (proofs: WorkProofLike[]) => {
+      const blob = await loadBlob();
+      if (blob) await base44.asServiceRole.entities.CompanyDataBlob.update(blob.id, { payload: proofs });
+      else await base44.asServiceRole.entities.CompanyDataBlob.create({ companyId: auth.companyId, category: PROOFS_CATEGORY, payload: proofs });
+    };
+    const audit = async (actionKey: string, details: string, extra: Record<string, unknown> = {}) => {
+      await base44.asServiceRole.entities.AuditLog.create({
+        companyId: auth.companyId,
+        action: actionKey,
+        performedBy: auth.name,
+        details,
+        reason: extra.reason || null,
+        oldValue: extra.oldValue || null,
+        newValue: extra.newValue || null,
+      });
+    };
+
+    if (action === "list" || action === "counts") {
+      let proofs = await listProofs();
+      const scope = body.stationId ? String(body.stationId) : null;
+      if (scope) proofs = proofs.filter((p) => p.stationId === scope);
+      const counts = deriveProofCounts(proofs);
+      if (action === "counts") return Response.json({ counts });
+      return Response.json({
+        proofs: proofs.map((p) => ({ ...p, stage: deriveProofStage(p), expectedSeal: sealIdFor(p) })),
+        counts,
+      });
+    }
+
+    if (action === "raise") {
+      const title = String(body.title || "").trim();
+      const workReason = String(body.workReason || "").trim();
+      const entityName = String(body.entityName || body.client || "").trim();
+      const client = String(body.client || entityName).trim();
+      const stationId = String(body.stationId || auth.stationId || "").trim();
+      const beforeStamp = String(body.beforeStamp || "").trim();
+      if (!title || !workReason || !entityName || !stationId || !beforeStamp) {
+        return Response.json({ error: "Missing title, workReason, entityName, stationId, or beforeStamp" }, { status: 400 });
+      }
+      const geoVerdict = String(body.geoVerdict || "in").toLowerCase().startsWith("out") ? "out" : "in";
+      const ref = String(body.ref || `WP-${Date.now().toString().slice(-6)}`);
+      const proof: WorkProofLike & { companyId: string; createdAt: string; beforeUrl?: string; afterUrl?: string } = {
+        id: uid("wp"),
+        companyId: auth.companyId,
+        ref,
+        title,
+        workReason,
+        entityKind: String(body.entityKind || "company").trim() || "company",
+        entityName,
+        entityUnified: String(body.entityUnified || "").trim() || null,
+        entityCr: String(body.entityCr || "").trim() || null,
+        entityQiwa: String(body.entityQiwa || "").trim() || null,
+        entitySite: String(body.entitySite || "").trim() || null,
+        entityProject: String(body.entityProject || "").trim() || null,
+        entityContact: String(body.entityContact || "").trim() || null,
+        entityPhone: String(body.entityPhone || "").trim() || null,
+        entityEmail: String(body.entityEmail || "").trim() || null,
+        personName: String(body.personName || "").trim() || null,
+        personId: String(body.personId || "").trim() || null,
+        personTitle: String(body.personTitle || "").trim() || null,
+        personPhone: String(body.personPhone || "").trim() || null,
+        startedAt: body.startedAt || new Date().toISOString(),
+        endedAt: null,
+        vehicle: body.vehicle && typeof body.vehicle === "object" ? body.vehicle : {},
+        client,
+        stationId,
+        techId: body.techId ? String(body.techId) : auth.userId,
+        raiserId: auth.userId,
+        beforeStamp,
+        afterStamp: null,
+        beforeUrl: body.beforeUrl || null,
+        afterUrl: null,
+        geoVerdict,
+        geoCleared: false,
+        status: "await",
+        endedById: null,
+        endedBy: null,
+        createdAt: new Date().toISOString(),
+      };
+      const proofs = await listProofs();
+      proofs.unshift(proof);
+      await saveProofs(proofs);
+      await audit("work_proof_raised", `Work proof ${ref} raised for ${client}`);
+      return Response.json({ proof: { ...proof, stage: deriveProofStage(proof) }, ok: true });
+    }
+
+    if (action === "attachAfter" || action === "end") {
+      const id = String(body.id || body.ref || "").trim();
+      const afterStamp = String(body.afterStamp || "").trim();
+      const afterUrl = body.afterUrl || null;
+      if (!id || !afterStamp || !afterUrl) return Response.json({ error: "Missing id/ref, afterStamp, or afterUrl" }, { status: 400 });
+      const proofs = await listProofs();
+      const idx = proofs.findIndex((p) => p.id === id || p.ref === id);
+      if (idx < 0) return Response.json({ error: "PROOF_NOT_FOUND" }, { status: 404 });
+      const p = { ...proofs[idx] };
+      const sameBranch = isSameProofBranch(auth.stationId, p.stationId);
+      const gate = checkEndWorkProofGate({ proof: p, actorUserId: auth.userId, sameBranch, isManager });
+      if (!gate.ok) {
+        return Response.json({ error: gate.error, reason: gate.reason, reasonEn: gate.reasonEn, gate }, { status: 422 });
+      }
+      p.endedAt = body.endedAt || new Date().toISOString();
+      p.afterStamp = afterStamp;
+      (p as any).afterUrl = afterUrl;
+      (p as any).endedById = auth.userId;
+      (p as any).endedBy = auth.name;
+      p.status = "ready";
+      p.sealId = null;
+      p.approvedAt = null;
+      const approve = checkApproveWorkProofGate({
+        proof: p,
+        actorUserId: auth.userId,
+        geoClearReason: body.geoClearReason || "إنهاء العمل بصورة البعد",
+      });
+      if (approve.ok) {
+        if (String(p.geoVerdict || "").toLowerCase().startsWith("out")) {
+          p.geoCleared = true;
+          p.geoClearReason = String(body.geoClearReason || "إنهاء العمل بصورة البعد").trim();
         }
+        p.approvedBy = auth.name;
+        p.approvedAt = new Date().toISOString();
+        p.sealId = approve.sealId;
+        p.status = "sealed";
       }
-    }
-    if (!auth) return Response.json({ error: "Unauthorized" }, { status: 401 });
-
-    const isSenior = seniorRoles.includes(auth.role);
-    const isManager = managerRoles.includes(auth.role) || auth.role === "owner";
-    const allStations = await base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId });
-    const visibleStationIds = isSenior ? allStations.map((s) => s.stationId) : auth.role === "pgm" ? auth.managedStations : auth.role === "station_manager" ? [auth.stationId, ...auth.managedStations].filter(Boolean) : [auth.stationId].filter(Boolean);
-
-    if (body.action === "list") {
-      const proofs = await base44.asServiceRole.entities.WorkProof.filter({ companyId: auth.companyId }, "-created_date", 500);
-      const visible = isSenior ? proofs : isManager ? proofs.filter((p) => visibleStationIds.includes(p.stationId)) : proofs.filter((p) => p.performedById === auth.userId || visibleStationIds.includes(p.stationId));
-      const stations = allStations.filter((s) => visibleStationIds.includes(s.stationId));
-      return Response.json({ proofs: visible, stations });
+      proofs[idx] = p;
+      await saveProofs(proofs);
+      await audit(
+        p.status === "sealed" ? "work_proof_ended_sealed" : "work_proof_ended",
+        `Work proof ${p.ref} ended by ${auth.name}${p.sealId ? ` sealed ${p.sealId}` : ""}`,
+      );
+      return Response.json({ proof: { ...p, stage: deriveProofStage(p) }, ok: true });
     }
 
-    if (body.action === "create") {
-      const workTitle = String(body.workTitle || "").trim();
-      const workDate = String(body.workDate || "").trim();
-      const stationId = String(body.stationId || "").trim();
-      if (!workTitle || !workDate || !stationId || !visibleStationIds.includes(stationId)) return Response.json({ error: "Invalid work proof data" }, { status: 400 });
-      const clean = (urls) => (Array.isArray(urls) ? urls.filter((u) => typeof u === "string" && u.startsWith("http")).slice(0, 10) : []);
-      const cleanFiles = (files) => (Array.isArray(files) ? files.filter((f) => typeof f?.url === "string" && f.url.startsWith("http")).slice(0, 10).map((f) => ({ url: f.url, name: String(f.name || "file") })) : []);
-      const idTypes = ["national_id", "iqama", "passport", "other"];
-      const workers = (Array.isArray(body.workers) ? body.workers : []).filter((w) => String(w?.name || "").trim()).slice(0, 50).map((w) => ({
-        name: String(w.name).trim(),
-        idType: idTypes.includes(w.idType) ? w.idType : "other",
-        idNumber: String(w.idNumber || "").trim(),
-        phone: String(w.phone || "").trim(),
-      }));
-      const vehicles = (Array.isArray(body.vehicles) ? body.vehicles : []).filter((v) => String(v?.plate || "").trim()).slice(0, 30).map((v) => ({
-        plate: String(v.plate).trim(),
-        type: String(v.type || "").trim(),
-        make: String(v.make || "").trim(),
-        model: String(v.model || "").trim(),
-        year: String(v.year || "").trim(),
-        driverName: String(v.driverName || "").trim(),
-      }));
-      const plannedDays = body.plannedDays == null || body.plannedDays === "" ? null : Number(body.plannedDays);
-      if (plannedDays != null && (!Number.isFinite(plannedDays) || plannedDays < 0)) return Response.json({ error: "Invalid planned days" }, { status: 400 });
-      const existing = await base44.asServiceRole.entities.WorkProof.filter({ companyId: auth.companyId });
-      const year = new Date().getFullYear();
-      const proofNumber = `WP-${year}-${String(existing.length + 1).padStart(6, "0")}`;
-      const created = await base44.asServiceRole.entities.WorkProof.create({
-        companyId: auth.companyId, proofNumber, stationId,
-        workTitle, workDescription: String(body.workDescription || ""), workDate,
-        workers, vehicles, plannedDays, actualDays: null, closedAt: null,
-        beforeImageUrls: clean(body.beforeImageUrls), afterImageUrls: [],
-        beforeFiles: cleanFiles(body.beforeFiles), afterFiles: [],
-        performedById: auth.userId || "owner", performedByName: auth.name,
-        clientName: null, clientTitle: null, clientSignatureUrl: null, signedAt: null,
-        status: "in_progress",
-      });
-      return Response.json({ ok: true, proof: created });
-    }
-
-    if (body.action === "close") {
-      const proofs = await base44.asServiceRole.entities.WorkProof.filter({ id: body.proofId, companyId: auth.companyId });
-      const proof = proofs[0];
-      if (!proof || proof.status !== "in_progress") return Response.json({ error: "Job cannot be closed" }, { status: 400 });
-      if (!visibleStationIds.includes(proof.stationId) && proof.performedById !== auth.userId) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const actualDays = Number(body.actualDays);
-      if (!Number.isFinite(actualDays) || actualDays < 0) return Response.json({ error: "Actual working days are required" }, { status: 400 });
-      const after = Array.isArray(body.afterImageUrls) ? body.afterImageUrls.filter((u) => typeof u === "string" && u.startsWith("http")).slice(0, 10) : [];
-      const afterFiles = Array.isArray(body.afterFiles) ? body.afterFiles.filter((f) => typeof f?.url === "string" && f.url.startsWith("http")).slice(0, 10).map((f) => ({ url: f.url, name: String(f.name || "file") })) : [];
-      // The employee who documented the job signs it automatically at close, using their saved signature.
-      let employeeSignatureUrl = proof.employeeSignatureUrl || null;
-      const provided = String(body.employeeSignatureUrl || "");
-      if (!employeeSignatureUrl && provided.startsWith("http")) employeeSignatureUrl = provided;
-      if (!employeeSignatureUrl && auth.userId) {
-        const employees = await base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId, employeeId: auth.userId });
-        const saved = employees[0]?.profile?.signatureUrl;
-        if (typeof saved === "string" && saved.startsWith("http")) employeeSignatureUrl = saved;
+    if (action === "edit") {
+      const id = String(body.id || body.ref || "").trim();
+      const proofs = await listProofs();
+      const idx = proofs.findIndex((p) => p.id === id || p.ref === id);
+      if (idx < 0) return Response.json({ error: "PROOF_NOT_FOUND" }, { status: 404 });
+      const current = proofs[idx];
+      const sameBranch = isSameProofBranch(auth.stationId, current.stationId);
+      const gate = checkEditWorkProofGate({ proof: current, actorUserId: auth.userId, sameBranch, isManager });
+      if (!gate.ok) {
+        return Response.json({ error: gate.error, reason: gate.reason, reasonEn: gate.reasonEn, gate }, { status: 422 });
       }
-      const closedAt = new Date().toISOString();
-      await base44.asServiceRole.entities.WorkProof.update(proof.id, {
-        actualDays, afterImageUrls: after, afterFiles, closedAt, status: "pending_signature",
-        employeeSignatureUrl, employeeSignedAt: employeeSignatureUrl ? closedAt : null,
-      });
-      return Response.json({ ok: true });
+      const title = String(body.title || "").trim();
+      const workReason = String(body.workReason || "").trim();
+      const entityName = String(body.entityName || body.client || "").trim();
+      if (!title || !workReason || !entityName) {
+        return Response.json({ error: "MISSING_FIELDS", reason: "الوصف وسبب العمل واسم المستفيد مطلوبة." }, { status: 400 });
+      }
+      const p = {
+        ...current,
+        title,
+        workReason,
+        entityKind: String(body.entityKind || current.entityKind || "company").trim(),
+        entityName,
+        entityUnified: String(body.entityUnified ?? (current as any).entityUnified ?? "").trim() || null,
+        entityCr: String(body.entityCr ?? (current as any).entityCr ?? "").trim() || null,
+        entityQiwa: String(body.entityQiwa ?? (current as any).entityQiwa ?? "").trim() || null,
+        entitySite: String(body.entitySite ?? (current as any).entitySite ?? "").trim() || null,
+        entityProject: String(body.entityProject ?? (current as any).entityProject ?? "").trim() || null,
+        entityContact: String(body.entityContact ?? (current as any).entityContact ?? "").trim() || null,
+        entityPhone: String(body.entityPhone ?? (current as any).entityPhone ?? "").trim() || null,
+        entityEmail: String(body.entityEmail ?? (current as any).entityEmail ?? "").trim() || null,
+        personName: String(body.personName ?? (current as any).personName ?? "").trim() || null,
+        personId: String(body.personId ?? (current as any).personId ?? "").trim() || null,
+        personTitle: String(body.personTitle ?? (current as any).personTitle ?? "").trim() || null,
+        personPhone: String(body.personPhone ?? (current as any).personPhone ?? "").trim() || null,
+        startedAt: body.startedAt || (current as any).startedAt || null,
+        vehicle: body.vehicle && typeof body.vehicle === "object" ? body.vehicle : (current as any).vehicle,
+        client: String(body.client || body.entityContact || entityName).trim(),
+        stationId: String(body.stationId || current.stationId || "").trim(),
+        geoVerdict: String(body.geoVerdict || current.geoVerdict || "in").toLowerCase().startsWith("out") ? "out" : "in",
+        editedAt: new Date().toISOString(),
+        editedBy: auth.name,
+        editedById: auth.userId,
+      };
+      proofs[idx] = p;
+      await saveProofs(proofs);
+      await audit("work_proof_edited", `Work proof ${p.ref} edited by ${auth.name}`);
+      return Response.json({ proof: { ...p, stage: deriveProofStage(p) }, ok: true });
     }
 
-    // Adding after-work evidence is still allowed while the proof awaits the client's signature.
-    if (body.action === "addAfterEvidence") {
-      const proofs = await base44.asServiceRole.entities.WorkProof.filter({ id: body.proofId, companyId: auth.companyId });
-      const proof = proofs[0];
-      if (!proof || proof.status !== "pending_signature") return Response.json({ error: "Evidence can no longer be added" }, { status: 400 });
-      if (!visibleStationIds.includes(proof.stationId) && proof.performedById !== auth.userId) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const after = Array.isArray(body.afterImageUrls) ? body.afterImageUrls.filter((u) => typeof u === "string" && u.startsWith("http")).slice(0, 10) : [];
-      const afterFiles = Array.isArray(body.afterFiles) ? body.afterFiles.filter((f) => typeof f?.url === "string" && f.url.startsWith("http")).slice(0, 10).map((f) => ({ url: f.url, name: String(f.name || "file") })) : [];
-      await base44.asServiceRole.entities.WorkProof.update(proof.id, { afterImageUrls: after, afterFiles });
-      return Response.json({ ok: true });
+    if (action === "approve") {
+      const id = String(body.id || body.ref || "").trim();
+      const proofs = await listProofs();
+      const idx = proofs.findIndex((p) => p.id === id || p.ref === id);
+      if (idx < 0) return Response.json({ error: "PROOF_NOT_FOUND" }, { status: 404 });
+      let p = { ...proofs[idx] };
+      if (!isManager && !isSameProofBranch(auth.stationId, p.stationId)) {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const gate = checkApproveWorkProofGate({
+        proof: p,
+        actorUserId: auth.userId,
+        geoClearReason: body.geoClearReason,
+      });
+      if (!gate.ok) {
+        return Response.json({ error: gate.error, reason: gate.reason, reasonEn: gate.reasonEn, gate }, { status: 422 });
+      }
+      if (isOutsideNeedsClear(p) && body.geoClearReason) {
+        p.geoCleared = true;
+        p.geoClearReason = String(body.geoClearReason).trim();
+      }
+      p.approvedBy = auth.name;
+      p.approvedAt = new Date().toISOString();
+      p.sealId = gate.sealId;
+      p.status = "sealed";
+      proofs[idx] = p;
+      await saveProofs(proofs);
+      await audit("work_proof_sealed", `Work proof ${p.ref} sealed ${p.sealId}`);
+      return Response.json({ proof: { ...p, stage: deriveProofStage(p) }, ok: true });
     }
 
-    if (body.action === "sendSignLink") {
-      const clientEmail = String(body.clientEmail || "").trim().toLowerCase();
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)) return Response.json({ error: "A valid client email is required" }, { status: 400 });
-      const proofs = await base44.asServiceRole.entities.WorkProof.filter({ id: body.proofId, companyId: auth.companyId });
-      const proof = proofs[0];
-      if (!proof || proof.status !== "pending_signature") return Response.json({ error: "Proof is not awaiting signature" }, { status: 400 });
-      if (!visibleStationIds.includes(proof.stationId) && proof.performedById !== auth.userId) return Response.json({ error: "Forbidden" }, { status: 403 });
-      const signToken = proof.signToken || crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
-      const origin = String(body.origin || "").replace(/\/$/, "");
-      const url = `${origin}/work-proof-sign?token=${signToken}`;
-      await sendGmail(base44, {
-        to: clientEmail,
-        subject: `توقيع إثبات العمل ${proof.proofNumber} · Work proof signature`,
-        text: `تم إنجاز العمل: ${proof.workTitle}\nبتاريخ ${proof.workDate} — بواسطة ${proof.performedByName}.\n\nيرجى مراجعة الإثبات والتوقيع إلكترونيًا عبر الزر أدناه.\n\nPlease review the work proof and sign it electronically.`,
-        cta: { url, label: "مراجعة وتوقيع · Review & sign" },
-      });
-      const clientName = String(body.clientName || "").trim();
-      if (!clientName) return Response.json({ error: "Client name is required" }, { status: 400 });
-      // Backfill the internal approval stamp for records closed before it existed.
-      const stampUrl = String(body.employeeSignatureUrl || "");
-      const backfill = !proof.employeeSignatureUrl && stampUrl.startsWith("http")
-        ? { employeeSignatureUrl: stampUrl, employeeSignedAt: proof.closedAt || new Date().toISOString() }
-        : {};
-      await base44.asServiceRole.entities.WorkProof.update(proof.id, {
-        signToken, clientEmail, clientName, clientTitle: String(body.clientTitle || "").trim() || null,
-        signLinkSentAt: new Date().toISOString(), ...backfill,
-      });
-      return Response.json({ ok: true, url });
+    if (action === "reject") {
+      const id = String(body.id || body.ref || "").trim();
+      const reason = String(body.reason || "").trim();
+      const proofs = await listProofs();
+      const idx = proofs.findIndex((p) => p.id === id || p.ref === id);
+      if (idx < 0) return Response.json({ error: "PROOF_NOT_FOUND" }, { status: 404 });
+      const p = { ...proofs[idx] };
+      if (!isManager && !isSameProofBranch(auth.stationId, p.stationId)) {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+      if (auth.userId && p.raiserId && String(auth.userId) === String(p.raiserId)) {
+        return Response.json({
+          error: "SELF_APPROVE_FORBIDDEN",
+          reason: "من رفع الإثبات لا يرفضه كمعتمد.",
+        }, { status: 422 });
+      }
+      p.status = "rejected";
+      (p as any).rejectReason = reason || null;
+      p.sealId = null;
+      p.approvedAt = null;
+      proofs[idx] = p;
+      await saveProofs(proofs);
+      await audit("work_proof_rejected", `Work proof ${p.ref} rejected`, { reason });
+      return Response.json({ proof: { ...p, stage: deriveProofStage(p) }, ok: true });
     }
 
-    if (body.action === "sign") {
-      const clientName = String(body.clientName || "").trim();
-      const signatureUrl = String(body.signatureUrl || "").trim();
-      const proofs = await base44.asServiceRole.entities.WorkProof.filter({ id: body.proofId, companyId: auth.companyId });
-      const proof = proofs[0];
-      if (!proof || proof.status !== "pending_signature") return Response.json({ error: "Proof cannot be signed" }, { status: 400 });
-      if (!visibleStationIds.includes(proof.stationId) && proof.performedById !== auth.userId) return Response.json({ error: "Forbidden" }, { status: 403 });
-      if (!clientName || !signatureUrl.startsWith("http")) return Response.json({ error: "Client name and signature are required" }, { status: 400 });
-      // Signing seals the record: the client's identity, signature and timestamp are written once and never edited.
-      await base44.asServiceRole.entities.WorkProof.update(proof.id, {
-        clientName, clientTitle: String(body.clientTitle || "").trim() || null,
-        clientSignatureUrl: signatureUrl, signedAt: new Date().toISOString(), status: "signed",
-      });
-      return Response.json({ ok: true });
+    if (action === "accept") {
+      const id = String(body.id || body.ref || "").trim();
+      const proofs = await listProofs();
+      const idx = proofs.findIndex((p) => p.id === id || p.ref === id);
+      if (idx < 0) return Response.json({ error: "PROOF_NOT_FOUND" }, { status: 404 });
+      const p = { ...proofs[idx] };
+      const gate = checkAcceptGate(p);
+      if (!gate.ok) {
+        return Response.json({ error: gate.error, reason: gate.reason, reasonEn: gate.reasonEn, gate }, { status: 422 });
+      }
+      p.acceptedAt = new Date().toISOString();
+      p.status = "accepted";
+      p.sealId = gate.sealId;
+      proofs[idx] = p;
+      await saveProofs(proofs);
+      await audit("work_proof_accepted", `Work proof ${p.ref} accepted by client`);
+      return Response.json({ proof: { ...p, stage: deriveProofStage(p) }, ok: true });
     }
 
-    return Response.json({ error: "Unknown action" }, { status: 400 });
+    if (action === "checkApprove") {
+      const id = String(body.id || body.ref || "").trim();
+      const proofs = await listProofs();
+      const proof = proofs.find((p) => p.id === id || p.ref === id) || null;
+      return Response.json(checkApproveWorkProofGate({ proof, actorUserId: auth.userId, geoClearReason: body.geoClearReason }));
+    }
+
+    return Response.json({ error: `Unknown action: ${action}` }, { status: 400 });
   } catch (error) {
-    console.error("WorkProof error", error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error("workproof error:", error);
+    return Response.json({ error: String(error?.message || error) }, { status: 500 });
   }
+});
+
+function isOutsideNeedsClear(p: WorkProofLike) {
+  const v = String(p.geoVerdict || "in").toLowerCase();
+  return (v === "out" || v.includes("outside")) && !p.geoCleared;
 }

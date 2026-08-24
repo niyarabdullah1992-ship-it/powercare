@@ -1,6 +1,7 @@
 import { base44 } from "@/api/base44Client";
 import { isOnLeaveToday } from "@/lib/leaveTypes";
 import { toRiyadhDateKey } from "@/lib/riyadhDate";
+import { extraCoverageStationIds } from "@/lib/stationTree";
 
 // Thin helpers around the supabaseAttendance backend function, shared by the
 // check-in widget, manager dashboards, and the task-gating check in Operations.
@@ -78,7 +79,8 @@ export function deriveTeamAttendanceToday(employees = [], attendanceRows = [], d
 // (Schedules page) — reused here instead of a separate attendance-only schedule.
 export function getTodaysShift(data, employee) {
   if (!employee?.id) return null;
-  const stationIds = [employee.stationId || data?.stations?.[0]?.id, ...(employee.managedStations || [])].filter(Boolean);
+  // Personal punch lookup: home + extra coverage. Child branches under home are not extra sites.
+  const stationIds = [employee.stationId || data?.stations?.[0]?.id, ...extraCoverageStationIds(employee, data)].filter(Boolean);
   const dateKey = toRiyadhDateKey();
   for (const stationId of stationIds) {
     const schedule = (data?.schedules || []).find((s) => s.stationId === stationId);

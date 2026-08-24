@@ -1,6 +1,7 @@
 export const PLAN_SECTIONS = [
   { key: "assistant", ar: "المساعد الذكي", en: "AI Assistant" }, { key: "reports", ar: "التقارير", en: "Reports" },
   { key: "tasks", ar: "المهام", en: "Tasks" }, { key: "inventory", ar: "المخزون", en: "Inventory" },
+  { key: "assets", ar: "الأصول", en: "Assets" }, { key: "accounting", ar: "المحاسبة", en: "Accounting" },
   { key: "attendance", ar: "الحضور", en: "Attendance" }, { key: "hr", ar: "الموارد البشرية", en: "HR" },
   { key: "performance", ar: "الأداء", en: "Performance" }, { key: "expenses", ar: "المصروفات", en: "Expenses" },
   { key: "payroll", ar: "الرواتب", en: "Payroll" }, { key: "safety", ar: "السلامة", en: "Safety" },

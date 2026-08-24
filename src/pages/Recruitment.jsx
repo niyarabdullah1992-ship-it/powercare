@@ -165,10 +165,10 @@ export default function Recruitment() {
   if (!currentUser) return null;
 
   const openList = vacancies
-    .filter((v) => matchesStationScope(v.stationId, headerScope))
+    .filter((v) => matchesStationScope(v.stationId, headerScope, data?.stations))
     .filter((v) => !v.board?.done && !v.withdrawn);
   const activeOnboarding = onboarding
-    .filter((h) => matchesStationScope(h.stationId, headerScope))
+    .filter((h) => matchesStationScope(h.stationId, headerScope, data?.stations))
     .filter((h) => !h.confirmed);
 
   return (

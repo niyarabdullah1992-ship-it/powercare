@@ -3,21 +3,50 @@ import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import useStationDeletion from "@/hooks/useStationDeletion";
 import StationDeleteSummary from "@/components/stations/StationDeleteSummary";
 
-export default function StationDeleteDialog({ station, stations, data, company, lang }) {
+import { isCompanyRootStation } from "@/lib/stationTree";
+
+export default function StationDeleteDialog({ station, stations, data, company, lang, label, buttonStyle, onDeleted }) {
   const ar = lang === "ar";
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState("transfer");
   const [target, setTarget] = useState("");
-  const { summary, loading, error, loadSummary, remove } = useStationDeletion(company, data, station.id);
-  const destinations = stations.filter((item) => item.id !== station.id);
-  const show = () => { setTarget(destinations[0]?.id || ""); setMode(destinations.length ? "transfer" : "delete"); setOpen(true); loadSummary(); };
-  const confirm = async () => { if (await remove(mode, mode === "transfer" ? target : null)) setOpen(false); };
+  const { summary, loading, error, loadSummary, remove } = useStationDeletion(company, data, station?.id);
+  const blocked = isCompanyRootStation(station) || !station?.id;
+  const parentId = String(station?.parentStationId || station?.parentBranchId || "");
+  const destinations = [...(stations || []).filter((item) => item.id && item.id !== station?.id)].sort((a, b) => {
+    if (String(a.id) === parentId) return -1;
+    if (String(b.id) === parentId) return 1;
+    return 0;
+  });
+  const show = () => {
+    if (blocked) return;
+    const initial = destinations.find((item) => String(item.id) === parentId)?.id || destinations[0]?.id || "";
+    setTarget(initial);
+    setMode(destinations.length ? "transfer" : "delete");
+    setOpen(true);
+    loadSummary();
+  };
+  const confirm = async () => {
+    if (!(await remove(mode, mode === "transfer" ? target : null))) return;
+    setOpen(false);
+    onDeleted?.(station.id, mode === "transfer" ? target : parentId);
+  };
+
+  if (blocked) return null;
 
   return <>
-    <button onClick={show} className="rounded-md p-1 text-destructive hover:bg-destructive/10" title={ar ? "حذف" : "Delete"}><Trash2 className="h-3.5 w-3.5" /></button>
+    <button
+      type="button"
+      onClick={(event) => { event.stopPropagation(); show(); }}
+      className={buttonStyle ? undefined : "rounded-md p-1 text-destructive hover:bg-destructive/10"}
+      style={buttonStyle}
+      title={ar ? "حذف الفرع" : "Delete branch"}
+    >
+      {label || <Trash2 className="h-3.5 w-3.5" />}
+    </button>
     {open && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" onClick={() => !loading && setOpen(false)}>
       <div className="w-full max-w-lg space-y-4 rounded-2xl border border-border bg-card p-5 shadow-elevated" onClick={(event) => event.stopPropagation()}>
-        <div><h3 className="font-heading text-xl font-semibold">{ar ? `حذف محطة ${station.name}` : `Delete ${station.name}`}</h3><p className="mt-1 text-sm text-muted-foreground">{ar ? "راجع البيانات المرتبطة قبل المتابعة." : "Review linked data before continuing."}</p></div>
+        <div><h3 className="font-heading text-xl font-semibold">{ar ? `حذف فرع ${station.name}` : `Delete ${station.name}`}</h3><p className="mt-1 text-sm text-muted-foreground">{ar ? "راجع البيانات المرتبطة قبل المتابعة. الفروع التابعة تنتقل إلى الأب." : "Review linked data before continuing. Child branches move to the parent."}</p></div>
         {loading && !summary ? <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-accent" /></div> : <StationDeleteSummary summary={summary} ar={ar} />}
         <div className="space-y-2"><p className="text-sm font-medium">{ar ? "ماذا تريد أن يحدث بالبيانات؟" : "What should happen to the data?"}</p>
           {destinations.length > 0 && <label className="flex cursor-pointer gap-3 rounded-xl border border-border p-3"><input type="radio" checked={mode === "transfer"} onChange={() => setMode("transfer")} /><span><strong className="block text-sm">{ar ? "نقل إلى محطة أخرى" : "Transfer to another station"}</strong><span className="text-xs text-muted-foreground">{ar ? "نقل الموظفين والمهام والحضور والسلامة والجداول." : "Move employees, tasks, attendance, safety, and schedules."}</span></span></label>}

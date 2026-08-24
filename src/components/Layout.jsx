@@ -7,7 +7,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Search,
-                  Bell, LogOut, ChevronDown, ChevronLeft, ChevronRight, Trophy, UserCog, MessageCircle, MessageSquare, FileText, PenLine, ClipboardCheck, FolderOpen, Sparkles, Banknote, Warehouse, ReceiptText, Camera, Briefcase, CalendarClock, CalendarOff, Network, Settings2, BarChart3,
+                  Bell, LogOut, ChevronDown, ChevronLeft, ChevronRight, Trophy, UserCog, MessageCircle, MessageSquare, FileText, PenLine, ClipboardCheck, FolderOpen, Sparkles, Banknote, Warehouse, Boxes, Calculator, ReceiptText, Camera, Briefcase, CalendarClock, CalendarOff, Network, Settings2,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -24,25 +24,23 @@ import GlobalSearch from "@/components/navigation/GlobalSearch";
 import StationScopeControl from "@/components/navigation/StationScopeControl";
 import SectionReportPicker from "@/components/reports/SectionReportPicker";
 import StationQuickSwitch from "@/components/navigation/StationQuickSwitch";
+import HeaderDateTime from "@/components/navigation/HeaderDateTime";
 import { OPEN_STATION_SWITCH_EVENT } from "@/hooks/useStationSwitcher";
 import { setStationScope, getStationScope } from "@/lib/stationScopeStore";
 import { visibleStations } from "@/lib/permissions";
 import PageErrorBoundary from "@/components/PageErrorBoundary";
 import { BORDER, CARD, INK, MUTED, NAVY, NAVY_FILL, SURFACE } from "@/lib/platformStyles";
-import { companyBrandFrom } from "@/lib/companyBrand";
-import { THEME_CHANGE_EVENT, applyPlatformTheme, applyStoredPlatformTheme, persistPlatformTheme, publishPlatformTheme, readStoredTheme } from "@/lib/platformTheme";
+import { THEME_CHANGE_EVENT, applyPlatformTheme, applyStoredPlatformTheme, persistPlatformTheme } from "@/lib/platformTheme";
 
 export default function Layout({ children }) {
-  const { t, lang, setLang, dir, languages } = useI18n();
+  const { t, lang, setLang, dir } = useI18n();
   const { currentUser, company, data, logout, isSyncing } = useAuth();
   const { terms } = useOrgTerms();
   const navigate = useNavigate();
   const location = useLocation();
-  const [langOpen, setLangOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const langRef = useRef(null);
   const notifRef = useRef(null);
   const userRef = useRef(null);
   const notificationPollInFlightRef = useRef(false);
@@ -75,16 +73,8 @@ export default function Layout({ children }) {
     base44.functions.invoke("settings", { action: "getColorTheme", companyId: company.id })
       .then((res) => {
         const remote = res?.data?.colorTheme ?? res?.colorTheme;
-        if (cancelled) return;
-        if (remote) {
-          applyPlatformTheme(persistPlatformTheme(remote, company.id));
-          return;
-        }
-        const brandColor = data?.reportBranding?.color;
-        if (brandColor) {
-          const current = readStoredTheme(company.id);
-          publishPlatformTheme({ id: "custom", navy: brandColor, accent: current.accent }, company.id);
-        }
+        if (cancelled || !remote) return;
+        applyPlatformTheme(persistPlatformTheme(remote, company.id));
       })
       .catch(() => {});
     return () => {
@@ -103,7 +93,6 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     const onClick = (e) => {
-      if (langRef.current && !langRef.current.contains(e.target)) setLangOpen(false);
       if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
       if (userRef.current && !userRef.current.contains(e.target)) setUserOpen(false);
     };
@@ -171,7 +160,7 @@ export default function Layout({ children }) {
         const current = getCompanyData(company.id);
         if (!current) return;
         const existing = new Set(
-          current.notifications.filter((n) => n.userId === currentUser.id).map((n) => n.text)
+          (current.notifications || []).filter((n) => n.userId === currentUser.id).map((n) => n.text)
         );
         const fresh = remote.filter((rn) => !existing.has(rn.message));
         if (fresh.length === 0) return;
@@ -231,7 +220,6 @@ export default function Layout({ children }) {
     { to: "/app/work-proof", icon: Camera, label: lang === "ar" ? "إثبات العمل" : "Work Proof", category: "daily" },
     { to: "/app/signing", icon: PenLine, label: lang === "ar" ? "التوقيع الرقمي" : "Digital Signing", category: "daily" },
     { to: "/app/daily-report", icon: FileText, label: lang === "ar" ? "التقرير اليومي" : "Daily Report", category: "daily", badge: dailyReportBadge },
-    { to: "/app/reports", icon: BarChart3, label: lang === "ar" ? "التقارير والتحليلات" : "Reports & Analytics", category: "daily" },
     { to: "/app/chat", icon: MessageSquare, label: lang === "ar" ? "المحادثات التشغيلية" : "Operations Chat", category: "daily" },
     { to: "/app/shifts", icon: CalendarClock, label: lang === "ar" ? "الورديات" : "Shifts", category: "workforce", fold: "workforce" },
     { to: "/app/leave", icon: CalendarOff, label: lang === "ar" ? "طلبات الإجازة" : "Leave Requests", category: "workforce", fold: "workforce" },
@@ -243,7 +231,9 @@ export default function Layout({ children }) {
     { to: "/app/complaints", icon: MessageCircle, label: lang === "ar" ? "صوت الموظف" : "Employee Voice", category: "compliance", fold: "compliance" },
     { to: "/app/payroll", icon: Banknote, label: lang === "ar" ? "الرواتب" : "Payroll", category: "money", fold: "money" },
     { to: "/app/expenses", icon: ReceiptText, label: lang === "ar" ? "المصروفات" : "Expenses", category: "money", fold: "money" },
-    { to: "/app/inventory", icon: Warehouse, label: lang === "ar" ? "المخزون والأصول" : "Inventory & Assets", category: "money", fold: "money" },
+    { to: "/app/accounting", icon: Calculator, label: lang === "ar" ? "المحاسبة" : "Accounting", category: "money", fold: "money" },
+    { to: "/app/assets", icon: Boxes, label: lang === "ar" ? "الأصول / العهد" : "Assets / Custody", category: "money", fold: "money" },
+    { to: "/app/inventory", icon: Warehouse, label: lang === "ar" ? "المخزون" : "Inventory", category: "money", fold: "money" },
     { to: "/app/files", icon: FolderOpen, label: lang === "ar" ? "الملفات" : "Files", category: "admin", fold: "admin" },
     { to: "/app/assistant", icon: Sparkles, label: lang === "ar" ? "المساعد الذكي" : "AI Assistant", category: "admin", fold: "admin" },
     { to: "/app/settings", icon: Settings2, label: lang === "ar" ? "إعدادات الشركة" : "Company Settings", category: "admin", fold: "admin" },
@@ -274,8 +264,8 @@ export default function Layout({ children }) {
     setNavFold((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const myNotifs = data.notifications.filter(
-    (notification) => notification.userId === currentUser.id && shouldShowNotification(notification.text, data)
+  const myNotifs = (data.notifications || []).filter(
+    (notification) => notification.userId === currentUser?.id && shouldShowNotification(notification.text, data)
   );
   const unread = myNotifs.filter((n) => !n.read).length;
 
@@ -332,11 +322,11 @@ export default function Layout({ children }) {
     },
     "/app/org": {
       title: lang === "ar" ? "الهيكل التنظيمي" : "Org Structure",
-      sub: lang === "ar" ? "منصب ثم قائمته ودرجته ثم تعيين" : "A seat, its list and grade, then assign",
+      sub: lang === "ar" ? "منه تُشتق الصلاحيات وسلسلة التصعيد" : "Permissions and the escalation chain derive from it",
     },
     "/app/settings": {
       title: lang === "ar" ? "إعدادات الشركة" : "Company Settings",
-      sub: lang === "ar" ? "الحساب والنطاق الجغرافي والهوية" : "Account, geofences and look",
+      sub: lang === "ar" ? "الحساب والنطاق الجغرافي والصلاحيات" : "Account, geofences and permissions",
     },
     "/app/hiring": {
       title: lang === "ar" ? "التوظيف" : "Recruitment",
@@ -372,13 +362,17 @@ export default function Layout({ children }) {
       title: lang === "ar" ? "التقرير اليومي" : "Daily Report",
       sub: lang === "ar" ? "تقرير واحد لكل فرع، يُعتمد قبل نهاية الوردية" : "One report per station, approved before the shift ends",
     },
-    "/app/reports": {
-      title: lang === "ar" ? "التقارير والتحليلات" : "Reports & Analytics",
-      sub: lang === "ar" ? "مكتبة التقارير والجدولة التلقائية" : "Report library and automated scheduling",
-    },
     "/app/inventory": {
-      title: lang === "ar" ? "المخزون والأصول" : "Inventory & Assets",
+      title: lang === "ar" ? "المخزون" : "Inventory",
       sub: lang === "ar" ? "شراء · رصيد الفرع · صرف للعمل" : "Purchase · station balance · issue to work",
+    },
+    "/app/assets": {
+      title: lang === "ar" ? "الأصول / العهد" : "Assets / Custody",
+      sub: lang === "ar" ? "سجل أصل · حائز واحد · تسليم بتوقيع الطرفين" : "Asset register · one holder · dual-sign handover",
+    },
+    "/app/accounting": {
+      title: lang === "ar" ? "المحاسبة" : "Accounting",
+      sub: lang === "ar" ? "ملخص الفترة · مصروف معتمد · مسير رواتب معتمد" : "Period summary · posted spend · approved payroll",
     },
     "/app/expenses": {
       title: lang === "ar" ? "المصروفات" : "Expenses",
@@ -421,7 +415,6 @@ export default function Layout({ children }) {
       sub: lang === "ar" ? "مرجع التشغيل والصلاحيات" : "Operating reference and permissions",
     },
   };
-  const brand = companyBrandFrom(data, company);
   const resolvePageMeta = () => {
     const path = location.pathname;
     if (pageMeta[path]) return pageMeta[path];
@@ -443,16 +436,22 @@ export default function Layout({ children }) {
     const hit = Object.keys(pageMeta).find((key) => key !== "/app" && path.startsWith(key));
     return hit
       ? pageMeta[hit]
-      : { title: brand.name || (lang === "ar" ? "نيروفيرا" : "NiroVera"), sub: lang === "ar" ? "منظومة الموارد البشرية" : "HR operating system" };
+      : { title: lang === "ar" ? "نيروفيرا" : "NiroVera", sub: lang === "ar" ? "منظومة الموارد البشرية" : "HR operating system" };
   };
   const { title: pageTitle, sub: pageSubtitle } = resolvePageMeta();
   // period footer removed from design shell — user chip only (L93–99)
-  const roleTitle = currentUser.role === "director" || currentUser.role === "owner"
+  const roleTitle = currentUser?.role === "director" || currentUser?.role === "owner"
     ? terms.ceo
-    : (t(currentUser.role) || currentUser.role);
-  const roleInitials = currentUser.name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?";
-  const shellTitle = brand.name || (lang === "ar" ? "نيروفيرا" : "NiroVera");
-  document.title = pageTitle && pageTitle !== shellTitle ? `${pageTitle} — ${shellTitle}` : shellTitle;
+    : (t(currentUser?.role) || currentUser?.role || "");
+  const roleInitials = String(currentUser?.name || "").split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?";
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: SURFACE }}>
+        <span style={{ color: MUTED, fontSize: 13 }}>{lang === "ar" ? "جاري تجهيز الحساب…" : "Preparing account…"}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="powercare-shell flex min-h-screen" dir={dir}>
@@ -471,13 +470,11 @@ export default function Layout({ children }) {
       >
         <div style={{ padding: sidebarCollapsed ? "18px 8px 14px" : "18px 16px 14px", display: "flex", alignItems: "center", gap: "10px", justifyContent: sidebarCollapsed ? "center" : "flex-start" }}>
           <span style={{ width: 32, height: 32, borderRadius: 8, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
-            <Logo size={22} wordmark={false} src={brand.logoUrl} />
+            <Logo size={22} wordmark={false} />
           </span>
           {!sidebarCollapsed && (
             <div data-nv="wide" style={{ lineHeight: 1.15, minWidth: 0 }}>
-              <div style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em", color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {brand.name || "NiroVera"}
-              </div>
+              <div style={{ fontFamily: "'IBM Plex Sans',sans-serif", fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em", color: INK }}>NiroVera</div>
               <div style={{ fontSize: "10px", color: MUTED, letterSpacing: "0.04em" }}>
                 {lang === "ar" ? "حزمة التشغيل" : "Operations Suite"}
               </div>
@@ -661,9 +658,6 @@ export default function Layout({ children }) {
         >
           <div className="flex min-w-0 items-center gap-2 md:hidden" style={{ flex: 1, minWidth: 0 }}>
             <BackButton />
-            <span style={{ width: 28, height: 28, borderRadius: 8, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", border: `1px solid ${BORDER}` }}>
-              <Logo size={18} wordmark={false} src={brand.logoUrl} />
-            </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pageTitle}</div>
               <div style={{ fontSize: "11px", color: MUTED, marginTop: "1px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pageSubtitle}</div>
@@ -745,6 +739,8 @@ export default function Layout({ children }) {
               </div>
             </div>
 
+            <HeaderDateTime lang={lang} />
+
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
@@ -770,80 +766,35 @@ export default function Layout({ children }) {
             <SyncStatusIndicator isSyncing={isSyncing} />
             <ThemeToggle />
 
-            <div className="relative" ref={langRef} style={{ position: "relative", flexShrink: 0 }}>
-              <button
-                type="button"
-                onClick={() => setLangOpen((o) => !o)}
-                aria-label={t("language")}
-                style={{
-                  flexShrink: 0,
-                  height: "34px",
-                  minWidth: "38px",
-                  padding: "0 11px",
-                  borderRadius: "9px",
-                  border: `1px solid ${BORDER}`,
-                  background: CARD,
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  color: MUTED,
-                  cursor: "pointer",
-                  fontFamily: "'IBM Plex Sans',sans-serif",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "var(--nv-accent)";
-                  e.currentTarget.style.color = "var(--nv-accent)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = BORDER;
-                  e.currentTarget.style.color = MUTED;
-                }}
-              >
-                {lang === "ar" ? "EN" : "ع"}
-              </button>
-              {langOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    insetInlineEnd: 0,
-                    zIndex: 50,
-                    marginTop: "6px",
-                    width: "176px",
-                    background: CARD,
-                    border: `1px solid ${BORDER}`,
-                    borderRadius: "11px",
-                    boxShadow: "0 14px 32px rgba(20,40,75,.14)",
-                    padding: "5px",
-                  }}
-                >
-                  {languages.map((l) => (
-                    <button
-                      key={l.code}
-                      type="button"
-                      onClick={() => { setLang(l.code); setLangOpen(false); }}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        width: "100%",
-                        padding: "9px 11px",
-                        borderRadius: "8px",
-                        border: "none",
-                        cursor: "pointer",
-                        fontFamily: "inherit",
-                        fontSize: "12px",
-                        textAlign: "start",
-                        background: lang === l.code ? SURFACE : "transparent",
-                        color: lang === l.code ? INK : MUTED,
-                        fontWeight: lang === l.code ? 600 : 400,
-                      }}
-                    >
-                      <span>{l.flag}</span> {l.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+              aria-label={t("language")}
+              style={{
+                flexShrink: 0,
+                height: "34px",
+                minWidth: "38px",
+                padding: "0 11px",
+                borderRadius: "9px",
+                border: `1px solid ${BORDER}`,
+                background: CARD,
+                fontSize: "11px",
+                fontWeight: 600,
+                color: MUTED,
+                cursor: "pointer",
+                fontFamily: "'IBM Plex Sans',sans-serif",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--nv-accent)";
+                e.currentTarget.style.color = "var(--nv-accent)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = BORDER;
+                e.currentTarget.style.color = MUTED;
+              }}
+            >
+              {lang === "ar" ? "EN" : "ع"}
+            </button>
 
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginInlineStart: "auto" }}>
               <div className="relative" ref={notifRef}>

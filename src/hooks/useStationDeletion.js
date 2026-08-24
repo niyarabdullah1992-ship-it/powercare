@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { deleteStationWithData, getStationDependencySummary } from "@/lib/stationData";
+import { isCompanyRootStation } from "@/lib/stationTree";
 
 export default function useStationDeletion(company, data, stationId) {
   const [summary, setSummary] = useState(null);
@@ -25,6 +26,11 @@ export default function useStationDeletion(company, data, stationId) {
   };
 
   const remove = async (mode, targetStationId) => {
+    const station = (data?.stations || []).find((item) => String(item.id) === String(stationId));
+    if (isCompanyRootStation(station)) {
+      setError("المنشأة فرع رئيسي ثابت ولا تُحذف.");
+      return false;
+    }
     setLoading(true);
     setError("");
     try {

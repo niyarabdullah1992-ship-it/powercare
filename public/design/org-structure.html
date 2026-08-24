@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تصميم الهيكل التنظيمي — NiroVera</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy: #14284B;
+      --ink: #14284B;
+      --muted: #5A6B85;
+      --green: #1E9E63;
+      --line: #E2E8F0;
+      --wash: #F7F8FA;
+      --card: #FFFFFF;
+      --soft: #EEF2F6;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #E8EDF2; color: var(--ink); font-family: "IBM Plex Sans Arabic", sans-serif; }
+    .toolbar {
+      position: sticky; top: 0; z-index: 4;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--line);
+    }
+    .toolbar b { font-size: 14px; }
+    .toolbar span { font-size: 12px; color: var(--muted); }
+    .toolbar .actions { display: flex; gap: 8px; }
+    .toolbar button {
+      height: 36px; padding: 0 14px; border: 0; border-radius: 8px;
+      background: var(--green); color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .toolbar button.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+    .wrap { max-width: 1400px; margin: 18px auto; padding: 0 16px 40px; }
+    .shell {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+      box-shadow: 0 8px 24px rgba(20,40,75,.06);
+    }
+    .rail { height: 3px; background: var(--navy); }
+    .head { display: flex; align-items: center; gap: 16px; padding: 14px 18px; }
+    .mark { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); display: grid; place-items: center; font-weight: 700; color: var(--green); background: #fff; flex: none; }
+    h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    .hint { margin: 5px 0 0; font-size: 12px; line-height: 1.6; color: var(--muted); max-width: 720px; }
+    .tabs {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px;
+      background: var(--wash); padding: 8px 12px; border-bottom: 1px solid var(--line);
+    }
+    .tabs button {
+      min-height: 38px; border: 1px solid transparent; border-radius: 9px; background: transparent;
+      color: var(--muted); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .tabs button.on { background: #fff; color: var(--ink); border-color: var(--line); box-shadow: 0 1px 2px rgba(20,40,75,.06); }
+    .count {
+      min-width: 16px; height: 16px; border-radius: 20px; padding: 0 4px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; background: color-mix(in srgb, var(--green) 12%, white); color: #0E7A4B;
+    }
+    .tabs button.on .count { background: var(--green); color: #fff; }
+    .body { padding: 16px; background: var(--wash); }
+    .panel { display: none; }
+    .panel.on { display: block; }
+    .tree-box {
+      background: #fff; border: 1px solid hsl(220 13% 91%); border-radius: 12px;
+      box-shadow: 0 12px 34px hsl(220 43% 11% / .05); overflow: hidden;
+    }
+    .tree-head { padding: 13px 16px; border-bottom: 1px solid hsl(220 13% 93%); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .tree-head strong { display: block; font-size: 13.5px; }
+    .tree-head small { display: block; margin-top: 2px; font-size: 11px; color: var(--muted); line-height: 1.55; }
+    .ghost { height: 32px; padding: 0 12px; border-radius: 9px; border: 1px solid hsl(220 13% 88%); background: #fff; color: hsl(220 20% 30%); font: inherit; font-size: 12.5px; }
+    .primary { height: 32px; padding: 0 12px; border-radius: 9px; border: 0; background: var(--green); color: #fff; font: inherit; font-size: 12px; font-weight: 600; }
+    .tree { padding: 22px 20px; background: hsl(220 20% 98%); overflow: auto; min-height: 420px; }
+    .col { display: flex; flex-direction: column; align-items: center; min-width: max-content; padding-inline: 16px; }
+    .row { display: flex; align-items: flex-start; justify-content: center; }
+    .stem { width: 2px; height: 26px; margin-bottom: -1px; border-radius: 99px; background: color-mix(in oklab, #14284B 28%, #D7DDE6); }
+    .tcap { width: 100%; height: 22px; position: relative; }
+    .tcap .bar { position: absolute; top: 0; height: 2px; border-radius: 99px; background: color-mix(in oklab, #14284B 28%, #D7DDE6); }
+    .tcap .down { position: absolute; top: 0; inset-inline-start: 50%; width: 2px; height: 22px; margin-inline-start: -1px; border-radius: 99px; background: color-mix(in oklab, #14284B 28%, #D7DDE6); }
+    .tcap .dot { position: absolute; top: -2px; inset-inline-start: 50%; width: 6px; height: 6px; margin-inline-start: -3px; border-radius: 99px; background: color-mix(in oklab, #14284B 42%, #E8EDF3); box-shadow: 0 0 0 2px hsl(220 20% 98%); }
+    .card {
+      width: 228px; height: 108px; border: 1px solid var(--line); border-radius: 12px; background: #fff;
+      box-shadow: 0 8px 20px hsl(220 43% 11% / .04); overflow: hidden; display: flex; flex-direction: column;
+    }
+    .card.root { border-color: var(--navy); box-shadow: 0 0 0 3px hsl(222 40% 40% / .16); }
+    .inspect { padding: 8px 16px; border-bottom: 1px solid hsl(220 13% 93%); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--wash); }
+    .inspect b { font-size: 12px; }
+    .inspect select { height: 32px; border-radius: 8px; border: 1px solid var(--line); padding: 0 8px; font-size: 12px; min-width: 140px; background: #fff; }
+    .tray { display: flex; flex-direction: column; align-items: center; }
+    .tray .box { background: hsl(222 28% 97%); border: 1px solid hsl(220 16% 90%); border-radius: 14px; padding: 8px 10px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .tray .box > span { font-size: 10px; font-weight: 700; color: var(--muted); }
+    .tray .grid { display: flex; gap: 8px; }
+    .who { display: flex; align-items: center; gap: 10px; padding: 10px 12px 8px; flex: 1; min-height: 0; }
+    .avatar { width: 40px; height: 40px; border-radius: 999px; background: var(--soft); color: var(--navy); display: grid; place-items: center; font-size: 11px; font-weight: 700; flex: none; }
+    .who b { display: block; font-size: 13px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .who em, .who i { display: block; font-style: normal; font-size: 11.5px; color: var(--muted); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .who i { font-size: 11px; }
+    .plus { width: 22px; height: 22px; border: 0; border-radius: 6px; background: var(--green); color: #fff; font-weight: 700; flex: none; }
+    .plus.navy { background: var(--navy); }
+    .foot { height: 34px; border-top: 1px solid var(--line); background: var(--wash); display: grid; place-items: center; font-size: 12px; font-weight: 700; font-family: "IBM Plex Sans Arabic", sans-serif; }
+    .staff { width: 148px; height: 56px; border: 1px solid var(--line); border-radius: 10px; background: #fff; display: flex; align-items: center; gap: 7px; padding: 0 8px; }
+    .staff .avatar { width: 32px; height: 32px; font-size: 10px; }
+    .rules { margin-top: 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .rule { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+    .rule b { display: block; font-size: 12px; margin-bottom: 4px; }
+    .rule p { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.65; }
+    .lists { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+    .list { background: #fff; border: 1px solid hsl(220 13% 93%); border-radius: 9px; padding: 11px 12px; }
+    .list-h { display: flex; align-items: baseline; gap: 8px; }
+    .tick { width: 3px; height: 14px; border-radius: 99px; background: hsl(154 79% 27%); flex: none; }
+    .chip { height: 32px; border-radius: 8px; border: 1px solid hsl(220 13% 88%); background: hsl(220 20% 98%); display: flex; align-items: center; padding: 0 10px; font-size: 12px; margin-bottom: 6px; }
+    .perm { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .perm span { font-size: 10px; padding: 3px 8px; border-radius: 20px; background: var(--soft); color: var(--muted); }
+    .perm span.on { background: color-mix(in srgb, var(--green) 14%, white); color: #0E7A4B; }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none; }
+      .wrap { max-width: none; margin: 0; padding: 0; }
+      .panel { display: block !important; break-after: page; }
+      .shell { box-shadow: none; border: 0; }
+    }
+    @media (max-width: 900px) {
+      .rules, .tabs { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div>
+      <b>تصميم الهيكل التنظيمي</b>
+      <span> — ثلاثة أسطح: الفروع · الموظفون · القوائم. اطبع PDF أو حمّل الملف.</span>
+    </div>
+    <div class="actions">
+      <button type="button" class="ghost" onclick="window.print()">طباعة / PDF</button>
+      <button type="button" onclick="downloadSelf()">تحميل HTML</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <article class="shell">
+      <div class="rail"></div>
+      <header class="head">
+        <span class="mark">ن</span>
+        <div>
+          <h1>الهيكل التنظيمي</h1>
+          <p class="hint" id="hint">المنشأة رأس الهرم: أعد تسميتها فيتحدّث الاسم في المنصة كلها. لا تُحذف ولا تتبع فرعاً آخر. يمكن تحويلها فرعاً أو مديراً مثل أي عقدة.</p>
+        </div>
+      </header>
+      <nav class="tabs" aria-label="الهيكل التنظيمي">
+        <button type="button" class="on" data-tab="branches" onclick="showTab('branches')">هيكل الفروع <span class="count">8</span></button>
+        <button type="button" data-tab="people" onclick="showTab('people')">هيكل الموظفين <span class="count">12</span></button>
+        <button type="button" data-tab="lists" onclick="showTab('lists')">قوائم الفروع <span class="count">3</span></button>
+      </nav>
+
+      <div class="body">
+        <section class="panel on" id="branches">
+          <div class="tree-box">
+            <div class="tree-head">
+              <div>
+                <strong>شجرة الفروع</strong>
+                <small>هرم متعامد: اختر عقدة لتعديل المدير والنوع والتبعية. الخطوط تبعية مكان عمل، لا أشخاص.</small>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <button type="button" class="ghost">أضف فرعًا أو مديرًا</button>
+                <button type="button" class="primary">نشر الهيكل</button>
+              </div>
+            </div>
+            <div class="inspect">
+              <b>المنشأة</b>
+              <select><option>نورة القحطاني</option></select>
+              <select><option>فرع</option><option>مدير</option></select>
+            </div>
+            <div class="tree">
+              <div class="col" style="padding-inline:0">
+                <div class="card root">
+                  <div class="who">
+                    <span class="avatar">نق</span>
+                    <div style="min-width:0;flex:1">
+                      <b>نورة القحطاني</b>
+                      <em>المنشأة</em>
+                      <i>رأس الهرم</i>
+                    </div>
+                    <button type="button" class="plus navy" title="أضف فرعًا تابعًا">+</button>
+                  </div>
+                  <div class="foot">12 موظفًا · 2 فروع</div>
+                </div>
+                <span class="stem"></span>
+                <div class="row">
+                  <div class="col">
+                    <div class="tcap"><span class="bar" style="inset-inline-start:50%;inset-inline-end:-16px"></span><span class="down"></span><span class="dot"></span></div>
+                    <div class="card">
+                      <div class="who">
+                        <span class="avatar">سح</span>
+                        <div style="min-width:0;flex:1">
+                          <b>سلطان الحربي</b>
+                          <em>المنطقة الشرقية</em>
+                          <i>مدير المنطقة</i>
+                        </div>
+                        <button type="button" class="plus navy" title="أضف فرعًا تابعًا">+</button>
+                      </div>
+                      <div class="foot">7 موظفون · 4 فروع</div>
+                    </div>
+                    <span class="stem"></span>
+                    <div class="row">
+                      <div class="col">
+                        <div class="tcap"><span class="bar" style="inset-inline-start:50%;inset-inline-end:-16px"></span><span class="down"></span><span class="dot"></span></div>
+                        <div class="card">
+                          <div class="who">
+                            <span class="avatar">؟</span>
+                            <div style="min-width:0;flex:1">
+                              <b>بلا مدير</b>
+                              <em>فرع الخفجي</em>
+                              <i>بلا منصب</i>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:4px">
+                              <button type="button" class="plus" title="أضف موظفًا">+</button>
+                              <button type="button" class="plus navy">+</button>
+                            </div>
+                          </div>
+                          <div class="foot">لا موظفون</div>
+                        </div>
+                      </div>
+                      <div class="col">
+                        <div class="tcap"><span class="bar" style="inset-inline-start:-16px;inset-inline-end:50%"></span><span class="down"></span><span class="dot"></span></div>
+                        <div class="card">
+                          <div class="who">
+                            <span class="avatar">بع</span>
+                            <div style="min-width:0;flex:1">
+                              <b>بندر العتيبي</b>
+                              <em>فرع الدمام</em>
+                              <i>مدير الفرع</i>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:4px">
+                              <button type="button" class="plus">+</button>
+                              <button type="button" class="plus navy">+</button>
+                            </div>
+                          </div>
+                          <div class="foot">5 موظفون · 2 فروع</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col">
+                    <div class="tcap"><span class="bar" style="inset-inline-start:-16px;inset-inline-end:50%"></span><span class="down"></span><span class="dot"></span></div>
+                    <div class="card">
+                      <div class="who">
+                        <span class="avatar">تغ</span>
+                        <div style="min-width:0;flex:1">
+                          <b>تركي الغامدي</b>
+                          <em>المنطقة الغربية</em>
+                          <i>مدير المنطقة</i>
+                        </div>
+                        <button type="button" class="plus navy">+</button>
+                      </div>
+                      <div class="foot">3 موظفون · 1 فرع</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="rules">
+            <div class="rule"><b>فرع أو مدير</b><p>أي عقدة بما فيها المنشأة: فرع مكان عمل يظهر في نطاق الرأس والحضور والمحادثات، أو مدير إشراف يظهر في الشجرة فقط وتتبعه فروع.</p></div>
+            <div class="rule"><b>لا توظيف على المدير</b><p>المدير ليس فرع توظيف. أضف فرعًا تحته ثم وظّف عليه. الزر الأخضر + للتوظيف على الفرع، والبحري لإضافة فرع تابع.</p></div>
+            <div class="rule"><b>لا محادثة تشغيلية</b><p>إذا صارت المنطقة مديرًا وليست فرعًا، لا تظهر في المحادثات التشغيلية. المحادثة على الفروع التابعة لها.</p></div>
+          </div>
+        </section>
+
+        <section class="panel" id="people">
+          <div class="tree-box">
+            <div class="tree-head">
+              <div>
+                <strong>شجرة الموظفين</strong>
+                <small>المدير المعيَّن على الفرع هو البطاقة. الموظفون في صندوق تحتها، ومديرو الفروع التابعة أسفل الخط.</small>
+              </div>
+            </div>
+            <div class="tree">
+              <div class="col" style="padding-inline:0">
+                <div class="card root">
+                  <div class="who">
+                    <span class="avatar">نق</span>
+                    <div style="min-width:0;flex:1">
+                      <b>نورة القحطاني</b>
+                      <em>المنشأة</em>
+                      <i>المالك</i>
+                    </div>
+                  </div>
+                  <div class="foot">12 موظفًا · 2 فروع</div>
+                </div>
+                <span class="stem"></span>
+                <div class="row">
+                  <div class="col">
+                    <div class="tcap"><span class="bar" style="inset-inline-start:50%;inset-inline-end:-16px"></span><span class="down"></span><span class="dot"></span></div>
+                    <div class="card">
+                      <div class="who">
+                        <span class="avatar">سح</span>
+                        <div style="min-width:0;flex:1">
+                          <b>سلطان الحربي</b>
+                          <em>المنطقة الشرقية</em>
+                          <i>مدير المنطقة</i>
+                        </div>
+                      </div>
+                      <div class="foot">7 موظفون · 4 فروع</div>
+                    </div>
+                    <div class="tray">
+                      <span class="stem" style="height:18px"></span>
+                      <div class="box">
+                        <span>في هذا الفرع</span>
+                        <div class="grid">
+                          <div class="staff"><span class="avatar">بع</span><div><b style="font-size:11.5px">بندر العتيبي</b><em style="font-size:10.5px;color:var(--muted);font-style:normal">مدير الفرع</em></div></div>
+                          <div class="staff"><span class="avatar">فخ</span><div><b style="font-size:11.5px">فهد الخالدي</b><em style="font-size:10.5px;color:var(--muted);font-style:normal">مشرف عمليات</em></div></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col">
+                    <div class="tcap"><span class="bar" style="inset-inline-start:-16px;inset-inline-end:50%"></span><span class="down"></span><span class="dot"></span></div>
+                    <div class="card">
+                      <div class="who">
+                        <span class="avatar">تغ</span>
+                        <div style="min-width:0;flex:1">
+                          <b>تركي الغامدي</b>
+                          <em>المنطقة الغربية</em>
+                          <i>مدير المنطقة</i>
+                        </div>
+                      </div>
+                      <div class="foot">3 موظفون · 1 فرع</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="rules">
+            <div class="rule"><b>يتبع = شخص</b><p>خط الشجرة هنا تبعية أشخاص: الموظف يتبع مديره. ليست تبعية فرع.</p></div>
+            <div class="rule"><b>المدير هو الفرع</b><p>إذا عُيّن مدير على فرع أو منطقة، يظهر هو البطاقة في هيكل الموظفين.</p></div>
+            <div class="rule"><b>الموظفون صندوق</b><p>من يعمل في الفرع يظهر في «في هذا الفرع» تحت المدير. مديرو الفروع التابعة بطاقات تحت الخط.</p></div>
+          </div>
+        </section>
+
+        <section class="panel" id="lists">
+          <p style="margin:0 0 12px;font-size:12px;color:var(--muted);line-height:1.65">القائمة للمنشأة كلها — ليست فرعًا. تُختار عند التوظيف أو رفع القالب، والصلاحيات تتبع القائمة لا الدرجة.</p>
+          <div class="lists">
+            <div class="list">
+              <div class="list-h"><span class="tick"></span><b style="flex:1;font-size:12px">القيادة</b><span style="font-size:10px;color:var(--muted)">3 مناصب · 2 درجات</span></div>
+              <p style="margin:10px 0 8px;font-size:11px;color:var(--muted)">المناصب</p>
+              <div class="chip">مدير المنطقة</div>
+              <div class="chip">مدير الفرع</div>
+              <div class="chip">مساعد مدير</div>
+              <p style="margin:10px 0 6px;font-size:11px;color:var(--muted)">الدرجات</p>
+              <div class="chip">مدير</div>
+              <div class="chip">مشرف أول</div>
+              <div class="perm"><span class="on">هيكل · إدارة</span><span class="on">موظفون · إدارة</span><span>حضور · قراءة</span></div>
+            </div>
+            <div class="list">
+              <div class="list-h"><span class="tick"></span><b style="flex:1;font-size:12px">العمليات</b><span style="font-size:10px;color:var(--muted)">4 مناصب · 3 درجات</span></div>
+              <p style="margin:10px 0 8px;font-size:11px;color:var(--muted)">المناصب</p>
+              <div class="chip">مشرف عمليات</div>
+              <div class="chip">منسق مهام</div>
+              <div class="chip">مراقب جودة</div>
+              <div class="chip">أخصائي تخطيط</div>
+              <div class="perm"><span class="on">مهام · إدارة</span><span class="on">حضور · قراءة</span><span>رواتب · مخفي</span></div>
+            </div>
+            <div class="list">
+              <div class="list-h"><span class="tick"></span><b style="flex:1;font-size:12px">الميدان</b><span style="font-size:10px;color:var(--muted)">3 مناصب · 2 درجات</span></div>
+              <p style="margin:10px 0 8px;font-size:11px;color:var(--muted)">المناصب</p>
+              <div class="chip">فني</div>
+              <div class="chip">مشغّل</div>
+              <div class="chip">سائق</div>
+              <div class="perm"><span class="on">مهام · قراءة</span><span class="on">حضور · قراءة</span><span>هيكل · مخفي</span></div>
+            </div>
+          </div>
+          <div class="rules">
+            <div class="rule"><b>القائمة ≠ الفرع</b><p>قائمة واحدة لكل المنشأة. لا تُنشأ قائمة لكل فرع.</p></div>
+            <div class="rule"><b>الصلاحيات من القائمة</b><p>الدرجة للتصنيف والأجر. الصلاحيات تتبع حزمة القائمة لا اسم الدرجة.</p></div>
+            <div class="rule"><b>القالب يملأ الشجرة</b><p>نزّل قالب الموظف من الشجرة، ارفعه، ثم اضغط تطبيق القالب لتعيين عدة أشخاص دفعة واحدة.</p></div>
+          </div>
+        </section>
+      </div>
+    </article>
+  </div>
+
+  <script>
+    const hints = {
+      branches: "المنشأة رأس الهرم: أعد تسميتها فيتحدّث الاسم في المنصة كلها. لا تُحذف ولا تتبع فرعاً آخر. يمكن تحويلها فرعاً أو مديراً مثل أي عقدة.",
+      people: "من هيكل الفروع: من عُيّن مديرًا يصبح هو الفرع هنا. اضغط العدد أسفل البطاقة لإظهار موظفي المقر أو الفروع تحته.",
+      lists: "القائمة للمنشأة كلها — ليست فرعًا. تُختار عند التوظيف أو رفع القالب، والصلاحيات تتبع القائمة لا الدرجة.",
+    };
+    function showTab(id) {
+      document.querySelectorAll(".panel").forEach((el) => el.classList.toggle("on", el.id === id));
+      document.querySelectorAll(".tabs button").forEach((el) => el.classList.toggle("on", el.dataset.tab === id));
+      document.getElementById("hint").textContent = hints[id] || hints.branches;
+    }
+    function downloadSelf() {
+      const blob = new Blob([document.documentElement.outerHTML], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "تصميم-الهيكل-التنظيمي.html";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

@@ -73,7 +73,8 @@ export default function Inventory() {
 
   const stations = asList(board.locations.length ? board.locations : data?.stations);
   const employees = asList(board.employees.length ? board.employees : data?.employees);
-  const scopedStations = stations.filter((station) => matchesStationScope(stationIdOf(station), scope));
+  const tree = data?.stations || [];
+  const scopedStations = stations.filter((station) => matchesStationScope(stationIdOf(station), scope, tree));
   const lockedStationId = scopedToOne ? scope : "";
 
   const reload = () => {
@@ -103,20 +104,20 @@ export default function Inventory() {
 
   if (!currentUser) return null;
 
-  const items = asList(board.items).filter((item) => matchesStationScope(item.currentLocationId, scope));
-  const purchases = asList(board.purchases).filter((row) => matchesStationScope(row.toLocationId, scope));
+  const items = asList(board.items).filter((item) => matchesStationScope(item.currentLocationId, scope, tree));
+  const purchases = asList(board.purchases).filter((row) => matchesStationScope(row.toLocationId, scope, tree));
   const requests = asList(board.requests).filter((row) =>
-    matchesStationScope(row.stationId, scope) || matchesStationScope(row.sourceStationId, scope),
+    matchesStationScope(row.stationId, scope, tree) || matchesStationScope(row.sourceStationId, scope, tree),
   );
   const movements = asList(board.movements).filter((row) =>
-    matchesStationScope(row.fromLocationId, scope) || matchesStationScope(row.toLocationId, scope),
+    matchesStationScope(row.fromLocationId, scope, tree) || matchesStationScope(row.toLocationId, scope, tree),
   );
   const low = items.filter((item) => Number(item.quantity) <= Number(item.minimumStock || 0)).length;
   const pending = requests.filter((request) => request.status === "pending").length;
   const stationName = (id) => stations.find((station) => stationIdOf(station) === id)?.name || "—";
   const itemName = (id) => asList(board.items).find((item) => item.id === id)?.name || "—";
   const personName = (id) => employees.find((row) => row.id === id || row.employeeId === id)?.name || "—";
-  const scopedEmployees = employees.filter((row) => !scopedToOne || matchesStationScope(row.stationId, scope));
+  const scopedEmployees = employees.filter((row) => !scopedToOne || matchesStationScope(row.stationId, scope, tree));
 
   const sections = TABS.map(([key, arLabel, enLabel, icon]) => ({
     value: key,
@@ -135,7 +136,7 @@ export default function Inventory() {
   return (
     <PlatformStampShell
       ar={ar}
-      title={ar ? "المخزون والأصول" : "Inventory & assets"}
+      title={ar ? "المخزون" : "Inventory"}
       hint={ar ? "شراء للصنف · رصيد الفرع · صرف للعمل. الفرع من الشريط العلوي." : "Purchase the item · station balance · issue to work. Station comes from the header."}
       sections={sections}
       tool={tab}

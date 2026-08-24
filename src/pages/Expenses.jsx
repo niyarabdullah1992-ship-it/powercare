@@ -58,7 +58,7 @@ export default function Expenses() {
   };
   const submit = async (payload) => run("submit", { ...payload, stationId: currentUser?.stationId });
 
-  const scopedClaims = (state.claims || []).filter((c) => matchesStationScope(c.stationId, scope));
+  const scopedClaims = (state.claims || []).filter((c) => matchesStationScope(c.stationId, scope, data?.stations));
 
   return (
     <PlatformStampShell

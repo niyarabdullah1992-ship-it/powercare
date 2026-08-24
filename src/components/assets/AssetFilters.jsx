@@ -1,28 +1,46 @@
 import React from "react";
-import MobileSelect from "@/components/mobile/MobileSelect";
 import { ASSET_STATUSES, assetStatusLabel } from "@/lib/assetsApi";
+import { field, labelMuted, MUTED } from "@/lib/platformStyles";
+
+const selectStyle = {
+  ...field,
+  width: "auto",
+  minWidth: 148,
+  height: 34,
+  paddingInline: 10,
+  fontSize: 12,
+  color: MUTED,
+  cursor: "pointer",
+};
 
 export default function AssetFilters({ lang, stations, categories, filters, setFilters }) {
-  const set = (key) => (value) => setFilters({ ...filters, [key]: value });
-  const all = lang === "ar" ? "الكل" : "All";
+  const ar = lang === "ar";
+  const all = ar ? "الكل" : "All";
+  const set = (key) => (event) => setFilters({ ...filters, [key]: event.target.value });
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <MobileSelect
-        value={filters.category} onChange={set("category")} placeholder={lang === "ar" ? "الفئة" : "Category"}
-        className="min-w-[150px]"
-        options={[{ value: "all", label: all }, ...categories.map((c) => ({ value: c, label: c }))]}
-      />
-      <MobileSelect
-        value={filters.stationId} onChange={set("stationId")} searchable placeholder={lang === "ar" ? "الوحدة" : "Unit"}
-        className="min-w-[170px]"
-        options={[{ value: "all", label: all }, ...stations.map((s) => ({ value: s.id, label: s.name }))]}
-      />
-      <MobileSelect
-        value={filters.status} onChange={set("status")} placeholder={lang === "ar" ? "الحالة" : "Status"}
-        className="min-w-[150px]"
-        options={[{ value: "all", label: all }, ...ASSET_STATUSES.map((s) => ({ value: s, label: assetStatusLabel(s, lang) }))]}
-      />
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "end" }}>
+      <label style={{ display: "grid", gap: 4 }}>
+        <span style={{ ...labelMuted, fontSize: 10 }}>{ar ? "الفئة" : "Category"}</span>
+        <select value={filters.category} onChange={set("category")} style={selectStyle}>
+          <option value="all">{all}</option>
+          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </label>
+      <label style={{ display: "grid", gap: 4 }}>
+        <span style={{ ...labelMuted, fontSize: 10 }}>{ar ? "الوحدة" : "Unit"}</span>
+        <select value={filters.stationId} onChange={set("stationId")} style={selectStyle}>
+          <option value="all">{all}</option>
+          {stations.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+      </label>
+      <label style={{ display: "grid", gap: 4 }}>
+        <span style={{ ...labelMuted, fontSize: 10 }}>{ar ? "الحالة" : "Status"}</span>
+        <select value={filters.status} onChange={set("status")} style={selectStyle}>
+          <option value="all">{all}</option>
+          {ASSET_STATUSES.map((s) => <option key={s} value={s}>{assetStatusLabel(s, lang)}</option>)}
+        </select>
+      </label>
     </div>
   );
 }

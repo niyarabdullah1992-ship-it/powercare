@@ -4,6 +4,9 @@
  */
 import { ACTION_REASONS } from "@/lib/hcmDerivations";
 import { updateCompany, getCompanyData, addNotification } from "@/lib/store";
+import { applyWorkplaceManagerRule } from "@/lib/peopleTreeGraph";
+import { appendOrgStructureEvent } from "@/lib/orgStructureLog";
+import { isManagerUnit, stripDescendantCoverage } from "@/lib/stationTree";
 
 function todayKey() {
   const d = new Date();
@@ -63,6 +66,15 @@ export function checkStationTransferGate({
   }
   if (!stations.some((s) => String(s.id) === toId)) {
     return { ok: false, error: "STATION_NOT_FOUND", reason: "الفرع الوجهة غير موجود.", reasonEn: "Target branch not found." };
+  }
+  const target = stations.find((s) => String(s.id) === toId);
+  if (isManagerUnit(target)) {
+    return {
+      ok: false,
+      error: "ADMIN_NO_HIRE",
+      reason: "المدير ليس مكان توظيف. حوّله إلى فرع ثم انقل إليه.",
+      reasonEn: "A manager is not a workplace. Convert it to a branch, then transfer there.",
+    };
   }
   const day = String(effectiveDate || "").slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
@@ -190,14 +202,28 @@ export function transferEmployeeBetweenStations(companyId, {
     if (emp.hrStationId && emp.hrStationId === gate.fromStationId) {
       emp.hrStationId = gate.toStationId;
     }
-    emp.managedStations = [...new Set(
+    emp.managedStations = stripDescendantCoverage(
       (emp.managedStations || []).map((id) =>
         String(id) === String(gate.fromStationId) ? gate.toStationId : id,
       ),
-    )];
+      d.stations || [],
+      gate.toStationId,
+    );
 
     emp.stationTransfers = Array.isArray(emp.stationTransfers) ? emp.stationTransfers : [];
     emp.stationTransfers.unshift(record);
+
+    (d.orgSeats || []).forEach((seat) => {
+      if (String(seat.employeeId) === String(employeeId)) seat.stationId = gate.toStationId;
+    });
+    (d.stations || []).forEach((station) => {
+      const managerSeat = (d.orgSeats || []).find((seat) =>
+        String(seat.stationId) === String(station.id)
+        && (String(seat.title || "").includes("مدير الفرع") || /branch manager/i.test(String(seat.title || "")))
+      );
+      if (managerSeat) station.managerId = managerSeat.employeeId || null;
+    });
+    applyWorkplaceManagerRule(d);
 
     d.employmentActions = Array.isArray(d.employmentActions) ? d.employmentActions : [];
     d.employmentActions.push({
@@ -205,6 +231,14 @@ export function transferEmployeeBetweenStations(companyId, {
       companyId,
       positionId: null,
       kind: "station_transfer",
+    });
+
+    appendOrgStructureEvent(d, {
+      type: "transfer",
+      employeeId,
+      employeeName: emp.name,
+      fromStationId: gate.fromStationId,
+      toStationId: gate.toStationId,
     });
 
     moveEmployeeOrgNode(d, employeeId, gate.toStationId);
@@ -224,4 +258,14 @@ export function transferEmployeeBetweenStations(companyId, {
   for (const id of notifyIds) addNotification(companyId, id, msgAr);
 
   return { ok: true, record, employee: getCompanyData(companyId)?.employees?.find((e) => e.id === employeeId) };
+}
+
+export function quickTransferEmployee(companyId, { employeeId, toStationId, actor } = {}) {
+  return transferEmployeeBetweenStations(companyId, {
+    employeeId,
+    toStationId,
+    reasonCode: "operational_need",
+    effectiveDate: todayKey(),
+    actor,
+  });
 }

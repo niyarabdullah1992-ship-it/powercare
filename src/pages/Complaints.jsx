@@ -23,7 +23,7 @@ export default function Complaints() {
   const fullScope = currentUser && (["director", "ops_manager"].includes(currentUser.role) || data?.ownerId === currentUser.id);
   const scopedStations = hasComplaintAccess ? hrScopeStations(currentUser, data) : currentUser?.role === "pgm" ? (currentUser.managedStations || []) : currentUser?.role === "station_manager" ? (currentUser.managedStations?.length ? currentUser.managedStations : [currentUser.stationId]) : [];
   const canSeeReport = (report) =>
-    matchesStationScope(report.stationId, headerScope)
+    matchesStationScope(report.stationId, headerScope, data?.stations)
     && (fullScope || scopedStations === null || (report.stationId && scopedStations.includes(report.stationId)));
 
   const stationName = (id) => data?.stations?.find((s) => s.id === id)?.name || (ar ? "المقر" : "HQ");

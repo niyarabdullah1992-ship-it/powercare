@@ -18,7 +18,10 @@ function readRaw() {
 
 export function normalizeStationScope(id) {
   if (id == null || id === "" || id === "all") return "all";
-  return String(id);
+  let value = String(id);
+  if (value.endsWith(":self")) value = value.slice(0, -5);
+  if (value.endsWith(":tree")) value = value.slice(0, -5);
+  return value || "all";
 }
 
 export function getStationScope() {

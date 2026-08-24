@@ -10,6 +10,7 @@ import {
   deriveChatBoard,
   scopeChannels,
   unreadForChannel,
+  stationKeyAllowsOpsChat,
 } from "../src/lib/chatDerivations.js";
 
 assert.equal(CHAT_SECTION, "chat");
@@ -132,6 +133,33 @@ const smBoard = deriveChatBoard({
 assert.ok(smBoard.channels.some((c) => c.id === "jbl2"));
 assert.ok(smBoard.channels.some((c) => c.id === "supervisors"));
 assert.ok(!smBoard.channels.some((c) => c.id === "jbl1"));
+
+const east = { id: "east", unitKind: "manager" };
+const dmm = { id: "dmm", unitKind: "branch" };
+assert.equal(stationKeyAllowsOpsChat("east", [east, dmm]), false);
+assert.equal(stationKeyAllowsOpsChat("dmm", [east, dmm]), true);
+assert.equal(stationKeyAllowsOpsChat("all", [east, dmm]), true);
+assert.equal(stationKeyAllowsOpsChat("group_1", [east, dmm]), true);
+assert.equal(
+  checkSendGate({
+    text: "hi",
+    companyId: "co_1",
+    channelId: "east",
+    stationKey: "east",
+    stations: [east, dmm],
+  }).error,
+  "MANAGER_NO_CHAT",
+);
+assert.equal(
+  checkSendGate({
+    text: "hi",
+    companyId: "co_1",
+    channelId: "dmm",
+    stationKey: "dmm",
+    stations: [east, dmm],
+  }).ok,
+  true,
+);
 
 console.log("chat derivations ok");
 

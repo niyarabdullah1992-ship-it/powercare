@@ -5,7 +5,7 @@ export default function StationManagerField({ value, onChange, employees, ar }) 
   return (
     <label style={{ display: "block" }}>
       <span style={labelText}>
-        {ar ? "مدير الفرع (اختياري)" : "Branch manager (optional)"}
+        {ar ? "المدير (اختياري)" : "Manager (optional)"}
       </span>
       <select
         value={value || ""}
@@ -18,7 +18,7 @@ export default function StationManagerField({ value, onChange, employees, ar }) 
         ))}
       </select>
       <span style={hintText}>
-        {ar ? "يمكن تعيين المدير لاحقًا من الهيكل." : "You can assign a manager later from the org tree."}
+        {ar ? "يُعيَّن على هذا العقدة سواء كانت مديرًا أو فرعًا." : "Assign on this node whether it is a manager or a branch."}
       </span>
     </label>
   );

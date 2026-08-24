@@ -1,5 +1,5 @@
 import React from "react";
-import { BORDER, BRAND, BRAND_DEEP, BRAND_SOFT, CARD, MUTED, SURFACE, ui } from "@/lib/platformStyles";
+import { BORDER, BRAND, BRAND_DEEP, BRAND_SOFT, CARD, MUTED, ui } from "@/lib/platformStyles";
 
 const OUTER = {
   display: "flex",

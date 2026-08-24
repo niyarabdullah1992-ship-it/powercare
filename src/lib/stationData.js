@@ -1,4 +1,7 @@
 import { updateCompany } from "@/lib/store";
+import { hangOrphanStationsUnderCompany, isCompanyRootStation, stationParentId } from "@/lib/stationTree";
+import { appendOrgStructureEvent } from "@/lib/orgStructureLog";
+import { applyWorkplaceManagerRule } from "@/lib/peopleTreeGraph";
 
 export function getStationDependencySummary(data, stationId) {
   const belongs = (item) => item?.stationId === stationId || item?.station_id === stationId || item?.assignmentId === stationId || item?.assignment_id === stationId;
@@ -7,12 +10,28 @@ export function getStationDependencySummary(data, stationId) {
 
 export function deleteStationWithData(companyId, stationId, { mode, targetStationId } = {}) {
   if (!stationId || !["transfer", "delete"].includes(mode) || (mode === "transfer" && (!targetStationId || targetStationId === stationId))) return false;
+  let blocked = false;
   updateCompany(companyId, (data) => {
+    const station = (data.stations || []).find((item) => String(item.id) === String(stationId));
+    if (isCompanyRootStation(station)) {
+      blocked = true;
+      return;
+    }
+    const parentId = stationParentId(station);
+    const stationName = station.name || "";
+    (data.stations || []).forEach((item) => {
+      if (String(stationParentId(item) || "") === String(stationId)) {
+        item.parentStationId = parentId;
+      }
+    });
     const moveOrRemove = (items) => mode === "transfer" ? (items || []).map((item) => item.stationId === stationId ? { ...item, stationId: targetStationId } : item) : (items || []).filter((item) => item.stationId !== stationId);
     (data.employees || []).forEach((employee) => {
       if (employee.stationId === stationId) employee.stationId = mode === "transfer" ? targetStationId : null;
       if (employee.hrStationId === stationId) employee.hrStationId = mode === "transfer" ? targetStationId : null;
       employee.managedStations = [...new Set((employee.managedStations || []).flatMap((id) => id === stationId ? (mode === "transfer" ? [targetStationId] : []) : [id]))];
+      (employee.actingAssignments || []).forEach((item) => {
+        if (String(item.stationId) === String(stationId) && !item.endedAt) item.endedAt = new Date().toISOString();
+      });
     });
     data.tasks = mode === "transfer" ? (data.tasks || []).map((task) => ({ ...task, stationId: task.stationId === stationId ? targetStationId : task.stationId, assignmentId: task.assignmentId === stationId ? targetStationId : task.assignmentId })) : (data.tasks || []).filter((task) => task.stationId !== stationId && task.assignmentId !== stationId);
     if (mode === "transfer") {
@@ -35,9 +54,21 @@ export function deleteStationWithData(companyId, stationId, { mode, targetStatio
       } else if (source) source.stationId = targetStationId;
     }
     data.schedules = (data.schedules || []).filter((schedule) => schedule.stationId !== stationId);
+    data.orgSeats = mode === "transfer"
+      ? (data.orgSeats || []).map((seat) => String(seat.stationId) === String(stationId) ? { ...seat, stationId: targetStationId } : seat)
+      : (data.orgSeats || []).filter((seat) => String(seat.stationId) !== String(stationId));
+    data.orgTree = (data.orgTree || []).filter((node) => !(node.type === "station" && String(node.refId) === String(stationId)));
     (data.payrollRuns || []).forEach((run) => (run.items || []).forEach((item) => { if (item.employeeStationId === stationId) item.employeeStationId = mode === "transfer" ? targetStationId : null; }));
     ["hrClusters", "stationChatGroups"].forEach((key) => (data[key] || []).forEach((item) => { item.stationIds = [...new Set((item.stationIds || []).flatMap((id) => id === stationId ? (mode === "transfer" ? [targetStationId] : []) : [id]))]; }));
-    data.stations = (data.stations || []).filter((station) => station.id !== stationId);
+    data.stations = (data.stations || []).filter((item) => item.id !== stationId);
+    hangOrphanStationsUnderCompany(data.stations);
+    applyWorkplaceManagerRule(data);
+    appendOrgStructureEvent(data, {
+      type: "deleted",
+      stationId,
+      stationName,
+      to: parentId,
+    });
   });
-  return true;
+  return !blocked;
 }

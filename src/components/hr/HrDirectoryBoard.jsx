@@ -44,10 +44,10 @@ export default function HrDirectoryBoard({ lang = "ar", stationScope = "all" }) 
   // Scope narrows the register itself, so the Saudization rate and the pipeline
   // below always describe the station on screen.
   const employees = useMemo(
-    () => (data?.employees || []).filter((e) => matchesStationScope(e.stationId, stationScope)),
-    [data?.employees, stationScope],
+    () => (data?.employees || []).filter((e) => matchesStationScope(e.stationId, stationScope, data?.stations)),
+    [data?.employees, data?.stations, stationScope],
   );
-  const stations = (data?.stations || []).filter((s) => matchesStationScope(s.id, stationScope));
+  const stations = (data?.stations || []).filter((s) => matchesStationScope(s.id, stationScope, data?.stations));
   const stationName = (id) => stations.find((s) => s.id === id)?.name || (ar ? "—" : "—");
 
   const openReqs = (data?.hiringRequests || data?.jobRequisitions || []).filter(
@@ -264,7 +264,7 @@ export default function HrDirectoryBoard({ lang = "ar", stationScope = "all" }) 
             </div>
           </div>
           <Link
-            to="/app/org?tab=assign"
+            to="/app/org"
             style={{
               padding: "7px 13px",
               borderRadius: "9px",
@@ -278,7 +278,7 @@ export default function HrDirectoryBoard({ lang = "ar", stationScope = "all" }) 
               textDecoration: "none",
             }}
           >
-            {ar ? "عيّن منصباً" : "Assign seat"}
+            {ar ? "الهيكل" : "Org"}
           </Link>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "9px", padding: "12px 18px", borderBottom: "1px solid #E2E8F0", flexWrap: "wrap" }}>

@@ -16,6 +16,7 @@ import {
   taskPoints,
 } from "@/lib/opsDerivations";
 import { getCompanyData, updateCompany } from "@/lib/store";
+import { stationInHeaderScope } from "@/lib/stationTree";
 
 function uid(prefix) {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-3)}`;
@@ -48,7 +49,9 @@ export function normalizeLocalTask(raw, index = 0) {
     completedCount,
     status,
     planPinned: !!raw.planPinned,
-    planHorizon: raw.planHorizon || (dueAt ? planHorizonFromDue(dueAt) : "w"),
+    planHorizon: raw.planPinned && raw.planHorizon
+      ? String(raw.planHorizon)
+      : planHorizonFromDue(dueAt),
     steps: raw.steps || "",
     attachments: Array.isArray(raw.attachments) ? raw.attachments : [],
     comments: Array.isArray(raw.comments) ? raw.comments : [],
@@ -67,12 +70,11 @@ export function normalizeLocalTask(raw, index = 0) {
   };
 }
 
-export function buildLocalOpsBoard({ tasks, scope = "all" } = {}) {
+export function buildLocalOpsBoard({ tasks, scope = "all", stations = [] } = {}) {
   const raw = Array.isArray(tasks) ? tasks : [];
   let normalized = raw.map((t, i) => normalizeLocalTask(t, i)).filter(Boolean);
   if (scope && scope !== "all") {
-    const sid = String(scope);
-    normalized = normalized.filter((t) => !t.stationId || String(t.stationId) === sid);
+    normalized = normalized.filter((t) => !t.stationId || stationInHeaderScope(t.stationId, scope, stations));
   }
   return {
     tasks: normalized,
@@ -105,7 +107,9 @@ export function createLocalOpsTask(companyId, input, { employees = [] } = {}) {
       completedCount: 0,
       status: "active",
       planPinned: !!input.planPinned,
-      planHorizon: input.planHorizon || "w",
+      planHorizon: input.planPinned && input.planHorizon
+        ? input.planHorizon
+        : planHorizonFromDue(input.dueAt || null),
       steps: input.steps || "",
       attachments: input.attachments || [],
       assignedTo: input.ownerId || null,

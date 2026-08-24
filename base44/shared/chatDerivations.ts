@@ -94,6 +94,19 @@ export function actorStationSet(actor?: ChatActor | null): Set<string> {
   return ids;
 }
 
+/** A manager node is not an operational chat room — only workplace branches are. */
+export function stationKeyAllowsOpsChat(
+  stationKey: string | null | undefined,
+  stations?: Array<{ id?: string; unitKind?: string }> | null,
+): boolean {
+  const key = String(stationKey || "").trim();
+  if (!key || key === "all" || key === "hq" || key.startsWith("group_")) return true;
+  if (!Array.isArray(stations) || !stations.length) return true;
+  const station = stations.find((item) => String(item?.id || "") === key);
+  if (!station) return true;
+  return String(station.unitKind || "").trim() !== "manager";
+}
+
 export function actorCanAccessChannel(
   channel: ChatChannel | null | undefined,
   actor?: ChatActor | null,
@@ -260,6 +273,7 @@ export function checkSendGate(input: {
   crossStationChatEnabled?: boolean;
   recentSendAts?: string[] | null;
   nowMs?: number;
+  stations?: Array<{ id?: string; unitKind?: string }> | null;
 }): GateFail | GateOk {
   if (input.crossTenant) {
     return {
@@ -303,6 +317,15 @@ export function checkSendGate(input: {
       error: "STATION_REQUIRED",
       reason: "اختر فرع أو قناة قبل الإرسال.",
       reasonEn: "Pick a station or channel before sending.",
+    };
+  }
+
+  if (!stationKeyAllowsOpsChat(stationKey || channelId, input.stations)) {
+    return {
+      ok: false,
+      error: "MANAGER_NO_CHAT",
+      reason: "المدير ليس فرع تشغيل. المحادثة على الفروع التابعة له.",
+      reasonEn: "A manager is not an operations channel. Chat on the branches under them.",
     };
   }
 

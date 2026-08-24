@@ -4,6 +4,8 @@ import { deriveAttendanceOtAnalysis, REPORT_CATALOG } from "@/lib/reportsDerivat
 import { allowedNavFor } from "@/lib/navVisibility";
 import { buildLocalOpsBoard } from "@/lib/localOpsFallback";
 import { netOf } from "@/lib/payroll";
+import { stationInHeaderScope } from "@/lib/stationTree";
+import { deriveAccountingPeriod } from "@/lib/accountingDerivations";
 
 /** One picker row per live section — same columns as that page. */
 export const SECTION_REPORTS = [
@@ -11,7 +13,9 @@ export const SECTION_REPORTS = [
   { id: "tasks", path: "/app/tasks", format: "pdf", labelAr: "المهام والعمليات", labelEn: "Tasks" },
   { id: "payroll", path: "/app/payroll", format: "xlsx", labelAr: "الرواتب", labelEn: "Payroll" },
   { id: "expenses", path: "/app/expenses", format: "xlsx", labelAr: "المصروفات", labelEn: "Expenses" },
-  { id: "inventory", path: "/app/inventory", format: "xlsx", labelAr: "المخزون والأصول", labelEn: "Inventory" },
+  { id: "inventory", path: "/app/inventory", format: "xlsx", labelAr: "المخزون", labelEn: "Inventory" },
+  { id: "assets", path: "/app/assets", format: "xlsx", labelAr: "الأصول والعهد", labelEn: "Assets & custody" },
+  { id: "accounting", path: "/app/accounting", format: "xlsx", labelAr: "المحاسبة", labelEn: "Accounting" },
   { id: "safety", path: "/app/safety", format: "pdf", labelAr: "السلامة HSE", labelEn: "Safety" },
   { id: "performance", path: "/app/performance", format: "pdf", labelAr: "الأداء", labelEn: "Performance" },
   { id: "leave", path: "/app/leave", format: "xlsx", labelAr: "طلبات الإجازة", labelEn: "Leave" },
@@ -84,12 +88,12 @@ function labelPeriod(filter, period) {
 function scopeStations(data, stationScope) {
   const list = data?.stations || [];
   if (!stationScope || stationScope === "all") return list;
-  return list.filter((s) => s.id === stationScope);
+  return list.filter((s) => stationInHeaderScope(s.id, stationScope, list));
 }
 
-function scopeEmployees(employees, stationScope) {
+function scopeEmployees(employees, stationScope, stations) {
   if (!stationScope || stationScope === "all") return employees || [];
-  return (employees || []).filter((e) => (e.stationId || e.station_id) === stationScope);
+  return (employees || []).filter((e) => stationInHeaderScope(e.stationId || e.station_id, stationScope, stations));
 }
 
 function clock(iso) {
@@ -166,7 +170,7 @@ export function buildLibraryReport({
   if (!entry) return null;
   const title = ar ? (entry.titleAr || section?.labelAr) : (entry.titleEn || section?.labelEn);
   const stations = scopeStations(data, stationScope);
-  const team = scopeEmployees(employees.length ? employees : data?.employees, stationScope);
+  const team = scopeEmployees(employees.length ? employees : data?.employees, stationScope, data?.stations);
   const periodFilter = resolvePeriodFilter({ period, dateFrom, dateTo });
   const periodLabel = labelPeriod(periodFilter, period);
   period = periodFilter;
@@ -176,7 +180,7 @@ export function buildLibraryReport({
     const att = deriveTeamAttendanceToday(team, todayRows, data);
     const tasks = (data?.tasks || []).filter((t) => {
       const sid = t.stationId || t.station_id || t.assignment_id;
-      return !stationScope || stationScope === "all" || sid === stationScope;
+      return !stationScope || stationScope === "all" || stationInHeaderScope(sid, stationScope, data?.stations);
     });
     const open = tasks.filter((t) => t.status !== "completed" && t.status !== "approved");
     const done = tasks.filter((t) => t.status === "completed" || t.status === "approved");
@@ -256,7 +260,7 @@ export function buildLibraryReport({
   }
 
   if (reportId === "hse_performance") {
-    const recs = (data?.safety || []).filter((r) => !stationScope || stationScope === "all" || r.stationId === stationScope);
+    const recs = (data?.safety || []).filter((r) => !stationScope || stationScope === "all" || stationInHeaderScope(r.stationId, stationScope, data?.stations));
     const hazards = recs.flatMap((r) => (r.hazards || []).map((h) => ({ ...h, stationId: r.stationId })));
     const open = hazards.filter((h) => !h.closedAt);
     const closed = hazards.filter((h) => h.closedAt);
@@ -331,7 +335,7 @@ export function buildLibraryReport({
   }
 
   if (reportId === "tasks") {
-    const board = buildLocalOpsBoard({ tasks: data?.tasks || [], scope: stationScope });
+    const board = buildLocalOpsBoard({ tasks: data?.tasks || [], scope: stationScope, stations: data?.stations || [] });
     const tasks = (board.tasks || []).filter((t) => {
       const stamp = t.createdAt || t.dueAt || t.approvedAt || t.completedAt || t.updatedAt;
       return !stamp || inPeriod(stamp, period);
@@ -361,7 +365,7 @@ export function buildLibraryReport({
     const scoped = items.filter((item) => {
       if (!stationScope || stationScope === "all") return true;
       const sid = item.employeeStationId || team.find((e) => e.id === (item.employeeId || item.employee_id))?.stationId;
-      return String(sid || "") === String(stationScope);
+      return stationInHeaderScope(sid, stationScope, data?.stations);
     });
     const headers = ar
       ? ["الموظف", "الفرع", "الشهر", "الأساسي", "البدلات", "الخصم", "الصافي", "مدفوع"]
@@ -381,7 +385,7 @@ export function buildLibraryReport({
 
   if (reportId === "expenses") {
     const list = (data?.expenseClaims || data?.expenses || []).filter((j) => inPeriod(j.date || j.createdAt || j.submittedAt, period)
-      && (!stationScope || stationScope === "all" || (j.stationId || j.station_id) === stationScope));
+      && (!stationScope || stationScope === "all" || stationInHeaderScope(j.stationId || j.station_id, stationScope, data?.stations)));
     const headers = ar
       ? ["المرجع", "التاريخ", "البيان", "قبل الضريبة", "الضريبة", "بعد الضريبة", "الحالة", "الفرع"]
       : ["Ref", "Date", "Memo", "Before tax", "Tax", "After tax", "Status", "Station"];
@@ -400,7 +404,7 @@ export function buildLibraryReport({
 
   if (reportId === "inventory") {
     const moves = (data?.stockMovements || []).filter((m) =>
-      (!stationScope || stationScope === "all" || (m.stationId || m.station_id || m.locationId) === stationScope)
+      (!stationScope || stationScope === "all" || stationInHeaderScope(m.stationId || m.station_id || m.locationId, stationScope, data?.stations))
       && inPeriod(m.date || m.createdAt, period));
     const items = (data?.inventoryItems || []).filter((item) => item.archived !== true);
     const headers = moves.length
@@ -424,8 +428,60 @@ export function buildLibraryReport({
     return { entry, title, periodLabel, headers, rows, stats: [{ value: rows.length, label: moves.length ? (ar ? "حركات مخزون" : "Stock moves") : (ar ? "أصناف" : "Items") }] };
   }
 
+  if (reportId === "assets") {
+    const list = (data?.assets || []).filter((a) =>
+      (!stationScope || stationScope === "all" || stationInHeaderScope(a.stationId, stationScope, data?.stations))
+      && (inPeriod(a.createdAt || a.purchaseDate || a.updatedAt, period) || !a.createdAt));
+    const headers = ar
+      ? ["الرمز", "الأصل", "الحالة", "الحائز", "الفرع"]
+      : ["Code", "Asset", "Status", "Holder", "Station"];
+    const rows = list.map((a) => [
+      a.assetCode || a.qrCode || a.id || "—",
+      a.name || "—",
+      a.status || "—",
+      a.holderName || employeeName(data, a.holderId || a.assignedTo) || "—",
+      stationName(data, a.stationId),
+    ]);
+    return { entry, title, periodLabel, headers, rows, stats: [{ value: list.length, label: ar ? "أصول" : "Assets" }] };
+  }
+
+  if (reportId === "accounting") {
+    const month = typeof period === "string" && /^\d{4}-\d{2}$/.test(period)
+      ? period
+      : String(period?.from || period || "").slice(0, 7);
+    const claims = data?.expenseClaims || data?.expenses || [];
+    const budgets = data?.stationBudgets || data?.budgets || [];
+    const snap = deriveAccountingPeriod({
+      month: month || undefined,
+      claims,
+      budgets,
+      payrollRuns: data?.payrollRuns || [],
+      lang: ar ? "ar" : "en",
+    });
+    const headers = ar ? ["البند", "القيمة"] : ["Item", "Value"];
+    const rows = [
+      [ar ? "الشهر" : "Month", snap.month],
+      [ar ? "مصروف منشور" : "Posted spend", snap.expenses.total],
+      [ar ? "عدد المطالبات" : "Claims", snap.expenses.count],
+      [ar ? "ميزانية متبقية" : "Budget remaining", snap.budget.remaining],
+      [ar ? "صافي رواتب معتمد" : "Approved payroll net", snap.payroll.posted ? snap.payroll.netTotal : 0],
+      [ar ? "حالة المسير" : "Payroll status", snap.payroll.status],
+    ];
+    return {
+      entry,
+      title,
+      periodLabel: snap.month,
+      headers,
+      rows,
+      stats: [
+        { value: snap.expenses.total, label: ar ? "مصروف منشور" : "Posted spend" },
+        { value: snap.payroll.posted ? snap.payroll.netTotal : 0, label: ar ? "صافي رواتب" : "Payroll net" },
+      ],
+    };
+  }
+
   if (reportId === "safety") {
-    const recs = (data?.safety || []).filter((r) => !stationScope || stationScope === "all" || r.stationId === stationScope);
+    const recs = (data?.safety || []).filter((r) => !stationScope || stationScope === "all" || stationInHeaderScope(r.stationId, stationScope, data?.stations));
     const hazards = recs.flatMap((r) => (Array.isArray(r.hazards) ? r.hazards : [r]).map((h) => ({ ...h, stationId: h.stationId || r.stationId })));
     const headers = ar
       ? ["الفرع", "الملاحظة", "الخطورة", "الحالة", "تاريخ الإغلاق"]
@@ -480,7 +536,7 @@ export function buildLibraryReport({
     const filings = (data?.reports || []).filter((r) => {
       const daily = !r.kind || r.kind === "daily" || r.type === "daily";
       if (!daily) return false;
-      if (stationScope && stationScope !== "all" && String(r.stationId) !== String(stationScope)) return false;
+      if (stationScope && stationScope !== "all" && !stationInHeaderScope(r.stationId, stationScope, data?.stations)) return false;
       return inPeriod(r.dateKey || r.date || r.createdAt, period);
     });
     const headers = ar

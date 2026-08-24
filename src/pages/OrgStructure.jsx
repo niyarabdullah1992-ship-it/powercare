@@ -1,104 +1,187 @@
-﻿import React from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
-import { useOrgTerms } from "@/hooks/useOrgTerms";
-import FlexOrgTree from "@/components/hr/FlexOrgTree";
-import OrgListWorkbench from "@/components/hr/OrgListWorkbench";
-import OrgAssignBoard from "@/components/hr/OrgAssignBoard";
+import { OPEN_HIRE_EVENT } from "@/lib/orgHire";
+import { isManagerUnit } from "@/lib/stationTree";
+import { toast } from "@/components/ui/use-toast";
+import { syncWorkplaceManagers } from "@/lib/peopleTree";
+import { orgChainHealth, orgChainNext } from "@/lib/orgChain";
+import OrgChainStrip from "@/components/hr/OrgChainStrip";
+import OrgTemplateBoard from "@/components/hr/OrgTemplateBoard";
+import OrgPeopleTree from "@/components/hr/OrgPeopleTree";
+import OrgListAccessBoard from "@/components/hr/OrgListAccessBoard";
+import HireSeatDrawer from "@/components/hr/HireSeatDrawer";
+import PageErrorBoundary from "@/components/PageErrorBoundary";
 import PlatformStampShell from "@/components/shared/PlatformStampShell";
-import { orderedOrgTracks } from "@/lib/orgTracks";
+import { MUTED } from "@/lib/platformStyles";
 
-const TABS = [
-  { value: "seats", ar: "القائمة", en: "List" },
-  { value: "assign", ar: "تعيين", en: "Assign" },
-  { value: "tree", ar: "الشجرة", en: "Tree" },
-];
+const ORG_TABS = new Set(["branches", "people", "lists"]);
 
-const TAB_ALIAS = {
-  board: "seats",
-  lists: "seats",
-  list: "seats",
-  grades: "seats",
-};
-
-/** Platform `org` — seats with a list column, then assign from the seat, then tree placement. */
+/** Place → people → access. One workplace tree; people derived; lists grant permission. */
 export default function OrgStructure() {
   const { lang } = useI18n();
   const ar = lang === "ar";
   const { data, currentUser, company } = useAuth();
-  const { terms } = useOrgTerms();
-  const [params, setParams] = useSearchParams();
-  const requested = TAB_ALIAS[params.get("tab")] || params.get("tab");
-  const tool = TABS.some((tab) => tab.value === requested) ? requested : "seats";
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [hire, setHire] = useState(null);
+  const requested = searchParams.get("tab");
+  const tool = ORG_TABS.has(requested) ? requested : "branches";
 
-  if (!data || !currentUser) return null;
-
-  const tracks = orderedOrgTracks(data);
-  const requestedList = params.get("list");
-  const listId = tracks.some((track) => track.id === requestedList) ? requestedList : "";
-
-  const setList = (id, tab = tool) => {
-    const next = { tab };
-    if (id) next.list = id;
-    if (params.get("employee") && tab === "assign") next.employee = params.get("employee");
-    setParams(next, { replace: true });
+  const setTool = (value) => {
+    const next = new URLSearchParams(searchParams);
+    if (value === "branches") next.delete("tab");
+    else next.set("tab", value);
+    setSearchParams(next, { replace: true });
   };
-  const openAssign = (id) => {
-    const next = { tab: "assign" };
-    if (id) next.list = id;
-    setParams(next, { replace: true });
-  };
-  const select = (value) => {
-    if (value === "tree") {
-      setParams({ tab: "tree" }, { replace: true });
+
+  const health = useMemo(() => orgChainHealth(data), [data]);
+  const next = useMemo(() => orgChainNext(data, ar), [data, ar]);
+
+  const sections = useMemo(() => [
+    {
+      value: "branches",
+      step: 1,
+      label: ar ? "المكان" : "Place",
+      count: health.branches,
+    },
+    {
+      value: "people",
+      step: 2,
+      label: ar ? "الناس" : "People",
+      count: health.people,
+    },
+    {
+      value: "lists",
+      step: 3,
+      label: ar ? "الصلاحية" : "Access",
+      count: health.lists,
+    },
+  ], [ar, health.branches, health.people, health.lists]);
+
+  const openHire = (detail = {}) => {
+    const station = (data?.stations || []).find((item) => String(item.id) === String(detail.stationId || ""));
+    if (detail.stationId && isManagerUnit(station)) {
+      toast({
+        description: ar
+          ? "المدير ليس مكان توظيف. حوّله إلى فرع ثم وظّف عليه."
+          : "A manager is not a hire workplace. Convert it to a branch, then hire there.",
+        variant: "destructive",
+      });
       return;
     }
-    const next = { tab: value === "assign" ? "assign" : "seats" };
-    if (listId) next.list = listId;
-    if (value === "assign" && params.get("employee")) next.employee = params.get("employee");
-    setParams(next, { replace: true });
+    setHire({
+      stationId: detail.stationId || "",
+      seatId: detail.seatId || "",
+      listId: detail.listId || "",
+      listName: detail.listName || "",
+    });
   };
 
-  const hint = {
-    seats: ar
-      ? "كل قائمة بطاقتها: درجاتها ومناصبها معاً."
-      : "Each list is one card: its grades and seats together.",
-    assign: ar
-      ? "موظف ثم منصب. الدرجة من قائمة ذلك المنصب."
-      : "Employee, then seat. The grade comes from that seat’s list.",
-    tree: ar
-      ? `ضع الشخص في فرعه تحت مسؤول · ${terms.stations}`
-      : `Place the person in a branch under a manager · ${terms.stations}`,
-  }[tool];
+  useEffect(() => {
+    const nextParams = new URLSearchParams(searchParams);
+    let changed = false;
+    if (nextParams.get("tab") === "seats" || nextParams.get("tab") === "template") {
+      nextParams.delete("tab");
+      changed = true;
+    }
+    if (nextParams.get("hire")) {
+      setHire({
+        stationId: nextParams.get("station") || "",
+        seatId: nextParams.get("seat") || "",
+        listId: nextParams.get("list") || "",
+        listName: "",
+      });
+      nextParams.delete("hire");
+      nextParams.delete("station");
+      nextParams.delete("seat");
+      nextParams.delete("list");
+      changed = true;
+    }
+    if (changed) setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const onOpen = (event) => {
+      const detail = event.detail || {};
+      setHire({
+        stationId: detail.stationId || "",
+        seatId: detail.seatId || "",
+        listId: detail.listId || "",
+        listName: detail.listName || "",
+      });
+      setSearchParams((prev) => {
+        const nextParams = new URLSearchParams(prev);
+        nextParams.delete("tab");
+        nextParams.delete("hire");
+        return nextParams;
+      }, { replace: true });
+    };
+    window.addEventListener(OPEN_HIRE_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_HIRE_EVENT, onOpen);
+  }, [setSearchParams]);
+
+  const canWrite = Boolean(currentUser && (
+    currentUser.id === data?.ownerId
+    || ["owner", "director", "admin", "pgm", "hr_manager"].includes(currentUser.role)
+  ));
+
+  useEffect(() => {
+    if (!company?.id || !canWrite) return;
+    syncWorkplaceManagers(company.id);
+  }, [company?.id, canWrite]);
 
   return (
-    <PlatformStampShell
-      ar={ar}
-      title={ar ? "الهيكل التنظيمي" : "Org structure"}
-      hint={hint}
-      maxWidth={1280}
-      sections={TABS.map((tab) => ({ value: tab.value, label: ar ? tab.ar : tab.en }))}
-      tool={tool}
-      onTool={select}
-    >
-      {tool === "seats" ? (
-        <OrgListWorkbench
-          lang={lang}
-          trackId={listId}
-          onTrackId={(id) => setList(id, "seats")}
-          onAssign={openAssign}
+    <>
+      <PlatformStampShell
+        ar={ar}
+        title={ar ? "الهيكل التنظيمي" : "Org structure"}
+        sections={sections}
+        tool={tool}
+        onTool={setTool}
+        maxWidth={1400}
+        flushBody
+        metaBar={(
+          <OrgChainStrip ar={ar} onTool={setTool} health={health} next={next} />
+        )}
+      >
+        {!data || !currentUser || !company ? (
+          <p style={{ margin: 0, fontSize: 13, color: MUTED }}>{ar ? "جارٍ تحميل الهيكل…" : "Loading org structure…"}</p>
+        ) : (
+          <div className="nv-org-page">
+          <PageErrorBoundary resetKey={tool}>
+            {tool === "people" ? (
+              <OrgPeopleTree lang={lang} canWrite={canWrite} />
+            ) : tool === "lists" ? (
+              <OrgListAccessBoard
+                data={data}
+                companyId={company.id}
+                ar={ar}
+                canWrite={canWrite}
+                ownerMode={currentUser.id === data.ownerId || currentUser.role === "owner"}
+                wide
+                onHire={openHire}
+              />
+            ) : (
+              <OrgTemplateBoard lang={lang} onHire={openHire} />
+            )}
+          </PageErrorBoundary>
+          </div>
+        )}
+      </PlatformStampShell>
+      {data && company ? (
+        <HireSeatDrawer
+          open={Boolean(hire)}
+          data={data}
+          companyId={company.id}
+          ar={ar}
+          stationId={hire?.stationId || ""}
+          seatId={hire?.seatId || ""}
+          listId={hire?.listId || ""}
+          listName={hire?.listName || ""}
+          onClose={() => setHire(null)}
         />
       ) : null}
-      {tool === "assign" ? (
-        <OrgAssignBoard
-          lang={lang}
-          trackId={listId}
-          onTrackId={(id) => setList(id, "assign")}
-          initialEmployeeId={params.get("employee") || ""}
-        />
-      ) : null}
-      {tool === "tree" ? <FlexOrgTree data={data} company={company} currentUser={currentUser} lang={lang} /> : null}
-    </PlatformStampShell>
+    </>
   );
 }

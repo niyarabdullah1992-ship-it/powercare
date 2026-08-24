@@ -53,7 +53,7 @@ function slaText(r, ar) {
 
 export default function ComplaintQueueBoard({ lang = "ar", stationScope = "all", voice = "all" }) {
   const ar = lang === "ar";
-  const { company, currentUser } = useAuth();
+  const { company, currentUser, data } = useAuth();
   const [reports, setReports] = useState([]);
   const [chain, setChain] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -128,7 +128,7 @@ export default function ComplaintQueueBoard({ lang = "ar", stationScope = "all",
   // Scope narrows the queue in place; the counters are re-derived from the same
   // rows so a station's figures never disagree with the list under them.
   const scopedReports = reports.filter((r) =>
-    (stationScope === "all" || matchesStationScope(r.stationId, stationScope))
+    (stationScope === "all" || matchesStationScope(r.stationId, stationScope, data?.stations))
     && matchesVoiceChannel(r, voice),
   );
   const scopedStats = deriveComplaintStats(scopedReports);

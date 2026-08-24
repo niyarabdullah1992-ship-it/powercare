@@ -29,7 +29,7 @@ import OffboardingTab from "@/components/employees/OffboardingTab";
 import EmpPointsTab from "@/components/employees/EmpPointsTab";
 import EmpAlertsStrip from "@/components/employees/EmpAlertsStrip";
 import AssignmentTab from "@/components/employees/AssignmentTab";
-import { employeeJobGrade, orderedJobGrades } from "@/lib/jobGrades";
+import { employeeJobGrade, gradesForList, orderedJobGrades } from "@/lib/jobGrades";
 import { BORDER, CARD, MUTED, NAVY, cardShell, ui } from "@/lib/platformStyles";
 import PlatformStampShell from "@/components/shared/PlatformStampShell";
 
@@ -185,7 +185,12 @@ export default function EmployeeProfile() {
           canEdit={canManage}
           isSelf={isSelf}
           canEditGrade={canEditGrade}
-          grades={orderedJobGrades(data)}
+          grades={(() => {
+            const listId = (data.smartPositions || []).find((item) => item.employeeId === employee.id)?.templateId
+              || employee.profile?.listId
+              || "";
+            return listId ? gradesForList(data, listId) : orderedJobGrades(data);
+          })()}
           fallbackPosition={fallbackPosition}
           stationName={stationName}
           autoEdit={autoEdit}

@@ -3,6 +3,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { base44 } from "@/api/base44Client";
 import { canSeeAllStations, visibleStations, isCompanyOwner, canTransferOwnership } from "@/lib/permissions";
+import { stationInHeaderScope, isWorkplaceStation } from "@/lib/stationTree";
 import { updateCompany, addStationChatGroup, removeStationChatGroup, getCompanyToken } from "@/lib/store";
 import { MessageSquare, Building2, Radio, Link2, Users, Settings2, Mail, Search, Paperclip } from "lucide-react";
 import ChatBubble from "@/components/chat/ChatBubble";
@@ -32,14 +33,8 @@ export default function StationChat() {
   const bottomRef = useRef(null);
   const headerScope = useStationScope();
 
-  const baseRooms = !data || !currentUser ? [] : canSeeAllStations(currentUser)
-    ? (data.stations || []).map((s) => ({ key: s.id, name: s.name }))
-    : ["pgm", "station_manager"].includes(currentUser.role)
-      ? visibleStations(currentUser, data).map((s) => ({ key: s.id, name: s.name }))
-      : [{
-          key: currentUser.stationId || "hq",
-          name: currentUser.stationId ? ((data.stations || []).find((s) => s.id === currentUser.stationId)?.name || t("station")) : t("hq"),
-        }];
+  const workplaces = !data || !currentUser ? [] : visibleStations(currentUser, data);
+  const baseRooms = workplaces.map((s) => ({ key: s.id, name: s.name }));
   const isOwner = isCompanyOwner(currentUser, data) || canTransferOwnership(currentUser);
   const chatGroups = data?.stationChatGroups || [];
   const myGroups = chatGroups.filter((g) =>
@@ -54,11 +49,11 @@ export default function StationChat() {
   ];
   const scopedRooms = headerScope && headerScope !== "all"
     ? stationRooms.filter((r) => {
-        if (String(r.key) === String(headerScope)) return true;
         if (r.key === "all") return false;
+        if (stationInHeaderScope(r.key, headerScope, data?.stations)) return true;
         if (r.isGroup) {
           const group = chatGroups.find((g) => `group_${g.id}` === r.key);
-          return (group?.stationIds || []).includes(headerScope);
+          return (group?.stationIds || []).some((id) => stationInHeaderScope(id, headerScope, data?.stations));
         }
         return false;
       })
@@ -80,6 +75,15 @@ export default function StationChat() {
     setActiveTab("chat");
     setShowEmail(false);
   };
+
+  useEffect(() => {
+    if (!selectedStation || selectedStation === "all" || String(selectedStation).startsWith("group_")) return;
+    const station = (data?.stations || []).find((item) => String(item.id) === String(selectedStation));
+    if (station && !isWorkplaceStation(station)) {
+      setSelectedStation(null);
+      setActiveChat(null);
+    }
+  }, [selectedStation, data?.stations]);
 
   useEffect(() => {
     if (scopedRooms.length !== 1 || selectedStation) return;
@@ -161,6 +165,7 @@ export default function StationChat() {
         allStations: canSeeAllStations(currentUser),
       },
       crossStationChatEnabled: !!data?.crossStationChatEnabled,
+      stations: data?.stations || [],
     });
     if (!gate.ok) {
       toast({
@@ -184,6 +189,7 @@ export default function StationChat() {
             stationIds: currentUser?.stationId
               ? [currentUser.stationId, ...(currentUser.managedStations || [])]
               : (currentUser?.managedStations || []),
+            stations: (data?.stations || []).map((station) => ({ id: station.id, unitKind: station.unitKind })),
           });
         } catch {
           // Board blob may not have this station key yet — legacy path still runs.
@@ -385,7 +391,7 @@ export default function StationChat() {
                     />
                   </button>
                 </div>
-                <ChatGroupManager t={t} stations={data.stations} groups={chatGroups} onAdd={addChatGroup} onDelete={deleteChatGroup} />
+                <ChatGroupManager t={t} stations={workplaces} groups={chatGroups} onAdd={addChatGroup} onDelete={deleteChatGroup} />
               </div>
             </details>
           )}

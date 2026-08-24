@@ -1,5 +1,6 @@
 /** Client mirror of base44/shared/opsDerivations.ts — keep in sync. */
-import { deriveBranchEscalationChain } from "@/lib/orgDerivations";
+import { deriveBranchEscalationChain } from "./orgDerivations.js";
+import { userCoversStation } from "./stationTree.js";
 
 export const PRIORITY_VALUE = { high: 3, medium: 2, low: 1 };
 
@@ -35,103 +36,165 @@ export function dayDiffFromToday(iso, today = new Date()) {
   return Math.round((due.getTime() - localDayStart(today).getTime()) / 86400000);
 }
 
-/** YYYY-MM-DD that is `days` local calendar days after today. */
-export function addLocalDays(days, today = new Date()) {
-  const n = Math.round(Number(days) || 0);
-  const d = localDayStart(today);
-  d.setDate(d.getDate() + n);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+export function isoDayKey(value, today = new Date()) {
+  if (!value) {
+    const d = today instanceof Date ? today : new Date(today);
+    if (Number.isNaN(d.getTime())) return "";
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+  const raw = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const d = raw.length === 10 ? new Date(`${raw}T00:00:00`) : new Date(raw);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/**
- * Daily pace is derived: remaining units ÷ remaining days to due.
- * Example: 30 tasks due in 15 days → 2 per day. Not a separately stored quota.
- */
-export function deriveTaskDailyPace(task, today = new Date()) {
-  const total = Math.max(1, Number(task?.targetCount) || 1);
-  const done = Math.max(0, Number(task?.completedCount) || 0);
-  const remaining = Math.max(0, total - done);
-  const dueAt = task?.dueAt ? String(task.dueAt).slice(0, 10) : "";
-  const met = remaining === 0;
-  const horizonSpan = daysForPlanHorizon(task?.planHorizon);
-  if (!dueAt) {
-    if (horizonSpan) {
-      const daily = met ? 0 : Math.ceil(remaining / horizonSpan);
-      return {
-        total,
-        done,
-        remaining,
-        dueAt: null,
-        daysLeft: horizonSpan,
-        daily,
-        overdue: false,
-        met,
-      };
-    }
-    return {
-      total,
-      done,
-      remaining,
-      dueAt: null,
-      daysLeft: null,
-      daily: null,
-      overdue: false,
-      met,
-    };
-  }
-  const diff = dayDiffFromToday(dueAt, today);
-  if (Number.isNaN(diff)) {
-    return {
-      total,
-      done,
-      remaining,
-      dueAt,
-      daysLeft: null,
-      daily: null,
-      overdue: false,
-      met,
-    };
-  }
-  const overdue = diff < 0 && !met;
-  const daysLeft = overdue ? 0 : Math.max(1, diff);
-  const daily = met ? 0 : (overdue ? remaining : Math.ceil(remaining / daysLeft));
-  return { total, done, remaining, dueAt, daysLeft, daily, overdue, met };
+export function calendarDaysInclusive(fromIso, toIso) {
+  const from = isoDayKey(fromIso);
+  const to = isoDayKey(toIso);
+  if (!from || !to) return 0;
+  const a = new Date(`${from}T00:00:00`);
+  const b = new Date(`${to}T00:00:00`);
+  return Math.round((b.getTime() - a.getTime()) / 86400000) + 1;
 }
 
-export function taskDailyPaceLabel(pace, ar = true) {
-  if (!pace) return "";
-  if (pace.met) return ar ? "أُغلق العدد المستهدف." : "Target count is met.";
-  if (pace.daily == null) {
-    return ar
-      ? "حدد مدة التسليم أو تاريخه ليُحسب العدد اليومي تلقائياً."
-      : "Set a duration or due date to derive the daily count.";
+/** Spread targetCount evenly across calendar days from start to due. Derived — never stored. */
+export function deriveDailyTaskPace({
+  targetCount,
+  completedCount = 0,
+  dueAt,
+  startAt,
+  today = new Date(),
+} = {}) {
+  const target = Math.max(0, Math.round(Number(targetCount) || 0));
+  const done = Math.max(0, Number(completedCount) || 0);
+  const remaining = Math.max(0, target - done);
+  const todayKey = isoDayKey(today);
+  const due = isoDayKey(dueAt);
+  const start = isoDayKey(startAt) || todayKey;
+  const empty = {
+    active: false,
+    target,
+    done,
+    remaining,
+    days: 0,
+    daysLeft: 0,
+    even: 0,
+    extra: 0,
+    todayExpected: 0,
+    overdue: false,
+    due: due || "",
+    start: start || "",
+  };
+  if (target <= 1 || !due) return empty;
+  const windowStart = start <= due ? start : due;
+  const days = Math.max(1, calendarDaysInclusive(windowStart, due));
+  const even = Math.floor(target / days);
+  const extra = target % days;
+  const overdue = todayKey > due;
+  const beforeStart = todayKey < windowStart;
+  let todayExpected = 0;
+  if (overdue) {
+    todayExpected = remaining;
+  } else if (!beforeStart) {
+    const dayIndex = Math.min(days - 1, Math.max(0, calendarDaysInclusive(windowStart, todayKey) - 1));
+    todayExpected = even + (dayIndex < extra ? 1 : 0);
+    todayExpected = Math.min(remaining, todayExpected);
+  }
+  return {
+    active: true,
+    target,
+    done,
+    remaining,
+    days,
+    daysLeft: overdue ? 0 : Math.max(0, calendarDaysInclusive(todayKey, due)),
+    even,
+    extra,
+    todayExpected,
+    overdue,
+    due,
+    start: windowStart,
+  };
+}
+
+export function dailyPaceCopy(pace, ar = true) {
+  if (!pace?.active) return null;
+  if (pace.remaining <= 0) {
+    return {
+      tone: "done",
+      kicker: ar ? "التوزيع على الأيام" : "Spread across days",
+      metrics: [
+        { label: ar ? "اليوم" : "Today", value: "0" },
+        { label: ar ? "المستهدف" : "Target", value: String(pace.target) },
+        { label: ar ? "الأيام" : "Days", value: String(pace.days) },
+      ],
+      hint: ar ? "اكتمل العدد المستهدف" : "Target count is met",
+    };
   }
   if (pace.overdue) {
-    return ar
-      ? `انتهى الأجل — المتبقي ${pace.remaining} يُطلب اليوم.`
-      : `Past due — ${pace.remaining} remain today.`;
+    return {
+      tone: "warn",
+      kicker: ar ? "متأخر عن التوزيع" : "Behind the spread",
+      metrics: [
+        { label: ar ? "اليوم" : "Today", value: String(pace.remaining) },
+        { label: ar ? "المتبقي" : "Left", value: String(pace.remaining) },
+        { label: ar ? "الأيام" : "Days", value: "0" },
+      ],
+      hint: ar ? "المتبقي يُنجز اليوم" : "Remaining is due today",
+    };
   }
-  if (pace.done === 0) {
-    return ar
-      ? `إجمالي ${pace.total} خلال ${pace.daysLeft} يوماً = ${pace.daily} كل يوم.`
-      : `${pace.total} over ${pace.daysLeft} days = ${pace.daily} per day.`;
-  }
-  return ar
-    ? `متبقّي ${pace.remaining} خلال ${pace.daysLeft} يوماً = ${pace.daily} كل يوم.`
-    : `${pace.remaining} left over ${pace.daysLeft} days = ${pace.daily} per day.`;
+  return {
+    tone: "ok",
+    kicker: ar ? "التوزيع على الأيام" : "Spread across days",
+    metrics: [
+      { label: ar ? "اليوم" : "Today", value: String(pace.todayExpected) },
+      { label: ar ? "المستهدف" : "Target", value: String(pace.target) },
+      { label: ar ? "الأيام" : "Days", value: String(pace.days) },
+    ],
+    hint: ar ? "يُقسَّم العدد بالتساوي حتى تاريخ الاستحقاق" : "The count is split evenly until the due date",
+  };
 }
 
-/** Calendar days used when a plan horizon is pinned (سنوية / شهرية / …). */
-export const HORIZON_DAYS = { w: 7, m: 30, q: 92, h: 183, y: 365 };
-
-export function daysForPlanHorizon(horizon) {
-  const n = HORIZON_DAYS[horizon];
-  return n || null;
+export function boardPaceCopy(board, ar = true) {
+  if (!board?.active) return null;
+  return {
+    tone: "ok",
+    kicker: ar ? "التوزيع على الأيام" : "Spread across days",
+    metrics: [
+      { label: ar ? "اليوم" : "Today", value: String(board.todayExpected) },
+      { label: ar ? "الأوامر" : "Orders", value: String(board.active) },
+    ],
+    hint: ar ? "مجموع إيقاع اليوم للأوامر المؤرخة" : "Sum of today's pace on dated orders",
+  };
 }
 
+export function dailyPaceLabel(pace, ar = true) {
+  const copy = dailyPaceCopy(pace, ar);
+  if (!copy) return "";
+  const today = copy.metrics[0]?.value || "0";
+  return `${copy.kicker} · ${today} · ${copy.hint}`;
+}
+
+export function deriveBoardDailyPace(tasks, today = new Date()) {
+  let todayExpected = 0;
+  let active = 0;
+  (Array.isArray(tasks) ? tasks : []).forEach((task) => {
+    if (isDone(task) || isAwaitingApproval(task)) return;
+    const pace = deriveDailyTaskPace({
+      targetCount: task.targetCount,
+      completedCount: task.completedCount,
+      dueAt: task.dueAt,
+      startAt: task.createdAt || task.startAt,
+      today,
+    });
+    if (!pace.active) return;
+    active += 1;
+    todayExpected += pace.todayExpected;
+  });
+  return { active, todayExpected };
+}
+
+/** Remaining days to due date: ≤7 weekly, ≤31 monthly, ≤92 quarterly, ≤183 half-year, else annual. */
 export function planHorizonFromDue(iso, today = new Date()) {
   if (!iso) return "w";
   const d = dayDiffFromToday(iso, today);
@@ -141,6 +204,12 @@ export function planHorizonFromDue(iso, today = new Date()) {
   if (d <= 92) return "q";
   if (d <= 183) return "h";
   return "y";
+}
+
+/** Live plan bucket from remaining days. A pinned horizon stays only when explicitly pinned. */
+export function taskPlanHorizon(task, today = new Date()) {
+  if (task?.planPinned && task?.planHorizon) return String(task.planHorizon);
+  return planHorizonFromDue(task?.dueAt, today);
 }
 
 export function isOverdue(task, today = new Date()) {
@@ -209,7 +278,7 @@ export function opsHandlersAt(levelIdx, task, data) {
     if (levelIdx === 0) {
       return employees.filter((e) => (
         e.role === "station_manager"
-        && (e.stationId === stationId || (e.managedStations || []).includes(stationId))
+        && userCoversStation(e, data, stationId)
       ));
     }
     const group = groups[levelIdx - 1];
@@ -232,7 +301,7 @@ export function opsHandlersAt(levelIdx, task, data) {
     if (role === "owner") return isOwner;
     if (e.role !== role) return false;
     if (role === "station_manager") {
-      return !stationId || e.stationId === stationId || (e.managedStations || []).includes(stationId);
+      return !stationId || userCoversStation(e, data, stationId);
     }
     return true;
   });
@@ -312,9 +381,7 @@ export function canReviewOpsTask(task, user, data) {
   const role = user.role;
   if (level === 0 && ["director", "ops_manager", "station_manager", "pgm"].includes(role)) {
     if (role === "station_manager") {
-      return !task.stationId
-        || user.stationId === task.stationId
-        || (user.managedStations || []).includes(task.stationId);
+      return !task.stationId || userCoversStation(user, data, task.stationId);
     }
     return true;
   }
@@ -342,11 +409,11 @@ export function deriveOpsCounts(tasks, today = new Date()) {
   };
 }
 
-export function deriveHorizonGroups(tasks) {
+export function deriveHorizonGroups(tasks, today = new Date()) {
   const order = ["y", "h", "q", "m", "w"];
   const list = Array.isArray(tasks) ? tasks : [];
   return order.map((id) => {
-    const rows = list.filter((t) => (t.planHorizon || "w") === id);
+    const rows = list.filter((t) => taskPlanHorizon(t, today) === id);
     const units = rows.reduce(
       (acc, t) => ({
         done: acc.done + (Number(t.completedCount) || 0),
@@ -492,7 +559,7 @@ export function canReassignOpsTask(task, user, data) {
   if (user.role === "station_manager") {
     const sid = task.stationId;
     if (!sid) return true;
-    if (user.stationId === sid || (user.managedStations || []).includes(sid)) return true;
+    if (userCoversStation(user, data, sid)) return true;
     return (data?.stations || []).some((s) => {
       const id = s.id || s.stationId;
       return id === sid && uid && s.managerId && String(s.managerId) === String(uid);

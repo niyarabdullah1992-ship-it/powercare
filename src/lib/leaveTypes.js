@@ -9,10 +9,8 @@ export const LEAVE_TYPES = [
   { key: "maternity", defaultTotal: 70, gender: "female", ar: "أمومة", en: "Maternity" },
   { key: "paternity", defaultTotal: 3, gender: "male", ar: "أبوة", en: "Paternity" },
   { key: "hajj", defaultTotal: 10, ar: "حج", en: "Hajj" },
-  { key: "holiday", defaultTotal: 8, ar: "أعياد", en: "Eid / public holidays" },
   { key: "emergency", defaultTotal: 5, ar: "اضطرارية", en: "Emergency" },
   { key: "unpaid", defaultTotal: null, ar: "بدون راتب", en: "Unpaid" },
-  { key: "other", defaultTotal: null, ar: "أخرى", en: "Other" },
 ];
 
 export function leaveTypeLabel(type, ar = true) {
@@ -36,10 +34,6 @@ export function leaveTypesForProfile(profile) {
     if (ty.gender === "male" && female) return false;
     return true;
   });
-}
-
-export function isLeaveTypeAllowed(profile, key) {
-  return leaveTypesForProfile(profile).some((ty) => ty.key === key);
 }
 
 export function getLeaveTotal(profile, key) {

@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
 import {
   SCOPE,
-  ORG_SECTIONS,
   BASELINE_MATRIX,
-  canonicalSectionId,
   nextScopeInCycle,
   checkSetPermGate,
   checkCreateBranchGate,
@@ -11,26 +9,20 @@ import {
   checkCreateDelegationGate,
   derivePermissionMatrix,
   deriveEscalationFromBranches,
+  deriveAutoBranchEscalationChain,
   isDelegationActive,
   deriveDelegationStatus,
   wouldCreateCycle,
 } from "../src/lib/orgDerivations.js";
 
-assert.equal(canonicalSectionId("operations"), "tasks");
-assert.equal(canonicalSectionId("daily"), "daily_report");
-assert.equal(canonicalSectionId("hse"), "safety");
-assert.equal(canonicalSectionId("hr"), "hr");
-
-assert.equal(ORG_SECTIONS.length, 22);
-assert.equal(BASELINE_MATRIX.length, 22);
-assert.equal(ORG_SECTIONS[10], "work_proof");
-assert.equal(BASELINE_MATRIX[7][1], SCOPE.NONE); // HR × station mgr — grantable
+assert.equal(BASELINE_MATRIX.length, 10);
+assert.equal(BASELINE_MATRIX[7][1], SCOPE.DELEGATED); // HR × station mgr
 assert.equal(BASELINE_MATRIX[9][0], SCOPE.COMPANY); // settings × ops director
 assert.equal(BASELINE_MATRIX[9][4], SCOPE.NONE);
 
 assert.equal(nextScopeInCycle(SCOPE.OWN), SCOPE.STATION);
 assert.equal(nextScopeInCycle(SCOPE.COMPANY), SCOPE.NONE);
-assert.equal(nextScopeInCycle(SCOPE.DELEGATED), SCOPE.OWN);
+assert.equal(nextScopeInCycle(SCOPE.DELEGATED), SCOPE.DELEGATED);
 
 assert.equal(checkSetPermGate(SCOPE.DELEGATED).error, "DELEGATED_IS_DERIVED");
 assert.equal(checkSetPermGate(SCOPE.STATION).ok, true);
@@ -53,13 +45,14 @@ const now = new Date(2026, 7, 11);
 assert.equal(isDelegationActive({ id: "d1", fromId: "a", toId: "b", perm: "x", end: "2026-08-18" }, now), true);
 assert.equal(isDelegationActive({ id: "d2", fromId: "a", toId: "b", perm: "x", end: "2026-08-09" }, now), false);
 assert.equal(deriveDelegationStatus({ id: "d2", fromId: "a", toId: "b", perm: "x", end: "2026-08-09" }, now).status, "expired");
+assert.equal(isDelegationActive({ id: "d3", fromId: "a", toId: "b", perm: "x", start: "2026-08-20", end: "2026-09-01" }, now), false);
+assert.equal(deriveDelegationStatus({ id: "d3", fromId: "a", toId: "b", perm: "x", start: "2026-08-20", end: "2026-09-01" }, now).status, "scheduled");
 
 assert.equal(checkCreateDelegationGate({ fromId: "a", toId: "a", end: "2026-09-01", perm: "tasks" }).error, "SELF_DELEGATION_FORBIDDEN");
 assert.equal(checkCreateDelegationGate({ fromId: "a", toId: "b", end: "2026-09-01", perm: "tasks" }).ok, true);
 
 const matrix = derivePermissionMatrix({});
-assert.equal(matrix[7].cells[1].derived, false);
-assert.equal(matrix[7].cells[1].scope, SCOPE.NONE);
+assert.equal(matrix[7].cells[1].derived, true);
 assert.equal(matrix[0].cells[0].scope, SCOPE.COMPANY);
 
 const dirty = derivePermissionMatrix({ "0:4": SCOPE.STATION });
@@ -72,5 +65,36 @@ const esc = deriveEscalationFromBranches([
 ]);
 assert.equal(esc.length, 1);
 assert.equal(esc[0].managerId, "m1");
+
+const workplace = {
+  ownerId: "o1",
+  employees: [
+    { id: "o1", name: "المالك", role: "owner" },
+    { id: "m1", name: "سالم" },
+    { id: "a1", name: "فهد", actingAssignments: [{ stationId: "port", until: "2099-01-01" }] },
+    { id: "ghost", name: "شجرة قديمة" },
+  ],
+  stations: [
+    { id: "hq", name: "الرئاسة", isCompanyRoot: true, managerId: "o1" },
+    { id: "khafji", name: "الخفجي", parentStationId: "hq", managerId: "m1" },
+    { id: "port", name: "الميناء", parentStationId: "khafji" },
+  ],
+  orgTree: [
+    { id: "n1", type: "employee", refId: "ghost", parentId: null, title: "مدير عمليات" },
+  ],
+};
+const portChain = deriveAutoBranchEscalationChain("port", workplace);
+assert.equal(portChain[0].employeeId, "a1");
+assert.equal(portChain[0].title, "مدير بالوكالة");
+assert.equal(portChain[1].employeeId, "m1");
+assert.equal(portChain[2].employeeId, "o1");
+assert.equal(portChain.some((step) => step.employeeId === "ghost"), false);
+
+const vacantChain = deriveAutoBranchEscalationChain("port", {
+  ...workplace,
+  employees: workplace.employees.map((item) => ({ ...item, actingAssignments: [] })),
+});
+assert.equal(vacantChain[0].employeeId, "m1");
+assert.equal(vacantChain[1].employeeId, "o1");
 
 console.log("org derivations ok");

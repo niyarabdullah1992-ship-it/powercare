@@ -37,7 +37,6 @@ function uid(prefix: string) {
 
 type OrgPayload = {
   branches: Array<BranchLike & { companyId: string }>;
-  /** Legacy blob field — live UI tree is company `orgTree`, not this list. */
   treeNodes: Array<OrgNodeLike & { companyId?: string; type?: string; refId?: string; title?: string }>;
   permOverrides: Record<string, PermOverride>;
   delegations: Array<DelegationLike & { companyId: string }>;
@@ -262,6 +261,10 @@ Deno.serve(async (req) => {
         seeded: false,
       };
       data.branches = [...data.branches, branch];
+      data.treeNodes = [
+        ...data.treeNodes,
+        { id: `org_station_${stationId}`, parentId: null, companyId: auth.companyId, type: "station", refId: stationId },
+      ];
       await savePayload(data);
       await audit("org.createBranch", `Created branch ${gate.name}`, { newValue: stationId });
       return Response.json({ ok: true, branch, ...enrich(data) });
@@ -353,6 +356,13 @@ Deno.serve(async (req) => {
       const current = titleKey
         ? effectiveTitleScope(sectionIdx, titleSlug(titleKey), overrideMap)
         : effectiveScope(sectionIdx, roleIdx, overrideMap);
+      if (current.derived) {
+        return Response.json({
+          error: "DELEGATED_IS_DERIVED",
+          reason: "«بتفويض» حالة مشتقة من سجل التفويض — لا تُضبط من المصفوفة.",
+          reasonEn: "\"Delegated\" is derived from the delegation register — not set from the matrix.",
+        }, { status: 400 });
+      }
       const next = body.scope != null ? Number(body.scope) : nextScopeInCycle(current.scope);
       const gate = checkSetPermGate(next);
       if (!gate.ok) {
@@ -413,7 +423,10 @@ Deno.serve(async (req) => {
         toId: String(body.toId),
         perm: String(body.perm).trim(),
         reason: String(body.reason || "").trim() || null,
+        start: String(body.start || "").trim() || null,
         end: String(body.end),
+        stationId: String(body.stationId || "").trim() || null,
+        listId: String(body.listId || "").trim() || null,
         revoked: false,
       };
       data.delegations = [rec, ...data.delegations];

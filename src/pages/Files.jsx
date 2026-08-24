@@ -11,6 +11,7 @@ import FileRow from "@/components/files/FileRow";
 import NewFolderDialog from "@/components/files/NewFolderDialog";
 import StationFilesCard from "@/components/files/StationFilesCard";
 import useStationScope from "@/hooks/useStationScope";
+import { stationInHeaderScope } from "@/lib/stationTree";
 import PlatformStampShell from "@/components/shared/PlatformStampShell";
 import { MUTED, NAVY, emptyState, ui } from "@/lib/platformStyles";
 
@@ -218,8 +219,12 @@ export default function Files() {
   const nodes = data?.files || [];
   const currentId = path.length ? path[path.length - 1].id : null;
   const childrenOf = (id) => nodes.filter((n) => (n.parentId || null) === id);
-  const matchesStation = (node) =>
-    isIndividual || stationFilter === "all" || (node.stationId || null) === (stationFilter === "hq" ? null : stationFilter);
+  const matchesStation = (node) => {
+    if (isIndividual || stationFilter === "all") return true;
+    const scopeId = stationFilter === "hq" ? null : stationFilter;
+    if (!scopeId) return (node.stationId || null) == null;
+    return stationInHeaderScope(node.stationId, scopeId, data?.stations);
+  };
   const folders = childrenOf(currentId).filter((node) => node.type === "folder" && matchesStation(node));
   const files = childrenOf(currentId).filter((node) => node.type === "file" && matchesStation(node));
   const stationName = (id) => data?.stations?.find((s) => s.id === id)?.name || null;

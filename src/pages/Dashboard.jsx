@@ -138,12 +138,13 @@ export default function Dashboard() {
 
   if (!data || !currentUser) return null;
 
-  const stations = visibleStations(currentUser, data).filter((s) => matchesStationScope(s.id, headerScope));
+  const tree = data.stations || [];
+  const stations = visibleStations(currentUser, data).filter((s) => matchesStationScope(s.id, headerScope, tree));
   const stationIds = new Set(stations.map((s) => s.id));
   const anonOpenCount = (data.anonymousReports || []).filter((a) => stationIds.has(a.stationId) && a.status === "open").length;
   const isEmployee = currentUser.role === "employee";
   const teamEmployees = visibleEmployees(currentUser, data).filter((employee) =>
-    matchesStationScope(employee.stationId, headerScope),
+    matchesStationScope(employee.stationId, headerScope, tree),
   );
   const mergedAttendanceRows = mergeAttendanceRows(
     attendanceRows,

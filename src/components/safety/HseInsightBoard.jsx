@@ -43,9 +43,9 @@ export default function HseInsightBoard({ lang = "ar", stationScope }) {
   const headerScope = useStationScope();
   const scope = stationScope || headerScope || "all";
   const stations = (currentUser && data ? visibleStations(currentUser, data) : []).filter((s) =>
-    matchesStationScope(s.id, scope),
+    matchesStationScope(s.id, scope, data?.stations),
   );
-  const safety = (data?.safety || []).filter((rec) => matchesStationScope(rec.stationId, scope));
+  const safety = (data?.safety || []).filter((rec) => matchesStationScope(rec.stationId, scope, data?.stations));
 
   const counts = useMemo(() => {
     let fatality = 0;
@@ -115,7 +115,7 @@ export default function HseInsightBoard({ lang = "ar", stationScope }) {
   const maxPyramid = Math.max(1, ...PYRAMID_LEVELS.map((l) => counts.pyramid[l.key] || 0));
 
   const competency = (data?.employees || [])
-    .filter((e) => matchesStationScope(e.stationId, scope))
+    .filter((e) => matchesStationScope(e.stationId, scope, data?.stations))
     .filter((e) => e.role === "safety_officer" || /سلامة|safety/i.test(e.position || ""))
     .slice(0, 6)
     .map((e) => ({

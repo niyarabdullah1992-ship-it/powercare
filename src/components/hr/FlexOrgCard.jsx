@@ -1,10 +1,9 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Image } from "@/components/ui/image";
-import { ChevronDown, ChevronRight, MapPin } from "lucide-react";
+import { ChevronDown, ChevronRight, MapPin, Plus } from "lucide-react";
 import ComplaintEscalationBadge from "@/components/hr/ComplaintEscalationBadge";
 import { identityIconWrap } from "@/components/shared/IdentityCard";
-import { employeeJobGrade, jobGradeLabel } from "@/lib/jobGrades";
 import { BORDER, MUTED, NAVY, NAVY_FILL, CARD } from "@/lib/platformStyles";
 
 function initials(name) {
@@ -13,18 +12,12 @@ function initials(name) {
   return `${parts[0][0] || ""}${parts[1]?.[0] || ""}`;
 }
 
-function personTitle(node, employee, ar, data) {
+function personTitle(node, employee, ar) {
   const titled = String(node.title || employee?.profile?.position || employee?.position || "").trim();
-  const grade = jobGradeLabel(employeeJobGrade(employee, data));
-  const extra = Math.max(0, (employee?.managedStations || []).length - 1);
-  const fallback = !titled && (employee?.isOwner || employee?.role === "owner")
-    ? (ar ? "المالك" : "Owner")
-    : !titled && employee?.role === "station_manager"
-      ? (ar ? "مدير الفرع" : "Branch manager")
-      : titled;
-  const bits = [fallback, grade].filter(Boolean);
-  if (extra > 0) bits.push(ar ? `+${extra} فروع` : `+${extra} branches`);
-  return bits.join(" · ");
+  if (titled) return titled;
+  if (employee?.isOwner || employee?.role === "owner") return ar ? "المالك" : "Owner";
+  if (employee?.role === "station_manager") return ar ? "مدير الفرع" : "Branch manager";
+  return "";
 }
 
 const cardShadow = "0 8px 24px rgba(20,40,75,.06)";
@@ -33,7 +26,7 @@ const cardShadow = "0 8px 24px rgba(20,40,75,.06)";
 export default function FlexOrgCard({
   node, employee, label, access, canManage, complaintLevel, escalationSharedLabel,
   childrenCount, collapsed, onToggleCollapse, onToggleEscalation,
-  onOrganize, onEditStation, ar, data,
+  onOrganize, onEditStation, onHire, ar,
 }) {
   const navigate = useNavigate();
   const station = node.type === "station";
@@ -42,7 +35,7 @@ export default function FlexOrgCard({
     ? (childrenCount > 0
       ? (ar ? `${childrenCount} في هذا الفرع` : `${childrenCount} in this branch`)
       : (ar ? "فرع تشغيلي" : "Operating branch"))
-    : personTitle(node, employee, ar, data);
+    : personTitle(node, employee, ar);
 
   const openNode = () => {
     if (station) onEditStation?.(node);
@@ -175,6 +168,37 @@ export default function FlexOrgCard({
           </span>
         )}
       </div>
+
+      {station && canManage && onHire && (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onHire({ stationId: node.refId });
+          }}
+          title={ar ? "أضف موظفًا إلى هذه الوحدة" : "Add an employee to this unit"}
+          aria-label={ar ? "أضف موظفًا إلى هذه الوحدة" : "Add an employee to this unit"}
+          style={{
+            position: "absolute",
+            top: 8,
+            insetInlineEnd: 8,
+            zIndex: 12,
+            width: 28,
+            height: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 9,
+            border: "1px solid #1E9E63",
+            background: "#1E9E63",
+            color: "#fff",
+            cursor: "pointer",
+            boxShadow: "0 4px 10px rgba(30,158,99,.28)",
+          }}
+        >
+          <Plus style={{ width: 14, height: 14 }} strokeWidth={2.2} />
+        </button>
+      )}
 
       {childrenCount > 0 && (
         <button

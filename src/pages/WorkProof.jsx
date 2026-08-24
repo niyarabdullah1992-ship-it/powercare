@@ -431,7 +431,7 @@ export default function WorkProof() {
     }
   };
 
-  const scopedProofs = proofs.filter((p) => matchesStationScope(p.stationId, headerScope));
+  const scopedProofs = proofs.filter((p) => matchesStationScope(p.stationId, headerScope, data?.stations));
   const activeFilter = filter === "accepted" || filter === "ready" || filter === "rejected" ? "all" : filter;
   const visible = scopedProofs.filter((p) => activeFilter === "all" || (p.stage || deriveProofStage(p)) === activeFilter);
   const scopedCounts = useMemo(() => deriveProofCounts(scopedProofs), [scopedProofs]);

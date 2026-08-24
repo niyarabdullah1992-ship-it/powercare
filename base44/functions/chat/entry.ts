@@ -282,6 +282,7 @@ Deno.serve(async (req) => {
         crossTenant,
         crossStationChatEnabled: facts.crossStationChatEnabled,
         recentSendAts: recent,
+        stations: Array.isArray(body.stations) ? body.stations : undefined,
       });
       if (!gate.ok) {
         return Response.json({

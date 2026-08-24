@@ -1,8 +1,10 @@
 import base44 from "@base44/vite-plugin"
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
-import { readFileSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
+import { readFileSync } from 'node:fs'
+import dns from 'node:dns'
+
+dns.setDefaultResultOrder("ipv4first");
 
 const normalizeRawUrl = (value = "") => value.replace(/([?&])raw=(?=(&|$))/g, "$1raw");
 
@@ -36,28 +38,22 @@ export default defineConfig({
       // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.
       // can be removed if the code has been updated to use the new SDK imports from @base44/sdk
       legacySDKImports: process.env.BASE44_LEGACY_SDK_IMPORTS === 'true',
-      // Production site is this Vite app only — do not inject builder/preview chrome.
-      hmrNotifier: process.env.NODE_ENV !== "production",
-      navigationNotifier: process.env.NODE_ENV !== "production",
-      analyticsTracker: false,
+      hmrNotifier: true,
+      navigationNotifier: true,
+      analyticsTracker: true,
       visualEditAgent: false
     }),
     react(),
-    {
-      name: "omit-legacy-public-dumps",
-      apply: "build",
-      closeBundle() {
-        for (const rel of ["claude-handoff-hr.html", "design"]) {
-          rmSync(join("dist", rel), { recursive: true, force: true });
-        }
-      },
-    },
   ],
   optimizeDeps: {
     include: ["qrcode"],
   },
   // Claude Design handoff zips lock files on Windows; watching them crashes Vite (EBUSY).
+  // Bind IPv4 as well as IPv6 — Windows localhost often fails if Vite listens on [::1] only.
   server: {
+    host: true,
+    port: 5173,
+    strictPort: true,
     watch: {
       ignored: ["**/design-handoff-claude/**", "**/.tmp-design-caps/**"],
     },

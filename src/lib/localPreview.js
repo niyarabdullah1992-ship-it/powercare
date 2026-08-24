@@ -365,8 +365,20 @@ export function enterLocalPreview() {
       { id: "org_field", type: "employee", refId: employeeId, title: "فني", parentId: "org_st_n", order: 0 },
     ],
     smartPositions: [],
-    orgPositions: [],
-    orgTracks: [],
+    orgSeats: [
+      {
+        id: "seat_vac_tech",
+        title: "فني تشغيل",
+        stationId: stationNorth,
+        listId: "field",
+        gradeId: "",
+        employeeId: null,
+        approverId: managerId,
+        salaryMin: null,
+        salaryMax: null,
+        createdAt: now,
+      },
+    ],
     complaintEscalationChain: [],
     signatureRequests: [{
       id: "sg_1",
@@ -439,9 +451,6 @@ export function enterLocalPreview() {
     ],
     settings: { rateLimitDaily: 3, rateLimitWeekly: 10, rateLimitMonthly: 30 },
     reportBranding: {},
-    permOverrides: {},
-    knownTitles: [],
-    removedTitles: [],
   };
 
   localStorage.setItem(`powercare_company_${companyId}`, JSON.stringify(data));

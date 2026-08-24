@@ -65,7 +65,7 @@ export default function Attendance() {
     ? roster.filter((employee) => leaveScope === null || leaveScope.includes(employee.stationId || defaultStationId))
     : defaultEmployees;
   const employees = (employeesBase || []).filter((employee) =>
-    matchesStationScope(employee.stationId || defaultStationId, headerScope),
+    matchesStationScope(employee.stationId || defaultStationId, headerScope, stationList),
   );
 
   const syncRoster = () => {

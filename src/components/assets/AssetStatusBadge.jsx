@@ -1,18 +1,19 @@
 import React from "react";
 import { assetStatusLabel } from "@/lib/assetsApi";
+import { OK, WARN, BAD, NEUTRAL } from "@/lib/platformStyles";
 
 const STYLES = {
-  available: "border-border bg-muted text-foreground",
-  in_custody: "border-emerald-300 bg-emerald-50 text-emerald-800",
-  inspection: "border-amber-300 bg-amber-50 text-amber-800",
-  maintenance: "border-amber-300 bg-amber-50 text-amber-800",
-  lost: "border-red-300 bg-red-50 text-red-700",
-  retired: "border-border bg-muted text-muted-foreground",
+  available: NEUTRAL,
+  in_custody: OK,
+  inspection: WARN,
+  maintenance: WARN,
+  lost: BAD,
+  retired: NEUTRAL,
 };
 
 export default function AssetStatusBadge({ status, lang }) {
   return (
-    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-body ${STYLES[status] || STYLES.available}`}>
+    <span style={STYLES[status] || NEUTRAL}>
       {assetStatusLabel(status, lang)}
     </span>
   );

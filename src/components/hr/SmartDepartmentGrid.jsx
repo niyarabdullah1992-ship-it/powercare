@@ -4,6 +4,7 @@ import {
   Briefcase,
   ClipboardCheck,
   FileText,
+  FileUser,
   FolderOpen,
   ListTodo,
   Lock,
@@ -18,29 +19,20 @@ import {
   UserCog,
   Warehouse,
   Banknote,
-  CalendarClock,
-  CalendarOff,
-  Network,
-  Settings2,
-  LayoutDashboard,
 } from "lucide-react";
-import { GRANTABLE_DEPARTMENTS, SMART_SECTION_GROUPS } from "@/lib/smartPositions";
+import { SMART_DEPARTMENTS, SMART_SECTION_GROUPS } from "@/lib/smartPositions";
 import { OWNER_ONLY_DEPARTMENTS } from "@/lib/permissionTemplates";
 import { ACCENT, MUTED, NAVY, SURFACE, CARD } from "@/lib/platformStyles";
 
 const ICONS = {
-  command: LayoutDashboard,
   tasks: ListTodo,
   attendance: ClipboardCheck,
-  shifts: CalendarClock,
-  leave: CalendarOff,
-  org: Network,
-  settings: Settings2,
   daily_report: FileText,
   chat: MessageSquare,
   performance: Trophy,
   hr: UserCog,
   hiring: Briefcase,
+  employees: FileUser,
   safety: ShieldQuestion,
   work_proof: Camera,
   signing: PenLine,
@@ -77,7 +69,7 @@ export default function SmartDepartmentGrid({
     return grantable[id] || "hidden";
   };
 
-  const active = GRANTABLE_DEPARTMENTS.filter((d) => permissions[d.id] && permissions[d.id] !== "hidden");
+  const active = SMART_DEPARTMENTS.filter((d) => permissions[d.id] && permissions[d.id] !== "hidden");
 
   const toggleOn = (id) => {
     if (disabled) return;
@@ -102,7 +94,7 @@ export default function SmartDepartmentGrid({
       </div>
 
       {SMART_SECTION_GROUPS.map((group) => {
-        const items = GRANTABLE_DEPARTMENTS.filter((d) => d.group === group.id);
+        const items = SMART_DEPARTMENTS.filter((d) => d.group === group.id);
         if (!items.length) return null;
         return (
           <section key={group.id}>

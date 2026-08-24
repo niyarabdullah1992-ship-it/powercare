@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import SmartDepartmentGrid from "@/components/hr/SmartDepartmentGrid";
 import StationManagerField from "@/components/hr/StationManagerField";
+import OrgUnitKindPicker from "@/components/hr/OrgUnitKindPicker";
 import PermissionTemplatePicker from "@/components/hr/PermissionTemplatePicker";
-import { grantedCount } from "@/lib/permissionTemplates";
+import { BUILT_IN_TEMPLATES, grantedCount } from "@/lib/permissionTemplates";
 import {
   ACCENT,
   CARD,
@@ -13,7 +14,10 @@ import {
   hintText,
   inputField,
   labelText,
+  softPanel,
 } from "@/lib/orgModalStyles";
+
+const HR_TEMPLATE = BUILT_IN_TEMPLATES.find((t) => t.id === "hr_officer");
 
 export default function OrgTreeNodeFields({
   type,
@@ -23,6 +27,8 @@ export default function OrgTreeNodeFields({
   setStationName,
   managerId,
   setManagerId,
+  unitKind,
+  setUnitKind,
   permissions,
   setPermissions,
   employees,
@@ -38,7 +44,17 @@ export default function OrgTreeNodeFields({
   titleSuggestions = [],
 }) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const hrOn = templateId === "hr_officer" || permissions?.hr === "manage";
   const granted = grantedCount(permissions);
+
+  const setHr = (on) => {
+    if (on) {
+      onTemplate?.("hr_officer");
+      if (!title.trim()) setTitle(ar ? (HR_TEMPLATE?.ar || "مسؤول موارد بشرية") : (HR_TEMPLATE?.en || "HR officer"));
+    } else {
+      onTemplate?.("");
+    }
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -54,6 +70,7 @@ export default function OrgTreeNodeFields({
               style={inputField}
             />
           </label>
+          <OrgUnitKindPicker value={unitKind} onChange={setUnitKind} ar={ar} />
           <StationManagerField value={managerId} onChange={setManagerId} employees={employees} ar={ar} />
         </>
       )}
@@ -84,6 +101,27 @@ export default function OrgTreeNodeFields({
 
       {type === "employee" && (
         <>
+          <div style={softPanel}>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={hrOn}
+                onChange={(e) => setHr(e.target.checked)}
+                style={{ marginTop: 3, width: 16, height: 16, accentColor: ACCENT }}
+              />
+              <span>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: NAVY }}>
+                  {ar ? "مسؤول موارد بشرية لهذا الفرع" : "HR officer for this branch"}
+                </span>
+                <span style={{ display: "block", marginTop: 4, fontSize: 11, lineHeight: 1.65, color: MUTED }}>
+                  {ar
+                    ? "يفعّل ملء ملفات موظفي نفس الفرع."
+                    : "Lets them fill employee files in the same branch."}
+                </span>
+              </span>
+            </label>
+          </div>
+
           {ownerMode && (
             <div style={{ borderRadius: 14, border: "1px solid #E2E8F0", overflow: "hidden", background: CARD }}>
               <button

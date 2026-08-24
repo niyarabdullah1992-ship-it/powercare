@@ -86,7 +86,7 @@ export default function Payroll() {
 
   useEffect(() => {
     setStationFilter(headerScope === "all" ? [] : [headerScope]);
-  }, [headerScope]);
+  }, [headerScope, data?.stations]);
 
   if (!canView) {
     return (

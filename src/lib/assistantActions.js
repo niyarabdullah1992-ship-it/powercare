@@ -1,6 +1,6 @@
 import { addCompanyFile, getCompanyToken, submitLeaveRequest, setLeaveRequestStatus } from "@/lib/store";
 import { recordSafetyIncident } from "@/lib/safetyStore";
-import { canManageEmployees, hasHRPermission } from "@/lib/permissions";
+import { canManageEmployees, hasHRPermission, visibleStations } from "@/lib/permissions";
 import { buildAssistantContext } from "./assistantContext";
 import { printReport } from "@/lib/printReport";
 import { generateSignedReport } from "@/lib/signedReport";
@@ -339,7 +339,7 @@ export async function executeAssistantAction(action, { data, company, currentUse
   }
 
   if (action.type === "send_station_message") {
-    const station = data.stations.find((entry) => matches(entry.name, action.station || ""));
+    const station = visibleStations(currentUser, data).find((entry) => matches(entry.name, action.station || ""));
     if (!station || !String(action.message || "").trim()) return { ok: false, message: t("aiNoData") };
     await base44.functions.invoke("supabaseTargets", {
       action: "sendChatMessage", ...sessionAuth, stationId: station.id,

@@ -4,10 +4,10 @@ import IdentityCard from "@/components/shared/IdentityCard";
 import { MUTED, ui } from "@/lib/platformStyles";
 
 export default class PageErrorBoundary extends React.Component {
-  state = { failed: false };
+  state = { failed: false, message: "" };
 
-  static getDerivedStateFromError() {
-    return { failed: true };
+  static getDerivedStateFromError(error) {
+    return { failed: true, message: String(error?.message || error || "") };
   }
 
   componentDidCatch(error, info) {
@@ -16,7 +16,7 @@ export default class PageErrorBoundary extends React.Component {
 
   componentDidUpdate(prevProps) {
     if (prevProps.resetKey !== this.props.resetKey && this.state.failed) {
-      this.setState({ failed: false });
+      this.setState({ failed: false, message: "" });
     }
   }
 
@@ -34,7 +34,7 @@ export default class PageErrorBoundary extends React.Component {
         >
           <button
             type="button"
-            onClick={() => this.setState({ failed: false })}
+            onClick={() => this.setState({ failed: false, message: "" })}
             style={{
               ...ui.btnPrimary,
               display: "inline-flex",
@@ -46,9 +46,15 @@ export default class PageErrorBoundary extends React.Component {
             <RefreshCw style={{ width: 14, height: 14, color: "#fff" }} />
             {ar ? "إعادة المحاولة" : "Try again"}
           </button>
-          <p style={{ margin: "10px 0 0", fontSize: 11, color: MUTED }}>
-            {ar ? "إن استمر العطل، افتح قسمًا آخر من القائمة ثم عد إلى هنا." : "If it continues, open another section from the menu, then return here."}
-          </p>
+          {this.state.message ? (
+            <p style={{ margin: "10px 0 0", fontSize: 11, color: MUTED, direction: "ltr", textAlign: "left", wordBreak: "break-word" }}>
+              {this.state.message}
+            </p>
+          ) : (
+            <p style={{ margin: "10px 0 0", fontSize: 11, color: MUTED }}>
+              {ar ? "إن استمر العطل، افتح قسمًا آخر من القائمة ثم عد إلى هنا." : "If it continues, open another section from the menu, then return here."}
+            </p>
+          )}
         </IdentityCard>
       </div>
     );

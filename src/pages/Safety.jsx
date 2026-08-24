@@ -37,7 +37,7 @@ export default function Safety() {
   };
 
   const stations = data && currentUser
-    ? visibleStations(currentUser, data).filter((station) => matchesStationScope(station.id, headerScope))
+    ? visibleStations(currentUser, data).filter((station) => matchesStationScope(station.id, headerScope, data.stations))
     : [];
   const selectedId = stations.some((station) => station.id === stationId) ? stationId : (stations[0]?.id || "");
 
@@ -47,7 +47,7 @@ export default function Safety() {
 
   if (!data || !currentUser) return null;
 
-  const scopedSafety = (data.safety || []).filter((rec) => matchesStationScope(rec.stationId, headerScope));
+  const scopedSafety = (data.safety || []).filter((rec) => matchesStationScope(rec.stationId, headerScope, data.stations));
   const isSafetyOfficer = currentUser.role === "safety_officer";
   const canEdit = ["director", "ops_manager", "pgm", "station_manager"].includes(currentUser.role) || isSafetyOfficer || data.ownerId === currentUser.id;
   const canCustomize = ["director", "ops_manager", "station_manager"].includes(currentUser.role) || isSafetyOfficer || data.ownerId === currentUser.id;
