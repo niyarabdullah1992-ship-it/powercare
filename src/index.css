@@ -1191,6 +1191,12 @@ html:not(.dark) .powercare-shell {
   .self-sign-actions button { padding-block: .45rem; }
 }
 
+/* Institutional section chrome — inactive section tabs lift on hover, on-palette. */
+.nv-stamp-tab:hover:not([data-selected]) {
+  background: color-mix(in oklab, var(--nv-navy) 5%, transparent);
+  color: var(--nv-ink);
+}
+
 @media (max-width: 700px) {
   .nv-inv-form {
     grid-template-columns: 1fr !important;
