@@ -51,7 +51,7 @@ function buildModuleMetrics(data, extra = {}) {
     complaints: extra.complaints ?? (data?.anonymousReports || []).filter((row) => row.status === "open").length,
     reports: extra.reports ?? reports.length,
     pendingReports: extra.pendingReports ?? reports.filter((row) => row.status === "pending").length,
-    payroll: data?.payroll?.length || 0,
+    payroll: data?.payrollRuns?.length || data?.payroll?.length || 0,
     attendanceRate: extra.attendanceRate ?? 0,
     checkedIn: extra.checkedIn ?? 0,
     absentCount: extra.absentCount ?? 0,

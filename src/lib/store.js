@@ -1485,7 +1485,39 @@ export function setLeaveRequestStatus(companyId, employeeId, requestId, status, 
         leaveReq.activeStartDate = approvalDate.toISOString();
         leaveReq.activeEndDate = activeEnd.toISOString();
       }
+      // Sign/stamp step of the proof cycle: an approved leave becomes a sealed
+      // decision document in the trust ledger, mirroring how work proofs and the
+      // daily report close their chain.
+      const seal = `NV-SIG-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      leaveReq.sealId = seal;
+      d.signedDocuments = Array.isArray(d.signedDocuments) ? d.signedDocuments : [];
+      d.signedDocuments.unshift({
+        id: uid("sd"),
+        title: `قرار إجازة — ${empName}`,
+        source: "leave",
+        status: "signed",
+        sealId: seal,
+        signedAt: new Date().toISOString(),
+        signedBy: reviewerName || "الإدارة",
+        employeeId,
+        requestId,
+        stationId: employee.stationId || null,
+      });
     }
+    // The requester is told the decision — submitting only alerted HR, so the
+    // employee side of the loop was previously silent.
+    d.notifications = Array.isArray(d.notifications) ? d.notifications : [];
+    d.notifications.unshift({
+      id: uid("ntf"),
+      userId: employeeId,
+      text: status === "approved"
+        ? `✅ اعتُمد طلب إجازتك (${leaveReq.type || ""}) — بمراجعة ${reviewerName || "الإدارة"}.`
+        : status === "rejected"
+          ? `↩︎ رُفض طلب إجازتك (${leaveReq.type || ""}) — راجع الملاحظات مع ${reviewerName || "الإدارة"}.`
+          : `تم تحديث حالة طلب إجازتك إلى: ${status}.`,
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
   });
   return { ok: true };
 }

@@ -81,6 +81,7 @@ const StationExpenses = lazy(() => import('./pages/StationExpenses'));
 const WorkProof = lazy(() => import('./pages/WorkProof'));
 const Recruitment = lazy(() => import('./pages/Recruitment'));
 const ProofVerify = lazy(() => import('./pages/ProofVerify'));
+const Employees = lazy(() => import('./pages/Employees'));
 
 // Start the workspace chunk immediately when a session already exists so /app
 // does not wait for window load — that delay was a blank spinner then a jump.
@@ -188,6 +189,8 @@ function AppRoutes() {
       <Route path="/app/chat" element={<RequireAuth><StationChat /></RequireAuth>} />
 
       <Route path="/app/complaints" element={<RequireAuth><Complaints /></RequireAuth>} />
+      <Route path="/app/employees" element={<RequireAuth><Employees /></RequireAuth>} />
+      <Route path="/app/stations" element={<Navigate to="/app/hr" replace />} />
       <Route path="/app/employees/:employeeId" element={<RequireAuth><EmployeeProfile /></RequireAuth>} />
       <Route path="/app/hr" element={<RequireAuth><HRStructureManagement /></RequireAuth>} />
       <Route path="/app/org" element={<RequireAuth><OrgStructure /></RequireAuth>} />

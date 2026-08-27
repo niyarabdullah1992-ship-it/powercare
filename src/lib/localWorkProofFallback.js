@@ -16,6 +16,37 @@ function withStage(proof) {
   return { ...proof, stage: deriveProofStage(proof) };
 }
 
+// Proof cycle bridge: once a work proof is sealed it must enter the signing
+// stage — the same way the daily report issues a signature request — so the
+// trust ledger and the dashboard signing metric reflect it. Idempotent per proof.
+function linkSealedProofToSigning(companyId, proof) {
+  if (!proof || proof.status !== "sealed") return;
+  updateCompany(companyId, (data) => {
+    data.signatureRequests = Array.isArray(data.signatureRequests) ? data.signatureRequests : [];
+    if (data.signatureRequests.some((request) => request && request.recordId === proof.id)) return;
+    data.signatureRequests.unshift({
+      id: uid("sg"),
+      status: "pending",
+      title: `شهادة إنجاز — ${proof.title || proof.ref || "إثبات عمل"}`,
+      source: "workproof",
+      createdAt: new Date().toISOString(),
+      stationId: proof.stationId || null,
+      recordId: proof.id,
+      sealId: proof.sealId || null,
+    });
+    if (proof.raiserId) {
+      data.notifications = Array.isArray(data.notifications) ? data.notifications : [];
+      data.notifications.unshift({
+        id: uid("ntf"),
+        userId: proof.raiserId,
+        text: `🔏 خُتم إثبات العمل "${proof.title || proof.ref}" وأُدرج في التوقيع الرقمي.`,
+        read: false,
+        createdAt: new Date().toISOString(),
+      });
+    }
+  });
+}
+
 export function listLocalWorkProofs(data) {
   const proofs = (Array.isArray(data?.workProofs) ? data.workProofs : []).map(withStage);
   return { proofs, counts: deriveProofCounts(proofs), source: "local" };
@@ -125,6 +156,7 @@ export function endLocalWorkProof(companyId, proof, actor, extra = {}) {
     data.workProofs = list;
   });
   if (!next) return { error: "PROOF_NOT_FOUND", reason: "الإثبات غير موجود." };
+  linkSealedProofToSigning(companyId, next);
   return { ok: true, proof: withStage(next) };
 }
 
@@ -206,6 +238,7 @@ export function approveLocalWorkProof(companyId, proof, actor, geoClearReason) {
     data.workProofs = list;
   });
   if (!next) return { error: "PROOF_NOT_FOUND", reason: "الإثبات غير موجود." };
+  linkSealedProofToSigning(companyId, next);
   return { ok: true, proof: withStage(next) };
 }
 
