@@ -17,6 +17,7 @@ import EmployeeDashboard from "@/components/dashboard/EmployeeDashboard";
 import HandoffCommandBoard from "@/components/dashboard/HandoffCommandBoard";
 import OperationsModuleGrid from "@/components/dashboard/OperationsModuleGrid";
 import StationManagerDashboard from "@/components/dashboard/StationManagerDashboard";
+import OwnerActionCenter from "@/components/dashboard/OwnerActionCenter";
 
 function pendingSigningCount(data) {
   return (data?.signatureRequests || []).filter((row) => {
@@ -198,6 +199,7 @@ export default function Dashboard() {
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <DashboardPersonaBar lang={lang} />
+            <OwnerActionCenter data={data} stationIds={stationIds} lang={lang} />
             <StationManagerDashboard user={currentUser} data={data} stoppageCount={stoppageCount} />
             <OperationsModuleGrid
               metrics={buildModuleMetrics(data, attendanceExtras)}
@@ -302,6 +304,7 @@ export default function Dashboard() {
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <DashboardPersonaBar lang={lang} />
+          <OwnerActionCenter data={data} stationIds={stationIds} lang={lang} />
           <HandoffCommandBoard
             lang={lang}
             readinessScore={readinessScore}
