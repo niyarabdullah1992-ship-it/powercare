@@ -1,0 +1,17 @@
+{
+  "name": "NiroVera / PowerCare",
+  "install": "npm install",
+  "terminals": [
+    {
+      "name": "vite-dev",
+      "command": "npm run dev",
+      "description": "Vite frontend dev server for NiroVera/PowerCare on http://localhost:5173. Serves the React app against the hosted Base44 backend when VITE_BASE44_APP_ID and VITE_BASE44_APP_BASE_URL are set in .env.local; otherwise the UI renders but /api calls have no backend. For a full local backend, run `base44 dev` instead (requires Base44 CLI + auth)."
+    }
+  ],
+  "ports": [
+    {
+      "name": "vite",
+      "port": 5173
+    }
+  ]
+}
