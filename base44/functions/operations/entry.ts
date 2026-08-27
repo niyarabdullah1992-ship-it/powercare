@@ -12,11 +12,15 @@ import {
   deriveHorizonGroups,
   deriveOpsCounts,
   nextOpsEscalation,
+  normalizeWorkKind,
   planHorizonFromDue,
+  runOpsEscalationSweep,
   taskAssigneeId,
   taskPoints,
   type AssignMode,
 } from "../../shared/opsDerivations.ts";
+import { checkFieldAttendanceGate, riyadhDateKey as gateDateKey } from "../../shared/attendanceGate.ts";
+import { validateOpsRequest, validationFailed } from "../../shared/proofCycleSchemas.ts";
 
 const TASKS_CATEGORY = "operationsTasks";
 const COMPETENCY_CATEGORY = "competencyCerts";
@@ -28,18 +32,105 @@ function requireCompanyId(companyId: unknown) {
 }
 
 function riyadhDateKey(d = new Date()) {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Riyadh",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(d);
+  return gateDateKey(d);
+}
+
+async function loadBlobForCompany(base44: ReturnType<typeof createClientFromRequest>, companyId: string, category: string) {
+  const rows = await base44.asServiceRole.entities.CompanyDataBlob.filter({ companyId, category });
+  return rows[0] || null;
+}
+
+async function loadEscalationDataForCompany(base44: ReturnType<typeof createClientFromRequest>, companyId: string) {
+  const [emps, stations, hrBlob, clusterBlob, treeBlob, metaBlob, branchBlob] = await Promise.all([
+    base44.asServiceRole.entities.Employee.filter({ companyId }),
+    base44.asServiceRole.entities.Station.filter({ companyId }),
+    loadBlobForCompany(base44, companyId, "hrLevels"),
+    loadBlobForCompany(base44, companyId, "hrClusters"),
+    loadBlobForCompany(base44, companyId, "orgTree"),
+    loadBlobForCompany(base44, companyId, "companyMeta"),
+    loadBlobForCompany(base44, companyId, "branchEscalationChains"),
+  ]);
+  const hrPayload = hrBlob?.payload;
+  const clusterPayload = clusterBlob?.payload;
+  const treePayload = treeBlob?.payload;
+  const metaPayload = metaBlob?.payload;
+  const branchPayload = branchBlob?.payload;
+  const meta = Array.isArray(metaPayload) ? (metaPayload[0] || {}) : (metaPayload || {});
+  const branchRaw = branchPayload || meta.branchEscalationChains || {};
+  const branchEscalationChains = Array.isArray(branchRaw)
+    ? Object.fromEntries(
+      branchRaw.map((row: { stationId?: string; id?: string; employeeIds?: string[]; ids?: string[] }) => [
+        String(row?.stationId || row?.id || ""),
+        row?.employeeIds || row?.ids || [],
+      ]).filter(([sid]) => sid),
+    )
+    : branchRaw;
+  return {
+    employees: (Array.isArray(emps) ? emps : []).map((e: { employeeId?: string; id?: string; role?: string; stationId?: string | null; managedStations?: string[]; hrLevelId?: string | null; hrStationId?: string | null; hrClusterId?: string | null; isOwner?: boolean; name?: string }) => ({
+      id: e.employeeId || e.id,
+      employeeId: e.employeeId || e.id,
+      role: e.role,
+      stationId: e.stationId || null,
+      managedStations: e.managedStations || [],
+      hrLevelId: e.hrLevelId || null,
+      hrStationId: e.hrStationId || null,
+      hrClusterId: e.hrClusterId || null,
+      isOwner: !!e.isOwner || e.role === "owner",
+      name: e.name,
+    })),
+    stations: (Array.isArray(stations) ? stations : []).map((s: { stationId?: string; id?: string; managerId?: string | null; parentStationId?: string | null; parentBranchId?: string | null }) => ({
+      id: s.stationId || s.id,
+      stationId: s.stationId || s.id,
+      managerId: s.managerId || null,
+      parentStationId: s.parentStationId || s.parentBranchId || null,
+      parentBranchId: s.parentBranchId || s.parentStationId || null,
+    })),
+    orgTree: Array.isArray(treePayload) ? treePayload : (treePayload?.nodes || []),
+    ownerId: meta.ownerId || null,
+    directorId: meta.directorId || null,
+    hrLevels: Array.isArray(hrPayload) ? hrPayload : (hrPayload?.levels || []),
+    hrClusters: Array.isArray(clusterPayload) ? clusterPayload : (clusterPayload?.clusters || []),
+    branchEscalationChains,
+  };
 }
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const body = await req.json();
+    const rawBody = await req.json();
+    const action = String(rawBody?.action || "");
+
+    /** Scheduled workflow — sweep every company (no user session). */
+    if (action === "runEscalationSweep" && !rawBody?.companyId) {
+      const workflowUser = await base44.auth.me().catch(() => null);
+      if (!workflowUser || workflowUser.role !== "admin") {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.list();
+      let escalated = 0;
+      const byCompany: Record<string, number> = {};
+      for (const account of accounts || []) {
+        const cid = String(account.companyId || "").trim();
+        if (!cid) continue;
+        const blob = await base44.asServiceRole.entities.CompanyDataBlob.filter({
+          companyId: cid,
+          category: TASKS_CATEGORY,
+        });
+        const tasks = Array.isArray(blob[0]?.payload) ? blob[0].payload : [];
+        const escData = await loadEscalationDataForCompany(base44, cid);
+        const sweep = runOpsEscalationSweep(tasks, escData, new Date(), { force: false });
+        if (sweep.escalated > 0 && blob[0]) {
+          await base44.asServiceRole.entities.CompanyDataBlob.update(blob[0].id, { payload: sweep.tasks });
+          escalated += sweep.escalated;
+          byCompany[cid] = sweep.escalated;
+        }
+      }
+      return Response.json({ ok: true, escalated, byCompany });
+    }
+
+    const parsed = validateOpsRequest(rawBody);
+    if (!parsed.success) return validationFailed(parsed.error);
+    const body = parsed.data;
     const action = String(body.action || "");
     const companyId = requireCompanyId(body.companyId);
     if (!companyId) {
@@ -83,27 +174,24 @@ Deno.serve(async (req) => {
     /** On-site completion requires today's check-in (present/late). Remote skips. Named reason — never silent. */
     const assertAttendanceGate = async (task: { mode?: string }) => {
       if (task.mode === "remote") return { ok: true as const, skipped: "remote" as const };
-      if (auth.admin || !auth.userId) return { ok: true as const, skipped: "admin_or_owner" as const };
       const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: auth.companyId });
       const plan = String(accounts[0]?.plan || "").toLowerCase();
-      if (plan === "individual") return { ok: true as const, skipped: "individual" as const };
-      if (!sbHeaders) {
+      const attendance = auth.admin || !auth.userId ? null : await loadTodayAttendance(auth.userId);
+      const gate = checkFieldAttendanceGate(attendance, auth, {
+        mode: task.mode,
+        requireAttendanceService: !sbHeaders,
+        plan,
+      });
+      if (!gate.ok) {
         return {
           ok: false as const,
-          error: "CHECK_IN_REQUIRED",
-          reason: "لا يمكن تسجيل إنجاز حضوري دون خدمة الحضور — تحقق من إعدادات الخادم.",
+          error: gate.error,
+          reason: gate.reason,
+          reasonEn: gate.reasonEn,
+          attendance: ("attendance" in gate ? gate.attendance : null) || null,
         };
       }
-      const attendance = await loadTodayAttendance(auth.userId);
-      if (!attendance || !["present", "late"].includes(String(attendance.status || ""))) {
-        return {
-          ok: false as const,
-          error: "CHECK_IN_REQUIRED",
-          reason: "تسجيل الإنجاز الميداني موقوف حتى بصمة اليوم — سجّل حضورك أولًا، أو حوّل المهمة إلى عن بُعد.",
-          attendance: attendance || null,
-        };
-      }
-      return { ok: true as const, attendance };
+      return { ok: true as const, attendance: ("attendance" in gate ? gate.attendance : null) || null };
     };
 
     const loadBlob = async (category: string) => {
@@ -159,45 +247,7 @@ Deno.serve(async (req) => {
         }));
     };
 
-    const loadEscalationData = async () => {
-      const [emps, stations, hrBlob, clusterBlob, treeBlob, metaBlob] = await Promise.all([
-        base44.asServiceRole.entities.Employee.filter({ companyId: auth.companyId }),
-        base44.asServiceRole.entities.Station.filter({ companyId: auth.companyId }),
-        loadBlob("hrLevels"),
-        loadBlob("hrClusters"),
-        loadBlob("orgTree"),
-        loadBlob("companyMeta"),
-      ]);
-      const hrPayload = hrBlob?.payload;
-      const clusterPayload = clusterBlob?.payload;
-      const treePayload = treeBlob?.payload;
-      const metaPayload = metaBlob?.payload;
-      const meta = Array.isArray(metaPayload) ? (metaPayload[0] || {}) : (metaPayload || {});
-      return {
-        employees: (Array.isArray(emps) ? emps : []).map((e: any) => ({
-          id: e.employeeId || e.id,
-          employeeId: e.employeeId || e.id,
-          role: e.role,
-          stationId: e.stationId || null,
-          managedStations: e.managedStations || [],
-          hrLevelId: e.hrLevelId || null,
-          hrStationId: e.hrStationId || null,
-          hrClusterId: e.hrClusterId || null,
-          isOwner: !!e.isOwner || e.role === "owner",
-          name: e.name,
-        })),
-        stations: (Array.isArray(stations) ? stations : []).map((s: any) => ({
-          id: s.stationId || s.id,
-          stationId: s.stationId || s.id,
-          managerId: s.managerId || null,
-        })),
-        orgTree: Array.isArray(treePayload) ? treePayload : (treePayload?.nodes || []),
-        ownerId: meta.ownerId || null,
-        directorId: meta.directorId || null,
-        hrLevels: Array.isArray(hrPayload) ? hrPayload : (hrPayload?.levels || []),
-        hrClusters: Array.isArray(clusterPayload) ? clusterPayload : (clusterPayload?.clusters || []),
-      };
-    };
+    const loadEscalationData = async () => loadEscalationDataForCompany(base44, auth.companyId);
 
     const reviewerUser = {
       id: auth.userId,
@@ -319,7 +369,7 @@ Deno.serve(async (req) => {
       if (!isManager) return Response.json({ error: "Forbidden: only managers can create tasks" }, { status: 403 });
       const title = String(body.title || "").trim();
       const priority = ["high", "medium", "low"].includes(body.priority) ? body.priority : "medium";
-      const workKind = ["pm", "cm", "em", "pr", "cp"].includes(body.workKind) ? body.workKind : "pm";
+      const workKind = normalizeWorkKind(body.workKind, "gn");
       const assignMode = (["one", "some", "all"].includes(body.assignMode) ? body.assignMode : "one") as AssignMode;
       const stationId = body.stationId || null;
       const ownerId = body.ownerId || null;
@@ -525,18 +575,17 @@ Deno.serve(async (req) => {
         return Response.json({ error: "Forbidden" }, { status: 403 });
       }
       const attendance = await loadTodayAttendance(employeeId);
-      const checkedIn = !!attendance && ["present", "late"].includes(String(attendance.status || ""));
+      const accounts = await base44.asServiceRole.entities.CompanyAccount.filter({ companyId: auth.companyId });
+      const plan = String(accounts[0]?.plan || "").toLowerCase();
+      const gate = checkFieldAttendanceGate(attendance, auth, {
+        requireAttendanceService: !sbHeaders,
+        plan,
+      });
       return Response.json({
         date: riyadhDateKey(),
         attendance,
-        checkedIn,
-        gate: checkedIn
-          ? { ok: true }
-          : {
-              ok: false,
-              error: "CHECK_IN_REQUIRED",
-              reason: "تسجيل الإنجاز الميداني موقوف حتى بصمة اليوم — سجّل حضورك أولًا، أو حوّل المهمة إلى عن بُعد.",
-            },
+        checkedIn: gate.ok,
+        gate,
       });
     }
 
@@ -554,7 +603,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "checkGate") {
-      const workKind = body.workKind || "pm";
+      const workKind = normalizeWorkKind(body.workKind || "gn");
       const assignMode = (body.assignMode || "one") as AssignMode;
       const stationId = body.stationId || null;
       const people = await loadPeople(assignMode === "all" ? stationId : null);
@@ -644,7 +693,7 @@ Deno.serve(async (req) => {
       }
 
       const assignGate = checkAssignGate({
-        workKind: current.workKind || "pm",
+        workKind: current.workKind || "gn",
         assignMode: "one",
         ownerId: toId,
         memberIds: [],
@@ -697,6 +746,29 @@ Deno.serve(async (req) => {
       await saveTasks(tasks);
       await audit("ops_task_attach", `Attachment on ${task.ref} by ${auth.name}: ${entry.name}`);
       return Response.json({ task, attachment: entry });
+    }
+
+    if (action === "runEscalationSweep") {
+      if (!isManager && !auth.owner) {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const escData = await loadEscalationData();
+      const tasks = await listTasksRaw();
+      const force = !!body.force;
+      const sweep = runOpsEscalationSweep(tasks, escData, new Date(), { force });
+      if (sweep.escalated > 0) {
+        await saveTasks(sweep.tasks);
+        await audit(
+          "ops_escalation_sweep",
+          `Auto-escalated ${sweep.escalated} task(s)`,
+          { newValue: String(sweep.escalated) },
+        );
+      }
+      return Response.json({
+        escalated: sweep.escalated,
+        details: sweep.details,
+        counts: deriveOpsCounts(scopeFilter(sweep.tasks, body.scope || null)),
+      });
     }
 
     return Response.json({ error: `Unknown action: ${action}` }, { status: 400 });

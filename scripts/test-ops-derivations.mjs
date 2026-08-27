@@ -17,6 +17,10 @@ import {
   deriveDailyTaskPace,
   deriveBoardDailyPace,
   dailyPaceLabel,
+  checkAutoEscalateGate,
+  runOpsEscalationSweep,
+  applyOpsAutoEscalate,
+  riyadhHour,
 } from "../src/lib/opsDerivations.js";
 
 // ── Points formula (High 3 · Medium 2 · Low 1) × effort (1–5) ───────────────
@@ -282,5 +286,33 @@ assert.equal(next.assignmentHistory[0].toId, "e2");
 assert.equal(next.assignmentHistory[0].byId, "mgr1");
 assert.match(assignmentHistoryNote(next.assignmentHistory[0], "ar"), /وُكِّل من First إلى Second/);
 assert.match(assignmentHistoryNote(next.assignmentHistory[0], "ar"), /لم يُنجز في الوقت/);
+
+// ── Auto escalation sweep ───────────────────────────────────────────────────
+const escData = {
+  stations: [{ id: "s1", managerId: "mgr1", parentStationId: null }],
+  employees: [
+    { id: "mgr1", employeeId: "mgr1", role: "station_manager", name: "Manager", stationId: "s1" },
+    { id: "dir1", employeeId: "dir1", role: "director", name: "Director", isOwner: true },
+  ],
+};
+const pacedTask = {
+  id: "t1",
+  ref: "T-1",
+  stationId: "s1",
+  status: "active",
+  targetCount: 10,
+  completedCount: 0,
+  dueAt: "2026-08-20",
+  createdAt: "2026-08-11T00:00:00",
+  escalationLevel: 0,
+};
+const evening = new Date("2026-08-15T19:00:00+03:00");
+const gate = checkAutoEscalateGate(pacedTask, escData, evening, { force: true });
+assert.equal(gate.ok, true);
+assert.equal(gate.nextLevel, 1);
+const swept = runOpsEscalationSweep([pacedTask], escData, evening, { force: true });
+assert.equal(swept.escalated, 1);
+assert.equal(swept.tasks[0].escalationLevel, 1);
+assert.equal(swept.tasks[0].autoEscalated, true);
 
 console.log("opsDerivations E2E rules: PASS");

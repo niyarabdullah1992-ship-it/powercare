@@ -26,6 +26,7 @@ import { applyStoredPlatformTheme } from '@/lib/platformTheme';
 import Landing from './pages/Landing';
 import Assistant from './pages/Assistant';
 import LocalPreviewEntry from './pages/LocalPreviewEntry';
+import Escalation from './pages/Escalation';
 
 const Login = lazy(() => import('./pages/Login'));
 const LoginPortal = lazy(() => import('./pages/LoginPortal'));
@@ -180,6 +181,7 @@ function AppRoutes() {
       <Route path="/app" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/app/executive" element={<Navigate to="/app" replace />} />
       <Route path="/app/tasks" element={<RequireAuth><Operations /></RequireAuth>} />
+      <Route path="/app/escalation" element={<RequireAuth><Escalation /></RequireAuth>} />
       <Route path="/app/tasks-classic" element={<Navigate to="/app/tasks" replace />} />
       <Route path="/app/my-tasks" element={<Navigate to="/app/tasks" replace />} />
       <Route path="/MyTasks" element={<Navigate to="/app/tasks" replace />} />

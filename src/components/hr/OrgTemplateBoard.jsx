@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/PowerCareAuth";
 import { identityIconWrap } from "@/components/shared/IdentityCard";
 import { BORDER, CARD, NAVY_FILL, SURFACE } from "@/lib/platformStyles";
@@ -1084,6 +1085,9 @@ export default function OrgTemplateBoard({ lang = "ar", onHire }) {
             <button type="button" onClick={printTree} style={orgBtnGhost}>
               {ar ? "طباعة" : "Print"}
             </button>
+            <Link to="/app/org?tab=escalation" style={{ ...orgBtnPrimary(), textDecoration: "none" }}>
+              {ar ? "تصعيد الفروع" : "Branch escalation"}
+            </Link>
             <HierarchyZoomControls
               zoom={zoom}
               onZoom={(change) => setSafeZoom(zoom + change)}
@@ -1151,6 +1155,24 @@ export default function OrgTemplateBoard({ lang = "ar", onHire }) {
                 </>
               ) : null}
           </OrgToolbar>
+
+          {canWrite ? (
+            <OrgNotice>
+              {ar ? (
+                <>
+                  عيّن مسؤول تصعيد لكل فرع من تبويب «التصعيد» — يظهر في أعلى الصفحة.
+                  {" "}
+                  <Link to="/app/org?tab=escalation" style={{ color: NAVY, fontWeight: 600 }}>فتح التصعيد</Link>
+                </>
+              ) : (
+                <>
+                  Assign an escalation handler per branch from the Escalation tab at the top of this page.
+                  {" "}
+                  <Link to="/app/org?tab=escalation" style={{ color: NAVY, fontWeight: 600 }}>Open escalation</Link>
+                </>
+              )}
+            </OrgNotice>
+          ) : null}
 
           {publishIssues.length ? (
             <OrgNotice tone="warn">

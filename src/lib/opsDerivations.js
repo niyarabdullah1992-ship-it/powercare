@@ -4,7 +4,33 @@ import { userCoversStation } from "./stationTree.js";
 
 export const PRIORITY_VALUE = { high: 3, medium: 2, low: 1 };
 
-export const CERT_FOR = { pm: "loto", cm: "loto", em: "fa", pr: "wah", cp: null };
+/** Flexible work kinds — office and field companies alike. Default is general. */
+export const WORK_KINDS = ["gn", "ad", "of", "tr", "pm", "cm", "em", "pr", "cp"];
+
+export const WORK_KIND_LABELS = {
+  gn: { ar: "عام", en: "General" },
+  ad: { ar: "إداري", en: "Administrative" },
+  of: { ar: "مكتبي / تنسيقي", en: "Office / coordination" },
+  tr: { ar: "تدريب / تطوير", en: "Training / development" },
+  pm: { ar: "صيانة وقائية", en: "Preventive maintenance" },
+  cm: { ar: "صيانة تصحيحية", en: "Corrective maintenance" },
+  em: { ar: "طارئ", en: "Emergency" },
+  pr: { ar: "مشروع", en: "Project" },
+  cp: { ar: "امتثال", en: "Compliance" },
+};
+
+/** Optional competency hint for field kinds only — never required for assignment. */
+export const CERT_FOR = {
+  gn: null,
+  ad: null,
+  of: null,
+  tr: null,
+  pm: "loto",
+  cm: "loto",
+  em: "fa",
+  pr: "wah",
+  cp: null,
+};
 
 export const CERT_LABELS = {
   fa: { ar: "الإسعافات الأولية", en: "First aid" },
@@ -12,6 +38,22 @@ export const CERT_LABELS = {
   wah: { ar: "العمل على ارتفاع", en: "Work at height" },
   cs: { ar: "الأماكن المحصورة", en: "Confined space" },
 };
+
+export function normalizeWorkKind(raw, fallback = "gn") {
+  const trimmed = String(raw || "").trim();
+  if (!trimmed) return fallback;
+  const id = trimmed.toLowerCase();
+  if (WORK_KINDS.includes(id)) return id;
+  // Free-text custom work type for companies outside the preset list.
+  return trimmed.slice(0, 80);
+}
+
+export function workKindLabel(kind, lang = "ar") {
+  const id = String(kind || "").trim();
+  if (!id) return lang === "en" ? "General" : "عام";
+  if (WORK_KIND_LABELS[id]) return WORK_KIND_LABELS[id][lang === "en" ? "en" : "ar"];
+  return id;
+}
 
 export function clampEffortWeight(raw) {
   const n = Number(raw);
@@ -657,4 +699,152 @@ export function applyOpsReassign(task, input = {}) {
       at,
     }],
   };
+}
+
+/** Riyadh calendar day for escalation sweeps (Asia/Riyadh). */
+export function riyadhDayKey(now = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Riyadh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
+export function riyadhHour(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Riyadh",
+    hour: "numeric",
+    hour12: false,
+  }).formatToParts(now);
+  return Number(parts.find((p) => p.type === "hour")?.value || 0);
+}
+
+/** Cumulative units expected through today on a paced multi-day task. */
+export function cumulativePaceExpected(pace, today = new Date()) {
+  if (!pace?.active) return 0;
+  const todayKey = isoDayKey(today);
+  const start = pace.start;
+  if (!start || todayKey < start) return 0;
+  if (pace.overdue) return pace.target;
+  const dayIndex = calendarDaysInclusive(start, todayKey) - 1;
+  let cum = 0;
+  for (let i = 0; i <= dayIndex; i += 1) {
+    cum += pace.even + (i < pace.extra ? 1 : 0);
+  }
+  return Math.min(pace.target, cum);
+}
+
+/**
+ * Auto-escalate gate — end of Riyadh workday or overdue when pace quota is unmet.
+ * Proof Cycle step 4: burn time quota without progress → next handler on branch ladder.
+ */
+export function checkAutoEscalateGate(task, data, now = new Date(), { force = false } = {}) {
+  if (isDone(task)) return { ok: false, error: "DONE" };
+  if (isAwaitingApproval(task)) return { ok: false, error: "AWAITING" };
+
+  const done = Number(task.completedCount) || 0;
+  const target = Math.max(1, Number(task.targetCount) || 1);
+  const pace = deriveDailyTaskPace({
+    targetCount: task.targetCount,
+    completedCount: done,
+    dueAt: task.dueAt,
+    startAt: task.createdAt || task.startAt,
+    today: now,
+  });
+
+  let breach = false;
+  let breachReason = "";
+  let breachReasonEn = "";
+
+  if (pace.active) {
+    const expected = cumulativePaceExpected(pace, now);
+    if (done < expected) {
+      const hour = riyadhHour(now);
+      if (pace.overdue || force || hour >= 18) {
+        breach = true;
+        breachReason = pace.overdue
+          ? "تصعيد تلقائي — تجاوز الاستحقاق دون إنجاز المستهدف."
+          : "تصعيد تلقائي — لم يُسجَّل إنجاز اليوم المطلوب حتى نهاية الدوام.";
+        breachReasonEn = pace.overdue
+          ? "Auto-escalated — past due without meeting the target."
+          : "Auto-escalated — today's pace quota was not logged by end of shift.";
+      }
+    }
+  } else if (isOverdue(task, now) && done < target) {
+    breach = true;
+    breachReason = "تصعيد تلقائي — مهمة متأخرة دون إغلاق.";
+    breachReasonEn = "Auto-escalated — overdue task still open.";
+  }
+
+  if (!breach) return { ok: false, error: "NO_BREACH" };
+
+  const dayKey = riyadhDayKey(now);
+  if (task.lastAutoEscalationDay === dayKey && !pace.overdue && !force) {
+    return { ok: false, error: "ALREADY_TODAY" };
+  }
+
+  const next = nextOpsEscalation(task, data, null);
+  if (!next.escalate) {
+    return { ok: false, error: "AT_TOP", atTop: true, breachReason, breachReasonEn };
+  }
+
+  return {
+    ok: true,
+    nextLevel: next.nextLevel,
+    handlers: next.handlers,
+    breachReason,
+    breachReasonEn,
+    pace,
+    expected: cumulativePaceExpected(pace, now),
+    done,
+  };
+}
+
+export function applyOpsAutoEscalate(task, { nextLevel, breachReason, breachReasonEn, now } = {}) {
+  const when = now instanceof Date ? now : new Date(now || Date.now());
+  const at = when.toISOString();
+  const dayKey = riyadhDayKey(when);
+  const comments = Array.isArray(task.comments) ? task.comments : [];
+  return {
+    ...task,
+    escalationLevel: nextLevel,
+    escalatedAt: at,
+    autoEscalated: true,
+    lastAutoEscalationDay: dayKey,
+    comments: [
+      ...comments,
+      {
+        id: `auto_${at}`,
+        authorId: null,
+        authorName: "النظام",
+        text: breachReason || "تصعيد تلقائي — إيقاع الإنجاز لم يُستوفَ.",
+        textEn: breachReasonEn || "Auto-escalated — pace quota not met.",
+        isIssue: true,
+        is_escalation: true,
+        is_auto: true,
+        at,
+      },
+    ],
+  };
+}
+
+/** Hourly / end-of-day sweep — returns updated task list + count escalated. */
+export function runOpsEscalationSweep(tasks, data, now = new Date(), opts = {}) {
+  let escalated = 0;
+  const details = [];
+  const nextTasks = (Array.isArray(tasks) ? tasks : []).map((task) => {
+    const gate = checkAutoEscalateGate(task, data, now, opts);
+    if (!gate.ok) return task;
+    const updated = applyOpsAutoEscalate(task, {
+      nextLevel: gate.nextLevel,
+      breachReason: gate.breachReason,
+      breachReasonEn: gate.breachReasonEn,
+      now,
+    });
+    escalated += 1;
+    details.push({ taskId: task.id, ref: task.ref, level: gate.nextLevel });
+    return updated;
+  });
+  return { tasks: nextTasks, escalated, details };
 }

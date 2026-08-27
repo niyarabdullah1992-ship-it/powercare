@@ -1,10 +1,13 @@
 import { actingAtStation } from "./orgStructureLog.js";
 import { companyLists } from "./permissionTemplates.js";
+import { deriveBranchEscalationChain } from "./orgDerivations.js";
+import { isWorkplaceStation } from "./stationTree.js";
 
 export const ORG_CHAIN = [
   { value: "branches", step: 1, ar: "المكان", en: "Place" },
   { value: "people", step: 2, ar: "الناس", en: "People" },
   { value: "lists", step: 3, ar: "الصلاحية", en: "Access" },
+  { value: "escalation", step: 4, ar: "التصعيد", en: "Escalation" },
 ];
 
 export function orgChainHealth(data) {
@@ -24,6 +27,12 @@ export function orgChainHealth(data) {
   const listsWithAccess = lists.filter((pack) => (
     Object.values(pack.permissions || {}).some((level) => level && level !== "hidden")
   )).length;
+  const workplaces = stations.filter((station) => isWorkplaceStation(station));
+  const escalationBranches = workplaces.filter((station) => {
+    const sid = String(station.id || station.stationId || "");
+    return sid && deriveBranchEscalationChain(sid, data).length > 0;
+  }).length;
+
   return {
     vacant,
     acting,
@@ -33,6 +42,7 @@ export function orgChainHealth(data) {
     people,
     lists: lists.length,
     listsWithAccess,
+    escalationBranches,
   };
 }
 
@@ -84,6 +94,14 @@ export function orgChainNext(data, ar = true) {
       tone: "navy",
       ar: "وظّف على فرع بقائمة. شجرة الناس تُشتق بعد التعيين — بلا محرر «يتبع».",
       en: "Hire onto a branch with a list. The people tree is derived after hire — no reports-to editor.",
+    };
+  }
+  if (health.branches >= 2 && health.escalationBranches < Math.max(1, health.branches - 1)) {
+    return {
+      tab: "escalation",
+      tone: "navy",
+      ar: "عيّن مسؤول تصعيد — يمكن أن يكون من المقر ليمسك الفروع الميدانية.",
+      en: "Assign escalation handlers — HQ staff can cover field branches.",
     };
   }
   return {

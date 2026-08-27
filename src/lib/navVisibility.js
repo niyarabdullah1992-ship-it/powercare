@@ -22,13 +22,14 @@ const BASE = [
   "/app/performance",
   "/app/manual",
 ];
-const MANAGER_EXTRA = ["/app/safety", "/app/hiring"];
+const MANAGER_EXTRA = ["/app/safety", "/app/hiring", "/app/escalation"];
 const EXEC_EXTRA = ["/app/hr", "/app/org", "/app/settings", "/app/payroll", "/app/hiring", "/app/accounting"];
 
 const PLAN_ROUTE_SECTIONS = {
   "/app/assistant": "assistant",
   "/app/daily-report": "reports",
   "/app/tasks": "tasks",
+  "/app/escalation": "tasks",
   "/app/inventory": "inventory",
   "/app/assets": "assets",
   "/app/attendance": "attendance",

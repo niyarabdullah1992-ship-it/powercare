@@ -7,7 +7,7 @@ import { updateCompany, getCompanyData, getCompanyToken } from "@/lib/store";
 import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, ListTodo, ShieldQuestion, Search,
-                  Bell, LogOut, ChevronDown, ChevronLeft, ChevronRight, Trophy, UserCog, MessageCircle, MessageSquare, FileText, PenLine, ClipboardCheck, FolderOpen, Sparkles, Banknote, Warehouse, Boxes, Calculator, ReceiptText, Camera, Briefcase, CalendarClock, CalendarOff, Network, Settings2,
+                  Bell, LogOut, ChevronDown, ChevronLeft, ChevronRight, Trophy, UserCog, MessageCircle, MessageSquare, FileText, PenLine, ClipboardCheck, FolderOpen, Sparkles, Banknote, Warehouse, Boxes, Calculator, ReceiptText, Camera, Briefcase, CalendarClock, CalendarOff, Network, Settings2, ArrowUpCircle,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import Logo from "@/components/Logo";
@@ -217,6 +217,7 @@ export default function Layout({ children }) {
     { to: "/app", icon: LayoutDashboard, label: lang === "ar" ? "مركز القيادة" : "Command Center", end: true, category: "daily" },
     { to: "/app/attendance", icon: ClipboardCheck, label: lang === "ar" ? "الحضور والانصراف" : "Attendance", category: "daily" },
     { to: "/app/tasks", icon: ListTodo, label: lang === "ar" ? "المهام والعمليات" : "Operations", category: "daily" },
+    { to: "/app/escalation", icon: ArrowUpCircle, label: lang === "ar" ? "التصعيد" : "Escalation", category: "daily" },
     { to: "/app/work-proof", icon: Camera, label: lang === "ar" ? "إثبات العمل" : "Work Proof", category: "daily" },
     { to: "/app/signing", icon: PenLine, label: lang === "ar" ? "التوقيع الرقمي" : "Digital Signing", category: "daily" },
     { to: "/app/daily-report", icon: FileText, label: lang === "ar" ? "التقرير اليومي" : "Daily Report", category: "daily", badge: dailyReportBadge },
@@ -357,6 +358,10 @@ export default function Layout({ children }) {
     "/app/tasks": {
       title: lang === "ar" ? "المهام والعمليات" : "Operations",
       sub: lang === "ar" ? "جهد وإثبات · مراجعة بسبب · تصعيد عند احتراق المهلة" : "Effort and proof · review with reason · escalate when the quota burns",
+    },
+    "/app/escalation": {
+      title: lang === "ar" ? "نظام التصعيد" : "Escalation",
+      sub: lang === "ar" ? "سلسلة لكل فرع · صندوق المهام المصعّدة · ضبط من الهيكل" : "Per-branch chain · escalated inbox · configure in Org",
     },
     "/app/daily-report": {
       title: lang === "ar" ? "التقرير اليومي" : "Daily Report",

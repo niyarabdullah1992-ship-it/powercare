@@ -63,6 +63,29 @@ export function setEmployeeEscalationCoverage(companyId, employeeId, stationIds,
   });
 }
 
+/** Replace one branch's escalation ladder with an ordered employee list. */
+export function setBranchEscalationChain(companyId, stationId, employeeIds) {
+  if (!companyId || !stationId) return;
+  updateCompany(companyId, (data) => {
+    const sid = String(stationId);
+    const chains = { ...branchEscalationMap(data) };
+    const cleaned = [];
+    const seen = new Set();
+    for (const raw of employeeIds || []) {
+      const eid = String(raw || "").trim();
+      if (!eid || seen.has(eid)) continue;
+      seen.add(eid);
+      cleaned.push(eid);
+    }
+    chains[sid] = cleaned;
+    data.branchEscalationChains = serializeBranchEscalationMap(chains);
+    for (const eid of cleaned) {
+      const position = (data.smartPositions || []).find((item) => String(item.employeeId) === eid);
+      if (position) position.permissions = { ...(position.permissions || {}), complaints: "manage" };
+    }
+  });
+}
+
 export function escalationLevelOnStation(employeeId, stationId, data) {
   const idx = deriveBranchEscalationChain(stationId, data)
     .findIndex((step) => String(step.employeeId) === String(employeeId));

@@ -12,6 +12,7 @@ import {
   checkReassignGate,
   nextOpsEscalation,
   planHorizonFromDue,
+  runOpsEscalationSweep,
   taskAssigneeId,
   taskPoints,
 } from "@/lib/opsDerivations";
@@ -42,7 +43,7 @@ export function normalizeLocalTask(raw, index = 0) {
     assignMode: raw.assignMode || "one",
     priority,
     effortWeight,
-    workKind: raw.workKind || "pm",
+    workKind: raw.workKind || "gn",
     mode: raw.mode || "onsite",
     dueAt,
     targetCount,
@@ -100,7 +101,7 @@ export function createLocalOpsTask(companyId, input, { employees = [] } = {}) {
       assignMode: input.assignMode || "one",
       priority: input.priority || "medium",
       effortWeight: input.effortWeight ?? 3,
-      workKind: input.workKind || "pm",
+      workKind: input.workKind || "gn",
       mode: input.mode || "onsite",
       dueAt: input.dueAt || null,
       targetCount: input.targetCount || 1,
@@ -211,6 +212,34 @@ export function reassignLocalOpsTask(companyId, taskId, { toId, reason, reviewer
   }, { seed: current });
 }
 
+export function addLocalOpsComment(companyId, taskId, { text, isIssue = false, authorId = null, authorName = "" } = {}) {
+  return mutateLocalOpsTask(companyId, taskId, (t) => ({
+    ...t,
+    comments: [
+      ...(t.comments || []),
+      {
+        id: uid("cm"),
+        text: String(text || "").trim(),
+        isIssue: !!isIssue,
+        authorId,
+        authorName,
+        createdAt: new Date().toISOString(),
+      },
+    ],
+  }));
+}
+
+export function addLocalOpsAttachment(companyId, taskId, { url, name = "file" } = {}) {
+  if (!url) throw new Error("Missing attachment url");
+  return mutateLocalOpsTask(companyId, taskId, (t) => ({
+    ...t,
+    attachments: [
+      ...(t.attachments || []),
+      { id: uid("att"), url, name, createdAt: new Date().toISOString() },
+    ],
+  }));
+}
+
 export function rejectLocalTask(companyId, taskId, reason, { reviewer, data } = {}) {
   let escalation = { escalate: false, atTop: true, nextLevel: 0 };
   const board = mutateLocalOpsTask(companyId, taskId, (t) => {
@@ -225,4 +254,21 @@ export function rejectLocalTask(companyId, taskId, reason, { reviewer, data } = 
     });
   });
   return { ...board, escalation };
+}
+
+export function runLocalEscalationSweep(companyId, data, { force = false } = {}) {
+  const raw = getCompanyData(companyId)?.tasks || [];
+  const normalized = raw.map((t, i) => normalizeLocalTask(t, i)).filter(Boolean);
+  const sweep = runOpsEscalationSweep(normalized, data, new Date(), { force });
+  if (!sweep.escalated) {
+    return { ...buildLocalOpsBoard({ tasks: normalized }), escalated: 0, details: [] };
+  }
+  updateCompany(companyId, (d) => {
+    d.tasks = sweep.tasks;
+  }, { sync: "tasks" });
+  return {
+    ...buildLocalOpsBoard({ tasks: sweep.tasks }),
+    escalated: sweep.escalated,
+    details: sweep.details,
+  };
 }

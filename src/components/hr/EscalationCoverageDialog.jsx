@@ -6,6 +6,7 @@ import {
   escalationStationsForEmployee,
 } from "@/lib/orgDerivations";
 import { setEmployeeEscalationCoverage } from "@/lib/orgTree";
+import { isCompanyRootStation } from "@/lib/stationTree";
 import { ACCENT, CARD, MUTED, NAVY, SURFACE } from "@/lib/platformStyles";
 
 function initials(name) {
@@ -24,10 +25,14 @@ export default function EscalationCoverageDialog({
   onClose,
 }) {
   const employee = (data?.employees || []).find((item) => String(item.id) === String(employeeId));
-  const stations = (data?.stations || []).map((s) => ({
-    id: String(s.id || s.stationId || ""),
-    name: s.name || "",
-  })).filter((s) => s.id);
+  const stations = (data?.stations || [])
+    .filter((station) => station && String(station.unitKind || "branch") !== "manager")
+    .map((s) => ({
+      id: String(s.id || s.stationId || ""),
+      name: s.name || "",
+      isHq: isCompanyRootStation(s),
+    }))
+    .filter((s) => s.id);
   const homeId = String(stationId || stations[0]?.id || "");
   const currentIds = escalationStationsForEmployee(employeeId, data);
   const rank = Number(level) > 0
@@ -197,7 +202,12 @@ export default function EscalationCoverageDialog({
                   <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: NAVY }}>
                     {station.name || station.id}
                   </span>
-                  {station.id === homeId && (
+                  {station.isHq && (
+                    <span style={{ display: "block", marginTop: 1, fontSize: 10, color: MUTED }}>
+                      {ar ? "المقر الرئيسي" : "Headquarters"}
+                    </span>
+                  )}
+                  {station.id === homeId && !station.isHq && (
                     <span style={{ display: "block", marginTop: 1, fontSize: 10, color: MUTED }}>
                       {ar ? "الفرع الحالي" : "Current branch"}
                     </span>

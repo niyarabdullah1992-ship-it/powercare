@@ -11,12 +11,13 @@ import OrgChainStrip from "@/components/hr/OrgChainStrip";
 import OrgTemplateBoard from "@/components/hr/OrgTemplateBoard";
 import OrgPeopleTree from "@/components/hr/OrgPeopleTree";
 import OrgListAccessBoard from "@/components/hr/OrgListAccessBoard";
+import OrgEscalationBoard from "@/components/hr/OrgEscalationBoard";
 import HireSeatDrawer from "@/components/hr/HireSeatDrawer";
 import PageErrorBoundary from "@/components/PageErrorBoundary";
 import PlatformStampShell from "@/components/shared/PlatformStampShell";
 import { MUTED } from "@/lib/platformStyles";
 
-const ORG_TABS = new Set(["branches", "people", "lists"]);
+const ORG_TABS = new Set(["branches", "people", "lists", "escalation"]);
 
 /** Place → people → access. One workplace tree; people derived; lists grant permission. */
 export default function OrgStructure() {
@@ -57,7 +58,13 @@ export default function OrgStructure() {
       label: ar ? "الصلاحية" : "Access",
       count: health.lists,
     },
-  ], [ar, health.branches, health.people, health.lists]);
+    {
+      value: "escalation",
+      step: 4,
+      label: ar ? "التصعيد" : "Escalation",
+      count: health.escalationBranches || 0,
+    },
+  ], [ar, health.branches, health.people, health.lists, health.escalationBranches]);
 
   const openHire = (detail = {}) => {
     const station = (data?.stations || []).find((item) => String(item.id) === String(detail.stationId || ""));
@@ -123,7 +130,7 @@ export default function OrgStructure() {
 
   const canWrite = Boolean(currentUser && (
     currentUser.id === data?.ownerId
-    || ["owner", "director", "admin", "pgm", "hr_manager"].includes(currentUser.role)
+    || ["owner", "director", "admin", "pgm", "hr_manager", "ops_manager"].includes(currentUser.role)
   ));
 
   useEffect(() => {
@@ -162,6 +169,8 @@ export default function OrgStructure() {
                 wide
                 onHire={openHire}
               />
+            ) : tool === "escalation" ? (
+              <OrgEscalationBoard lang={lang} canWrite={canWrite} />
             ) : (
               <OrgTemplateBoard lang={lang} onHire={openHire} />
             )}
