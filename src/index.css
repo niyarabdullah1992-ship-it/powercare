@@ -1206,7 +1206,7 @@ html:not(.dark) .powercare-shell {
   :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="submit"]):not([type="button"]), select, textarea):focus-visible {
   outline: none;
   border-color: var(--nv-accent);
-  box-shadow: 0 0 0 3px var(--nv-accent-soft);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--nv-accent) 22%, transparent);
 }
 
 /* Institutional data cells (الخانات في الجداول): a quiet hover on data rows.
