@@ -12,13 +12,15 @@ export const identityFrame = {
   boxShadow: "0 8px 24px rgba(20,40,75,.06)",
 };
 
+/** Module symbol chip — soft accent tile with a deep-accent glyph (institutional الرموز). */
 export const identityIconWrap = {
   width: 40,
   height: 40,
   flexShrink: 0,
   borderRadius: 11,
-  background: SURFACE,
-  color: INK,
+  background: "var(--nv-accent-soft, #ECFDF3)",
+  color: "var(--nv-accent-deep, #15803D)",
+  border: "1px solid var(--nv-accent-border, #BBF7D0)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",

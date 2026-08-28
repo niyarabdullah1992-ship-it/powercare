@@ -1197,6 +1197,27 @@ html:not(.dark) .powercare-shell {
   color: var(--nv-ink);
 }
 
+/* Institutional fields (الخانات): text inputs, selects and textareas across the
+   internal platform get one on-palette focus ring. Auth/marketing pages render
+   outside .powercare-interior-page, so they are untouched. */
+.powercare-interior-page
+  :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="submit"]):not([type="button"]), select, textarea):focus,
+.powercare-interior-page
+  :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="submit"]):not([type="button"]), select, textarea):focus-visible {
+  outline: none;
+  border-color: var(--nv-accent);
+  box-shadow: 0 0 0 3px var(--nv-accent-soft);
+}
+
+/* Institutional data cells (الخانات في الجداول): a quiet hover on data rows.
+   No letter-spacing/casing is applied — it would break Arabic shaping. */
+.powercare-interior-page tbody tr {
+  transition: background .12s;
+}
+.powercare-interior-page tbody tr:hover {
+  background: color-mix(in oklab, var(--nv-navy) 4%, transparent);
+}
+
 @media (max-width: 700px) {
   .nv-inv-form {
     grid-template-columns: 1fr !important;

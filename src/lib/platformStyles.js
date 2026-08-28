@@ -105,6 +105,8 @@ export const field = {
   fontSize: "13px",
   fontFamily: "inherit",
   boxSizing: "border-box",
+  outline: "none",
+  transition: "border-color .12s, box-shadow .12s",
 };
 
 export const textarea = {
@@ -118,7 +120,29 @@ export const textarea = {
   fontFamily: "inherit",
   boxSizing: "border-box",
   resize: "vertical",
+  outline: "none",
+  transition: "border-color .12s, box-shadow .12s",
 };
+
+/**
+ * Institutional symbol chip (الرموز) — one on-palette treatment for inline module
+ * icons: a soft accent tile with a deep-accent glyph. Section identity (the navy
+ * seal in the page header) stays distinct from these secondary module symbols.
+ */
+export function iconChip(size = 40) {
+  return {
+    width: size,
+    height: size,
+    flexShrink: 0,
+    borderRadius: Math.round(size * 0.28),
+    background: "var(--nv-accent-soft, #ECFDF3)",
+    color: "var(--nv-accent-deep, #15803D)",
+    border: "1px solid var(--nv-accent-border, #BBF7D0)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+}
 
 export const labelMuted = {
   display: "block",
