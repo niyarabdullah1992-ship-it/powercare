@@ -18,16 +18,16 @@ import {
   CARD,
   MUTED,
   NAVY,
+  NAVY_FILL,
   SURFACE,
   cardShell,
-  emptyState,
   pill,
   ui,
   field,
 } from "@/lib/platformStyles";
 import useStationScope, { matchesStationScope } from "@/hooks/useStationScope";
 import PlatformStampShell from "@/components/shared/PlatformStampShell";
-import { Clock, LayoutList, ShieldCheck } from "lucide-react";
+import { Camera, Clock, LayoutList, ShieldCheck } from "lucide-react";
 import WorkProofRaiseFields, {
   EMPTY_VEHICLE,
   formatProofDateTime,
@@ -505,8 +505,41 @@ export default function WorkProof() {
       )}
 
       {visible.length === 0 ? (
-        <div style={emptyState}>
-          {ar ? "لا إثباتات بعد — اضغط «بدء عمل جديد» للبدء." : "No proofs yet — tap “Start new work” to begin."}
+        <div style={{ ...cardShell, padding: "44px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 12 }}>
+          <span
+            aria-hidden
+            style={{
+              width: 64, height: 64, borderRadius: 18, flexShrink: 0,
+              background: "var(--nv-accent-soft, #ECF7F1)", color: "var(--nv-accent-deep, #15703F)",
+              border: "1px solid var(--nv-accent-border, #BFE3D0)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <Camera style={{ width: 30, height: 30 }} strokeWidth={1.7} />
+          </span>
+          <div style={{ fontSize: 16, fontWeight: 700, color: NAVY }}>
+            {ar ? "لا إثباتات بعد" : "No proofs yet"}
+          </div>
+          <div style={{ fontSize: 13, lineHeight: 1.7, color: MUTED, maxWidth: 420 }}>
+            {ar
+              ? "ابدأ عملًا جديدًا بصورة «قبل»، وعند الانتهاء ارفع صورة «البعد» ليُختم الإثبات ويدخل التوقيع الرقمي."
+              : "Start new work with a “before” photo; when you finish, upload the “after” photo to seal the proof and enter digital signing."}
+          </div>
+          {!raising && !editingProof && (
+            <button
+              type="button"
+              onClick={() => { setEditingProof(null); resetForm(); setRaising(true); }}
+              style={{
+                marginTop: 6, display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "11px 22px", borderRadius: 10, border: "none", cursor: "pointer",
+                fontFamily: "inherit", fontSize: 13, fontWeight: 600,
+                background: NAVY_FILL, color: "#fff",
+              }}
+            >
+              <Camera style={{ width: 16, height: 16 }} strokeWidth={1.9} />
+              {ar ? "بدء عمل جديد" : "Start new work"}
+            </button>
+          )}
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
