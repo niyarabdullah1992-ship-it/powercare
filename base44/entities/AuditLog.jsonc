@@ -1,0 +1,66 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string",
+      "description": "The company this action relates to (or platform)."
+    },
+    "action": {
+      "type": "string",
+      "description": "Machine-readable action key."
+    },
+    "performedBy": {
+      "type": "string",
+      "description": "Name or email of whoever performed the action."
+    },
+    "details": {
+      "type": "string",
+      "description": "Human-readable description of what changed."
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "oldValue": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "newValue": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "companyId",
+    "action"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

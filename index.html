@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/nirovera-mark.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- The app has its own built-in 9-language system; block browser auto-translation
+         (e.g. Chrome's "always translate") which corrupts the UI with wrong machine translations. -->
+    <meta name="google" content="notranslate" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <meta name="description" content="NiroVera — دورة الإثبات: حضور، مهمة، اعتماد، وختم للعميل." />
+    <title>NiroVera — منظومة الموارد البشرية</title>
+    <style>html,body,#root{background:var(--nv-soft,#F7F8FA);color:var(--nv-ink,#14284B);margin:0;min-height:100%;}</style>
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("powercare_theme");
+          var dark = saved === "dark" || saved === "light"
+            ? saved === "dark"
+            : window.matchMedia("(prefers-color-scheme: dark)").matches;
+          document.documentElement.classList.toggle("dark", dark);
+          document.documentElement.style.colorScheme = dark ? "dark" : "light";
+          var raw = localStorage.getItem("powercare_color_theme");
+          if (raw) {
+            var theme = JSON.parse(raw);
+            var hex = /^#[0-9A-Fa-f]{6}$/;
+            if (theme && hex.test(theme.navy)) document.documentElement.style.setProperty("--nv-navy", theme.navy);
+            if (theme && hex.test(theme.accent)) document.documentElement.style.setProperty("--nv-accent", theme.accent);
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.addEventListener("error", function (event) {
+        var root = document.getElementById("root");
+        if (!root || root.childElementCount) return;
+        var err = event.error || event;
+        var msg = String((err && err.message) || event.message || err || "Unknown error");
+        var file = event.filename ? (event.filename + ":" + (event.lineno || 0)) : "";
+        root.innerHTML = '<div dir="rtl" style="padding:24px;font-family:sans-serif;color:#14284B;max-width:720px;margin:40px auto"><h1 style="font-size:20px">تعذر تشغيل نيروفيرا</h1><p style="font-size:13px;color:#5A6B85">انسخ النص ثم أعد التحميل بـ Ctrl+F5.</p><pre dir="ltr" style="white-space:pre-wrap;background:#F1F5F9;padding:12px;border-radius:8px;font-size:12px">' + (file ? file + "\\n" : "") + msg + '</pre><button type="button" onclick="location.reload()" style="margin-top:12px;height:40px;padding:0 16px;border:0;border-radius:8px;background:#1E9E63;color:#fff">إعادة التحميل</button></div>';
+      });
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

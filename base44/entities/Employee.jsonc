@@ -1,0 +1,154 @@
+{
+  "name": "Employee",
+  "type": "object",
+  "properties": {
+    "employeeId": {
+      "type": "string",
+      "description": "Stable client-side id used across the app."
+    },
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company this employee belongs to."
+    },
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "stationId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "phone": {
+      "type": "string"
+    },
+    "position": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "anonymousId": {
+      "type": "string"
+    },
+    "points": {
+      "type": "number",
+      "default": 0
+    },
+    "hrLevelId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "hrStationId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "hrClusterId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "canManageTeam": {
+      "type": "boolean",
+      "default": false
+    },
+    "managedStations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "profile": {
+      "type": "object",
+      "properties": {
+        "gradeId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Reference to the company job grade."
+        },
+        "maxStations": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 1,
+          "description": "Maximum stations; null means unlimited."
+        },
+        "position": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Employee-managed free-form position title."
+        }
+      },
+      "additionalProperties": true
+    },
+    "certificates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "leaveRequests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "hrMessages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "employeeId",
+    "companyId",
+    "name",
+    "role"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

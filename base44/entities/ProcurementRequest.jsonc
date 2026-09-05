@@ -1,0 +1,90 @@
+{
+  "name": "ProcurementRequest",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "requestNumber": {
+      "type": "string"
+    },
+    "stationId": {
+      "type": "string"
+    },
+    "requesterId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "requesterName": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "justification": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "ordered",
+        "received"
+      ]
+    },
+    "reviewedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reviewedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "companyId",
+    "requestNumber",
+    "stationId",
+    "items",
+    "justification",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

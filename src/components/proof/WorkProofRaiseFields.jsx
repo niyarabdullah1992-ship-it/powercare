@@ -1,0 +1,583 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { Camera, Plus } from "lucide-react";
+import { ACCENT, MUTED, NAVY, CARD, SURFACE, ui } from "@/lib/platformStyles";
+import PlatformDateField from "@/components/shared/PlatformDateField";
+import { vehicleLabel } from "@/lib/proofVehicle";
+import { workplaceStations } from "@/lib/stationTree";
+import {
+  EMPTY_PERSON,
+  EMPTY_VEHICLE,
+  canAddCrewItem,
+  formPeople,
+  formVehicles,
+} from "@/lib/workProofCrew";
+
+export { EMPTY_PERSON, EMPTY_VEHICLE };
+
+export function formatProofDateTime(value, ar) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString(ar ? "ar-SA-u-ca-gregory-nu-latn" : "en-GB", {
+    timeZone: "Asia/Riyadh",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+export function dateTimeDateKey(value) {
+  return String(value || "").slice(0, 10);
+}
+
+export function spliceDateIntoDateTime(prev, nextDate) {
+  if (!nextDate) return "";
+  const time = /T\d{2}:\d{2}/.exec(String(prev || ""))?.[0];
+  if (time) return `${nextDate}${time}`;
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${nextDate}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+export function workDurationLabel(startedAt, endedAt, ar) {
+  const start = formatProofDateTime(startedAt, ar);
+  const end = formatProofDateTime(endedAt, ar);
+  if (!start && !end) return "";
+  if (start && end) {
+    const from = new Date(startedAt);
+    const to = new Date(endedAt);
+    let extra = "";
+    if (!Number.isNaN(from.getTime()) && !Number.isNaN(to.getTime()) && to > from) {
+      const hours = Math.round(((to - from) / 36e5) * 10) / 10;
+      extra = ar ? ` · ${hours} ساعة` : ` · ${hours} h`;
+    }
+    return `${start} → ${end}${extra}`;
+  }
+  return start || end;
+}
+
+export function proofPersonLabel(proof) {
+  const names = Array.isArray(proof?.people) && proof.people.length
+    ? proof.people.map((person) => person?.name).filter(Boolean)
+    : [proof?.personName].filter(Boolean);
+  return names.join(" · ") || proof?.client || "";
+}
+
+export function proofVehicleText(proof) {
+  const list = Array.isArray(proof?.vehicles) && proof.vehicles.length
+    ? proof.vehicles
+    : (proof?.vehicle ? [proof.vehicle] : []);
+  return list.map(vehicleLabel).filter(Boolean).join(" · ");
+}
+
+export function isInternalEntityScope(proof) {
+  return String(proof?.entityScope || "") === "internal" || String(proof?.entityKind || "") === "branch";
+}
+
+export function proofEntityPlaceLabel(proof, stationName, ar) {
+  const name = proof?.entityName || proof?.client || "";
+  if (isInternalEntityScope(proof)) {
+    const resolved = typeof stationName === "function" ? stationName(proof?.entityStationId) : "";
+    const branch = (resolved && resolved !== "—" ? resolved : "") || name;
+    return ar ? `داخل الشركة · ${branch || "فرع"}` : `Inside company · ${branch || "branch"}`;
+  }
+  return name
+    ? (ar ? `خارج الشركة · ${name}` : `Outside company · ${name}`)
+    : (ar ? "خارج الشركة" : "Outside company");
+}
+
+export function workProofEntityFields(form, stations) {
+  const internal = String(form?.entityScope || "") === "internal";
+  if (internal) {
+    const entityStationId = String(form?.entityStationId || "").trim();
+    const station = (stations || []).find((item) => String(item.id) === entityStationId);
+    const entityName = String(station?.name || form?.entityName || "").trim();
+    return {
+      ok: Boolean(entityStationId && entityName),
+      errorAr: "اختر فرع الشركة المستفيد.",
+      errorEn: "Pick the company branch that is the beneficiary.",
+      fields: {
+        entityScope: "internal",
+        entityStationId,
+        entityKind: "branch",
+        entityName,
+        entityUnified: "",
+        entityCr: "",
+        entityQiwa: "",
+        entitySite: String(form?.entitySite || "").trim(),
+        entityProject: String(form?.entityProject || "").trim(),
+        entityContact: String(form?.entityContact || "").trim(),
+        entityPhone: String(form?.entityPhone || "").trim(),
+        entityEmail: String(form?.entityEmail || "").trim(),
+      },
+    };
+  }
+  const entityName = String(form?.entityName || "").trim();
+  return {
+    ok: Boolean(entityName),
+    errorAr: "اكتب الاسم الرسمي للمنشأة.",
+    errorEn: "Enter the official establishment name.",
+    fields: {
+      entityScope: "external",
+      entityStationId: "",
+      entityKind: form?.entityKind === "individual" ? "individual" : "company",
+      entityName,
+      entityUnified: String(form?.entityUnified || "").trim(),
+      entityCr: String(form?.entityCr || "").trim(),
+      entityQiwa: String(form?.entityQiwa || "").trim(),
+      entitySite: String(form?.entitySite || "").trim(),
+      entityProject: String(form?.entityProject || "").trim(),
+      entityContact: String(form?.entityContact || "").trim(),
+      entityPhone: String(form?.entityPhone || "").trim(),
+      entityEmail: String(form?.entityEmail || "").trim(),
+    },
+  };
+}
+
+const CSS = `
+  .wp-raise-split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(260px, .85fr); gap: 18px; align-items: start; }
+  .wp-raise-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .wp-fold > summary::-webkit-details-marker { display: none; }
+  .wp-fold > summary { list-style: none; }
+  .wp-fold > summary::before { content: "+"; display: inline-block; width: 14px; color: #5A6B85; font-weight: 600; }
+  .wp-fold[open] > summary::before { content: "−"; }
+  .wp-repeat { display: grid; gap: 10px; }
+  @media (max-width: 860px) {
+    .wp-raise-split { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    .wp-raise-2 { grid-template-columns: 1fr; }
+  }
+`;
+
+const box = {
+  width: "100%",
+  height: 36,
+  borderRadius: 9,
+  border: "1px solid #E2E8F0",
+  background: CARD,
+  padding: "0 11px",
+  fontSize: 13,
+  color: NAVY,
+  fontFamily: "inherit",
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+function Field({ label, required, children }) {
+  return (
+    <label>
+      <span style={{ display: "block", fontSize: 11, fontWeight: 600, color: MUTED, marginBottom: 5 }}>
+        {label}{required ? <span style={{ color: ACCENT, marginInlineStart: 3 }}>•</span> : null}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function Fold({ title, hint, children }) {
+  return (
+    <details className="wp-fold" style={{ borderTop: "1px solid #EEF2F6", paddingTop: 8, marginTop: 10 }}>
+      <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 600, color: NAVY, display: "flex", alignItems: "center", gap: 6 }}>
+        <span>{title}</span>
+        {hint ? <span style={{ fontSize: 11, fontWeight: 500, color: MUTED }}>{hint}</span> : null}
+      </summary>
+      <div className="wp-raise-2" style={{ marginTop: 8 }}>{children}</div>
+    </details>
+  );
+}
+
+function PhotoSlot({ file, title, required, onFile, ar }) {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    if (!file) { setUrl(""); return undefined; }
+    const next = URL.createObjectURL(file);
+    setUrl(next);
+    return () => URL.revokeObjectURL(next);
+  }, [file]);
+
+  return (
+    <label
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: url ? 132 : 88,
+        borderRadius: 10,
+        border: file ? `1px solid color-mix(in oklab, ${ACCENT} 28%, #fff)` : "1px dashed #D5DCE6",
+        background: file ? "color-mix(in oklab, #1E9E63 5%, #fff)" : "#F7F8FA",
+        cursor: "pointer",
+        overflow: "hidden",
+      }}
+    >
+      {url ? (
+        <img src={url} alt="" style={{ width: "100%", height: 88, objectFit: "cover", display: "block" }} />
+      ) : null}
+      <span style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px" }}>
+        <Camera style={{ width: 15, height: 15, color: file ? ACCENT : MUTED }} />
+        <span style={{ fontSize: 12, fontWeight: 600, color: NAVY }}>
+          {title}{required ? "" : ` · ${ar ? "اختياري" : "optional"}`}
+        </span>
+        <span style={{ fontSize: 11, color: MUTED, marginInlineStart: "auto" }}>
+          {file?.name || (ar ? "اختيار" : "Choose")}
+        </span>
+      </span>
+      <input
+        type="file"
+        accept="image/*"
+        required={required}
+        onChange={(e) => onFile(e.target.files?.[0] || null)}
+        style={{ display: "none" }}
+      />
+    </label>
+  );
+}
+
+function RepeatHead({ title, onRemove, canRemove, ar }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+      <span style={{ fontSize: 11, fontWeight: 600, color: MUTED }}>{title}</span>
+      {canRemove ? (
+        <button type="button" onClick={onRemove} style={{ ...ui.btnGhost, padding: "4px 8px", fontSize: 11 }}>
+          {ar ? "حذف" : "Remove"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+export default function WorkProofRaiseFields({ form, setForm, stations, headerScope, ar, hidePhotos }) {
+  const set = (key) => (event) => setForm({ ...form, [key]: event.target.value });
+  const people = formPeople(form);
+  const vehicles = formVehicles(form);
+  const setPeople = (next) => setForm({ ...form, people: next });
+  const setVehicles = (next) => setForm({ ...form, vehicles: next });
+  const patchPerson = (index, key) => (event) => {
+    setPeople(people.map((person, i) => (i === index ? { ...person, [key]: event.target.value } : person)));
+  };
+  const patchVehicle = (index, key) => (event) => {
+    setVehicles(vehicles.map((vehicle, i) => (i === index ? { ...vehicle, [key]: event.target.value } : vehicle)));
+  };
+
+  const entityKind = form.entityKind === "government" ? "company" : (form.entityKind || "company");
+  const entityScope = form.entityScope === "internal" ? "internal" : "external";
+  const workplaces = useMemo(() => workplaceStations(stations), [stations]);
+  const entityExtra = useMemo(
+    () => [form.entityProject, form.entityCr, form.entityQiwa, form.entityContact, form.entityPhone].filter(Boolean).length,
+    [form.entityProject, form.entityCr, form.entityQiwa, form.entityContact, form.entityPhone],
+  );
+
+  const setEntityScope = (next) => {
+    if (next === "internal") {
+      const station = workplaces.find((item) => String(item.id) === String(form.entityStationId || ""));
+      setForm({
+        ...form,
+        entityScope: "internal",
+        entityKind: "branch",
+        entityName: station?.name || form.entityName,
+        entityUnified: "",
+        entityCr: "",
+        entityQiwa: "",
+      });
+      return;
+    }
+    setForm({
+      ...form,
+      entityScope: "external",
+      entityStationId: "",
+      entityKind: form.entityKind === "branch" ? "company" : (form.entityKind === "individual" ? "individual" : "company"),
+    });
+  };
+
+  const addBtn = {
+    ...ui.btnGhost,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+  };
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <style>{CSS}</style>
+      <div className="wp-raise-split">
+        <div>
+          <Field label={ar ? "سبب العمل" : "Reason for work"} required>
+            <input
+              required
+              value={form.workReason}
+              onChange={set("workReason")}
+              placeholder={ar ? "لماذا يُنفَّذ هذا العمل؟" : "Why is this work being done?"}
+              style={{ ...box, height: 40, fontSize: 14, fontWeight: 500 }}
+            />
+          </Field>
+          <Field label={ar ? "وصف العمل" : "Work"} required>
+            <input
+              required
+              value={form.title}
+              onChange={set("title")}
+              placeholder={ar ? "ما العمل الذي سيُنفَّذ؟" : "What work is starting?"}
+              style={{ ...box, height: 40, fontSize: 14, fontWeight: 500, marginTop: 10 }}
+            />
+          </Field>
+
+          <div style={{ marginTop: 10 }}>
+            <Field label={ar ? "تاريخ البداية" : "Start date"} required>
+              <PlatformDateField
+                ar={ar}
+                value={dateTimeDateKey(form.startedAt)}
+                onChange={(next) => setForm({ ...form, startedAt: spliceDateIntoDateTime(form.startedAt, next) })}
+              />
+            </Field>
+          </div>
+          <div className="wp-raise-2" style={{ marginTop: 10 }}>
+            <Field label={ar ? "فرع التنفيذ" : "Executing branch"} required>
+              <select required value={form.stationId} onChange={set("stationId")} disabled={headerScope !== "all"} style={box}>
+                <option value="">{ar ? "اختر فرعًا" : "Pick a branch"}</option>
+                {stations.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </Field>
+            <Field label={ar ? "الموقع عند الالتقاط" : "Capture location"}>
+              <select value={form.geoVerdict} onChange={set("geoVerdict")} style={box}>
+                <option value="in">{ar ? "داخل نطاق الفرع" : "Inside the branch"}</option>
+                <option value="out">{ar ? "خارج النطاق" : "Outside geofence"}</option>
+              </select>
+            </Field>
+          </div>
+
+          {!hidePhotos && (
+          <div style={{ marginTop: 12 }}>
+            <PhotoSlot
+              file={form.beforeFile}
+              title={ar ? "صورة قبل — عند البداية" : "Before — at start"}
+              required
+              ar={ar}
+              onFile={(file) => setForm({ ...form, beforeFile: file })}
+            />
+          </div>
+          )}
+        </div>
+
+        <div style={{ padding: "12px 12px 10px", borderRadius: 12, background: SURFACE, border: "1px solid #EEF2F6" }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: NAVY, marginBottom: 10 }}>
+            {ar ? "المستفيد" : "Beneficiary"}
+          </div>
+          <div style={{ marginBottom: 4 }}>
+            <span style={{ display: "block", fontSize: 11, fontWeight: 600, color: MUTED, marginBottom: 5 }}>
+              {ar ? "المنشأة" : "Establishment"}
+              <span style={{ color: ACCENT, marginInlineStart: 3 }}>•</span>
+            </span>
+            <div className="wp-raise-2">
+              {[
+                {
+                  value: "internal",
+                  title: ar ? "داخل الشركة" : "Inside the company",
+                  hint: ar ? "أحد الفروع الأخرى" : "Another company branch",
+                },
+                {
+                  value: "external",
+                  title: ar ? "خارج الشركة" : "Outside the company",
+                  hint: ar ? "جهة أو عميل خارجي" : "External client or firm",
+                },
+              ].map((option) => {
+                const active = entityScope === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setEntityScope(option.value)}
+                    style={{
+                      textAlign: "start",
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      border: active ? `1px solid color-mix(in oklab, ${ACCENT} 40%, #fff)` : "1px solid #E2E8F0",
+                      background: active ? "color-mix(in oklab, #1E9E63 8%, #fff)" : CARD,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    <div style={{ fontSize: 12, fontWeight: 600, color: NAVY }}>{option.title}</div>
+                    <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{option.hint}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: MUTED, margin: "8px 0 10px" }}>
+            {ar
+              ? "إذا كان العمل لفرع آخر من الشركة اختر داخل الشركة، وإذا كان لجهة خارجية اختر خارج الشركة."
+              : "Use Inside if the site is another company branch; Outside for an external client."}
+          </div>
+          {entityScope === "internal" ? (
+            <div className="wp-raise-2">
+              <Field label={ar ? "فرع الشركة المستفيد" : "Beneficiary branch"} required>
+                <select
+                  required
+                  value={form.entityStationId || ""}
+                  onChange={(event) => {
+                    const id = event.target.value;
+                    const station = workplaces.find((item) => String(item.id) === id);
+                    setForm({
+                      ...form,
+                      entityScope: "internal",
+                      entityStationId: id,
+                      entityKind: "branch",
+                      entityName: station?.name || "",
+                    });
+                  }}
+                  style={box}
+                >
+                  <option value="">{ar ? "اختر فرعًا" : "Pick a branch"}</option>
+                  {workplaces.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </Field>
+              <Field label={ar ? "موقع التنفيذ" : "Work site"}>
+                <input value={form.entitySite} onChange={set("entitySite")} placeholder={ar ? "المبنى / الوحدة" : "Building / unit"} style={box} />
+              </Field>
+            </div>
+          ) : (
+            <div className="wp-raise-2">
+              <Field label={ar ? "نوع المنشأة" : "Establishment type"} required>
+                <select required value={entityKind === "branch" ? "company" : entityKind} onChange={set("entityKind")} style={box}>
+                  <option value="company">{ar ? "شركة / مؤسسة" : "Company"}</option>
+                  <option value="individual">{ar ? "مؤسسة فردية" : "Sole establishment"}</option>
+                </select>
+              </Field>
+              <Field label={ar ? "الاسم الرسمي" : "Official name"} required>
+                <input required value={form.entityName} onChange={set("entityName")} placeholder={ar ? "كما في السجل أو القرار" : "As on the register"} style={box} />
+              </Field>
+              <Field label={ar ? "الرقم الوطني الموحد" : "Unified national no."}>
+                <input value={form.entityUnified} onChange={set("entityUnified")} dir="ltr" placeholder="700xxxxxxxx" style={box} />
+              </Field>
+              <Field label={ar ? "موقع التنفيذ" : "Work site"}>
+                <input value={form.entitySite} onChange={set("entitySite")} placeholder={ar ? "المبنى / الوحدة / المدينة" : "Building / unit / city"} style={box} />
+              </Field>
+            </div>
+          )}
+          <Fold
+            title={ar ? "عقد وهوية وتواصل" : "Contract, IDs & contact"}
+            hint={entityExtra ? (ar ? `${entityExtra} مُعبّأة` : `${entityExtra} filled`) : (ar ? "اختياري" : "optional")}
+          >
+            <Field label={ar ? "رقم العقد / أمر العمل" : "Contract / work order"}>
+              <input value={form.entityProject} onChange={set("entityProject")} style={box} />
+            </Field>
+            {entityScope === "external" ? (
+              <>
+                <Field label={ar ? "السجل التجاري" : "Commercial registration"}>
+                  <input value={form.entityCr} onChange={set("entityCr")} dir="ltr" placeholder="10 أرقام" style={box} />
+                </Field>
+                <Field label={ar ? "رقم المنشأة في قوى" : "Qiwa establishment no."}>
+                  <input value={form.entityQiwa} onChange={set("entityQiwa")} dir="ltr" placeholder="7-1104829" style={box} />
+                </Field>
+              </>
+            ) : null}
+            <Field label={ar ? "مسؤول التواصل" : "Contact"}>
+              <input value={form.entityContact} onChange={set("entityContact")} style={box} />
+            </Field>
+            <Field label={ar ? "جوال المسؤول" : "Contact phone"}>
+              <input value={form.entityPhone} onChange={set("entityPhone")} dir="ltr" placeholder="05xxxxxxxx" style={box} />
+            </Field>
+          </Fold>
+
+          <div style={{ fontSize: 11, fontWeight: 600, color: NAVY, margin: "14px 0 8px" }}>
+            {ar ? "المنفذون" : "Workers"}
+          </div>
+          <div style={{ fontSize: 11, color: MUTED, marginBottom: 8 }}>
+            {ar ? "يمكن إضافة أكثر من شخص وأكثر من سيارة لنفس الإثبات." : "Add more than one worker and more than one vehicle on the same proof."}
+          </div>
+          <div className="wp-repeat">
+            {people.map((person, index) => (
+              <div
+                key={`person-${index}`}
+                style={{ padding: 10, borderRadius: 10, border: "1px solid #EEF2F6", background: CARD }}
+              >
+                <RepeatHead
+                  title={ar ? `منفذ ${index + 1}` : `Worker ${index + 1}`}
+                  canRemove={people.length > 1}
+                  onRemove={() => setPeople(people.filter((_, i) => i !== index))}
+                  ar={ar}
+                />
+                <div className="wp-raise-2">
+                  <Field label={ar ? "الاسم" : "Name"} required={index === 0}>
+                    <input required={index === 0} value={person.name} onChange={patchPerson(index, "name")} style={box} />
+                  </Field>
+                  <Field label={ar ? "الجوال" : "Phone"}>
+                    <input value={person.phone} onChange={patchPerson(index, "phone")} dir="ltr" style={box} />
+                  </Field>
+                  <Field label={ar ? "رقم الهوية" : "ID number"}>
+                    <input value={person.id} onChange={patchPerson(index, "id")} dir="ltr" style={box} />
+                  </Field>
+                  <Field label={ar ? "المسمى" : "Title"}>
+                    <input value={person.title} onChange={patchPerson(index, "title")} style={box} />
+                  </Field>
+                </div>
+              </div>
+            ))}
+          </div>
+          {canAddCrewItem(people) ? (
+            <button
+              type="button"
+              onClick={() => setPeople([...people, { ...EMPTY_PERSON }])}
+              style={addBtn}
+            >
+              <Plus style={{ width: 14, height: 14 }} />
+              {ar ? "إضافة منفذ" : "Add worker"}
+            </button>
+          ) : null}
+
+          <div style={{ fontSize: 11, fontWeight: 600, color: NAVY, margin: "14px 0 8px" }}>
+            {ar ? "السيارات" : "Vehicles"}
+          </div>
+          <div className="wp-repeat">
+            {vehicles.map((vehicle, index) => (
+              <div
+                key={`vehicle-${index}`}
+                style={{ padding: 10, borderRadius: 10, border: "1px solid #EEF2F6", background: CARD }}
+              >
+                <RepeatHead
+                  title={ar ? `سيارة ${index + 1}` : `Vehicle ${index + 1}`}
+                  canRemove={vehicles.length > 1}
+                  onRemove={() => setVehicles(vehicles.filter((_, i) => i !== index))}
+                  ar={ar}
+                />
+                <div className="wp-raise-2">
+                  <Field label={ar ? "الشركة المصنعة" : "Maker"}>
+                    <input value={vehicle.maker} onChange={patchVehicle(index, "maker")} style={box} />
+                  </Field>
+                  <Field label={ar ? "الموديل" : "Model"}>
+                    <input value={vehicle.model} onChange={patchVehicle(index, "model")} style={box} />
+                  </Field>
+                  <Field label={ar ? "نوع السيارة" : "Type"}>
+                    <input value={vehicle.type} onChange={patchVehicle(index, "type")} style={box} />
+                  </Field>
+                  <Field label={ar ? "سنة الصنع" : "Year"}>
+                    <input value={vehicle.year} onChange={patchVehicle(index, "year")} dir="ltr" style={box} />
+                  </Field>
+                  <Field label={ar ? "حروف اللوحة" : "Plate letters"}>
+                    <input value={vehicle.plateLetters} onChange={patchVehicle(index, "plateLetters")} style={box} />
+                  </Field>
+                  <Field label={ar ? "أرقام اللوحة" : "Plate numbers"}>
+                    <input value={vehicle.plateNumbers} onChange={patchVehicle(index, "plateNumbers")} dir="ltr" style={box} />
+                  </Field>
+                </div>
+              </div>
+            ))}
+          </div>
+          {canAddCrewItem(vehicles) ? (
+            <button
+              type="button"
+              onClick={() => setVehicles([...vehicles, { ...EMPTY_VEHICLE }])}
+              style={addBtn}
+            >
+              <Plus style={{ width: 14, height: 14 }} />
+              {ar ? "إضافة سيارة" : "Add vehicle"}
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}

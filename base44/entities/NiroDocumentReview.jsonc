@@ -1,0 +1,91 @@
+{
+  "name": "NiroDocumentReview",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "actorId": {
+      "type": "string"
+    },
+    "actorName": {
+      "type": "string"
+    },
+    "actorRole": {
+      "type": "string"
+    },
+    "fileName": {
+      "type": "string"
+    },
+    "sourceUrl": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "analyzing",
+        "needs_attention",
+        "sealed",
+        "error"
+      ]
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "sealedUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "verificationId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "fileHash": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "auditTrail": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "companyId",
+    "actorId",
+    "fileName",
+    "sourceUrl",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

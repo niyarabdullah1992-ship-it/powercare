@@ -1,0 +1,98 @@
+{
+  "name": "PointsLedger",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company (tenant) this entry belongs to."
+    },
+    "employeeId": {
+      "type": "string",
+      "description": "Employee whose score this entry changes (matches Employee.employeeId)."
+    },
+    "points": {
+      "type": "number",
+      "description": "Signed change. Corrections are new negative entries \u2014 entries are never edited or deleted."
+    },
+    "targetId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The task/target this entry originates from."
+    },
+    "taskTitle": {
+      "type": "string"
+    },
+    "priority": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "effortWeight": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "stationId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "awardedBy": {
+      "type": "string",
+      "description": "Employee id of the approver, or 'system' for deadline auto-approval."
+    },
+    "awardedAt": {
+      "type": "string",
+      "description": "ISO timestamp of the award moment."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Human-readable basis for the entry."
+    },
+    "evidenceUrls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Field-evidence file URLs attached to the completion this entry rewards."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "companyId",
+    "employeeId",
+    "points",
+    "awardedBy",
+    "awardedAt"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "name": "InventoryItem",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "itemCode": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "currentLocationId": {
+      "type": "string"
+    },
+    "minimumStock": {
+      "type": "number",
+      "minimum": 0
+    },
+    "quantity": {
+      "type": "number",
+      "minimum": 0
+    },
+    "locationBalances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "qrCode": {
+      "type": "string"
+    },
+    "imageUrls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10
+    },
+    "archived": {
+      "type": "boolean",
+      "default": false
+    },
+    "archivedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "archivedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "companyId",
+    "itemCode",
+    "name",
+    "currentLocationId",
+    "minimumStock",
+    "quantity",
+    "qrCode"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

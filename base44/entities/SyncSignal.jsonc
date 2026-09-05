@@ -1,0 +1,39 @@
+{
+  "name": "SyncSignal",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string",
+      "description": "The company whose data changed. Contains no sensitive data \u2014 only a change signal."
+    },
+    "version": {
+      "type": "number",
+      "description": "Monotonically increasing counter bumped by the backend on every data write."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "companyId"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

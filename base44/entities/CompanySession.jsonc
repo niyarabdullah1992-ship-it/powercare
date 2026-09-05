@@ -1,0 +1,68 @@
+{
+  "name": "CompanySession",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company (tenant) this session belongs to."
+    },
+    "token": {
+      "type": "string",
+      "description": "Random opaque session token issued at login."
+    },
+    "userId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Employee id for employee sessions; null for owner sessions."
+    },
+    "role": {
+      "type": "string",
+      "description": "'owner' or 'employee'."
+    },
+    "expiresAt": {
+      "type": "string",
+      "description": "ISO timestamp after which this session is invalid."
+    },
+    "lastSeenAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Latest website heartbeat used to identify users currently online."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "companyId",
+    "token",
+    "role",
+    "expiresAt"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

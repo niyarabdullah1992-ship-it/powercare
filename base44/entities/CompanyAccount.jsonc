@@ -1,0 +1,139 @@
+{
+  "name": "CompanyAccount",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string",
+      "description": "Stable client-side company id (matches the registry entry used across the app)."
+    },
+    "name": {
+      "type": "string"
+    },
+    "ownerEmail": {
+      "type": "string"
+    },
+    "ownerPassword": {
+      "type": "string",
+      "description": "Server-only PBKDF2 password hash. Plaintext passwords are never stored."
+    },
+    "plan": {
+      "type": "string"
+    },
+    "allowedEmailDomain": {
+      "type": "string"
+    },
+    "emailLanguage": {
+      "type": "string",
+      "enum": [
+        "en",
+        "ar",
+        "de",
+        "fr",
+        "es",
+        "pt",
+        "ru",
+        "ja",
+        "ko"
+      ],
+      "default": "en",
+      "description": "Manually selected language for automated company email messages."
+    },
+    "trialReminderSent": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once the trial-ending reminder email has been sent for this account."
+    },
+    "subscriptionStart": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Manual subscription start date (YYYY-MM-DD)."
+    },
+    "subscriptionEnd": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Manual subscription end date (YYYY-MM-DD)."
+    },
+    "customPrice": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Monthly price (USD) for a manually-managed Custom plan."
+    },
+    "subscriptionExempt": {
+      "type": "boolean",
+      "default": false,
+      "description": "Waives subscription charges while keeping company access active."
+    },
+    "exemptReason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "exemptedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "frozen": {
+      "type": "boolean",
+      "default": false,
+      "description": "Suspends access for every user in this company."
+    },
+    "frozenAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "frozenReason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "orgType": {
+      "type": "string",
+      "enum": ["company", "gov"],
+      "default": "company",
+      "description": "Facility kind — company vs government. Locked at signup; drives login portal separation and terminology."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "companyId",
+    "ownerEmail",
+    "ownerPassword"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

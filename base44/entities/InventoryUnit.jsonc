@@ -1,0 +1,52 @@
+{
+  "name": "InventoryUnit",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "itemId": {
+      "type": "string"
+    },
+    "locationId": {
+      "type": "string"
+    },
+    "quantity": {
+      "type": "number",
+      "minimum": 0,
+      "default": 0
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "companyId",
+    "itemId",
+    "locationId",
+    "quantity"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

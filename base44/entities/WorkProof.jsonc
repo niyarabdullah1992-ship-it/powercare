@@ -1,0 +1,273 @@
+{
+  "name": "WorkProof",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company (tenant) this proof belongs to."
+    },
+    "proofNumber": {
+      "type": "string",
+      "description": "Human-readable proof number, e.g. WP-2026-000001."
+    },
+    "stationId": {
+      "type": "string",
+      "description": "Station where the work was performed."
+    },
+    "workTitle": {
+      "type": "string"
+    },
+    "workDescription": {
+      "type": "string"
+    },
+    "workDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "workers": {
+      "type": "array",
+      "description": "Crew members performing the work, with identity document details.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "idType": {
+            "type": "string",
+            "enum": [
+              "national_id",
+              "iqama",
+              "passport",
+              "other"
+            ]
+          },
+          "idNumber": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "vehicles": {
+      "type": "array",
+      "description": "Vehicles entering the site for this job.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "plate": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "make": {
+            "type": "string",
+            "description": "Manufacturer / company."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model name."
+          },
+          "year": {
+            "type": "string",
+            "description": "Manufacturing year."
+          },
+          "driverName": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "plannedDays": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Working days planned before starting the job."
+    },
+    "actualDays": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Actual working days recorded when the job was closed."
+    },
+    "closedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ISO timestamp when the job was closed and after-photos were attached."
+    },
+    "beforeImageUrls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10
+    },
+    "afterImageUrls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10
+    },
+    "beforeFiles": {
+      "type": "array",
+      "description": "Document attachments captured before the work started.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "maxItems": 10
+    },
+    "afterFiles": {
+      "type": "array",
+      "description": "Document attachments captured after the work was completed.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "maxItems": 10
+    },
+    "performedById": {
+      "type": "string",
+      "description": "Employee id (or 'owner') who documented the work."
+    },
+    "performedByName": {
+      "type": "string"
+    },
+    "employeeSignatureUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Employee's saved signature stamped automatically when the job was closed."
+    },
+    "employeeSignedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ISO timestamp of the automatic employee signature at close."
+    },
+    "clientName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Name of the client who signed the proof."
+    },
+    "clientTitle": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Client's job title / capacity."
+    },
+    "clientEmail": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Client email the signature link was sent to."
+    },
+    "signToken": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Opaque token embedded in the emailed signature link. Cleared once signed."
+    },
+    "signLinkSentAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ISO timestamp when the signature link was emailed to the client."
+    },
+    "clientSignatureUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Uploaded image of the client's hand-drawn signature."
+    },
+    "signedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ISO timestamp of the client signing moment. Once set, the record is immutable."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "in_progress",
+        "pending_signature",
+        "signed"
+      ],
+      "default": "in_progress"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "companyId",
+    "proofNumber",
+    "stationId",
+    "workTitle",
+    "workDate",
+    "performedById",
+    "performedByName",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

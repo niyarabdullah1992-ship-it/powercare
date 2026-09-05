@@ -1,0 +1,64 @@
+{
+  "name": "SignedDocument",
+  "type": "object",
+  "properties": {
+    "verificationId": {
+      "type": "string",
+      "description": "Unique encrypted verification ID stamped on the document badge (PWC-XXXX-XXXX-XXXX)."
+    },
+    "fileHash": {
+      "type": "string",
+      "description": "SHA-256 hex hash of the final signed PDF bytes \u2014 binds the badge to this exact file."
+    },
+    "signerName": {
+      "type": "string",
+      "description": "Name of the person who signed."
+    },
+    "signerId": {
+      "type": "string",
+      "description": "PowerCare employee/owner id of the signer."
+    },
+    "companyId": {
+      "type": "string",
+      "description": "The PowerCare company (tenant) this signature belongs to."
+    },
+    "fileName": {
+      "type": "string",
+      "description": "Original document file name."
+    },
+    "signedAt": {
+      "type": "string",
+      "description": "ISO timestamp of the signing moment."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "verificationId",
+    "fileHash"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

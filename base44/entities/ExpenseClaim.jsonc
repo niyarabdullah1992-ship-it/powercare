@@ -1,0 +1,170 @@
+{
+  "name": "ExpenseClaim",
+  "type": "object",
+  "properties": {
+    "companyId": {
+      "type": "string"
+    },
+    "requesterId": {
+      "type": "string"
+    },
+    "requesterName": {
+      "type": "string"
+    },
+    "stationId": {
+      "type": "string"
+    },
+    "stationIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "stationScope": {
+      "type": "string",
+      "enum": [
+        "single",
+        "selected",
+        "all"
+      ]
+    },
+    "expenseType": {
+      "type": "string",
+      "enum": [
+        "travel",
+        "accommodation",
+        "fuel",
+        "overtime_meals",
+        "tools_equipment",
+        "training",
+        "other"
+      ]
+    },
+    "customExpenseType": {
+      "type": "string"
+    },
+    "beforeTaxAmount": {
+      "type": "number",
+      "minimum": 0
+    },
+    "taxAmount": {
+      "type": "number",
+      "minimum": 0
+    },
+    "afterTaxAmount": {
+      "type": "number",
+      "minimum": 0.01
+    },
+    "quantity": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0.01
+    },
+    "itemCount": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "Legacy item count retained for existing expense records."
+    },
+    "invoiceNumber": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number",
+      "minimum": 0.01
+    },
+    "totalAmount": {
+      "type": "number",
+      "minimum": 0.01
+    },
+    "currency": {
+      "type": "string",
+      "default": "SAR"
+    },
+    "expenseDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "description": {
+      "type": "string"
+    },
+    "receiptUrl": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "submitted",
+        "manager_approved",
+        "manager_rejected",
+        "finance_approved",
+        "finance_rejected"
+      ]
+    },
+    "managerReviewedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "managerReviewedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "financeReviewedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "financeReviewedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "companyId",
+    "requesterId",
+    "requesterName",
+    "stationId",
+    "stationIds",
+    "stationScope",
+    "expenseType",
+    "amount",
+    "totalAmount",
+    "currency",
+    "expenseDate",
+    "receiptUrl",
+    "status"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
